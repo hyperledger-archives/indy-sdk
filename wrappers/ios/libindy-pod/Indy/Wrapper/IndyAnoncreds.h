@@ -16,43 +16,48 @@
  Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
  to Indy distributed ledger.
  
- @param issuerDID DID of the issuer signing credential_def transaction to the Ledger
+ @param issuerDID DID of schema issuer
  @param name a name the schema
  @param version a version of the schema
  @param attrs a list of schema attributes descriptions
  @param completion Callback that takes command result as parameter. Returns schemaId and schemaJson.
 */
-+ (void)issuerCreateSchemaForIssuerDID:(NSString *)issuerDID
-                                  name:(NSString *)name
-                               version:(NSString *)version
-                                 attrs:(NSString *)attrs
-                            completion:(void (^)(NSError *error, NSString *schemaId, NSString *schemaJSON))completion;
++ (void)issuerCreateSchemaWithName:(NSString *)name
+                           version:(NSString *)version
+                             attrs:(NSString *)attrs
+                         issuerDID:(NSString *)issuerDID
+                        completion:(void (^)(NSError *error, NSString *schemaId, NSString *schemaJSON))completion;
 
 /**
- Creates keys (both primary and revocation) for the given schema and signature type (currently only CL signature type is supported).
- Stores the keys together with signature type and schema in a secure wallet as a credential definition.
- 
- The credential definition in the wallet is identifying by a returned unique key.
+ Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
+ and secrets used for credentials revocation.
+
+ Credential definition entity contains private and public parts. Private part will be stored in the wallet. Public part
+ will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing CRED_DEF transaction
+ to Indy distributed ledger.
  
  @param issuerDID DID of the issuer signing credential_def transaction to the Ledger
  @param schemaJSON Schema as a json
- @param tag:
- @param type: (optional) signature type. Currently only 'CL' is supported.
- @param configJSON: config json.
-     {
-         "support_revocation": boolean
-     }
+ @param tag: allows to distinct between credential definitions for the same issuer and schema
+ @param type: type_: credential definition type (optional, 'CL' by default) that defines claims signature and revocation math. 
+ Supported types are:
+    - 'CL': Camenisch-Lysyanskaya credential signature type
+ @param configJSON: type-specific configuration of credential definition as json:
+ - 'CL':
+   - revocationSupport: whether to request non-revocation credential (optional, default false)
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter. 
- Returns credential definition json containing information about signature type, schema and issuer's public key.
+ Returns:
+    credDefId: identifier of created credential definition.
+    credDefJson: public part of created credential definition
 */
-+ (void)issuerCreateAndStoreCredentialDefForIssuerDID:(NSString *)issuerDID
-                                           schemaJSON:(NSString *)schemaJSON
-                                                  tag:(NSString *)tag
-                                                 type:(NSString *)type
-                                           configJSON:(NSString *)configJSON
-                                         walletHandle:(IndyHandle)walletHandle
-                                           completion:(void (^)(NSError *error, NSString *credentialDefId, NSString *credentialDefJSON))completion;
++ (void)issuerCreateAndStoreCredentialDefForSchema:(NSString *)schemaJSON
+                                         issuerDID:(NSString *)issuerDID
+                                               tag:(NSString *)tag
+                                              type:(NSString *)type
+                                        configJSON:(NSString *)configJSON
+                                      walletHandle:(IndyHandle)walletHandle
+                                        completion:(void (^)(NSError *error, NSString *credDefId, NSString *credDefJSON))completion;
 
 /**
  Creates a new revocation registry for the given credential definition.
@@ -62,7 +67,7 @@
  @param issuerDID: a DID of the issuer signing transaction to the Ledger
  @param type: (optional) registry type. Currently only 'CL_ACCUM' is supported.
  @param tag:
- @param credDefId: id of stored in ledger credential definition
+ @param credDefID: id of stored in ledger credential definition
  @param configJSON: {
      "issuance_type": (optional) type of issuance. Currently supported:
          1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
@@ -70,220 +75,184 @@
          2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
      "max_cred_num": maximum number of credentials the new registry can process.
  }
- @param tailsWriterType:
+ @param tailsWriterHandle:
  @param tailsWriterConfig:
  @param completion Callback that takes command result as parameter.
  Returns revocation registry definition json and revocation registry entry json.
  */
-+ (void)issuerCreateAndStoreRevocRegForIssuerDid:(NSString *)issuerDID
-                                            type:(NSString *)type
-                                             tag:(NSString *)tag
-                                       credDefId:(NSString *)credDefId
-                                      configJSON:(NSString *)configJSON
-                                 tailsWriterType:(NSString *)tailsWriterType
-                               tailsWriterConfig:(NSString *)tailsWriterConfig
-                                    walletHandle:(IndyHandle)walletHandle
-                                      completion:(void (^)(NSError *error, NSString *revocRegID, NSString *revocRegDefJSON, NSString *revocRegEntryJSON))completion;
++ (void)issuerCreateAndStoreRevocRegForCredentialDefId:(NSString *)credDefID
+                                             issuerDID:(NSString *)issuerDID
+                                                  type:(NSString *)type
+                                                   tag:(NSString *)tag
+                                            configJSON:(NSString *)configJSON
+                                     tailsWriterHandle:(IndyHandle)tailsWriterHandle
+                                          walletHandle:(IndyHandle)walletHandle
+                                            completion:(void (^)(NSError *error, NSString *revocRegID, NSString *revocRegDefJSON, NSString *revocRegEntryJSON))completion;
 
 /**
  Create credential offer and store it in wallet.
 
  @param cred_def_id: id of stored in ledger credential definition
- @param issuer_did: a DID of the issuer of credential
- @param prover_did: a DID of the target user
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter.
  Returns credentials offer json
         {
             "cred_def_id": string,
-            "issuer_did" : string,
+            // Fields below can depend on Cred Def type
             "nonce": string,
             "key_correctness_proof" : <key_correctness_proof>
         }
 */
-+ (void)issuerCreateCredentialOfferForProverDID:(NSString *)proverDID
-                                      issuerDID:(NSString *)issuerDID
-                                      credDefId:(NSString *)credDefId
++ (void)issuerCreateCredentialOfferForCredDefId:(NSString *)credDefID
                                    walletHandle:(IndyHandle)walletHandle
                                      completion:(void (^)(NSError *error, NSString *credentialOfferJSON))completion;
 
 /**
- Signs a given credential values for the given user by a given key (credential def).
- The corresponding credential definition and revocation registry must be already created
- an stored into the wallet.
+ Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.
 
- @param  credentialRequestJSON: a credential request with a blinded secret from the user (returned by prover_create_and_store_credential_req).
-     Example:
-     {
-      "blinded_ms" : <blinded_master_secret>,
-      "cred_def_id" : string,
-      "issuer_did" : string,
-      "prover_did" : string,
-      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
-      "nonce": string
-    }
- @param  credentialValuesJSON: a credential containing attribute values for each of requested attribute names.
+ Cred Request must match Cred Offer. The credential definition and revocation registry definition
+ referenced in Cred Offer and Cred Request must be already created and stored into the wallet.
+
+ Information for this credential revocation will be store in the wallet as part of revocation registry under
+ generated cred_revoc_id local for this wallet.
+
+ This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
+ Note that it is possible to accumulate deltas to reduce ledger load.
+
+ @param  credOfferJSON: a cred offer created by issuerCreateCredentialOfferForCredDefId
+ @param  credRequestJSON: a credential request created by proverCreateCredentialReqWithCredentialDef
+ @param  credValuesJSON: a credential containing attribute values for each of requested attribute names.
      Example:
      {
       "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
       "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
      }
  @param revRegId: (Optional) id of stored in ledger revocation registry definition
- @param tailsReaderHandle:
- @param userRevocIndex: index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
+ @param blobStorageReaderHandle: (Optional) Pre-configured blob storage reader instance handle that will allow to read revocation tails
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter. 
- Revocation registry update json with a newly issued credential
- Credential json containing signed credential values, issuer_did, schema_key, and revoc_reg_seq_no
- used for issuance
+ Return:
+     credJSON: Contains signed credential values
      {
-         "values": <see credential_values_json above>,
-         "signature": <signature>,
-         "issuer_did": string,
          "cred_def_id": string,
          "rev_reg_id", Optional<string>,
+         "values": <see credential_values_json above>,
+         // Fields below can depend on Cred Def type
+         "signature": <signature>,
          "signature_correctness_proof": <signature_correctness_proof>
      }
+     credRevocID: local id for revocation info (Can be used for revocation of this cred)
+     revocRegDeltaJSON: Revocation registry delta json with a newly issued credential
  */
-+ (void)issuerCreateCredentialWithRequest:(NSString *)credentialRequestJSON
-                     credentialValuesJSON:(NSString *)credentialValuesJSON
-                                 revRegId:(NSString *)revRegId
-                        tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                           userRevocIndex:(NSNumber *)userRevocIndex
-                             walletHandle:(IndyHandle)walletHandle
-                               completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON, NSString *xcredentialJSON))completion;
++ (void)issuerCreateCredentialForCredentialRequest:(NSString *)credReqJSON
+                                     credOfferJSON:(NSString *)credOfferJSON
+                                    credValuesJSON:(NSString *)credValuesJSON
+                                          revRegId:(NSString *)revRegId
+                           blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
+                                      walletHandle:(IndyHandle)walletHandle
+                                        completion:(void (^)(NSError *error, NSString *credJSON, NSString *credRevocID, NSString *revocRegDeltaJSON))completion;
 
 /**
- Revokes a user identified by a user_revoc_index in a given revoc-registry.
+ Revoke a credential identified by a cred_revoc_id (returned by indy_issuer_create_cred).
+
  The corresponding credential definition and revocation registry must be already
  created an stored into the wallet.
- 
- @param rev_reg_id: id of revocation registry stored in wallet
- @param tails_reader_handle:
- @param user_revoc_index: index of the user in the revocation registry
+
+ This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
+ Note that it is possible to accumulate deltas to reduce ledger load.
+
+ @param revRegId: id of revocation registry stored in wallet
+ @param blobStorageReaderHandle: pre-configured blob storage reader instance handle that will allow to read revocation tails
+ @param credRevocId: local id for revocation info
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter. 
  Revocation registry delta json with a revoked credential
  */
-+ (void)issuerRevokeCredentialForRevRegId:(NSString *)revRegId
-                        tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                           userRevocIndex:(NSNumber *)userRevocIndex
-                             walletHandle:(IndyHandle)walletHandle
-                               completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion;
-
-+ (void)issuerRecoverCredentialForRevRegId:(NSString *)revRegId
-                         tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                            userRevocIndex:(NSNumber *)userRevocIndex
-                              walletHandle:(IndyHandle)walletHandle
-                                completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion;
-
-/**
- Stores a credential offer from the given issuer in a secure storage.
-  
- @param credentialOfferJSON: credential offer as a json containing information about the issuer and a credential:
-        {
-            "cred_def_id": string,
-            "rev_reg_id" : Optional<string>,
-            "nonce": string,
-            "key_correctness_proof" : <key_correctness_proof>
-        } 
- @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- */
-+ (void)proverStoreCredentialOffer:(NSString *)credentialOfferJSON
-                  WithWalletHandle:(IndyHandle)walletHandle
-                        completion:(void (^)(NSError *error))completion;
-
-/**
- Gets all stored credential offers (see prover_store_credential_offer).
- A filter can be specified to get credential offers for specific Issuer, credential_def or schema only.
- 
- @param filterJSON: optional filter to get credential offers for specific Issuer, credential_def or schema only only
-     Each of the filters is optional and can be combines
-        {
-            "schema_id": string, (Optional)
-            "schema_did": string, (Optional)
-            "schema_name": string, (Optional)
-            "schema_version": string, (Optional)
-            "issuer_did": string, (Optional)
-            "issuer_did": string, (Optional)
-            "cred_def_id": string, (Optional)
-        }
- @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param completion Returns A json with a list of credentials offers for the filter.
- */
-+ (void)proverGetCredentialOffersWithFilter:(NSString *)filterJSON
++ (void)issuerRevokeCredentialByCredRevocId:(NSString *)credRevocId
+                                   revRegId:(NSString *)revRegId
+                    blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
                                walletHandle:(IndyHandle)walletHandle
-                                 completion:(void (^)(NSError *error, NSString *credentialOffersJSON))completion;
+                                 completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion;
 
++ (void)issuerRecoverCredentialByCredRevocId:(NSString *)credRevocId
+                                    revRegId:(NSString *)revRegId
+                     blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
+                                walletHandle:(IndyHandle)walletHandle
+                                  completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion;
+
++ (void)issuerMergerRevocationRegistryDelta:(NSString *)revRegDelta
+                                  withDelta:(NSString *)otherRevRegDelta
+                                 completion:(void (^)(NSError *error, NSString *credOfferJSON))completion;
 
 /**
  Creates a master secret with a given name and stores it in the wallet.
  The name must be unique.
  
- @param masterSecretName A new master secret name.
+ @param masterSecretID A new master secret name.
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Returns error code.
  
  */
-+ (void)proverCreateMasterSecretNamed:(NSString *)masterSecretName
-                         walletHandle:(IndyHandle)walletHandle
-                           completion:(void (^)(NSError *error))completion;
++ (void)proverCreateMasterSecret:(NSString *)masterSecretID
+                    walletHandle:(IndyHandle)walletHandle
+                      completion:(void (^)(NSError *error, NSString *outMasterSecretId))completion;
 
 /**
  
- Creates a clam request json for the given credential offer and stores it in a secure wallet.
- The credential offer contains the information about Issuer (DID, schema_seq_no),
- and the schema (schema_key).
+ Creates a clam request for the given credential offer.
+
  The method creates a blinded master secret for a master secret identified by a provided name.
  The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
  The blinded master secret is a part of the credential request.
-  
+
  @param proverDID: a DID of the prover
- @param credentialOfferJSON: credential offer as a json containing information about the issuer and a credential:
-        {
-            "cred_def_id": string,
-            "rev_reg_id" : Optional<string>,
-            "nonce": string,
-            "key_correctness_proof" : <key_correctness_proof>
-        }
- @param credentialDefJSON: credential definition json associated with issuer_did and schema_seq_no in the credential_offer
- @param masterSecretName: the name of the master secret stored in the wallet
+ @param credOfferJSON: a cred offer created by issuerCreateCredentialOfferForCredDefId
+ @param credentialDefJSON: credential definition json created by issuerCreateAndStoreCredentialDefForIssuerDID
+ @param masterSecretID: the name of the master secret stored in the wallet
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param completion Callback that takes command result as parameter. Returns Credential request json.
+ @param completion Callback that takes command result as parameter. 
+ Returns 
+     credReqJSON: Credential request json for creation of credential by Issuer
+     {
+      "cred_def_id" : string,
+      "rev_reg_id" : Optional<string>,
+      "prover_did" : string,
+         // Fields below can depend on Cred Def type
+      "blinded_ms" : <blinded_master_secret>,
+      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+      "nonce": string
+    }
+    credReqMetadataJSON: Credential request metadata json for processing of received form Issuer credential.
  */
-+ (void)proverCreateAndStoreCredentialReqWithCredentialDef:(NSString *)credentialDefJSON
-                                                 proverDID:(NSString *)proverDID
-                                       credentialOfferJSON:(NSString *)credentialOfferJSON
-                                          masterSecretName:(NSString *)masterSecretName
-                                              walletHandle:(IndyHandle)walletHandle
-                                                completion:(void (^)(NSError *error, NSString *credentialReqJSON))completion;
++ (void)proverCreateCredentialReqForCredentialOffer:(NSString *)credOfferJSON
+                                  credentialDefJSON:(NSString *)credentialDefJSON
+                                          proverDID:(NSString *)proverDID
+                                     masterSecretID:(NSString *)masterSecretID
+                                       walletHandle:(IndyHandle)walletHandle
+                                         completion:(void (^)(NSError *error, NSString *credReqJSON, NSString *credReqMetadataJSON))completion;
 
 /**
- Updates the credential by a master secret and stores in a secure wallet.
- The credential contains the information about
- schema_key, issuer_did, revoc_reg_seq_no (see issuer_create_credential).
- Seq_no is a sequence number of the corresponding transaction in the ledger.
- The method loads a blinded secret for this key from the wallet,
- updates the credential and stores it in a wallet.
+ Check credential provided by Issuer for the given credential request,
+ updates the credential by a master secret and stores in a secure wallet.
  
- @param credentialId: identifier by which credential will be stored in wallet
- @param credentialsJson: credential json:
-     {
-         "values": <see credential_values_json above>,
-         "signature": <signature>,
-         "cred_def_id": string,
-         "rev_reg_id", Optional<string>,
-         "signature_correctness_proof": <signature_correctness_proof>
-     }
+ @param credID: identifier by which credential will be stored in wallet
+ @param credReqJSON: a credential request created by proverCreateCredentialReqForCredentialOffer
+ @param credReqMetadataJSON: a credential request metadata created by proverCreateCredentialReqForCredentialOffer
+ @param credJson: credential json created by issuerCreateCredentialForCredOffer
+ @param credDefJSON: credential definition json created by issuerCreateSchemaForIssuerDID
  @param revRegDefJSON: revocation registry definition json
+ @param revStateJSON: revocation state json
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter.
  */
-+ (void)proverStoreCredential:(NSString *)credentialsJson
-                 credentialId:(NSString *)credentialId
++ (void)proverStoreCredential:(NSString *)credJson
+                       credID:(NSString *)credID
+                  credReqJSON:(NSString *)credReqJSON
+          credReqMetadataJSON:(NSString *)credReqMetadataJSON
+                  credDefJSON:(NSString *)credDefJSON
                 revRegDefJSON:(NSString *)revRegDefJSON
                  walletHandle:(IndyHandle)walletHandle
-                   completion:(void (^)(NSError *error))completion;
+                   completion:(void (^)(NSError *error, NSString *outCredID))completion;
 
 /**
  Gets human readable credentials according to the filter.
@@ -293,7 +262,7 @@
  @param filterJSON: filter for credentials
         {
             "schema_id": string, (Optional)
-            "schema_did": string, (Optional)
+            "schema_issuer_did": string, (Optional)
             "schema_name": string, (Optional)
             "schema_version": string, (Optional)
             "issuer_did": string, (Optional)
@@ -305,9 +274,9 @@
  Returns credentials json. See example above.
 
  */
-+ (void)proverGetCredentialsWithFilter:(NSString *)filterJSON
-                          walletHandle:(IndyHandle)walletHandle
-                            completion:(void (^)(NSError *error, NSString *credentialsJSON))completion;
++ (void)proverGetCredentialsForFilter:(NSString *)filterJSON
+                         walletHandle:(IndyHandle)walletHandle
+                           completion:(void (^)(NSError *error, NSString *credentialsJSON))completion;
 
 /**
  Gets human readable credentials matching the given proof request.
@@ -413,14 +382,14 @@
          "credential2_referent_in_wallet": <schema2>,
          "credential3_referent_in_wallet": <schema3>,
      }
- @param masterSecretName: the name of the master secret stored in the wallet
+ @param masterSecretID: the name of the master secret stored in the wallet
  @param credentialDefsJSON: all credential definition jsons participating in the proof request
      {
          "credential1_referent_in_wallet": <credential_def1>,
          "credential2_referent_in_wallet": <credential_def2>,
          "credential3_referent_in_wallet": <credential_def3>,
      }
- @param revocInfosJSON: all revocation registry jsons participating in the proof request
+ @param revocStatesJSON: all revocation registry jsons participating in the proof request
      {
          "credential1_referent_in_wallet": {
              "freshness1": <revoc_info1>,
@@ -471,10 +440,10 @@
      } */
 + (void)proverCreateProofForRequest:(NSString *)proofRequestJSON
            requestedCredentialsJSON:(NSString *)requestedCredentialsJSON
+                     masterSecretID:(NSString *)masterSecretID
                         schemasJSON:(NSString *)schemasJSON
-                   masterSecretName:(NSString *)masterSecretName
                  credentialDefsJSON:(NSString *)credentialDefsJSON
-                     revocInfosJSON:(NSString *)revocInfosJSON
+                    revocStatesJSON:(NSString *)revocStatesJSON
                        walletHandle:(IndyHandle)walletHandle
                          completion:(void (^)(NSError *error, NSString *proofJSON))completion;
 
@@ -565,29 +534,19 @@
                      revocRegsJSON:(NSString *)revocRegsJSON
                         completion:(void (^)(NSError *error, BOOL valid))completion;
 
-+ (void)createRevocationInfoForTimestamp:(NSNumber *)timestamp
-                           revRegDefJSON:(NSString *)revRegDefJSON
-                         revRegDeltaJSON:(NSString *)revRegDeltaJSON
-                       tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                                  revIdx:(NSNumber *)revIdx
-                              completion:(void (^)(NSError *error, NSString *revInfo))completion;
++ (void)createRevocationStateForCredRevID:(NSString *)credRevID
+                                timestamp:(NSNumber *)timestamp
+                            revRegDefJSON:(NSString *)revRegDefJSON
+                          revRegDeltaJSON:(NSString *)revRegDeltaJSON
+                  blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
+                               completion:(void (^)(NSError *error, NSString *revStateJSON))completion;
 
-+ (void)updateRevocationInfoForTimestamp:(NSNumber *)timestamp
-                             revInfoJSON:(NSString *)revInfoJSON
-                           revRegDefJSON:(NSString *)revRegDefJSON
-                         revRegDeltaJSON:(NSString *)revRegDeltaJSON
-                       tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                                  revIdx:(NSNumber *)revIdx
-                              completion:(void (^)(NSError *error, NSString *updatedRevInfo))completion;
-
-+ (void)storeRevocationInfoForId:(NSString *)id
-                     revInfoJSON:(NSString *)revInfoJSON
-                    walletHandle:(IndyHandle)walletHandle
-                      completion:(void (^)(NSError *error))completion;
-
-+ (void)getRevocationInfoForId:(NSString *)id
-                     timestamp:(NSNumber *)timestamp
-                  walletHandle:(IndyHandle)walletHandle
-                    completion:(void (^)(NSError *error, NSString *revInfo))completion;
++ (void)updateRevocationState:(NSString *)revStateJSON
+                    credRevID:(NSString *)credRevID
+                    timestamp:(NSNumber *)timestamp
+                revRegDefJSON:(NSString *)revRegDefJSON
+              revRegDeltaJSON:(NSString *)revRegDeltaJSON
+      blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
+                   completion:(void (^)(NSError *error, NSString *updatedRevStateJSON))completion;
 
 @end

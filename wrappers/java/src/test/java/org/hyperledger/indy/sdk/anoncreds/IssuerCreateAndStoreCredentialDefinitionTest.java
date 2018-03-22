@@ -15,7 +15,7 @@ public class IssuerCreateAndStoreCredentialDefinitionTest extends AnoncredsInteg
 	@Test
 	public void testIssuerCreateAndStoreCredentialDefWorks() throws Exception {
 		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredentialDefResult =
-				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchemaJson, "Works", null, defaultCredentialDefConfig).get();
+				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, "Works", null, defaultCredentialDefitionConfig).get();
 		assertNotNull(createCredentialDefResult);
 	}
 
@@ -31,7 +31,7 @@ public class IssuerCreateAndStoreCredentialDefinitionTest extends AnoncredsInteg
 				"           \"attr_names\":[\"name\"]" +
 				"        }";
 
-		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, schema, "InvalidSchema", null, defaultCredentialDefConfig).get();
+		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, schema, "InvalidSchema", null, defaultCredentialDefitionConfig).get();
 	}
 
 	@Test
@@ -47,13 +47,13 @@ public class IssuerCreateAndStoreCredentialDefinitionTest extends AnoncredsInteg
 				"           \"attr_names\":[]\n" +
 				"       }";
 
-		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, schema, "EmptyKeys", null, defaultCredentialDefConfig).get();
+		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, schema, "EmptyKeys", null, defaultCredentialDefitionConfig).get();
 	}
 
 	@Test
 	public void testIssuerCreateAndStoreCredentialDefWorksForCorrectCryptoType() throws Exception {
 		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredentialDefResult =
-				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchemaJson, "CorrectCryptoType", "CL", defaultCredentialDefConfig).get();
+				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, "CorrectCryptoType", "CL", defaultCredentialDefitionConfig).get();
 		assertNotNull(createCredentialDefResult);
 	}
 
@@ -63,16 +63,16 @@ public class IssuerCreateAndStoreCredentialDefinitionTest extends AnoncredsInteg
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchemaJson, "InvalidCryptoType", "type", defaultCredentialDefConfig).get();
+		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, "InvalidCryptoType", "type", defaultCredentialDefitionConfig).get();
 	}
 
 	@Test
 	public void testIssuerCreateAndStoreCredentialDefWorksForDuplicate() throws Exception {
-		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchemaJson, "Duplicate", null, defaultCredentialDefConfig).get();
+		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, "Duplicate", null, defaultCredentialDefitionConfig).get();
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(ClaimDefAlreadyExistsException.class));
 
-		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchemaJson, "Duplicate", null, defaultCredentialDefConfig).get();
+		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, "Duplicate", null, defaultCredentialDefitionConfig).get();
 	}
 }

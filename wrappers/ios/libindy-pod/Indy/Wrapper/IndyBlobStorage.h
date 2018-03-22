@@ -11,8 +11,10 @@
 
 + (void)openReaderWithType:(NSString *)type
                     config:(NSString *)config
-                  location:(NSString *)location
-                      hash:(NSString *)hash
+                completion:(void (^)(NSError *error, NSNumber *handle))completion;
+
++ (void)openWriterWithType:(NSString *)type
+                    config:(NSString *)config
                 completion:(void (^)(NSError *error, NSNumber *handle))completion;
 
 @end

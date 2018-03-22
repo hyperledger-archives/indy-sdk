@@ -123,11 +123,30 @@ public final class AnoncredsResults {
 	 */
 	public static class IssuerCreateCredentialResult extends IndyJava.Result {
 
-		private String revocRegDeltaJson, credentialJson;
+		private String credentialJson, revocId, revocRegDeltaJson;
 
-		IssuerCreateCredentialResult(String revocRegUpdateJson, String credentialJson) {
-			this.revocRegDeltaJson = revocRegUpdateJson;
+		IssuerCreateCredentialResult(String credentialJson, String revocId, String revocRegUpdateJson) {
 			this.credentialJson = credentialJson;
+			this.revocId = revocId;
+			this.revocRegDeltaJson = revocRegUpdateJson;
+		}
+
+		/**
+		 * Gets the credential JSON.
+		 *
+		 * @return The credential JSON.
+		 */
+		public String getCredentialJson() {
+			return this.credentialJson;
+		}
+
+		/**
+		 * Gets the credential revocation Id.
+		 *
+		 * @return The credential revocation Id.
+		 */
+		public String getRevocId() {
+			return this.revocId;
 		}
 
 		/**
@@ -138,14 +157,36 @@ public final class AnoncredsResults {
 		public String getRevocRegDeltaJson() {
 			return this.revocRegDeltaJson;
 		}
+	}
+
+	/**
+	 * Result from calling proverCreateCredentialReq.
+	 */
+	public static class ProverCreateCredentialRequestResult extends IndyJava.Result {
+
+		private String credentialRequestJson, credentialRequestMetadataJson;
+
+		ProverCreateCredentialRequestResult(String credentialRequestJson, String credentialRequestMetadataJson) {
+			this.credentialRequestJson = credentialRequestJson;
+			this.credentialRequestMetadataJson = credentialRequestMetadataJson;
+		}
 
 		/**
-		 * Gets the credential JSON.
+		 * Gets the credential request JSON.
 		 *
-		 * @return The credential JSON.
+		 * @return The credential request JSON.
 		 */
-		public String getCredentialJson() {
-			return this.credentialJson;
+		public String getCredentialRequestJson() {
+			return this.credentialRequestJson;
+		}
+
+		/**
+		 * Gets the credential request metadata JSON.
+		 *
+		 * @return The credential request metadata JSON.
+		 */
+		public String getCredentialRequestMetadataJson() {
+			return this.credentialRequestMetadataJson;
 		}
 	}
 }

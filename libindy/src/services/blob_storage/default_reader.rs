@@ -6,7 +6,7 @@ use base64;
 
 use errors::common::CommonError;
 
-use super::{Reader, ReaderType};
+use super::{ReadableBlob, Reader, ReaderType};
 use self::indy_crypto::utils::json::JsonDecodable;
 use self::digest::{FixedOutput, Input};
 use self::sha2::Sha256;
@@ -28,9 +28,15 @@ struct DefaultReaderConfig {
 impl<'a> JsonDecodable<'a> for DefaultReaderConfig {}
 
 impl ReaderType for DefaultReaderType {
-    fn open(&self, config: &str, hash: &[u8], location: &str) -> Result<Box<Reader>, CommonError> {
+    fn open(&self, config: &str) -> Result<Box<Reader>, CommonError> {
         let cfg = DefaultReaderConfig::from_json(config)?;
-        let mut path = PathBuf::from(cfg.base_dir);
+        Ok(Box::new(cfg))
+    }
+}
+
+impl Reader for DefaultReaderConfig {
+    fn open(&self, hash: &[u8], location: &str) -> Result<Box<ReadableBlob>, CommonError> {
+        let mut path = PathBuf::from(&self.base_dir);
         path.push(base64::encode(hash));
         let file = File::open(path)?;
         Ok(Box::new(DefaultReader {
@@ -40,7 +46,7 @@ impl ReaderType for DefaultReaderType {
     }
 }
 
-impl Reader for DefaultReader {
+impl ReadableBlob for DefaultReader {
     fn verify(&mut self) -> Result<bool, CommonError> {
         self.file.seek(SeekFrom::Start(0))?;
         let mut hasher = Sha256::default();

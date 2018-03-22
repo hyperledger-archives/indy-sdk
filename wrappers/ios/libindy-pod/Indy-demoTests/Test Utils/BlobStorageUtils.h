@@ -16,8 +16,10 @@
 
 - (NSError *)openReaderWithType:(NSString *)type
                          config:(NSString *)config
-                       location:(NSString *)location
-                           hash:(NSString *)hash
+                         handle:(NSNumber **)handle;
+
+- (NSError *)openWriterWithType:(NSString *)type
+                         config:(NSString *)config
                          handle:(NSNumber **)handle;
 
 @end

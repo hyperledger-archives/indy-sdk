@@ -15,7 +15,7 @@
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_blob_storage_open_reader(handle,
+    ret = indy_open_blob_storage_reader(handle,
             [type UTF8String],
             [configJson UTF8String],
             [location UTF8String],

@@ -19,7 +19,6 @@ mod utils;
 use utils::wallet::WalletUtils;
 use utils::crypto::CryptoUtils;
 use utils::did::DidUtils;
-use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 use utils::constants::*;
 

@@ -48,12 +48,12 @@
     //2. Issuer schema
     NSString *schemaId;
     NSString *schemaJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaForIssuerDID:[TestUtils issuerDid]
-                                                                     name:[TestUtils gvtSchemaName]
-                                                                  version:[TestUtils schemaVersion]
-                                                                    attrs:[TestUtils gvtSchemaAttrs]
-                                                                 schemaId:&schemaId
-                                                               schemaJson:&schemaJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaWithName:[TestUtils gvtSchemaName]
+                                                              version:[TestUtils schemaVersion]
+                                                                attrs:[TestUtils gvtSchemaAttrs]
+                                                            issuerDID:[TestUtils issuerDid]
+                                                             schemaId:&schemaId
+                                                           schemaJson:&schemaJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateSchemaForIssuerDID failed");
 
     XCTAssertTrue([schemaId isValid], @"invalid schemaId: %@", schemaId);
@@ -62,64 +62,68 @@
     //3. Issuer create credential definition
     NSString *credentialDefId;
     NSString *credentialDefJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialDefinitionWithWalletHandle:walletHandle
-                                                                                  issuerDid:[TestUtils issuerDid]
-                                                                                 schemaJson:schemaJson
-                                                                                        tag:[TestUtils tag]
-                                                                                       type:nil
-                                                                                 configJson:[[AnoncredsUtils sharedInstance] defaultCredentialDefConfig]
-                                                                            credentialDefId:&credentialDefId
-                                                                          credentialDefJson:&credentialDefJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateAndStoreCredentialDefForSchema:schemaJson
+                                                                            issuerDID:[TestUtils issuerDid]
+                                                                                  tag:[TestUtils tag]
+                                                                                 type:nil
+                                                                           configJSON:[[AnoncredsUtils sharedInstance] defaultCredentialDefConfig]
+                                                                         walletHandle:walletHandle
+                                                                            credDefId:&credentialDefId
+                                                                          credDefJson:&credentialDefJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialDefinifionWithWalletHandle failed");
 
     XCTAssertTrue([credentialDefId isValid], @"invalid credentialDefId: %@", credentialDefId);
     XCTAssertTrue([credentialDefJson isValid], @"invalid credentialDefJson: %@", credentialDefJson);
 
     //4. Prover create Master Secret
-    NSString *masterSecretName = @"prover_master_secret";
-    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:masterSecretName
-                                                            walletHandle:walletHandle];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:[TestUtils commonMasterSecretName]
+                                                       walletHandle:walletHandle
+                                                  outMasterSecretId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret failed");
 
     // 5. Issuer create Credential Offer
     NSString *credentialOfferJSON = nil;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferWithWalletHandle:walletHandle
-                                                                       credentialDefId:credentialDefId
-                                                                             issuerDid:[TestUtils issuerDid]
-                                                                             proverDid:[TestUtils proverDid]
-                                                                   credentialOfferJson:&credentialOfferJSON];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferForCredDefId:credentialDefId
+                                                                      walletHandle:walletHandle
+                                                                     credOfferJson:&credentialOfferJSON];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreCredentialDef() failed!");
 
     //6. Prover create Credential Request
     NSString *credentialRequest;
-
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreCredentialReqWithDef:credentialDefJson
-                                                                          proverDid:[TestUtils proverDid]
-                                                                credentialOfferJson:credentialOfferJSON
-                                                                   masterSecretName:masterSecretName
-                                                                       walletHandle:walletHandle
-                                                               outCredentialReqJson:&credentialRequest];
+    NSString *credentialRequestMetadata;
+    ret = [[AnoncredsUtils sharedInstance] proverCreateCredentialReqForCredentialOffer:credentialOfferJSON
+                                                                     credentialDefJSON:credentialDefJson
+                                                                             proverDID:[TestUtils proverDid]
+                                                                        masterSecretID:[TestUtils commonMasterSecretName]
+                                                                          walletHandle:walletHandle
+                                                                           credReqJson:&credentialRequest
+                                                                   credReqMetadataJson:&credentialRequestMetadata];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreCredentialReq failed");
     XCTAssertTrue([credentialRequest isValid], @"invalid credentialRequest");
 
     //7. Issuer create Credential
-    NSString *xCredentialJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialWithWalletHandle:walletHandle
-                                                                credentialReqJson:credentialRequest
-                                                             credentialValuesJson:[[AnoncredsUtils sharedInstance] getGvtCredentialValuesJson]
-                                                                         revRegId:nil
-                                                                tailsReaderHandle:nil
-                                                                   userRevocIndex:nil
-                                                                outCredentialJson:&xCredentialJson
-                                                             outRevocRegDeltaJSON:nil];
+    NSString *credentialJSON;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialForCredentialRequest:credentialRequest
+                                                                        credOfferJSON:credentialOfferJSON
+                                                                       credValuesJSON:[[AnoncredsUtils sharedInstance] getGvtCredentialValuesJson]
+                                                                             revRegId:nil
+                                                              blobStorageReaderHandle:nil
+                                                                         walletHandle:walletHandle
+                                                                             credJson:&credentialJSON
+                                                                          credRevocId:nil
+                                                                    revocRegDeltaJSON:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateCredentialWithWalletHandle failed");
-    XCTAssertTrue([xCredentialJson isValid], @"invalid xCredentialJson: %@", xCredentialJson);
+    XCTAssertTrue([credentialJSON isValid], @"invalid xCredentialJson: %@", credentialJSON);
 
     // 8. Prover store received Credential
-    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialWithWalletHandle:walletHandle
-                                                                    credentialId:[[AnoncredsUtils sharedInstance] credentialId1]
-                                                                 credentialsJson:xCredentialJson
-                                                                   revRegDefJSON:nil];
+    ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:credentialJSON
+                                                          credID:[[AnoncredsUtils sharedInstance] credentialId1]
+                                                     credReqJSON:credentialRequest
+                                             credReqMetadataJSON:credentialRequestMetadata
+                                                     credDefJSON:credentialDefJson
+                                                   revRegDefJSON:nil
+                                                    walletHandle:walletHandle
+                                                       outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredentialWithWalletHandle failed");
 
     // 9. Prover gets Credentials for Proof Request
@@ -128,7 +132,7 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
-            "\"requested_attrs\":{\
+            "\"requested_attributes\":{\
                                     \"attr1_referent\":{\
                                         \"name\":\"name\"\
                                     }\
@@ -137,9 +141,9 @@
                             }"];
     NSString *credentialsJson = nil;
 
-    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReqWithWalletHandle:walletHandle
-                                                                          proofRequestJson:proofReqJson
-                                                                        outCredentialsJson:&credentialsJson];
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofReqJson
+                                                              walletHandle:walletHandle
+                                                           credentialsJson:&credentialsJson];
     XCTAssertEqual(ret.code, Success, @"proverGetCredentialsForProofReq() failed!");
 
     NSDictionary *credentials = [NSDictionary fromString:credentialsJson];
@@ -152,22 +156,22 @@
     // 9. Prover create Proof
     NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{\
                                      \"self_attested_attributes\":{},\
-                                     \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
+                                     \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
                                      \"requested_predicates\":{}\
                                      }", credentialReferent];
-    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialReferent, schemaJson];
-    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialReferent, credentialDefJson];
-    NSString *revocInfosJson = @"{}";
+    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", schemaId, schemaJson];
+    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialDefId, credentialDefJson];
+    NSString *revocStatesJson = @"{}";
 
     NSString *proofJson;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateProofWithWalletHandle:walletHandle
-                                                                proofReqJson:proofReqJson
-                                                    requestedCredentialsJson:requestedCredentialsJson
-                                                                 schemasJson:schemasJson
-                                                            masterSecretName:masterSecretName
-                                                          credentialDefsJson:credentialDefsJson
-                                                              revocInfosJSON:revocInfosJson
-                                                                outProofJson:&proofJson];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateProofForRequest:proofReqJson
+                                              requestedCredentialsJSON:requestedCredentialsJson
+                                                        masterSecretID:[TestUtils commonMasterSecretName]
+                                                           schemasJSON:schemasJson
+                                                    credentialDefsJSON:credentialDefsJson
+                                                       revocStatesJSON:revocStatesJson
+                                                          walletHandle:walletHandle
+                                                             proofJson:&proofJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateProofWithWalletHandle failed");
     XCTAssertTrue([proofJson isValid], @"invalid proofJson: %@", proofJson);
 
@@ -177,16 +181,16 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
-            "\"requested_attrs\":{\
+            "\"requested_attributes\":{\
                                     \"attr1_referent\":{\
                                         \"name\":\"name\"\
                                     }\
                               },\
                               \"requested_predicates\":{\
                                     \"predicate1_referent\":{\
-                                        \"attr_name\":\"age\",\
+                                        \"name\":\"age\",\
                                         \"p_type\":\">=\",\
-                                        \"value\":18\
+                                        \"p_value\":18\
                                     }\
                               }\
                             }"];
@@ -196,23 +200,18 @@
     XCTAssertTrue(proof, @"serialization failed");
 
     NSDictionary *revealedAttr1 = proof[@"requested_proof"][@"revealed_attrs"][@"attr1_referent"];
-    NSString *id = revealedAttr1[@"referent"];
-
-    schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, schemaJson];
-
-    credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, credentialDefJson];
 
     NSString *revocRegDefsJson = @"{}";
     NSString *revocRegsJson = @"{}";
 
     BOOL isVerified = false;
-    ret = [[AnoncredsUtils sharedInstance] verifierVerifyProof:proofReqJSON
-                                                     proofJson:proofJson
-                                                   schemasJson:schemasJson
-                                            credentialDefsJson:credentialDefsJson
-                                              revocRegDefsJSON:revocRegDefsJson
-                                                 revocRegsJson:revocRegsJson
-                                                      outValid:&isVerified];
+    ret = [[AnoncredsUtils sharedInstance] verifierVerifyProofRequest:proofReqJSON
+                                                            proofJSON:proofJson
+                                                          schemasJSON:schemasJson
+                                                   credentialDefsJSON:credentialDefsJson
+                                                     revocRegDefsJSON:revocRegsJson
+                                                        revocRegsJSON:revocRegsJson
+                                                              isValid:&isVerified];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"verifierVerifyProof() returned wrong code!");
     [TestUtils cleanupStorage];
 }
@@ -240,12 +239,12 @@
     // 3. Issuer create Schema
     NSString *schemaId;
     NSString *schemaJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaForIssuerDID:[TestUtils issuerDid]
-                                                                     name:[TestUtils gvtSchemaName]
-                                                                  version:[TestUtils schemaVersion]
-                                                                    attrs:[TestUtils gvtSchemaAttrs]
-                                                                 schemaId:&schemaId
-                                                               schemaJson:&schemaJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaWithName:[TestUtils gvtSchemaName]
+                                                              version:[TestUtils schemaVersion]
+                                                                attrs:[TestUtils gvtSchemaAttrs]
+                                                            issuerDID:[TestUtils issuerDid]
+                                                             schemaId:&schemaId
+                                                           schemaJson:&schemaJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateSchemaForIssuerDID failed");
 
     XCTAssertTrue([schemaId isValid], @"invalid schemaId: %@", schemaId);
@@ -254,102 +253,78 @@
     //3. Issuer create credential definition
     NSString *credentialDefId;
     NSString *credentialDefJSON;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialDefinitionWithWalletHandle:issuerWalletHandle
-                                                                                  issuerDid:[TestUtils issuerDid]
-                                                                                 schemaJson:schemaJson
-                                                                                        tag:[TestUtils tag]
-                                                                                       type:nil
-                                                                                 configJson:[[AnoncredsUtils sharedInstance] defaultCredentialDefConfig]
-                                                                            credentialDefId:&credentialDefId
-                                                                          credentialDefJson:&credentialDefJSON];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateAndStoreCredentialDefForSchema:schemaJson
+                                                                            issuerDID:[TestUtils issuerDid]
+                                                                                  tag:[TestUtils tag]
+                                                                                 type:nil
+                                                                           configJSON:[[AnoncredsUtils sharedInstance] defaultCredentialDefConfig]
+                                                                         walletHandle:issuerWalletHandle
+                                                                            credDefId:&credentialDefId
+                                                                          credDefJson:&credentialDefJSON];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialDefinifionWithWalletHandle failed");
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::createCredentialDefinitionAndSetLink() failed");
 
     //4. Prover create Master Secret
 
-    NSString *masterSecretName = @"prover_master_secret";
-
-    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:masterSecretName
-                                                            walletHandle:proverWalletHandle];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:[TestUtils commonMasterSecretName]
+                                                       walletHandle:proverWalletHandle
+                                                  outMasterSecretId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed");
 
     // 5. Issuer create Credential Offer
     NSString *credentialOfferJson = nil;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferWithWalletHandle:issuerWalletHandle
-                                                                       credentialDefId:credentialDefId
-                                                                             issuerDid:[TestUtils issuerDid]
-                                                                             proverDid:[TestUtils proverDid]
-                                                                   credentialOfferJson:&credentialOfferJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferForCredDefId:credentialDefId
+                                                                      walletHandle:issuerWalletHandle
+                                                                     credOfferJson:&credentialOfferJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreCredentialDef() failed!");
 
-
-    //6. Prover store Credential Offer received from Issuer
-    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialOffer:proverWalletHandle
-                                                  credentialOfferJson:credentialOfferJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredentialOffer() failed");
-
-    //7. Prover get Credential Offers
-
-    NSString *filterJson = [NSString stringWithFormat:@"{ \"issuer_did\":\"%@\"}", [TestUtils issuerDid]];
-    NSString *credentialOffersJson = nil;
-
-    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialOffers:proverWalletHandle
-                                                          filterJson:filterJson
-                                             outCredentialOffersJSON:&credentialOffersJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialOffers() failed");
-    XCTAssertTrue([credentialOffersJson isValid], @"invalid credentialOffersJson: %@", credentialOffersJson);
-
-    NSArray *credentialOffers = (NSArray *) [NSDictionary fromString:credentialOffersJson];
-
-    XCTAssertTrue(credentialOffers, @"credentialOffers == nil");
-    XCTAssertEqual([credentialOffers count], 1, @"[credentialOffers count] != 1");
-
-    NSDictionary *credentialOffer1 = credentialOffers[0];
-    credentialOfferJson = [NSDictionary toString:credentialOffer1];
-
-    //8. Prover create Credential Request
+    //6. Prover create Credential Request
     NSString *credentialReq = nil;
+    NSString *credentialReqMetadata = nil;
 
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreCredentialReqWithDef:credentialDefJSON
-                                                                          proverDid:[TestUtils proverDid]
-                                                                credentialOfferJson:credentialOfferJson
-                                                                   masterSecretName:masterSecretName
-                                                                       walletHandle:proverWalletHandle
-                                                               outCredentialReqJson:&credentialReq];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateCredentialReqForCredentialOffer:credentialOfferJson
+                                                                     credentialDefJSON:credentialDefJSON
+                                                                             proverDID:[TestUtils proverDid]
+                                                                        masterSecretID:[TestUtils commonMasterSecretName]
+                                                                          walletHandle:proverWalletHandle
+                                                                           credReqJson:&credentialReq
+                                                                   credReqMetadataJson:&credentialReqMetadata];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreCredentialReq() failed");
     XCTAssertTrue([credentialReq isValid], @"invalid credentialRequest: %@", credentialReq);
-    NSLog(@"credentialReqJson: %@", credentialReq);
+    XCTAssertTrue([credentialReqMetadata isValid], @"invalid credentialReqMetadata: %@", credentialReqMetadata);
 
-
-    //9. Issuer create Credential
-    NSString *xcredentialJson = nil;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialWithWalletHandle:issuerWalletHandle
-                                                                credentialReqJson:credentialReq
-                                                             credentialValuesJson:[[AnoncredsUtils sharedInstance] getGvtCredentialValuesJson]
-                                                                         revRegId:nil
-                                                                tailsReaderHandle:nil
-                                                                   userRevocIndex:nil
-                                                                outCredentialJson:&xcredentialJson
-                                                             outRevocRegDeltaJSON:nil];
+    //7. Issuer create Credential
+    NSString *credentialJson = nil;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialForCredentialRequest:credentialReq
+                                                                        credOfferJSON:credentialOfferJson
+                                                                       credValuesJSON:[[AnoncredsUtils sharedInstance] getGvtCredentialValuesJson]
+                                                                             revRegId:nil
+                                                              blobStorageReaderHandle:nil
+                                                                         walletHandle:issuerWalletHandle
+                                                                             credJson:&credentialJson
+                                                                          credRevocId:nil
+                                                                    revocRegDeltaJSON:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateCredential() failed");
-    XCTAssertTrue([xcredentialJson isValid], @"invalid xCredentialJson: %@", xcredentialJson);
-    NSLog(@"xcredentialJson: %@", xcredentialJson);
+    XCTAssertTrue([credentialJson isValid], @"invalid credentialJson: %@", credentialJson);
 
-    // 10. Prover store received Credential
-
-    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialWithWalletHandle:proverWalletHandle
-                                                                    credentialId:[[AnoncredsUtils sharedInstance] credentialId1]
-                                                                 credentialsJson:xcredentialJson
-                                                                   revRegDefJSON:nil];
+    // 8. Prover store received Credential
+    ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:credentialJson
+                                                          credID:[[AnoncredsUtils sharedInstance] credentialId1]
+                                                     credReqJSON:credentialReq
+                                             credReqMetadataJSON:credentialReqMetadata
+                                                     credDefJSON:credentialDefJSON
+                                                   revRegDefJSON:nil
+                                                    walletHandle:proverWalletHandle
+                                                       outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredential() failed");
 
 
-    // 11. Prover gets Credentials for Proof Request
+    // 9. Prover gets Credentials for Proof Request
     NSString *proofReqJson = [NSString stringWithFormat:@"{"\
                              " \"nonce\":\"123432421212\","\
                              " \"name\":\"proof_req_1\","\
                              " \"version\":\"0.1\","\
-                             " \"requested_attrs\":"\
+                             " \"requested_attributes\":"\
                              "             {\"attr1_referent\":"\
                              "                        {"\
                              "                          \"name\":\"name\",\"restrictions\":[{\"schema_id\":\"%@\"}]"\
@@ -362,15 +337,15 @@
                              " \"requested_predicates\":"\
                              "             {"\
                              "              \"predicate1_referent\":"\
-                             "                      {\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}"\
+                             "                      {\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}"\
                              "             }"\
                              "}", [[AnoncredsUtils sharedInstance] getGvtSchemaId]];
 
     NSString *credentialsJson = nil;
 
-    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReqWithWalletHandle:proverWalletHandle
-                                                                          proofRequestJson:proofReqJson
-                                                                        outCredentialsJson:&credentialsJson];
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofReqJson
+                                                              walletHandle:proverWalletHandle
+                                                           credentialsJson:&credentialsJson];
     XCTAssertEqual(ret.code, Success, @"proverGetCredentialsForProofReq() failed!");
 
     NSDictionary *credentials = [NSDictionary fromString:credentialsJson];
@@ -383,41 +358,36 @@
     // 12. Prover create Proof
     NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{\
                                      \"self_attested_attributes\":{\"attr2_referent\":\"value\"},\
-                                     \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
+                                     \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
                                      \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%@\"}}\
                                      }", credentialReferent, credentialReferent];
 
 
-    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialReferent, schemaJson];
-
-    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialReferent, credentialDefJSON];
-    NSString *revocInfosJson = @"{}";
+    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", schemaId, schemaJson];
+    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialDefId, credentialDefJSON];
+    NSString *revocStatesJson = @"{}";
 
     NSString *proofJson;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateProofWithWalletHandle:proverWalletHandle
-                                                                proofReqJson:proofReqJson
-                                                    requestedCredentialsJson:requestedCredentialsJson
-                                                                 schemasJson:schemasJson
-                                                            masterSecretName:masterSecretName
-                                                          credentialDefsJson:credentialDefsJson
-                                                              revocInfosJSON:revocInfosJson
-                                                                outProofJson:&proofJson];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateProofForRequest:proofReqJson
+                                              requestedCredentialsJSON:requestedCredentialsJson
+                                                        masterSecretID:[TestUtils commonMasterSecretName]
+                                                           schemasJSON:schemasJson
+                                                    credentialDefsJSON:credentialDefsJson
+                                                       revocStatesJSON:revocStatesJson
+                                                          walletHandle:proverWalletHandle
+                                                             proofJson:&proofJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateProof() failed");
     XCTAssertTrue([proofJson isValid], @"invalid proofJson: %@", proofJson);
 
     NSDictionary *proof = [NSDictionary fromString:proofJson];
     NSDictionary *revealedAttr1 = proof[@"requested_proof"][@"revealed_attrs"][@"attr1_referent"];
     NSString *raw = revealedAttr1[@"raw"];
-    NSString *id = revealedAttr1[@"referent"];
 
     XCTAssertTrue([raw isEqualToString:@"Alex"]);
 
     NSString *attestedAttrUUID = proof[@"requested_proof"][@"self_attested_attrs"][@"attr2_referent"];
     XCTAssertTrue([attestedAttrUUID isEqualToString:@"value"]);
 
-    schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, schemaJson];
-
-    credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, credentialDefJSON];
 
     NSString *revocRegDefsJson = @"{}";
     NSString *revocRegsJson = @"{}";
@@ -426,13 +396,13 @@
     // 13. Verifier verify proof
     BOOL isValid = NO;
 
-    ret = [[AnoncredsUtils sharedInstance] verifierVerifyProof:proofReqJson
-                                                     proofJson:proofJson
-                                                   schemasJson:schemasJson
-                                            credentialDefsJson:credentialDefsJson
-                                              revocRegDefsJSON:revocRegDefsJson
-                                                 revocRegsJson:revocRegsJson
-                                                      outValid:&isValid];
+    ret = [[AnoncredsUtils sharedInstance] verifierVerifyProofRequest:proofReqJson
+                                                            proofJSON:proofJson
+                                                          schemasJSON:schemasJson
+                                                   credentialDefsJSON:credentialDefsJson
+                                                     revocRegDefsJSON:revocRegsJson
+                                                        revocRegsJSON:revocRegsJson
+                                                              isValid:&isValid];
 
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::verifierVerifyProof() failed");
     XCTAssertTrue(isValid, @"isValid == NO");
@@ -474,12 +444,12 @@
     //4. Issuer create GVT Schema
     NSString *gvtSchemaId;
     NSString *gvtSchemaJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaForIssuerDID:[TestUtils issuerDid]
-                                                                     name:[TestUtils gvtSchemaName]
-                                                                  version:[TestUtils schemaVersion]
-                                                                    attrs:[TestUtils gvtSchemaAttrs]
-                                                                 schemaId:&gvtSchemaId
-                                                               schemaJson:&gvtSchemaJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaWithName:[TestUtils gvtSchemaName]
+                                                              version:[TestUtils schemaVersion]
+                                                                attrs:[TestUtils gvtSchemaAttrs]
+                                                            issuerDID:[TestUtils issuerDid]
+                                                             schemaId:&gvtSchemaId
+                                                           schemaJson:&gvtSchemaJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateSchemaForIssuerDID failed");
 
     XCTAssertTrue([gvtSchemaId isValid], @"invalid gvtSchemaId: %@", gvtSchemaId);
@@ -488,12 +458,12 @@
     //4. Issuer create XYZ Schema
     NSString *xyzSchemaId;
     NSString *xyzSchemaJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaForIssuerDID:[TestUtils issuerDid]
-                                                                     name:[TestUtils xyzSchemaName]
-                                                                  version:[TestUtils schemaVersion]
-                                                                    attrs:[TestUtils xyzSchemaAttrs]
-                                                                 schemaId:&xyzSchemaId
-                                                               schemaJson:&xyzSchemaJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaWithName:[TestUtils xyzSchemaName]
+                                                              version:[TestUtils schemaVersion]
+                                                                attrs:[TestUtils xyzSchemaAttrs]
+                                                            issuerDID:[TestUtils issuer2Did]
+                                                             schemaId:&xyzSchemaId
+                                                           schemaJson:&xyzSchemaJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateSchemaForIssuerDID failed");
 
     XCTAssertTrue([xyzSchemaId isValid], @"invalid gvtSchemaId: %@", gvtSchemaId);
@@ -502,157 +472,152 @@
     //4. Issuer1 create credential definition by GVT Schema
     __block NSString *issuer1GvtCredentialDefId;
     __block NSString *issuer1GvtCredentialDefJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialDefinitionWithWalletHandle:issuerGvtWalletHandle
-                                                                                  issuerDid:[TestUtils issuerDid]
-                                                                                 schemaJson:gvtSchemaJson
-                                                                                        tag:[TestUtils tag]
-                                                                                       type:nil
-                                                                                 configJson:[[AnoncredsUtils sharedInstance] defaultCredentialDefConfig]
-                                                                            credentialDefId:&issuer1GvtCredentialDefId
-                                                                          credentialDefJson:&issuer1GvtCredentialDefJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateAndStoreCredentialDefForSchema:gvtSchemaJson
+                                                                            issuerDID:[TestUtils issuerDid]
+                                                                                  tag:[TestUtils tag]
+                                                                                 type:nil
+                                                                           configJSON:[[AnoncredsUtils sharedInstance] defaultCredentialDefConfig]
+                                                                         walletHandle:issuerGvtWalletHandle
+                                                                            credDefId:&issuer1GvtCredentialDefId
+                                                                          credDefJson:&issuer1GvtCredentialDefJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialDefinifionWithWalletHandle failed");
 
     //5. Issuer2 create credential definition by XYZ Schema
 
     NSString *issuer2XyzCredentialDefId;
     NSString *issuer2XyzCredentialDefJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialDefinitionWithWalletHandle:issuerXyzWalletHandle
-                                                                                  issuerDid:[TestUtils issuer2Did]
-                                                                                 schemaJson:xyzSchemaJson
-                                                                                        tag:[TestUtils tag]
-                                                                                       type:nil
-                                                                                 configJson:[[AnoncredsUtils sharedInstance] defaultCredentialDefConfig]
-                                                                            credentialDefId:&issuer2XyzCredentialDefId
-                                                                          credentialDefJson:&issuer2XyzCredentialDefJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateAndStoreCredentialDefForSchema:xyzSchemaJson
+                                                                            issuerDID:[TestUtils issuerDid]
+                                                                                  tag:[TestUtils tag]
+                                                                                 type:nil
+                                                                           configJSON:[[AnoncredsUtils sharedInstance] defaultCredentialDefConfig]
+                                                                         walletHandle:issuerXyzWalletHandle
+                                                                            credDefId:&issuer2XyzCredentialDefId
+                                                                          credDefJson:&issuer2XyzCredentialDefJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialDefinifionWithWalletHandle failed");
 
     //6. Prover create Master Secret
-
-    NSString *masterSecretName1 = @"prover_master_secret_issuer_1";
-    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:masterSecretName1
-                                                            walletHandle:proverWalletHandle];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:[TestUtils commonMasterSecretName]
+                                                       walletHandle:proverWalletHandle
+                                                  outMasterSecretId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed for issuer 1");
 
     // 7. Issuer1 create Credential Offer
     NSString *issuer1GvtCredentialOfferJson = nil;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferWithWalletHandle:issuerGvtWalletHandle
-                                                                       credentialDefId:issuer1GvtCredentialDefId
-                                                                             issuerDid:[TestUtils issuerDid]
-                                                                             proverDid:[TestUtils proverDid]
-                                                                   credentialOfferJson:&issuer1GvtCredentialOfferJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferForCredDefId:issuer1GvtCredentialDefId
+                                                                      walletHandle:issuerGvtWalletHandle
+                                                                     credOfferJson:&issuer1GvtCredentialOfferJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreCredentialDef() failed!");
 
-
-    //8. Prover store Credential Offer received from Issuer1
-    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialOffer:proverWalletHandle
-                                                  credentialOfferJson:issuer1GvtCredentialOfferJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredentialOffer() failed for issuer 1");
-
-    //9. Issuer2 create Credential Offer
+    //8. Issuer2 create Credential Offer
     NSString *issuer2XyzCredentialOfferJson = nil;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferWithWalletHandle:issuerXyzWalletHandle
-                                                                       credentialDefId:issuer2XyzCredentialDefId
-                                                                             issuerDid:[TestUtils issuer2Did]
-                                                                             proverDid:[TestUtils proverDid]
-                                                                   credentialOfferJson:&issuer2XyzCredentialOfferJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferForCredDefId:issuer2XyzCredentialDefId
+                                                                      walletHandle:issuerXyzWalletHandle
+                                                                     credOfferJson:&issuer2XyzCredentialOfferJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreCredentialDef() failed!");
 
-
-    //10. Prover store Credential Offer received from Issuer2
-    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialOffer:proverWalletHandle
-                                                  credentialOfferJson:issuer2XyzCredentialOfferJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils:: proverStoreCredentialOffer() failed for issuer 2");
-
-    //12. Prover create Credential Request for Issuer1 GVT credential offer
+    //9. Prover create Credential Request for Issuer1 GVT credential offer
 
     NSString *issuer1GvtCredentialReq;
-
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreCredentialReqWithDef:issuer1GvtCredentialDefJson
-                                                                          proverDid:[TestUtils proverDid]
-                                                                credentialOfferJson:issuer1GvtCredentialOfferJson
-                                                                   masterSecretName:masterSecretName1
-                                                                       walletHandle:proverWalletHandle
-                                                               outCredentialReqJson:&issuer1GvtCredentialReq];
+    NSString *issuer1GvtCredentialReqMetadata;
+    ret = [[AnoncredsUtils sharedInstance] proverCreateCredentialReqForCredentialOffer:issuer1GvtCredentialOfferJson
+                                                                     credentialDefJSON:issuer1GvtCredentialDefJson
+                                                                             proverDID:[TestUtils proverDid]
+                                                                        masterSecretID:[TestUtils commonMasterSecretName]
+                                                                          walletHandle:proverWalletHandle
+                                                                           credReqJson:&issuer1GvtCredentialReq
+                                                                   credReqMetadataJson:&issuer1GvtCredentialReqMetadata];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreCredentialReq() failed");
 
-    //13. Issuer1 create GVT Credential
+    //10. Issuer1 create GVT Credential
     NSString *issuer1GvtCredential;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialWithWalletHandle:issuerGvtWalletHandle
-                                                                credentialReqJson:issuer1GvtCredentialReq
-                                                             credentialValuesJson:[[AnoncredsUtils sharedInstance] getGvtCredentialValuesJson]
-                                                                         revRegId:nil
-                                                                tailsReaderHandle:nil
-                                                                   userRevocIndex:nil
-                                                                outCredentialJson:&issuer1GvtCredential
-                                                             outRevocRegDeltaJSON:nil];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialForCredentialRequest:issuer1GvtCredentialReq
+                                                                        credOfferJSON:issuer1GvtCredentialOfferJson
+                                                                       credValuesJSON:[[AnoncredsUtils sharedInstance] getGvtCredentialValuesJson]
+                                                                             revRegId:nil
+                                                              blobStorageReaderHandle:nil
+                                                                         walletHandle:issuerGvtWalletHandle
+                                                                             credJson:&issuer1GvtCredential
+                                                                          credRevocId:nil
+                                                                    revocRegDeltaJSON:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateCredential() failed for issuerGvtWalletHandle");
 
-    //14. Prover store received GVT Credential
-    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialWithWalletHandle:proverWalletHandle
-                                                                    credentialId:[[AnoncredsUtils sharedInstance] credentialId1]
-                                                                 credentialsJson:issuer1GvtCredential
-                                                                   revRegDefJSON:nil];
+    //11. Prover store received GVT Credential
+    ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:issuer1GvtCredential
+                                                          credID:[[AnoncredsUtils sharedInstance] credentialId1]
+                                                     credReqJSON:issuer1GvtCredentialReq
+                                             credReqMetadataJSON:issuer1GvtCredentialReqMetadata
+                                                     credDefJSON:issuer1GvtCredentialDefJson
+                                                   revRegDefJSON:nil
+                                                    walletHandle:proverWalletHandle
+                                                       outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredential() failed");
 
-    //15. Prover create Credential Request for xyz credential offer
+    //12. Prover create Credential Request for xyz credential offer
     NSString *issuer2XyzCredentialReq;
-
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreCredentialReqWithDef:issuer2XyzCredentialDefJson
-                                                                          proverDid:[TestUtils proverDid]
-                                                                credentialOfferJson:issuer2XyzCredentialOfferJson
-                                                                   masterSecretName:masterSecretName1
-                                                                       walletHandle:proverWalletHandle
-                                                               outCredentialReqJson:&issuer2XyzCredentialReq];
+    NSString *issuer2XyzCredentialReqMetadata;
+    ret = [[AnoncredsUtils sharedInstance] proverCreateCredentialReqForCredentialOffer:issuer2XyzCredentialOfferJson
+                                                                     credentialDefJSON:issuer2XyzCredentialDefJson
+                                                                             proverDID:[TestUtils proverDid]
+                                                                        masterSecretID:[TestUtils commonMasterSecretName]
+                                                                          walletHandle:proverWalletHandle
+                                                                           credReqJson:&issuer2XyzCredentialReq
+                                                                   credReqMetadataJson:&issuer2XyzCredentialReqMetadata];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreCredentialReq() failed");
 
-    //16. Issuer create XYZ Credential
+    //13. Issuer create XYZ Credential
     NSString *issuer2XyzCredential;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialWithWalletHandle:issuerXyzWalletHandle
-                                                                credentialReqJson:issuer2XyzCredentialReq
-                                                             credentialValuesJson:[[AnoncredsUtils sharedInstance] getXyzCredentialValuesJson]
-                                                                         revRegId:nil
-                                                                tailsReaderHandle:nil
-                                                                   userRevocIndex:nil
-                                                                outCredentialJson:&issuer2XyzCredential
-                                                             outRevocRegDeltaJSON:nil];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialForCredentialRequest:issuer2XyzCredentialReq
+                                                                        credOfferJSON:issuer2XyzCredentialOfferJson
+                                                                       credValuesJSON:[[AnoncredsUtils sharedInstance] getXyzCredentialValuesJson]
+                                                                             revRegId:nil
+                                                              blobStorageReaderHandle:nil
+                                                                         walletHandle:issuerXyzWalletHandle
+                                                                             credJson:&issuer2XyzCredential
+                                                                          credRevocId:nil
+                                                                    revocRegDeltaJSON:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateCredential() failed for issuerXyzWalletHandle");
 
-    // 17. Prover store received XYZ Credential
-    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialWithWalletHandle:proverWalletHandle
-                                                                    credentialId:[[AnoncredsUtils sharedInstance] credentialId2]
-                                                                 credentialsJson:issuer2XyzCredential
-                                                                   revRegDefJSON:nil];
+    // 14. Prover store received XYZ Credential
+    ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:issuer2XyzCredential
+                                                          credID:[[AnoncredsUtils sharedInstance] credentialId2]
+                                                     credReqJSON:issuer2XyzCredentialReq
+                                             credReqMetadataJSON:issuer2XyzCredentialReqMetadata
+                                                     credDefJSON:issuer2XyzCredentialDefJson
+                                                   revRegDefJSON:nil
+                                                    walletHandle:proverWalletHandle
+                                                       outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredential() failed on step 16");
 
-    // 18. Prover gets Credentials for Proof Request
+    // 15. Prover gets Credentials for Proof Request
 
     NSString *proofReqJson = [NSString stringWithFormat:@"{"\
                              " \"nonce\":\"123432421212\","\
                              " \"name\":\"proof_req_1\","\
                              " \"version\":\"0.1\","\
-                             " \"requested_attrs\":"\
+                             " \"requested_attributes\":"\
                              "             {\"attr1_referent\":"\
                              "                        {"\
                              "                          \"name\":\"name\",\"restrictions\":[{\"schema_id\":\"%@\"}]"\
                              "                        },"\
                              "              \"attr2_referent\":"\
                              "                        {"\
-                             "                          \"name\":\"status\",\"restrictions\":[{\"schema_id\":\"%@\"}]"\
+                             "                          \"name\":\"status\""\
                              "                        }"\
                              "             },"\
                              " \"requested_predicates\":"\
                              "             {"\
                              "              \"predicate1_referent\":"\
-                             "                      {\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18},"\
+                             "                      {\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18},"\
                              "              \"predicate2_referent\":"\
-                             "                      {\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}"\
+                             "                      {\"name\":\"period\",\"p_type\":\">=\",\"p_value\":5}"\
                              "             }"\
-                             "}", [[AnoncredsUtils sharedInstance] getGvtSchemaId], [[AnoncredsUtils sharedInstance] getXyzSchemaId]];
+                             "}", [[AnoncredsUtils sharedInstance] getGvtSchemaId]];
 
     NSString *credentialsJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReqWithWalletHandle:proverWalletHandle
-                                                                          proofRequestJson:proofReqJson
-                                                                        outCredentialsJson:&credentialsJson];
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofReqJson
+                                                              walletHandle:proverWalletHandle
+                                                           credentialsJson:&credentialsJson];
 
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForProofReq() failed");
 
@@ -671,7 +636,7 @@
     XCTAssertTrue(credentialForPredicate1, @"no object for key \"predicate1_referent\"");
     XCTAssertTrue(credentialForPredicate2, @"no object for key \"predicate2_referent\"");
 
-    // 19. Prover create Proof
+    // 16. Prover create Proof
     NSString *credential_attr_1_UUID = credentialForAttr1[@"cred_info"][@"referent"];
     NSString *credential_attr_2_UUID = credentialForAttr2[@"cred_info"][@"referent"];
     NSString *credential_predicate_1_UUID = credentialForPredicate1[@"cred_info"][@"referent"];
@@ -684,7 +649,7 @@
 
     NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{\
                                      \"self_attested_attributes\":{},\
-                                     \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true},\
+                                     \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true},\
                                                           \"attr2_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
                                      \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%@\"}, \
                                                                \"predicate2_referent\":{\"cred_id\":\"%@\"}}\
@@ -693,60 +658,46 @@
     NSString *schemasJson = [NSString stringWithFormat:@"{"\
                              " \"%@\": %@, "\
                              " \"%@\": %@}",
-                    [[AnoncredsUtils sharedInstance] credentialId1], gvtSchemaJson,
-                    [[AnoncredsUtils sharedInstance] credentialId2], xyzSchemaJson];
+                                                       gvtSchemaId, gvtSchemaJson,
+                                                       xyzSchemaId, xyzSchemaJson];
 
     NSString *credentialDefsJson = [NSString stringWithFormat:@"{"\
                                " \"%@\": %@, \"%@\": %@}",
-                    [[AnoncredsUtils sharedInstance] credentialId1], issuer1GvtCredentialDefJson,
-                    [[AnoncredsUtils sharedInstance] credentialId2], issuer2XyzCredentialDefJson];
+                                                              issuer1GvtCredentialDefId, issuer1GvtCredentialDefJson,
+                                                              issuer2XyzCredentialDefId, issuer2XyzCredentialDefJson];
 
-    NSString *revocInfosJson = @"{}";
+    NSString *revocStatesJson = @"{}";
 
     NSString *proofJson;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateProofWithWalletHandle:proverWalletHandle
-                                                                proofReqJson:proofReqJson
-                                                    requestedCredentialsJson:requestedCredentialsJson
-                                                                 schemasJson:schemasJson
-                                                            masterSecretName:masterSecretName1
-                                                          credentialDefsJson:credentialDefsJson
-                                                              revocInfosJSON:revocInfosJson
-                                                                outProofJson:&proofJson];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateProofForRequest:proofReqJson
+                                              requestedCredentialsJSON:requestedCredentialsJson
+                                                        masterSecretID:[TestUtils commonMasterSecretName]
+                                                           schemasJSON:schemasJson
+                                                    credentialDefsJSON:credentialDefsJson
+                                                       revocStatesJSON:revocStatesJson
+                                                          walletHandle:proverWalletHandle
+                                                             proofJson:&proofJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateProof() failed on step 18");
 
-    // 20. Verifier verify proof
+    // 17. Verifier verify proof
     NSDictionary *proof = [NSDictionary fromString:proofJson];
     XCTAssertTrue(proof, @"serialization failed");
 
     NSDictionary *revealedAttr1 = proof[@"requested_proof"][@"revealed_attrs"][@"attr1_referent"];
-    NSString *gvtSubProofId = revealedAttr1[@"referent"];
-
     NSDictionary *revealedAttr2 = proof[@"requested_proof"][@"revealed_attrs"][@"attr2_referent"];
-    NSString *xyzSubProofId = revealedAttr2[@"referent"];
-
-    schemasJson = [NSString stringWithFormat:@"{"\
-                             " \"%@\": %@, "\
-                             " \"%@\": %@}",
-                                             gvtSubProofId, gvtSchemaJson,
-                                             xyzSubProofId, xyzSchemaJson];
-
-    credentialDefsJson = [NSString stringWithFormat:@"{"\
-                               " \"%@\": %@, \"%@\": %@}",
-                                               gvtSubProofId, issuer1GvtCredentialDefJson,
-                                               xyzSubProofId, issuer2XyzCredentialDefJson];
 
     NSString *revocRegDefsJson = @"{}";
     NSString *revocRegsJson = @"{}";
 
     BOOL isValidJson = NO;
 
-    ret = [[AnoncredsUtils sharedInstance] verifierVerifyProof:proofReqJson
-                                                     proofJson:proofJson
-                                                   schemasJson:schemasJson
-                                            credentialDefsJson:credentialDefsJson
-                                              revocRegDefsJSON:revocRegDefsJson
-                                                 revocRegsJson:revocRegsJson
-                                                      outValid:&isValidJson];
+    ret = [[AnoncredsUtils sharedInstance] verifierVerifyProofRequest:proofReqJson
+                                                            proofJSON:proofJson
+                                                          schemasJSON:schemasJson
+                                                   credentialDefsJSON:credentialDefsJson
+                                                     revocRegDefsJSON:revocRegsJson
+                                                        revocRegsJSON:revocRegsJson
+                                                              isValid:&isValidJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::verifierVerifyProof() failed");
     XCTAssertTrue(isValidJson, @"proof is not verified!");
 
@@ -754,7 +705,7 @@
 }
 
 
-- (void)testAnoncredsWorksForSingleIssuerMultiplyCredentialsSingleProver {
+- (void)testAnoncredsWorksForSingleIssuerMultipleCredentialsSingleProver {
     [TestUtils cleanupStorage];
 
     NSError *ret = nil;
@@ -778,12 +729,12 @@
     //4. Issuer create GVT Schema
     NSString *gvtSchemaId;
     NSString *gvtSchemaJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaForIssuerDID:[TestUtils issuerDid]
-                                                                     name:[TestUtils gvtSchemaName]
-                                                                  version:[TestUtils schemaVersion]
-                                                                    attrs:[TestUtils gvtSchemaAttrs]
-                                                                 schemaId:&gvtSchemaId
-                                                               schemaJson:&gvtSchemaJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaWithName:[TestUtils gvtSchemaName]
+                                                              version:[TestUtils schemaVersion]
+                                                                attrs:[TestUtils gvtSchemaAttrs]
+                                                            issuerDID:[TestUtils issuerDid]
+                                                             schemaId:&gvtSchemaId
+                                                           schemaJson:&gvtSchemaJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateSchemaForIssuerDID failed");
 
     XCTAssertTrue([gvtSchemaId isValid], @"invalid gvtSchemaId: %@", gvtSchemaId);
@@ -792,149 +743,144 @@
     //4. Issuer create XYZ Schema
     NSString *xyzSchemaId;
     NSString *xyzSchemaJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaForIssuerDID:[TestUtils issuerDid]
-                                                                     name:[TestUtils xyzSchemaName]
-                                                                  version:[TestUtils schemaVersion]
-                                                                    attrs:[TestUtils xyzSchemaAttrs]
-                                                                 schemaId:&xyzSchemaId
-                                                               schemaJson:&xyzSchemaJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaWithName:[TestUtils xyzSchemaName]
+                                                              version:[TestUtils schemaVersion]
+                                                                attrs:[TestUtils xyzSchemaAttrs]
+                                                            issuerDID:[TestUtils issuerDid]
+                                                             schemaId:&xyzSchemaId
+                                                           schemaJson:&xyzSchemaJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateSchemaForIssuerDID failed");
 
     XCTAssertTrue([xyzSchemaId isValid], @"invalid gvtSchemaId: %@", gvtSchemaId);
     XCTAssertTrue([xyzSchemaJson isValid], @"invalid gvtSchemaJson: %@", gvtSchemaJson);
 
     //4. Issuer create credential definition by GVT Schema
-    __block NSString *issuer1GvtCredentialDefId;
-    __block NSString *issuer1GvtCredentialDefJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialDefinitionWithWalletHandle:issuerWalletHandle
-                                                                                  issuerDid:[TestUtils issuerDid]
-                                                                                 schemaJson:gvtSchemaJson
-                                                                                        tag:[TestUtils tag]
-                                                                                       type:nil
-                                                                                 configJson:[[AnoncredsUtils sharedInstance] defaultCredentialDefConfig]
-                                                                            credentialDefId:&issuer1GvtCredentialDefId
-                                                                          credentialDefJson:&issuer1GvtCredentialDefJson];
+    __block NSString *gvtCredentialDefId;
+    __block NSString *gvtCredentialDefJson;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateAndStoreCredentialDefForSchema:gvtSchemaJson
+                                                                            issuerDID:[TestUtils issuerDid]
+                                                                                  tag:[TestUtils tag]
+                                                                                 type:nil
+                                                                           configJSON:[[AnoncredsUtils sharedInstance] defaultCredentialDefConfig]
+                                                                         walletHandle:issuerWalletHandle
+                                                                            credDefId:&gvtCredentialDefId
+                                                                          credDefJson:&gvtCredentialDefJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialDefinifionWithWalletHandle failed");
 
     //5. Issuer create credential definition by XYZ Schema
 
-    NSString *issuer1XyzCredentialDefId;
-    NSString *issuer1XyzCredentialDefJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialDefinitionWithWalletHandle:issuerWalletHandle
-                                                                                  issuerDid:[TestUtils issuerDid]
-                                                                                 schemaJson:xyzSchemaJson
-                                                                                        tag:[TestUtils tag]
-                                                                                       type:nil
-                                                                                 configJson:[[AnoncredsUtils sharedInstance] defaultCredentialDefConfig]
-                                                                            credentialDefId:&issuer1XyzCredentialDefId
-                                                                          credentialDefJson:&issuer1XyzCredentialDefJson];
+    NSString *xyzCredentialDefId;
+    NSString *xyzCredentialDefJson;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateAndStoreCredentialDefForSchema:xyzSchemaJson
+                                                                            issuerDID:[TestUtils issuerDid]
+                                                                                  tag:[TestUtils tag]
+                                                                                 type:nil
+                                                                           configJSON:[[AnoncredsUtils sharedInstance] defaultCredentialDefConfig]
+                                                                         walletHandle:issuerWalletHandle
+                                                                            credDefId:&xyzCredentialDefId
+                                                                          credDefJson:&xyzCredentialDefJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialDefinifionWithWalletHandle failed");
 
     //6. Prover create Master Secret
-
-    NSString *masterSecretName1 = @"prover_master_secret_issuer_1";
-    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:masterSecretName1
-                                                            walletHandle:proverWalletHandle];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:[TestUtils commonMasterSecretName]
+                                                       walletHandle:proverWalletHandle
+                                                  outMasterSecretId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed for issuer 1");
 
-    // 7. Issuer create GVT Credential Offer
-    NSString *issuer1GvtCredentialOfferJson = nil;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferWithWalletHandle:issuerWalletHandle
-                                                                       credentialDefId:issuer1GvtCredentialDefId
-                                                                             issuerDid:[TestUtils issuerDid]
-                                                                             proverDid:[TestUtils proverDid]
-                                                                   credentialOfferJson:&issuer1GvtCredentialOfferJson];
+    // 7. Issuer create Credential Offer
+    NSString *gvtCredentialOfferJson = nil;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferForCredDefId:gvtCredentialDefId
+                                                                      walletHandle:issuerWalletHandle
+                                                                     credOfferJson:&gvtCredentialOfferJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreCredentialDef() failed!");
 
-
-    //8. Prover store Credential Offer received from Issuer
-    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialOffer:proverWalletHandle
-                                                  credentialOfferJson:issuer1GvtCredentialOfferJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredentialOffer() failed for issuer 1");
-
-    //9. Issuer create Credential Offer
-    NSString *issuer1XyzCredentialOfferJson = nil;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferWithWalletHandle:issuerWalletHandle
-                                                                       credentialDefId:issuer1XyzCredentialDefId
-                                                                             issuerDid:[TestUtils issuerDid]
-                                                                             proverDid:[TestUtils proverDid]
-                                                                   credentialOfferJson:&issuer1XyzCredentialOfferJson];
+    //8. Issuer create Credential Offer
+    NSString *xyzCredentialOfferJson = nil;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferForCredDefId:xyzCredentialDefId
+                                                                      walletHandle:issuerWalletHandle
+                                                                     credOfferJson:&xyzCredentialOfferJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreCredentialDef() failed!");
 
+    //9. Prover create Credential Request for Issuer GVT credential offer
 
-    //10. Prover store Credential Offer received from Issuer
-    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialOffer:proverWalletHandle
-                                                  credentialOfferJson:issuer1XyzCredentialOfferJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils:: proverStoreCredentialOffer() failed for issuer 2");
-
-    //12. Prover create Credential Request for Issuer GVT credential offer
-
-    NSString *issuer1GvtCredentialReq;
-
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreCredentialReqWithDef:issuer1GvtCredentialDefJson
-                                                                          proverDid:[TestUtils proverDid]
-                                                                credentialOfferJson:issuer1GvtCredentialOfferJson
-                                                                   masterSecretName:masterSecretName1
-                                                                       walletHandle:proverWalletHandle
-                                                               outCredentialReqJson:&issuer1GvtCredentialReq];
+    NSString *gvtCredentialReq;
+    NSString *gvtCredentialReqMetadata;
+    ret = [[AnoncredsUtils sharedInstance] proverCreateCredentialReqForCredentialOffer:gvtCredentialOfferJson
+                                                                     credentialDefJSON:gvtCredentialDefJson
+                                                                             proverDID:[TestUtils proverDid]
+                                                                        masterSecretID:[TestUtils commonMasterSecretName]
+                                                                          walletHandle:proverWalletHandle
+                                                                           credReqJson:&gvtCredentialReq
+                                                                   credReqMetadataJson:&gvtCredentialReqMetadata];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreCredentialReq() failed");
 
-    //13. Issuer create GVT Credential
-    NSString *issuer1GvtCredential;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialWithWalletHandle:issuerWalletHandle
-                                                                credentialReqJson:issuer1GvtCredentialReq
-                                                             credentialValuesJson:[[AnoncredsUtils sharedInstance] getGvtCredentialValuesJson]
-                                                                         revRegId:nil
-                                                                tailsReaderHandle:nil
-                                                                   userRevocIndex:nil
-                                                                outCredentialJson:&issuer1GvtCredential
-                                                             outRevocRegDeltaJSON:nil];
+    //10. Issuer create GVT Credential
+    NSString *gvtCredential;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialForCredentialRequest:gvtCredentialReq
+                                                                        credOfferJSON:gvtCredentialOfferJson
+                                                                       credValuesJSON:[[AnoncredsUtils sharedInstance] getGvtCredentialValuesJson]
+                                                                             revRegId:nil
+                                                              blobStorageReaderHandle:nil
+                                                                         walletHandle:issuerWalletHandle
+                                                                             credJson:&gvtCredential
+                                                                          credRevocId:nil
+                                                                    revocRegDeltaJSON:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateCredential() failed for issuerGvtWalletHandle");
 
-    //14. Prover store received GVT Credential
-    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialWithWalletHandle:proverWalletHandle
-                                                                    credentialId:[[AnoncredsUtils sharedInstance] credentialId1]
-                                                                 credentialsJson:issuer1GvtCredential
-                                                                   revRegDefJSON:nil];
+    //11. Prover store received GVT Credential
+    ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:gvtCredential
+                                                          credID:[[AnoncredsUtils sharedInstance] credentialId1]
+                                                     credReqJSON:gvtCredentialReq
+                                             credReqMetadataJSON:gvtCredentialReqMetadata
+                                                     credDefJSON:gvtCredentialDefJson
+                                                   revRegDefJSON:nil
+                                                    walletHandle:proverWalletHandle
+                                                       outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredential() failed");
 
-    //15. Prover create Credential Request for xyz credential offer
-    NSString *issuer1XyzCredentialReq;
-
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreCredentialReqWithDef:issuer1XyzCredentialDefJson
-                                                                          proverDid:[TestUtils proverDid]
-                                                                credentialOfferJson:issuer1XyzCredentialOfferJson
-                                                                   masterSecretName:masterSecretName1
-                                                                       walletHandle:proverWalletHandle
-                                                               outCredentialReqJson:&issuer1XyzCredentialReq];
+    //12. Prover create Credential Request for xyz credential offer
+    NSString *xyzCredentialReq;
+    NSString *xyzCredentialReqMetadata;
+    ret = [[AnoncredsUtils sharedInstance] proverCreateCredentialReqForCredentialOffer:xyzCredentialOfferJson
+                                                                     credentialDefJSON:xyzCredentialDefJson
+                                                                             proverDID:[TestUtils proverDid]
+                                                                        masterSecretID:[TestUtils commonMasterSecretName]
+                                                                          walletHandle:proverWalletHandle
+                                                                           credReqJson:&xyzCredentialReq
+                                                                   credReqMetadataJson:&xyzCredentialReqMetadata];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreCredentialReq() failed");
 
-    //16. Issuer create XYZ Credential
-    NSString *issuer1XyzCredential;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialWithWalletHandle:issuerWalletHandle
-                                                                credentialReqJson:issuer1XyzCredentialReq
-                                                             credentialValuesJson:[[AnoncredsUtils sharedInstance] getXyzCredentialValuesJson]
-                                                                         revRegId:nil
-                                                                tailsReaderHandle:nil
-                                                                   userRevocIndex:nil
-                                                                outCredentialJson:&issuer1XyzCredential
-                                                             outRevocRegDeltaJSON:nil];
+    //13. Issuer create XYZ Credential
+    NSString *xyzCredential;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialForCredentialRequest:xyzCredentialReq
+                                                                        credOfferJSON:xyzCredentialOfferJson
+                                                                       credValuesJSON:[[AnoncredsUtils sharedInstance] getXyzCredentialValuesJson]
+                                                                             revRegId:nil
+                                                              blobStorageReaderHandle:nil
+                                                                         walletHandle:issuerWalletHandle
+                                                                             credJson:&xyzCredential
+                                                                          credRevocId:nil
+                                                                    revocRegDeltaJSON:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateCredential() failed for issuerXyzWalletHandle");
 
-    // 17. Prover store received XYZ Credential
-    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialWithWalletHandle:proverWalletHandle
-                                                                    credentialId:[[AnoncredsUtils sharedInstance] credentialId2]
-                                                                 credentialsJson:issuer1XyzCredential
-                                                                   revRegDefJSON:nil];
+    // 14. Prover store received XYZ Credential
+    ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:xyzCredential
+                                                          credID:[[AnoncredsUtils sharedInstance] credentialId2]
+                                                     credReqJSON:xyzCredentialReq
+                                             credReqMetadataJSON:xyzCredentialReqMetadata
+                                                     credDefJSON:xyzCredentialDefJson
+                                                   revRegDefJSON:nil
+                                                    walletHandle:proverWalletHandle
+                                                       outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredential() failed on step 16");
 
-    // 18. Prover gets Credentials for Proof Request
+    // 15. Prover gets Credentials for Proof Request
 
     NSString *proofReqJson = [NSString stringWithFormat:@"{"\
                              " \"nonce\":\"123432421212\","\
                              " \"name\":\"proof_req_1\","\
                              " \"version\":\"0.1\","\
-                             " \"requested_attrs\":"\
+                             " \"requested_attributes\":"\
                              "             {\"attr1_referent\":"\
                              "                        {"\
                              "                          \"name\":\"name\",\"restrictions\":[{\"schema_id\":\"%@\"}]"\
@@ -947,16 +893,16 @@
                              " \"requested_predicates\":"\
                              "             {"\
                              "              \"predicate1_referent\":"\
-                             "                      {\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18},"\
+                             "                      {\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18},"\
                              "              \"predicate2_referent\":"\
-                             "                      {\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}"\
+                             "                      {\"name\":\"period\",\"p_type\":\">=\",\"p_value\":5}"\
                              "             }"\
                              "}", [[AnoncredsUtils sharedInstance] getGvtSchemaId], [[AnoncredsUtils sharedInstance] getXyzSchemaId]];
 
     NSString *credentialsJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReqWithWalletHandle:proverWalletHandle
-                                                                          proofRequestJson:proofReqJson
-                                                                        outCredentialsJson:&credentialsJson];
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofReqJson
+                                                              walletHandle:proverWalletHandle
+                                                           credentialsJson:&credentialsJson];
 
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForProofReq() failed");
 
@@ -975,7 +921,7 @@
     XCTAssertTrue(credentialForPredicate1, @"no object for key \"predicate1_referent\"");
     XCTAssertTrue(credentialForPredicate2, @"no object for key \"predicate2_referent\"");
 
-    // 19. Prover create Proof
+    // 16. Prover create Proof
     NSString *credential_attr_1_UUID = credentialForAttr1[@"cred_info"][@"referent"];
     NSString *credential_attr_2_UUID = credentialForAttr2[@"cred_info"][@"referent"];
     NSString *credential_predicate_1_UUID = credentialForPredicate1[@"cred_info"][@"referent"];
@@ -988,7 +934,7 @@
 
     NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{\
                                      \"self_attested_attributes\":{},\
-                                     \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true},\
+                                     \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true},\
                                                           \"attr2_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
                                      \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%@\"}, \
                                                                \"predicate2_referent\":{\"cred_id\":\"%@\"}}\
@@ -997,60 +943,47 @@
     NSString *schemasJson = [NSString stringWithFormat:@"{"\
                              " \"%@\": %@, "\
                              " \"%@\": %@}",
-                    [[AnoncredsUtils sharedInstance] credentialId1], gvtSchemaJson,
-                    [[AnoncredsUtils sharedInstance] credentialId2], xyzSchemaJson];
+                                                       gvtSchemaId, gvtSchemaJson,
+                                                       xyzSchemaId, xyzSchemaJson];
 
     NSString *credentialDefsJson = [NSString stringWithFormat:@"{"\
                                " \"%@\": %@, \"%@\": %@}",
-                    [[AnoncredsUtils sharedInstance] credentialId1], issuer1GvtCredentialDefJson,
-                    [[AnoncredsUtils sharedInstance] credentialId2], issuer1XyzCredentialDefJson];
+                                                              gvtCredentialDefId, gvtCredentialDefJson,
+                                                              xyzCredentialDefId, xyzCredentialDefJson];
 
-    NSString *revocInfosJson = @"{}";
+    NSString *revocStatesJson = @"{}";
 
     NSString *proofJson;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateProofWithWalletHandle:proverWalletHandle
-                                                                proofReqJson:proofReqJson
-                                                    requestedCredentialsJson:requestedCredentialsJson
-                                                                 schemasJson:schemasJson
-                                                            masterSecretName:masterSecretName1
-                                                          credentialDefsJson:credentialDefsJson
-                                                              revocInfosJSON:revocInfosJson
-                                                                outProofJson:&proofJson];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateProofForRequest:proofReqJson
+                                              requestedCredentialsJSON:requestedCredentialsJson
+                                                        masterSecretID:[TestUtils commonMasterSecretName]
+                                                           schemasJSON:schemasJson
+                                                    credentialDefsJSON:credentialDefsJson
+                                                       revocStatesJSON:revocStatesJson
+                                                          walletHandle:proverWalletHandle
+                                                             proofJson:&proofJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateProof() failed on step 18");
 
-    // 20. Verifier verify proof
+    // 17. Verifier verify proof
     NSDictionary *proof = [NSDictionary fromString:proofJson];
     XCTAssertTrue(proof, @"serialization failed");
 
     NSDictionary *revealedAttr1 = proof[@"requested_proof"][@"revealed_attrs"][@"attr1_referent"];
-    NSString *gvtSubProofId = revealedAttr1[@"referent"];
 
     NSDictionary *revealedAttr2 = proof[@"requested_proof"][@"revealed_attrs"][@"attr2_referent"];
-    NSString *xyzSubProofId = revealedAttr2[@"referent"];
-
-    schemasJson = [NSString stringWithFormat:@"{"\
-                             " \"%@\": %@, "\
-                             " \"%@\": %@}",
-                                             gvtSubProofId, gvtSchemaJson,
-                                             xyzSubProofId, xyzSchemaJson];
-
-    credentialDefsJson = [NSString stringWithFormat:@"{"\
-                               " \"%@\": %@, \"%@\": %@}",
-                                               gvtSubProofId, issuer1GvtCredentialDefJson,
-                                               xyzSubProofId, issuer1XyzCredentialDefJson];
 
     NSString *revocRegDefsJson = @"{}";
     NSString *revocRegsJson = @"{}";
 
     BOOL isValidJson = NO;
 
-    ret = [[AnoncredsUtils sharedInstance] verifierVerifyProof:proofReqJson
-                                                     proofJson:proofJson
-                                                   schemasJson:schemasJson
-                                            credentialDefsJson:credentialDefsJson
-                                              revocRegDefsJSON:revocRegDefsJson
-                                                 revocRegsJson:revocRegsJson
-                                                      outValid:&isValidJson];
+    ret = [[AnoncredsUtils sharedInstance] verifierVerifyProofRequest:proofReqJson
+                                                            proofJSON:proofJson
+                                                          schemasJSON:schemasJson
+                                                   credentialDefsJSON:credentialDefsJson
+                                                     revocRegDefsJSON:revocRegsJson
+                                                        revocRegsJSON:revocRegsJson
+                                                              isValid:&isValidJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::verifierVerifyProof() failed");
     XCTAssertTrue(isValidJson, @"proof is not verified!");
 
@@ -1080,12 +1013,12 @@
     // 3. Issuer create Schema
     NSString *schemaId;
     NSString *schemaJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaForIssuerDID:[TestUtils issuerDid]
-                                                                     name:[TestUtils gvtSchemaName]
-                                                                  version:[TestUtils schemaVersion]
-                                                                    attrs:[TestUtils gvtSchemaAttrs]
-                                                                 schemaId:&schemaId
-                                                               schemaJson:&schemaJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaWithName:[TestUtils gvtSchemaName]
+                                                              version:[TestUtils schemaVersion]
+                                                                attrs:[TestUtils gvtSchemaAttrs]
+                                                            issuerDID:[TestUtils issuerDid]
+                                                             schemaId:&schemaId
+                                                           schemaJson:&schemaJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateSchemaForIssuerDID failed");
 
     XCTAssertTrue([schemaId isValid], @"invalid schemaId: %@", schemaId);
@@ -1094,133 +1027,113 @@
     //4. Issuer create credential definition
     NSString *credentialDefId;
     NSString *credentialDefJSON;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialDefinitionWithWalletHandle:issuerWalletHandle
-                                                                                  issuerDid:[TestUtils issuerDid]
-                                                                                 schemaJson:schemaJson
-                                                                                        tag:[TestUtils tag]
-                                                                                       type:nil
-                                                                                 configJson:@"{\"support_revocation\": true}"
-                                                                            credentialDefId:&credentialDefId
-                                                                          credentialDefJson:&credentialDefJSON];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateAndStoreCredentialDefForSchema:schemaJson
+                                                                            issuerDID:[TestUtils issuerDid]
+                                                                                  tag:[TestUtils tag]
+                                                                                 type:nil
+                                                                           configJSON:@"{\"support_revocation\": true}"
+                                                                         walletHandle:issuerWalletHandle
+                                                                            credDefId:&credentialDefId
+                                                                          credDefJson:&credentialDefJSON];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialDefinifionWithWalletHandle failed");
 
     //4. Issuer create revocation registry
     NSString *configJson = @"{\"max_cred_num\":5, \"issuance_type\":\"ISSUANCE_ON_DEMAND\"}";
     NSString *tailsWriterConfig = [NSString stringWithFormat:@"{\"base_dir\":\"%@\", \"uri_pattern\":\"\"}", [TestUtils tmpFilePathAppending:@"tails"]];
+    NSNumber *tailsWriterHandle = nil;
+    ret = [[BlobStorageUtils sharedInstance] openWriterWithType:[TestUtils defaultType]
+                                                         config:tailsWriterConfig
+                                                         handle:&tailsWriterHandle];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::openWriterWithType() failed");
 
     NSString *revocRefId;
     NSString *revocRegDefJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateAndStoreRevocRegForWithWalletHandle:issuerWalletHandle
-                                                                                 issuerDid:[TestUtils issuerDid]
-                                                                                      type:nil
-                                                                                       tag:[TestUtils tag]
-                                                                                 credDefId:credentialDefId
-                                                                                configJSON:configJson
-                                                                           tailsWriterType:@"default"
-                                                                         tailsWriterConfig:tailsWriterConfig
-                                                                                revocRegId:&revocRefId
-                                                                           revocRegDefJson:&revocRegDefJson
-                                                                         revocRegEntryJson:nil];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateAndStoreRevocRegForCredentialDefId:credentialDefId
+                                                                                issuerDID:[TestUtils issuerDid]
+                                                                                     type:nil
+                                                                                      tag:[TestUtils tag]
+                                                                               configJSON:configJson
+                                                                        tailsWriterHandle:[tailsWriterHandle intValue]
+                                                                             walletHandle:issuerWalletHandle
+                                                                               revocRegId:&revocRefId
+                                                                          revocRegDefJson:&revocRegDefJson
+                                                                        revocRegEntryJson:nil];
     XCTAssertEqual(ret.code, Success, @"issuerCreateAndStoreRevocRegForWithWalletHandle failed");
 
     //4. Prover create Master Secret
-
-    NSString *masterSecretName = @"prover_master_secret";
-
-    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:masterSecretName
-                                                            walletHandle:proverWalletHandle];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:[TestUtils commonMasterSecretName]
+                                                       walletHandle:proverWalletHandle
+                                                  outMasterSecretId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed");
 
     // 5. Issuer create Credential Offer
     NSString *credentialOfferJson = nil;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferWithWalletHandle:issuerWalletHandle
-                                                                       credentialDefId:credentialDefId
-                                                                             issuerDid:[TestUtils issuerDid]
-                                                                             proverDid:[TestUtils proverDid]
-                                                                   credentialOfferJson:&credentialOfferJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferForCredDefId:credentialDefId
+                                                                      walletHandle:issuerWalletHandle
+                                                                     credOfferJson:&credentialOfferJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreCredentialDef() failed!");
 
-
-    //6. Prover store Credential Offer received from Issuer
-    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialOffer:proverWalletHandle
-                                                  credentialOfferJson:credentialOfferJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredentialOffer() failed");
-
-    //8. Prover create Credential Request
+    //6. Prover create Credential Request
     NSString *credentialReq = nil;
-
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreCredentialReqWithDef:credentialDefJSON
-                                                                          proverDid:[TestUtils proverDid]
-                                                                credentialOfferJson:credentialOfferJson
-                                                                   masterSecretName:masterSecretName
-                                                                       walletHandle:proverWalletHandle
-                                                               outCredentialReqJson:&credentialReq];
+    NSString *credentialReqMetadata = nil;
+    ret = [[AnoncredsUtils sharedInstance] proverCreateCredentialReqForCredentialOffer:credentialOfferJson
+                                                                     credentialDefJSON:credentialDefJSON
+                                                                             proverDID:[TestUtils proverDid]
+                                                                        masterSecretID:[TestUtils commonMasterSecretName]
+                                                                          walletHandle:proverWalletHandle
+                                                                           credReqJson:&credentialReq
+                                                                   credReqMetadataJson:&credentialReqMetadata];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreCredentialReq() failed");
     XCTAssertTrue([credentialReq isValid], @"invalid credentialRequest: %@", credentialReq);
+    XCTAssertTrue([credentialReqMetadata isValid], @"invalid credentialReqMetadata: %@", credentialReqMetadata);
     NSLog(@"credentialReqJson: %@", credentialReq);
 
-    //9. Issuer create Tails reader
+    //7. Issuer create Tails reader
     NSDictionary *revRegDef = [NSDictionary fromString:revocRegDefJson];
     NSString *location = revRegDef[@"value"][@"tails_location"];
     NSString *hash = revRegDef[@"value"][@"tails_hash"];
 
-    NSNumber *tailsReaderHandle = nil;
+    NSNumber *blobStorageReaderHandle = nil;
     ret = [[BlobStorageUtils sharedInstance] openReaderWithType:[TestUtils defaultType]
                                                          config:tailsWriterConfig
-                                                       location:location
-                                                           hash:hash
-                                                         handle:&tailsReaderHandle];
+                                                         handle:&blobStorageReaderHandle];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::openReaderWithType() failed");
 
-    //9. Issuer create Credential
-    NSString *xcredentialJson = nil;
+    //8. Issuer create Credential
+    NSString *credentialJson = nil;
+    NSString *credentialRevId = nil;
     NSString *revocRegDeltaJson = nil;
-    NSNumber *revIdx = @1;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialForCredentialRequest:credentialReq
+                                                                        credOfferJSON:credentialOfferJson
+                                                                       credValuesJSON:[[AnoncredsUtils sharedInstance] getGvtCredentialValuesJson]
+                                                                             revRegId:revocRefId
+                                                              blobStorageReaderHandle:blobStorageReaderHandle
+                                                                         walletHandle:issuerWalletHandle
+                                                                             credJson:&credentialJson
+                                                                          credRevocId:&credentialRevId
+                                                                    revocRegDeltaJSON:&revocRegDeltaJson];
+    XCTAssertTrue([credentialJson isValid], @"invalid credentialJson: %@", credentialJson);
+    XCTAssertTrue([credentialRevId isValid], @"invalid credentialRevId: %@", credentialRevId);
+    XCTAssertTrue([revocRegDeltaJson isValid], @"invalid revocRegDeltaJson: %@", revocRegDeltaJson);
 
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialWithWalletHandle:issuerWalletHandle
-                                                                credentialReqJson:credentialReq
-                                                             credentialValuesJson:[[AnoncredsUtils sharedInstance] getGvtCredentialValuesJson]
-                                                                         revRegId:revocRefId
-                                                                tailsReaderHandle:tailsReaderHandle
-                                                                   userRevocIndex:revIdx
-                                                                outCredentialJson:&xcredentialJson
-                                                             outRevocRegDeltaJSON:&revocRegDeltaJson];
-    XCTAssertTrue([xcredentialJson isValid], @"invalid xCredentialJson: %@", xcredentialJson);
-    NSLog(@"xcredentialJson: %@", xcredentialJson);
-
-    // 10. Prover create Revocation Info
-    NSString *revocInfoJson = nil;
-    NSNumber *timestamp = @100;
-
-    ret = [[AnoncredsUtils sharedInstance] createRevocationInfoForTimestamp:timestamp
-                                                              revRegDefJSON:revocRegDefJson
-                                                            revRegDeltaJSON:revocRegDeltaJson
-                                                          tailsReaderHandle:tailsReaderHandle
-                                                                     revIdx:revIdx
-                                                                revInfoJson:&revocInfoJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::createRevocationInfoForTimestamp() failed");
-
-    // 10. Prover store revocation info
-    ret = [[AnoncredsUtils sharedInstance] storeRevocationInfoForWalletHandle:proverWalletHandle
-                                                                           id:[[AnoncredsUtils sharedInstance] credentialId1]
-                                                                  revInfoJSON:revocInfoJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::storeRevocationInfoForWalletHandle() failed");
-
-    // 10. Prover store received Credential
-
-    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialWithWalletHandle:proverWalletHandle
-                                                                    credentialId:[[AnoncredsUtils sharedInstance] credentialId1]
-                                                                 credentialsJson:xcredentialJson
-                                                                   revRegDefJSON:revocRegDefJson];
+    // 9. Prover store received Credential
+    ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:credentialJson
+                                                          credID:[[AnoncredsUtils sharedInstance] credentialId1]
+                                                     credReqJSON:credentialReq
+                                             credReqMetadataJSON:credentialReqMetadata
+                                                     credDefJSON:credentialDefJSON
+                                                   revRegDefJSON:revocRegDefJson
+                                                    walletHandle:proverWalletHandle
+                                                       outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredential() failed");
 
 
-    // 11. Prover gets Credentials for Proof Request
+    // 10. Prover gets Credentials for Proof Request
     NSString *proofReqJson = [NSString stringWithFormat:@"{"\
                              " \"nonce\":\"123432421212\","\
                              " \"name\":\"proof_req_1\","\
                              " \"version\":\"0.1\","\
-                             " \"requested_attrs\":"\
+                             " \"requested_attributes\":"\
                              "             {\"attr1_referent\":"\
                              "                        {"\
                              "                          \"name\":\"name\",\"restrictions\":[{\"schema_id\":\"%@\"}]"\
@@ -1233,15 +1146,15 @@
                              " \"requested_predicates\":"\
                              "             {"\
                              "              \"predicate1_referent\":"\
-                             "                      {\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}"\
+                             "                      {\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}"\
                              "             }"\
                              "}", [[AnoncredsUtils sharedInstance] getGvtSchemaId]];
 
     NSString *credentialsJson = nil;
 
-    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReqWithWalletHandle:proverWalletHandle
-                                                                          proofRequestJson:proofReqJson
-                                                                        outCredentialsJson:&credentialsJson];
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofReqJson
+                                                              walletHandle:proverWalletHandle
+                                                           credentialsJson:&credentialsJson];
     XCTAssertEqual(ret.code, Success, @"proverGetCredentialsForProofReq() failed!");
 
     NSDictionary *credentials = [NSDictionary fromString:credentialsJson];
@@ -1251,59 +1164,67 @@
     XCTAssertTrue(credentials_for_attr_1, @"no object for key \"attr1_referent\"");
     NSString *credentialReferent = credentials_for_attr_1[@"cred_info"][@"referent"];
 
+    //11. Prover create Revocation State
+    NSString *revocStateJson = nil;
+    NSNumber *timestamp = @100;
+
+    ret = [[AnoncredsUtils sharedInstance] createRevocationStateForCredRevID:credentialRevId
+                                                                   timestamp:timestamp
+                                                               revRegDefJSON:revocRegDefJson
+                                                             revRegDeltaJSON:revocRegDeltaJson
+                                                     blobStorageReaderHandle:blobStorageReaderHandle
+                                                                revStateJson:&revocStateJson];
+
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::createRevocationInfoForTimestamp() failed");
+
     // 12. Prover create Proof
     NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{\
                                      \"self_attested_attributes\":{\"attr2_referent\":\"value\"},\
-                                     \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true, \"timestamp\":%@}},\
+                                     \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true, \"timestamp\":%@}},\
                                      \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%@\", \"timestamp\":%@}}\
                                      }", credentialReferent, timestamp, credentialReferent, timestamp];
 
 
-    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialReferent, schemaJson];
+    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", schemaId, schemaJson];
 
-    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialReferent, credentialDefJSON];
+    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialDefId, credentialDefJSON];
 
-    NSString *revocInfosJson = [NSString stringWithFormat:@"{\"%@\": {\"%@\": %@}}", credentialReferent, timestamp, revocInfoJson];
+    NSString *revocStatesJson = [NSString stringWithFormat:@"{\"%@\": {\"%@\": %@}}", revocRefId, timestamp, revocStateJson];
 
     NSString *proofJson;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateProofWithWalletHandle:proverWalletHandle
-                                                                proofReqJson:proofReqJson
-                                                    requestedCredentialsJson:requestedCredentialsJson
-                                                                 schemasJson:schemasJson
-                                                            masterSecretName:masterSecretName
-                                                          credentialDefsJson:credentialDefsJson
-                                                              revocInfosJSON:revocInfosJson
-                                                                outProofJson:&proofJson];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateProofForRequest:proofReqJson
+                                              requestedCredentialsJSON:requestedCredentialsJson
+                                                        masterSecretID:[TestUtils commonMasterSecretName]
+                                                           schemasJSON:schemasJson
+                                                    credentialDefsJSON:credentialDefsJson
+                                                       revocStatesJSON:revocStatesJson
+                                                          walletHandle:proverWalletHandle
+                                                             proofJson:&proofJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateProof() failed");
     XCTAssertTrue([proofJson isValid], @"invalid proofJson: %@", proofJson);
 
     NSDictionary *proof = [NSDictionary fromString:proofJson];
     NSDictionary *revealedAttr1 = proof[@"requested_proof"][@"revealed_attrs"][@"attr1_referent"];
     NSString *raw = revealedAttr1[@"raw"];
-    NSString *id = revealedAttr1[@"referent"];
 
     XCTAssertTrue([raw isEqualToString:@"Alex"]);
 
     NSString *attestedAttrUUID = proof[@"requested_proof"][@"self_attested_attrs"][@"attr2_referent"];
     XCTAssertTrue([attestedAttrUUID isEqualToString:@"value"]);
 
-    schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, schemaJson];
-
-    credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, credentialDefJSON];
-
-    NSString *revocRegDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, revocRegDefJson];
-    NSString *revocRegsJson = [NSString stringWithFormat:@"{\"%@\": {\"%@\": %@}}", id, timestamp, revocRegDeltaJson];
+    NSString *revocRegDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", revocRefId, revocRegDefJson];
+    NSString *revocRegsJson = [NSString stringWithFormat:@"{\"%@\": {\"%@\": %@}}", revocRefId, timestamp, revocRegDeltaJson];
 
     // 13. Verifier verify proof
     BOOL isValid = NO;
 
-    ret = [[AnoncredsUtils sharedInstance] verifierVerifyProof:proofReqJson
-                                                     proofJson:proofJson
-                                                   schemasJson:schemasJson
-                                            credentialDefsJson:credentialDefsJson
-                                              revocRegDefsJSON:revocRegDefsJson
-                                                 revocRegsJson:revocRegsJson
-                                                      outValid:&isValid];
+    ret = [[AnoncredsUtils sharedInstance] verifierVerifyProofRequest:proofReqJson
+                                                            proofJSON:proofJson
+                                                          schemasJSON:schemasJson
+                                                   credentialDefsJSON:credentialDefsJson
+                                                     revocRegDefsJSON:revocRegDefsJson
+                                                        revocRegsJSON:revocRegsJson
+                                                              isValid:&isValid];
 
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::verifierVerifyProof() failed");
     XCTAssertTrue(isValid, @"isValid == NO");

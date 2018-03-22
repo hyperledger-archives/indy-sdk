@@ -15,19 +15,27 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 trait WriterType {
-    fn create(&self, config: &str) -> Result<Box<Writer>, CommonError>;
+    fn open(&self, config: &str) -> Result<Box<Writer>, CommonError>;
 }
 
 trait Writer {
+    fn create(&self, id: i32) -> Result<Box<WritableBlob>, CommonError>;
+}
+
+trait WritableBlob {
     fn append(&mut self, bytes: &[u8]) -> Result<usize, CommonError>;
     fn finalize(&mut self, hash: &[u8]) -> Result<String, CommonError>;
 }
 
 trait ReaderType {
-    fn open(&self, config: &str, hash: &[u8], location: &str) -> Result<Box<Reader>, CommonError>;
+    fn open(&self, config: &str) -> Result<Box<Reader>, CommonError>;
 }
 
 trait Reader {
+    fn open(&self, hash: &[u8], location: &str) -> Result<Box<ReadableBlob>, CommonError>;
+}
+
+trait ReadableBlob {
     fn read(&mut self, size: usize, offset: usize) -> Result<Vec<u8>, CommonError>;
     fn verify(&mut self) -> Result<bool, CommonError>;
     fn close(&self) -> Result<(), CommonError>;
@@ -35,10 +43,12 @@ trait Reader {
 
 pub struct BlobStorageService {
     writer_types: RefCell<HashMap<String, Box<WriterType>>>,
-    writers: RefCell<HashMap<i32, (Box<Writer>, Sha256)>>,
+    writer_configs: RefCell<HashMap<i32, Box<Writer>>>,
+    writer_blobs: RefCell<HashMap<i32, (Box<WritableBlob>, Sha256)>>,
 
     reader_types: RefCell<HashMap<String, Box<ReaderType>>>,
-    readers: RefCell<HashMap<i32, Box<Reader>>>,
+    reader_configs: RefCell<HashMap<i32, Box<Reader>>>,
+    reader_blobs: RefCell<HashMap<i32, Box<ReadableBlob>>>,
 }
 
 impl BlobStorageService {
@@ -50,40 +60,53 @@ impl BlobStorageService {
 
         BlobStorageService {
             writer_types: RefCell::new(writer_types),
-            writers: RefCell::new(HashMap::new()),
+            writer_configs: RefCell::new(HashMap::new()),
+            writer_blobs: RefCell::new(HashMap::new()),
 
             reader_types: RefCell::new(reader_types),
-            readers: RefCell::new(HashMap::new()),
+            reader_configs: RefCell::new(HashMap::new()),
+            reader_blobs: RefCell::new(HashMap::new()),
         }
     }
 }
 
 /* Writer */
 impl BlobStorageService {
-    pub fn create_writer(&self, type_: &str, config: &str) -> Result<i32, CommonError> {
-        let writer = self.writer_types.try_borrow()?
-            .get(type_).ok_or(CommonError::InvalidStructure("Unknown BlobStorage type".to_owned()))?
-            .create(config)?;
+    pub fn open_writer(&self, type_: &str, config: &str) -> Result<i32, CommonError> {
+        let writer_config = self.writer_types.try_borrow()?
+            .get(type_).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Writer type".to_string()))?
+            .open(config)?;
 
-        let writer_handle = SequenceUtils::get_next_id();
-        self.writers.try_borrow_mut()?.insert(writer_handle, (writer, Sha256::default()));
+        let config_handle = SequenceUtils::get_next_id();
+        self.writer_configs.try_borrow_mut()?.insert(config_handle, writer_config);
 
-        Ok(writer_handle)
+        Ok(config_handle)
+    }
+
+    pub fn create_blob(&self, config_handle: i32) -> Result<i32, CommonError> {
+        let blob_handle = SequenceUtils::get_next_id();
+        let writer = self.writer_configs.try_borrow()?
+            .get(&config_handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Writer".to_owned()))?
+            .create(blob_handle)?;
+
+        self.writer_blobs.try_borrow_mut()?.insert(blob_handle, (writer, Sha256::default()));
+
+        Ok(blob_handle)
     }
 
     pub fn append(&self, handle: i32, bytes: &[u8]) -> Result<usize, CommonError> {
-        let mut writers = self.writers.try_borrow_mut()?;
+        let mut writers = self.writer_blobs.try_borrow_mut()?;
         let &mut (ref mut writer, ref mut hasher) = writers
-            .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?;
+            .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle Blob to append".to_owned()))?;
 
         hasher.process(bytes);
         writer.append(bytes)
     }
 
     pub fn finalize(&self, handle: i32) -> Result<(String, Vec<u8>), CommonError> {
-        let mut writers = self.writers.try_borrow_mut()?;
-        let (mut writer, mut hasher) = writers
-            .remove(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?;
+        let mut writers = self.writer_blobs.try_borrow_mut()?;
+        let (mut writer, hasher) = writers
+            .remove(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle Blob to finalize".to_owned()))?;
 
         let hash = hasher.fixed_result().to_vec();
 
@@ -94,32 +117,43 @@ impl BlobStorageService {
 
 /* Reader */
 impl BlobStorageService {
-    pub fn open_reader(&self, type_: &str, config: &str, location: &str, hash: &[u8]) -> Result<i32, CommonError> {
-        let reader = self.reader_types.try_borrow()?
+    pub fn open_reader(&self, type_: &str, config: &str) -> Result<i32, CommonError> {
+        let reader_config = self.reader_types.try_borrow()?
             .get(type_).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Reader type".to_string()))?
-            .open(config, hash, location)?;
+            .open(config)?;
+
+        let config_handle = SequenceUtils::get_next_id();
+        self.reader_configs.try_borrow_mut()?.insert(config_handle, reader_config);
+
+        Ok(config_handle)
+    }
+
+    pub fn open_blob(&self, config_handle: i32, location: &str, hash: &[u8]) -> Result<i32, CommonError> {
+        let reader = self.reader_configs.try_borrow()?
+            .get(&config_handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Reader".to_string()))?
+            .open(hash, location)?;
 
         let reader_handle = SequenceUtils::get_next_id();
-        self.readers.try_borrow_mut()?.insert(reader_handle, reader);
+        self.reader_blobs.try_borrow_mut()?.insert(reader_handle, reader);
 
         Ok(reader_handle)
     }
 
     pub fn read(&self, handle: i32, size: usize, offset: usize) -> Result<Vec<u8>, CommonError> {
-        self.readers.try_borrow_mut()?
-            .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?
+        self.reader_blobs.try_borrow_mut()?
+            .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle Blob to read".to_owned()))?
             .read(size, offset)
     }
 
     pub fn verify(&self, handle: i32) -> Result<bool, CommonError> {
-        self.readers.try_borrow_mut()?
-            .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?
+        self.reader_blobs.try_borrow_mut()?
+            .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle Blob to verify".to_owned()))?
             .verify()
     }
 
     pub fn close(&self, handle: i32) -> Result<(), CommonError> {
-        self.readers.try_borrow_mut()?
-            .remove(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?
+        self.reader_blobs.try_borrow_mut()?
+            .remove(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle Blob to close".to_owned()))?
             .close()
     }
 }

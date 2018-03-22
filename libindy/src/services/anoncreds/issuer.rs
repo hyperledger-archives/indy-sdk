@@ -23,7 +23,7 @@ impl Issuer {
                                                                           CredentialPrivateKey,
                                                                           CredentialKeyCorrectnessProof), AnoncredsError> {
         trace!("new_credential_definition >>> issuer_did: {:?}, schema: {:?}, support_revocation: {:?}",
-              issuer_did, schema, support_revocation);
+               issuer_did, schema, support_revocation);
 
         let credential_schema = build_credential_schema(&schema.attr_names)?;
 
@@ -36,7 +36,7 @@ impl Issuer {
         };
 
         trace!("new_credential_definition <<< credential_definition_value: {:?}, credential_private_key: {:?}, credential_key_correctness_proof: {:?}",
-              credential_definition_value, credential_private_key, credential_key_correctness_proof);
+               credential_definition_value, credential_private_key, credential_key_correctness_proof);
 
         Ok((credential_definition_value, credential_private_key, credential_key_correctness_proof))
     }
@@ -46,11 +46,11 @@ impl Issuer {
                                    max_cred_num: u32,
                                    issuance_by_default: bool,
                                    issuer_did: &str) -> Result<(RevocationRegistryDefinitionValuePublicKeys,
-                                                                  RevocationKeyPrivate,
-                                                                  RevocationRegistry,
-                                                                  RevocationTailsGenerator), AnoncredsError> {
+                                                                RevocationKeyPrivate,
+                                                                RevocationRegistry,
+                                                                RevocationTailsGenerator), AnoncredsError> {
         trace!("new_revocation_registry >>> pub_key: {:?}, max_cred_num: {:?}, issuance_by_default: {:?}, issuer_did: {:?}",
-              credential_def, max_cred_num, issuance_by_default, issuer_did);
+               credential_def, max_cred_num, issuance_by_default, issuer_did);
 
         let credential_pub_key =
             CredentialPublicKey::build_from_parts(&credential_def.value.primary, credential_def.value.revocation.as_ref())?;
@@ -63,7 +63,7 @@ impl Issuer {
         };
 
         trace!("new_revocation_registry <<< rev_keys_pub: {:?}, rev_key_priv: {:?}, rev_reg_entry: {:?}, rev_tails_generator: {:?}",
-              rev_keys_pub, rev_key_priv, rev_reg_entry, rev_tails_generator);
+               rev_keys_pub, rev_key_priv, rev_reg_entry, rev_tails_generator);
 
         Ok((rev_keys_pub, rev_key_priv, rev_reg_entry, rev_tails_generator))
     }
@@ -83,7 +83,7 @@ impl Issuer {
                                                                             Option<RevocationRegistryDelta>), AnoncredsError> where RTA: RevocationTailsAccessor {
         trace!("new_credential >>> credential_def: {:?}, credential_priv_key: {:?}, master_secret_blinding_nonce: {:?}, credential_request: {:?},\
                credential_values: {:?}, rev_idx: {:?}, rev_reg_def: {:?}, rev_reg: {:?}, rev_key_priv: {:?}",
-              credential_def, credential_priv_key, master_secret_blinding_nonce, credential_request, credential_values, rev_idx, rev_reg_def, rev_reg, rev_key_priv);
+               credential_def, credential_priv_key, master_secret_blinding_nonce, credential_request, credential_values, rev_idx, rev_reg_def, rev_reg, rev_key_priv);
 
         let credential_values = build_credential_values(&credential_values)?;
         let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.value.primary, credential_def.value.revocation.as_ref())?;
@@ -114,6 +114,9 @@ impl Issuer {
                                                          rev_reg,
                                                          rev_key_priv,
                                                          rev_tails_accessor)?
+
+
+
             } else {
                 let (signature, correctness_proof) =
                     CryptoIssuer::sign_credential(&credential_request.prover_did,
@@ -128,7 +131,7 @@ impl Issuer {
             };
 
         trace!("new_credential <<< credential_signature {:?}, signature_correctness_proof {:?}, rev_reg_delta {:?}",
-              credential_signature, signature_correctness_proof, rev_reg_delta);
+               credential_signature, signature_correctness_proof, rev_reg_delta);
 
         Ok((credential_signature, signature_correctness_proof, rev_reg_delta))
     }

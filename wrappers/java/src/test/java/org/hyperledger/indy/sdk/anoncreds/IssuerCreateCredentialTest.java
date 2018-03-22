@@ -14,7 +14,7 @@ public class IssuerCreateCredentialTest extends AnoncredsIntegrationTest {
 	public void testIssuerCreateCredentialWorks() throws Exception {
 
 		AnoncredsResults.IssuerCreateCredentialResult createCredentialResult =
-				Anoncreds.issuerCreateCredentail(wallet, credentialRequest, gvtCredentialValuesJson, null, - 1, - 1).get();
+				Anoncreds.issuerCreateCredential(wallet, issuer1GvtCredOffer, issuer1GvtCredReq, gvtCredentialValuesJson, null, - 1).get();
 		assertNotNull(createCredentialResult);
 	}
 
@@ -24,7 +24,7 @@ public class IssuerCreateCredentialTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Anoncreds.issuerCreateCredentail(wallet, credentialRequest, xyzCredentialValuesJson, null, - 1, - 1).get();
+		Anoncreds.issuerCreateCredential(wallet, issuer1GvtCredOffer, issuer1GvtCredReq, xyzCredentialValuesJson, null, - 1).get();
 	}
 
 	@Test
@@ -33,11 +33,11 @@ public class IssuerCreateCredentialTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String credential = "{" +
+		String credValues = "{" +
 				"        \"sex\":\"male\",\n" +
 				"        \"age\":\"28\"" +
 				"       }";
 
-		Anoncreds.issuerCreateCredentail(wallet, credentialRequest, credential, null, - 1, - 1).get();
+		Anoncreds.issuerCreateCredential(wallet, issuer1GvtCredOffer, issuer1GvtCredReq, credValues, null, - 1).get();
 	}
 }
