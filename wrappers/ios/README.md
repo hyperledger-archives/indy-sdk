@@ -1,4 +1,15 @@
-# Setup of IOS build environment
+# How to install
+A wrapper is a private pod, so private podspec must be set. Put at the top of the Podfile: 
+    
+    source 'https://github.com/hyperledger/indy-sdk.git'
+    
+Cocoapod will search for spec files in the root Specs folder.
+
+Add pod to target:
+    
+    pod 'libindy-objc'                
+
+# How to build
 
 1. Install Rust and rustup (https://www.rust-lang.org/install.html).
 1. Install toolchains using command:
@@ -59,21 +70,6 @@
 
 # Creation 
 Run Archive process for `Indy` target. Custom post-action shell script `universal_framework.h` will be triggered and you get universal framework. Then put it to folder: `libindy-objc/Indy.framework` and upload to repo.
-
-# Installation
-
-Wrapper is a private pod, so private podspec must be set. Put at the top of the Podfile:
-
-```
-source 'https://github.com/hyperledger/indy-sdk.git'
-```
-Cocoapos will search for spec files in the root Specs folder.
-
-Add pod to target:
-
-```
-pod 'libindy-objc'
-```
 
 # Usage
 
