@@ -48,7 +48,7 @@ fn anoncreds_demo_works() {
     let (issuer_create_credential_offer_receiver, issuer_create_credential_offer_command_handle, issuer_create_credential_offer_callback) = CallbackUtils::_closure_to_cb_ec_string();
     let (create_wallet_receiver, create_wallet_command_handle, create_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
     let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = CallbackUtils::_closure_to_cb_ec_i32();
-    let (prover_create_master_secret_receiver, prover_create_master_secret_command_handle, prover_create_master_secret_callback) = CallbackUtils::_closure_to_cb_ec();
+    let (prover_create_master_secret_receiver, prover_create_master_secret_command_handle, prover_create_master_secret_callback) = CallbackUtils::_closure_to_cb_ec_string();
     let (prover_create_credential_req_receiver, prover_create_credential_req_command_handle, prover_create_credential_req_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
     let (issuer_create_credential_receiver, issuer_create_credential_command_handle, issuer_create_credential_callback) = CallbackUtils::_closure_to_cb_ec_string_opt_string_opt_string();
     let (prover_store_credential_receiver, prover_store_credential_command_handle, prover_store_credential_callback) = CallbackUtils::_closure_to_cb_ec_string();
@@ -134,7 +134,7 @@ fn anoncreds_demo_works() {
                                          prover_create_master_secret_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let err = prover_create_master_secret_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, _) = prover_create_master_secret_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 6. Issuer create Credential Offer
@@ -204,16 +204,16 @@ fn anoncreds_demo_works() {
                                        "nonce":"123432421212",
                                        "name":"proof_req_1",
                                        "version":"0.1",
-                                       "requested_attrs":{
+                                       "requested_attributes":{
                                             "attr1_referent":{
                                                 "name":"name"
                                             }
                                        },
                                        "requested_predicates":{
                                            "predicate1_referent":{
-                                               "attr_name":"age",
+                                               "name":"age",
                                                "p_type":">=",
-                                               "value":18
+                                               "p_value":18
                                            }
                                        }
                                    }"#;
@@ -237,7 +237,7 @@ fn anoncreds_demo_works() {
 
     let requested_credentials_json = format!(r#"{{
                                                   "self_attested_attributes":{{}},
-                                                  "requested_attrs":{{
+                                                  "requested_attributes":{{
                                                         "attr1_referent":{{ "cred_id":"{}", "revealed":true }}
                                                   }},
                                                   "requested_predicates":{{

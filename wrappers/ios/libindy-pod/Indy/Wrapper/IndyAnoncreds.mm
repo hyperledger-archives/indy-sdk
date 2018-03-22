@@ -217,7 +217,7 @@
 
 + (void)proverCreateMasterSecret:(NSString *)masterSecretID
                     walletHandle:(IndyHandle)walletHandle
-                      completion:(void (^)(NSError *error))completion {
+                      completion:(void (^)(NSError *error, NSString *outMasterSecretId))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -225,14 +225,14 @@
     ret = indy_prover_create_master_secret(handle,
             walletHandle,
             [masterSecretID UTF8String],
-            IndyWrapperCommon2PCallback
+            IndyWrapperCommon3PSCallback
     );
 
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError:ret]);
+            completion([NSError errorFromIndyError:ret], nil);
         });
     }
 }

@@ -81,7 +81,9 @@
 
     // 5. Prover create Master Secret
     ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:[TestUtils commonMasterSecretName]
-                                                       walletHandle:walletHandle];
+                                                       walletHandle:walletHandle
+                                                  outMasterSecretId:nil];
+
     XCTAssertEqual(ret.code, Success, @"proverCreateMasterSecret() failed!");
 
     // 6. Issuer create Credential Offer
@@ -142,16 +144,16 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
-            "\"requested_attrs\":{\
+            "\"requested_attributes\":{\
                                     \"attr1_referent\":{\
                                         \"name\":\"name\"\
                                     }\
                               },\
                               \"requested_predicates\":{\
                                     \"predicate1_referent\":{\
-                                        \"attr_name\":\"age\",\
+                                        \"name\":\"age\",\
                                         \"p_type\":\">=\",\
-                                        \"value\":18\
+                                        \"p_value\":18\
                                     }\
                               }\
                             }"];
@@ -175,7 +177,7 @@
 
     NSString *requestedCredentialsJSON = [NSString stringWithFormat:@"{\
                                      \"self_attested_attributes\":{},\
-                                     \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
+                                     \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
                                      \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%@\"}}\
                                      }", credentialReferent, credentialReferent];
 
@@ -282,7 +284,8 @@
 
     // 5. Prover create Master Secret
     ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:[TestUtils commonMasterSecretName]
-                                                       walletHandle:walletHandle];
+                                                       walletHandle:walletHandle
+                                                               outMasterSecretId:nil];
     XCTAssertEqual(ret.code, Success, @"proverCreateMasterSecret() failed!");
 
     // 6. Issuer create Credential Offer
@@ -343,16 +346,16 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
-            "\"requested_attrs\":{\
+            "\"requested_attributes\":{\
                                     \"attr1_referent\":{\
                                         \"name\":\"name\"\
                                     }\
                               },\
                               \"requested_predicates\":{\
                                     \"predicate1_referent\":{\
-                                        \"attr_name\":\"age\",\
+                                        \"name\":\"age\",\
                                         \"p_type\":\">=\",\
-                                        \"value\":18\
+                                        \"p_value\":18\
                                     }\
                               }\
                             }"];
@@ -376,7 +379,7 @@
 
     NSString *requestedCredentialsJSON = [NSString stringWithFormat:@"{\
                                      \"self_attested_attributes\":{},\
-                                     \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
+                                     \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
                                      \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%@\"}}\
                                      }", credentialReferent, credentialReferent];
 

@@ -77,7 +77,8 @@
 
     //4. Prover create Master Secret
     ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:[TestUtils commonMasterSecretName]
-                                                       walletHandle:walletHandle];
+                                                       walletHandle:walletHandle
+                                                  outMasterSecretId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret failed");
 
     // 5. Issuer create Credential Offer
@@ -131,7 +132,7 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
-            "\"requested_attrs\":{\
+            "\"requested_attributes\":{\
                                     \"attr1_referent\":{\
                                         \"name\":\"name\"\
                                     }\
@@ -155,7 +156,7 @@
     // 9. Prover create Proof
     NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{\
                                      \"self_attested_attributes\":{},\
-                                     \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
+                                     \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
                                      \"requested_predicates\":{}\
                                      }", credentialReferent];
     NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", schemaId, schemaJson];
@@ -180,16 +181,16 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
-            "\"requested_attrs\":{\
+            "\"requested_attributes\":{\
                                     \"attr1_referent\":{\
                                         \"name\":\"name\"\
                                     }\
                               },\
                               \"requested_predicates\":{\
                                     \"predicate1_referent\":{\
-                                        \"attr_name\":\"age\",\
+                                        \"name\":\"age\",\
                                         \"p_type\":\">=\",\
-                                        \"value\":18\
+                                        \"p_value\":18\
                                     }\
                               }\
                             }"];
@@ -266,7 +267,8 @@
     //4. Prover create Master Secret
 
     ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:[TestUtils commonMasterSecretName]
-                                                       walletHandle:proverWalletHandle];
+                                                       walletHandle:proverWalletHandle
+                                                  outMasterSecretId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed");
 
     // 5. Issuer create Credential Offer
@@ -322,7 +324,7 @@
                              " \"nonce\":\"123432421212\","\
                              " \"name\":\"proof_req_1\","\
                              " \"version\":\"0.1\","\
-                             " \"requested_attrs\":"\
+                             " \"requested_attributes\":"\
                              "             {\"attr1_referent\":"\
                              "                        {"\
                              "                          \"name\":\"name\",\"restrictions\":[{\"schema_id\":\"%@\"}]"\
@@ -335,7 +337,7 @@
                              " \"requested_predicates\":"\
                              "             {"\
                              "              \"predicate1_referent\":"\
-                             "                      {\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}"\
+                             "                      {\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}"\
                              "             }"\
                              "}", [[AnoncredsUtils sharedInstance] getGvtSchemaId]];
 
@@ -356,7 +358,7 @@
     // 12. Prover create Proof
     NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{\
                                      \"self_attested_attributes\":{\"attr2_referent\":\"value\"},\
-                                     \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
+                                     \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
                                      \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%@\"}}\
                                      }", credentialReferent, credentialReferent];
 
@@ -496,7 +498,8 @@
 
     //6. Prover create Master Secret
     ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:[TestUtils commonMasterSecretName]
-                                                       walletHandle:proverWalletHandle];
+                                                       walletHandle:proverWalletHandle
+                                                  outMasterSecretId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed for issuer 1");
 
     // 7. Issuer1 create Credential Offer
@@ -592,7 +595,7 @@
                              " \"nonce\":\"123432421212\","\
                              " \"name\":\"proof_req_1\","\
                              " \"version\":\"0.1\","\
-                             " \"requested_attrs\":"\
+                             " \"requested_attributes\":"\
                              "             {\"attr1_referent\":"\
                              "                        {"\
                              "                          \"name\":\"name\",\"restrictions\":[{\"schema_id\":\"%@\"}]"\
@@ -605,9 +608,9 @@
                              " \"requested_predicates\":"\
                              "             {"\
                              "              \"predicate1_referent\":"\
-                             "                      {\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18},"\
+                             "                      {\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18},"\
                              "              \"predicate2_referent\":"\
-                             "                      {\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}"\
+                             "                      {\"name\":\"period\",\"p_type\":\">=\",\"p_value\":5}"\
                              "             }"\
                              "}", [[AnoncredsUtils sharedInstance] getGvtSchemaId]];
 
@@ -646,7 +649,7 @@
 
     NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{\
                                      \"self_attested_attributes\":{},\
-                                     \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true},\
+                                     \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true},\
                                                           \"attr2_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
                                      \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%@\"}, \
                                                                \"predicate2_referent\":{\"cred_id\":\"%@\"}}\
@@ -780,7 +783,8 @@
 
     //6. Prover create Master Secret
     ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:[TestUtils commonMasterSecretName]
-                                                       walletHandle:proverWalletHandle];
+                                                       walletHandle:proverWalletHandle
+                                                  outMasterSecretId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed for issuer 1");
 
     // 7. Issuer create Credential Offer
@@ -876,7 +880,7 @@
                              " \"nonce\":\"123432421212\","\
                              " \"name\":\"proof_req_1\","\
                              " \"version\":\"0.1\","\
-                             " \"requested_attrs\":"\
+                             " \"requested_attributes\":"\
                              "             {\"attr1_referent\":"\
                              "                        {"\
                              "                          \"name\":\"name\",\"restrictions\":[{\"schema_id\":\"%@\"}]"\
@@ -889,9 +893,9 @@
                              " \"requested_predicates\":"\
                              "             {"\
                              "              \"predicate1_referent\":"\
-                             "                      {\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18},"\
+                             "                      {\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18},"\
                              "              \"predicate2_referent\":"\
-                             "                      {\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}"\
+                             "                      {\"name\":\"period\",\"p_type\":\">=\",\"p_value\":5}"\
                              "             }"\
                              "}", [[AnoncredsUtils sharedInstance] getGvtSchemaId], [[AnoncredsUtils sharedInstance] getXyzSchemaId]];
 
@@ -930,7 +934,7 @@
 
     NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{\
                                      \"self_attested_attributes\":{},\
-                                     \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true},\
+                                     \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true},\
                                                           \"attr2_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
                                      \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%@\"}, \
                                                                \"predicate2_referent\":{\"cred_id\":\"%@\"}}\
@@ -1054,7 +1058,8 @@
 
     //4. Prover create Master Secret
     ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:[TestUtils commonMasterSecretName]
-                                                       walletHandle:proverWalletHandle];
+                                                       walletHandle:proverWalletHandle
+                                                  outMasterSecretId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed");
 
     // 5. Issuer create Credential Offer
@@ -1063,7 +1068,7 @@
                                                                       walletHandle:issuerWalletHandle
                                                                      credOfferJson:&credentialOfferJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreCredentialDef() failed!");
-    
+
     //6. Prover create Credential Request
     NSString *credentialReq = nil;
     NSString *credentialReqMetadata = nil;
@@ -1109,20 +1114,7 @@
     XCTAssertTrue([credentialRevId isValid], @"invalid credentialRevId: %@", credentialRevId);
     XCTAssertTrue([revocRegDeltaJson isValid], @"invalid revocRegDeltaJson: %@", revocRegDeltaJson);
 
-    // 9. Prover create Revocation State
-    NSString *revocStateJson = nil;
-    NSNumber *timestamp = @100;
-
-    ret = [[AnoncredsUtils sharedInstance] createRevocationStateForCredRevID:credentialRevId
-                                                                   timestamp:timestamp
-                                                               revRegDefJSON:revocRegDefJson
-                                                             revRegDeltaJSON:revocRegDeltaJson
-                                                     blobStorageReaderHandle:blobStorageReaderHandle
-                                                                revStateJson:&revocStateJson];
-
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::createRevocationInfoForTimestamp() failed");
-
-    // 10. Prover store received Credential
+    // 9. Prover store received Credential
     ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:credentialJson
                                                           credID:[[AnoncredsUtils sharedInstance] credentialId1]
                                                      credReqJSON:credentialReq
@@ -1134,12 +1126,12 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredential() failed");
 
 
-    // 11. Prover gets Credentials for Proof Request
+    // 10. Prover gets Credentials for Proof Request
     NSString *proofReqJson = [NSString stringWithFormat:@"{"\
                              " \"nonce\":\"123432421212\","\
                              " \"name\":\"proof_req_1\","\
                              " \"version\":\"0.1\","\
-                             " \"requested_attrs\":"\
+                             " \"requested_attributes\":"\
                              "             {\"attr1_referent\":"\
                              "                        {"\
                              "                          \"name\":\"name\",\"restrictions\":[{\"schema_id\":\"%@\"}]"\
@@ -1152,7 +1144,7 @@
                              " \"requested_predicates\":"\
                              "             {"\
                              "              \"predicate1_referent\":"\
-                             "                      {\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}"\
+                             "                      {\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}"\
                              "             }"\
                              "}", [[AnoncredsUtils sharedInstance] getGvtSchemaId]];
 
@@ -1170,10 +1162,23 @@
     XCTAssertTrue(credentials_for_attr_1, @"no object for key \"attr1_referent\"");
     NSString *credentialReferent = credentials_for_attr_1[@"cred_info"][@"referent"];
 
+    //11. Prover create Revocation State
+    NSString *revocStateJson = nil;
+    NSNumber *timestamp = @100;
+
+    ret = [[AnoncredsUtils sharedInstance] createRevocationStateForCredRevID:credentialRevId
+                                                                   timestamp:timestamp
+                                                               revRegDefJSON:revocRegDefJson
+                                                             revRegDeltaJSON:revocRegDeltaJson
+                                                     blobStorageReaderHandle:blobStorageReaderHandle
+                                                                revStateJson:&revocStateJson];
+
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::createRevocationInfoForTimestamp() failed");
+
     // 12. Prover create Proof
     NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{\
                                      \"self_attested_attributes\":{\"attr2_referent\":\"value\"},\
-                                     \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true, \"timestamp\":%@}},\
+                                     \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true, \"timestamp\":%@}},\
                                      \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%@\", \"timestamp\":%@}}\
                                      }", credentialReferent, timestamp, credentialReferent, timestamp];
 

@@ -19,8 +19,8 @@ use super::tails::SDKTailsAccessor;
 pub enum ProverCommand {
     CreateMasterSecret(
         i32, // wallet handle
-        String, // master secret id
-        Box<Fn(Result<(), IndyError>) + Send>),
+        Option<String>, // master secret id
+        Box<Fn(Result<String, IndyError>) + Send>),
     CreateCredentialRequest(
         i32, // wallet handle
         String, // prover did
@@ -95,7 +95,7 @@ impl ProverCommandExecutor {
         match command {
             ProverCommand::CreateMasterSecret(wallet_handle, master_secret_id, cb) => {
                 trace!(target: "prover_command_executor", "CreateMasterSecret command received");
-                cb(self.create_master_secret(wallet_handle, &master_secret_id));
+                cb(self.create_master_secret(wallet_handle, master_secret_id.as_ref().map(String::as_str)));
             }
             ProverCommand::CreateCredentialRequest(wallet_handle, prover_did, credential_offer_json,
                                                    credential_def_json, master_secret_name, cb) => {
@@ -136,8 +136,10 @@ impl ProverCommandExecutor {
 
     fn create_master_secret(&self,
                             wallet_handle: i32,
-                            master_secret_id: &str) -> Result<(), IndyError> {
+                            master_secret_id: Option<&str>) -> Result<String, IndyError> {
         trace!("create_master_secret >>> wallet_handle: {:?}, master_secret_id: {:?}", wallet_handle, master_secret_id);
+
+        let master_secret_id = master_secret_id.map(String::from).unwrap_or(uuid::Uuid::new_v4().to_string());
 
         if let Ok(_) = self.wallet_service.get(wallet_handle, &format!("master_secret::{}", master_secret_id)) {
             return Err(IndyError::AnoncredsError(
@@ -147,9 +149,9 @@ impl ProverCommandExecutor {
         let master_secret = self.anoncreds_service.prover.new_master_secret()?;
         let master_secret_json = self.wallet_service.set_object(wallet_handle, &format!("master_secret::{}", master_secret_id), &master_secret, "MasterSecret")?;
 
-        trace!("create_master_secret <<<");
+        trace!("create_master_secret <<< master_secret_id: {:?}", master_secret_id);
 
-        Ok(())
+        Ok(master_secret_id)
     }
 
     fn create_credential_request(&self,
@@ -356,7 +358,7 @@ impl ProverCommandExecutor {
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of CredentialDefinition: {:?}", err)))?;
 
         let rev_states: HashMap<String, HashMap<u64, RevocationState>> = serde_json::from_str(rev_states_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationInfo: {:?}", err)))?;
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationState: {:?}", err)))?;
 
         let requested_credentials: RequestedCredentials = RequestedCredentials::from_json(requested_credentials_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RequestedCredentials: {:?}", err)))?;
@@ -365,7 +367,7 @@ impl ProverCommandExecutor {
             self.wallet_service.get_object(wallet_handle, &format!("master_secret::{}", master_secret_id), "MasterSecret", &mut String::new())?;
 
         let cred_refs_for_attrs =
-            requested_credentials.requested_attrs
+            requested_credentials.requested_attributes
                 .values()
                 .map(|requested_attr| requested_attr.cred_id.clone())
                 .collect::<HashSet<String>>();

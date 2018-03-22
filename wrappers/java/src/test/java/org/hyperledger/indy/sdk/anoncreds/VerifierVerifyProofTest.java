@@ -190,8 +190,8 @@ public class VerifierVerifyProofTest extends AnoncredsIntegrationTest {
 		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"               \"name\":\"proof_req_1\",\n" +
 				"               \"version\":\"0.1\",\n" +
-				"               \"requested_attrs\":{\"attr1_referent\":{\"name\":\"sex\"}},\n" +
-				"               \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"height\",\"p_type\":\">=\",\"value\":180}}\n" +
+				"               \"requested_attributes\":{\"attr1_referent\":{\"name\":\"sex\"}},\n" +
+				"               \"requested_predicates\":{\"predicate1_referent\":{\"name\":\"height\",\"p_type\":\">=\",\"p_value\":180}}\n" +
 				"              }";
 
 		Anoncreds.verifierVerifyProof(proofRequest, proofJson, schemasJson, credentialDefsJson, revocRegDefsJson, revocRegsJson).get();

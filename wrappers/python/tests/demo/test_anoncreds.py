@@ -56,11 +56,11 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home):
         'nonce': '123432421212',
         'name': 'proof_req_1',
         'version': '0.1',
-        'requested_attrs': {
+        'requested_attributes': {
             'attr1_referent': {'name': 'name'}
         },
         'requested_predicates': {
-            'predicate1_referent': {'attr_name': 'age', 'p_type': '>=', 'value': 18}
+            'predicate1_referent': {'name': 'age', 'p_type': '>=', 'p_value': 18}
         }
     })
 
@@ -73,7 +73,7 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home):
     # 9. Prover create Proof for Proof Request
     requested_credentials_json = json.dumps({
         'self_attested_attributes': {},
-        'requested_attrs': {'attr1_referent': {'cred_id': referent, 'revealed': True}},
+        'requested_attributes': {'attr1_referent': {'cred_id': referent, 'revealed': True}},
         'requested_predicates': {'predicate1_referent': {'cred_id': referent}}
     })
 
@@ -155,31 +155,32 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name,
         await anoncreds.issuer_create_credential(wallet_handle, cred_offer_json, cred_req_json,
                                                  cred_values_json, rev_reg_id, blob_storage_reader_handle)
 
-    # 10. Prover creates revocation state
-    timestamp = 100
-    rev_state_json = await anoncreds.create_revocation_state(blob_storage_reader_handle, rev_reg_def_json,
-                                                             rev_reg_delta_json, timestamp, rev_id)
-
-    # 11. Prover process and store credential
+    # 10. Prover process and store credential
     cred_id = 'cred_1_id'
     await anoncreds.prover_store_credential(wallet_handle, cred_id, cred_req_json, cred_req_metadata_json,
                                             cred_json, cred_def_json, rev_reg_def_json)
 
-    # 12. Prover gets credentials for Proof Request
+    # 11. Prover gets credentials for Proof Request
     proof_req_json = json.dumps({
         'nonce': '123432421212',
         'name': 'proof_req_1',
         'version': '0.1',
-        'requested_attrs': {
+        'requested_attributes': {
             'attr1_referent': {'name': 'name'}
         },
         'requested_predicates': {
-            'predicate1_referent': {'attr_name': 'age', 'p_type': '>=', 'value': 18}
-        }
+            'predicate1_referent': {'name': 'age', 'p_type': '>=', 'p_value': 18}
+        },
+        "non_revoked": {"from": 80, "to": 100}
     })
 
     credential_for_proof_json = await anoncreds.prover_get_credentials_for_proof_req(wallet_handle, proof_req_json)
     credentials_for_proof = json.loads(credential_for_proof_json)
+
+    # 12. Prover creates revocation state
+    timestamp = 100
+    rev_state_json = await anoncreds.create_revocation_state(blob_storage_reader_handle, rev_reg_def_json,
+                                                             rev_reg_delta_json, timestamp, rev_id)
 
     credential_for_attr1 = credentials_for_proof['attrs']['attr1_referent']
     referent = credential_for_attr1[0]['cred_info']['referent']
@@ -187,7 +188,7 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name,
     # 13. Prover create Proof for Proof Request
     requested_credentials_json = json.dumps({
         'self_attested_attributes': {},
-        'requested_attrs': {'attr1_referent': {'cred_id': referent, 'revealed': True, 'timestamp': timestamp}},
+        'requested_attributes': {'attr1_referent': {'cred_id': referent, 'revealed': True, 'timestamp': timestamp}},
         'requested_predicates': {'predicate1_referent': {'cred_id': referent, 'timestamp': timestamp}}
     })
 

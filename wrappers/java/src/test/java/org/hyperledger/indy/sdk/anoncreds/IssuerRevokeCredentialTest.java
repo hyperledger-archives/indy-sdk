@@ -82,7 +82,7 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 		//13. Prover create Proof
 		String requestedCredentialsJson = String.format("{" +
 				"\"self_attested_attributes\":{}," +
-				"\"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true, \"timestamp\":%d }}," +
+				"\"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true, \"timestamp\":%d }}," +
 				"\"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\", \"timestamp\":%d}}" +
 				"}", credentialUuid, timestamp, credentialUuid, timestamp);
 

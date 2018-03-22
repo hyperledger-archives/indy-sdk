@@ -96,7 +96,9 @@
                                       revocRegDeltaJSON:(NSString **)revocRegDeltaJson;
 
 - (NSError *)proverCreateMasterSecret:(NSString *)masterSecretId
-                         walletHandle:(IndyHandle)walletHandle;
+                         walletHandle:(IndyHandle)walletHandle
+                    outMasterSecretId:(NSString **)outMasterSecretId;
+
 
 - (NSError *)proverCreateCredentialReqForCredentialOffer:(NSString *)credOfferJSON
                                        credentialDefJSON:(NSString *)credentialDefJSON

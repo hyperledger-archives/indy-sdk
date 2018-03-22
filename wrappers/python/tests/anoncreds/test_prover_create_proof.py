@@ -12,7 +12,7 @@ async def test_prover_create_proof_works(wallet_handle, prepopulated_wallet, gvt
 
     requested_credentials = {
         "self_attested_attributes": {},
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {"cred_id": id_credential_1, "revealed": True}
         },
         "requested_predicates": {
@@ -43,7 +43,7 @@ async def test_prover_create_proof_works_for_using_not_satisfy_credential(wallet
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {
                 "name": "some_attr"
             }
@@ -53,7 +53,7 @@ async def test_prover_create_proof_works_for_using_not_satisfy_credential(wallet
 
     requested_credentials = {
         "self_attested_attributes": {},
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {"cred_id": id_credential_1, "revealed": True}
         },
         "requested_predicates": {
@@ -83,7 +83,7 @@ async def test_prover_create_proof_works_for_invalid_wallet_handle(wallet_handle
 
     requested_credentials = {
         "self_attested_attributes": {},
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {"cred_id": id_credential_1, "revealed": True}
         },
         "requested_predicates": {

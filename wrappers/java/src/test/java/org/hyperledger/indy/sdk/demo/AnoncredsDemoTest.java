@@ -120,13 +120,13 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
-				"                    \"requested_attrs\": {" +
+				"                    \"requested_attributes\": {" +
 				"                          \"attr1_referent\":{\"name\":\"name\"}," +
 				"                          \"attr2_referent\":{\"name\":\"sex\"}," +
 				"                          \"attr3_referent\":{\"name\":\"phone\"}" +
 				"                     }," +
 				"                    \"requested_predicates\":{" +
-				"                         \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}" +
+				"                         \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
 				"                    }" +
 				"                  }";
 
@@ -147,8 +147,8 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String selfAttestedValue = "8-800-300";
 		String requestedCredentialsJson = String.format("{\n" +
 				"                                          \"self_attested_attributes\":{\"attr3_referent\":\"%s\"},\n" +
-				"                                          \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true},\n" +
-				"                                                               \"attr2_referent\":{\"cred_id\":\"%s\", \"revealed\":false}},\n" +
+				"                                          \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true},\n" +
+				"                                                                    \"attr2_referent\":{\"cred_id\":\"%s\", \"revealed\":false}},\n" +
 				"                                          \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\"}}\n" +
 				"                                        }", selfAttestedValue, credentialUuid, credentialUuid, credentialUuid);
 
@@ -246,13 +246,13 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
-				"                    \"requested_attrs\": {" +
+				"                    \"requested_attributes\": {" +
 				"                          \"attr1_referent\":{ \"name\":\"name\"}," +
 				"                          \"attr2_referent\":{ \"name\":\"status\"}" +
 				"                     }," +
 				"                    \"requested_predicates\":{" +
-				"                         \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}," +
-				"                          \"predicate2_referent\":{\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}" +
+				"                         \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}," +
+				"                          \"predicate2_referent\":{\"name\":\"period\",\"p_type\":\">=\",\"p_value\":5}" +
 				"                    }" +
 				"                  }";
 
@@ -278,8 +278,8 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		//16. Prover create Proof
 		String requestedCredentialsJson = String.format("{\n" +
 				"                                          \"self_attested_attributes\":{},\n" +
-				"                                          \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true},\n" +
-				"                                                               \"attr2_referent\":{\"cred_id\":\"%s\", \"revealed\":true}},\n" +
+				"                                          \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true},\n" +
+				"                                                                    \"attr2_referent\":{\"cred_id\":\"%s\", \"revealed\":true}},\n" +
 				"                                          \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\"}," +
 				"                                                                    \"predicate2_referent\":{\"cred_id\":\"%s\"}}\n" +
 				"                                        }", credentialUuidForAttr1, credentialUuidForAttr2, credentialUuidForPredicate1, credentialUuidForPredicate2);
@@ -375,13 +375,13 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
-				"                    \"requested_attrs\": {" +
+				"                    \"requested_attributes\": {" +
 				"                          \"attr1_referent\":{ \"name\":\"name\"}," +
 				"                          \"attr2_referent\":{ \"name\":\"status\"}" +
 				"                     }," +
 				"                    \"requested_predicates\":{" +
-				"                         \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}," +
-				"                          \"predicate2_referent\":{\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}" +
+				"                         \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}," +
+				"                          \"predicate2_referent\":{\"name\":\"period\",\"p_type\":\">=\",\"p_value\":5}" +
 				"                    }" +
 				"                  }";
 
@@ -407,8 +407,8 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		//16. Prover create Proof
 		String requestedCredentialsJson = String.format("{\n" +
 				"                                          \"self_attested_attributes\":{},\n" +
-				"                                          \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true},\n" +
-				"                                                               \"attr2_referent\":{\"cred_id\":\"%s\", \"revealed\":true}},\n" +
+				"                                          \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true},\n" +
+				"                                                                    \"attr2_referent\":{\"cred_id\":\"%s\", \"revealed\":true}},\n" +
 				"                                          \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\"}," +
 				"                                                                    \"predicate2_referent\":{\"cred_id\":\"%s\"}}\n" +
 				"                                        }", credentialUuidForAttr1, credentialUuidForAttr2, credentialUuidForPredicate1, credentialUuidForPredicate2);
@@ -486,23 +486,19 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String revRegDelta = createCredentialResult.getRevocRegDeltaJson();
 		String credRevId = createCredentialResult.getRevocId();
 
-		//9. Prover create RevocationInfo
-		int timestamp = 100;
-		String revStateJson = Anoncreds.createRevocationState(blobStorageReaderHandle, revRegDef, revRegDelta, timestamp, credRevId).get();
-
-		//10. Prover store received Credential
+		//9. Prover store received Credential
 		Anoncreds.proverStoreCredential(proverWallet, credentialId1, credReq, credReqMetadata, credential, credDef, revRegDef).get();
 
-		//11. Prover gets Credentials for Proof Request
+		//10. Prover gets Credentials for Proof Request
 		String proofRequest = "{\n" +
 				"                   \"nonce\":\"123432421212\",\n" +
 				"                   \"name\":\"proof_req_1\",\n" +
 				"                   \"version\":\"0.1\", " +
-				"                   \"requested_attrs\":{" +
+				"                   \"requested_attributes\":{" +
 				"                          \"attr1_referent\":{\"name\":\"name\"}" +
 				"                    },\n" +
 				"                    \"requested_predicates\":{" +
-				"                          \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}" +
+				"                          \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
 				"                    }" +
 				"               }";
 
@@ -512,10 +508,15 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		String credentialUuid = credentialsForAttr1.getJSONObject(0).getJSONObject("cred_info").getString("referent");
 
+		//11. Prover create RevocationState
+		int timestamp = 100;
+		String revStateJson = Anoncreds.createRevocationState(blobStorageReaderHandle, revRegDef, revRegDelta, timestamp, credRevId).get();
+
+
 		//12. Prover create Proof
 		String requestedCredentialsJson = String.format("{" +
 				"\"self_attested_attributes\":{}," +
-				"\"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true, \"timestamp\":%d }}," +
+				"\"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true, \"timestamp\":%d }}," +
 				"\"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\", \"timestamp\":%d}}" +
 				"}", credentialUuid, timestamp, credentialUuid, timestamp);
 
@@ -579,7 +580,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
-				"                    \"requested_attrs\": {" +
+				"                    \"requested_attributes\": {" +
 				"                          \"attr1_referent\":{ \"name\":\"name\", \"restrictions\":[{\"schema_id\":%s}]}," +
 				"                          \"attr2_referent\":{ \"name\":\"phone\"}" +
 				"                     }," +
@@ -627,11 +628,11 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
-				"                    \"requested_attrs\": {" +
+				"                    \"requested_attributes\": {" +
 				"                          \"attr1_referent\":{ \"name\":\"name\", \"restrictions\":[{\"schema_id\":%s}]}" +
 				"                     }," +
 				"                    \"requested_predicates\":{" +
-				"                          \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}" +
+				"                          \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
 				"                    }" +
 				"                  }", gvtSchemaId);
 

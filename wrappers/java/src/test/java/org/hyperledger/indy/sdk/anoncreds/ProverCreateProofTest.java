@@ -13,7 +13,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 	private String requestedCredentialsJson = String.format("{" +
 			"\"self_attested_attributes\":{}," +
-			"\"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true}}," +
+			"\"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true}}," +
 			"\"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\"}}" +
 			"}", credentialId1, credentialId1);
 
@@ -36,7 +36,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String requestedCredentialsJson = String.format("{\"self_attested_attributes\":{},\n" +
-				"                                    \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true}},\n" +
+				"                                    \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true}},\n" +
 				"                                    \"requested_predicates\":{}\n" +
 				"                                   }", credentialId2);
 

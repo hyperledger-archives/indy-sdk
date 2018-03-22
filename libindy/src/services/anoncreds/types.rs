@@ -64,7 +64,7 @@ pub struct CredentialDefinitionValue {
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct RevocationRegistryConfig {
     pub issuance_type: Option<String>,
-    pub max_cred_num: u32
+    pub max_cred_num: Option<u32>
 }
 
 impl<'a> JsonDecodable<'a> for RevocationRegistryConfig {}
@@ -209,7 +209,7 @@ impl CredentialInfo {
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
 pub struct Filter {
     pub schema_id: Option<String>,
-    pub schema_did: Option<String>,
+    pub schema_issuer_did: Option<String>,
     pub schema_name: Option<String>,
     pub schema_version: Option<String>,
     pub issuer_did: Option<String>,
@@ -220,7 +220,7 @@ impl<'a> JsonDecodable<'a> for Filter {}
 
 pub trait Filtering {
     fn schema_id(&self) -> String;
-    fn schema_did(&self) -> String;
+    fn schema_issuer_did(&self) -> String;
     fn schema_name(&self) -> String;
     fn schema_version(&self) -> String;
     fn issuer_did(&self) -> String;
@@ -229,7 +229,7 @@ pub trait Filtering {
 
 impl Filtering for CredentialInfo {
     fn schema_id(&self) -> String { self.parts()[2..6].join(":").to_string() }
-    fn schema_did(&self) -> String { self.parts()[2].to_string() }
+    fn schema_issuer_did(&self) -> String { self.parts()[2].to_string() }
     fn schema_name(&self) -> String { self.parts()[4].to_string() }
     fn schema_version(&self) -> String { self.parts()[5].to_string() }
     fn issuer_did(&self) -> String { self.parts()[0].to_string() }
@@ -241,27 +241,33 @@ pub struct ProofRequest {
     pub nonce: Nonce,
     pub name: String,
     pub version: String,
-    pub requested_attrs: HashMap<String, AttributeInfo>,
+    pub requested_attributes: HashMap<String, AttributeInfo>,
     pub requested_predicates: HashMap<String, PredicateInfo>,
-    pub freshness: Option<u64>
+    pub non_revoked: Option<NonRevocedInterval>
 }
 
 impl<'a> JsonDecodable<'a> for ProofRequest {}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
+pub struct NonRevocedInterval {
+    pub from: Option<u64>,
+    pub to: Option<u64>
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AttributeInfo {
     pub name: String,
     pub restrictions: Option<Vec<Filter>>,
-    pub freshness: Option<u64>
+    pub non_revoked: Option<NonRevocedInterval>
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct PredicateInfo {
-    pub attr_name: String,
+    pub name: String,
     pub p_type: String,
-    pub value: i32,
+    pub p_value: i32,
     pub restrictions: Option<Vec<Filter>>,
-    pub freshness: Option<u64>
+    pub non_revoked: Option<NonRevocedInterval>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -277,7 +283,7 @@ impl<'a> JsonDecodable<'a> for CredentialsForProofRequest {}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RequestedCredential {
     pub cred_info: CredentialInfo,
-    pub freshness: Option<u64>
+    pub interval: Option<NonRevocedInterval>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -302,7 +308,7 @@ pub struct Identifier {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RequestedCredentials {
     pub self_attested_attributes: HashMap<String, String>,
-    pub requested_attrs: HashMap<String, RequestedAttribute>,
+    pub requested_attributes: HashMap<String, RequestedAttribute>,
     pub requested_predicates: HashMap<String, ProvingCredentialKey>
 }
 

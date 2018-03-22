@@ -60,11 +60,11 @@ public class AnoncredsIntegrationTest {
 			"                   \"nonce\":\"123432421212\",\n" +
 			"                   \"name\":\"proof_req_1\",\n" +
 			"                   \"version\":\"0.1\", " +
-			"                   \"requested_attrs\":{" +
+			"                   \"requested_attributes\":{" +
 			"                          \"attr1_referent\":{\"name\":\"name\"}" +
 			"                    },\n" +
 			"                    \"requested_predicates\":{" +
-			"                          \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}" +
+			"                          \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
 			"                    }" +
 			"               }";
 

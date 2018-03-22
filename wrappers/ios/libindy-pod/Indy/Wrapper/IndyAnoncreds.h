@@ -196,7 +196,7 @@
  */
 + (void)proverCreateMasterSecret:(NSString *)masterSecretID
                     walletHandle:(IndyHandle)walletHandle
-                      completion:(void (^)(NSError *error))completion;
+                      completion:(void (^)(NSError *error, NSString *outMasterSecretId))completion;
 
 /**
  
@@ -263,7 +263,7 @@
  @param filterJSON: filter for credentials
         {
             "schema_id": string, (Optional)
-            "schema_did": string, (Optional)
+            "schema_issuer_did": string, (Optional)
             "schema_name": string, (Optional)
             "schema_version": string, (Optional)
             "issuer_did": string, (Optional)

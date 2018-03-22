@@ -105,16 +105,16 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_issuer_create_and_store_cred_def(command_handle: i32,
-                                                    wallet_handle: i32,
-                                                    issuer_did: *const c_char,
-                                                    schema_json: *const c_char,
-                                                    tag: *const c_char,
-                                                    type_: *const c_char,
-                                                    config_json: *const c_char,
-                                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                         cred_def_id: *const c_char,
-                                                                         cred_def_json: *const c_char)>) -> ErrorCode
+pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
+                                                          wallet_handle: i32,
+                                                          issuer_did: *const c_char,
+                                                          schema_json: *const c_char,
+                                                          tag: *const c_char,
+                                                          type_: *const c_char,
+                                                          config_json: *const c_char,
+                                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                               cred_def_id: *const c_char,
+                                                                               cred_def_json: *const c_char)>) -> ErrorCode
 ```
 
 ```Rust
@@ -138,9 +138,11 @@ pub extern fn indy_issuer_create_and_store_cred_def(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to user context
 /// wallet_handle: wallet handler (created by open_wallet)
+/// issuer_did: a DID of the issuer signing transaction to the Ledger
 /// blob_storage_writer_handle: pre-configured blob storage writer instance handle that will allow to write generated tails
 /// type_: revocation registry type (optional, default value depends on claim definition type). Supported types are:
 /// - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' claim definition type
+/// tag: allows to distinct between revocation registries for the same issuer and credential definition
 /// config_json: type-specific configuration of revocation registry as json:
 /// - 'CL_ACCUM':
 ///   - maxClaimsNum: maximum number of claims the new registry can process (optional, default 100000)
@@ -181,14 +183,12 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// command_handle: command handle to map callback to user context
 /// wallet_handle: wallet handler (created by open_wallet)
 /// cred_def_id: id of credential definition stored in the wallet
-/// rev_reg_id: id of revocation registry definition stored in the wallet
 /// cb: Callback that takes command result as parameter
 ///
 /// #Returns
 /// credential offer json:
 ///   {
 ///     "cred_def_id": string,
-///     "rev_reg_def_id" : Optional<string>,
 ///     // Fields below can depend on Cred Def type
 ///     "nonce": string,
 ///     "key_correctness_proof" : <key_correctness_proof>
@@ -199,12 +199,11 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_issuer_create_cred_offer(command_handle: i32,
-                                            wallet_handle: i32,
-                                            cred_def_id: *const c_char,
-                                            rev_reg_def_id: *const c_char,
-                                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                 claim_offer_json: *const c_char)>) -> ErrorCode
+pub extern fn indy_issuer_create_credential_offer(command_handle: i32,
+                                                  wallet_handle: i32,
+                                                  cred_def_id: *const c_char,
+                                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                       cred_offer_json: *const c_char)>) -> ErrorCode
 ```
 
 ```Rust
@@ -224,44 +223,46 @@ pub extern fn indy_issuer_create_cred_offer(command_handle: i32,
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handler (created by open_wallet).
 /// blob_storage_reader_handle: pre-configured blob storage reader instance handle that will allow to read revocation tails
-/// cred_offer_json: a cred offer created by indy_issuer_create_cred_offer
-/// cred_req_json: a credential request created by indy_prover_create_cred_request
+/// cred_offer_json: a cred offer created by indy_issuer_create_credential_offer
+/// cred_req_json: a credential request created by indy_prover_create_credential_req
 /// cred_values_json: a credential containing attribute values for each of requested attribute names.
 ///     Example:
 ///     {
 ///      "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
 ///      "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
 ///     }
+/// rev_reg_id: id of revocation registry stored in the wallet
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// revoc_id: local id for revocation info (Can be used for revocation of this cred)
-/// revoc_reg_delta_json: Revocation registry update json with a newly issued credential
 /// cred_json: Credential json containing signed credential values
 ///     {
 ///         "cred_def_id": string,
 ///         "rev_reg_def_id", Optional<string>,
 ///         "values": <see credential_values_json above>,
+///         // Fields below can depend on Cred Def type
 ///         "signature": <signature>,
 ///         "signature_correctness_proof": <signature_correctness_proof>,
-///         "revoc_idx": // TODO: FIXME: Think how to share it in a secure way
 ///     }
-///
+/// cred_revoc_id: local id for revocation info (Can be used for revocation of this cred)
+/// revoc_reg_delta_json: Revocation registry update json with a newly issued credential
+/// 
 /// #Errors
 /// Annoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_issuer_create_cred(command_handle: i32,
-                                      wallet_handle: i32,
-                                      blob_storage_reader_handle: i32,
-                                      cred_offer_json: *const c_char,
-                                      cred_req_json: *const c_char,
-                                      cred_values_json: *const c_char,
-                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                           cred_revoc_id: *const c_char,
-                                                           revoc_reg_delta_json: *const c_char,
-                                                           cred_json: *const c_char)>) -> ErrorCode
+pub extern fn indy_issuer_create_credential(command_handle: i32,
+                                            wallet_handle: i32,
+                                            cred_offer_json: *const c_char,
+                                            cred_req_json: *const c_char,
+                                            cred_values_json: *const c_char,
+                                            rev_reg_id: *const c_char,
+                                            blob_storage_reader_handle: i32,
+                                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                 cred_revoc_id: *const c_char,
+                                                                 revoc_reg_delta_json: *const c_char,
+                                                                 cred_json: *const c_char)>) -> ErrorCode
 ```
 
 ```Rust
@@ -278,8 +279,7 @@ pub extern fn indy_issuer_create_cred(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// blob_storage_reader_handle: pre-configured blob storage reader instance handle that will allow to read revocation tails
 /// rev_reg_id: id of revocation registry stored in wallet
-/// tails_reader_handle:
-/// user_revoc_index: index of the user in the revocation registry
+/// cred_revoc_id: local id for revocation info
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -334,8 +334,9 @@ pub extern fn indy_issuer_recover_credential(command_handle: i32,
 ### Prover
 
 ```Rust
-/// Creates a master secret and stores it in the wallet.
-///
+/// Creates a master secret with a given id and stores it in the wallet.
+/// The id must be unique.
+/// 
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handler (created by open_wallet).
@@ -353,7 +354,7 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
                                                wallet_handle: i32,
                                                master_secret_id: *const c_char,
                                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                    master_secret_id: *const c_char)>) -> ErrorCode
+                                                                    out_master_secret_id: *const c_char)>) -> ErrorCode
 ```
 
 ```Rust
@@ -373,44 +374,44 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// cred_req_json: Credential request json
+/// cred_req_json: Credential request json for creation of credential by Issuer
 ///     {
 ///      "cred_def_id" : string,
 ///      "rev_reg_id" : Optional<string>,
 ///      "prover_did" : string,
-///       // Fields below are depend on anoncreds crypto type
+///         // Fields below can depend on Cred Def type
 ///      "blinded_ms" : <blinded_master_secret>,
 ///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
 ///      "nonce": string
 ///    }
+/// cred_req_metadata_json: Credential request metadata json for processing of received form Issuer credential.
 ///
 /// #Errors
 /// Annoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_create_cred_req(command_handle: i32,
-                                          wallet_handle: i32,
-                                          prover_did: *const c_char,
-                                          cred_offer_json: *const c_char,
-                                          cred_def_json: *const c_char,
-                                          master_secret_id: *const c_char,
-                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                cred_req_json: *const c_char)>) -> ErrorCode
+pub extern fn indy_prover_create_credential_req(command_handle: i32,
+                                                wallet_handle: i32,
+                                                prover_did: *const c_char,
+                                                cred_offer_json: *const c_char,
+                                                cred_def_json: *const c_char,
+                                                master_secret_id: *const c_char,
+                                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                     cred_req_json: *const c_char)>) -> ErrorCode
 ```
 
 ```Rust
 /// Check credential provided by Issuer for the given credential request,
 /// updates the credential by a master secret and stores in a secure wallet.
 ///
-///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handler (created by open_wallet).
-/// id: (optional, default is a random one) identifier by which credential will be stored in the wallet
-/// cred_req_json: a credential request created by indy_prover_create_cred_request
+/// cred_id: (optional, default is a random one) identifier by which credential will be stored in the wallet
+/// cred_req_json: a credential request created by indy_prover_create_credential_req
+/// cred_req_metadata_json: a credential request metadata created by indy_prover_create_credential_req
 /// cred_json: credential json created by indy_issuer_create_cred
-/// schema_json: a schema that was used for credential issuance
 /// cred_def_json: credential definition json created by indy_issuer_create_and_store_cred_def
 /// rev_reg_def_json: revocation registry definition json created by indy_issuer_create_and_store_revoc_reg
 /// cb: Callback that takes command result as parameter.
@@ -432,7 +433,7 @@ pub extern fn indy_prover_store_cred(command_handle: i32,
                                      cred_def_json: *const c_char,
                                      rev_reg_def_json: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                          cred_id: *const c_char)>) -> ErrorCode
+                                                          out_cred_id: *const c_char)>) -> ErrorCode
 ```
 
 ```Rust
@@ -458,11 +459,11 @@ pub extern fn indy_prover_store_cred(command_handle: i32,
 ///     [{
 ///         "cred_referent": string, // cred_id in the wallet
 ///         "values": <see credential_values_json above>,
-///         "schema_id: string,
-///         "issuer_did": string,
 ///         "cred_def_id": string,
-///         "rev_reg_id", Optional<string>
+///         "rev_reg_id": Optional<string>,
+///         "cred_rev_id": Optional<string>
 ///     }]
+/// 
 /// #Errors
 /// Annoncreds*
 /// Common*
@@ -536,20 +537,20 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 /// credentials_json: json with credentials for the given pool request.
 ///     {
 ///         "requested_attrs": {
-///             "<attr_referent>": [<credential_info>],
+///             "<attr_referent>": [{ cred_info: <credential_info>, timestamp: Optional<integer> }],
 ///             ...,
 ///         },
 ///         "requested_predicates": {
-///             "requested_predicates": [(credential1, Optional<freshness>), (credential3, Optional<freshness>)],
-///             "requested_predicate_2_referent": [(credential2, Optional<freshness>)]
+///             "requested_predicates": [{ cred_info: <credential_info>, timestamp: Optional<integer> }, { cred_info: <credential_2_info>, timestamp: Optional<integer> }],
+///             "requested_predicate_2_referent": [{ cred_info: <credential_2_info>, timestamp: Optional<integer> }]
 ///         }
 ///     }, where credential is
 ///     {
 ///         "referent": <string>,
 ///         "attrs": [{"attr_name" : "attr_raw_value"}],
-///         "issuer_did": string,
 ///         "cred_def_id": string,
-///         "rev_reg_id": Optional<int>
+///         "rev_reg_id": Optional<int>,
+///         "cred_rev_id": Optional<int>,
 ///     }
 ///
 /// #Errors
@@ -562,9 +563,229 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
                                                         proof_request_json: *const c_char,
                                                         cb: Option<extern fn(
                                                             xcommand_handle: i32, err: ErrorCode,
-                                                            credentials_json: *const c_char
-)>) -> ErrorCode
+                                                            credentials_json: *const c_char)>) -> ErrorCode
 ```
+
+```Rust
+
+/// Creates a proof according to the given proof request
+/// Either a corresponding credential with optionally revealed attributes or self-attested attribute must be provided
+/// for each requested attribute (see indy_prover_get_credentials_for_pool_req).
+/// A proof request may request multiple credentials from different schemas and different issuers.
+/// All required schemas, public keys and revocation registries must be provided.
+/// The proof request also contains nonce.
+/// The proof contains either proof or self-attested attribute value for each requested attribute.
+///
+/// #Params
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
+/// proof_request_json: proof request json
+///     {
+///         "name": string,
+///         "version": string,
+///         "nonce": string,
+///         "requested_attrs": { // set of requested attributes
+///              "<attr_referent>": <attr_info>, // see below
+///              ...,
+///         },
+///         "requested_predicates": { // set of requested predicates
+///              "<predicate_referent>": <predicate_info>, // see below
+///              ...,
+///          },
+///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+///                        // If specified prover must proof non-revocation
+///                        // for date in this interval for each attribute
+///                        // (can be overridden on attribute level)
+///     }
+/// requested_credentials_json: either a credential or self-attested attribute for each requested attribute
+///     {
+///         "self_attested_attributes": {
+///             "self_attested_attribute_referent": string
+///         },
+///         "requested_attributes": {
+///             "requested_attribute_referent_1": {"cred_id": string, "timestamp": Optional<number>, revealed: <bool> }},
+///             "requested_attribute_referent_2": {"cred_id": string, "timestamp": Optional<number>, revealed: <bool> }}
+///         },
+///         "requested_predicates": {
+///             "requested_predicates_referent_1": {"cred_id": string, "timestamp": Optional<number> }},
+///         }
+///     }
+/// master_secret_id: the id of the master secret stored in the wallet
+/// schemas_json: all schema jsons participating in the proof request
+///     {
+///         <schema1_id>: <schema1_json>,
+///         <schema2_id>: <schema2_json>,
+///         <schema3_id>: <schema3_json>,
+///     }
+/// credential_defs_json: all credential definitions json participating in the proof request
+///     {
+///         "credential_def1_id": <credential_def1_json>,
+///         "credential_def2_id": <credential_def2_json>,
+///         "credential_def3_id": <credential_def3_json>,
+///     }
+/// rev_states_json: all revocation states json participating in the proof request
+///     {
+///         "rev_reg1_id": {
+///             "freshness1": <rev_state1>,
+///             "freshness2": <rev_state2>,
+///         },
+///         "credential2_referent_in_wallet": {
+///             "freshness3": <rev_state3>
+///         },
+///         "credential3_referent_in_wallet": {
+///             "freshness4": <rev_state4>
+///         },
+///     }
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Proof json
+/// For each requested attribute either a proof (with optionally revealed attribute value) or
+/// self-attested attribute value is provided.
+/// Each proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.
+/// There is also aggregated proof part common for all credential proofs.
+///     {
+///         "requested": {
+///             "revealed_attrs": {
+///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
+///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+///             },
+///             "unrevealed_attrs": {
+///                 "requested_attr3_id": {sub_proof_index: number}
+///             },
+///             "self_attested_attrs": {
+///                 "requested_attr2_id": self_attested_value,
+///             },
+///             "requested_predicates": {
+///                 "requested_predicate_1_referent": {sub_proof_index: int},
+///                 "requested_predicate_2_referent": {sub_proof_index: int},
+///             }
+///         }
+///         "proof": {
+///             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
+///             "aggregated_proof": <aggregated_proof>
+///         }
+///         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
+///     }
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_prover_create_proof(command_handle: i32,
+                                       wallet_handle: i32,
+                                       proof_req_json: *const c_char,
+                                       requested_credentials_json: *const c_char,
+                                       master_secret_id: *const c_char,
+                                       schemas_json: *const c_char,
+                                       credential_defs_json: *const c_char,
+                                       rev_states_json: *const c_char,
+                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                            proof_json: *const c_char)>) -> ErrorCode
+```
+
+```Rust
+/// Verifies a proof (of multiple credential).
+/// All required schemas, public keys and revocation registries must be provided.
+///
+/// #Params
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
+/// proof_request_json: proof request json
+///     {
+///         "name": string,
+///         "version": string,
+///         "nonce": string,
+///         "requested_attrs": { // set of requested attributes
+///              "<attr_referent>": <attr_info>, // see below
+///              ...,
+///         },
+///         "requested_predicates": { // set of requested predicates
+///              "<predicate_referent>": <predicate_info>, // see below
+///              ...,
+///          },
+///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+///                        // If specified prover must proof non-revocation
+///                        // for date in this interval for each attribute
+///                        // (can be overridden on attribute level)
+///     }
+/// proof_json: created for request proof json
+///     {
+///         "requested": {
+///             "revealed_attrs": {
+///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
+///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+///             },
+///             "unrevealed_attrs": {
+///                 "requested_attr3_id": {sub_proof_index: number}
+///             },
+///             "self_attested_attrs": {
+///                 "requested_attr2_id": self_attested_value,
+///             },
+///             "requested_predicates": {
+///                 "requested_predicate_1_referent": {sub_proof_index: int},
+///                 "requested_predicate_2_referent": {sub_proof_index: int},
+///             }
+///         }
+///         "proof": {
+///             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
+///             "aggregated_proof": <aggregated_proof>
+///         }
+///         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
+///     }
+/// schemas_json: all schema jsons participating in the proof
+///     {
+///         <schema1_id>: <schema1_json>,
+///         <schema2_id>: <schema2_json>,
+///         <schema3_id>: <schema3_json>,
+///     }
+/// credential_defs_json: all credential definitions json participating in the proof
+///     {
+///         "credential_def1_id": <credential_def1_json>,
+///         "credential_def2_id": <credential_def2_json>,
+///         "credential_def3_id": <credential_def3_json>,
+///     }
+/// rev_reg_defs_json: all revocation registry definitions json participating in the proof
+///     {
+///         "rev_reg_def1_id": <rev_reg_def1_json>,
+///         "rev_reg_def2_id": <rev_reg_def2_json>,
+///         "rev_reg_def3_id": <rev_reg_def3_json>,
+///     }
+/// rev_regs_json: all revocation registries json participating in the proof
+///     {
+///         "rev_reg1_id": {
+///             "freshness1": <rev_reg1>,
+///             "freshness2": <rev_reg2>,
+///         },
+///         "credential2_referent_in_wallet": {
+///             "freshness3": <rev_reg3>
+///         },
+///         "credential3_referent_in_wallet": {
+///             "freshness4": <rev_reg4>
+///         },
+///     }
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// valid: true - if signature is valid, false - otherwise
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_verifier_verify_proof(command_handle: i32,
+                                         proof_request_json: *const c_char,
+                                         proof_json: *const c_char,
+                                         schemas_json: *const c_char,
+                                         credential_defs_json: *const c_char,
+                                         rev_reg_defs_json: *const c_char,
+                                         rev_regs_json: *const c_char,
+                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                              valid: bool)>) -> ErrorCode
+```
+
 
 ### Blob Storage
 

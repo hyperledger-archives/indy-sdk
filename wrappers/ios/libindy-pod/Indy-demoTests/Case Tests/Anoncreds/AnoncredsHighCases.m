@@ -109,7 +109,8 @@
 
     // 2. create master secret
     ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:@"master_secret_name1"
-                                                       walletHandle:walletHandle];
+                                                       walletHandle:walletHandle
+                                                  outMasterSecretId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret failed with code:%ld", (long) ret.code);
 
 }
@@ -130,7 +131,8 @@
     // 2. create master secret
     IndyHandle invalidWalletHandle = walletHandle + 1;
     ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:@"master_secret_name2"
-                                                       walletHandle:invalidWalletHandle];
+                                                       walletHandle:invalidWalletHandle
+                                                               outMasterSecretId:nil];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverCreateMasterSecret returned not WalletInvalidHandle code:%ld", (long) ret.code);
 
 }
@@ -548,7 +550,7 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","\
-        "\"requested_attrs\":{"
+        "\"requested_attributes\":{"
             "\"attr1_referent\":{"
             "\"name\":\"name\""
             "}"
@@ -585,7 +587,7 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","\
-        "\"requested_attrs\":{"
+        "\"requested_attributes\":{"
             "\"attr1_referent\":{"
             "\"name\":\"some_attr\""
             "}"
@@ -622,8 +624,8 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","\
-            "\"requested_attrs\":{},"
-            "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}"
+            "\"requested_attributes\":{},"
+            "\"requested_predicates\":{\"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}}"
             "}";
     NSString *credentialsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofRequest
@@ -655,8 +657,8 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","\
-    "\"requested_attrs\":{},"
-            "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":58}}"
+    "\"requested_attributes\":{},"
+            "\"requested_predicates\":{\"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":58}}"
             "}";
     NSString *credentialsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofRequest
@@ -689,13 +691,13 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
-            "\"requested_attrs\":{"
+            "\"requested_attributes\":{"
             "\"attr1_referent\":{\"name\":\"name\"},"
             "\"attr2_referent\":{\"name\":\"sex\"}"
             "},"
             "\"requested_predicates\":{"
-            "\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18},"
-            "\"predicate2_referent\":{\"attr_name\":\"height\",\"p_type\":\">=\",\"value\":160}"
+            "\"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18},"
+            "\"predicate2_referent\":{\"name\":\"height\",\"p_type\":\">=\",\"p_value\":160}"
             "}}"];
     NSString *credentialsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofRequest
@@ -731,8 +733,8 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
-            "\"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\"}},"
-            "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}"
+            "\"requested_attributes\":{\"attr1_referent\":{\"name\":\"name\"}},"
+            "\"requested_predicates\":{\"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}}"
             "}";
     IndyHandle invalidWalletHandle = walletHandle + 1;
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofRequest
@@ -764,8 +766,8 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
-            "\"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\"}},"
-            "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}"
+            "\"requested_attributes\":{\"attr1_referent\":{\"name\":\"name\"}},"
+            "\"requested_predicates\":{\"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}}"
             "}";
     NSString *credentialsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofRequest
@@ -773,7 +775,7 @@
                                                            credentialsJson:&credentialsJson];
     NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{"\
                                      "\"self_attested_attributes\":{},"\
-                                     "\"requested_attrs\":{"\
+                                     "\"requested_attributes\":{"\
                                         "\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},"\
                                     "\"requested_predicates\":{"\
                                         "\"predicate1_referent\":{\"cred_id\":\"%@\"}"\
@@ -814,13 +816,13 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
-            "\"requested_attrs\":{\"attr1_referent\":{\"name\":\"status\"}},"
+            "\"requested_attributes\":{\"attr1_referent\":{\"name\":\"status\"}},"
             "\"requested_predicates\":{}"
             "}";
 
     NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{"\
                                      "\"self_attested_attributes\":{},"\
-                                     "\"requested_attrs\":{"\
+                                     "\"requested_attributes\":{"\
                                         "\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},"\
                                      "\"requested_predicates\":{}}", [[AnoncredsUtils sharedInstance] credentialId1]];
 
@@ -860,7 +862,7 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
-            "\"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\"}},"
+            "\"requested_attributes\":{\"attr1_referent\":{\"name\":\"name\"}},"
             "\"requested_predicates\":{}"
             "}";
 
@@ -868,7 +870,7 @@
 
     NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{"\
                                      "\"self_attested_attributes\":{},"\
-                                     "\"requested_attrs\":{"\
+                                     "\"requested_attributes\":{"\
                                         "\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},"\
                                      "\"requested_predicates\":{}}", credentialId];
 
@@ -900,14 +902,14 @@
             "\"nonce\":\"123432421212\","\
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
-            "\"requested_attrs\":{"\
+            "\"requested_attributes\":{"\
                 "\"attr1_referent\":{"\
                     "\"name\":\"name\"}},"\
             "\"requested_predicates\":{"\
                 "\"predicate1_referent\":{"\
-                    "\"attr_name\":\"age\","\
+                    "\"name\":\"age\","\
                     "\"p_type\":\">=\","\
-                    "\"value\":18}"\
+                    "\"p_value\":18}"\
                 "}"\
             "}";
 
@@ -953,14 +955,14 @@
         "\"nonce\":\"123432421212\","\
         "\"name\":\"proof_req_1\","\
         "\"version\":\"0.1\","\
-        "\"requested_attrs\":{"\
+        "\"requested_attributes\":{"\
             "\"attr1_referent\":{"\
                 "\"name\":\"sex\"}},"\
         "\"requested_predicates\":{"\
             "\"predicate1_referent\":{"\
-                "\"attr_name\":\"height\","\
+                "\"name\":\"height\","\
                 "\"p_type\":\">=\","\
-                "\"value\":180}"\
+                "\"p_value\":180}"\
         "}"\
     "}";
 
@@ -1003,14 +1005,14 @@
             "\"nonce\":\"123432421212\","\
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
-            "\"requested_attrs\":{"\
+            "\"requested_attributes\":{"\
                 "\"attr1_referent\":{"\
                     "\"name\":\"name\"}},"\
             "\"requested_predicates\":{"\
                 "\"predicate1_referent\":{"\
-                    "\"attr_name\":\"age\","\
+                    "\"name\":\"age\","\
                     "\"p_type\":\">=\","\
-                    "\"value\":18}}"\
+                    "\"p_value\":18}}"\
             "}";
 
 

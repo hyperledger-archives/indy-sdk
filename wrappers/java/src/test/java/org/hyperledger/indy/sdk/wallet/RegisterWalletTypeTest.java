@@ -61,7 +61,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		String credentialOffer = Anoncreds.issuerCreateCredentialOffer(wallet, credentialDefId).get();
 
 		// 5. Issuer creates Master Secret
-		String masterSecretId = "master_secret_name";
+		String masterSecretId = "master_secret";
 		Anoncreds.proverCreateMasterSecret(wallet, masterSecretId).get();
 
 		// 6. Prover creates Credential Request

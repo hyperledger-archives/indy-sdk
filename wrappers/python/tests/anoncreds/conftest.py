@@ -273,14 +273,14 @@ def proof_req(predicate_value):
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {"name": "name"}
         },
         "requested_predicates": {
             "predicate1_referent": {
-                "attr_name": "age",
+                "name": "age",
                 "p_type": ">=",
-                "value": predicate_value
+                "p_value": predicate_value
             }
         }
     }

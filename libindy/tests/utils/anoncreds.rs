@@ -170,14 +170,14 @@ impl AnoncredsUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn prover_create_master_secret(wallet_handle: i32, master_secret_id: &str) -> Result<(), ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+    pub fn prover_create_master_secret(wallet_handle: i32, master_secret_id: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let master_secret_id = CString::new(master_secret_id).unwrap();
 
         let err = indy_prover_create_master_secret(command_handle, wallet_handle, master_secret_id.as_ptr(), cb);
 
-        super::results::result_to_empty(err, receiver)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn prover_create_credential_req(wallet_handle: i32, prover_did: &str, cred_offer_json: &str,
@@ -353,7 +353,7 @@ impl AnoncredsUtils {
     }
 
     pub fn default_rev_reg_config() -> String {
-        serde_json::to_string(&RevocationRegistryConfig { max_cred_num: 5, issuance_type: None }).unwrap()
+        serde_json::to_string(&RevocationRegistryConfig { max_cred_num: Some(5), issuance_type: None }).unwrap()
     }
 
     pub fn gvt_schema_id() -> String {
@@ -524,20 +524,22 @@ impl AnoncredsUtils {
 
     pub fn proof_request_attr_and_predicate() -> &'static str {
         r#"{
-              "nonce":"123432421212",
-              "name":"proof_req_1",
-              "version":"0.1",
-              "requested_attrs":{
-                  "attr1_referent":{
-                      "name":"name"
-                  }
-              },
-              "requested_predicates":{
-                  "predicate1_referent":{
-                      "attr_name":"age","p_type":">=","value":18
-                  }
-              }
-         }"#
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes":{
+                "attr1_referent":{
+                    "name":"name"
+                }
+           },
+           "requested_predicates":{
+               "predicate1_referent":{
+                   "name":"age",
+                   "p_type":">=",
+                   "p_value":18
+               }
+           }
+       }"#
     }
 
     pub fn proof_request_attr() -> &'static str {
@@ -545,7 +547,7 @@ impl AnoncredsUtils {
               "nonce":"123432421212",
               "name":"proof_req_1",
               "version":"0.1",
-              "requested_attrs":{
+              "requested_attributes":{
                   "attr1_referent":{
                       "name":"name"
                   }

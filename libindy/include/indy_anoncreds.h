@@ -68,7 +68,7 @@ extern "C" {
                                                       void           (*cb)(indy_handle_t xcommand_handle,
                                                                            indy_error_t  err,
                                                                            const char*   cred_json,
-                                                                           const char*   revoc_id,
+                                                                           const char*   cred_revoc_id,
                                                                            const char*   revoc_reg_delta_json)
                                                       );
     
@@ -109,7 +109,8 @@ extern "C" {
                                                          const char *  master_secret_id,
 
                                                          void           (*cb)(indy_handle_t xcommand_handle,
-                                                                              indy_error_t  err)
+                                                                              indy_error_t  err,
+                                                                              const char*   out_master_secret_id)
                                                          );
     
     

@@ -72,7 +72,7 @@ impl VerifierCommandExecutor {
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Proof: {:?}", err)))?;
 
         let requested_attrs: HashSet<String> =
-            proof_req.requested_attrs
+            proof_req.requested_attributes
                 .keys()
                 .map(|referent| referent.clone())
                 .into_iter()
