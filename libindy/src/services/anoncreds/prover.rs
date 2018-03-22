@@ -468,10 +468,6 @@ impl Prover {
             let cred_sig_primary = PrimaryClaim_to_PrimaryCredentialSignature(
                 &proof_claim.claim_json.signature.primary_claim,
             )?;
-            /*let cred_sig = CredentialSignature {
-                p_credential: cred_sig_primary,
-                r_credential: None,
-            };*/
             let cred_pub_key =
                 PublicKey_to_CredentialPublicKey(&proof_claim.claim_definition.data.public_key)?;
             ProofBuilder::_check_add_sub_proof_request_params_consistency(
@@ -531,8 +527,6 @@ impl Prover {
 
             c_list.extend_from_slice(&primary_init_proof.as_c_list()?);
             tau_list.extend_from_slice(&primary_init_proof.as_tau_list()?);
-
-            // let init_proof = InitProof::new(primary_init_proof, non_revoc_init_proof);
 
             init_proofs.insert(proof_claim_uuid.clone(), (
                 primary_init_proof,

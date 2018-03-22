@@ -122,6 +122,11 @@ pub enum LedgerCommand {
     BuildGetAgentAuthzAccumRequest(
         String, // submitter
         String, // accumulator id
+        Box<Fn(Result<String, IndyError>) + Send>),
+    BuildGetAgentAuthzAccumWitnessRequest(
+        String, // submitter
+        String, // accumulator id
+        String, // commitment
         Box<Fn(Result<String, IndyError>) + Send>)
 
 }
@@ -237,6 +242,10 @@ impl LedgerCommandExecutor {
             LedgerCommand::BuildGetAgentAuthzAccumRequest(submitter, accum_id, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetAgentAuthzAccumRequest command received");
                 cb(self.build_get_agent_authz_accum_request(&submitter, &accum_id));
+            }
+            LedgerCommand::BuildGetAgentAuthzAccumWitnessRequest(submitter, accum_id, comm, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetAgentAuthzAccumRequest command received");
+                cb(self.build_get_agent_authz_accum_witness_request(&submitter, &accum_id, &comm));
             }
         };
     }
@@ -493,6 +502,23 @@ impl LedgerCommandExecutor {
                                                                           accum_id)?;
 
         info!("build_get_agent_authz_accum_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_get_agent_authz_accum_witness_request(&self,
+                                           submitter: &str,
+                                           accum_id: &str,
+                                           comm: &str) -> Result<String, IndyError> {
+        info!("build_get_agent_authz_accum_witness_request >>> submitter: {:?}, accum_id: {:?}, comm: {:?}", submitter, accum_id, comm);
+
+        self.signus_service.validate_did(submitter)?;
+        // TODO: Need some validation
+        let comm = BigNumber::from_dec(comm)?;
+        let res = self.ledger_service.build_get_agent_authz_accum_witness_request(submitter,
+                                                                          accum_id, comm)?;
+
+        info!("build_get_agent_authz_accum_witness_request <<< res: {:?}", res);
 
         Ok(res)
     }

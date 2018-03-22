@@ -568,3 +568,23 @@ pub struct GetAgentAuthzAccumResult {
 }
 
 impl<'a> JsonDecodable<'a> for GetAgentAuthzAccumResult {}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct GetAgentAuthzAccumWitnessOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub accum_id: String,
+    pub comm: BigNumber
+}
+
+impl GetAgentAuthzAccumWitnessOperation {
+    pub fn new(accum_id: String, comm: BigNumber) -> GetAgentAuthzAccumWitnessOperation {
+        GetAgentAuthzAccumWitnessOperation {
+            _type: GET_AGENT_AUTHZ_ACCUM.to_string(),
+            accum_id,
+            comm
+        }
+    }
+}
+
+impl JsonEncodable for GetAgentAuthzAccumWitnessOperation {}

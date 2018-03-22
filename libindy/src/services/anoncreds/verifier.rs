@@ -23,10 +23,6 @@ impl Verifier {
         BigNumber::rand(LARGE_NONCE)
     }
 
-    /*fn _get_revealed_raw_attribute_from_encoded(requested_proof: RequestedProofJson, encoded: BigNumber, claim_uuid: &str) -> String {
-        let
-    }*/
-
     pub fn verify(
         &self,
         proof: &ProofJson,
@@ -70,13 +66,6 @@ impl Verifier {
                 )?
                     .as_slice()?);
             };
-
-            /*tau_list.append_vec(&Verifier::_verify_primary_proof(
-                &claim_definition.data.public_key,
-                &proof.aggregated_proof.c_hash,
-                &proof_item.proof.primary_proof,
-                &schema,
-            )?)?;*/
 
             let new_primary_pubkey =
                 PublicKey_to_CredentialPublicKey(&claim_definition.data.public_key)?;
@@ -125,142 +114,6 @@ impl Verifier {
 
         Ok(c_hver == proof.aggregated_proof.c_hash)
     }
-
-    /*fn _verify_primary_proof(
-        pk: &PublicKey,
-        c_hash: &BigNumber,
-        primary_proof: &PrimaryProof,
-        schema: &Schema,
-    ) -> Result<Vec<BigNumber>, CommonError> {
-        info!(target: "anoncreds_service", "Verifier verify primary proof -> start");
-
-        let mut t_hat: Vec<BigNumber> =
-            Verifier::_verify_equality(pk, &primary_proof.eq_proof, c_hash, schema)?;
-
-        for ge_proof in primary_proof.ge_proofs.iter() {
-            t_hat.append(&mut Verifier::_verify_ge_predicate(pk, ge_proof, c_hash)?)
-        }
-
-        info!(target: "anoncreds_service", "Verifier verify primary proof -> done");
-        Ok(t_hat)
-    }
-
-    fn _verify_equality(
-        pk: &PublicKey,
-        proof: &PrimaryEqualProof,
-        c_h: &BigNumber,
-        schema: &Schema,
-    ) -> Result<Vec<BigNumber>, CommonError> {
-        use std::iter::FromIterator;
-
-        let unrevealed_attrs: Vec<String> = schema
-            .data
-            .attr_names
-            .difference(&HashSet::from_iter(proof.revealed_attrs.keys().cloned()))
-            .map(|attr| attr.clone())
-            .collect::<Vec<String>>();
-
-        let t1: BigNumber = Verifier::calc_teq(
-            &pk,
-            &proof.a_prime,
-            &proof.e,
-            &proof.v,
-            &proof.m,
-            &proof.m2,
-            &unrevealed_attrs,
-        )?;
-
-        let mut ctx = BigNumber::new_context()?;
-        let mut rar = BigNumber::from_dec("1")?;
-
-        for (attr, encoded_value) in &proof.revealed_attrs {
-            let cur_r = pk.r.get(attr).ok_or(CommonError::InvalidStructure(format!(
-                "Value by key '{}' not found in pk.r",
-                attr
-            )))?;
-
-            rar = cur_r
-                .mod_exp(&BigNumber::from_dec(&encoded_value)?, &pk.n, Some(&mut ctx))?
-                .mul(&rar, Some(&mut ctx))?;
-        }
-
-        let tmp: BigNumber = BigNumber::from_dec("2")?.exp(
-            &BigNumber::from_dec(
-                &LARGE_E_START.to_string(),
-            )?,
-            Some(&mut ctx),
-        )?;
-
-        rar = proof.a_prime.mod_exp(&tmp, &pk.n, Some(&mut ctx))?.mul(
-            &rar,
-            Some(
-                &mut ctx,
-            ),
-        )?;
-
-        let t2: BigNumber = pk.z
-            .mod_div(&rar, &pk.n)?
-            .mod_exp(&c_h, &pk.n, Some(&mut ctx))?
-            .inverse(&pk.n, Some(&mut ctx))?;
-
-        let t: BigNumber = t1.mul(&t2, Some(&mut ctx))?.modulus(&pk.n, Some(&mut ctx))?;
-
-        Ok(vec![t])
-    }
-
-    fn _verify_ge_predicate(
-        pk: &PublicKey,
-        proof: &PrimaryPredicateGEProof,
-        c_h: &BigNumber,
-    ) -> Result<Vec<BigNumber>, CommonError> {
-        let mut ctx = BigNumber::new_context()?;
-        let mut tau_list =
-            Verifier::calc_tge(&pk, &proof.u, &proof.r, &proof.mj, &proof.alpha, &proof.t)?;
-
-        for i in 0..ITERATION {
-            let cur_t = proof.t.get(&i.to_string()).ok_or(
-                CommonError::InvalidStructure(
-                    format!(
-                        "Value by key '{}' not found in proof.t",
-                        i
-                    ),
-                ),
-            )?;
-
-            tau_list[i] = cur_t
-                .mod_exp(&c_h, &pk.n, Some(&mut ctx))?
-                .inverse(&pk.n, Some(&mut ctx))?
-                .mul(&tau_list[i], Some(&mut ctx))?
-                .modulus(&pk.n, Some(&mut ctx))?;
-        }
-
-        let delta = proof.t.get("DELTA").ok_or(
-            CommonError::InvalidStructure(format!(
-                "Value by key '{}' not found in proof.t",
-                "DELTA"
-            )),
-        )?;
-
-        tau_list[ITERATION] = pk.z
-            .mod_exp(
-                &BigNumber::from_dec(&proof.predicate.value.to_string())?,
-                &pk.n,
-                Some(&mut ctx),
-            )?
-            .mul(&delta, Some(&mut ctx))?
-            .mod_exp(&c_h, &pk.n, Some(&mut ctx))?
-            .inverse(&pk.n, Some(&mut ctx))?
-            .mul(&tau_list[ITERATION], Some(&mut ctx))?
-            .modulus(&pk.n, Some(&mut ctx))?;
-
-        tau_list[ITERATION + 1] = delta
-            .mod_exp(&c_h, &pk.n, Some(&mut ctx))?
-            .inverse(&pk.n, Some(&mut ctx))?
-            .mul(&tau_list[ITERATION + 1], Some(&mut ctx))?
-            .modulus(&pk.n, Some(&mut ctx))?;
-
-        Ok(tau_list)
-    }*/
 
     pub fn calc_tge(
         pk: &PublicKey,
@@ -352,7 +205,6 @@ impl Verifier {
         e: &BigNumber,
         v: &BigNumber,
         mtilde: &HashMap<String, BigNumber>,
-        // m1tilde: &BigNumber,
         m2tilde: &BigNumber,
         unrevealed_attrs: &Vec<String>,
     ) -> Result<BigNumber, CommonError> {
@@ -373,13 +225,6 @@ impl Verifier {
                 Some(&mut ctx),
             )?;
         }
-
-        /*result = pk.rms.mod_exp(&m1tilde, &pk.n, Some(&mut ctx))?.mul(
-            &result,
-            Some(
-                &mut ctx,
-            ),
-        )?;*/
 
         result = pk.rctxt.mod_exp(&m2tilde, &pk.n, Some(&mut ctx))?.mul(
             &result,

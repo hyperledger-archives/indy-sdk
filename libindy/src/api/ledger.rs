@@ -704,3 +704,30 @@ pub extern fn indy_build_get_agent_authz_accum_request(command_handle: i32,
 
     result_to_err_code!(result)
 }
+
+#[no_mangle]
+pub extern fn indy_build_get_agent_authz_accum_witness_request(command_handle: i32,
+                                                       submitter: *const c_char,
+                                                       accum_id: *const c_char,
+                                                       comm: *const c_char,
+                                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                            request_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(submitter, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(accum_id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(comm, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildGetAgentAuthzAccumWitnessRequest(
+            submitter,
+            accum_id,
+            comm,
+            Box::new(move |result| {
+                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let request_json = CStringUtils::string_to_cstring(request_json);
+                cb(command_handle, err, request_json.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
