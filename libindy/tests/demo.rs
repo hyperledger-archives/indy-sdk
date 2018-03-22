@@ -40,6 +40,8 @@ use std::sync::mpsc::channel;
 use std::ffi::CString;
 use utils::types::ProofClaimsJson;
 
+use utils::authz::AuthzUtils;
+
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;
 
@@ -319,6 +321,8 @@ fn anoncreds_demo_works() {
                                          CString::new(master_secret_name).unwrap().as_ptr(),
                                          prover_create_master_secret_callback);
 
+    let policy_address = &AuthzUtils::create_new_policy(wallet_handle)[..];
+
     assert_eq!(ErrorCode::Success, err);
     let err = prover_create_master_secret_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
@@ -334,7 +338,7 @@ fn anoncreds_demo_works() {
                                                CString::new(claim_offer_json).unwrap().as_ptr(),
                                                CString::new(claim_def_json.clone()).unwrap().as_ptr(),
                                                CString::new(master_secret_name).unwrap().as_ptr(),
-                                               null(),
+                                               CString::new(policy_address).unwrap().as_ptr(),
                                                prover_create_claim_req_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -418,6 +422,7 @@ fn anoncreds_demo_works() {
                                  CString::new(requested_claims_json).unwrap().as_ptr(),
                                  CString::new(schemas_json.clone()).unwrap().as_ptr(),
                                  CString::new(master_secret_name).unwrap().as_ptr(),
+                                 CString::new(policy_address).unwrap().as_ptr(),
                                  CString::new(claim_defs_json.clone()).unwrap().as_ptr(),
                                  CString::new(revoc_regs_jsons.clone()).unwrap().as_ptr(),
                                  prover_create_proof_callback);

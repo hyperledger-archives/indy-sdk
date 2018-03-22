@@ -24,6 +24,7 @@ pub struct AnoncredsUtils {}
 static mut WALLET_HANDLE: i32 = 0;
 static mut CLAIM_DEF_JSON: &'static str = "";
 pub const COMMON_MASTER_SECRET: &'static str = "common_master_secret_name";
+pub const COMMON_POLICY_ADDRESS: &'static str = "114356529703218070977209757375038280327138143043673463359702632758673448977019";
 
 impl AnoncredsUtils {
     pub fn issuer_create_claim_definition(wallet_handle: i32, issuer_did: &str, schema: &str, signature_type: Option<&str>, create_non_revoc: bool) -> Result<String, ErrorCode> {
@@ -306,7 +307,7 @@ impl AnoncredsUtils {
     }
 
     pub fn prover_create_proof(wallet_handle: i32, proof_req_json: &str, requested_claims_json: &str,
-                               schemas_json: &str, master_secret_name: &str, claim_defs_json: &str,
+                               schemas_json: &str, master_secret_name: &str, policy_address: &str, claim_defs_json: &str,
                                revoc_regs_json: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
@@ -320,6 +321,7 @@ impl AnoncredsUtils {
         let requested_claims_json = CString::new(requested_claims_json).unwrap();
         let schemas_json = CString::new(schemas_json).unwrap();
         let master_secret_name = CString::new(master_secret_name).unwrap();
+        let policy_address = CString::new(policy_address).unwrap();
         let claim_defs_json = CString::new(claim_defs_json).unwrap();
         let revoc_regs_json = CString::new(revoc_regs_json).unwrap();
 
@@ -329,6 +331,7 @@ impl AnoncredsUtils {
                                            requested_claims_json.as_ptr(),
                                            schemas_json.as_ptr(),
                                            master_secret_name.as_ptr(),
+                                           policy_address.as_ptr(),
                                            claim_defs_json.as_ptr(),
                                            revoc_regs_json.as_ptr(),
                                            cb);

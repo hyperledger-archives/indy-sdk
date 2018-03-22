@@ -1,7 +1,10 @@
 extern crate libc;
+extern crate serde_json;
 
 use std::sync::mpsc::channel;
 use std::ffi::CString;
+
+use serde_json::Value;
 
 use indy::api::authz::*;
 use indy::api::ErrorCode;
@@ -12,6 +15,17 @@ use utils::timeout::TimeoutUtils;
 pub struct AuthzUtils {}
 
 impl AuthzUtils {
+    pub fn create_new_policy(wallet_handle: i32) -> String {
+        let policy_json = AuthzUtils::create_and_store_policy_address(wallet_handle).unwrap();
+        AuthzUtils::get_address_from_policy_json(&policy_json).unwrap()
+    }
+
+    pub fn get_address_from_policy_json(policy_json: &str)  -> Result<String, ErrorCode> {
+        let policy: Value = serde_json::from_str(&policy_json).unwrap();
+        let policy_address = policy["address"].as_str().unwrap();
+        Ok(policy_address.to_string())
+    }
+
     pub fn create_and_store_policy_address(wallet_handle: i32) -> Result<String, ErrorCode> {
         let (create_and_store_policy, create_and_store_policy_receiver) = channel();
         let create_and_store_my_policy = Box::new(move |err, address| {
@@ -27,11 +41,11 @@ impl AuthzUtils {
         if err != ErrorCode::Success {
             return Err(err);
         }
-        let (err, address) = create_and_store_policy_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let (err, policy_json) = create_and_store_policy_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
         if err != ErrorCode::Success {
             return Err(err);
         }
-        Ok(address)
+        Ok(policy_json)
     }
 
     pub fn get_policy_from_wallet(wallet_handle: i32, policy_address: &str) -> Result<String, ErrorCode> {

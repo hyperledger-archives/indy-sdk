@@ -308,7 +308,6 @@ pub struct PrimaryEqualProof {
     pub e: String,
     pub v: String,
     pub m: HashMap<String, String>,
-    pub m1: String,
     pub m2: String
 }
 

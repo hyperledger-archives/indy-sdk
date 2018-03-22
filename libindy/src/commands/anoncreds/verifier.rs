@@ -133,12 +133,13 @@ impl VerifierCommandExecutor {
                 format!("Requested attributes {:?} do not correspond to received {:?}", requested_attrs, received_attrs))));
         }
 
-        if requested_predicates != received_predicates {
+        // TODO: Uncomment me; The structure of attributes and predicates is different
+        /*if requested_predicates != received_predicates {
             return Err(IndyError::CommonError(CommonError::InvalidStructure(
                 format!("Requested predicates {:?} do not correspond to received {:?}", requested_predicates, received_predicates))));
         }
 
-        /*let received_revealed_attrs_values: HashSet<(String, String)> =
+        let received_revealed_attrs_values: HashSet<(String, String)> =
             proof_claims.requested_proof.revealed_attrs
                 .values()
                 .map(|&(ref uuid, _, ref encoded_value)| (uuid.clone(), encoded_value.clone()))
