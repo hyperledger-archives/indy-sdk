@@ -40,8 +40,8 @@ impl AuthzService {
                                            &policy_address, &mod_1,
                                            &mod_2, &mut ctx)?)*/
         let gen = AuthzProofGenerators::new()?;
-        let factors = AuthzProofFactors::new(&gen, secret, policy_address)?;
-        Ok((factors.P.clone()?, factors.r.clone()?, factors.r_prime.clone()?))
+        let (r, r_prime, _, P) = AuthzProofFactors::generate_double_commitment(&gen, secret, policy_address)?;
+        Ok((P.clone()?, r.clone()?, r_prime.clone()?))
     }
 
     pub fn generate_new_policy(&self) -> Result<Policy, AuthzError> {
