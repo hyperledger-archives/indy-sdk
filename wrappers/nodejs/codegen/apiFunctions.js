@@ -21,6 +21,20 @@ var fixBufferParams = function (params) {
   return out
 }
 
+var toJsParams = function (params) {
+  return fixBufferParams(params)
+    .map(function (param) {
+      var name = param.name
+        .replace(/_json$/, '')
+        .replace(/_(\w)/g, function (matches, letter) {
+          return letter.toUpperCase()
+        })
+      return Object.assign({}, param, {
+        name: name
+      })
+    })
+}
+
 var functions = []
 
 Object.keys(api.functions).forEach(function (name) {
@@ -64,15 +78,20 @@ Object.keys(api.functions).forEach(function (name) {
     }
     fn.jsParams.push(param)
   })
-  fn.jsParams = fixBufferParams(fn.jsParams)
-  fn.jsCbParams = fixBufferParams(fn.jsCbParams)
+  fn.jsParams = toJsParams(fn.jsParams)
+  fn.jsCbParams = toJsParams(fn.jsCbParams)
+
+  fn.humanReturnValue = 'void'
+  if (fn.jsCbParams.length === 1) {
+    fn.humanReturnValue = fn.jsCbParams[0].name
+  } else if (fn.jsCbParams.length > 1) {
+    fn.humanReturnValue = '[' + fn.jsCbParams.map(arg => arg.name).join(', ') + ']'
+  }
 
   var humanArgs = fn.jsParams.map(arg => arg.name)
   var humanCb = 'cb(err'
-  if (fn.jsCbParams.length === 1) {
-    humanCb += ', ' + fn.jsCbParams[0].name
-  } else if (fn.jsCbParams.length > 1) {
-    humanCb += ', [' + fn.jsCbParams.map(arg => arg.name).join(', ') + ']'
+  if (fn.humanReturnValue !== 'void') {
+    humanCb += ', ' + fn.humanReturnValue
   }
   humanCb += ')'
   humanArgs.push(humanCb)

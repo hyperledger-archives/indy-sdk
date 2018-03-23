@@ -4,8 +4,11 @@ var apiFunctions = require('./apiFunctions')
 
 var README_FILE = path.resolve(__dirname, '../README.md')
 
-var toHumanType = function (typeSrc) {
-  switch (typeSrc.replace(/[^a-z0-9_*]/ig, '')) {
+var toHumanType = function (param) {
+  if (param.json) {
+    return 'Json'
+  }
+  switch (param.type.replace(/[^a-z0-9_*]/ig, '')) {
     case 'constchar*':
     case 'constchar*const':
       return 'String'
@@ -24,22 +27,26 @@ var toHumanType = function (typeSrc) {
     case 'Buffer':
       return 'Buffer'
   }
-  throw new Error('toHumanType doesn\'t handle: ' + typeSrc)
+  throw new Error('toHumanType doesn\'t handle: ' + param.type)
+}
+
+var readmeParam = function (param) {
+  return '`' + param.name + '`: ' + toHumanType(param)
 }
 
 var readme = ''
 apiFunctions.forEach(function (fn) {
-  readme += '#### ' + fn.humanSignature.replace(/_/g, '\\_') + '\n'
-  var readmeArg = function (arg) {
-    return '`' + arg.name + '`: ' + toHumanType(arg.type)
-  }
+  var signature = fn.jsName + '(' + fn.jsParams.map(arg => arg.name).join(', ') + ')' + ' -> ' + fn.humanReturnValue
+
+  readme += '#### ' + signature.replace(/_/g, '\\_') + '\n'
+
   fn.jsParams.forEach(function (arg) {
-    readme += '* ' + readmeArg(arg) + '\n'
+    readme += '* ' + readmeParam(arg) + '\n'
   })
   if (fn.jsCbParams.length === 1) {
-    readme += '* __->__ ' + readmeArg(fn.jsCbParams[0]) + '\n'
+    readme += '* __->__ ' + readmeParam(fn.jsCbParams[0]) + '\n'
   } else if (fn.jsCbParams.length > 1) {
-    readme += '* __->__ [' + fn.jsCbParams.map(readmeArg).join(', ') + ']\n'
+    readme += '* __->__ [' + fn.jsCbParams.map(readmeParam).join(', ') + ']\n'
   }
   readme += '\n'
 })
