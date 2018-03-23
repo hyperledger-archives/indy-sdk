@@ -116,7 +116,12 @@ docker run -itd -p 9701-9708:9701-9708 indy_pool
  networking on your virtual environment.
 
 ## Wrappers documentation
-* [.Net](wrappers/dotnet/README.md)
+
+The following wrappers are tested and complete. There is also active work
+on wrappers for Go and node.js; visit #indy-sdk on Rocket.Chat for
+details.
+
+* [.Net](wrappers/dotnet/README.md) (lacks a couple recent features)
 * [Java](wrappers/java/README.md)
 * [Python](wrappers/python/README.md)
 * [iOS](wrappers/ios/README.md)
@@ -124,5 +129,10 @@ docker run -itd -p 9701-9708:9701-9708 indy_pool
 ## Indy CLI documentation
 * [Indy CLI](cli/README.md)
 
-## Getting started
+## Getting Started
+This extended tutorial shows how the whole ecosystem works, and how
+functions in the SDK can be used to construct rich clients. (You may also
+want to look at the [older guide](https://github.com/hyperledger/indy-node/blob/stable/getting-started.md)
+that explored the ecosystem via command line. That material is being
+rewritten but still contains some useful ideas.)
 * [Libindy Getting-Started Guide](doc/getting-started/getting-started.md)
