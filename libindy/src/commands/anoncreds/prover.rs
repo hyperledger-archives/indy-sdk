@@ -72,6 +72,7 @@ pub enum ProverCommand {
         String, // schemas json
         String, // master secret name,
         String, // policy address
+        String, // agent_verkey
         String, // claim defs json
         String, // revoc regs json
         Box<Fn(Result<String, IndyError>) + Send>
@@ -144,6 +145,7 @@ impl ProverCommandExecutor {
                                        schemas_jsons,
                                        master_secret_name,
                                        policy_address,
+                                       agent_verkey,
                                        claim_def_jsons,
                                        revoc_regs_jsons,
                                        cb) => {
@@ -155,6 +157,7 @@ impl ProverCommandExecutor {
                     &schemas_jsons,
                     &master_secret_name,
                     &policy_address,
+                    &agent_verkey,
                     &claim_def_jsons,
                     &revoc_regs_jsons,
                     cb,
@@ -718,6 +721,7 @@ impl ProverCommandExecutor {
         schemas_jsons: &str,
         master_secret_name: &str,
         policy_address: &str,
+        agent_verkey: &str,
         claim_def_jsons: &str,
         revoc_regs_jsons: &str,
         cb: Box<Fn(Result<String, IndyError>) + Send>,
@@ -729,6 +733,7 @@ impl ProverCommandExecutor {
             schemas_jsons,
             master_secret_name,
             policy_address,
+            agent_verkey,
             claim_def_jsons,
             revoc_regs_jsons,
         );
@@ -743,6 +748,7 @@ impl ProverCommandExecutor {
         schemas_jsons: &str,
         master_secret_name: &str,
         policy_address: &str,
+        agent_verkey: &str,
         claim_def_jsons: &str,
         revoc_regs_jsons: &str,
     ) -> Result<String, IndyError> {
@@ -806,6 +812,9 @@ impl ProverCommandExecutor {
         )?;
 
         let ms: BigNumber = BigNumber::from_dec(&ms)?;
+
+        let policy_agent = AuthzCommandExecutor::get_policy_agent_from_wallet(
+            &self.wallet_service, wallet_handle, policy_address.to_string(), agent_verkey.to_string())?;
         let policy_address: BigNumber = BigNumber::from_dec(&policy_address)?;
 
         let mut tails: HashMap<i32, PointG2> = HashMap::new();
@@ -828,6 +837,7 @@ impl ProverCommandExecutor {
             &requested_claims,
             &ms,
             &policy_address,
+            policy_agent,
             &tails,
         )?;
 

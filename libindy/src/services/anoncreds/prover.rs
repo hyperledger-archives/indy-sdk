@@ -12,6 +12,7 @@ use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use services::anoncreds::types::{AttributeInfo, ClaimInfo, RequestedClaimsJson, ProofRequestJson};
 use services::anoncreds::converters::*;
+use services::authz::types::PolicyAgent;
 use std::iter::FromIterator;
 
 use self::indy_crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
@@ -19,7 +20,11 @@ use self::indy_crypto::cl::prover::{Prover as CryptoProver, ProofBuilder};
 use self::indy_crypto::cl::{SubProofRequestBuilder, CredentialSignature, CredentialSchema,
                             NonCredentialSchemaElements, CredentialValues, SubProofRequest,
                             PrimaryInitProof as NewPrimaryInitProof};
+use self::indy_crypto::authz::{AuthzProofGenerators, AuthzProofFactors};
 
+
+// Temporary value
+pub const REVOC_WITNESS: &'static str = "3081076980007713925959604505993528370091252037219432570372268594215374344448178557927330505659829548196001541910397044574503804349888018481637021558820201495180652853839389373736354855089915654973646390593825402963369085598243175499331073210996369094524584737045812083227000057867534282991348704391352741963150846904684740081827853667405049291950563131087880761067102663540026285677395840413088174715082923530727315147001628040210198449287076046431564773892455551663145805008468300855353569160670769107273734038564797672775330380086322494841998600095197724618324340015371990124082923120036387971884629120210018406941724331997393028520399574577331410576856213987051688696744981047884734763621690605729499908487228784147873046418572825090779840794201637455940120941399814886616382625317460565896684910105909504707053360780917358988981169951477861282629772514247925341760072523828218731362450851436561547397656679975389798488887044194917116583673849515191323195914776662418177189603969638270971498700371796973381598884749348990545341638774881936625120806067766409748553292974329171798703826943631238764095392265996716384324391039958314190118742197999180964544894121268375540809742303181386694824266665061651735305169041165995833012997227";
 
 pub struct Prover {}
 
@@ -412,9 +417,22 @@ impl Prover {
         requested_claims: &RequestedClaimsJson,
         ms: &BigNumber,
         policy_address: &BigNumber,
+        policy_agent: PolicyAgent,
         tails: &HashMap<i32, PointG2>,
     ) -> Result<ProofJson, AnoncredsError> {
         info!(target: "anoncreds_service", "Prover create proof -> start");
+
+        let factors = AuthzProofFactors {
+            agent_secret: policy_agent.secret.unwrap().clone()?,
+            policy_address: old_bn_to_new_bn(&policy_address)?,
+            r: policy_agent.blinding_factor.unwrap(),
+            r_prime: policy_agent.blinding_factor_1.unwrap(),
+            K: policy_agent.commitment.unwrap(),
+            P: policy_agent.double_commitment.unwrap(),
+            policy_address_attr_name: POLICY_ADDRESS_NAME.to_string(),
+            provisioned_witness: policy_agent.witness.unwrap(),
+            revocation_witness: old_bn_to_new_bn(&BigNumber::from_dec(REVOC_WITNESS).unwrap())?
+        };
 
         let proof_claims = Prover::_prepare_proof_claims(
             proof_req,
@@ -427,17 +445,22 @@ impl Prover {
 
         let mut proof_builder = CryptoProver::new_proof_builder()?;
 
+        proof_builder.add_common_attribute(LINK_SECRET_NAME).unwrap();
+        proof_builder.add_common_attribute(POLICY_ADDRESS_NAME).unwrap();
+
+        proof_builder.add_authz_proof_request(&factors).unwrap();
+
         let m1_tilde = BigNumber::rand(LARGE_M2_TILDE)?;
 
-        let mut init_proofs: HashMap<
-            String,
+        let mut init_proofs: HashMap<String,
             (NewPrimaryInitProof,
              Option<NonRevocInitProof>,
              CredentialSchema,
              NonCredentialSchemaElements,
              CredentialValues,
-             SubProofRequest),
+             SubProofRequest)
         > = HashMap::new();
+
         let mut c_list: Vec<Vec<u8>> = Vec::new();
         let mut tau_list: Vec<Vec<u8>> = Vec::new();
 
@@ -541,12 +564,18 @@ impl Prover {
         let mut values: Vec<Vec<u8>> = Vec::new();
         values.extend_from_slice(&tau_list);
         values.extend_from_slice(&c_list);
+
+        if let Some(ref authz_proof_init) = proof_builder.authz_proof_init {
+            authz_proof_init.add_t_list(&mut values);
+        }
+
         values.push(proof_req.nonce.to_bytes()?);
 
         let c_h = get_hash_as_int(&mut values)?;
 
         let mut proofs: HashMap<String, ClaimProof> = HashMap::new();
         let mut attributes: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
+        let mut policy_address_m_hat = None;
 
         for (proof_claim_uuid, init_proof) in init_proofs.iter() {
             let proof_claim = proof_claims.get(proof_claim_uuid).ok_or(
@@ -561,14 +590,6 @@ impl Prover {
                 )?);
             }
 
-            /*let primary_proof = Prover::_finalize_proof(
-                &ms,
-                &init_proof.0,
-                &c_h,
-                &proof_claim.claim_json.claim,
-                &proof_claim.revealed_attrs,
-            )?;*/
-
             let primary_proof = ProofBuilder::_finalize_primary_proof(
                 &init_proofs.get(proof_claim_uuid).unwrap().0,
                 &old_bn_to_new_bn(&c_h)?,
@@ -577,6 +598,13 @@ impl Prover {
                 &init_proof.4,
                 &init_proof.5,
             )?;
+
+            if policy_address_m_hat == None {
+                if let Some(ref authz_proof_init) = proof_builder.authz_proof_init {
+                    let m_hat = primary_proof.eq_proof.m[authz_proof_init.get_policy_address_attr_name()].clone()?;
+                    policy_address_m_hat = Some(m_hat);
+                }
+            }
 
             let proof = Proof {
                 primary_proof: new_PrimaryProof_to_old_PrimaryProof(
@@ -600,6 +628,13 @@ impl Prover {
             );
         }
 
+        let authz_proof =
+            if let Some(ref authz_proof_init) = proof_builder.authz_proof_init {
+                Some(authz_proof_init.finalize(&old_bn_to_new_bn(&c_h)?, &policy_address_m_hat.unwrap())?)
+            } else {
+                None
+            };
+
         let aggregated_proof = AggregatedProof::new(c_h, c_list);
 
         let (revealed_attrs, unrevealed_attrs) =
@@ -613,7 +648,7 @@ impl Prover {
         );
 
         info!(target: "anoncreds_service", "Prover create proof -> done");
-        Ok(ProofJson::new(proofs, aggregated_proof, requested_proof))
+        Ok(ProofJson::new(proofs, aggregated_proof, requested_proof, authz_proof))
     }
 
     fn _init_proof(
@@ -2241,7 +2276,7 @@ pub mod mocks {
             name: "name".to_string(),
             version: "version".to_string(),
             requested_attrs: requested_attrs,
-            requested_predicates: requested_predicates,
+            requested_predicates: requested_predicates
         }
     }
 

@@ -10,6 +10,7 @@ use utils::json::{JsonEncodable, JsonDecodable};
 use std::fmt;
 
 use self::indy_crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
+use self::indy_crypto::authz::AuthzProof;
 
 pub enum ByteOrder {
     Big,
@@ -1110,7 +1111,7 @@ pub struct ProofRequestJson {
     pub name: String,
     pub version: String,
     pub requested_attrs: HashMap<String, AttributeInfo>,
-    pub requested_predicates: HashMap<String, Predicate>,
+    pub requested_predicates: HashMap<String, Predicate>
 }
 
 impl ProofRequestJson {
@@ -1119,14 +1120,14 @@ impl ProofRequestJson {
         name: String,
         version: String,
         requested_attr: HashMap<String, AttributeInfo>,
-        requested_predicate: HashMap<String, Predicate>,
+        requested_predicate: HashMap<String, Predicate>
     ) -> ProofRequestJson {
         ProofRequestJson {
             nonce: nonce,
             name: name,
             version: version,
             requested_attrs: requested_attr,
-            requested_predicates: requested_predicate,
+            requested_predicates: requested_predicate
         }
     }
 }
@@ -1140,6 +1141,7 @@ pub struct ProofJson {
     pub proofs: HashMap<String, ClaimProof>,
     pub aggregated_proof: AggregatedProof,
     pub requested_proof: RequestedProofJson,
+    pub authz_proof: Option<AuthzProof>,
 }
 
 impl ProofJson {
@@ -1147,11 +1149,13 @@ impl ProofJson {
         proofs: HashMap<String, ClaimProof>,
         aggregated_proof: AggregatedProof,
         requested_proof: RequestedProofJson,
+        authz_proof: Option<AuthzProof>,
     ) -> ProofJson {
         ProofJson {
             proofs: proofs,
             aggregated_proof: aggregated_proof,
             requested_proof: requested_proof,
+            authz_proof: authz_proof,
         }
     }
 }

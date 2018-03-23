@@ -28,7 +28,8 @@ pub struct AuthzService {
 impl AuthzService {
     pub fn new(crypto_service: Rc<SignusService>) -> AuthzService { AuthzService { crypto_service } }
 
-    pub fn get_double_commitment_to_secret(secret: &BigNumber, policy_address: &BigNumber) -> Result<(BigNumber, BigNumber, BigNumber), AuthzError> {
+    pub fn get_double_commitment_to_secret(secret: &BigNumber, policy_address: &BigNumber) -> Result<
+        (BigNumber, BigNumber, BigNumber, BigNumber), AuthzError> {
         /*let g_1 = BigNumber::from_dec(G_1).unwrap();
         let g_2 = BigNumber::from_dec(G_2).unwrap();
         let h_1 = BigNumber::from_dec(H_1).unwrap();
@@ -40,8 +41,8 @@ impl AuthzService {
                                            &policy_address, &mod_1,
                                            &mod_2, &mut ctx)?)*/
         let gen = AuthzProofGenerators::new()?;
-        let (r, r_prime, _, P) = AuthzProofFactors::generate_double_commitment(&gen, secret, policy_address)?;
-        Ok((P.clone()?, r.clone()?, r_prime.clone()?))
+        let (r, r_prime, K, P) = AuthzProofFactors::generate_double_commitment(&gen, secret, policy_address)?;
+        Ok((K.clone()?, P.clone()?, r.clone()?, r_prime.clone()?))
     }
 
     pub fn generate_new_policy(&self) -> Result<Policy, AuthzError> {
@@ -52,35 +53,35 @@ impl AuthzService {
     }
 
     pub fn generate_new_agent(&self, policy_address: &BigNumber, agent_info: Option<&PolicyAgentInfo>) -> Result<(PolicyAgent, Key), AuthzError> {
-        let (vk, sk, secret, comm, blinding_factor, blinding_factor_1) = match agent_info {
+        let (vk, sk, secret, comm1, comm2, blinding_factor, blinding_factor_1) = match agent_info {
             Some(ref info) => {
                 let (vk, sk) = match self.crypto_service.get_crypto_name_and_keypair(&info.crypto_type, &info.seed) {
                     Ok((_, vk, sk)) => (vk, sk),
                     Err(err) => return Err(AuthzError::SignusError(err)),
                 };
 
-                let (comm, blinding_factor, blinding_factor_1) = match info.secret {
+                let (comm1, comm2, blinding_factor, blinding_factor_1) = match info.secret {
                     Some(ref s) => {
-                        let (c, b, b_1) = AuthzService::get_double_commitment_to_secret(&s, policy_address)?;
-                        (Some(c), Some(b), Some(b_1))
+                        let (c_1, c_2, b, b_1) = AuthzService::get_double_commitment_to_secret(&s, policy_address)?;
+                        (Some(c_1), Some(c_2), Some(b), Some(b_1))
                     },
-                    None => (None, None, None)
+                    None => (None, None, None, None)
                 };
-                (vk, sk, info.secret.as_ref().map(|bn| bn.clone().unwrap()), comm, blinding_factor, blinding_factor_1)
+                (vk, sk, info.secret.as_ref().map(|bn| bn.clone().unwrap()), comm1, comm2, blinding_factor, blinding_factor_1)
             },
             None => {
                 let (vk, sk) = match self.crypto_service.get_crypto_name_and_keypair(&None, &None) {
                     Ok((_, vk, sk)) => (vk, sk),
                     Err(err) => return Err(AuthzError::SignusError(err)),
                 };
-                (vk, sk, None, None, None, None)
+                (vk, sk, None, None, None, None, None)
             }
         };
 
         let vk = Base58::encode(&vk);
         let sk = Base58::encode(&sk);
 
-        Ok((PolicyAgent::new(vk.clone(), secret, comm, blinding_factor,
+        Ok((PolicyAgent::new(vk.clone(), secret, comm1, comm2, blinding_factor,
                              blinding_factor_1,None), Key::new(vk, sk)))
     }
 
@@ -94,14 +95,14 @@ impl AuthzService {
 
     pub fn add_new_agent_to_policy_with_verkey(&self, policy: &mut Policy, verkey: String,
                                                secret: Option<BigNumber>) -> Result<String, AuthzError> {
-        let (comm, blinding_factor,blinding_factor_1) = match secret {
+        let (comm_1, comm_2, blinding_factor,blinding_factor_1) = match secret {
             Some(ref s) => {
-                let (c, b,b_1) = AuthzService::get_double_commitment_to_secret(&s, &policy.address)?;
-                (Some(c), Some(b), Some(b_1))
+                let (c_1, c_2, b,b_1) = AuthzService::get_double_commitment_to_secret(&s, &policy.address)?;
+                (Some(c_1), Some(c_2), Some(b), Some(b_1))
             },
-            None => (None, None, None)
+            None => (None, None, None, None)
         };
-        let agent = PolicyAgent::new(verkey.clone(), secret, comm, blinding_factor, blinding_factor_1,None);
+        let agent = PolicyAgent::new(verkey.clone(), secret, comm_1, comm_2, blinding_factor, blinding_factor_1,None);
         policy.agents.insert(agent.verkey.clone(), agent);
         Ok(verkey)
     }
@@ -140,10 +141,12 @@ mod tests {
         assert_eq!(agent.verkey, verkey);
         if no_secret {
             assert!(agent.secret.is_none());
+            assert!(agent.commitment.is_none());
             assert!(agent.double_commitment.is_none());
             assert!(agent.blinding_factor.is_none());
         } else {
             assert!(agent.secret.is_some());
+            assert!(agent.commitment.is_some());
             assert!(agent.double_commitment.is_some());
             assert!(agent.blinding_factor.is_some());
         }

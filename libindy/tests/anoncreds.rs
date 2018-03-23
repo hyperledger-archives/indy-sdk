@@ -16,7 +16,7 @@ mod utils;
 
 use utils::wallet::WalletUtils;
 use utils::anoncreds::AnoncredsUtils;
-use utils::anoncreds::{COMMON_MASTER_SECRET, COMMON_POLICY_ADDRESS};
+use utils::anoncreds::{COMMON_MASTER_SECRET, COMMON_POLICY_ADDRESS, COMMON_AGENT_SEED, COMMON_AGENT_VERKEY, COMMON_PROVISION_WITNESS};
 use utils::test::TestUtils;
 use std::collections::HashMap;
 use utils::types::{
@@ -592,12 +592,15 @@ mod high_cases {
             let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, claim_def_json);
             let revoc_regs_jsons = "{}";
 
+            let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
+
             AnoncredsUtils::prover_create_proof(wallet_handle,
                                                 &proof_req,
                                                 &requested_claims_json,
                                                 &schemas_json,
                                                 COMMON_MASTER_SECRET,
-                                                COMMON_POLICY_ADDRESS,
+                                                &policy_address,
+                                                COMMON_AGENT_VERKEY,
                                                 &claim_defs_json,
                                                 &revoc_regs_jsons).unwrap();
         }
@@ -627,12 +630,15 @@ mod high_cases {
             let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_uuid, claim_def_json);
             let revoc_regs_jsons = "{}";
 
+            let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
+
             let res = AnoncredsUtils::prover_create_proof(wallet_handle,
                                                           &proof_req,
                                                           &requested_claims_json,
                                                           &schemas_json,
                                                           COMMON_MASTER_SECRET,
-                                                          COMMON_POLICY_ADDRESS,
+                                                          &policy_address,
+                                                          COMMON_AGENT_VERKEY,
                                                           &claim_defs_json,
                                                           &revoc_regs_jsons);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -665,13 +671,16 @@ mod high_cases {
             let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, claim_def_json);
             let revoc_regs_jsons = "{}";
 
+            let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
+
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_create_proof(invalid_wallet_handle,
                                                           &proof_req,
                                                           &requested_claims_json,
                                                           &schemas_json,
                                                           COMMON_MASTER_SECRET,
-                                                          COMMON_POLICY_ADDRESS,
+                                                          &policy_address,
+                                                          COMMON_AGENT_VERKEY,
                                                           &claim_defs_json,
                                                           &revoc_regs_jsons);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
@@ -705,7 +714,7 @@ mod high_cases {
                                                               &proof_json,
                                                               &schemas_json,
                                                               &claim_defs_json,
-                                                              &revoc_regs_jsons).unwrap();
+                                                              &revoc_regs_jsons, None).unwrap();
             assert!(valid);
         }
 
@@ -733,7 +742,7 @@ mod high_cases {
                                                             &proof_json,
                                                             &schemas_json,
                                                             &claim_defs_json,
-                                                            &revoc_regs_jsons);
+                                                            &revoc_regs_jsons, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -761,7 +770,7 @@ mod high_cases {
                                                               &proof_json,
                                                               &schemas_json,
                                                               &claim_defs_json,
-                                                              &revoc_regs_jsons).unwrap();
+                                                              &revoc_regs_jsons, None).unwrap();
             assert_eq!(valid, false);
         }
     }
@@ -1215,12 +1224,15 @@ mod medium_cases {
             let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, claim_def_json);
             let revoc_regs_jsons = "{}";
 
+            let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
+
             let res = AnoncredsUtils::prover_create_proof(wallet_handle,
                                                           &proof_req,
                                                           &requested_claims_json,
                                                           &schemas_json,
                                                           "invalid_master_secret_name",
-                                                          COMMON_POLICY_ADDRESS,
+                                                          &policy_address,
+                                                          COMMON_AGENT_VERKEY,
                                                           &claim_defs_json,
                                                           &revoc_regs_jsons);
             assert_eq!(res.unwrap_err(), ErrorCode::KeyNotFoundInWalletError);
@@ -1253,12 +1265,15 @@ mod medium_cases {
             let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, claim_def_json);
             let revoc_regs_jsons = "{}";
 
+            let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
+
             let res = AnoncredsUtils::prover_create_proof(wallet_handle,
                                                           &proof_req,
                                                           &requested_claims_json,
                                                           &schemas_json,
                                                           COMMON_MASTER_SECRET,
-                                                          COMMON_POLICY_ADDRESS,
+                                                          &policy_address,
+                                                          COMMON_AGENT_VERKEY,
                                                           &claim_defs_json,
                                                           &revoc_regs_jsons);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1291,12 +1306,15 @@ mod medium_cases {
             let claim_defs_json = r#"{}"#;
             let revoc_regs_jsons = "{}";
 
+            let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
+
             let res = AnoncredsUtils::prover_create_proof(wallet_handle,
                                                           &proof_req,
                                                           &requested_claims_json,
                                                           &schemas_json,
                                                           COMMON_MASTER_SECRET,
-                                                          COMMON_POLICY_ADDRESS,
+                                                          &policy_address,
+                                                          COMMON_AGENT_VERKEY,
                                                           &claim_defs_json,
                                                           &revoc_regs_jsons);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1328,12 +1346,15 @@ mod medium_cases {
             let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, claim_def_json);
             let revoc_regs_jsons = "{}";
 
+            let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
+
             let res = AnoncredsUtils::prover_create_proof(wallet_handle,
                                                           &proof_req,
                                                           &requested_claims_json,
                                                           &schemas_json,
                                                           COMMON_MASTER_SECRET,
-                                                          COMMON_POLICY_ADDRESS,
+                                                          &policy_address,
+                                                          COMMON_AGENT_VERKEY,
                                                           &claim_defs_json,
                                                           &revoc_regs_jsons);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1367,7 +1388,7 @@ mod medium_cases {
                                                             &proof_json,
                                                             &schemas_json,
                                                             &claim_defs_json,
-                                                            &revoc_regs_jsons);
+                                                            &revoc_regs_jsons, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -1394,7 +1415,7 @@ mod medium_cases {
                                                             &proof_json,
                                                             &schemas_json,
                                                             &claim_defs_json,
-                                                            &revoc_regs_jsons);
+                                                            &revoc_regs_jsons, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -1420,7 +1441,7 @@ mod medium_cases {
                                                             &proof_json,
                                                             &schemas_json,
                                                             &claim_defs_json,
-                                                            &revoc_regs_jsons);
+                                                            &revoc_regs_jsons, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
     }
@@ -1457,7 +1478,7 @@ mod demos {
         let master_secret_name = "prover_master_secret";
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, master_secret_name).unwrap();
 
-        let policy_address = AuthzUtils::create_new_policy(prover_wallet_handle);
+        let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
 
         //3. Prover store Claim Offer received from Issuer
         let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, schema_seq_no);
@@ -1553,6 +1574,7 @@ mod demos {
                                                              &schemas_json,
                                                              &master_secret_name,
                                                              &policy_address,
+                                                             COMMON_AGENT_VERKEY,
                                                              &claim_defs_json,
                                                              &revoc_regs_jsons).unwrap();
 
@@ -1571,7 +1593,7 @@ mod demos {
                                                           &proof_json,
                                                           &schemas_json,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons).unwrap();
+                                                          &revoc_regs_jsons, None).unwrap();
         assert!(valid);
 
         TestUtils::cleanup_storage();
@@ -1611,7 +1633,7 @@ mod demos {
 
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, master_secret_name).unwrap();
 
-        let policy_address = AuthzUtils::create_new_policy(prover_wallet_handle);
+        let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
 
         //5. Prover store Claim Offer received from Issuer
         let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, schema_seq_no);
@@ -1676,6 +1698,7 @@ mod demos {
                                                              &schemas_json,
                                                              &master_secret_name,
                                                              &policy_address,
+                                                             COMMON_AGENT_VERKEY,
                                                              &claim_defs_json,
                                                              &revoc_regs_jsons).unwrap();
 
@@ -1754,7 +1777,7 @@ mod demos {
                                                           &proof_json,
                                                           &schemas_json,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons).unwrap();
+                                                          &revoc_regs_jsons, None).unwrap();
         assert!(valid);
 
         TestUtils::cleanup_storage();
@@ -1777,7 +1800,7 @@ mod demos {
         let master_secret_name = "prover_master_secret";
         AnoncredsUtils::prover_create_master_secret(wallet_handle, master_secret_name).unwrap();
 
-        let policy_address = AuthzUtils::create_new_policy(wallet_handle);
+        let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
 
         //4. Prover create Claim Request
         let prover_did = "BzfFCYk";
@@ -1829,6 +1852,7 @@ mod demos {
                                                              &schemas_json,
                                                              &master_secret_name,
                                                              &policy_address,
+                                                             COMMON_AGENT_VERKEY,
                                                              &claim_defs_json,
                                                              &revoc_regs_jsons).unwrap();
 
@@ -1845,7 +1869,7 @@ mod demos {
                                                         &proof_json,
                                                         &schemas_json,
                                                         &claim_defs_json,
-                                                        &revoc_regs_jsons);
+                                                        &revoc_regs_jsons, None);
         assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
         TestUtils::cleanup_storage();
@@ -1871,7 +1895,7 @@ mod demos {
         let master_secret_name = "prover_master_secret";
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, master_secret_name).unwrap();
 
-        let policy_address = AuthzUtils::create_new_policy(prover_wallet_handle);
+        let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(prover_wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
 
         //5. Prover store Claim Offer received from Issuer
         let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, schema_seq_no);
@@ -1893,7 +1917,8 @@ mod demos {
                                                                           prover_did,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
-                                                                          master_secret_name, Some(&policy_address)).unwrap();
+                                                                          master_secret_name,
+                                                                          Some(&policy_address)).unwrap();
 
         //8. Issuer create Claim
         let claim_json = AnoncredsUtils::get_gvt_claim_json();
@@ -1940,6 +1965,7 @@ mod demos {
                                                              &schemas_json,
                                                              &master_secret_name,
                                                              &policy_address,
+                                                             COMMON_AGENT_VERKEY,
                                                              &claim_defs_json,
                                                              &revoc_regs_jsons).unwrap();
 
@@ -1958,7 +1984,7 @@ mod demos {
                                                           &proof_json,
                                                           &schemas_json,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons).unwrap();
+                                                          &revoc_regs_jsons, None).unwrap();
         assert!(valid);
 
         TestUtils::cleanup_storage();
@@ -2006,7 +2032,7 @@ mod demos {
         let master_secret_name_1 = "prover_master_secret_issuer_1";
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, master_secret_name_1).unwrap();
 
-        let policy_address1 = AuthzUtils::create_new_policy(prover_wallet_handle);
+        let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(prover_wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
 
         //7. Prover create Master Secret for Issuer2
         let master_secret_name_2 = "prover_master_secret_issuer_2";
@@ -2045,7 +2071,7 @@ mod demos {
                                                                               prover_did,
                                                                               &claim_offer,
                                                                               &gvt_claim_def_json,
-                                                                              master_secret_name_1, Some(&policy_address1)).unwrap();
+                                                                              master_secret_name_1, Some(&policy_address)).unwrap();
 
         //12. Issuer create GVT Claim
         let gvt_claim_json = AnoncredsUtils::get_gvt_claim_json();
@@ -2062,7 +2088,7 @@ mod demos {
                                                                               prover_did,
                                                                               &claim_offer,
                                                                               &xyz_claim_def_json,
-                                                                              master_secret_name_1, Some(&policy_address1)).unwrap();
+                                                                              master_secret_name_1, Some(&policy_address)).unwrap();
 
         //15. Issuer create XYZ Claim
         let xyz_claim_json = AnoncredsUtils::get_xyz_claim_json();
@@ -2138,7 +2164,8 @@ mod demos {
                                                              &requested_claims_json,
                                                              &schemas_json,
                                                              &master_secret_name_1,
-                                                             &policy_address1,
+                                                             &policy_address,
+                                                             COMMON_AGENT_VERKEY,
                                                              &claim_defs_json,
                                                              &revoc_regs_jsons).unwrap();
 
@@ -2155,7 +2182,7 @@ mod demos {
                                                           &proof_json,
                                                           &schemas_json,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons).unwrap();
+                                                          &revoc_regs_jsons, None).unwrap();
         assert!(valid);
 
         TestUtils::cleanup_storage();
@@ -2199,7 +2226,7 @@ mod demos {
         let master_secret_name = "prover_master_secret_issuer";
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, master_secret_name).unwrap();
 
-        let policy_address = AuthzUtils::create_new_policy(prover_wallet_handle);
+        let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(prover_wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
 
         //6. Prover store GVT Claim Offer received from Issuer
         let issuer_claim_offer_json = AnoncredsUtils::get_claim_offer(issuer_did, gvt_schema_seq_no);
@@ -2326,6 +2353,7 @@ mod demos {
                                                              &schemas_json,
                                                              &master_secret_name,
                                                              &policy_address,
+                                                             COMMON_AGENT_VERKEY,
                                                              &claim_defs_json,
                                                              &revoc_regs_jsons).unwrap();
 
@@ -2339,7 +2367,7 @@ mod demos {
                                                           &proof_json,
                                                           &schemas_json,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons).unwrap();
+                                                          &revoc_regs_jsons, None).unwrap();
         assert!(valid);
 
         TestUtils::cleanup_storage();
@@ -2367,7 +2395,7 @@ mod demos {
         let master_secret_name = "prover_master_secret";
         AnoncredsUtils::prover_create_master_secret(wallet_handle, master_secret_name).unwrap();
 
-        let policy_address = AuthzUtils::create_new_policy(wallet_handle);
+        let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
 
         //5. Prover store Claim Offer received from Issuer
         let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, schema_seq_no);
@@ -2425,6 +2453,7 @@ mod demos {
                                                              &schemas_json,
                                                              &master_secret_name,
                                                              &policy_address,
+                                                             COMMON_AGENT_VERKEY,
                                                              &claim_defs_json,
                                                              &revoc_regs_jsons).unwrap();
 
@@ -2433,7 +2462,7 @@ mod demos {
                                                           &proof_json,
                                                           &schemas_json,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons).unwrap();
+                                                          &revoc_regs_jsons, None).unwrap();
         assert!(valid);
 
         TestUtils::cleanup_storage();
@@ -2461,7 +2490,7 @@ mod demos {
         let master_secret_name = "prover_master_secret";
         AnoncredsUtils::prover_create_master_secret(wallet_handle, master_secret_name).unwrap();
 
-        let policy_address = AuthzUtils::create_new_policy(wallet_handle);
+        let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
 
         //5. Prover store Claim Offer received from Issuer
         let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, schema_seq_no);
@@ -2521,6 +2550,7 @@ mod demos {
                                                       &schemas_json,
                                                       &master_secret_name,
                                                       &policy_address,
+                                                      COMMON_AGENT_VERKEY,
                                                       &claim_defs_json,
                                                       &revoc_regs_jsons);
         assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsClaimRevoked);
@@ -2550,7 +2580,7 @@ mod demos {
         let master_secret_name = "prover_master_secret";
         AnoncredsUtils::prover_create_master_secret(wallet_handle, master_secret_name).unwrap();
 
-        let policy_address = AuthzUtils::create_new_policy(wallet_handle);
+        let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
 
         //5. Prover store Claim Offer received from Issuer
         let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, schema_seq_no);
@@ -2606,6 +2636,7 @@ mod demos {
                                                              &schemas_json,
                                                              &master_secret_name,
                                                              &policy_address,
+                                                             COMMON_AGENT_VERKEY,
                                                              &claim_defs_json,
                                                              &revoc_regs_jsons).unwrap();
 
@@ -2618,7 +2649,7 @@ mod demos {
                                                           &proof_json,
                                                           &schemas_json,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons).unwrap();
+                                                          &revoc_regs_jsons, None).unwrap();
         assert!(!valid);
 
         TestUtils::cleanup_storage();

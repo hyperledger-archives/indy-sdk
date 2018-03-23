@@ -1,16 +1,20 @@
 extern crate indy_crypto;
+extern crate serde_json;
 
 use self::indy_crypto::bn::{BigNumber};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use self::indy_crypto::utils::rsa::{generate_witness};
+use self::indy_crypto::authz::constants::ACCUM1_MODULUS;
 use errors::common::CommonError;
 use errors::indy::IndyError;
+use errors::authz::AuthzError;
 use services::ledger::types::{Reply, };
 use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::signus::SignusService;
 use services::ledger::LedgerService;
 use services::authz::AuthzService;
-use services::authz::types::{Policy, PolicyAgentInfo};
+use services::authz::types::{Policy, PolicyAgent, PolicyAgentInfo};
 
 use services::authz::constants::AUTHZ_ADDRESS_WALLET_KEY_PREFIX;
 //use services::anoncreds::constants::MASTER_SECRET_WALLET_KEY_PREFIX;
@@ -50,6 +54,10 @@ pub enum AuthzCommand {
         i32, // wallet handle
         String,  // policy address
         Box<Fn(Result<String, IndyError>) + Send>), // Return policy as json encoded String
+    ComputeWitness(
+        String,  // Initial witness
+        String,  // Witness array as JSON
+        Box<Fn(Result<String, IndyError>) + Send>), // Computed Witness as string repr of BigNumber
 }
 
 pub struct AuthzCommandExecutor {
@@ -97,6 +105,10 @@ impl AuthzCommandExecutor {
             AuthzCommand::GetPolicy(wallet_handle, policy_addr, cb) => {
                 info!("GetPolicy command received");
                 cb(self.get_policy_from_wallet(wallet_handle, policy_addr));
+            }
+            AuthzCommand::ComputeWitness(initial_witness, witness_array, cb) => {
+                info!("ComputePolicy command received");
+                cb(self.compute_witness(&initial_witness,&witness_array));
             }
         }
     }
@@ -174,6 +186,22 @@ impl AuthzCommandExecutor {
         Ok(verkey.to_string())
     }
 
+    fn compute_witness(&self, initial_witness: &str, witness_json: &str,) -> Result<String, IndyError> {
+        let initial_witness = BigNumber::from_dec(&initial_witness)?;
+        let witnesses: Vec<&str> = serde_json::from_str(witness_json)?;
+        let mut witness_nums = Vec::new();
+        for w in witnesses {
+            let w = BigNumber::from_dec(&w)?;
+            witness_nums.push(w.clone()?);
+        }
+        let n = BigNumber::from_dec(&ACCUM1_MODULUS)?;
+        let mut context = BigNumber::new_context()?;
+        let new_w = generate_witness(&initial_witness, &witness_nums,
+                                     &n, &mut context)?;
+        let u = BigNumber::to_dec(&new_w)?;
+        Ok(u)
+    }
+
     fn get_policy_from_wallet(&self, wallet_handle: i32, policy_addr: String) -> Result<String, IndyError> {
         let res = self._get_policy_from_wallet(wallet_handle, policy_addr)?;
         let policy_json = Policy::to_json(&res).map_err(map_err_trace!())
@@ -197,9 +225,13 @@ impl AuthzCommandExecutor {
     }
 
     fn _get_policy_from_wallet(&self, wallet_handle: i32, policy_addr: String) -> Result<Policy, IndyError> {
+        AuthzCommandExecutor::__get_policy_from_wallet(&self.wallet_service, wallet_handle, policy_addr)
+    }
+
+    fn __get_policy_from_wallet(wallet_service: &WalletService, wallet_handle: i32, policy_addr: String) -> Result<Policy, IndyError> {
         let key = AuthzCommandExecutor::_policy_addr_to_wallet_key(policy_addr);
         println!("Getting key {:?}", &key);
-        let value = self.wallet_service.get(wallet_handle, &key)?;
+        let value = wallet_service.get(wallet_handle, &key)?;
         let policy = Policy::from_json(&value)
             .map_err(map_err_trace!())
             .map_err(|err|
@@ -208,6 +240,18 @@ impl AuthzCommandExecutor {
         Ok(policy)
     }
 
+    pub fn get_policy_agent_from_wallet(wallet_service: &WalletService, wallet_handle: i32,
+                                        policy_addr: String, agent_verkey: String) -> Result<PolicyAgent, IndyError> {
+        let policy = AuthzCommandExecutor::__get_policy_from_wallet(wallet_service, wallet_handle, policy_addr)?;
+        if policy.agents.contains_key(&agent_verkey) {
+            Ok(policy.agents.get(&agent_verkey).unwrap().clone()?)
+        } else {
+            Err(IndyError::AuthzError(AuthzError::AgentDoesNotExistError(
+                format!("Cannot find agent with verkey: {}", &agent_verkey))))
+        }
+    }
+
+    // TODO: Fixme; Does not need an owned string
     pub fn _policy_addr_to_wallet_key(policy_address: String) -> String {
         format!("{}::{:}", AUTHZ_ADDRESS_WALLET_KEY_PREFIX, policy_address)
     }

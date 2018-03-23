@@ -732,6 +732,7 @@ pub extern "C" fn indy_prover_create_proof(
     schemas_json: *const c_char,
     master_secret_name: *const c_char,
     policy_address: *const c_char,
+    agent_verkey: *const c_char,
     claim_defs_json: *const c_char,
     revoc_regs_json: *const c_char,
     cb: Option<
@@ -745,9 +746,10 @@ pub extern "C" fn indy_prover_create_proof(
     check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam6);
     check_useful_c_str!(policy_address, ErrorCode::CommonInvalidParam7);
-    check_useful_c_str!(claim_defs_json, ErrorCode::CommonInvalidParam8);
-    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam9);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam10);
+    check_useful_c_str!(agent_verkey, ErrorCode::CommonInvalidParam8);
+    check_useful_c_str!(claim_defs_json, ErrorCode::CommonInvalidParam9);
+    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam10);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam11);
 
     let result = CommandExecutor::instance().send(Command::Anoncreds(
         AnoncredsCommand::Prover(ProverCommand::CreateProof(
@@ -757,6 +759,7 @@ pub extern "C" fn indy_prover_create_proof(
             schemas_json,
             master_secret_name,
             policy_address,
+            agent_verkey,
             claim_defs_json,
             revoc_regs_json,
             Box::new(move |result| {
@@ -841,6 +844,7 @@ pub extern "C" fn indy_verifier_verify_proof(
     schemas_json: *const c_char,
     claim_defs_jsons: *const c_char,
     revoc_regs_json: *const c_char,
+    accumulators: *const c_char,
     cb: Option<extern "C" fn(xcommand_handle: i32, err: ErrorCode, valid: bool)>,
 ) -> ErrorCode {
     check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam2);
@@ -848,7 +852,8 @@ pub extern "C" fn indy_verifier_verify_proof(
     check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(claim_defs_jsons, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam6);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+    check_useful_opt_c_str!(accumulators, ErrorCode::CommonInvalidParam7);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let result = CommandExecutor::instance().send(Command::Anoncreds(AnoncredsCommand::Verifier(
         VerifierCommand::VerifyProof(
@@ -857,6 +862,7 @@ pub extern "C" fn indy_verifier_verify_proof(
             schemas_json,
             claim_defs_jsons,
             revoc_regs_json,
+            accumulators,
             Box::new(move |result| {
                 let (err, valid) = result_to_err_code_1!(result, false);
                 cb(command_handle, err, valid)

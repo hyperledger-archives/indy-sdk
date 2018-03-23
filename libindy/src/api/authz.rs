@@ -90,6 +90,31 @@ pub  extern fn indy_update_agent_witness(command_handle: i32,
 
 
 #[no_mangle]
+pub  extern fn indy_generate_witness(command_handle: i32,
+                                     initial_witness: *const c_char,
+                                     witness_array: *const c_char,
+                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                    policy_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(initial_witness, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(witness_array, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Authz(AuthzCommand::ComputeWitness(
+            initial_witness,
+            witness_array,
+            Box::new(move |result| {
+                let (err, new_witness) = result_to_err_code_1!(result, String::new());
+                let new_witness = CStringUtils::string_to_cstring(new_witness);
+                cb(command_handle, err, new_witness.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+
+#[no_mangle]
 pub  extern fn indy_get_policy(command_handle: i32,
                                                 wallet_handle: i32,
                                                 policy_address: *const c_char,

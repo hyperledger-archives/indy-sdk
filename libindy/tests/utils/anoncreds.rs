@@ -17,6 +17,8 @@ use std::collections::HashSet;
 use std::sync::{Once, ONCE_INIT};
 use std::mem;
 use utils::constants::*;
+use utils::crypto::CryptoUtils;
+use utils::authz::AuthzUtils;
 
 
 pub struct AnoncredsUtils {}
@@ -25,8 +27,19 @@ static mut WALLET_HANDLE: i32 = 0;
 static mut CLAIM_DEF_JSON: &'static str = "";
 pub const COMMON_MASTER_SECRET: &'static str = "common_master_secret_name";
 pub const COMMON_POLICY_ADDRESS: &'static str = "114356529703218070977209757375038280327138143043673463359702632758673448977019";
+pub const COMMON_AGENT_SEED: &'static str = "00000000000000000000000000000000";
+pub const COMMON_AGENT_VERKEY: &'static str = "2ru5PcgeQzxF7QZYwQgDkG2K13PRqyigVw99zMYg8eML";
+pub const COMMON_PROVISION_WITNESS: &'static str = "1915182769368569486963976668657418846122016471585262452138689064979880063217142171230525667406114297912997697884669760718181148903891406258652154564474937314809392827351229074850339882653085906709452763512017926382658040877860425398565313118206001571983057266861433787870120516963262872556160137632986790799637800187327525373894833699998137974425675888510468704041321563743266953919273330110447213516904474856325884904918747921700098338253140217925656078220294833113261362981479227102302139442862538529417112227112104830922667359007109709204936925922862592053626140248383988977967399826184116697852122995719423774656923017777301713520425580745782097460248899329835740441429284020663186635354571333690692107185946297929772630086928323118606594588790915139339431940489511850279806818826143040378319619062305629273497273725721368157955512179352674013822087432127910233025333571203452180390613181846035364105352384024395662959142236311712295552933323767329374261596612060957502167831080774021620823718240397211269873903737841346862215246685242302847894894907938934985950908016181737929997451061016202494801606490097096889822976223609532834237496884730642312786447889763148272139117981855545441295507862786712405210727374768044118436617961";
 
 impl AnoncredsUtils {
+    pub fn add_new_policy_and_agent_with_witness_to_policy(wallet_handle: i32, seed: &str, witness: &str) -> Result<String, ErrorCode> {
+        let policy_address = AuthzUtils::create_new_policy(wallet_handle);
+        let key = CryptoUtils::create_key(wallet_handle, Some(seed))?;
+        AuthzUtils::add_agent_to_policy_in_wallet(wallet_handle, &policy_address, &key, true)?;
+        AuthzUtils::update_agent_witness_in_wallet(wallet_handle, &policy_address, &key, witness)?;
+        Ok(policy_address.to_string())
+    }
+
     pub fn issuer_create_claim_definition(wallet_handle: i32, issuer_did: &str, schema: &str, signature_type: Option<&str>, create_non_revoc: bool) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
@@ -307,7 +320,8 @@ impl AnoncredsUtils {
     }
 
     pub fn prover_create_proof(wallet_handle: i32, proof_req_json: &str, requested_claims_json: &str,
-                               schemas_json: &str, master_secret_name: &str, policy_address: &str, claim_defs_json: &str,
+                               schemas_json: &str, master_secret_name: &str, policy_address: &str,
+                               agent_verkey: &str, claim_defs_json: &str,
                                revoc_regs_json: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
@@ -322,6 +336,7 @@ impl AnoncredsUtils {
         let schemas_json = CString::new(schemas_json).unwrap();
         let master_secret_name = CString::new(master_secret_name).unwrap();
         let policy_address = CString::new(policy_address).unwrap();
+        let agent_verkey = CString::new(agent_verkey).unwrap();
         let claim_defs_json = CString::new(claim_defs_json).unwrap();
         let revoc_regs_json = CString::new(revoc_regs_json).unwrap();
 
@@ -332,6 +347,7 @@ impl AnoncredsUtils {
                                            schemas_json.as_ptr(),
                                            master_secret_name.as_ptr(),
                                            policy_address.as_ptr(),
+                                           agent_verkey.as_ptr(),
                                            claim_defs_json.as_ptr(),
                                            revoc_regs_json.as_ptr(),
                                            cb);
@@ -350,7 +366,7 @@ impl AnoncredsUtils {
     }
 
     pub fn verifier_verify_proof(proof_request_json: &str, proof_json: &str,
-                                 schemas_json: &str, claim_defs_json: &str, revoc_regs_json: &str) -> Result<bool, ErrorCode> {
+                                 schemas_json: &str, claim_defs_json: &str, revoc_regs_json: &str, accumulator: Option<&str>) -> Result<bool, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, valid| {
@@ -364,6 +380,7 @@ impl AnoncredsUtils {
         let schemas_json = CString::new(schemas_json).unwrap();
         let claim_defs_json = CString::new(claim_defs_json).unwrap();
         let revoc_regs_json = CString::new(revoc_regs_json).unwrap();
+        let accumulator = accumulator.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = indy_verifier_verify_proof(command_handle,
                                              proof_request_json.as_ptr(),
@@ -371,6 +388,7 @@ impl AnoncredsUtils {
                                              schemas_json.as_ptr(),
                                              claim_defs_json.as_ptr(),
                                              revoc_regs_json.as_ptr(),
+                                             accumulator.as_ptr(),
                                              cb);
 
         if err != ErrorCode::Success {

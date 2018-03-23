@@ -11,6 +11,9 @@ use services::anoncreds::converters::*;
 use self::indy_crypto::pair::{PointG1, PointG2, Pair};
 use self::indy_crypto::cl::verifier::{Verifier as CryptoVerifier, ProofVerifier};
 use self::indy_crypto::cl::SubProofRequestBuilder;
+use self::indy_crypto::authz::AuthzAccumulators;
+use services::anoncreds::converters::old_bn_to_new_bn;
+
 
 pub struct Verifier {}
 
@@ -30,6 +33,7 @@ impl Verifier {
         claim_defs: &HashMap<String, ClaimDefinition>,
         revoc_regs: &HashMap<String, RevocationRegistry>,
         schemas: &HashMap<String, Schema>,
+        accumulators: Option<&AuthzAccumulators>
     ) -> Result<bool, CommonError> {
         info!(target: "anoncreds_service", "Verifier verify proof -> start");
 
@@ -106,6 +110,12 @@ impl Verifier {
 
         values.extend_from_slice(&tau_list);
         values.extend_from_slice(&proof.aggregated_proof.c_list);
+
+        if let Some(ref authz_proof) = proof.authz_proof {
+            let t_list = authz_proof.verify(&old_bn_to_new_bn(&proof.aggregated_proof.c_hash)?, accumulators.unwrap())?;
+            values.push(t_list);
+        }
+
         values.push(nonce.to_bytes()?);
 
         let c_hver = get_hash_as_int(&mut values)?;

@@ -41,7 +41,8 @@ use std::ffi::CString;
 use utils::types::ProofClaimsJson;
 
 use utils::authz::AuthzUtils;
-
+use utils::anoncreds::AnoncredsUtils;
+use utils::anoncreds::{COMMON_AGENT_SEED, COMMON_AGENT_VERKEY, COMMON_PROVISION_WITNESS};
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;
 
@@ -414,6 +415,8 @@ fn anoncreds_demo_works() {
     let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
     let revoc_regs_jsons = "{}";
 
+    let policy_address = AnoncredsUtils::add_new_policy_and_agent_with_witness_to_policy(wallet_handle, COMMON_AGENT_SEED, COMMON_PROVISION_WITNESS).unwrap();
+
     // 9. Prover create Proof for Proof Request
     let err =
         indy_prover_create_proof(prover_create_proof_handle,
@@ -423,6 +426,7 @@ fn anoncreds_demo_works() {
                                  CString::new(schemas_json.clone()).unwrap().as_ptr(),
                                  CString::new(master_secret_name).unwrap().as_ptr(),
                                  CString::new(policy_address).unwrap().as_ptr(),
+                                 CString::new(COMMON_AGENT_VERKEY).unwrap().as_ptr(),
                                  CString::new(claim_defs_json.clone()).unwrap().as_ptr(),
                                  CString::new(revoc_regs_jsons.clone()).unwrap().as_ptr(),
                                  prover_create_proof_callback);
@@ -440,6 +444,7 @@ fn anoncreds_demo_works() {
                                    CString::new(schemas_json).unwrap().as_ptr(),
                                    CString::new(claim_defs_json).unwrap().as_ptr(),
                                    CString::new(revoc_regs_jsons).unwrap().as_ptr(),
+                                   CString::new("").unwrap().as_ptr(),
                                    verifier_verify_proof_callback);
 
     assert_eq!(ErrorCode::Success, err);

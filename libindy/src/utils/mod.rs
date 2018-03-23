@@ -30,3 +30,6 @@ pub mod timeout;
 
 #[macro_use]
 pub mod try;
+
+
+pub mod misc;
