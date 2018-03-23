@@ -1,4 +1,4 @@
-var binding = require('bindings')('indy')
+var binding = require('bindings')('indynodejs')
 var api = require('./api.json')
 var apiFunctions = require('./apiFunctions')
 

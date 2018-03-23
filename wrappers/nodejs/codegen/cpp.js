@@ -162,6 +162,6 @@ apiFunctions.forEach(function (fn) {
   cpp += '  Nan::Export(target, "' + fn.jsName + '", ' + fn.jsName + ');\n'
 })
 cpp += '}\n'
-cpp += 'NODE_MODULE(indy, InitAll)\n'
+cpp += 'NODE_MODULE(indynodejs, InitAll)\n'
 
 fs.writeFileSync(OUT_FILE, cpp, 'utf8')

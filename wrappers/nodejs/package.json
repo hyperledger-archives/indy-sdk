@@ -20,15 +20,12 @@
   "files": [
     "src",
     "binding.gyp",
-    "include",
-    "codegen"
+    "include"
   ],
   "scripts": {
-    "prepublish": "cp -r ../../libindy/include/ . && node codegen",
-    "preinstall": "node codegen",
-    "install": "node-gyp rebuild",
+    "prepare": "npm run cp-include",
+    "cp-include": "cp -r ../../libindy/include/ .",
     "test": "standard && ava --fail-fast tests",
-    "fmt": "standard --fix",
     "rebuild": "node codegen && node-gyp rebuild"
   },
   "dependencies": {

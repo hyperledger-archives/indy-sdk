@@ -1,7 +1,7 @@
 {
   "targets": [
     {
-      "target_name": "indy",
+      "target_name": "indynodejs",
       "include_dirs": [
         "<!(node -e \"require('nan')\")",
         "<(module_root_dir)/include",
