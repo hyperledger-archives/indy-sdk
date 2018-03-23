@@ -11,6 +11,7 @@
       ],
       "link_settings": {
         "libraries": [
+          "-L<(module_root_dir)",
           "-lindy"
         ]
       }

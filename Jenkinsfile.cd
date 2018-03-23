@@ -217,6 +217,19 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
             }
         }
 
+        sh "cp libindy/target/release/libindy.so wrappers/nodejs"
+        dir('wrappers/nodejs') {
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                echo "${env_name} Libindy Test: Test nodejs wrapper"
+
+                sh '''
+                    npm run cp-include
+                    npm install
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=trace TEST_POOL_IP=10.0.0.2 npm test
+                '''
+            }
+        }
+
         sh "cp libindy/target/release/libindy.so cli"
         dir('cli') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
@@ -391,6 +404,7 @@ def ubuntuPublishing() {
 
                 libindyDebPublishing(testEnv)
                 pythonWrapperPublishing(testEnv, false)
+                nodejsWrapperPublishing(testEnv, false)
                 javaWrapperPublishing(testEnv, false)
                 libindyCliDebPublishing(testEnv)
             }
@@ -500,6 +514,19 @@ def pythonWrapperPublishing(testEnv, isRelease) {
     }
 }
 
+def nodejsWrapperPublishing(testEnv, isRelease) {
+    dir('wrappers/nodejs') {
+        def version = getSrcVersion()
+        def suffix = getSuffix(isRelease, "nodejs")
+
+        testEnv.inside {
+            # TODO npm user for publishing ~/.npmrc
+            sh 'npm version --no-git-tag-version "$version$suffix"'
+            sh 'npm publish'
+        }
+    }
+}
+
 def javaWrapperPublishing(testEnv, isRelease) {
     dir('wrappers/java') {
         echo "Publish To Maven Test: Build docker image"
@@ -564,6 +591,9 @@ def publishingRCtoStable() {
 
                 echo 'Moving Ubuntu RC artifacts to Stable: python wrapper'
                 pythonWrapperPublishing(testEnv, true)
+
+                echo 'Moving Ubuntu RC artifacts to Stable: nodejs wrapper'
+                nodejsWrapperPublishing(testEnv, true)
 
                 echo 'Moving Ubuntu RC artifacts to Stable: java wrapper'
                 javaWrapperPublishing(testEnv, true)
