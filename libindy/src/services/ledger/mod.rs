@@ -161,6 +161,26 @@ impl LedgerService {
             .map_err(|err| CommonError::InvalidState(format!("Invalid pool_config request json: {:?}", err)))
     }
 
+    pub fn build_pool_restart(&self, identifier: &str, action: &str, schedule: Option<&str>) -> Result<String, CommonError> {
+        let schedule = match schedule {
+            Some(schedule) => Some(serde_json::from_str::<HashMap<String, String>>(schedule)
+                .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize schedule: {:?}", err)))?),
+            None => None
+        };
+
+        if action != "start" && action != "cancel" {
+            return Err(CommonError::InvalidStructure(format!("Invalid action: {}", action)));
+        }
+
+        if action == "start" && schedule.is_none() {
+            return Err(CommonError::InvalidStructure(format!("Schedule is required for `{}` action", action)));
+        }
+
+        let operation = PoolRestartOperation::new(action, schedule);
+        Request::build_request(identifier.to_string(), operation)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid pool_restart request json: {:?}", err)))
+    }
+
     pub fn build_pool_upgrade(&self, identifier: &str, name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
                               justification: Option<&str>, reinstall: bool, force: bool) -> Result<String, CommonError> {
         let schedule = match schedule {

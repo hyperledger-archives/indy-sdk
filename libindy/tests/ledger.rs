@@ -1000,6 +1000,76 @@ mod high_cases {
         }
     }
 
+    mod pool_restart {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_pool_restart_request_works_for_start_action() {
+            TestUtils::cleanup_storage();
+
+            let expected_result = r#""operation":{"type":"116","action":"start","schedule":{}"#;
+            let request = LedgerUtils::build_pool_restart_request(DID_TRUSTEE,
+                                                                  "start",
+                                                                  Some("{}")).unwrap();
+            assert!(request.contains(expected_result));
+
+            TestUtils::cleanup_storage();
+        }
+
+        fn is_success(res_json : String) -> bool{
+            true
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        #[ignore] //FIXME currently unstable because pool isn't maintain restart transaction yet.
+        fn indy_pool_restart_request_works_with_valid_data() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+
+            let request = LedgerUtils::build_pool_restart_request(&trustee_did, "start", Some("{}")).unwrap();
+            let submit_res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request);
+
+            let ret_value = submit_res.unwrap();
+
+            println!("Ret value is {} ", ret_value);
+            assert!(is_success(ret_value));
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        #[ignore] //FIXME currently unstable because pool isn't maintain restart transaction yet.
+        fn indy_pool_restart_request_works_with_steward_role() {
+            TestUtils::cleanup_storage();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (steward_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(STEWARD_SEED)).unwrap();
+
+            let request = LedgerUtils::build_pool_restart_request(&steward_did, "start", Some("{}")).unwrap();
+            let submit_res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request);
+
+            let ret_value = submit_res.unwrap();
+
+            println!("Ret value is {} ", ret_value);
+            assert!(is_success(ret_value));
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
+        }
+    }
+
     mod pool_upgrade {
         use super::*;
 

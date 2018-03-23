@@ -474,6 +474,27 @@ impl PoolConfigOperation {
 impl JsonEncodable for PoolConfigOperation {}
 
 #[derive(Serialize, PartialEq, Debug)]
+pub struct PoolRestartOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub action: String, //start, cancel
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub schedule: Option<HashMap<String, String>>,
+}
+
+impl PoolRestartOperation {
+    pub fn new(action: &str, schedule: Option<HashMap<String, String>>) -> PoolRestartOperation {
+        PoolRestartOperation {
+            _type: POOL_RESTART.to_string(),
+            action: action.to_string(),
+            schedule,
+        }
+    }
+}
+
+impl JsonEncodable for PoolRestartOperation {}
+
+#[derive(Serialize, PartialEq, Debug)]
 pub struct PoolUpgradeOperation {
     #[serde(rename = "type")]
     pub _type: String,

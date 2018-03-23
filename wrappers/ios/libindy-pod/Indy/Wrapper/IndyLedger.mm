@@ -375,6 +375,30 @@
     }
 }
 
+// MARK: - Pool restart request
+
++ (void)buildPoolRestartRequestWithSubmitterDid:(NSString *)submitterDid
+                                         action:(NSString *)action
+                                       schedule:(NSString *)schedule
+                                     completion:(void (^)(NSError *error, NSString *requestJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_pool_restart_request(handle,
+            [submitterDid UTF8String],
+            [action UTF8String],
+            [schedule UTF8String],
+            IndyWrapperCommon3PSCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 // MARK: - Pool upgrade request
 
 + (void)buildPoolUpgradeRequestWithSubmitterDid:(NSString *)submitterDid

@@ -270,6 +270,22 @@ public class Ledger extends IndyJava.API {
 	};
 
 	/**
+	 * Callback used when buildPoolRestartRequest completes.
+	 */
+	public static Callback buildPoolRestartRequestCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_json;
+			future.complete(result);
+		}
+	};
+
+	/**
 	 * Callback used when buildPoolUpgradeRequest completes.
 	 */
 	public static Callback buildPoolUpgradeRequestCb = new Callback() {
@@ -787,6 +803,36 @@ public class Ledger extends IndyJava.API {
 				writes,
 				force,
 				buildPoolConfigRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Builds a POOL_RESTART request.
+	 *
+	 * param submitter_did: Id of Identity that sender transaction
+	 * param action       : Action that pool has to do after received transaction.
+	 * 						Can be "start" or "cancel"
+	 * schedule           : Time when pool must be restarted.
+	 */
+	public static CompletableFuture<String> buildPoolRestartRequest(
+			String submitterDid,
+			String action,
+			String schedule) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_pool_restart_request(
+				commandHandle,
+				submitterDid,
+				action,
+				schedule,
+				buildPoolRestartRequestCb);
 
 		checkResult(result);
 
