@@ -2,12 +2,15 @@ import asyncio
 import time
 import re
 
+# Step 5 code goes here, replacing the prep() stub.
 async def prep(wallet_handle, my_vk, their_vk, msg):
     print('prepping %s' % msg)
 
+# Step 3 code goes here, replacing the init() stub.
 async def init():
     return None, None, None, None, None
 
+# Step 6 code goes here, replacing the read() stub.
 async def read(wallet_handle, my_vk):
     print('reading')
 
