@@ -128,4 +128,29 @@ impl AuthzUtils {
         }
         Ok(agent_verkey)
     }
+
+    pub fn compute_witness(initial_witness: &str, witness_json: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err, agent_verkey| {
+            sender.send((err, agent_verkey)).unwrap();
+        });
+        let (command_handle, callback) = CallbackUtils::closure_to_compute_witness_cb(cb);
+
+        let initial_witness = CString::new(initial_witness).unwrap();
+        let witness_json = CString::new(witness_json).unwrap();
+
+        let err = indy_generate_witness(command_handle,
+                                            initial_witness.as_ptr(),
+                                        witness_json.as_ptr(),
+                                            callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let (err, witness) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok(witness)
+    }
 }
