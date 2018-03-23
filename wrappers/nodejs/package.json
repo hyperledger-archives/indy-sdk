@@ -23,8 +23,7 @@
     "include"
   ],
   "scripts": {
-    "prepare": "npm run cp-include",
-    "cp-include": "cp -r ../../libindy/include/ .",
+    "prepare": "cp -r ../../libindy/include/ .",
     "test": "standard && ava --fail-fast tests",
     "rebuild": "node codegen && node-gyp rebuild"
   },

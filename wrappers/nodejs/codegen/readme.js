@@ -1,6 +1,6 @@
 var fs = require('fs')
 var path = require('path')
-var apiFunctions = require('../src/apiFunctions.js')
+var apiFunctions = require('./apiFunctions')
 
 var README_FILE = path.resolve(__dirname, '../README.md')
 

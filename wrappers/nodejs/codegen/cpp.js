@@ -1,6 +1,6 @@
 var fs = require('fs')
 var path = require('path')
-var apiFunctions = require('../src/apiFunctions.js')
+var apiFunctions = require('./apiFunctions')
 
 var OUT_FILE = path.resolve(__dirname, '../src/indy_codegen.h')
 
