@@ -1,7 +1,7 @@
-# Send a Secure Message in 10 minutes
+# Send a Secure Message
 Indy-SDK Developer Walkthrough #3, Python Edition
 
-[ [Java](../java/send-secure-msg.md) | [.NET](../dotnet/send-secure-msg.md) | [Node.js](../node/send-secure-msg.md) | [Objective C](../objectivec/send-secure-msg.md) ]
+[ [Java](../java/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
 
 
 ## Step 1
@@ -11,7 +11,7 @@ Setup your workstation and indy development VM. See [prerequisites](../prerequis
 ## Step 2
 
 In your normal workstation OS (not the VM), open a python editor of your
-choice and paste the code from [secure-msg-template.py](secure-msg-template.py)
+choice and paste the code from [template.py](template.py)
 into a new doc. We will be modifying this code in later steps. Save the
 doc as `msgme.py`
 
@@ -32,8 +32,8 @@ see some simple text output. Try a few commands. Type `quit` when you're done.
 Now we need to begin adding interesting features.
 
 The first thing we need to do is give the app the DIDs and the keys it
-needs to communicate. Copy the contents of [secure-msg-init.py](secure-msg-init.py)
-onto your clipboard, and paste it into `msgme.py`, replacing the stub of
+needs to communicate. Open [step4.py](step4.py) in a text editor, and copy
+its contents into `msgme.py`, replacing the stub of
 the `init()` function from your template.
 
 We will also have to import some dependencies, since this function uses
@@ -78,8 +78,8 @@ you can use copy/paste to share them with the other window.
 
 ## Step 6
 
-Now we need to add secure encryption using indy crypto's `authcrypt()`
-primitive. Copy the contents of [secure-msg-prep.py](secure-msg-prep.py)
+Now we need to add secure encryption using indy crypto's [`auth_crypt()`](https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/crypto.rs#L272)
+primitive. Copy the contents of [step6.py](step6.py)
 onto your clipboard and paste it into `msgme.py`, replacing the stub of
 the `prep()` function from your template.
 
@@ -104,8 +104,7 @@ kill the app.
 ## Step 7
 
 The final feature that our app needs is the ability to read encrypted data.
-Copy the contents of [secure-msg-read.py](secure-msg-read.py) onto your
-clipboard and paste it into `msgme.py`, replacing the stub of the `prep()`
+Copy the contents of [step7.py](step7.py) into `msgme.py`, replacing the stub of the `prep()`
 function from your template.
 
 Save the updated version of `msgme.py`. Now take a minute and study the
