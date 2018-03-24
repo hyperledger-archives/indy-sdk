@@ -1029,7 +1029,7 @@
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "config_name", "type": "const char*"},
-        {"name": "config", "type": "const char*"},
+        {"name": "config", "type": "const char*", "json": true},
         {
           "name": "cb",
           "params": [
@@ -1078,7 +1078,7 @@
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "pools", "type": "const char *const"}
+            {"name": "pools", "type": "const char *const", "json": true}
           ]
         }
       ],
@@ -1171,7 +1171,7 @@
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "wallets", "type": "const char *const"}
+            {"name": "wallets", "type": "const char *const", "json": true}
           ]
         }
       ],

@@ -12,7 +12,7 @@ test('crypto', async function (t) {
   var wHandle = await indy.open_wallet(wName, null, null)
 
   var seed1 = '00000000000000000000000000000My1'
-  var verkey = await indy.create_key(wHandle, JSON.stringify({'seed': seed1}))
+  var verkey = await indy.create_key(wHandle, {'seed': seed1})
 
   var message = Buffer.from('{"reqId":1496822211362017764}', 'utf8')
 

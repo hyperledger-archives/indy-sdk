@@ -7,7 +7,7 @@ test('wallet', async function (t) {
   var pool = await initTestPool()
 
   var listWallets = async function () {
-    var list = JSON.parse(await indy.list_wallets())
+    var list = await indy.list_wallets()
     return list
       .filter(a => a.associated_pool_name === pool.name)
       .map(a => ({name: a.name, type: a.type}))

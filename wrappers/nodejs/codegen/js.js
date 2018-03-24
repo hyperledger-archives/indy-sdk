@@ -11,6 +11,13 @@ js += '\n'
 js += '/* eslint-disable camelcase */\n'
 js += "var capi = require('bindings')('indynodejs')\n"
 js += "var wrapIndyCallback = require('./wrapIndyCallback')\n"
+js += "var safeJson = require('safe-json-stringify')\n"
+js += '\n'
+js += 'function jsonify (val) {\n'
+js += '  return val === null || val === void 0\n'
+js += '    ? null\n'
+js += '    : safeJson(val)\n'
+js += '}\n'
 js += '\n'
 js += 'var indy = {}\n\n'
 
@@ -20,10 +27,18 @@ apiFunctions.forEach(function (fn) {
     js += arg.name + ', '
   })
   js += 'cb) {\n'
-  js += '  cb = wrapIndyCallback(cb)\n'
+  js += '  cb = wrapIndyCallback(cb'
+  if (fn.jsCbParams.length === 1 && fn.jsCbParams[0].json) {
+    js += ', true'
+  }
+  js += ')\n'
   js += '  capi.' + fn.jsName + '('
   fn.jsParams.forEach(function (arg) {
-    js += arg.name + ', '
+    if (arg.json) {
+      js += 'jsonify(' + arg.name + '), '
+    } else {
+      js += arg.name + ', '
+    }
   })
   js += 'cb)\n'
   js += '  return cb.promise\n'

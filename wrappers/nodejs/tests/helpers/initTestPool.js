@@ -3,10 +3,10 @@ var makeTestPool = require('./makeTestPool')
 
 module.exports = async function () {
   var pool = await makeTestPool()
-  await indy.create_pool_ledger_config(pool.name, JSON.stringify({
+  await indy.create_pool_ledger_config(pool.name, {
     'genesis_txn': pool.file
-  }))
-  var poolH = await indy.open_pool_ledger(pool.name, 'null')
+  })
+  var poolH = await indy.open_pool_ledger(pool.name)
 
   return {
     name: pool.name,
