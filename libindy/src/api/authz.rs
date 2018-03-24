@@ -94,7 +94,7 @@ pub  extern fn indy_generate_witness(command_handle: i32,
                                      initial_witness: *const c_char,
                                      witness_array: *const c_char,
                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                    policy_json: *const c_char)>) -> ErrorCode {
+                                                    new_witness: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(initial_witness, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(witness_array, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
