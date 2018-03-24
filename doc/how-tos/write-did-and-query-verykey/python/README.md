@@ -4,11 +4,14 @@ Indy-SDK Developer Walkthrough #1, Python Edition
 [ [Java](../java/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
 
 
-## Step 1
+## Prerequisites
 
-Setup your workstation and indy development VM. See [prerequisites](../prerequisites).
+Setup your workstation and indy development VM. See [prerequisites](../../prerequisites).
 
-## Step 2
+
+## Steps
+
+### Step 1
 
 In your normal workstation OS (not the VM), open a python editor of your
 choice and paste the code from [template.py](template.py)
@@ -18,7 +21,7 @@ doc as `write_did.py`
 This is a very simple app framework into which you'll plug the code
 you'll be writing.
 
-## Step 3
+### Step 2
 
 Now we need to give the SDK some context that it will need
 to deal with an indy ledger. This requires us to point the SDK at some
@@ -29,19 +32,18 @@ appropriate keys.
 We also need to create a wallet, so the SDK can store the DID and key
 material generated during the tutorial.
 
-Copy the contents of [step3.py](step3.py) into
-`write_did.py` on top of the `Step 3 code goes here` placeholder comment.
+Copy the contents of [step2.py](step2.py) into
+`write_did.py` on top of the `Step 2 code goes here` placeholder comment.
 Save the updated version of `write_did.py`.
 
 Study the changes. Scaffolding code like this is likely to appear in anything
 that uses indy.
 
-
-## Step 4
+### Step 3
 
 Now we need to put some DIDs and keys in our identity
-wallet. Copy the contents of [step4.py](step4.py) into
-`write_did.py` on top of the `Step 4 code goes here` placeholder comment.
+wallet. Copy the contents of [step3.py](step3.py) into
+`write_did.py` on top of the `Step 3 code goes here` placeholder comment.
 
 Study the changes.
 
@@ -68,27 +70,27 @@ material are created that the genesis txns expect. In a production indy pool
 such as the Sovrin "live" network, the bootstrapping steward identities
 would not have known seeds.
 
-## Step 5
+## Step 4
 
 Now that preparations are complete, we can finally write the DID and verkey
 for our trust anchor identity to the ledger.
 
-Copy the contents of [step5.py](step5.py) into
-`write_did.py` on top of the `Step 5 code goes here` placeholder comment.
+Copy the contents of [step4.py](step4.py) into
+`write_did.py` on top of the `Step 4 code goes here` placeholder comment.
 
-## Step 6
+## Step 5
 
 Once we have an identity on the ledger, we can query it.
 
-Copy the contents of [step6.py](step5.py) into
-`write_did.py` on top of the `Step 6 code goes here` placeholder comment.
+Copy the contents of [step5.py](step5.py) into
+`write_did.py` on top of the `Step 5 code goes here` placeholder comment.
 
 Only a handful of lines of code matter here; the rest of this block is
 comments and cleanup. You should see similarities between the way this
 query "transaction" and the preceding write transaction are bundled, sent,
 and awaited.
 
-## Step 7
+## Step 6
 
 Run the completed demo and observe the whole sequence.
 
@@ -99,7 +101,10 @@ Now that you have a trust anchor identity, you can write or query
 any number of additional identities to the ledger, with just a handful of
 lines of code. Try creating some.
 
-You might also try to create a new steward identity without a seed, or
+You might try the ["Rotate a Key"](../../rotate-key/python/README.md)
+how-to, which can be done in only one step one you complete this one.
+
+You could also try to create a new steward identity without a seed, or
 with a different seed, and see what kind of error you get. Only identities
 with a trustee role can create stewards...
 
