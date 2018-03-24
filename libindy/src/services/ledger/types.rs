@@ -580,7 +580,7 @@ pub struct GetAgentAuthzAccumWitnessOperation {
 impl GetAgentAuthzAccumWitnessOperation {
     pub fn new(accum_id: String, comm: BigNumber) -> GetAgentAuthzAccumWitnessOperation {
         GetAgentAuthzAccumWitnessOperation {
-            _type: GET_AGENT_AUTHZ_ACCUM.to_string(),
+            _type: GET_AGENT_AUTHZ_ACCUM_WIT.to_string(),
             accum_id,
             comm
         }

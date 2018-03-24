@@ -519,7 +519,7 @@ mod tests {
         let identifier = "2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3";
         let accum_id = "accum_1";
         let comm = BigNumber::from_dec("8001212000112224889901201212001120008532779673333402212111").unwrap();
-        let expected_result = r#""identifier":"2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3","operation":{"type":"30002","accum_id":"accum_1","comm":"8001212000112224889901201212001120008532779673333402212111"},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3","operation":{"type":"30003","accum_id":"accum_1","comm":"8001212000112224889901201212001120008532779673333402212111"},"protocolVersion":1"#;
 
         let request = ledger_service.build_get_agent_authz_accum_witness_request(identifier, accum_id, comm);
         assert!(request.is_ok());

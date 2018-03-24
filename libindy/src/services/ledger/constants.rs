@@ -22,3 +22,4 @@ pub const ROLE_REMOVE: &str = "";
 pub const AGENT_AUTHZ: &'static str = "30000";
 pub const GET_AGENT_AUTHZ: &'static str = "30001";
 pub const GET_AGENT_AUTHZ_ACCUM: &'static str = "30002";
+pub const GET_AGENT_AUTHZ_ACCUM_WIT: &'static str = "30003";
