@@ -40,14 +40,27 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <summary>
         /// Gets the callback to use when the IssuerCreateClaimAsync command completes.
         /// </summary>
-        private static IssuerCreateClaimCompletedDelegate _issuerCreateClaimCallback = (xcommand_handle, err, revoc_reg_update_json, xclaim_json) =>
+        private static IssuerCreateClaimOfferCompletedDelegate _issuerCreateClaimOfferCallback = (xcommand_handle, err, claim_offer_json) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(claim_offer_json);
+        };
+
+        /// <summary>
+        /// Gets the callback to use when the IssuerCreateClaimAsync command completes.
+        /// </summary>
+        private static IssuerCreateClaimCompletedDelegate _issuerCreateClaimCallback = (xcommand_handle, err, revoc_reg_update_json, claim_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<IssuerCreateClaimResult>(xcommand_handle);
 
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            var callbackResult = new IssuerCreateClaimResult(revoc_reg_update_json, xclaim_json);
+            var callbackResult = new IssuerCreateClaimResult(revoc_reg_update_json, claim_json);
 
             taskCompletionSource.SetResult(callbackResult);
         };
@@ -216,6 +229,38 @@ namespace Hyperledger.Indy.AnonCredsApi
                 schemaSeqNo,
                 maxClaimNum,
                 _issuerCreateAndStoreClaimRevocRegCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// TODO: Issuers the create claim offer async.
+        /// </summary>
+        /// <returns>The create claim offer async.</returns>
+        /// <param name="wallet">Wallet.</param>
+        /// <param name="schemaJson">Schema json.</param>
+        /// <param name="issuerDid">Issuer did.</param>
+        /// <param name="proverDid">Prover did.</param>
+        public static Task<string> IssuerCreateClaimOfferAsync(Wallet wallet, string schemaJson, string issuerDid, string proverDid)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(schemaJson, "schemaJson");
+            ParamGuard.NotNullOrWhiteSpace(issuerDid, "issuerDid");
+            ParamGuard.NotNullOrWhiteSpace(proverDid, "proverDid");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_issuer_create_claim_offer(
+                commandHandle,
+                wallet.Handle,
+                schemaJson,
+                issuerDid,
+                proverDid,
+                _issuerCreateClaimOfferCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -546,8 +591,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// </remarks>
         /// <param name="wallet">The target wallet.</param>
         /// <param name="claimsJson">The claims JSON.</param>
+        /// <param name="revRegJson">revocation registry json</param>
         /// <returns>An asynchronous <see cref="Task"/> that completes when the operation has completed.</returns>
-        public static Task ProverStoreClaimAsync(Wallet wallet, string claimsJson)
+        public static Task ProverStoreClaimAsync(Wallet wallet, string claimsJson, string revRegJson)
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(claimsJson, "claimsJson");
@@ -559,6 +605,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 commandHandle,
                 wallet.Handle,
                 claimsJson,
+                revRegJson,
                 CallbackHelper.TaskCompletingNoValueCallback
                 );
 

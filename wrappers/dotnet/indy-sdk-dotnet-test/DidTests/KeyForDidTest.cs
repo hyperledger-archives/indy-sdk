@@ -1,5 +1,5 @@
 ﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.DidApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
@@ -12,11 +12,11 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestKeyForDidWorksForMyDid()
         {
-            var result = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
+            var result = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
             var did = result.Did;
             var key = result.VerKey;
 
-            var receivedKey = await Signus.KeyForDidAsync(pool, wallet, did);
+            var receivedKey = await Did.KeyForDidAsync(pool, wallet, did);
 
             Assert.AreEqual(key, receivedKey);
         }
@@ -25,9 +25,9 @@ namespace Hyperledger.Indy.Test.SignusTests
         public async Task TestKeyForDidWorksForTheirDid()
         {
             var identityJson = string.Format(IDENTITY_JSON_TEMPLATE, DID_MY1, VERKEY_MY1);
-            await Signus.StoreTheirDidAsync(wallet, identityJson);
+            await Did.StoreTheirDidAsync(wallet, identityJson);
 
-            var receivedKey = await Signus.KeyForDidAsync(pool, wallet, DID_MY1);
+            var receivedKey = await Did.KeyForDidAsync(pool, wallet, DID_MY1);
 
             Assert.AreEqual(VERKEY_MY1, receivedKey);
         }
@@ -35,16 +35,16 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestKeyForDidWorksForGetKeyFromLedger()
         {
-            var result = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var result = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var trusteeDid = result.Did;
 
             var identityJson = string.Format(IDENTITY_JSON_TEMPLATE, DID_MY1, VERKEY_MY1);
-            await Signus.StoreTheirDidAsync(wallet, identityJson);
+            await Did.StoreTheirDidAsync(wallet, identityJson);
 
             var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, DID_MY1, VERKEY_MY1, null, null);
             await Ledger.SignAndSubmitRequestAsync(pool, wallet, trusteeDid, nymRequest);
 
-            var receivedKey = await Signus.KeyForDidAsync(pool, wallet, DID_MY1);
+            var receivedKey = await Did.KeyForDidAsync(pool, wallet, DID_MY1);
 
             Assert.AreEqual(VERKEY_MY1, receivedKey);
         }
@@ -53,7 +53,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         public async Task TestKeyForDidWorksForNoKey()
         {
             var ex = await Assert.ThrowsExceptionAsync<InvalidStateException>(() =>
-               Signus.KeyForDidAsync(pool, wallet, DID_MY2)
+               Did.KeyForDidAsync(pool, wallet, DID_MY2)
            );
         }
     }

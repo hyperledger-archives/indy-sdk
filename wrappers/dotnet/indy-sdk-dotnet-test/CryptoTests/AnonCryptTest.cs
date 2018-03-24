@@ -5,19 +5,19 @@ using System.Threading.Tasks;
 namespace Hyperledger.Indy.Test.CryptoTests
 {
     [TestClass]
-    public class BoxSealTest : IndyIntegrationTestBase
+    public class AnonCryptTest : IndyIntegrationTestBase
     {
         [TestMethod] 
-        public async Task TestBoxSealWorks()
+        public async Task TestAnonCryptWorks()
         {
-            await Crypto.BoxSealAsync(VERKEY_MY1, MESSAGE);
+            await Crypto.AnonCryptAsync(VERKEY_MY1, MESSAGE);
         }
 
         [TestMethod]
-        public async Task TestBoxSealWorksForInvalidKey()
+        public async Task TestAnonCryptWorksForInvalidKey()
         {
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                Crypto.BoxSealAsync(INVALID_VERKEY, MESSAGE)
+                  Crypto.AnonCryptAsync(INVALID_VERKEY, MESSAGE)
            );
         }
     }

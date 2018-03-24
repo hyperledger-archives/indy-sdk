@@ -1,5 +1,5 @@
 ﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
@@ -36,10 +36,10 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestSignAndSubmitRequestWorks()
         {
-            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var trusteeDid = trusteeDidResult.Did;
 
-            var myDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
+            var myDidResult = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
             var myDid = myDidResult.Did;
 
             var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, null, null, null);
@@ -51,10 +51,10 @@ namespace Hyperledger.Indy.Test.LedgerTests
         {
             var signerDidJson = "{\"seed\":\"00000000000000000000UnknowSigner\"}";
 
-            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, signerDidJson);
+            var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, signerDidJson);
             var signerDid = trusteeDidResult.Did;
 
-            var myDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
+            var myDidResult = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
             var myDid = myDidResult.Did;
 
             var nymRequest = await Ledger.BuildNymRequestAsync(signerDid, myDid, null, null, null);            
@@ -72,10 +72,10 @@ namespace Hyperledger.Indy.Test.LedgerTests
             await Wallet.CreateWalletAsync("otherPoolName", walletName, "default", null, null);
             var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
 
-            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var trusteeDid = trusteeDidResult.Did;
 
-            var myDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
+            var myDidResult = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
             var myDid = myDidResult.Did;
 
             var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, null, null, null);            

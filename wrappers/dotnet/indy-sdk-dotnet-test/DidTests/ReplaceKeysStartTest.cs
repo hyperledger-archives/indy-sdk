@@ -1,4 +1,4 @@
-﻿using Hyperledger.Indy.SignusApi;
+﻿using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.Test.Util.Base58Check;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -15,7 +15,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestInitialize]
         public async Task CreateWalletWithDid()
         {
-            var result = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
+            var result = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
 
             _did = result.Did;
             _verkey = result.VerKey;
@@ -24,7 +24,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestReplaceKeysStartWorksForEmptyJson()
         {
-            var result = await Signus.ReplaceKeysStartAsync(wallet, _did, "{}");
+            var result = await Did.ReplaceKeysStartAsync(wallet, _did, "{}");
 
             Assert.IsNotNull(result);
             Assert.AreEqual(32, Base58CheckEncoding.DecodePlain(result).Length);
@@ -34,14 +34,14 @@ namespace Hyperledger.Indy.Test.SignusTests
         public async Task TestReplaceKeysStartWorksForNotExistsDid()
         {
             var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-                Signus.ReplaceKeysStartAsync(this.wallet, DID1, "{}")
+                Did.ReplaceKeysStartAsync(this.wallet, DID1, "{}")
             );
         }
 
         [TestMethod]
         public async Task TestReplaceKeysStartWorksForSeed()
         {
-            var result = await Signus.ReplaceKeysStartAsync(wallet, _did, "{\"seed\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}");
+            var result = await Did.ReplaceKeysStartAsync(wallet, _did, "{\"seed\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}");
 
             Assert.AreEqual("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", result);
             Assert.AreNotEqual(this._verkey, result);
