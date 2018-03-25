@@ -321,18 +321,16 @@ fn parse_claim_req_payload(payload: &Vec<u8>) -> Result<ClaimRequest, u32> {
 }
 
 pub fn issuer_claim_create(schema_seq_no: u32,
-                           source_id: Option<String>,
+                           source_id: String,
                            issuer_did: String,
                            claim_name: String,
                            claim_data: String) -> Result<u32, u32> {
 
     let new_handle = rand::thread_rng().gen::<u32>();
 
-    let source_id_unwrap = source_id.unwrap_or("".to_string());
-
     let mut new_issuer_claim = Box::new(IssuerClaim {
         handle: new_handle,
-        source_id: source_id_unwrap,
+        source_id,
         msg_uid: String::new(),
         claim_attributes: claim_data,
         issuer_did,
@@ -561,7 +559,7 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         match issuer_claim_create(0,
-                                  None,
+                                  "1".to_string(),
                                   "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                   "claim_name".to_string(),
                                   "{\"attr\":\"value\"}".to_owned()) {
@@ -575,7 +573,7 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let handle = issuer_claim_create(0,
-                                         None,
+                                         "1".to_string(),
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                          "claim_name".to_string(),
                                          "{\"attr\":\"value\"}".to_owned()).unwrap();
@@ -593,7 +591,7 @@ pub mod tests {
         let claim_id = DEFAULT_CLAIM_ID;
 
         let handle = issuer_claim_create(0,
-                                         None,
+                                         "1".to_string(),
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                          "claim_name".to_string(),
                                          "{\"attr\":\"value\"}".to_owned()).unwrap();
@@ -613,7 +611,7 @@ pub mod tests {
         let claim_id = DEFAULT_CLAIM_ID;
 
         let handle = issuer_claim_create(0,
-                                         None,
+                                         "1".to_string(),
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                          "claim_name".to_string(),
                                          "{\"attr\":\"value\"}".to_owned()).unwrap();
@@ -701,7 +699,7 @@ pub mod tests {
     fn test_from_string_succeeds() {
         set_default_and_enable_test_mode();
         let handle = issuer_claim_create(0,
-                                         None,
+                                         "1".to_string(),
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                          "claim_name".to_string(),
                                          "{\"attr\":\"value\"}".to_owned()).unwrap();
@@ -758,7 +756,7 @@ pub mod tests {
     fn test_issuer_claim_changes_state_after_being_validated() {
         set_default_and_enable_test_mode();
         let handle = issuer_claim_create(0,
-                                         None,
+                                         "1".to_string(),
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                          "claim_name".to_string(),
                                          "{\"att\":\"value\"}".to_owned()).unwrap();
@@ -900,11 +898,11 @@ pub mod tests {
     fn test_release_all() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-        let h1 = issuer_claim_create(0,None,"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
-        let h2 = issuer_claim_create(0,None,"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
-        let h3 = issuer_claim_create(0,None,"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
-        let h4 = issuer_claim_create(0,None,"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
-        let h5 = issuer_claim_create(0,None,"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
+        let h1 = issuer_claim_create(0,"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
+        let h2 = issuer_claim_create(0,"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
+        let h3 = issuer_claim_create(0,"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
+        let h4 = issuer_claim_create(0,"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
+        let h5 = issuer_claim_create(0,"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
         release_all();
         assert_eq!(release(h1),error::INVALID_ISSUER_CLAIM_HANDLE.code_num);
         assert_eq!(release(h2),error::INVALID_ISSUER_CLAIM_HANDLE.code_num);

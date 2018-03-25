@@ -118,7 +118,7 @@ pub fn try_i8_bundle(data: Vec<u8>) -> Result<Bundled<Vec<u8>>, u32> {
     let bundle: Bundled<Vec<i8>> = match Deserialize::deserialize(&mut de) {
         Ok(x) => x,
         Err(_) => {
-            error!("could not deserialize bundle with i8, will try u8");
+            warn!("could not deserialize bundle with i8, will try u8");
             return Err(error::INVALID_MSGPACK.code_num);
         },
     };

@@ -432,10 +432,10 @@ pub mod tests {
     #[test]
     fn test_create_claim_def_and_store_in_wallet() {
         settings::set_defaults();
-        assert!(init_wallet("a_test_wallet").unwrap() > 0);
+        assert!(init_wallet("test_claim_def").unwrap() > 0);
         let wallet_handle = get_wallet_handle();
         let claim_def_json = create_and_store_claim_def(SCHEMAS_JSON, ISSUER_DID, Some(SigTypes::CL), false).unwrap();
-        delete_wallet("a_test_wallet").unwrap();
+        delete_wallet("test_claim_def").unwrap();
         let claim_def_obj = ClaimDefinition::from_str(&claim_def_json).unwrap();
         assert_eq!(claim_def_obj.schema_seq_no, 15);
         assert_eq!(claim_def_obj.issuer_did, ISSUER_DID.to_string());

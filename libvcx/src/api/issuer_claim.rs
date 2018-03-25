@@ -48,6 +48,7 @@ pub extern fn vcx_issuer_create_claim(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(claim_data, error::INVALID_OPTION.code_num);
     check_useful_c_str!(claim_name, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
 
     let issuer_did: String = if !issuer_did.is_null() {
         check_useful_c_str!(issuer_did, error::INVALID_OPTION.code_num);
@@ -59,22 +60,16 @@ pub extern fn vcx_issuer_create_claim(command_handle: u32,
         }
     };
 
-    let source_id_opt = if !source_id.is_null() {
-        check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
-        let val = source_id.to_owned();
-        Some(val)
-    } else { None };
-
-    info!("vcx_issuer_create_claim(command_handle: {}, source_id: {:?}, schema_seq_no: {}, issuer_did: {}, claim_data: {}, claim_name: {})",
+    info!("vcx_issuer_create_claim(command_handle: {}, source_id: {}, schema_seq_no: {}, issuer_did: {}, claim_data: {}, claim_name: {})",
           command_handle,
-          source_id_opt,
+          source_id,
           schema_seq_no,
           issuer_did,
           claim_data,
           claim_name);
 
     thread::spawn(move|| {
-        let (rc, handle) = match issuer_claim::issuer_claim_create(schema_seq_no, source_id_opt, issuer_did, claim_name, claim_data) {
+        let (rc, handle) = match issuer_claim::issuer_claim_create(schema_seq_no, source_id, issuer_did, claim_name, claim_data) {
             Ok(x) => {
                 info!("vcx_issuer_create_claim_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
                       command_handle, error_string(0), x, issuer_claim::get_source_id(x).unwrap_or_default());
@@ -406,7 +401,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         assert_eq!(vcx_issuer_create_claim(0,
-                                           ptr::null(),
+                                           CString::new(DEFAULT_CLAIM_NAME).unwrap().into_raw(),
                                            32,
                                            ptr::null(),
                                            CString::new(DEFAULT_ATTR).unwrap().into_raw(),
@@ -421,7 +416,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         assert_eq!(vcx_issuer_create_claim(
             0,
-            ptr::null(),
+            CString::new(DEFAULT_CLAIM_NAME).unwrap().into_raw(),
             32,
             ptr::null(),
             ptr::null(),
@@ -443,7 +438,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         assert_eq!(vcx_issuer_create_claim(0,
-                                           ptr::null(),
+                                           CString::new(DEFAULT_CLAIM_NAME).unwrap().into_raw(),
                                            DEFAULT_SCHEMA_SEQ_NO,
                                            CString::new(DEFAULT_DID).unwrap().into_raw(),
                                            CString::new(DEFAULT_ATTR).unwrap().into_raw(),
@@ -529,7 +524,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
         assert_eq!(vcx_issuer_create_claim(0,
-                                           ptr::null(),
+                                           CString::new(DEFAULT_CLAIM_NAME).unwrap().into_raw(),
                                            DEFAULT_SCHEMA_SEQ_NO,
                                            CString::new(DEFAULT_DID).unwrap().into_raw(),
                                            CString::new(DEFAULT_ATTR).unwrap().into_raw(),

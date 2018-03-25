@@ -205,15 +205,44 @@ vcx_error_t vcx_proof_update_state(vcx_command_handle_t command_handle, vcx_proo
 /** Retrieves the state of the proof. */
 vcx_error_t vcx_proof_get_state(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_state_t state));
 
-/** Populates status with the current state of this claim. */
+/** Populates status with the current state of this proof. */
 vcx_error_t vcx_proof_serialize(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *state));
 
-/** Re-creates a claim object from the specified serialization. */
+/** Re-creates a proof object from the specified serialization. */
 vcx_error_t vcx_proof_deserialize(vcx_command_handle_t command_handle, const char *serialized_proof, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_proof_handle_t proof_handle));
 
 /** Releases the proof from memory. */
 vcx_error_t vcx_proof_release(vcx_proof_handle_t proof_handle);
 
+/**
+ * disclosed_proof object
+ *
+ * Used for sending a disclosed_proof to an identity owner.
+ */
+
+/** Creates a disclosed_proof object.  Populates a handle to the new disclosed_proof. */
+vcx_error_t vcx_disclosed_proof_create(vcx_command_handle_t command_handle, const char *source_id, const char *requested_attrs, const char *requested_predicates, const char *name, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_proof_handle_t proof_handle));
+
+/** Asynchronously send a proof to the connection. */
+vcx_error_t vcx_disclosed_proof_send_proof(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
+
+/** Populates status with the current state of this disclosed_proof request. */
+vcx_error_t vcx_disclosed_proof_update_state(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_state_t state));
+
+/** Check for any proof requests from the connection. */
+vcx_error_t vcx_disclosed_proof_get_requests(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *offers));
+
+/** Retrieves the state of the disclosed_proof. */
+vcx_error_t vcx_disclosed_proof_get_state(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_state_t state));
+
+/** Populates status with the current state of this disclosed_proof. */
+vcx_error_t vcx_disclosed_proof_serialize(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *state));
+
+/** Re-creates a disclosed_proof object from the specified serialization. */
+vcx_error_t vcx_disclosed_proof_deserialize(vcx_command_handle_t command_handle, const char *serialized_proof, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_proof_handle_t proof_handle));
+
+/** Releases the disclosed_proof from memory. */
+vcx_error_t vcx_disclosed_proof_release(vcx_proof_handle_t proof_handle);
 
 /**
  * claim object
@@ -227,7 +256,7 @@ vcx_error_t vcx_claim_create_with_offer(vcx_command_handle_t command_handle, con
 /** Asynchronously sends the claim request to the connection. */
 vcx_error_t vcx_claim_send_request(vcx_command_handle_t command_handle, vcx_claim_handle_t claim_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
 
-/** Check for any new claim offers from the connection. */
+/** Check for any claim offers from the connection. */
 vcx_error_t vcx_claim_get_offers(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *offers));
 
 /** Updates the state of the claim from the agency. */
