@@ -38,6 +38,7 @@ pub mod claim_def;
 pub mod proof_compliance;
 pub mod claim;
 pub mod object_cache;
+pub mod disclosed_proof;
 
 pub fn create_path(s:&str) -> &Path {
     Path::new(s)

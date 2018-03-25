@@ -309,19 +309,17 @@ impl Proof {
     fn get_source_id(&self) -> String { self.source_id.clone() }
 }
 
-pub fn create_proof(source_id: Option<String>,
+pub fn create_proof(source_id: String,
                     requested_attrs: String,
                     requested_predicates: String,
                     name: String) -> Result<u32, u32> {
 
     let new_handle = rand::thread_rng().gen::<u32>();
-    debug!("creating proof with name: {}, requested_attrs: {}, requested_predicates: {}", name, requested_attrs, requested_predicates);
-
-    let source_id_unwrap = source_id.unwrap_or("".to_string());
+    debug!("creating proof with source_id: {}, name: {}, requested_attrs: {}, requested_predicates: {}", source_id, name, requested_attrs, requested_predicates);
 
     let mut new_proof = Box::new(Proof {
         handle: new_handle,
-        source_id: source_id_unwrap,
+        source_id,
         msg_uid: String::new(),
         ref_msg_id: String::new(),
         requested_attrs,
@@ -512,7 +510,7 @@ mod tests {
     fn test_create_proof_succeeds() {
         set_default_and_enable_test_mode();
 
-        create_proof(None,
+        create_proof("1".to_string(),
                      REQUESTED_ATTRS.to_owned(),
                      REQUESTED_PREDICATES.to_owned(),
                      "Optional".to_owned()).unwrap();
@@ -528,7 +526,7 @@ mod tests {
     fn test_to_string_succeeds() {
         set_default_and_enable_test_mode();
 
-        let handle = create_proof(None,
+        let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();
@@ -539,7 +537,7 @@ mod tests {
     #[test]
     fn test_from_string_succeeds() {
         set_default_and_enable_test_mode();
-        let handle = create_proof(None,
+        let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();
@@ -555,7 +553,7 @@ mod tests {
     #[test]
     fn test_release_proof() {
         set_default_and_enable_test_mode();
-        let handle = create_proof(Some("1".to_string()),
+        let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();
@@ -573,7 +571,7 @@ mod tests {
         connection::set_agent_did(connection_handle, DID);
         connection::set_their_pw_verkey(connection_handle, VERKEY);
 
-        let handle = create_proof(Some("1".to_string()),
+        let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();
@@ -594,7 +592,7 @@ mod tests {
         let connection_handle = build_connection("test_send_proof_request").unwrap();
         connection::set_pw_did(connection_handle, "");
 
-        let handle = create_proof(Some("1".to_string()),
+        let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();
@@ -607,7 +605,7 @@ mod tests {
     #[test]
     fn test_get_proof_fails_with_no_proof() {
         set_default_and_enable_test_mode();
-        let handle = create_proof(Some("1".to_string()),
+        let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();
@@ -879,11 +877,11 @@ mod tests {
     fn test_release_all() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-        let h1 = create_proof(None, REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
-        let h2 = create_proof(None, REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
-        let h3 = create_proof(None, REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
-        let h4 = create_proof(None, REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
-        let h5 = create_proof(None, REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
+        let h1 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
+        let h2 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
+        let h3 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
+        let h4 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
+        let h5 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
         release_all();
         assert_eq!(release(h1), error::INVALID_PROOF_HANDLE.code_num);
         assert_eq!(release(h2), error::INVALID_PROOF_HANDLE.code_num);
@@ -943,7 +941,7 @@ mod tests {
         connection::set_agent_did(connection_handle, DID);
         connection::set_their_pw_verkey(connection_handle, VERKEY);
 
-        let handle = create_proof(Some("1".to_string()),
+        let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();

@@ -35,8 +35,6 @@ lazy_static! {
     static ref HANDLE_MAP: ObjectCache<Claim>  = Default::default();
 }
 
-const LINK_SECRET_ALIAS: &str = "main";
-
 impl Default for Claim {
     fn default() -> Claim
     {
@@ -101,13 +99,13 @@ impl Claim {
 
         let claim_offer = serde_json::to_string(claim_offer).or(Err(error::INVALID_CLAIM_JSON.code_num))?;
 
+        debug!("storing claim offer: {}", claim_offer);
         libindy_prover_store_claim_offer(wallet_h, &claim_offer)?;
 
         let req = libindy_prover_create_and_store_claim_req(wallet_h,
                                                             &prover_did,
                                                             &claim_offer,
-                                                            &claim_def,
-                                                            LINK_SECRET_ALIAS)?;
+                                                            &claim_def)?;
 
         let mut  req : Value = serde_json::from_str(&req)
             .or_else(|e|{
@@ -130,7 +128,7 @@ impl Claim {
     }
 
     fn send_request(&mut self, connection_handle: u32) -> Result<u32, u32> {
-        debug!("sending claim offer via connection connection: {}", connection_handle);
+        debug!("sending claim request via connection: {}", connection_handle);
         self.my_did = Some(connection::get_pw_did(connection_handle)?);
         self.my_vk = Some(connection::get_pw_verkey(connection_handle)?);
         self.agent_did = Some(connection::get_agent_did(connection_handle)?);
@@ -209,8 +207,8 @@ impl Claim {
                         let wallet_h = wallet::get_wallet_handle();
 
                         let claim = serde_json::to_string_pretty(&claim).unwrap();
+                        debug!("storing claim: {}", claim);
                         libindy_prover_store_claim(wallet_h, &claim)?;
-                        debug!("received claim");
                         self.state = VcxStateType::VcxStateAccepted;
                     },
                     None => return Err(error::INVALID_HTTP_RESPONSE.code_num)
@@ -437,26 +435,28 @@ mod tests {
         let offers = serde_json::to_string(&offers[0]).unwrap();
 
         let c_h = claim_create_with_offer("TEST_CLAIM", &offers).unwrap();
-        assert_eq!(3, get_state(c_h).unwrap());
+        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(c_h).unwrap());
 
         send_claim_request(c_h, connection_h).unwrap();
 
-        assert_eq!(2, get_state(c_h).unwrap());
+        assert_eq!(VcxStateType::VcxStateOfferSent as u32, get_state(c_h).unwrap());
 
         httpclient::set_next_u8_response(::utils::constants::CLAIM_RESPONSE.to_vec());
 
         update_state(c_h).unwrap();
-        assert_eq!(4, get_state(c_h).unwrap());
+        assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(c_h).unwrap());
 
         wallet::delete_wallet("full_claim_test").unwrap();
     }
 
+    #[ignore]
     #[test]
     fn test_real_claim() {
+        ::utils::logger::LoggerUtils::init();
         settings::set_to_defaults();
         //BE INSTITUTION AND GENERATE INVITE FOR CONSUMER
         ::utils::devsetup::setup_dev_env("test_real_claim");
-        ::utils::libindy::anoncreds::libindy_prover_create_master_secret(wallet::get_wallet_handle(), LINK_SECRET_ALIAS).unwrap();
+        ::utils::libindy::anoncreds::libindy_prover_create_master_secret(wallet::get_wallet_handle(), ::settings::DEFAULT_LINK_SECRET_ALIAS).unwrap();
         let alice = connection::build_connection("alice").unwrap();
         connection::connect(alice, Some("{}".to_string())).unwrap();
         let details = connection::get_invite_details(alice,true).unwrap();
@@ -474,7 +474,7 @@ mod tests {
         // AS INSTITUTION SEND CLAIM OFFER
         let claim_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
         let claim_offer = issuer_claim::issuer_claim_create(22,
-                                                            None,
+                                                            "1".to_string(),
                                                             settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap(),
                                                             "claim_name".to_string(),
                                                             claim_data.to_owned()).unwrap();

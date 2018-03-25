@@ -15,7 +15,7 @@ use std::ptr;
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// source_id: Institution's personal identification for the user, should be unique.
+/// source_id: Institution's personal identification for the claim, should be unique.
 ///
 /// offer: claim offer received via "vcx_get_claim_offers"
 ///
@@ -63,7 +63,7 @@ pub extern fn vcx_claim_create_with_offer(command_handle: u32,
 /// #params
 /// command_handle: command handle to map callback to user context
 ///
-/// claim_handle: claim handle that ws provided during creation. Used to identify claim object
+/// claim_handle: claim handle that was provided during creation. Used to identify claim object
 ///
 /// connection_handle: Connection handle that identifies pairwise connection
 ///
@@ -513,5 +513,4 @@ mod tests {
         assert_eq!(vcx_claim_send_request(0, handle, cxn,Some(send_offer_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
-
 }

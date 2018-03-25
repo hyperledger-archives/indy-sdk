@@ -27,8 +27,10 @@ pub static CONFIG_ENABLE_TEST_MODE: &'static str = "enable_test_mode";
 pub static CONFIG_GENESIS_PATH: &str = "genesis_path";
 pub static CONFIG_WALLET_KEY: &str = "wallet_key";
 pub static CONFIG_LOG_CONFIG: &str = "log_config";
+pub static CONFIG_LINK_SECRET_ALIAS: &str = "link_secret_alias";
 pub static DEFAULT_GENESIS_PATH: &str = "/tmp/genesis.txn";
 pub static DEFAULT_WALLET_NAME: &str = "LIBVCX_SDK_WALLET";
+pub static DEFAULT_LINK_SECRET_ALIAS: &str = "main";
 pub static UNINITIALIZED_WALLET_KEY: &str = "<KEY_IS_NOT_SET>";
 
 lazy_static! {
@@ -55,6 +57,7 @@ pub fn set_defaults() -> u32 {
     settings.set_default(CONFIG_SDK_TO_REMOTE_VERKEY, "2zoa6G7aMfX8GnUEpDxxunFHE7fZktRiiHk1vgMRH2tm");
     settings.set_default(CONFIG_GENESIS_PATH, DEFAULT_GENESIS_PATH);
     settings.set_default(CONFIG_WALLET_KEY, UNINITIALIZED_WALLET_KEY);
+    settings.set_default(CONFIG_LINK_SECRET_ALIAS, DEFAULT_LINK_SECRET_ALIAS);
 
     error::SUCCESS.code_num
 }
@@ -79,6 +82,7 @@ pub fn set_to_defaults() -> u32 {
     settings.set(CONFIG_SDK_TO_REMOTE_VERKEY,"2zoa6G7aMfX8GnUEpDxxunFHE7fZktRiiHk1vgMRH2tm");
     settings.set(CONFIG_GENESIS_PATH, DEFAULT_GENESIS_PATH);
     settings.set(CONFIG_WALLET_KEY,UNINITIALIZED_WALLET_KEY);
+    settings.set(CONFIG_LINK_SECRET_ALIAS, DEFAULT_LINK_SECRET_ALIAS);
 
     error::SUCCESS.code_num
 }

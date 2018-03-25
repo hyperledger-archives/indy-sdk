@@ -75,6 +75,16 @@ export interface IFFIEntryPoint {
   vcx_proof_update_state: (commandId: number, handle: string, cb: any) => number,
   vcx_proof_get_state: (commandId: number, handle: string, cb: any) => number,
 
+  // disclosed proof
+  vcx_disclosed_proof_create_with_request: (commandId: number, sourceId: string, req: string, cb: any) => number,
+  vcx_disclosed_proof_release: (handle: string) => number,
+  vcx_disclosed_proof_send_proof: (commandId: number, proofHandle: string, connectionHandle: string, cb: any) => number,
+  vcx_disclosed_proof_serialize: (commandId: number, handle: string, cb: any) => number,
+  vcx_disclosed_proof_deserialize: (commandId: number, data: string, cb: any) => number,
+  vcx_disclosed_proof_update_state: (commandId: number, handle: string, cb: any) => number,
+  vcx_disclosed_proof_get_state: (commandId: number, handle: string, cb: any) => number,
+  vcx_disclosed_proof_get_requests: (commandId: number, connectionHandle: string, cb: any) => number,
+
   // claim
   vcx_claim_create_with_offer: (commandId: number, sourceId: string, offer: string, cb: any) => number,
   vcx_claim_release: (handle: string) => number,
@@ -150,6 +160,18 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_proof_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_proof_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_proof_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
+
+  // disclosed proof
+  vcx_disclosed_proof_create_with_request: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA,
+    FFI_CALLBACK_PTR]],
+  vcx_disclosed_proof_release: [FFI_ERROR_CODE, [FFI_PROOF_HANDLE]],
+  vcx_disclosed_proof_send_proof: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CONNECTION_HANDLE,
+    FFI_CALLBACK_PTR]],
+  vcx_disclosed_proof_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_disclosed_proof_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_disclosed_proof_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_disclosed_proof_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_disclosed_proof_get_requests: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
 
   // claim
   vcx_claim_create_with_offer: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_CALLBACK_PTR]],

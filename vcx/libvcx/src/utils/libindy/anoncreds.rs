@@ -229,8 +229,7 @@ pub fn libindy_prover_get_claims(wallet_handle: i32,
 pub fn libindy_prover_create_and_store_claim_req(wallet_handle: i32,
                                                  prover_did: &str,
                                                  claim_offer_json: &str,
-                                                 claim_def_json: &str,
-                                                 master_secret_name: &str) -> Result<String, u32>
+                                                 claim_def_json: &str) -> Result<String, u32>
 {
     if settings::test_indy_mode_enabled() { return Ok(::utils::constants::CLAIM_REQ_STRING.to_owned()); }
 
@@ -239,7 +238,7 @@ pub fn libindy_prover_create_and_store_claim_req(wallet_handle: i32,
     let prover_did = CString::new(prover_did).map_err(map_string_error)?;
     let claim_offer_json = CString::new(claim_offer_json).map_err(map_string_error)?;
     let claim_def_json = CString::new(claim_def_json).map_err(map_string_error)?;
-    let master_secret_name = CString::new(master_secret_name).map_err(map_string_error)?;
+    let master_secret_name = CString::new(settings::get_config_value(settings::CONFIG_LINK_SECRET_ALIAS).unwrap()).map_err(map_string_error)?;
 
     unsafe {
         indy_function_eval(

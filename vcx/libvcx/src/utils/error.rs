@@ -65,6 +65,7 @@ pub static WALLET_ALREADY_OPEN: Error = Error{code_num: 1052, message: "Indy wal
 pub static INVALID_CLAIM_HANDLE: Error = Error{code_num: 1053, message: "Invalid claim handle"};
 pub static INVALID_CLAIM_JSON: Error = Error{code_num: 1054, message: "Invalid claim json"};
 pub static CREATE_CLAIM_REQUEST_ERROR: Error = Error{code_num: 1055, message: "could not create claim request"};
+pub static CREATE_PROOF_ERROR: Error = Error{code_num: 1056, message: "could not create proof"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -123,6 +124,7 @@ lazy_static! {
         insert_c_message(&mut m, &INVALID_CLAIM_HANDLE);
         insert_c_message(&mut m, &INVALID_CLAIM_JSON);
         insert_c_message(&mut m, &CREATE_CLAIM_REQUEST_ERROR);
+        insert_c_message(&mut m, &CREATE_PROOF_ERROR);
        m
     };
 }
