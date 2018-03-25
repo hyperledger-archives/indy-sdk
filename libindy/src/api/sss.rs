@@ -1,4 +1,3 @@
-// TODO: Add 3 commands, add and create shards of a verkey, get shards of a verkey, recover secret using given shards
 extern crate libc;
 
 use api::ErrorCode;

@@ -219,7 +219,7 @@ impl AuthzCommandExecutor {
                     format!("Can't serialize policy: {}", err.description())))?;
         let addr_str = BigNumber::to_dec(&policy.address)?;
         let key = AuthzCommandExecutor::_policy_addr_to_wallet_key(addr_str);
-        println!("Setting key {:?} value {:?}", &key, &policy_json);
+        trace!("Setting key {:?} value {:?}", &key, &policy_json);
         self.wallet_service.set(wallet_handle, &key, &policy_json)?;
         Ok(policy_json)
     }
@@ -230,7 +230,7 @@ impl AuthzCommandExecutor {
 
     fn __get_policy_from_wallet(wallet_service: &WalletService, wallet_handle: i32, policy_addr: String) -> Result<Policy, IndyError> {
         let key = AuthzCommandExecutor::_policy_addr_to_wallet_key(policy_addr);
-        println!("Getting key {:?}", &key);
+        trace!("Getting key {:?}", &key);
         let value = wallet_service.get(wallet_handle, &key)?;
         let policy = Policy::from_json(&value)
             .map_err(map_err_trace!())
