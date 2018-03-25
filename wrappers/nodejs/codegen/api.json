@@ -44,6 +44,8 @@
   },
   "functions": {
     "indy_issuer_create_and_store_claim_def": {
+      "docs": "",
+      "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -63,6 +65,8 @@
       "ret": "indy_error_t"
     },
     "indy_issuer_create_and_store_revoc_reg": {
+      "docs": "",
+      "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -81,6 +85,8 @@
       "ret": "indy_error_t"
     },
     "indy_issuer_create_claim_offer": {
+      "docs": "",
+      "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -99,6 +105,8 @@
       "ret": "indy_error_t"
     },
     "indy_issuer_create_claim": {
+      "docs": "",
+      "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -118,6 +126,8 @@
       "ret": "indy_error_t"
     },
     "indy_issuer_revoke_claim": {
+      "docs": "",
+      "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -136,6 +146,8 @@
       "ret": "indy_error_t"
     },
     "indy_prover_store_claim_offer": {
+      "docs": "",
+      "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -151,6 +163,8 @@
       "ret": "indy_error_t"
     },
     "indy_prover_get_claim_offers": {
+      "docs": "",
+      "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -167,6 +181,8 @@
       "ret": "indy_error_t"
     },
     "indy_prover_create_master_secret": {
+      "docs": "",
+      "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -182,6 +198,8 @@
       "ret": "indy_error_t"
     },
     "indy_prover_create_and_store_claim_req": {
+      "docs": "",
+      "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -201,6 +219,8 @@
       "ret": "indy_error_t"
     },
     "indy_prover_store_claim": {
+      "docs": "",
+      "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -217,6 +237,8 @@
       "ret": "indy_error_t"
     },
     "indy_prover_get_claims": {
+      "docs": "",
+      "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -233,6 +255,8 @@
       "ret": "indy_error_t"
     },
     "indy_prover_get_claims_for_proof_req": {
+      "docs": "",
+      "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -249,6 +273,8 @@
       "ret": "indy_error_t"
     },
     "indy_prover_create_proof": {
+      "docs": "",
+      "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -270,6 +296,8 @@
       "ret": "indy_error_t"
     },
     "indy_verifier_verify_proof": {
+      "docs": "",
+      "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "proof_request_json", "type": "const char*", "json": true},
@@ -289,6 +317,8 @@
       "ret": "indy_error_t"
     },
     "indy_create_key": {
+      "docs": "Creates keys pair and stores in the wallet.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: Wallet handle (created by open_wallet).\nkey_json: Key information as json. Example:\n{\n\"seed\": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.\n\"crypto_type\": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.\n}\ncb: Callback that takes command result as parameter.\n\n#Returns\nError Code\ncb:\n- xcommand_handle: command handle to map callback to caller context.\n- err: Error code.\n- verkey: Ver key of generated key pair, also used as key identifier\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "group": "crypto",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -305,6 +335,8 @@
       "ret": "indy_error_t"
     },
     "indy_set_key_metadata": {
+      "docs": "Saves/replaces the meta information for the giving key in the wallet.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: Wallet handle (created by open_wallet).\nverkey - the key (verkey, key id) to store metadata.\nmetadata - the meta information that will be store with the key.\ncb: Callback that takes command result as parameter.\n\n#Returns\nError Code\ncb:\n- xcommand_handle: command handle to map callback to caller context.\n- err: Error code.\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "group": "crypto",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -321,6 +353,8 @@
       "ret": "indy_error_t"
     },
     "indy_get_key_metadata": {
+      "docs": "Retrieves the meta information for the giving key in the wallet.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: Wallet handle (created by open_wallet).\nverkey - The key (verkey, key id) to retrieve metadata.\ncb: Callback that takes command result as parameter.\n\n#Returns\nError Code\ncb:\n- xcommand_handle: Command handle to map callback to caller context.\n- err: Error code.\n- metadata - The meta information stored with the key; Can be null if no metadata was saved for this key.\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "group": "crypto",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -337,6 +371,8 @@
       "ret": "indy_error_t"
     },
     "indy_crypto_sign": {
+      "docs": "Signs a message by a signing key associated with my DID. The DID with a signing key\nmust be already created and stored in a secured wallet (see create_and_store_my_identity)\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nmy_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did\nmessage_raw: a pointer to first byte of message to be signed\nmessage_len: a message length\ncb: Callback that takes command result as parameter.\n\n#Returns\na signature string\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "group": "crypto",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -356,6 +392,8 @@
       "ret": "indy_error_t"
     },
     "indy_crypto_verify": {
+      "docs": "Verify a signature with a verkey.\n\nNote to use DID keys with this function you can call indy_key_for_did to get key id (verkey)\nfor specific DID.\n\n#Params\ncommand_handle: command handle to map callback to user context.\ntheir_vk: verkey to use\nmessage_raw: a pointer to first byte of message to be signed\nmessage_len: a message length\nsignature_raw: a a pointer to first byte of signature to be verified\nsignature_len: a signature length\ncb: Callback that takes command result as parameter.\n\n#Returns\nvalid: true - if signature is valid, false - otherwise\n\n#Errors\nCommon*\nWallet*\nLedger*\nCrypto*",
+      "group": "crypto",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "their_vk", "type": "const char*"},
@@ -375,6 +413,8 @@
       "ret": "indy_error_t"
     },
     "indy_crypto_auth_crypt": {
+      "docs": "Encrypt a message by authenticated-encryption scheme.\n\nSender can encrypt a confidential message specifically for Recipient, using Sender's public key.\nUsing Recipient's public key, Sender can compute a shared secret key.\nUsing Sender's public key and his secret key, Recipient can compute the exact same shared secret key.\nThat shared secret key can be used to verify that the encrypted message was not tampered with,\nbefore eventually decrypting it.\n\nNote to use DID keys with this function you can call indy_key_for_did to get key id (verkey)\nfor specific DID.\n\n#Params\ncommand_handle: command handle to map callback to user context.\nwallet_handle: wallet handle (created by open_wallet).\nmy_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did\ntheir_vk: id (verkey) of their key\nmessage_raw: a pointer to first byte of message that to be encrypted\nmessage_len: a message length\ncb: Callback that takes command result as parameter.\n\n#Returns\nan encrypted message\n\n#Errors\nCommon*\nWallet*\nLedger*\nCrypto*",
+      "group": "crypto",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -395,6 +435,8 @@
       "ret": "indy_error_t"
     },
     "indy_crypto_auth_decrypt": {
+      "docs": "Decrypt a message by authenticated-encryption scheme.\n\nSender can encrypt a confidential message specifically for Recipient, using Sender's public key.\nUsing Recipient's public key, Sender can compute a shared secret key.\nUsing Sender's public key and his secret key, Recipient can compute the exact same shared secret key.\nThat shared secret key can be used to verify that the encrypted message was not tampered with,\nbefore eventually decrypting it.\n\nNote to use DID keys with this function you can call indy_key_for_did to get key id (verkey)\nfor specific DID.\n\n#Params\ncommand_handle: command handle to map callback to user context.\nwallet_handle: wallet handler (created by open_wallet).\nmy_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did\nencrypted_msg_raw: a pointer to first byte of message that to be decrypted\nencrypted_msg_len: a message length\ncb: Callback that takes command result as parameter.\n\n#Returns\nsender verkey and decrypted message\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "group": "crypto",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -415,6 +457,8 @@
       "ret": "indy_error_t"
     },
     "indy_crypto_anon_crypt": {
+      "docs": "Encrypts a message by anonymous-encryption scheme.\n\nSealed boxes are designed to anonymously send messages to a Recipient given its public key.\nOnly the Recipient can decrypt these messages, using its private key.\nWhile the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.\n\nNote to use DID keys with this function you can call indy_key_for_did to get key id (verkey)\nfor specific DID.\n\n#Params\ncommand_handle: command handle to map callback to user context.\ntheir_vk: id (verkey) of their key\nmessage_raw: a pointer to first byte of message that to be encrypted\nmessage_len: a message length\ncb: Callback that takes command result as parameter.\n\n#Returns\nan encrypted message\n\n#Errors\nCommon*\nWallet*\nLedger*\nCrypto*",
+      "group": "crypto",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "their_vk", "type": "const char*"},
@@ -433,6 +477,8 @@
       "ret": "indy_error_t"
     },
     "indy_crypto_anon_decrypt": {
+      "docs": "Decrypts a message by anonymous-encryption scheme.\n\nSealed boxes are designed to anonymously send messages to a Recipient given its public key.\nOnly the Recipient can decrypt these messages, using its private key.\nWhile the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.\n\nNote to use DID keys with this function you can call indy_key_for_did to get key id (verkey)\nfor specific DID.\n\n#Params\ncommand_handle: command handle to map callback to user context.\nwallet_handle: wallet handler (created by open_wallet).\nmy_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did\nencrypted_msg_raw: a pointer to first byte of message that to be decrypted\nencrypted_msg_len: a message length\ncb: Callback that takes command result as parameter.\n\n#Returns\ndecrypted message\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "group": "crypto",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -452,6 +498,8 @@
       "ret": "indy_error_t"
     },
     "indy_create_and_store_my_did": {
+      "docs": "Creates keys (signing and encryption keys) for a new\nDID (owned by the caller of the library).\nIdentity's DID must be either explicitly provided, or taken as the first 16 bit of verkey.\nSaves the Identity DID with keys in a secured Wallet, so that it can be used to sign\nand encrypt transactions.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\ndid_json: Identity information as json. Example:\n{\n\"did\": string, (optional; if not provided then the first 16 bit of the verkey will be used\nas a new DID; if provided, then keys will be replaced - key rotation use case)\n\"seed\": string, (optional; if not provide then a random one will be created)\n\"crypto_type\": string, (optional; if not set then ed25519 curve is used;\ncurrently only 'ed25519' value is supported for this field)\n}\ncb: Callback that takes command result as parameter.\n\n#Returns\nDID, verkey (for verification of signature) and public_key (for decryption)\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -469,6 +517,8 @@
       "ret": "indy_error_t"
     },
     "indy_replace_keys_start": {
+      "docs": "Generated temporary keys (signing and encryption keys) for an existing\nDID (owned by the caller of the library).\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nidentity_json: Identity information as json. Example:\n{\n\"seed\": string, (optional; if not provide then a random one will be created)\n\"crypto_type\": string, (optional; if not set then ed25519 curve is used;\ncurrently only 'ed25519' value is supported for this field)\n}\ncb: Callback that takes command result as parameter.\n\n#Returns\nverkey (for verification of signature) and public_key (for decryption)\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -486,6 +536,8 @@
       "ret": "indy_error_t"
     },
     "indy_replace_keys_apply": {
+      "docs": "Apply temporary keys as main for an existing DID (owned by the caller of the library).\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\ndid\ncb: Callback that takes command result as parameter.\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -501,6 +553,8 @@
       "ret": "indy_error_t"
     },
     "indy_store_their_did": {
+      "docs": "Saves their DID for a pairwise connection in a secured Wallet,\nso that it can be used to verify transaction.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nidentity_json: Identity information as json. Example:\n{\n\"did\": string, (required)\n\"verkey\": string (optional, can be avoided if did is cryptonym: did == verkey)\n}\ncb: Callback that takes command result as parameter.\n\n#Returns\nNone\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -516,6 +570,8 @@
       "ret": "indy_error_t"
     },
     "indy_key_for_did": {
+      "docs": "Returns ver key (key id) for the given DID.\n\n\"indy_key_for_did\" call follow the idea that we resolve information about their DID from\nthe ledger with cache in the local wallet. The \"indy_open_wallet\" call has freshness parameter\nthat is used for checking the freshness of cached pool value.\n\nNote if you don't want to resolve their DID info from the ledger you can use\n\"indy_key_for_local_did\" call instead that will look only to local wallet and skip\nfreshness checking\n\nNote that indy_create_and_store_my_did makes similar wallet record as indy_create_key.\nAs result we can use returned ver key in all generic crypto and messaging functions.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\npool_handle: Pool handle to resolve information from the ledger.\nwallet_handle: Wallet handle (created by open_wallet).\ndid - The DID to resolve key.\ncb: Callback that takes command result as parameter.\n\n#Returns\nError Code\ncb:\n- xcommand_handle: Command handle to map callback to caller context.\n- err: Error code.\n- key - The DIDs ver key (key id).\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "pool_handle", "type": "indy_handle_t"},
@@ -533,6 +589,8 @@
       "ret": "indy_error_t"
     },
     "indy_key_for_local_did": {
+      "docs": "Returns ver key (key id) for the given DID.\n\n\"indy_key_for_local_did\" call looks data stored in the local wallet only and skips freshness checking.\n\nNote if you want to get fresh data from the ledger you can use \"indy_key_for_did\" call\ninstead.\n\nNote that \"indy_create_and_store_my_did\" makes similar wallet record as \"indy_create_key\".\nAs result we can use returned ver key in all generic crypto and messaging functions.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: Wallet handle (created by open_wallet).\ndid - The DID to resolve key.\ncb: Callback that takes command result as parameter.\n\n#Returns\nError Code\ncb:\n- xcommand_handle: Command handle to map callback to caller context.\n- err: Error code.\n- key - The DIDs ver key (key id).\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -549,6 +607,8 @@
       "ret": "indy_error_t"
     },
     "indy_set_endpoint_for_did": {
+      "docs": "",
+      "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -566,6 +626,8 @@
       "ret": "indy_error_t"
     },
     "indy_get_endpoint_for_did": {
+      "docs": "",
+      "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -584,6 +646,8 @@
       "ret": "indy_error_t"
     },
     "indy_set_did_metadata": {
+      "docs": "Saves/replaces the meta information for the giving DID in the wallet.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: Wallet handle (created by open_wallet).\ndid - the DID to store metadata.\nmetadata - the meta information that will be store with the DID.\ncb: Callback that takes command result as parameter.\n\n#Returns\nError Code\ncb:\n- xcommand_handle: command handle to map callback to caller context.\n- err: Error code.\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -600,6 +664,8 @@
       "ret": "indy_error_t"
     },
     "indy_get_did_metadata": {
+      "docs": "Retrieves the meta information for the giving DID in the wallet.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: Wallet handle (created by open_wallet).\ndid - The DID to retrieve metadata.\ncb: Callback that takes command result as parameter.\n\n#Returns\nError Code\ncb:\n- xcommand_handle: Command handle to map callback to caller context.\n- err: Error code.\n- metadata - The meta information stored with the DID; Can be null if no metadata was saved for this DID.\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -616,6 +682,8 @@
       "ret": "indy_error_t"
     },
     "indy_get_my_did_with_meta": {
+      "docs": "Get info about My DID in format: DID, verkey, metadata",
+      "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -632,6 +700,8 @@
       "ret": "indy_error_t"
     },
     "indy_list_my_dids_with_meta": {
+      "docs": "Lists created DIDs with metadata as JSON array with each DID in format: DID, verkey, metadata",
+      "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -647,6 +717,8 @@
       "ret": "indy_error_t"
     },
     "indy_abbreviate_verkey": {
+      "docs": "Retrieves abbreviated verkey if it is possible otherwise return full verkey",
+      "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "did", "type": "const char *const"},
@@ -663,6 +735,8 @@
       "ret": "indy_error_t"
     },
     "indy_sign_and_submit_request": {
+      "docs": "Signs and submits request message to validator pool.\n\nAdds submitter information to passed request json, signs it with submitter\nsign key (see wallet_sign), and sends signed request message\nto validator pool (see write_request).\n\n#Params\ncommand_handle: command handle to map callback to caller context.\npool_handle: pool handle (created by open_pool_ledger).\nwallet_handle: wallet handle (created by open_wallet).\nsubmitter_did: Id of Identity stored in secured Wallet.\nrequest_json: Request data json.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*\nWallet*\nLedger*\nCrypto*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "pool_handle", "type": "indy_handle_t"},
@@ -681,6 +755,8 @@
       "ret": "indy_error_t"
     },
     "indy_submit_request": {
+      "docs": "Publishes request message to validator pool (no signing, unlike sign_and_submit_request).\n\nThe request is sent to the validator pool as is. It's assumed that it's already prepared.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\npool_handle: pool handle (created by open_pool_ledger).\nrequest_json: Request data json.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*\nLedger*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "pool_handle", "type": "indy_handle_t"},
@@ -697,6 +773,8 @@
       "ret": "indy_error_t"
     },
     "indy_sign_request": {
+      "docs": "Signs request message.\n\nAdds submitter information to passed request json, signs it with submitter\nsign key (see wallet_sign).\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nwallet_handle: wallet handle (created by open_wallet).\nsubmitter_did: Id of Identity stored in secured Wallet.\nrequest_json: Request data json.\ncb: Callback that takes command result as parameter.\n\n#Returns\nSigned request json.\n\n#Errors\nCommon*\nWallet*\nLedger*\nCrypto*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -714,6 +792,8 @@
       "ret": "indy_error_t"
     },
     "indy_build_get_ddo_request": {
+      "docs": "Builds a request to get a DDO.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ntarget_did: Id of Identity stored in secured Wallet.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
@@ -730,6 +810,8 @@
       "ret": "indy_error_t"
     },
     "indy_build_nym_request": {
+      "docs": "Builds a NYM request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ntarget_did: Id of Identity stored in secured Wallet.\nverkey: verification key\nalias\nrole: Role of a user NYM record\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
@@ -749,6 +831,8 @@
       "ret": "indy_error_t"
     },
     "indy_build_attrib_request": {
+      "docs": "Builds an ATTRIB request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ntarget_did: Id of Identity stored in secured Wallet.\nhash: Hash of attribute data\nraw: represented as json, where key is attribute name and value is it's value\nenc: Encrypted attribute data\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
@@ -768,6 +852,8 @@
       "ret": "indy_error_t"
     },
     "indy_build_get_attrib_request": {
+      "docs": "Builds a GET_ATTRIB request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ntarget_did: Id of Identity stored in secured Wallet.\nhash: Hash of attribute data\nraw: represented as json, where key is attribute name and value is it's value\nenc: Encrypted attribute data\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
@@ -787,6 +873,8 @@
       "ret": "indy_error_t"
     },
     "indy_build_get_nym_request": {
+      "docs": "Builds a GET_NYM request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ntarget_did: Id of Identity stored in secured Wallet.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
@@ -803,6 +891,8 @@
       "ret": "indy_error_t"
     },
     "indy_build_schema_request": {
+      "docs": "Builds a SCHEMA request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ndata: name, version, type, attr_names (ip, port, keys)\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
@@ -819,6 +909,8 @@
       "ret": "indy_error_t"
     },
     "indy_build_get_schema_request": {
+      "docs": "Builds a GET_SCHEMA request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ndest: Id of Identity stored in secured Wallet.\ndata: name, version\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
@@ -836,6 +928,8 @@
       "ret": "indy_error_t"
     },
     "indy_build_claim_def_txn": {
+      "docs": "Builds an CLAIM_DEF request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\nxref: Seq. number of schema\nsignature_type\ndata: components of a key in json: N, R, S, Z\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
@@ -854,6 +948,8 @@
       "ret": "indy_error_t"
     },
     "indy_build_get_claim_def_txn": {
+      "docs": "Builds a GET_CLAIM_DEF request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\nxref: Seq. number of schema\nsignature_type: signature type (only CL supported now)\norigin: issuer did\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
@@ -872,6 +968,8 @@
       "ret": "indy_error_t"
     },
     "indy_build_node_request": {
+      "docs": "Builds a NODE request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ntarget_did: Id of Identity stored in secured Wallet.\ndata: id of a target NYM record\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
@@ -889,6 +987,8 @@
       "ret": "indy_error_t"
     },
     "indy_build_get_txn_request": {
+      "docs": "Builds a GET_TXN request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ndata: seq_no of transaction in ledger\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
@@ -905,6 +1005,8 @@
       "ret": "indy_error_t"
     },
     "indy_build_pool_config_request": {
+      "docs": "Builds a POOL_CONFIG request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\nwrites:\nforce:\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
@@ -922,6 +1024,8 @@
       "ret": "indy_error_t"
     },
     "indy_build_pool_upgrade_request": {
+      "docs": "Builds a POOL_UPGRADE request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\nname:\naction: Either start or cancel\nsha256:\ntimeout:\nschedule:\njustification:\nreinstall:\nforce:\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
@@ -946,6 +1050,8 @@
       "ret": "indy_error_t"
     },
     "indy_is_pairwise_exists": {
+      "docs": "Check if pairwise is exists.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\ntheir_did: encrypted DID\ncb: Callback that takes command result as parameter.\n\n#Returns\nexists: true - if pairwise is exists, false - otherwise\n\n#Errors\nCommon*\nWallet*",
+      "group": "pairwise",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -962,6 +1068,8 @@
       "ret": "indy_error_t"
     },
     "indy_create_pairwise": {
+      "docs": "Creates pairwise.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\ntheir_did: encrypting DID\nmy_did: encrypted DID\nmetadata Optional: extra information for pairwise\ncb: Callback that takes command result as parameter.\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
+      "group": "pairwise",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -979,6 +1087,8 @@
       "ret": "indy_error_t"
     },
     "indy_list_pairwise": {
+      "docs": "Get list of saved pairwise.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\ncb: Callback that takes command result as parameter.\n\n#Returns\nlist_pairwise: list of saved pairwise\n\n#Errors\nCommon*\nWallet*",
+      "group": "pairwise",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -994,6 +1104,8 @@
       "ret": "indy_error_t"
     },
     "indy_get_pairwise": {
+      "docs": "Gets pairwise information for specific their_did.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\ntheir_did: encoded Did\ncb: Callback that takes command result as parameter.\n\n#Returns\npairwise_info_json: did info associated with their did\n\n#Errors\nCommon*\nWallet*",
+      "group": "pairwise",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -1010,6 +1122,8 @@
       "ret": "indy_error_t"
     },
     "indy_set_pairwise_metadata": {
+      "docs": "Save some data in the Wallet for pairwise associated with Did.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\ntheir_did: encoded Did\nmetadata: some extra information for pairwise\ncb: Callback that takes command result as parameter.\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
+      "group": "pairwise",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
@@ -1026,6 +1140,8 @@
       "ret": "indy_error_t"
     },
     "indy_create_pool_ledger_config": {
+      "docs": "",
+      "group": "pool",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "config_name", "type": "const char*"},
@@ -1041,6 +1157,8 @@
       "ret": "indy_error_t"
     },
     "indy_open_pool_ledger": {
+      "docs": "",
+      "group": "pool",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "config_name", "type": "const char*"},
@@ -1057,6 +1175,8 @@
       "ret": "indy_error_t"
     },
     "indy_refresh_pool_ledger": {
+      "docs": "",
+      "group": "pool",
       "params": [
         {"name": "command_hangle", "type": "indy_handle_t"},
         {"name": "handle", "type": "indy_handle_t"},
@@ -1071,6 +1191,8 @@
       "ret": "indy_error_t"
     },
     "indy_list_pools": {
+      "docs": "",
+      "group": "pool",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {
@@ -1085,6 +1207,8 @@
       "ret": "indy_error_t"
     },
     "indy_close_pool_ledger": {
+      "docs": "",
+      "group": "pool",
       "params": [
         {"name": "command_hangle", "type": "indy_handle_t"},
         {"name": "handle", "type": "indy_handle_t"},
@@ -1099,6 +1223,8 @@
       "ret": "indy_error_t"
     },
     "indy_delete_pool_ledger_config": {
+      "docs": "",
+      "group": "pool",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "config_name", "type": "const char*"},
@@ -1113,6 +1239,8 @@
       "ret": "indy_error_t"
     },
     "indy_register_wallet_type": {
+      "docs": "Registers custom wallet implementation.\n\nIt allows library user to provide custom wallet implementation.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nxtype: Wallet type name.\ncreate: WalletType create operation handler\nopen: WalletType open operation handler\nset: Wallet set operation handler\nget: Wallet get operation handler\nget_not_expired: Wallet get_not_expired operation handler\nlist: Wallet list operation handler\nclose: Wallet close operation handler\ndelete: WalletType delete operation handler\nfree: Handler that allows to de-allocate strings allocated in caller code\n\n#Returns\nError code",
+      "group": "wallet",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "xtype", "type": "const char*"},
@@ -1129,6 +1257,8 @@
       "ret": "indy_error_t"
     },
     "indy_create_wallet": {
+      "docs": "Creates a new secure wallet with the given unique name.\n\n#Params\npool_name: Name of the pool that corresponds to this wallet.\nname: Name of the wallet.\nxtype(optional): Type of the wallet. Defaults to 'default'.\nCustom types can be registered with indy_register_wallet_type call.\nconfig(optional): Wallet configuration json. List of supported keys are defined by wallet type.\nif NULL, then default config will be used.\ncredentials(optional): Wallet credentials json. List of supported keys are defined by wallet type.\nif NULL, then default config will be used.\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
+      "group": "wallet",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "pool_name", "type": "const char*"},
@@ -1147,6 +1277,8 @@
       "ret": "indy_error_t"
     },
     "indy_open_wallet": {
+      "docs": "Opens the wallet with specific name.\n\nWallet with corresponded name must be previously created with indy_create_wallet method.\nIt is impossible to open wallet with the same name more than once.\n\n#Params\nname: Name of the wallet.\nruntime_config (optional): Runtime wallet configuration json. if NULL, then default runtime_config will be used. Example:\n{\n\"freshness_time\": string (optional), Amount of minutes to consider wallet value as fresh. Defaults to 24*60.\n... List of additional supported keys are defined by wallet type.\n}\ncredentials(optional): Wallet credentials json. List of supported keys are defined by wallet type.\nif NULL, then default credentials will be used.\n\n#Returns\nHandle to opened wallet to use in methods that require wallet access.\n\n#Errors\nCommon*\nWallet*",
+      "group": "wallet",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "name", "type": "const char*"},
@@ -1164,6 +1296,8 @@
       "ret": "indy_error_t"
     },
     "indy_list_wallets": {
+      "docs": "Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool",
+      "group": "wallet",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {
@@ -1178,6 +1312,8 @@
       "ret": "indy_error_t"
     },
     "indy_close_wallet": {
+      "docs": "Closes opened wallet and frees allocated resources.\n\n#Params\nhandle: wallet handle returned by indy_open_wallet.\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
+      "group": "wallet",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "handle", "type": "indy_handle_t"},
@@ -1192,6 +1328,8 @@
       "ret": "indy_error_t"
     },
     "indy_delete_wallet": {
+      "docs": "Deletes created wallet.\n\n#Params\nname: Name of the wallet to delete.\ncredentials(optional): Wallet credentials json. List of supported keys are defined by wallet type.\nif NULL, then default credentials will be used.\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
+      "group": "wallet",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "name", "type": "const char*"},

@@ -8,60 +8,108 @@ var fs = require('fs')
 var path = require('path')
 var stringify = require('json-stringify-pretty-compact')
 
-// concatenate all the .h files into one string
-var hText = ''
+var api = {
+  errors: {},
+  functions: {}
+}
+
 var dir = path.resolve(__dirname, '../../../libindy/include')
 fs.readdirSync(dir).forEach(function (file) {
   file = path.resolve(dir, file)
 
-  hText += fs.readFileSync(file, 'utf8') + '\n'
+  var group = path.basename(file).replace(/^indy_|\.h$/g, '')
+  var hText = fs.readFileSync(file, 'utf8') + '\n'
+  parseSection(group, hText)
 })
 
-// split it into lines and remove comments and # lines
-var lines = hText
-  .split('\n')
-  .map(function (line) {
-    return line
-      .replace(/\s+/g, ' ')
-      .trim()
-      .replace(/^#.*$/g, '')
-      .replace(/\/\/.*$/g, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-  })
-  .filter(function (line) {
-    return line.length > 0
-  })
+function parseSection (group, hText) {
+  // split it into lines and remove comments and # lines
+  var lines = hText
+    .split('\n')
+    .map(function (line) {
+      return line
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/^#.*$/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+    })
+    .map(function (line) {
+      return /^\/\//.test(line)
+        ? line
+        : line.replace(/\/\/.*$/g, '').trim()
+    })
+    .filter(function (line) {
+      return line.length > 0
+    })
 
-// extract all inside the `extern "C" { (.*) }`
-var externCText = ''
-var line
-var i = 0
-while (i < lines.length) {
-  line = lines[i]
-  i++
-  if (line === 'extern "C" {') {
+  // extract all inside the `extern "C" { (.*) }`
+  var externCText = ''
+  var line
+  var i = 0
+  while (i < lines.length) {
     line = lines[i]
-    while (line !== '}' && i < lines.length) {
-      externCText += line + '\n'
-      i++
+    i++
+    if (line === 'extern "C" {') {
       line = lines[i]
+      while (line !== '}' && i < lines.length) {
+        externCText += line + '\n'
+        i++
+        line = lines[i]
+      }
     }
   }
+
+  var externCLines = externCText.split('\n')
+  var docs = ''
+  var externFn = ''
+  var functions = []
+  i = 0
+  while (i < externCLines.length) {
+    line = externCLines[i]
+    i++
+    while (/^\/\//.test(line)) {
+      docs += line.replace(/^\/\/+/, '').trim() + '\n'
+      line = externCLines[i]
+      i++
+    }
+    if (/^extern/.test(line)) {
+      while (i < externCLines.length) {
+        if (/^\/\//.test(line)) {
+          break
+        }
+        if (/;$/.test(line)) {
+          externFn += line + ' '
+          break
+        }
+        externFn += line + ' '
+        line = externCLines[i]
+        i++
+      }
+      functions.push({
+        docs: docs.trim(),
+        externFn: externFn.replace(/\s+/, ' ').trim()
+      })
+      docs = ''
+      externFn = ''
+    }
+  }
+  functions.forEach(function (fn) {
+    var m = /^extern (indy_error_t) (\w+) ?\((.*\));$/.exec(fn.externFn)
+    if (!m) {
+      throw new Error('Unexpected function line: ' + fn.externFn)
+    }
+    api.functions[m[2]] = {
+      docs: fn.docs,
+      group: group,
+      params: parseParams(m[3]),
+      ret: m[1]
+    }
+  })
 }
 
-// extern functions on their own lines
-var functionLines = (' ' + externCText.replace(/\n/g, ' ').replace(/\s+/g, ' '))
-  .split('extern')
-  .map(function (line) {
-    return line.replace(/\s+/g, ' ').trim()
-  })
-  .filter(function (line) {
-    return line.length > 0
-  })
-
 // parse a function params string until it hits the closing ")"
-var parseParams = function (src) {
+function parseParams (src) {
   var params = []
   var buff = ''
 
@@ -117,25 +165,7 @@ var parseParams = function (src) {
   return params
 }
 
-var api = {
-  errors: {},
-  functions: {}
-}
-
-functionLines.forEach(function (line) {
-  var m = /^(indy_error_t) (\w+) ?\((.*\));$/.exec(line)
-  if (!m) {
-    throw new Error('Unexpected function line: ' + line)
-  }
-
-  api.functions[m[2]] = {
-    params: parseParams(m[3]),
-    ret: m[1]
-  }
-})
-
 // now parse the error codes
-
 fs.readFileSync(path.resolve(__dirname, '../../../libindy/include/indy_mod.h'), 'utf8')
   .split('\n')
   .map(function (line) {
@@ -159,4 +189,4 @@ fs.readFileSync(path.resolve(__dirname, '../../../libindy/include/indy_mod.h'), 
     api.errors['c' + pair[0]] = pair[1]
   })
 
-fs.writeFileSync(path.resolve(__dirname, '../src/api.json'), stringify(api, {maxLength: 100}), 'utf8')
+fs.writeFileSync(path.resolve(__dirname, 'api.json'), stringify(api, {maxLength: 100}), 'utf8')
