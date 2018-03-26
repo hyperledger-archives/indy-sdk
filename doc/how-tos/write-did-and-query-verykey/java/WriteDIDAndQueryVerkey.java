@@ -22,7 +22,7 @@ would be used and DIDs would be exchanged using some channel of communication
 */
 
 
-public class WriteNymQueryVerkey {
+public class WriteDIDAndQueryVerkey {
 	static void demo() throws Exception {
         String walletName = "myWallet";
         String poolName = "pool";

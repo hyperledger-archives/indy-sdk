@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.Scanner;
 
 
-public class MessageEncryption {
+public class SendSecureMessage {
 	Wallet walletHandle;
 	String myDID;
 	String myVerkey;
