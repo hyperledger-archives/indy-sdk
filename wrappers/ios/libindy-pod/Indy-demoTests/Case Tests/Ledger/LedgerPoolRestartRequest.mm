@@ -40,7 +40,7 @@
     NSError *ret = [[LedgerUtils sharedInstance] buildPoolRestartRequestWithSubmitterDid:identifier
                                                                                action:@"start"
                                                                                schedule:@"{}"
-                                                                         resultJson:&poolUpgradeRequestJson];
+                                                                         resultJson:&poolRestartRequestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildPoolRestartRequestWithSubmitterDid() failed");
     XCTAssertNotNil(poolRestartRequestJson, @"poolRestartRequestJson is nil!");
     NSLog(@"poolRestartRequestJson: %@", poolRestartRequestJson);
