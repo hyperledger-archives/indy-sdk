@@ -1,7 +1,8 @@
 const assert = require('chai').assert
+const ffi = require('ffi')
 const vcx = require('../dist/index')
 const { stubInitVCX } = require('./helpers')
-const { Schema, Error } = vcx
+const { Schema, Error, rustAPI } = vcx
 
 const SCHEMA = {
   sourceId: 'sourceId',
@@ -89,5 +90,61 @@ describe('A Schema', function () {
     const deserializedSchema = await Schema.deserialize(serializedLookup)
     assert(schema)
     assert.equal(schema.sourceId, deserializedSchema.sourceId)
+  })
+
+  const schemaCreateCheckAndDelete = async () => {
+    let schema = await Schema.create(SCHEMA)
+    const data = await schema.serialize()
+    assert(data)
+    const serialize = rustAPI().vcx_schema_serialize
+    const handle = schema._handle
+    schema = null
+    return {
+      handle,
+      serialize
+    }
+  }
+
+  // Fix the GC issue
+  it('schema and GC deletes object should return null when serialize is called ', async function () {
+    this.timeout(30000)
+
+    const { handle, serialize } = await schemaCreateCheckAndDelete()
+
+    global.gc()
+
+    let isComplete = false
+    //  hold on to callbacks so it doesn't become garbage collected
+    const callbacks = []
+
+    while (!isComplete) {
+      const data = await new Promise(function (resolve, reject) {
+        const callback = ffi.Callback('void', ['uint32', 'uint32', 'string'],
+            function (handle, err, data) {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve(data)
+            })
+        callbacks.push(callback)
+        const rc = serialize(
+            0,
+            handle,
+            callback
+        )
+
+        if (rc === 1042) {
+          resolve(null)
+        }
+      })
+      if (!data) {
+        isComplete = true
+      }
+    }
+
+    // this will timeout if condition is never met
+    // ill return "" because the schema object was released
+    return isComplete
   })
 })
