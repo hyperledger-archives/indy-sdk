@@ -223,14 +223,14 @@ impl DisclosedProof {
         let claims = anoncreds::libindy_prover_get_claims(wallet_h,
                                                           &proof_req_data_json)?;
 
-        println!("claims: {}", claims);
+        debug!("claims: {}", claims);
         let claims_identifiers = claim_def_identifiers(&claims)?;
         let requested_claims = self._build_requested_claims(&claims_identifiers)?;
 
         let schemas = self._find_schemas(&claims_identifiers)?;
-        println!("schemas: {}", schemas);
+        debug!("schemas: {}", schemas);
         let claim_defs_json = self._find_claim_def(&claims_identifiers)?;
-        println!("claim_defs: {}", claim_defs_json);
+        debug!("claim_defs: {}", claim_defs_json);
         let revoc_regs_json = Some("{}");
 
         let proof = anoncreds::libindy_prover_create_proof(wallet_h,

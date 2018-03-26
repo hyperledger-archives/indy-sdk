@@ -261,3 +261,16 @@ fn setup_wallet(wallet_name: &str) {
     connection.close().unwrap();
     wallet::close_wallet().unwrap();
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[ignore]
+    #[test]
+    fn test_dev_env_setup() {
+        // Use this test to setup a complete wallet for external use
+        setup_dev_env("pyvcx");
+        ::utils::libindy::anoncreds::libindy_prover_create_master_secret(wallet::get_wallet_handle(), ::settings::DEFAULT_LINK_SECRET_ALIAS).unwrap();
+    }
+}
