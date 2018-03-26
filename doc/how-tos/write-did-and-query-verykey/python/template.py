@@ -32,13 +32,13 @@ def print_log(value_color="", value_noncolor=""):
 
 async def write_nym_and_query_verkey():
     try:
+        # Step 2 code goes here.
+
         # Step 3 code goes here.
 
         # Step 4 code goes here.
 
         # Step 5 code goes here.
-
-        # Step 6 code goes here.
 
     except IndyError as e:
         print('Error occurred: %s' % e)
