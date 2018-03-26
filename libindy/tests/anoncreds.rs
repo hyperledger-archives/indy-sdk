@@ -3792,5 +3792,27 @@ mod demos {
 
         TestUtils::cleanup_storage();
     }
+
+    #[test]
+    #[ignore] // FIXME
+    fn anoncreds_works_for_twice_entry_of_credential_for_different_witness() {
+        unimplemented!();
+    }
+
+    #[test]
+    #[ignore] //FIXME
+    fn anoncreds_works_for_twice_entry_of_attribute_from_different_credential() {
+        unimplemented!();
+    }
+
+    #[test]
+    #[ignore] //FIXME
+    fn anoncreds_works_for_misused_witness() {
+        //???
+        // ignore requested timestamp in proof request
+        // - provide valid proof for invalid time
+        // - provide hacked proof: specify requested timestamp, actually use invalid TS
+        unimplemented!();
+    }
 }
 
