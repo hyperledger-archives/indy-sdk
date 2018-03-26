@@ -33,4 +33,3 @@ It's fine for a wrapper to add convenience methods and extra ideas. However, the
 ## 4. Versioning and applicability
 
 The wrapper should document the earliest and latest version of libindy that it knows to be compatible. Likewise, it should document what platforms it targets, what use cases it's built for, etc. A wrapper should be able to find libindy using default OS methods (e.g., in the system PATH), but should also provide a way for a specific path to libindy to be specified, such that the wrapper can work either from an OS-wide install of libindy or a version in a particular directory.
-
