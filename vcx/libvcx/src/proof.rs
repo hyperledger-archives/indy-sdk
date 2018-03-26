@@ -87,7 +87,7 @@ impl Proof {
         Ok(error::SUCCESS.code_num)
     }
 
-    fn build_claim_defs_json(&mut self, claim_data:&Vec<ClaimData>) -> Result<String, u32> {
+    fn build_claim_defs_json(&self, claim_data:&Vec<ClaimData>) -> Result<String, u32> {
         debug!("building claimdef json for proof validation");
         let mut claim_json: HashMap<String, ClaimDefinition> = HashMap::new();
         for claim in claim_data.iter() {
@@ -119,7 +119,7 @@ impl Proof {
         })
     }
 
-    fn build_proof_json(&mut self) -> Result<String, u32> {
+    fn build_proof_json(&self) -> Result<String, u32> {
         debug!("building proof json for proof validation");
         match self.proof {
             Some(ref x) => x.to_string(),
@@ -127,7 +127,7 @@ impl Proof {
         }
     }
 
-    fn build_schemas_json(&mut self, claim_data:&Vec<ClaimData>) -> Result<String, u32> {
+    fn build_schemas_json(&self, claim_data:&Vec<ClaimData>) -> Result<String, u32> {
         debug!("building schemas json for proof validation");
 
         let mut schema_json: HashMap<String, SchemaTransaction> = HashMap::new();
@@ -154,10 +154,10 @@ impl Proof {
         })
     }
 
-    fn build_proof_req_json(&mut self) -> Result<String, u32> {
+    fn build_proof_req_json(&self) -> Result<String, u32> {
         debug!("building proof request json for proof validation");
         match self.proof_request {
-            Some(ref mut x) => {
+            Some(ref x) => {
                 Ok(x.get_proof_request_data())
             },
             None => Err(error::INVALID_PROOF.code_num)
@@ -165,12 +165,12 @@ impl Proof {
     }
 
     fn proof_validation(&mut self) -> Result<u32, u32> {
-        let proof_req_msg = match self.proof_request.clone() {
-            Some(x) => x,
+        let proof_req_msg = match self.proof_request {
+            Some(ref x) => x.clone(),
             None => return Err(error::INVALID_PROOF.code_num),
         };
-        let proof_msg = match self.proof.clone() {
-            Some(x) => x,
+        let proof_msg = match self.proof {
+            Some(ref x) => x.clone(),
             None => return Err(error::INVALID_PROOF.code_num),
         };
         let claim_data = proof_msg.get_claim_info()?;
@@ -304,9 +304,9 @@ impl Proof {
 
     fn get_proof_state(&self) -> u32 {let state = self.proof_state as u32; state}
 
-    fn get_proof_uuid(&self) -> String { self.msg_uid.clone() }
+    fn get_proof_uuid(&self) -> &String { &self.msg_uid }
 
-    fn get_source_id(&self) -> String { self.source_id.clone() }
+    fn get_source_id(&self) -> &String { &self.source_id }
 }
 
 pub fn create_proof(source_id: String,
@@ -395,14 +395,14 @@ pub fn release_all() {
 
 pub fn to_string(handle: u32) -> Result<String, u32> {
     match PROOF_MAP.lock().unwrap().get(&handle) {
-        Some(p) => Ok(serde_json::to_string(&p).unwrap().to_owned()),
+        Some(p) => Ok(serde_json::to_string(&p).unwrap()),
         None => Err(error::INVALID_PROOF_HANDLE.code_num)
     }
 }
 
 pub fn get_source_id(handle: u32) -> Result<String, u32> {
     match PROOF_MAP.lock().unwrap().get(&handle) {
-        Some(p) => Ok(p.get_source_id()),
+        Some(p) => Ok(p.get_source_id().clone()),
         None => Err(error::INVALID_PROOF_HANDLE.code_num)
     }
 }
@@ -454,7 +454,7 @@ fn get_proof_details(response: &str) -> Result<String, u32> {
 
 pub fn get_proof_uuid(handle: u32) -> Result<String,u32> {
     match PROOF_MAP.lock().unwrap().get(&handle) {
-        Some(proof) => Ok(proof.get_proof_uuid()),
+        Some(proof) => Ok(proof.get_proof_uuid().clone()),
         None => Err(error::INVALID_PROOF_HANDLE.code_num),
     }
 }
@@ -707,7 +707,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let data = r#"{"ref":1,"origin":"NcYxiDXkpYi6ov5FcYDi1e","signature_type":"CL","data":{"primary":{"n":"9","s":"8","rms":"7","r":{"height":"6","sex":"5","age":"4","name":"3"},"rctxt":"2","z":"1"},"revocation":null}}"#;
-        let mut proof = Proof {
+        let proof = Proof {
             handle: 1,
             source_id: "12".to_string(),
             msg_uid: String::from("1234"),
@@ -778,7 +778,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let data = r#"{"ref":1,"origin":"NcYxiDXkpYi6ov5FcYDi1e","signature_type":"CL","data":{"primary":{"n":"9","s":"8","rms":"7","r":{"height":"6","sex":"5","age":"4","name":"3"},"rctxt":"2","z":"1"},"revocation":null}}"#;
-        let mut proof = Proof {
+        let proof = Proof {
             handle: 1,
             source_id: "12".to_string(),
             msg_uid: String::from("1234"),

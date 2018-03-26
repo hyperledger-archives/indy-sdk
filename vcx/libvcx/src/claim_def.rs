@@ -93,17 +93,17 @@ pub trait ClaimDefCommon {
                      schema_num:u32,
                      sig_type: Option<SigTypes>,
                      issuer_did: &str) -> Result<String, u32> {
-        libindy_build_get_claim_def_txn(submitter_did.to_string(),
+        libindy_build_get_claim_def_txn(submitter_did,
                                         schema_num as i32,
                                         sig_type,
-                                        issuer_did.to_string()).map_err(
+                                        issuer_did).map_err(
             |x| map_libindy_err(x, error::BUILD_CLAIM_DEF_REQ_ERR.code_num))
     }
 
     fn send_request(&self, request: &str) ->  Result<String, u32> {
         if settings::test_indy_mode_enabled() { return Ok(STORE_CLAIM_DEF_RESULT.to_string()); }
         let pool_handle = pool::get_pool_handle()?;
-        libindy_submit_request(pool_handle, request.to_string()).map_err(
+        libindy_submit_request(pool_handle, request).map_err(
             |x| map_libindy_err(x, error::INDY_SUBMIT_REQUEST_ERR.code_num))
     }
 
@@ -155,16 +155,16 @@ impl CreateClaimDef {
         let wallet_handle = get_wallet_handle();
         libindy_sign_and_submit_request(pool_handle,
                                         wallet_handle,
-                                        self.claim_def.issuer_did.to_string(),
-                                        request.to_string()).map_err(
+                                        &self.claim_def.issuer_did,
+                                        request).map_err(
             |x| map_libindy_err(x, error::CREATE_CLAIM_DEF_ERR.code_num))
     }
 
     pub fn build_create_txn(&self, claim_def_json: &str) -> Result<String, u32> {
-        libindy_build_create_claim_def_txn(self.claim_def.issuer_did.clone(),
+        libindy_build_create_claim_def_txn(&self.claim_def.issuer_did,
                                            self.claim_def.schema_seq_no as i32,
                                            Some(SigTypes::CL),
-                                           claim_def_json.to_string()).map_err(
+                                           claim_def_json).map_err(
             |x| map_libindy_err(x, error::CREATE_CLAIM_DEF_ERR.code_num))
     }
 
@@ -189,7 +189,7 @@ impl CreateClaimDef {
         }
     }
 
-    pub fn get_source_id(&self) -> String { self.source_id.clone() }
+    pub fn get_source_id(&self) -> &String { &self.source_id }
 
     pub fn set_handle(&mut self, handle: u32) { self.handle = handle; }
 
@@ -282,8 +282,8 @@ fn create_and_store_claim_def(schema_json: &str,
     if settings::test_indy_mode_enabled() { return Ok(CLAIM_DEF_JSON.to_string()); }
     let wallet_handle = get_wallet_handle();
     libindy_create_and_store_claim_def(wallet_handle,
-                                       issuer_did.to_string(),
-                                       schema_json.to_string(),
+                                       issuer_did,
+                                       schema_json,
                                        sig_type,
                                        create_non_revoc)
         .map_err(|err| {
@@ -333,7 +333,7 @@ pub fn from_string(claimdef_data: &str) -> Result<u32, u32> {
 
 pub fn get_source_id(handle: u32) -> Result<String, u32> {
     match CLAIMDEF_MAP.lock().unwrap().get(&handle) {
-        Some(c) => Ok(c.get_source_id()),
+        Some(c) => Ok(c.get_source_id().clone()),
         None => Err(error::INVALID_CLAIM_DEF_HANDLE.code_num),
     }
 }

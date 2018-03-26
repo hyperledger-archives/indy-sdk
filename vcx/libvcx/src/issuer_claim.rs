@@ -248,13 +248,13 @@ impl IssuerClaim {
     }
 
     fn get_state(&self) -> u32 { let state = self.state as u32; state }
-    fn get_offer_uid(&self) -> String { self.msg_uid.clone() }
+    fn get_offer_uid(&self) -> &String { &self.msg_uid }
     fn set_offer_uid(&mut self, uid: &str) {self.msg_uid = uid.to_owned();}
     fn set_claim_request(&mut self, claim_request:ClaimRequest){
         self.claim_request = Some(claim_request);
     }
 
-    fn get_source_id(&self) -> String { self.source_id.clone() }
+    fn get_source_id(&self) -> &String { &self.source_id }
 
     fn generate_claim_offer(&self, to_did: &str) -> Result<ClaimOffer, u32> {
         let attr_map = convert_to_map(&self.claim_attributes)?;
@@ -292,8 +292,8 @@ pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRe
     debug!("claim request: {}", claim_req_str);
 
     let (_, xclaim_json) = libindy_issuer_create_claim(wallet_handle,
-                                                       claim_req_str,
-                                                       claim_data.to_string(),
+                                                       &claim_req_str,
+                                                       claim_data,
                                                        -1)?;
     debug!("xclaim_json: {:?}", xclaim_json);
     Ok(xclaim_json)
@@ -301,7 +301,7 @@ pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRe
 
 pub fn get_offer_uid(handle: u32) -> Result<String,u32> {
     match ISSUER_CLAIM_MAP.lock().unwrap().get(&handle) {
-        Some(claim) => Ok(claim.get_offer_uid()),
+        Some(claim) => Ok(claim.get_offer_uid().clone()),
         None => Err(error::INVALID_ISSUER_CLAIM_HANDLE.code_num),
     }
 }
@@ -465,7 +465,7 @@ pub fn convert_to_map(s:&str) -> Result<serde_json::Map<String, serde_json::Valu
 
 pub fn get_source_id(handle: u32) -> Result<String, u32> {
     match ISSUER_CLAIM_MAP.lock().unwrap().get(&handle) {
-        Some(c) => Ok(c.get_source_id()),
+        Some(c) => Ok(c.get_source_id().clone()),
         None => Err(error::INVALID_ISSUER_CLAIM_HANDLE.code_num),
     }
 }
@@ -508,7 +508,7 @@ pub mod tests {
 
         let issuer_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
-        libindy_create_and_store_claim_def(wallet_handle, issuer_did, SCHEMAS_JSON.to_string(), None, false).unwrap();
+        libindy_create_and_store_claim_def(wallet_handle, &issuer_did, SCHEMAS_JSON, None, false).unwrap();
     }
 
     fn set_default_and_enable_test_mode() {

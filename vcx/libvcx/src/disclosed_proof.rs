@@ -308,7 +308,7 @@ impl DisclosedProof {
     }
 
     fn set_source_id(&mut self, id: &str) { self.source_id = id.to_string(); }
-    fn get_source_id(&self) -> String {self.source_id.clone()}
+    fn get_source_id(&self) -> &String { &self.source_id }
 }
 
 //********************************************
@@ -427,7 +427,7 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
 
 pub fn get_source_id(handle: u32) -> Result<String, u32> {
     HANDLE_MAP.get(handle, |obj| {
-        Ok(obj.get_source_id())
+        Ok(obj.get_source_id().clone())
     }).map_err(handle_err)
 }
 

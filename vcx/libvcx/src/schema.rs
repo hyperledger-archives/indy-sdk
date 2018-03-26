@@ -72,13 +72,13 @@ pub trait Schema: ToString {
         }
         debug!("retrieving schema_no {} from ledger", sequence_num);
         let txn = Self::retrieve_from_ledger(sequence_num)?;
-        match Self::process_ledger_txn(txn){
+        match Self::process_ledger_txn(&txn){
             Ok(data) => Ok(data),
             Err(code) => return Err(error::INVALID_SCHEMA_SEQ_NO.code_num)
         }
     }
 
-    fn process_ledger_txn(txn: String) -> Result<SchemaTransaction, u32>
+    fn process_ledger_txn(txn: &str) -> Result<SchemaTransaction, u32>
     {
         let result = Self::extract_result_from_txn(&txn)?;
         let schema_txn: SchemaTransaction = match result.get("data") {
@@ -94,16 +94,16 @@ pub trait Schema: ToString {
             }
         };
 
-        match schema_txn.clone().txn_type {
+        match schema_txn.txn_type.as_ref() {
             Some(x) => {
                 if x.ne(SCHEMA_TYPE) {
                     warn!("ledger txn type not schema: {:?}", x);
                     return Err(error::INVALID_SCHEMA_SEQ_NO.code_num)
                 }
-                Ok(schema_txn)
             },
-            None => Err(error::INVALID_SCHEMA_SEQ_NO.code_num)
-        }
+            None => return Err(error::INVALID_SCHEMA_SEQ_NO.code_num)
+        };
+        Ok(schema_txn)
     }
 
     fn extract_result_from_txn(txn:&str) -> Result<serde_json::Value, u32> {
@@ -125,12 +125,12 @@ pub trait Schema: ToString {
         let txn = Self::build_get_txn(sequence_num)?;
         let pool_handle = get_pool_handle()?;
 
-        libindy_submit_request(pool_handle, txn)
+        libindy_submit_request(pool_handle, &txn)
     }
 
     fn build_get_txn(sequence_num: i32) -> Result<String, u32>
     {
-        let submitter_did = "GGBDg1j8bsKmr4h5T9XqYf".to_string();
+        let submitter_did = "GGBDg1j8bsKmr4h5T9XqYf";
 
         libindy_build_get_txn_request(submitter_did, sequence_num)
     }
@@ -191,9 +191,9 @@ impl LedgerSchema {
 }
 
 impl CreateSchema {
-    pub fn create_schema_req(submitter_did: &str, data: String) -> Result<String, u32> {
+    pub fn create_schema_req(submitter_did: &str, data: &str) -> Result<String, u32> {
         if settings::test_indy_mode_enabled() { return Ok(SCHEMA_REQ.to_string()); }
-        libindy_build_schema_request(submitter_did.to_string(), data)
+        libindy_build_schema_request(submitter_did, data)
             .map_err( |x| error::map_libindy_err(x, error::INVALID_SCHEMA_CREATION.code_num))
     }
 
@@ -203,8 +203,8 @@ impl CreateSchema {
         let wallet_handle = get_wallet_handle();
         libindy_sign_and_submit_request(pool_handle,
                                         wallet_handle,
-                                        submitter_did.to_string(),
-                                        request.to_string())
+                                        submitter_did,
+                                        request)
             .map_err( |x| error::map_libindy_err(x, error::INVALID_SCHEMA_CREATION.code_num))
     }
 
@@ -220,7 +220,7 @@ impl CreateSchema {
 
     pub fn get_sequence_num(&self) -> u32 {let sequence_num = self.sequence_num as u32; sequence_num}
 
-    pub fn get_source_id(&self) -> String { self.source_id.clone() }
+    pub fn get_source_id(&self) -> &String { &self.source_id }
 
 }
 
@@ -229,7 +229,7 @@ pub fn create_new_schema(source_id: &str,
                          issuer_did: String,
                          data: String) -> Result<u32, u32> {
     debug!("creating schema with source_id: {}, name: {}, issuer_did: {}", source_id, schema_name, issuer_did);
-    let req = CreateSchema::create_schema_req(&issuer_did, data)?;
+    let req = CreateSchema::create_schema_req(&issuer_did, &data)?;
     let sign_response = CreateSchema::sign_and_send_request(&issuer_did, &req)?;
     debug!("created schema on ledger");
 
@@ -299,7 +299,7 @@ pub fn to_string(handle: u32) -> Result<String, u32> {
 
 pub fn get_source_id(handle: u32) -> Result<String, u32> {
     match SCHEMA_MAP.lock().unwrap().get(&handle) {
-        Some(s) => Ok(s.get_source_id()),
+        Some(s) => Ok(s.get_source_id().clone()),
         None => Err(error::INVALID_SCHEMA_HANDLE.code_num),
     }
 }
@@ -344,7 +344,6 @@ mod tests {
     use utils::libindy::signus::SignusUtils;
     use utils::libindy::wallet::{ delete_wallet, init_wallet };
     use utils::constants::{ DEMO_AGENT_PW_SEED, DEMO_ISSUER_PW_SEED };
-    use std::str::FromStr;
 
     static  EXAMPLE: &str = r#"{
     "seqNo": 15,
@@ -469,19 +468,19 @@ mod tests {
 
     #[test]
     fn test_process_ledger_txn(){
-        let test = LedgerSchema::process_ledger_txn(String::from_str(LEDGER_SAMPLE).unwrap()).unwrap();
+        let test = LedgerSchema::process_ledger_txn(LEDGER_SAMPLE).unwrap();
     }
 
     #[test]
     fn test_process_ledger_txn_fails_with_incorrect_type(){
         let data = r#"{"result":{"identifier":"GGBDg1j8bsKmr4h5T9XqYf","data":{"verkey":"~CoRER63DVYnWZtK8uAzNbx","dest":"V4SGRU86Z58d6TV7PBUe6f","role":"0","type":"1","auditPath":[],"rootHash":"3W3ih6Hxf1yv8pmerY6jdEhYR3scDVFBk4PM91XKx1Bk","seqNo":1},"type":"3","reqId":1516732266277924815,"seqNo":1},"op":"REPLY"}"#;
-        let test = LedgerSchema::process_ledger_txn(String::from_str(data).unwrap());
+        let test = LedgerSchema::process_ledger_txn(data);
         assert!(test.is_err());
     }
 
     #[test]
     fn test_schema_request(){
-        let data = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#.to_string();
+        let data = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#;
         let test = CreateSchema::create_schema_req("4fUDR9R7fjwELRvH9JT6HH", data).unwrap();
         assert!(test.contains("{\"type\":\"101\",\"data\":{\"name\":\"name\",\"version\":\"1.0\",\"attr_names\":[\"name\",\"male\"]}"));
     }
@@ -495,7 +494,7 @@ mod tests {
 
     #[test]
     fn test_ledger_schema_to_string(){
-        let test = LedgerSchema::process_ledger_txn(String::from_str(LEDGER_SAMPLE).unwrap()).unwrap();
+        let test = LedgerSchema::process_ledger_txn(LEDGER_SAMPLE).unwrap();
 
         let schema = LedgerSchema {sequence_num:15, data:Some(test)};
 
