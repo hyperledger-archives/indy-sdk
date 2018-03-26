@@ -165,7 +165,7 @@ impl Prover {
                 let rev_states_for_timestamp = rev_states.get(&rev_reg_id)
                     .ok_or(CommonError::InvalidStructure(format!("RevocationState not found by id: {:?}", rev_reg_id)))?;
                 Some(rev_states_for_timestamp.get(&timestamp)
-                    .ok_or(CommonError::InvalidStructure(format!("RevocationState not found by timestamp: {:?}", timestamp)))?)
+                    .ok_or(CommonError::InvalidStructure(format!("RevocationInfo not found by timestamp: {:?}", timestamp)))?)
             } else { None };
 
             let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_definition.value.primary, credential_definition.value.revocation.as_ref())?;
