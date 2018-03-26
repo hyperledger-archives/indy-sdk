@@ -93,6 +93,12 @@
                                               force:(BOOL)force
                                          resultJson:(NSString **)resultJson;
 
+// MARK: - Pool Restart request
+- (NSError *)buildPoolRestartRequestWithSubmitterDid:(NSString *)submitterDid
+                                              action:(NSString *)action
+                                            schedule:(NSString *)schedule
+                                          resultJson:(NSString **)resultJson;
+
 // MARK: - Pool Upgrade request
 - (NSError *)buildPoolUpgradeRequestWithSubmitterDid:(NSString *)submitterDid
                                                 name:(NSString *)name
