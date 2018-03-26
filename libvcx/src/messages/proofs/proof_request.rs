@@ -197,7 +197,7 @@ impl ProofRequestMessage {
         }
     }
 
-    pub fn get_proof_request_data(&mut self) -> String {
+    pub fn get_proof_request_data(&self) -> String {
         json!(self)[PROOF_DATA].to_string()
     }
 

@@ -123,8 +123,8 @@ pub fn libindy_verifier_verify_proof(proof_req_json: &str,
 }
 
 pub fn libindy_create_and_store_claim_def(wallet_handle: i32,
-                                          issuer_did: String,
-                                          schema_json: String,
+                                          issuer_did: &str,
+                                          schema_json: &str,
                                           sig_type: Option<SigTypes>,
                                           create_non_revoc: bool)  -> Result<String, u32>{
 
@@ -148,8 +148,8 @@ pub fn libindy_create_and_store_claim_def(wallet_handle: i32,
 }
 
 pub fn libindy_issuer_create_claim(wallet_handle: i32,
-                                   claim_req_json: String,
-                                   claim_json: String,
+                                   claim_req_json: &str,
+                                   claim_json: &str,
                                    user_revoc_index: i32)  -> Result<(String, String), u32>{
     let rtn_obj = Return_I32_STR_STR::new()?;
     let claim_req_json = CString::new(claim_req_json).map_err(map_string_error)?;
@@ -340,8 +340,8 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         init_wallet("wallet_simple").unwrap();
         let result = libindy_create_and_store_claim_def(get_wallet_handle(),
-                                                        "GGBDg1j8bsKmr4h5T9XqYf".to_string(),
-                                                        SCHEMAS_JSON.to_string(),
+                                                        "GGBDg1j8bsKmr4h5T9XqYf",
+                                                        SCHEMAS_JSON,
                                                         None,
                                                         false);
         delete_wallet("wallet_simple").unwrap();
@@ -366,8 +366,8 @@ mod tests {
         let encoded_claim_data = issuer_claim.create_attributes_encodings().unwrap();
         util_put_claim_def_in_issuer_wallet(15, wallet_handle);
         let result = libindy_issuer_create_claim(get_wallet_handle(),
-                                                 serde_json::to_string(&claim_req).unwrap(),
-                                                 encoded_claim_data.to_string(),
+                                                 &serde_json::to_string(&claim_req).unwrap(),
+                                                 &encoded_claim_data,
                                                         -1);
         delete_wallet("test_wallet").unwrap();
         assert!(result.is_ok());

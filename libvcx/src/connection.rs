@@ -148,34 +148,34 @@ impl Connection {
     fn get_state(&self) -> u32 { self.state as u32 }
     fn set_state(&mut self, state: VcxStateType) { self.state = state; }
 
-    fn get_pw_did(&self) -> String { self.pw_did.clone() }
+    fn get_pw_did(&self) -> &String { &self.pw_did }
     fn set_pw_did(&mut self, did: &str) { self.pw_did = did.to_string(); }
 
-    fn get_their_pw_did(&self) -> String { self.their_pw_did.clone() }
+    fn get_their_pw_did(&self) -> &String { &self.their_pw_did }
     fn set_their_pw_did(&mut self, did: &str) { self.their_pw_did = did.to_string(); }
 
-    fn get_agent_did(&self) -> String { self.agent_did.clone() }
+    fn get_agent_did(&self) -> &String { &self.agent_did }
     fn set_agent_did(&mut self, did: &str) { self.agent_did = did.to_string(); }
 
-    fn get_pw_verkey(&self) -> String { self.pw_verkey.clone() }
+    fn get_pw_verkey(&self) -> &String { &self.pw_verkey }
     fn set_pw_verkey(&mut self, verkey: &str) { self.pw_verkey = verkey.to_string(); }
 
-    fn get_their_pw_verkey(&self) -> String { self.their_pw_verkey.clone() }
+    fn get_their_pw_verkey(&self) -> &String { &self.their_pw_verkey }
     fn set_their_pw_verkey(&mut self, verkey: &str) { self.their_pw_verkey = verkey.to_string(); }
 
-    fn get_agent_verkey(&self) -> String { self.agent_vk.clone() }
+    fn get_agent_verkey(&self) -> &String { &self.agent_vk }
     fn set_agent_verkey(&mut self, verkey: &str) { self.agent_vk = verkey.to_string(); }
 
-    fn get_uuid(&self) -> String { self.uuid.clone() }
+    fn get_uuid(&self) -> &String { &self.uuid }
     fn set_uuid(&mut self, uuid: &str) { self.uuid = uuid.to_string(); }
 
-    fn get_endpoint(&self) -> String { self.endpoint.clone() }
+    fn get_endpoint(&self) -> &String { &self.endpoint }
     fn set_endpoint(&mut self, endpoint: &str) { self.endpoint = endpoint.to_string(); }
 
-    fn get_invite_detail(&self) -> Option<InviteDetail> { self.invite_detail.clone() }
+    fn get_invite_detail(&self) -> &Option<InviteDetail> { &self.invite_detail }
     fn set_invite_detail(&mut self, invite_detail: InviteDetail) { self.invite_detail = Some(invite_detail); }
 
-    fn get_source_id(&self) -> String { self.source_id.clone() }
+    fn get_source_id(&self) -> &String { &self.source_id }
 
     fn ready_to_connect(&self) -> bool {
         if self.state == VcxStateType::VcxStateNone || self.state == VcxStateType::VcxStateAccepted {
@@ -202,14 +202,14 @@ pub fn set_agent_did(handle: u32, did: &str) {
 
 pub fn get_agent_did(handle: u32) -> Result<String, u32> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
-        Some(cxn) => Ok(cxn.get_agent_did()),
+        Some(cxn) => Ok(cxn.get_agent_did().clone()),
         None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
     }
 }
 
 pub fn get_pw_did(handle: u32) -> Result<String, u32> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
-        Some(cxn) => Ok(cxn.get_pw_did()),
+        Some(cxn) => Ok(cxn.get_pw_did().clone()),
         None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
     }
 }
@@ -223,7 +223,7 @@ pub fn set_pw_did(handle: u32, did: &str) {
 
 pub fn get_their_pw_did(handle: u32) -> Result<String, u32> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
-        Some(cxn) => Ok(cxn.get_their_pw_did()),
+        Some(cxn) => Ok(cxn.get_their_pw_did().clone()),
         None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
     }
 }
@@ -237,7 +237,7 @@ pub fn set_their_pw_did(handle: u32, did: &str) {
 
 pub fn get_their_pw_verkey(handle: u32) -> Result<String, u32> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
-        Some(cxn) => Ok(cxn.get_their_pw_verkey()),
+        Some(cxn) => Ok(cxn.get_their_pw_verkey().clone()),
         None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
     }
 }
@@ -251,7 +251,7 @@ pub fn set_their_pw_verkey(handle: u32, verkey: &str) {
 
 pub fn get_uuid(handle: u32) -> Result<String, u32> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
-        Some(cxn) => Ok(cxn.get_uuid()),
+        Some(cxn) => Ok(cxn.get_uuid().clone()),
         None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
     }
 }
@@ -265,7 +265,7 @@ pub fn set_uuid(handle: u32, uuid: &str) {
 
 pub fn get_endpoint(handle: u32) -> Result<String, u32> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
-        Some(cxn) => Ok(cxn.get_endpoint()),
+        Some(cxn) => Ok(cxn.get_endpoint().clone()),
         None => Err(error::NO_ENDPOINT.code_num),
     }
 }
@@ -279,7 +279,7 @@ pub fn set_endpoint(handle: u32, endpoint: &str) {
 
 pub fn get_agent_verkey(handle: u32) -> Result<String, u32> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
-        Some(cxn) => Ok(cxn.get_agent_verkey()),
+        Some(cxn) => Ok(cxn.get_agent_verkey().clone()),
         None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
     }
 }
@@ -293,7 +293,7 @@ pub fn set_agent_verkey(handle: u32, verkey: &str) {
 
 pub fn get_pw_verkey(handle: u32) -> Result<String, u32> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
-        Some(cxn) => Ok(cxn.get_pw_verkey()),
+        Some(cxn) => Ok(cxn.get_pw_verkey().clone()),
         None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
     }
 }
@@ -321,7 +321,7 @@ pub fn set_state(handle: u32, state: VcxStateType) {
 
 pub fn get_source_id(handle: u32) -> Result<String, u32> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
-        Some(cxn) => Ok(cxn.get_source_id()),
+        Some(ref cxn) => Ok(cxn.get_source_id().clone()),
         None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
     }
 }
@@ -552,11 +552,9 @@ pub fn from_string(connection_data: &str) -> Result<u32,u32> {
     };
 
     let new_handle = rand::thread_rng().gen::<u32>();
-    let source_id = derived_connection.source_id.clone();
+    debug!("inserting handle {} source_id {:?} into connection table", new_handle, derived_connection.get_source_id());
+
     let connection = Box::from(derived_connection);
-
-    debug!("inserting handle {} source_id {:?} into connection table", new_handle, source_id);
-
     CONNECTION_MAP.lock().unwrap().insert(new_handle, connection);
 
     Ok(new_handle)
