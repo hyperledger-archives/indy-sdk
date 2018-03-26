@@ -1,13 +1,13 @@
 # Getting Started with Libindy
 
-## A Developer Guide for an Implementation of the Libindy Code Base
+## A Developer Guide for Building Indy Clients Using Libindy
 
 ![logo](https://raw.githubusercontent.com/hyperledger/indy-node/master/collateral/logos/indy-logo.png)
 
-* [Getting Started with Indy](#getting-started-with-indy)
-  * [What Indy Is, and Why it Matters](#what-indy-is-and-why-it-matters)
+* [Getting Started with Libndy](#getting-started-with-libindy)
+  * [What Indy and Libindy are and Why They Matter](#what-indy-and-libindy-are-and-why-they-matter)
   * [What We'll Cover](#what-well-cover)
-  * [Involving of Alice](#involving-of-alice)
+  * [About Alice](#about-alice)
   * [Infrastructure Preparation](#infrastructure-preparation)
       * [Step 1: Getting Trust Anchor Credentials for Faber, Acme, Thrift and Government](#step-1-getting-trust-anchor-credentials-for-faber-acme-thrift-and-government)
       * [Step 2: Connecting to the Indy Nodes Pool](#step-2-connecting-to-the-indy-nodes-pool)
@@ -15,16 +15,16 @@
       * [Step 4: Onboarding Faber, Acme, Thrift and Government by the Steward](#step-4-onboarding-faber-acme-thrift-and-government-by-steward)
         * [Connecting the Establishment](#connecting-the-establishment)
         * [Getting the Verinym](#getting-verinym)
-      * [Step 5: Claim Schemas Setup](#step-5-claim-schemas-setup)
-      * [Step 6: Claim Definition Setup](#step-6-claim-definition-setup)
+      * [Step 5: Credential Schemas Setup](#step-5-credential-schemas-setup)
+      * [Step 6: Credential Definition Setup](#step-6-credential-definition-setup)
   * [Alice Gets a Transcript](#alice-gets-a-transcript)
   * [Apply for a Job](#apply-for-a-job)
   * [Apply for a Loan](#apply-for-a-loan)
   * [Explore the Code](#explore-the-code)
 
-## What Indy is and Why it Matters
+## What Indy and Libindy are and Why They Matter
 
-The Indy code base (Indy) is a software ecosystem for private, secure, and powerful identity. Once it is implemented, it puts people — not the organizations that traditionally centralize identity — in charge of decisions about their own privacy and disclosure. This enables all kinds of rich innovation: connection contracts, revocation, novel payment workflows, asset and document management features, creative forms of escrow, curated reputation, integrations with other cool technologies, and so on.
+Indy provides a software ecosystem for private, secure, and powerful identity, and libindy enables clients for it. Indy puts people — not the organizations that traditionally centralize identity — in charge of decisions about their own privacy and disclosure. This enables all kinds of rich innovation: connection contracts, revocation, novel payment workflows, asset and document management features, creative forms of escrow, curated reputation, integrations with other cool technologies, and so on.
 
 Indy uses open-source, distributed ledger technology. These ledgers are a form of database that is provided cooperatively by a pool of participants, instead of by a giant database with a central admin. Data lives redundantly in many places, and it accrues in transactions orchestrated by many machines. Strong, industry-standard cryptography protects it. Best practices in key management and cybersecurity pervade its design. The result is a reliable, public source of truth under no single entity’s control, robust to system failure, resilient to hacking, and highly immune to subversion by hostile entities.
 
@@ -40,27 +40,27 @@ The sorts of identity and trust interactions required to pull this off are messy
 
 Ready?
 
-## Involving of Alice
+## About Alice
 
 As a graduate of Faber College, Alice receives an alumni newsletter where she learns that her alma mater is offering digital transcripts. She logs in to the college alumni website and requests her transcript by clicking **Get Transcript**.  (Other ways to initiate this request might include scanning a QR code, downloading a transcript package from a published URL, etc.)
 
-Alice doesn’t realize it yet, but in order to use this digital transcript she will need a new type of identity — not the traditional identity that Faber College has built for her in its on-campus database, but a new and portable one that belongs to her, independent of all past and future relationships, that nobody can revoke or co-opt or correlate without her permission. This is a **_self-sovereign identity_** and it is the core feature of the ledger.
+Alice doesn’t realize it yet, but in order to use this digital transcript she will need a new type of identity — not the traditional identity that Faber College has built for her in its on-campus database, but a new and portable one that belongs to her, independent of all past and future relationships, that nobody can revoke or co-opt or correlate without her permission. This is a **_self-sovereign identity_** and it is the core feature of indy.
 
-In normal contexts, managing a self-sovereign identity will require a tool such as a desktop or mobile application. It might be a standalone app or it might leverage a third party service provider that the ledger calls an **agency**. For example, leaders in this technology such as the Sovrin Foundation and companies like Evernym, publish reference versions of such tools. Faber College will have studied these requirements and will recommend an **_Indy app_** to Alice if she doesn’t already have one. This app will install as part of the workflow from the **Get Transcript** button.
+In normal contexts, managing a self-sovereign identity will require a tool such as a desktop or mobile application. It might be a standalone app or it might leverage a third party service provider that the ledger calls an **agency**. The Sovrin Foundation publishes reference versions of such tools. Faber College will have studied these requirements and will recommend an **_Indy app_** to Alice if she doesn’t already have one. This app will install as part of the workflow from the **Get Transcript** button.
 
 When Alice clicks **Get Transcript**, she will download a file that holds an Indy **connection request**. This connection request file, having an .indy extension and associated with her Indy app, will allow her to establish a secure channel of communication with another party in the ledger ecosystem — Faber College.
 
 So when Alice clicks **Get Transcript**, she will normally end up installing an app (if needed), launching it, and then being asked by the app whether she wants to accept a request to connect with Faber.
 
-For this guide, however, we’ll be using an **Indy SDK API** instead of an app, so we can see what happens behind the scenes. We will pretend to be a particularly curious and technically adventurous Alice…
+For this guide, however, we’ll be using an **Indy SDK API** (as provided by libindy) instead of an app, so we can see what happens behind the scenes. We will pretend to be a particularly curious and technically adventurous Alice…
 
 ## Infrastructure Preparation
 
 ### Step 1: Getting Trust Anchor Credentials for Faber, Acme, Thrift and Government
 
-Faber College and another actors have done some prep steps to offer this service to Alice. To understand these steps let's start with some definitions.
+Faber College and another actors have done some preparation to offer this service to Alice. To understand these steps let's start with some definitions.
 
-The ledger is intended to store **Identity Records** that describe a **Ledger Entity**. Identity Records are public data and may include Public Keys, Service Endpoints, Claim Schemas, Claim Definitions. Every **Identity Record** is associated with exactly one **DID** (Decentralized Identifier) that is globally unique and resolvable (via a ledger) without requiring any centralized resolution authority. To maintain privacy each **Identity Owner** can own multiple DIDs.
+The ledger is intended to store **Identity Records** that describe a **Ledger Entity**. Identity Records are public data and may include Public Keys, Service Endpoints, Credential Schemas, Credential Definitions. Every **Identity Record** is associated with exactly one **DID** (Decentralized Identifier) that is globally unique and resolvable (via a ledger) without requiring any centralized resolution authority. To maintain privacy each **Identity Owner** can own multiple DIDs.
 
 In this tutorial we will use two types of DIDs. The first one is a **Verinym**. **Verinym** is associated with the **Legal Identity** of the **Identity Owner**. For example, all parties should be able to verify that some DID is used by a Government to publish schemas for some document type. The second type is a **Pseudonym** - a **Blinded Identifier** used to maintain privacy in the context on an ongoing digital relationship (**Connection**). If the Pseudonym is used to maintain only one digital relationship we will call it a Pairwise-Unique Identifier. We will use Pairwise-Unique Identifiers to maintain secure connections between actors in this tutorial.
 
@@ -70,7 +70,7 @@ Publishing with a DID verification key allows a person, organization or thing, t
 
 Our ledger is public permissioned and anyone who wants to publish DIDs need to get the role of **Trust Anchor** on the ledger. A **Trust Anchor** is a person or organization that the ledger already knows about, that is able to help bootstrap others. (It is *not* the same as what cybersecurity experts call a "trusted third party"; think of it more like a facilitator). See [Roles](https://docs.google.com/spreadsheets/d/1TWXF7NtBjSOaUIBeIH77SyZnawfo91cJ_ns4TR-wsq4/edit#gid=0) to get more information about roles.
 
-**The first step towards being able to place transactions on the ledger involves getting the role of Trust Anchor on the ledger. Faber College, Acme Corp and Thrift Bank will need to get the role of Trust Anchor on the ledger s they can create Verinyms and Pairwise-Unique Identifiers to provide the service to Alice.**
+**The first step towards being able to place transactions on the ledger involves getting the role of Trust Anchor on the ledger. Faber College, Acme Corp and Thrift Bank will need to get the role of Trust Anchor on the ledger so they can create Verinyms and Pairwise-Unique Identifiers to provide the service to Alice.**
 
 Becoming a **Trust Anchor** requires contacting a person or organization who already has the **Trust Anchor** role on the ledger. For the sake of the demo, in our empty test ledger we have only NYMs with the **Steward** role, but all **Stewards** are automatically **Trust Anchors**.
 
@@ -103,7 +103,7 @@ The below code block below contains each of these items. Note how the comments d
 
 The test ledger we use was pre-configured to store some known **Steward** NYMs. Also we know **seed** values for the random number generator that were used to generate keys for this NYMs. These **seed** values allow us to restore signing keys for these DIDs on **Steward's** agent side and as result get the DID ownership.
 
-Libindy has a concept of the **Wallet**. The wallet is secure storage for crypto materials like DIDs, keys and etc... To store the **Steward's** DID and corresponding signkey, the agent should create a named wallet first by calling ``pool.create_wallet``. After this the named wallet can be opened by calling ``pool.open_wallet``. This call returns the wallet handle that can be used to reference this opened wallet in future libindy calls.
+Libindy has a concept of the **Wallet**. The wallet is secure storage for crypto materials like DIDs, keys and etc... To store the **Steward's** DID and corresponding signkey, the agent should create a named wallet first by calling ``wallet.create_wallet``. After this the named wallet can be opened by calling ``wallet.open_wallet``. This call returns the wallet handle that can be used to reference this opened wallet in future libindy calls.
 
 After the wallet is opened we can create a DID record in this wallet by calling ``did.create_and_store_my_did`` that returns the generated DID and verkey part of generated key. The signkey part for this DID will be stored in the wallet too, but it is impossible to read it directly.
 
@@ -296,15 +296,15 @@ At this point **Faber** has a DID related to his identity in the Ledger.
 
 **Acme**, **Thrift Bank**, and **Government** must pass the same Onboarding process connection establishment with **Steward**.
 
-#### Step 5: Claim Schemas Setup
+#### Step 5: Credential Schemas Setup
 
-**Claim Schema** is the base semantic structure that describes the list of attributes which one particular Claim can contain.
+**Credential Schema** is the base semantic structure that describes the list of attributes which one particular Claim can contain.
 
 **Note:** It's not possible to update an existing Schema. So, if the Schema needs to be evolved, a new Schema with a new version or name needs to be created.
 
-A **Claim Schema** can be created and saved in the Ledger by any **Trust Anchor**.
+A **Credential Schema** can be created and saved in the Ledger by any **Trust Anchor**.
 
-Here is where the **Government** creates and publishes the **Transcript** Claim Schema to the Ledger:
+Here is where the **Government** creates and publishes the **Transcript** Credential Schema to the Ledger:
 
 1. The **Trust Anchor** optionally creates a new DID record in his wallet and sends the corresponding NYM transaction to the Ledger.
     ```python
@@ -314,7 +314,7 @@ Here is where the **Government** creates and publishes the **Transcript** Claim 
     await ledger.sign_and_submit_request(pool_handle, government_handle, government_did, nym_request)
     ```
 
-2. The **Trust Anchor** prepares the **Claim Schema**.
+2. The **Trust Anchor** prepares the **Credential Schema**.
     ```python
     # Government Agent
     transcript_schema = {
@@ -331,7 +331,7 @@ Here is where the **Government** creates and publishes the **Transcript** Claim 
     await ledger.sign_and_submit_request(pool_handle, government_wallet, government_issuer_did, schema_request)
     ```
 
-In the same way **Government** creates and publishes the **Job-Certificate** Claim Schema to the Ledger:
+In the same way **Government** creates and publishes the **Job-Certificate** Credential Schema to the Ledger:
 ```python    
   # Government Agent
   job_certificate_schema = {
@@ -343,15 +343,15 @@ In the same way **Government** creates and publishes the **Job-Certificate** Cla
   await ledger.sign_and_submit_request(pool_handle, government_wallet, government_issuer_did, schema_request)
 ```
 
-At this point we have the **Transcript** and the **Job-Certificate** Claim Schemas published by **Government** to the Ledger.
+At this point we have the **Transcript** and the **Job-Certificate** Credential Schemas published by **Government** to the Ledger.
 
-#### Step 6: Claim Definition Setup
+#### Step 6: Credential Definition Setup
 
-**Claim Definition** is similar in that the keys that the Issuer uses for the signing of Claims also satisfies a specific Claim Schema.
+**Credential Definition** is similar in that the keys that the Issuer uses for the signing of Claims also satisfies a specific Credential Schema.
 
-**Note** It's not possible to update data in an existing claim definition. So, if a `ClaimDef` needs to be evolved (for example, a key needs to be rotated), then a new claim definition needs to be created by a new Issuer DID.
+**Note** It's not possible to update data in an existing Credential Definition. So, if a `ClaimDef` needs to be evolved (for example, a key needs to be rotated), then a new Credential Definition needs to be created by a new Issuer DID.
 
-A claim definition can be created and saved in the Ledger by any **Trust Anchor**. Here **Faber** creates and publishes a claim definition for the known **Transcript** Claim Schema to the Ledger.
+A Credential Definition can be created and saved in the Ledger by any **Trust Anchor**. Here **Faber** creates and publishes a Credential Definition for the known **Transcript** Credential Schema to the Ledger.
 
 1. The **Trust Anchor** optionally creates new DID record in his wallet and sends the corresponding NYM transaction to the Ledger.
     ```python
@@ -361,7 +361,7 @@ A claim definition can be created and saved in the Ledger by any **Trust Anchor*
     await ledger.sign_and_submit_request(pool_handle, faber_wallet, faber_did, nym_request)  
     ```
 
-2. The **Trust Anchor** gets the specific **Claim Schema** from the Ledger by consistently calling the ``ledger.build_get_schema_request`` to build the `GetSchema` request and ``ledger.sign_and_submit_request`` to send the created request.
+2. The **Trust Anchor** gets the specific **Credential Schema** from the Ledger by consistently calling the ``ledger.build_get_schema_request`` to build the `GetSchema` request and ``ledger.sign_and_submit_request`` to send the created request.
     ```python
     # Faber Agent
     get_schema_data = json.dumps({
@@ -373,8 +373,8 @@ A claim definition can be created and saved in the Ledger by any **Trust Anchor*
     transcript_schema = json.loads(get_schema_response)['result']
     ```
 
-3. The **Trust Anchor** creates the **Claim Definition** related to the received **Claim Schema** by calling ``anoncreds.issuer_create_and_store_claim_def`` that returns the generated public **Claim Definition**.
-   The private claim definition part for this **Claim Schema** will be stored in the wallet too, but it is impossible to read it directly.
+3. The **Trust Anchor** creates the **Credential Definition** related to the received **Credential Schema** by calling ``anoncreds.issuer_create_and_store_claim_def`` that returns the generated public **Credential Definition**.
+   The private Credential Definition part for this **Credential Schema** will be stored in the wallet too, but it is impossible to read it directly.
     ```python
     # Faber Agent
     faber_transcript_claim_def_json = \
@@ -391,7 +391,7 @@ A claim definition can be created and saved in the Ledger by any **Trust Anchor*
     await ledger.sign_and_submit_request(pool_handle, faber_wallet, faber_issuer_did, claim_def_request)
     ```
 
-The same way **Acme** creates and publishes a **Claim Definition** for the known **Job-Certificate** Claim Schema to the Ledger.
+The same way **Acme** creates and publishes a **Credential Definition** for the known **Job-Certificate** Credential Schema to the Ledger.
 ```python
   # Acme Agent
   (acme_issuer_did, acme_issuer_key) = await did.create_and_store_my_did(acme_wallet, "{}")
@@ -415,8 +415,8 @@ The same way **Acme** creates and publishes a **Claim Definition** for the known
   await ledger.sign_and_submit_request(pool_handle, acme_wallet, acme_issuer_did, claim_def_request)
 ```
 
-At this point we have a **Claim Definition** for the **Job-Certificate** Claim Schema published by **Acme** and a
- **Claim Definition** for the **Transcript** Claim Schema published by **Faber**.
+At this point we have a **Credential Definition** for the **Job-Certificate** Credential Schema published by **Acme** and a
+ **Credential Definition** for the **Transcript** Credential Schema published by **Faber**.
 
 ## Alice Gets a Transcript
 
@@ -429,8 +429,8 @@ An issuer may be any identity owner known to the Ledger and any issuer may issue
 The usefulness and reliability of a claim are tied to the reputation of the issuer with respect to the claim at hand.
 For Alice to self-issue a claim that she likes chocolate ice cream may be perfectly reasonable, but for her to self-issue a claim that she graduated from Faber College should not impress anyone.
 
-As we mentioned in [Involving of Alice](#involving-of-alice) **Alice** graduated from **Faber College**.
-After **Faber College** had established a connection with Alice, he created for her a Claim Offer about the issuance of the **Transcript** Claim.
+As we mentioned in [About Alice](#about-alice) **Alice** graduated from **Faber College**.
+After **Faber College** had established a connection with Alice, he created for her a Credential Offer about the issuance of the **Transcript** Claim.
 ```python
   # Faber Agent
     transcript_claim_offer_json = \
@@ -438,7 +438,7 @@ After **Faber College** had established a connection with Alice, he created for 
                                                   faber_issuer_did, alice_faber_did)
 ```
 
-Alice stores the **Transcript** Claim Offer in her wallet.
+Alice stores the **Transcript** Credential Offer in her wallet.
 ```python
   # Alice Agent
   await anoncreds.prover_store_claim_offer(alice_wallet, transcript_claim_offer_json)
@@ -449,7 +449,7 @@ Alice stores the **Transcript** Claim Offer in her wallet.
 The value of this **Transcript** Claim is that it is provably issued by **Faber College**.
 
 **Alice** wants to see the attributes that the **Transcript** Claim contains.
-These attributes are known because a Claim Schema for **Transcript** has been written to the Ledger.
+These attributes are known because a Credential Schema for **Transcript** has been written to the Ledger.
 ```python
   # Alice Agent
   get_schema_data = json.dumps({
@@ -481,7 +481,7 @@ Alice creates Master Secret in her wallet.
   await anoncreds.prover_create_master_secret(alice_wallet, alice_master_secret_name)
 ```
 
-Alice also needs to get the Claim Definition corresponding to the `issuer_did` and the `schema_key` in the **Transcript** Claim Offer.
+Alice also needs to get the Credential Definition corresponding to the `issuer_did` and the `schema_key` in the **Transcript** Credential Offer.
 ```python
   # Alice Agent
   get_claim_def_request = await ledger.build_get_claim_def_txn(alice_faber_did, transcript_schema['seqNo'], 'CL', faber_issuer_did)
@@ -497,7 +497,7 @@ Now Alice has everything to create a Claim Request of the issuance of the **Fabe
                                                             json.dumps(transcript_claim_def), alice_master_secret)
 ```
 
-**Faber** prepares both raw and encoded values for each attribute in the **Transcript** Claim Schema.
+**Faber** prepares both raw and encoded values for each attribute in the **Transcript** Credential Schema.
 **Faber** creates the **Transcript** Claim for Alice.
 ```python
   # Faber Agent
@@ -635,7 +635,7 @@ For the **Job-Application** Proof Request Alice divided the attributes as follow
   })
 ```
 
-In addition, Alice must get the Claim Schema and corresponding Claim Definition for each used Claim, the same way, as on the step used to in the creation of the Claim Request.
+In addition, Alice must get the Credential Schema and corresponding Credential Definition for each used Claim, the same way, as on the step used to in the creation of the Claim Request.
 
 Now Alice has everything to create the Proof for **Acme Job-Application** Proof Request.
 ```python
@@ -677,7 +677,7 @@ When **Acme** inspects the received Proof he will see following structure:
 ```
 
 **Acme** got all the requested attributes. Now **Acme** wants to check the Validity Proof.
-To do it **Acme** first must get every Claim Schema and corresponding Claim Definition for each identifier presented in Proof, the same way, as it was doing Alice.
+To do it **Acme** first must get every Credential Schema and corresponding Credential Definition for each identifier presented in the Proof, the same way that Alice did it.
 Now **Acme** has everything to check **Job-Application** Proof from Alice.
  ```python
   # Acme Agent
@@ -686,7 +686,7 @@ Now **Acme** has everything to check **Job-Application** Proof from Alice.
 ```
 
 Here, we’ll assume the application is accepted and Alice ends up getting the job.
-**Acme** creates new Claim Offer for Alice.
+**Acme** creates new Credential Offer for Alice.
 ```python
   # Acme Agent
     job_certificate_claim_offer_json = \
@@ -694,7 +694,7 @@ Here, we’ll assume the application is accepted and Alice ends up getting the j
                                                   acme_issuer_did, alice_acme_did)
 ```
 
-When Alice inspects her connection with Acme, she sees that a new Claim Offer is available.
+When Alice inspects her connection with Acme, she sees that a new Credential Offer is available.
 ```python
   # Alice Agent
   await anoncreds.prover_store_claim_offer(alice_wallet, job_certificate_claim_offer_json)
@@ -703,7 +703,7 @@ When Alice inspects her connection with Acme, she sees that a new Claim Offer is
 ## Apply for a Loan
 
 Now that Alice has a job, she’d like to apply for a loan. That will require proof of employment.
-She can get this from the **Job-Certificate** Claim offered by Acme.
+She can get this from the **Job-Certificate** credential offered by Acme.
 Alice goes through a familiar sequence of interactions.
 
 1. First she creates a Claim Request.
