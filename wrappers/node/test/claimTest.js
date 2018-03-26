@@ -1,7 +1,8 @@
 const assert = require('chai').assert
+const ffi = require('ffi')
 const vcx = require('../dist/index')
 const { stubInitVCX } = require('./helpers')
-const { Claim, Connection } = vcx
+const { Claim, Connection, rustAPI } = vcx
 
 describe('A Claim', function () {
   this.timeout(30000)
@@ -142,5 +143,62 @@ describe('A Claim', function () {
     await connection.connect()
     let val = await Claim.get_offers(connection)
     assert(val)
+  })
+
+  const claimCreateCheckAndDelete = async () => {
+    let claim = await Claim.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
+    assert(claim)
+    const val = await claim.serialize()
+    assert(val)
+    const serialize = rustAPI().vcx_claim_serialize
+    const handle = claim._handle
+    claim = null
+    return {
+      handle,
+      serialize
+    }
+  }
+
+  // Fix the GC issue
+  it('claim and GC deletes object should return null when serialize is called ', async function () {
+    this.timeout(30000)
+
+    const { handle, serialize } = await claimCreateCheckAndDelete()
+
+    global.gc()
+
+    let isComplete = false
+    //  hold on to callbacks so it doesn't become garbage collected
+    const callbacks = []
+
+    while (!isComplete) {
+      const data = await new Promise(function (resolve, reject) {
+        const callback = ffi.Callback('void', ['uint32', 'uint32', 'string'],
+            function (handle, err, data) {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve(data)
+            })
+        callbacks.push(callback)
+        const rc = serialize(
+            0,
+            handle,
+            callback
+        )
+
+        if (rc === 1053) {
+          resolve(null)
+        }
+      })
+      if (!data) {
+        isComplete = true
+      }
+    }
+
+    // this will timeout if condition is never met
+    // ill return "" because the proof object was released
+    return isComplete
   })
 })

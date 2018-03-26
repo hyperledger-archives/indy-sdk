@@ -1,7 +1,8 @@
 const assert = require('chai').assert
+const ffi = require('ffi')
 const vcx = require('../dist/index')
 const { stubInitVCX } = require('./helpers')
-const { Connection, Proof, StateType, Error, ProofState } = vcx
+const { Connection, Proof, StateType, Error, ProofState, rustAPI } = vcx
 
 const ATTR = [{issuerDid: '8XFh8yBzrpJQmNyZzgoTqB', schemaSeqNo: 1, name: 'test'}]
 const PROOF_MSG = '{"version":"0.1","to_did":"BnRXf8yDMUwGyZVDkSENeq","from_did":"GxtnGN6ypZYgEqcftSQFnC","proof_request_id":"cCanHnpFAD","proofs":{"claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"state":"96473275571522321025213415717206189191162"},"a_prime":"921....546","e":"158....756","v":"114....069","m":{"address2":"140....691","city":"209....294","address1":"111...738","zip":"149....066"},"m1":"777....518","m2":"515....229"},"ge_proofs":[]},"non_revoc_proof":null},"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH"}},"aggregated_proof":{"c_hash":"25105671496406009212798488318112715144459298495509265715919744143493847046467","c_list":[[72,245,38,"....",46,195,18]]},"requested_proof":{"revealed_attrs":{"attr_key_id":["claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b","UT","96473275571522321025213415717206189191162"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{}}}'
@@ -132,5 +133,65 @@ describe('A Proof', function () {
     const expectedData = {proofAttrs: attrs, proofState: ProofState.Invalid}
     assert.equal(JSON.stringify(proofData.proofAttrs), expectedData.proofAttrs)
     assert.equal(proofData.proofState, expectedData.proofState)
+  })
+
+  const proofCreateCheckAndDelete = async () => {
+    let connection = await Connection.create({ id: '234' })
+    await connection.connect()
+    const sourceId = 'SerializeDeserialize'
+    let proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
+    let jsonProof = await proof.serialize()
+    assert(jsonProof)
+    const serialize = rustAPI().vcx_proof_serialize
+    const handle = proof._handle
+    connection = null
+    proof = null
+    return {
+      handle,
+      serialize
+    }
+  }
+
+  // Fix the GC issue
+  it('proof and GC deletes object should return null when serialize is called ', async function () {
+    this.timeout(30000)
+
+    const { handle, serialize } = await proofCreateCheckAndDelete()
+
+    global.gc()
+
+    let isComplete = false
+    //  hold on to callbacks so it doesn't become garbage collected
+    const callbacks = []
+
+    while (!isComplete) {
+      const data = await new Promise(function (resolve, reject) {
+        const callback = ffi.Callback('void', ['uint32', 'uint32', 'string'],
+            function (handle, err, data) {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve(data)
+            })
+        callbacks.push(callback)
+        const rc = serialize(
+            0,
+            handle,
+            callback
+        )
+
+        if (rc === 1017) {
+          resolve(null)
+        }
+      })
+      if (!data) {
+        isComplete = true
+      }
+    }
+
+    // this will timeout if condition is never met
+    // ill return "" because the proof object was released
+    return isComplete
   })
 })

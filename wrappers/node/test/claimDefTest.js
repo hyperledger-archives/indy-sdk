@@ -1,7 +1,8 @@
 const assert = require('chai').assert
+const ffi = require('ffi')
 const vcx = require('../dist/index')
 const { stubInitVCX } = require('./helpers')
-const { ClaimDef, Error } = vcx
+const { ClaimDef, Error, rustAPI } = vcx
 
 const CLAIM_DEF = {
   name: 'test',
@@ -52,5 +53,61 @@ describe('A ClaimDef', function () {
       assert.equal(error.vcxFunction, 'vcx_claimdef_serialize')
       assert.equal(error.message, 'Invalid Claim Definition handle')
     }
+  })
+
+  const claimDefCreateCheckAndDelete = async () => {
+    let claimDef = await ClaimDef.create(CLAIM_DEF)
+    let data = await claimDef.serialize()
+    assert(data)
+    const serialize = rustAPI().vcx_claimdef_serialize
+    const handle = claimDef._handle
+    claimDef = null
+    return {
+      handle,
+      serialize
+    }
+  }
+
+  // Fix the GC issue
+  it('claimdef and GC deletes object should return null when serialize is called ', async function () {
+    this.timeout(30000)
+
+    const { handle, serialize } = await claimDefCreateCheckAndDelete()
+
+    global.gc()
+
+    let isComplete = false
+    //  hold on to callbacks so it doesn't become garbage collected
+    const callbacks = []
+
+    while (!isComplete) {
+      const data = await new Promise(function (resolve, reject) {
+        const callback = ffi.Callback('void', ['uint32', 'uint32', 'string'],
+            function (handle, err, data) {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve(data)
+            })
+        callbacks.push(callback)
+        const rc = serialize(
+            0,
+            handle,
+            callback
+        )
+
+        if (rc === 1037) {
+          resolve(null)
+        }
+      })
+      if (!data) {
+        isComplete = true
+      }
+    }
+
+    // this will timeout if condition is never met
+    // ill return "" because the claimdef object was released
+    return isComplete
   })
 })

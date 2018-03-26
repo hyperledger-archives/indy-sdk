@@ -514,7 +514,6 @@ pub fn update_state(handle: u32) -> Result<u32, u32> {
         }
         Ok(response) => {
             debug!("update state response: {:?}", response);
-            println!("updated state: {:?}{}",response, get_state(handle));
             if get_state(handle) == VcxStateType::VcxStateOfferSent as u32 || get_state(handle) == VcxStateType::VcxStateInitialized as u32{
                  for i in response {
                      if i.status_code == MessageAccepted.as_string() && i.msg_type == "connReqAnswer" {

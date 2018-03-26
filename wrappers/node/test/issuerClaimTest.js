@@ -1,9 +1,10 @@
 const assert = require('chai').assert
 const expect = require('chai').expect
+const ffi = require('ffi')
 const vcx = require('../dist')
 const { stubInitVCX, shouldThrow } = require('./helpers')
 
-const { IssuerClaim, Connection, StateType, Error } = vcx
+const { IssuerClaim, Connection, StateType, Error, rustAPI } = vcx
 
 const config = {
   sourceId: 'jsonCreation',
@@ -215,5 +216,63 @@ describe('An issuerClaim', async function () {
   it('can be created from a json', async function () {
     const claim = await IssuerClaim.create(config)
     expect(claim.sourceId).to.equal(config.sourceId)
+  })
+
+  const issuerClaimOfferCheckAndDelete = async () => {
+    let connection = await Connection.create({id: '123'})
+    await connection.connect({ sms: true })
+    const sourceId = 'Claim'
+    let claim = await IssuerClaim.create({ ...config, sourceId })
+    await claim.sendOffer(connection)
+    const serialize = rustAPI().vcx_issuer_claim_serialize
+    const handle = claim._handle
+    connection = null
+    claim = null
+    return {
+      handle,
+      serialize
+    }
+  }
+
+  // Fix the GC issue
+  it('issuer_claim and GC deletes object should return null when serialize is called ', async function () {
+    this.timeout(30000)
+
+    const { handle, serialize } = await issuerClaimOfferCheckAndDelete()
+
+    global.gc()
+
+    let isComplete = false
+    //  hold on to callbacks so it doesn't become garbage collected
+    const callbacks = []
+    while (!isComplete) {
+      const data = await new Promise(function (resolve, reject) {
+        const callback = ffi.Callback('void', ['uint32', 'uint32', 'string'],
+            function (handle, err, data) {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve(data)
+            })
+        callbacks.push(callback)
+        const rc = serialize(
+            0,
+            handle,
+            callback
+        )
+
+        if (rc === Error.INVALID_ISSUER_CLAIM_HANDLE) {
+          resolve(null)
+        }
+      })
+      if (!data) {
+        isComplete = true
+      }
+    }
+
+    // this will timeout if condition is never met
+    // get_data will return "" because the connection object was released
+    return isComplete
   })
 })
