@@ -18,12 +18,12 @@ class Claim(VcxStateful):
         self.logger.debug("Deleted {} obj: {}".format(Claim, self.handle))
 
     @staticmethod
-    async def create(source_id: str, claim_offer: dict):
-        constructor_params = source_id
+    async def create(source_id: str, claim_offer: str):
+        constructor_params = (source_id,)
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
         c_offer = c_char_p(json.dumps(claim_offer).encode('utf-8'))
-        c_params = (c_source_id, c_offer)
+        c_params = (c_source_id, c_offer, )
 
         return await Claim._create("vcx_claim_create_with_offer",
                                    constructor_params,
@@ -37,15 +37,17 @@ class Claim(VcxStateful):
         return claim
 
     @staticmethod
-    async def get_offers(connection: Connection):
+    async def get_offers(connection: Connection) -> dict:
         if not hasattr(Claim.get_offers, "cb"):
-            Claim.get_offers.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+            Claim.get_offers.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
         c_connection_handle = c_uint32(connection.handle)
 
-        await do_call('vcx_claim_get_offers',
+        data = await do_call('vcx_claim_get_offers',
                       c_connection_handle,
                       Claim.get_offers.cb)
+
+        return json.loads(data.decode())
 
     async def serialize(self) -> dict:
         return await self._serialize(Claim, 'vcx_claim_serialize')

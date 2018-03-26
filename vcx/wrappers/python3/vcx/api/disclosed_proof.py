@@ -18,12 +18,12 @@ class DisclosedProof(VcxStateful):
         self.logger.debug("Deleted {} obj: {}".format(DisclosedProof, self.handle))
 
     @staticmethod
-    async def create(source_id: str, proof_request: dict):
-        constructor_params = source_id
+    async def create(source_id: str, proof_request: str):
+        constructor_params = (source_id,)
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
         c_proof_request = c_char_p(json.dumps(proof_request).encode('utf-8'))
-        c_params = (c_source_id, c_proof_request)
+        c_params = (c_source_id, c_proof_request, )
 
         return await DisclosedProof._create("vcx_disclosed_proof_create_with_request",
                                    constructor_params,
@@ -37,15 +37,17 @@ class DisclosedProof(VcxStateful):
         return disclosed_proof
 
     @staticmethod
-    async def get_requests(connection: Connection):
+    async def get_requests(connection: Connection) -> dict:
         if not hasattr(DisclosedProof.get_requests, "cb"):
-            DisclosedProof.get_requests.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+            DisclosedProof.get_requests.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
         c_connection_handle = c_uint32(connection.handle)
 
-        await do_call('vcx_disclosed_proof_get_requests',
+        data = await do_call('vcx_disclosed_proof_get_requests',
                       c_connection_handle,
                       DisclosedProof.get_requests.cb)
+
+        return json.loads(data.decode())
 
     async def serialize(self) -> dict:
         return await self._serialize(DisclosedProof, 'vcx_disclosed_proof_serialize')
