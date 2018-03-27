@@ -298,19 +298,25 @@ pub extern fn indy_build_attrib_request(command_handle: i32,
 pub extern fn indy_build_get_attrib_request(command_handle: i32,
                                             submitter_did: *const c_char,
                                             target_did: *const c_char,
-                                            data: *const c_char,
+                                            raw: *const c_char,
+                                            hash: *const c_char,
+                                            enc: *const c_char,
                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                  request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(data, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_c_str!(raw, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(hash, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_c_str!(enc, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetAttribRequest(
             submitter_did,
             target_did,
-            data,
+            raw,
+            hash,
+            enc,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);

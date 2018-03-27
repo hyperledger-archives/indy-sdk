@@ -27,9 +27,8 @@ async def test_replace_keys_apply_works(pool_handle, wallet_handle, identity_tru
 
     schema_request = await ledger.build_schema_request(my_did, schema_data)
 
-    with pytest.raises(IndyError) as e:
-        await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
-    assert ErrorCode.LedgerInvalidTransaction == e.value.error_code
+    response = await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
+    assert json.loads(response)['op'] == 'REQNACK'
 
     await did.replace_keys_apply(wallet_handle, my_did)
 
@@ -49,6 +48,6 @@ async def test_replace_keys_without_nym_transaction(pool_handle, wallet_handle, 
 
     schema_request = await ledger.build_schema_request(my_did, schema_data)
 
-    with pytest.raises(IndyError) as e:
-        await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
-    assert ErrorCode.LedgerInvalidTransaction == e.value.error_code
+    response = await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
+    assert json.loads(response)['op'] == 'REQNACK'
+

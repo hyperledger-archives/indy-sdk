@@ -35,6 +35,10 @@ use std::rc::Rc;
 fn main() {
     utils::logger::LoggerUtils::init();
 
+    if env::args().find(|a| a == "-h" || a == "--help").is_some() {
+        return _print_help();
+    }
+
     let command_executor = build_executor();
 
     if env::args().len() == 1 {
@@ -54,6 +58,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(common::show_command::new())
         .add_group(did::group::new())
         .add_command(did::new_command::new())
+        .add_command(did::import_command::new())
         .add_command(did::use_command::new())
         .add_command(did::rotate_key_command::new())
         .add_command(did::list_command::new())
@@ -82,6 +87,8 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::claim_def_command::new())
         .add_command(ledger::get_claim_def_command::new())
         .add_command(ledger::node_command::new())
+        .add_command(ledger::pool_config_command::new())
+        .add_command(ledger::pool_upgrade_command::new())
         .add_command(ledger::custom_command::new())
         .finalize_group()
         .finalize()
@@ -129,6 +136,18 @@ fn execute_batch(command_executor: CommandExecutor, script_path: Option<&str>) {
         let stdin = std::io::stdin();
         _iter_batch(command_executor, stdin.lock());
     };
+}
+
+fn _print_help() {
+    println_acc!("Hyperledger Indy CLI");
+    println!();
+    println_acc!("CLI supports 2 execution modes:");
+    println_acc!("\tInteractive - reads commands from terminal. To start just run indy-cli without params.");
+    println_acc!("\tUsage: indy-cli");
+    println!();
+    println_acc!("\tBatch - all commands will be read from text file or pipe and executed in series.");
+    println_acc!("\tUsage: indy-cli <path-to-text-file>");
+    println!();
 }
 
 fn _iter_batch<T>(command_executor: CommandExecutor, reader: T) where T: std::io::BufRead {

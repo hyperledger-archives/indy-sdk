@@ -192,6 +192,22 @@ public class Did extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when getAttrVerkey completes.
+	 */
+	private static Callback getAttrVerkeyCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String verkey) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = verkey;
+			future.complete(result);
+		}
+	};
+
 	/*
 	 * STATIC METHODS
 	 */
@@ -541,6 +557,35 @@ public class Did extends IndyJava.API {
 				walletHandle,
 				did,
 				getDidMetadataCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Retrieves abbreviated verkey if it is possible otherwise return full verkey.
+	 *
+	 * @param did
+	 * @param verkey
+	 * @return A future resolving to a verkey
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> AbbreviateVerkey(
+			String did,
+			String verkey) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+		ParamGuard.notNullOrWhiteSpace(did, "verkey");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_abbreviate_verkey(
+				commandHandle,
+				did,
+				verkey,
+				getAttrVerkeyCb);
 
 		checkResult(result);
 

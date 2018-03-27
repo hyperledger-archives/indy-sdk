@@ -132,9 +132,11 @@
                                                               submitterDid:myDid
                                                                requestJson:schemaRequest
                                                            outResponseJson:&schemaResponse];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequest() failed");
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequest() returned not Success");
     XCTAssertNotNil(schemaResponse, @"schemaResponse is nil!");
-    
+    NSDictionary *response = [NSDictionary fromString:schemaResponse];
+    XCTAssertTrue([response[@"op"] isEqualToString:@"REQNACK"], @"wrong response type");
+
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }

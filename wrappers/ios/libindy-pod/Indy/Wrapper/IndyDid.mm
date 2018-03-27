@@ -87,6 +87,16 @@
     [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
 }
 
++ (void)keyForLocalDid:(NSString *)did
+     walletHandle:(IndyHandle)walletHandle
+       completion:(void (^)(NSError *error, NSString *key))completion
+{
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+    indy_error_t ret = indy_key_for_local_did(handle, walletHandle, [did UTF8String], IndyWrapperCommon3PSCallback);
+
+    [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
+}
+
 + (void)setEndpointAddress:(NSString *)address
               transportKey:(NSString *)transportKey
                     forDid:(NSString *)did
@@ -135,6 +145,16 @@
 {
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     indy_error_t ret = indy_get_key_metadata(handle, walletHandle, [did UTF8String], IndyWrapperCommon3PSCallback);
+
+    [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
+}
+
++ (void)AbbreviateVerkey:(NSString *)did
+           fullVerkey:(NSString *)fullVerkey
+           completion:(void (^)(NSError *error, NSString *verkey))completion
+{
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+    indy_error_t ret = indy_abbreviate_verkey(handle,[did UTF8String],[fullVerkey UTF8String], IndyWrapperCommon3PSCallback);
 
     [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
 }

@@ -7,11 +7,13 @@ use libc::c_char;
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::sync::Mutex;
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::{channel, Receiver};
 
-pub fn _closure_to_cb_ec(sender: Sender<ErrorCode>) -> (i32,
-                                                        Option<extern fn(command_handle: i32,
-                                                                         err: ErrorCode)>) {
+pub fn _closure_to_cb_ec() -> (Receiver<ErrorCode>, i32,
+                               Option<extern fn(command_handle: i32,
+                                                err: ErrorCode)>) {
+    let (sender, receiver) = channel();
+
     lazy_static! {
         static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
     }
@@ -30,12 +32,14 @@ pub fn _closure_to_cb_ec(sender: Sender<ErrorCode>) -> (i32,
     let command_handle = SequenceUtils::get_next_id();
     callbacks.insert(command_handle, closure);
 
-    (command_handle, Some(_callback))
+    (receiver, command_handle, Some(_callback))
 }
 
-pub fn _closure_to_cb_ec_i32(sender: Sender<(ErrorCode, i32)>) -> (i32,
-                                                                   Option<extern fn(command_handle: i32, err: ErrorCode,
-                                                                                    c_i32: i32)>) {
+pub fn _closure_to_cb_ec_i32() -> (Receiver<(ErrorCode, i32)>, i32,
+                                   Option<extern fn(command_handle: i32, err: ErrorCode,
+                                                    c_i32: i32)>) {
+    let (sender, receiver) = channel();
+
     lazy_static! {
         static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, i32) + Send>>> = Default::default();
     }
@@ -54,13 +58,15 @@ pub fn _closure_to_cb_ec_i32(sender: Sender<(ErrorCode, i32)>) -> (i32,
     let command_handle = SequenceUtils::get_next_id();
     callbacks.insert(command_handle, closure);
 
-    (command_handle, Some(_callback))
+    (receiver, command_handle, Some(_callback))
 }
 
-pub fn _closure_to_cb_ec_string(sender: Sender<(ErrorCode, String)>) -> (i32,
-                                                                         Option<extern fn(command_handle: i32,
-                                                                                          err: ErrorCode,
-                                                                                          c_str: *const c_char)>) {
+pub fn _closure_to_cb_ec_string() -> (Receiver<(ErrorCode, String)>, i32,
+                                      Option<extern fn(command_handle: i32,
+                                                       err: ErrorCode,
+                                                       c_str: *const c_char)>) {
+    let (sender, receiver) = channel();
+
     lazy_static! {
         static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
     }
@@ -80,14 +86,16 @@ pub fn _closure_to_cb_ec_string(sender: Sender<(ErrorCode, String)>) -> (i32,
     let command_handle = SequenceUtils::get_next_id();
     callbacks.insert(command_handle, closure);
 
-    (command_handle, Some(_callback))
+    (receiver, command_handle, Some(_callback))
 }
 
-pub fn _closure_to_cb_ec_string_string(sender: Sender<(ErrorCode, String, String)>) -> (i32,
-                                                                                        Option<extern fn(command_handle: i32,
-                                                                                                         err: ErrorCode,
-                                                                                                         str1: *const c_char,
-                                                                                                         str2: *const c_char)>) {
+pub fn _closure_to_cb_ec_string_string() -> (Receiver<(ErrorCode, String, String)>, i32,
+                                             Option<extern fn(command_handle: i32,
+                                                              err: ErrorCode,
+                                                              str1: *const c_char,
+                                                              str2: *const c_char)>) {
+    let (sender, receiver) = channel();
+
     lazy_static! {
             static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
     }
@@ -108,5 +116,5 @@ pub fn _closure_to_cb_ec_string_string(sender: Sender<(ErrorCode, String, String
     let command_handle = SequenceUtils::get_next_id();
     callbacks.insert(command_handle, closure);
 
-    (command_handle, Some(_callback))
+    (receiver, command_handle, Some(_callback))
 }

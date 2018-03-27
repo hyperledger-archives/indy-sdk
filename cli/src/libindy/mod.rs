@@ -83,6 +83,9 @@ pub enum ErrorCode
     // Trying to open wallet that was opened already
     WalletAlreadyOpenedError = 206,
 
+    // Attempt to open encrypted wallet with invalid credentials
+    WalletAccessFailed = 207,
+
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
     PoolLedgerNotCreatedError = 300,
@@ -95,9 +98,6 @@ pub enum ErrorCode
 
     // No concensus during ledger operation
     LedgerNoConsensusError = 303,
-
-    // Attempt to send unknown or incomplete transaction message
-    LedgerInvalidTransaction = 304,
 
     // Attempt to send transaction without the necessary privileges
     LedgerSecurityError = 305,
@@ -124,9 +124,15 @@ pub enum ErrorCode
 
     AnoncredsClaimRevoked = 406,
 
+    // Attempt to create claim definition with duplicated did schema pair
+    AnoncredsClaimDefAlreadyExistsError = 407,
+
     // Signus errors
     // Unknown format of DID entity keys
-    SignusUnknownCryptoError = 500
+    UnknownCryptoTypeError = 500,
+
+    // Attempt to create duplicate did
+    DidAlreadyExistsError = 600
 }
 
 impl ErrorCode {
@@ -156,6 +162,7 @@ impl ErrorCode {
             WalletAlreadyExistsError => "Attempt to create wallet with name used for another exists wallet",
             WalletNotFoundError => "Requested entity id isn't present in wallet",
             WalletIncompatiblePoolError => "Trying to use wallet with pool that has different name",
+            WalletAccessFailed => "Trying to open wallet encrypted wallet with invalid credentials",
             WalletAlreadyOpenedError => "Trying to open wallet that was opened already",
             PoolLedgerNotCreatedError => "Trying to open pool ledger that wasn't created before",
             PoolLedgerInvalidPoolHandle => "Caller passed invalid pool ledger handle",
@@ -171,7 +178,9 @@ impl ErrorCode {
             AnoncredsMasterSecretDuplicateNameError => "Attempt to generate master secret with duplicated name",
             AnoncredsProofRejected => "Proof rejected",
             AnoncredsClaimRevoked => "Claim revoked",
-            SignusUnknownCryptoError => "Unknown format of DID entity keys",
+            AnoncredsClaimDefAlreadyExistsError => "Claim definition already exists",
+            UnknownCryptoTypeError => "Unknown format of DID entity keys",
+            DidAlreadyExistsError => "Did already exists",
         }
     }
 }

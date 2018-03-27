@@ -112,7 +112,8 @@ namespace Hyperledger.Indy.Test.DemoTests
                     "                          \"name\":\"proof_req_1\",\n" +
                     "                          \"version\":\"0.1\",\n" +
                     "                          \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]},\n" +
-                    "                                                \"attr2_referent\":{\"name\":\"sex\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+                    "                                                \"attr2_referent\":{\"name\":\"sex\",\"restrictions\":[{\"schema_seq_no\":1}]},\n" +
+                    "                                                \"attr3_referent\":{\"phone\":\"sex\"}},\n" +
                     "                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                     "                  }";
 
@@ -131,9 +132,9 @@ namespace Hyperledger.Indy.Test.DemoTests
             var claimUuid = claimsForAttribute1[0].Value<string>("referent");
 
             //12. Prover create Proof
-            var selfAttestedValue = "yes";
+            var selfAttestedValue = "8-800-200";
             var requestedClaimsJson = string.Format("{{\n" +
-                    "                                          \"self_attested_attributes\":{{\"self1\":\"{0}\"}},\n" +
+                    "                                          \"self_attested_attributes\":{{\"attr3_referent\":\"{0}\"}},\n" +
                     "                                          \"requested_attrs\":{{\"attr1_referent\":[\"{1}\", true],\n" +
                     "                                                               \"attr2_referent\":[\"{2}\", false]}},\n" +
                     "                                          \"requested_predicates\":{{\"predicate1_referent\":\"{3}\"}}\n" +
@@ -156,7 +157,7 @@ namespace Hyperledger.Indy.Test.DemoTests
 
             Assert.IsNotNull(proof["requested_proof"]["unrevealed_attrs"].Value<string>("attr2_referent"));
 
-            Assert.AreEqual(selfAttestedValue, proof["requested_proof"]["self_attested_attrs"].Value<string>("self1"));
+            Assert.AreEqual(selfAttestedValue, proof["requested_proof"]["self_attested_attrs"].Value<string>("attr3_referent"));
 
             Boolean valid = await AnonCreds.VerifierVerifyProofAsync(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson);
             Assert.IsTrue(valid);
@@ -527,7 +528,7 @@ namespace Hyperledger.Indy.Test.DemoTests
                     "                          \"nonce\":\"123432421212\",\n" +
                     "                          \"name\":\"proof_req_1\",\n" +
                     "                          \"version\":\"0.1\",\n" +
-                    "                          \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+                    "                          \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}, \"attr2_referent\":{\"name\":\"phone\"}},\n" +
                     "                          \"requested_predicates\":{}\n" +
                     "                  }";
 

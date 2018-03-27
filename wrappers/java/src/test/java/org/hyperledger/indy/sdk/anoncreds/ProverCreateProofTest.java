@@ -13,13 +13,6 @@ import static org.junit.Assert.assertNotNull;
 
 public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
-	String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-			"                                \"name\":\"proof_req_1\",\n" +
-			"                                \"version\":\"0.1\",\n" +
-			"                                \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
-			"                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
-			"                              }";
-
 	@Test
 	public void testProverCreateProofWorks() throws Exception {
 
@@ -33,13 +26,9 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		String claimUuid = claimForAttribute.getString("referent");
 
-		String requestedClaimsJson = String.format("{\n" +
-				"                                          \"self_attested_attributes\":{},\n" +
-				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true]},\n" +
-				"                                          \"requested_predicates\":{\"predicate1_referent\":\"%s\"}\n" +
-				"                                        }", claimUuid, claimUuid);
+		String requestedClaimsJson = String.format(requestedClaimsJsonTemplate, claimUuid, claimUuid);
 
-		String schemasJson = String.format("{\"%s\":%s}", claimUuid, schema);
+		String schemasJson = String.format("{\"%s\":%s}", claimUuid, gvtSchemaJson);
 		String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDef);
 		String revocRegsJson = "{}";
 
@@ -62,19 +51,22 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		String claimUuid = claims.getJSONObject(0).getString("referent");
 
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"               \"name\":\"proof_req_1\",\n" +
-				"               \"version\":\"0.1\",\n" +
-				"               \"requested_attrs\":{\"attr1_referent\":{\"name\":\"some_attr\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
-				"               \"requested_predicates\":{}\n" +
-				"              }";
+		String proofRequest = "{\n" +
+		"                           \"nonce\":\"123432421212\",\n" +
+		"                           \"name\":\"proof_req_1\",\n" +
+		"                           \"version\":\"0.1\", " +
+		"                           \"requested_attrs\":{" +
+		"                               \"attr1_referent\":{\"name\":\"some_attr\"}" +
+		"                           },\n" +
+		"                           \"requested_predicates\":{}" +
+		"                      }";
 
 		String requestedClaimsJson = String.format("{\"self_attested_attributes\":{},\n" +
 				"                                    \"requested_attrs\":{\"attr1_referent\":[\"%s\", true]},\n" +
 				"                                    \"requested_predicates\":{}\n" +
 				"                                   }", claimUuid);
 
-		String schemasJson = String.format("{\"%s\":%s}", claimUuid, schema);
+		String schemasJson = String.format("{\"%s\":%s}", claimUuid, gvtSchemaJson);
 		String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDef);
 		String revocRegsJson = "{}";
 
@@ -98,13 +90,9 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		String claimUuid = claimForAttribute.getString("referent");
 
-		String requestedClaimsJson = String.format("{\n" +
-				"                                          \"self_attested_attributes\":{},\n" +
-				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true]},\n" +
-				"                                          \"requested_predicates\":{\"predicate1_referent\":\"%s\"}\n" +
-				"                                        }", claimUuid, claimUuid);
+		String requestedClaimsJson = String.format(requestedClaimsJsonTemplate, claimUuid, claimUuid);
 
-		String schemasJson = String.format("{\"%s\":%s}", claimUuid, schema);
+		String schemasJson = String.format("{\"%s\":%s}", claimUuid, gvtSchemaJson);
 		String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDef);
 		String revocRegsJson = "{}";
 
@@ -127,12 +115,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		String claimUuid = claimForAttribute.getString("referent");
 
-		String requestedClaimsJson = String.format("{\n" +
-				"                                          \"self_attested_attributes\":{},\n" +
-				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true]},\n" +
-				"                                          \"requested_predicates\":{\"predicate1_referent\":\"%s\"}\n" +
-				"                                        }", claimUuid, claimUuid);
-
+		String requestedClaimsJson = String.format(requestedClaimsJsonTemplate, claimUuid, claimUuid);
 		String schemasJson = "{}";
 		String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDef);
 		String revocRegsJson = "{}";
@@ -160,7 +143,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 				"                      \"requested_predicates\":{}\n" +
 				"                    }";
 
-		String schemasJson = String.format("{\"%s\":%s}", claimUuid, schema);
+		String schemasJson = String.format("{\"%s\":%s}", claimUuid, gvtSchemaJson);
 		String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDef);
 		String revocRegsJson = "{}";
 

@@ -1,8 +1,10 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
 import org.hyperledger.indy.sdk.InvalidStructureException;
+import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.json.JSONObject;
 import org.junit.*;
 
 import static org.hamcrest.CoreMatchers.isA;
@@ -15,47 +17,25 @@ public class ProverStoreClaimTest extends AnoncredsIntegrationTest {
 	public void testProverStoreClaimWorks() throws Exception {
 		initCommonWallet();
 
-		String proverWalletName = "proverWallet";
-		Wallet.createWallet("default", proverWalletName, "default", null, null).get();
-		Wallet proverWallet = Wallet.openWallet(proverWalletName, null, null).get();
+		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, issuer1GvtClaimOffer, claimDef, masterSecretName).get();
 
-		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecretName).get();
-
-		String claimOffer = String.format(claimOfferTemplate, issuerDid, 1);
-
-		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, claimOffer, claimDef, masterSecretName).get();
-
-		String claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
-				"                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
-				"                 \"height\":[\"175\",\"175\"],\n" +
-				"                 \"age\":[\"28\",\"28\"]\n" +
-				"        }";
-
-		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
+		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, gvtClaimValuesJson, - 1).get();
 		String claimJson = createClaimResult.getClaimJson();
 
-		Anoncreds.proverStoreClaim(proverWallet, claimJson).get();
-
-		proverWallet.closeWallet().get();
-		Wallet.deleteWallet(proverWalletName, null).get();
+		Anoncreds.proverStoreClaim(wallet, claimJson, null).get();
 	}
 
 	@Test
 	public void testProverStoreClaimWorksWithoutClaimReq() throws Exception {
-
 		initCommonWallet();
+
+		JSONObject claimObj = new JSONObject(claim);
+		claimObj.put("issuer_did", proverDid);
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		String claimJson = String.format("{\"values\":{\"sex\":[\"male\",\"1\"],\"age\":[\"28\",\"28\"],\"name\":[\"Alex\",\"1\"],\"height\":[\"175\",\"175\"]},\n" +
-				"                          \"issuer_did\":\"%s\",\n" +
-				"                          \"rev_reg_seq_no\":null,\n" +
-				"                          \"schema_seq_no\":2,\n" +
-				"                          \"signature\":{\"p_claim\":{\"m_2\":\"1\",\"a\":\"1\",\"e\":\"2\",\"v\":\"3\"}," +
-				"                          \"r_claim\":null}}", issuerDid2);
-
-		Anoncreds.proverStoreClaim(wallet, claimJson).get();
+		Anoncreds.proverStoreClaim(wallet, claimObj.toString(), null).get();
 	}
 
 	@Test
@@ -63,18 +43,16 @@ public class ProverStoreClaimTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
-
-		String claimOffer = String.format(claimOfferTemplate, issuerDid, 1);
-
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, issuer1GvtClaimOffer, claimDef, masterSecretName).get();
 
 		String claimJson = "{\"claim\":{\"sex\":[\"male\",\"1\"],\"age\":[\"28\",\"28\"],\"name\":[\"Alex\",\"1\"],\"height\":[\"175\",\"175\"]},\n" +
 				"            \"issuer_did\":1,\"\n" +
 				"            \"revoc_reg_seq_no\":null,\n" +
-				"            \"schema_seq_no\":1}";
+				"            \"schema_key\":1}";
 
-		Anoncreds.proverStoreClaim(wallet, claimJson).get();
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(isA(InvalidStructureException.class));
+
+		Anoncreds.proverStoreClaim(wallet, claimJson, null).get();
 	}
 }

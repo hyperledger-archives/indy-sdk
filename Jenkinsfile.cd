@@ -2,6 +2,16 @@
 
 @Library('SovrinHelpers') _
 
+properties([
+        [$class: 'BuildDiscarderProperty', strategy: [
+                $class               : 'LogRotator',
+                artifactDaysToKeepStr: '28',
+                artifactNumToKeepStr : '',
+                daysToKeepStr        : '28',
+                numToKeepStr         : ''
+        ]]
+]);
+
 try {
     testing()
     publishing()
@@ -79,13 +89,35 @@ def notifyingFailure() {
 def getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver) {
     if (pool_type != null && plenum_ver != null && anoncreds_ver != null && node_ver != null) {
         return "--build-arg=indy_stream=${pool_type} --build-arg indy_plenum_ver=${plenum_ver} --build-arg indy_anoncreds_ver=${anoncreds_ver} --build-arg indy_node_ver=${node_ver}"
-    }
-    else {
+    } else {
         return ""
     }
 }
 
+def dockerClean(env_name, network_name) {
+    try {
+        try {
+            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f || true" //TODO: FIXME
+        } catch (error) {
+            echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
+        }
+        try {
+            echo "${env_name} Test: remove pool network ${network_name}"
+            sh "docker network rm ${network_name} || true" //TODO: FIXME
+        } catch (error) {
+            echo "${env_name} Test: error while delete ${network_name} - ${error}"
+        }
+    }
+    finally {
+        sh "docker container prune -f"
+        sh "docker network prune -f"
+    }
+}
+
 def openPool(env_name, network_name, pool_type = null, pool_ver = null, plenum_ver = null, anoncreds_ver = null, node_ver = null) {
+    echo "${env_name} Test: Clean docker"
+    dockerClean(env_name, network_name)
+
     echo "${env_name} Test: Create docker network (${network_name}) for nodes pool and test image"
     sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
 
@@ -101,26 +133,13 @@ def openPool(env_name, network_name, pool_type = null, pool_ver = null, plenum_v
 def closePool(env_name, network_name, poolInst) {
     echo "${env_name} Test: Cleanup"
     try {
-        sh "docker network inspect ${network_name}"
-    } catch (error) {
-        echo "${env_name} Tests: error while inspect network ${network_name} - ${error}"
-    }
-    try {
         echo "${env_name} Test: stop pool"
         poolInst.stop()
     } catch (error) {
         echo "${env_name} Tests: error while stop pool ${error}"
     }
-    try {
-        sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f"
-    } catch (error) {
-        echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
-    }
-    try {
-        echo "${env_name} Test: remove pool network ${network_name}"
-        sh "docker network rm ${network_name}"
-    } catch (error) {
-        echo "${env_name} Test: error while delete ${network_name} - ${error}"
+    finally {
+        dockerClean(env_name, network_name)
     }
     step([$class: 'WsCleanup'])
 }
@@ -193,21 +212,22 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
 
                 sh '''
                     python3.5 -m pip install --user -e .
-                    LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
                 '''
             }
         }
 
         sh "cp libindy/target/release/libindy.so cli"
         dir('cli') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name} -u 0:0") {
-                sh "cp libindy.so /usr/lib"
-
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Indy Cli Test: Build"
-                sh "RUST_BACKTRACE=1 cargo build --release"
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release"
+
+                echo "${env_name} Indy Cli Test: Build Tests"
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run"
 
                 echo "${env_name} Indy Cli Test: Run tests"
-                sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release"
+                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
 
                 if (stashBuildResults) {
                     stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
@@ -231,6 +251,8 @@ def windowsTesting() {
                 bat "docker -H $INDY_SDK_SERVER_IP build --build-arg pool_ip=$INDY_SDK_SERVER_IP -f ci/indy-pool.dockerfile -t indy_pool ci"
                 bat "docker -H $INDY_SDK_SERVER_IP run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 
+                setupRust()
+
                 dir('libindy') {
                     echo "Windows Test: Download prebuilt dependencies"
                     bat 'wget -O prebuilt.zip "https://repo.sovrin.org/windows/libindy/deps/indy-sdk-deps.zip"'
@@ -241,7 +263,7 @@ def windowsTesting() {
                             "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "INDY_CRYPTO_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "MILAGRO_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "ZMQPW_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "LIBZMQ_PREFIX=$WORKSPACE\\libindy\\prebuilt",
                             "SODIUM_LIB_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
@@ -437,31 +459,25 @@ def getSuffix(isRelease, target) {
 }
 
 def libindyDebPublishing(testEnv) {
-    dir('libindy') {
-        echo 'Publish Libindy deb files to Apt'
+    echo 'Publish Libindy deb files to Apt'
 
-        testEnv.inside('-u 0:0') {
-            sh 'chmod -R 755 ci/*.sh'
+    dir('libindy/sovrin-packaging') {
+        downloadPackagingUtils()
+    }
 
-            def suffix = "~$env.BUILD_NUMBER"
+    testEnv.inside {
+        sh 'chmod -R 755 libindy/ci/*.sh'
 
-            dir('sovrin-packaging') {
-                downloadPackagingUtils()
-            }
+        def suffix = "~$env.BUILD_NUMBER"
 
-            unstash name: 'LibindyUbuntuBuildResult'
+        unstash name: 'LibindyUbuntuBuildResult'
+        sh 'mkdir --parent libindy/target/release/ && mv target/release/* libindy/target/release/'
 
-            withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-                try {
-                    sh "./ci/libindy-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
+        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
+            sh "cd libindy && ./ci/libindy-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
 
-                    if (env.BRANCH_NAME == 'rc') {
-                        stash includes: 'debs/*', name: 'libindyDebs'
-                    }
-                }
-                finally {
-                    sh "rm -rf debian"
-                }
+            if (env.BRANCH_NAME == 'rc') {
+                stash includes: 'libindy/debs/*', name: 'libindyDebs'
             }
         }
     }
@@ -504,31 +520,25 @@ def javaWrapperPublishing(testEnv, isRelease) {
 }
 
 def libindyCliDebPublishing(testEnv) {
-    dir('cli') {
-        echo 'Publish Indy Cli deb files to Apt'
+    echo 'Publish Indy Cli deb files to Apt'
 
-        testEnv.inside('-u 0:0') {
-            sh 'chmod -R 755 ci/*.sh'
+    dir('cli/sovrin-packaging') {
+        downloadPackagingUtils()
+    }
 
-            def suffix = "~$env.BUILD_NUMBER"
+    testEnv.inside {
+        sh 'chmod -R 755 cli/ci/*.sh'
 
-            dir('sovrin-packaging') {
-                downloadPackagingUtils()
-            }
+        def suffix = "~$env.BUILD_NUMBER"
 
-            unstash name: 'IndyCliUbuntuBuildResult'
+        unstash name: 'IndyCliUbuntuBuildResult'
+        sh 'mkdir --parent cli/target/release/ && mv target/release/* cli/target/release/'
 
-            withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-                try {
-                    sh "./ci/indy-cli-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
+        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
+            sh "cd cli && ./ci/indy-cli-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
 
-                    if (env.BRANCH_NAME == 'rc') {
-                        stash includes: 'debs/*', name: 'libindyCliDebs'
-                    }
-                }
-                finally {
-                    sh "rm -rf debian"
-                }
+            if (env.BRANCH_NAME == 'rc') {
+                stash includes: 'cli/debs/*', name: 'libindyCliDebs'
             }
         }
     }
@@ -594,25 +604,25 @@ def publishLibindyCliWindowsFilesRCtoStable(version) {
 }
 
 def publishLibindyDebRCtoStable(testEnv, version) {
-    testEnv.inside('-u 0:0') {
+    testEnv.inside {
         rcFullVersion = "${version}~${env.BUILD_NUMBER}"
 
         unstash name: 'libindyDebs'
 
-        sh "deb-reversion -v $version debs/libindy_\"$rcFullVersion\"_amd64.deb"
-        sh "deb-reversion -v $version debs/libindy-dev_\"$rcFullVersion\"_amd64.deb"
+        sh "fakeroot deb-reversion -v $version libindy/debs/libindy_\"$rcFullVersion\"_amd64.deb"
+        sh "fakeroot deb-reversion -v $version libindy/debs/libindy-dev_\"$rcFullVersion\"_amd64.deb"
 
         uploadDebianFilesToStable()
     }
 }
 
 def publishLibindyCliDebRCtoStable(testEnv, version) {
-    testEnv.inside('-u 0:0') {
+    testEnv.inside {
         rcFullVersion = "${version}~${env.BUILD_NUMBER}"
 
         unstash name: 'libindyCliDebs'
 
-        sh "deb-reversion -v $version debs/indy-cli_\"$rcFullVersion\"_amd64.deb"
+        sh "fakeroot deb-reversion -v $version cli/debs/indy-cli_\"$rcFullVersion\"_amd64.deb"
 
         uploadDebianFilesToStable()
     }
@@ -620,12 +630,10 @@ def publishLibindyCliDebRCtoStable(testEnv, version) {
 
 def uploadDebianFilesToStable() {
     withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-        dir('sovrin-packaging') {
-            downloadPackagingUtils()
-        }
+        downloadPackagingUtils()
         path = sh(returnStdout: true, script: 'pwd').trim()
 
-        sh "./sovrin-packaging/upload_debs.py $path $SOVRIN_SDK_REPO_NAME stable --host $SOVRIN_REPO_HOST --ssh-key $sovrin_key"
+        sh "./upload_debs.py $path $SOVRIN_SDK_REPO_NAME stable --host $SOVRIN_REPO_HOST --ssh-key $sovrin_key"
     }
 }
 
@@ -633,3 +641,6 @@ def downloadPackagingUtils() {
     git branch: 'master', credentialsId: 'evernym-github-machine-user', url: 'https://github.com/evernym/sovrin-packaging'
 }
 
+def setupRust() {
+    sh "rustup default 1.21.0"
+}

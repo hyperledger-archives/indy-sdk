@@ -127,6 +127,11 @@ public enum ErrorCode {
 	 */
 	WalletAlreadyOpenedError(206),
 
+	/**
+	 * Attempt to open encrypted wallet with invalid credentials
+	 */
+	WalletAccessFailed(207),
+
 	// Ledger errors
 	
 	/**
@@ -149,11 +154,6 @@ public enum ErrorCode {
 	 */
 	LedgerNoConsensusError(303),
 
-	/**
-	 * Attempt to send unknown or incomplete transaction message
-	 */
-	LedgerInvalidTransaction(304),
-	
 	/**
 	 * Attempt to send transaction without the necessary privileges
 	 */
@@ -206,12 +206,22 @@ public enum ErrorCode {
 	 */
 	AnoncredsClaimRevoked(406),
 
+	/**
+	 * Attempt to create claim definition with duplicated did schema pair.
+	 */
+	AnoncredsClaimDefAlreadyExistsError(407),
+
 	// Crypto errors
 	
 	/**
 	 * Unknown format of DID entity keys
 	 */
-	UnknownCryptoTypeError(500);
+	UnknownCryptoTypeError(500),
+
+	/**
+	 * Attempt to create duplicate did.
+	 */
+	DidAlreadyExistsError(600);
 
 	private int value;
 	private static Map<Integer, ErrorCode> map = new HashMap<Integer, ErrorCode>();

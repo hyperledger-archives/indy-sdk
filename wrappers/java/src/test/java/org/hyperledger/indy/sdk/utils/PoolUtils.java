@@ -2,8 +2,10 @@ package org.hyperledger.indy.sdk.utils;
 
 import org.apache.commons.io.FileUtils;
 import org.hyperledger.indy.sdk.IndyException;
+import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters;
+import org.json.JSONException;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -13,6 +15,9 @@ import java.util.concurrent.ExecutionException;
 public class PoolUtils {
 
 	public static final String DEFAULT_POOL_NAME = "default_pool";
+	public static final int TEST_TIMEOUT_FOR_REQUEST_ENSURE = 20_000;
+	static final int RESUBMIT_REQUEST_TIMEOUT = 5_000;
+	static final int RESUBMIT_REQUEST_CNT = 3;
 
 
 	public static File createGenesisTxnFile(String filename) throws IOException {
@@ -71,5 +76,39 @@ public class PoolUtils {
 
 		PoolJSONParameters.OpenPoolLedgerJSONParameter config = new PoolJSONParameters.OpenPoolLedgerJSONParameter(true, null, null);
 		return Pool.openPoolLedger(poolName, config.toJson()).get();
+	}
+
+	public interface PoolResponseChecker {
+		boolean check(String response);
+	}
+
+	public interface ActionChecker {
+		String action() throws IndyException, ExecutionException, InterruptedException;
+	}
+
+	public static String ensurePreviousRequestApplied(Pool pool, String checkerRequest, PoolResponseChecker checker) throws IndyException, ExecutionException, InterruptedException {
+		for (int i = 0; i < RESUBMIT_REQUEST_CNT; i++) {
+			String response = Ledger.submitRequest(pool, checkerRequest).get();
+			try {
+				if (checker.check(response)) {
+					return response;
+				}
+			} catch (JSONException e) {
+				e.printStackTrace();
+				System.err.println(e.toString());
+				System.err.println(response);
+			}
+			Thread.sleep(RESUBMIT_REQUEST_TIMEOUT);
+		}
+		throw new IllegalStateException();
+	}
+
+	public static boolean retryCheck(ActionChecker action, PoolResponseChecker checker) throws InterruptedException, ExecutionException, IndyException {
+		for (int i = 0; i < RESUBMIT_REQUEST_CNT; i++) {
+			if (checker.check(action.action())) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

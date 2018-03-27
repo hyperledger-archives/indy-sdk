@@ -1,7 +1,7 @@
 import org.hyperledger.indy.sdk.pool.Pool;
-import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
-import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
+import org.hyperledger.indy.sdk.did.Did;
+import org.hyperledger.indy.sdk.did.DidJSONParameters;
+import org.hyperledger.indy.sdk.did.DidResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONObject;
 import utils.PoolUtils;
@@ -33,15 +33,15 @@ class Ledger {
 		Wallet trusteeWallet = Wallet.openWallet(theirWalletName, null, null).get();
 
 		// 4. Create My Did
-		CreateAndStoreMyDidResult createMyDidResult = Signus.createAndStoreMyDid(myWallet, "{}").get();
+		CreateAndStoreMyDidResult createMyDidResult = Did.createAndStoreMyDid(myWallet, "{}").get();
 		String myDid = createMyDidResult.getDid();
 		String myVerkey = createMyDidResult.getVerkey();
 
-		// 5. Create Did from Trustee1 seed
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter theirDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, trusteeSeed, null, null);
+		// 5. Create Crypto from Trustee1 seed
+		DidJSONParameters.CreateAndStoreMyDidJSONParameter theirDidJson =
+				new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, trusteeSeed, null, null);
 
-		CreateAndStoreMyDidResult createTheirDidResult = Signus.createAndStoreMyDid(trusteeWallet, theirDidJson.toJson()).get();
+		CreateAndStoreMyDidResult createTheirDidResult = Did.createAndStoreMyDid(trusteeWallet, theirDidJson.toJson()).get();
 		String trusteeDid = createTheirDidResult.getDid();
 
 		// 6. Build Nym Request

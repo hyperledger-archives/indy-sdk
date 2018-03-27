@@ -35,3 +35,12 @@ async def test_create_wallet_works_for_duplicate_name(pool_name, wallet_name, wa
         await wallet.create_wallet(pool_name, wallet_name, wallet_type, None, None)
 
     assert ErrorCode.WalletAlreadyExistsError == e.value.error_code
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "wallet_name, credentials",
+    [(wallet_name(), '{"key":"testkey"}')])
+async def test_create_wallet_works_for_credentials(xwallet, credentials):
+    pass

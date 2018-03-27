@@ -31,7 +31,7 @@ pub enum ProverCommand {
         Box<Fn(Result<(), IndyError>) + Send>),
     CreateAndStoreClaimRequest(
         i32, // wallet handle
-        String, // prover_did
+        String, // prover did
         String, // claim offer json
         String, // claim def json
         String, // master secret name
@@ -39,6 +39,7 @@ pub enum ProverCommand {
     StoreClaim(
         i32, // wallet handle
         String, // claims json
+        Option<String>, // revocation registry json
         Box<Fn(Result<(), IndyError>) + Send>),
     GetClaims(
         i32, // wallet handle
@@ -77,51 +78,44 @@ impl ProverCommandExecutor {
         match command {
             ProverCommand::StoreClaimOffer(wallet_handle, claim_offer_json, cb) => {
                 info!(target: "prover_command_executor", "StoreClaimOffer command received");
-                self.store_claim_offer(wallet_handle, &claim_offer_json, cb);
+                cb(self.store_claim_offer(wallet_handle, &claim_offer_json));
             }
             ProverCommand::GetClaimOffers(wallet_handle, filter_json, cb) => {
                 info!(target: "prover_command_executor", "GetClaimOffers command received");
-                self.get_claim_offers(wallet_handle, &filter_json, cb);
+                cb(self.get_claim_offers(wallet_handle, &filter_json));
             }
             ProverCommand::CreateMasterSecret(wallet_handle, master_secret_name, cb) => {
                 info!(target: "prover_command_executor", "CreateMasterSecret command received");
-                self.create_master_secret(wallet_handle, &master_secret_name, cb);
+                cb(self.create_master_secret(wallet_handle, &master_secret_name));
             }
             ProverCommand::CreateAndStoreClaimRequest(wallet_handle, prover_did, claim_offer_json,
                                                       claim_def_json, master_secret_name, cb) => {
                 info!(target: "prover_command_executor", "CreateAndStoreClaimRequest command received");
-                self.create_and_store_claim_request(wallet_handle, &prover_did, &claim_offer_json,
-                                                    &claim_def_json, &master_secret_name, cb);
+                cb(self.create_and_store_claim_request(wallet_handle, &prover_did, &claim_offer_json,
+                                                       &claim_def_json, &master_secret_name));
             }
-            ProverCommand::StoreClaim(wallet_handle, claims_json, cb) => {
+            ProverCommand::StoreClaim(wallet_handle, claims_json, rev_reg_json, cb) => {
                 info!(target: "prover_command_executor", "StoreClaim command received");
-                self.store_claim(wallet_handle, &claims_json, cb);
+                cb(self.store_claim(wallet_handle, &claims_json, rev_reg_json.as_ref().map(String::as_str)));
             }
             ProverCommand::GetClaims(wallet_handle, filter_json, cb) => {
                 info!(target: "prover_command_executor", "GetClaims command received");
-                self.get_claims(wallet_handle, &filter_json, cb);
+                cb(self.get_claims(wallet_handle, &filter_json));
             }
             ProverCommand::GetClaimsForProofReq(wallet_handle, proof_req_json, cb) => {
                 info!(target: "prover_command_executor", "GetClaimsForProofReq command received");
-                self.get_claims_for_proof_req(wallet_handle, &proof_req_json, cb);
+                cb(self.get_claims_for_proof_req(wallet_handle, &proof_req_json));
             }
             ProverCommand::CreateProof(wallet_handle, proof_req_json, requested_claims_json, schemas_jsons,
                                        master_secret_name, claim_def_jsons, revoc_regs_jsons, cb) => {
                 info!(target: "prover_command_executor", "CreateProof command received");
-                self.create_proof(wallet_handle, &proof_req_json, &requested_claims_json, &schemas_jsons,
-                                  &master_secret_name, &claim_def_jsons, &revoc_regs_jsons, cb);
+                cb(self.create_proof(wallet_handle, &proof_req_json, &requested_claims_json, &schemas_jsons,
+                                     &master_secret_name, &claim_def_jsons, &revoc_regs_jsons));
             }
         };
     }
 
-    fn store_claim_offer(&self,
-                         wallet_handle: i32,
-                         claim_offer_json: &str,
-                         cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self._store_claim_offer(wallet_handle, claim_offer_json));
-    }
-
-    fn _store_claim_offer(&self, wallet_handle: i32, claim_offer_json: &str) -> Result<(), IndyError> {
+    fn store_claim_offer(&self, wallet_handle: i32, claim_offer_json: &str) -> Result<(), IndyError> {
         info!("store_claim_offer >>> wallet_handle: {:?}, claim_offer_json: {:?}", wallet_handle, claim_offer_json);
 
         let claim_offer: ClaimOffer = ClaimOffer::from_json(claim_offer_json)
@@ -130,7 +124,7 @@ impl ProverCommandExecutor {
         Base58::decode(&claim_offer.issuer_did)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid issuer did: {:?}", err)))?;
 
-        let id = get_composite_id(&claim_offer.issuer_did, claim_offer.schema_seq_no);
+        let id = get_composite_id(&claim_offer.issuer_did, &claim_offer.schema_key);
         self.wallet_service.set(wallet_handle, &format!("claim_offer::{}", &id), &claim_offer_json)?;
 
         info!("store_claim_offer <<<");
@@ -140,14 +134,7 @@ impl ProverCommandExecutor {
 
     fn get_claim_offers(&self,
                         wallet_handle: i32,
-                        filter_json: &str,
-                        cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self._get_claim_offers(wallet_handle, filter_json));
-    }
-
-    fn _get_claim_offers(&self,
-                         wallet_handle: i32,
-                         filter_json: &str) -> Result<String, IndyError> {
+                        filter_json: &str) -> Result<String, IndyError> {
         info!("get_claim_offers >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
 
         let claim_offer_jsons: Vec<(String, String)> = self.wallet_service.list(wallet_handle, &format!("claim_offer::"))?;
@@ -166,28 +153,29 @@ impl ProverCommandExecutor {
             if let Some(ref issuer_did) = filter.issuer_did {
                 condition = condition && claim_offer.issuer_did == issuer_did.clone();
             }
-            if let Some(ref schema_seq_no) = filter.schema_seq_no {
-                condition = condition && claim_offer.schema_seq_no == schema_seq_no.clone();
+            if let Some(ref schema_key) = filter.schema_key {
+                if let Some(ref name) = schema_key.name {
+                    condition = condition && claim_offer.schema_key.name == name.clone();
+                }
+                if let Some(ref version) = schema_key.version {
+                    condition = condition && claim_offer.schema_key.version == version.clone();
+                }
+                if let Some(ref did) = schema_key.did {
+                    condition = condition && claim_offer.schema_key.did == did.clone();
+                }
             }
             condition
         });
 
         let claim_offers_json = serde_json::to_string(&claim_offers)
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of claim offers: {:?}", err)))?;
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of claim offer: {:?}", err)))?;
 
         info!("get_claim_offers <<< claim_offers_json: {:?}", claim_offers_json);
 
         Ok(claim_offers_json)
     }
 
-    fn create_master_secret(&self,
-                            wallet_handle: i32,
-                            master_secret_name: &str,
-                            cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self._create_master_secret(wallet_handle, master_secret_name))
-    }
-
-    fn _create_master_secret(&self, wallet_handle: i32, master_secret_name: &str) -> Result<(), IndyError> {
+    fn create_master_secret(&self, wallet_handle: i32, master_secret_name: &str) -> Result<(), IndyError> {
         info!("create_master_secret >>> wallet_handle: {:?}, master_secret_name: {:?}", wallet_handle, master_secret_name);
 
         if let Ok(_) = self.wallet_service.get(wallet_handle, &format!("master_secret::{}", master_secret_name)) {
@@ -211,18 +199,7 @@ impl ProverCommandExecutor {
                                       prover_did: &str,
                                       claim_offer_json: &str,
                                       claim_def_json: &str,
-                                      master_secret_name: &str,
-                                      cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self._create_and_store_claim_request(wallet_handle, prover_did, claim_offer_json,
-                                                claim_def_json, master_secret_name))
-    }
-
-    fn _create_and_store_claim_request(&self,
-                                       wallet_handle: i32,
-                                       prover_did: &str,
-                                       claim_offer_json: &str,
-                                       claim_def_json: &str,
-                                       master_secret_name: &str) -> Result<String, IndyError> {
+                                      master_secret_name: &str) -> Result<String, IndyError> {
         info!("create_and_store_claim_request >>> wallet_handle: {:?}, prover_did: {:?}, claim_offer_json: {:?}, claim_def_json: {:?}, \
                master_secret_name: {:?}", wallet_handle, prover_did, claim_offer_json, claim_def_json, master_secret_name);
 
@@ -244,19 +221,23 @@ impl ProverCommandExecutor {
                 format!("ClaimOffer issuer_did {:?} does not correspond to ClaimDef issuer_did {:?}", claim_offer.issuer_did, claim_def.issuer_did))));
         }
 
-        if claim_def.schema_seq_no != claim_offer.schema_seq_no {
-            return Err(IndyError::CommonError(CommonError::InvalidStructure(
-                format!("ClaimOffer schema_seq_no {:?} does not correspond to ClaimDef schema_seq_no {:?}", claim_offer.schema_seq_no, claim_def.schema_seq_no))));
-        }
-
         let (claim_request, master_secret_blinding_data) =
             self.anoncreds_service.prover.new_claim_request(&claim_def.data, &master_secret, &claim_offer, prover_did)?;
 
-        let master_secret_blinding_data_json = master_secret_blinding_data.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize master secret blinding data: {:?}", err)))?;
+        let nonce = claim_request.nonce.clone()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize nonce: {:?}", err)))?;
 
-        let id = get_composite_id(&claim_offer.issuer_did, claim_offer.schema_seq_no);
-        self.wallet_service.set(wallet_handle, &format!("master_secret_blinding_data::{}", id), &master_secret_blinding_data_json)?;
+        let claim_request_metadata = ClaimRequestMetadata {
+            master_secret_blinding_data,
+            nonce,
+            master_secret_name: master_secret_name.to_string()
+        };
+
+        let claim_request_metadata_json = claim_request_metadata.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claim request metadata {:?}", err)))?;
+
+        let id = get_composite_id(&claim_offer.issuer_did, &claim_offer.schema_key);
+        self.wallet_service.set(wallet_handle, &format!("claim_request_metadata::{}", id), &claim_request_metadata_json)?;
 
         let claim_request_json = claim_request.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claim request: {:?}", err)))?;
@@ -268,39 +249,37 @@ impl ProverCommandExecutor {
         Ok(claim_request_json)
     }
 
-    fn store_claim(&self,
-                   wallet_handle: i32,
-                   claim_json: &str,
-                   cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self._store_claim(wallet_handle, claim_json));
-    }
-
-    fn _store_claim(&self, wallet_handle: i32, claim_json: &str) -> Result<(), IndyError> {
-        info!("store_claim >>> wallet_handle: {:?}, claim_json: {:?}", wallet_handle, claim_json);
+    fn store_claim(&self, wallet_handle: i32, claim_json: &str, rev_reg_json: Option<&str>) -> Result<(), IndyError> {
+        info!("store_claim >>> wallet_handle: {:?}, claim_json: {:?}, rev_reg_json: {:?}", wallet_handle, claim_json, rev_reg_json);
 
         let mut claim: Claim = Claim::from_json(&claim_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannon deserialize claim: {:?}", err)))?;
 
-        let id = get_composite_id(&claim.issuer_did, claim.schema_seq_no);
+        let id = get_composite_id(&claim.issuer_did, &claim.schema_key);
 
-        let rev_reg_pub = match self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", id)) {
-            Ok(rev_reg_pub_json) =>
+        let rev_reg_pub = match rev_reg_json {
+            Some(rev_reg_pub_json) =>
                 Some(RevocationRegistry::from_json(&rev_reg_pub_json)
                     .map_err(|err| CommonError::InvalidState(format!("Cannon deserialize revocation registry: {:?}", err)))?
                     .data),
-            Err(_) => None
+            None => None
         };
 
-        let master_secret_blinding_data_json = self.wallet_service.get(wallet_handle, &format!("master_secret_blinding_data::{}", &id))?;
-        let master_secret_blinding_data = MasterSecretBlindingData::from_json(&master_secret_blinding_data_json)
-            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize master secret blinding data: {:?}", err)))?;
+        let claim_request_metadata_json = self.wallet_service.get(wallet_handle, &format!("claim_request_metadata::{}", &id))?;
+        let claim_request_metadata = ClaimRequestMetadata::from_json(&claim_request_metadata_json)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim request metadata: {:?}", err)))?;
+
+        let master_secret_json = self.wallet_service.get(wallet_handle, &format!("master_secret::{}", &claim_request_metadata.master_secret_name))?;
+        let master_secret = MasterSecret::from_json(&master_secret_json)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize master secret: {:?}", err)))?;
 
         let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", id))?;
         let claim_def: ClaimDefinition = ClaimDefinition::from_json(&claim_def_json)
             .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim definition: {:?}", err)))?;
 
         self.anoncreds_service.prover.process_claim(&mut claim,
-                                                    &master_secret_blinding_data,
+                                                    &claim_request_metadata,
+                                                    &master_secret,
                                                     &claim_def.data,
                                                     rev_reg_pub.as_ref())?;
 
@@ -310,6 +289,10 @@ impl ProverCommandExecutor {
         let referent = Uuid::new_v4().to_string();
         self.wallet_service.set(wallet_handle, &format!("claim::{}", &referent), &claim_json)?;
 
+        if let Some(rev_reg_json) = rev_reg_json {
+            self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", id), &rev_reg_json)?;
+        }
+
         info!("store_claim <<<");
 
         Ok(())
@@ -317,15 +300,7 @@ impl ProverCommandExecutor {
 
     fn get_claims(&self,
                   wallet_handle: i32,
-                  filter_json: &str,
-                  cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let result = self._get_claims(wallet_handle, filter_json);
-        cb(result)
-    }
-
-    fn _get_claims(&self,
-                   wallet_handle: i32,
-                   filter_json: &str) -> Result<String, IndyError> {
+                  filter_json: &str) -> Result<String, IndyError> {
         info!("get_claims >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
 
         let mut claims_info: Vec<ClaimInfo> = self.get_claims_info(wallet_handle)?;
@@ -333,19 +308,7 @@ impl ProverCommandExecutor {
         let filter: Filter = Filter::from_json(filter_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize filter: {:?}", err)))?;
 
-        claims_info.retain(move |claim_info| {
-            let mut condition = true;
-
-            if let Some(schema_seq_no) = filter.schema_seq_no {
-                condition = condition && claim_info.schema_seq_no == schema_seq_no;
-            }
-
-            if let Some(issuer_did) = filter.issuer_did.clone() {
-                condition = condition && claim_info.issuer_did == issuer_did;
-            }
-
-            condition
-        });
+        claims_info.retain(move |claim_info| self.anoncreds_service.prover.claim_satisfy_restriction(claim_info, &filter));
 
         let claims_info_json = serde_json::to_string(&claims_info)
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claims info: {:?}", err)))?;
@@ -375,7 +338,7 @@ impl ProverCommandExecutor {
                 ClaimInfo {
                     referent: referent.clone(),
                     attrs: claim_values,
-                    schema_seq_no: claim.schema_seq_no.clone(),
+                    schema_key: claim.schema_key.clone(),
                     issuer_did: claim.issuer_did.clone(),
                     revoc_reg_seq_no: claim.rev_reg_seq_no.clone()
                 });
@@ -388,15 +351,7 @@ impl ProverCommandExecutor {
 
     fn get_claims_for_proof_req(&self,
                                 wallet_handle: i32,
-                                proof_req_json: &str,
-                                cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let result = self._get_claims_for_proof_req(wallet_handle, proof_req_json);
-        cb(result)
-    }
-
-    fn _get_claims_for_proof_req(&self,
-                                 wallet_handle: i32,
-                                 proof_req_json: &str, ) -> Result<String, IndyError> {
+                                proof_req_json: &str, ) -> Result<String, IndyError> {
         info!("get_claims_for_proof_req >>> wallet_handle: {:?}, proof_req_json: {:?}", wallet_handle, proof_req_json);
 
         let proof_req: ProofRequest = ProofRequest::from_json(proof_req_json)
@@ -420,21 +375,7 @@ impl ProverCommandExecutor {
                     schemas_jsons: &str,
                     master_secret_name: &str,
                     claim_def_jsons: &str,
-                    revoc_regs_jsons: &str,
-                    cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let result = self._create_proof(wallet_handle, proof_req_json, requested_claims_json, schemas_jsons,
-                                        master_secret_name, claim_def_jsons, revoc_regs_jsons);
-        cb(result)
-    }
-
-    fn _create_proof(&self,
-                     wallet_handle: i32,
-                     proof_req_json: &str,
-                     requested_claims_json: &str,
-                     schemas_jsons: &str,
-                     master_secret_name: &str,
-                     claim_def_jsons: &str,
-                     revoc_regs_jsons: &str) -> Result<String, IndyError> {
+                    revoc_regs_jsons: &str) -> Result<String, IndyError> {
         let proof_req: ProofRequest = ProofRequest::from_json(proof_req_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize proof request: {:?}", err)))?;
 

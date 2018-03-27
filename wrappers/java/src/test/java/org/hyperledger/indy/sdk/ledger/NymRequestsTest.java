@@ -5,6 +5,7 @@ import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.did.DidJSONParameters;
 import org.hyperledger.indy.sdk.did.DidResults;
+import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.*;
 
@@ -39,8 +40,6 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 	@Test
 	public void testBuildNymRequestWorksForOnlyOptionalFields() throws Exception {
-		String verkey = "Anfh2rjAcxkE249DcdsaQl";
-
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{" +
 				"\"alias\":\"%s\"," +
@@ -48,9 +47,9 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 				"\"role\":\"2\"," +
 				"\"type\":\"1\"," +
 				"\"verkey\":\"%s\"" +
-				"}", DID, alias, dest, verkey);
+				"}", DID, alias, dest, VERKEY_TRUSTEE);
 
-		String nymRequest = Ledger.buildNymRequest(DID, dest, verkey, alias, role).get();
+		String nymRequest = Ledger.buildNymRequest(DID, dest, VERKEY_TRUSTEE, alias, role).get();
 		assertTrue(nymRequest.contains(expectedResult));
 	}
 
@@ -64,14 +63,12 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 	@Test
 	public void testNymRequestWorksWithoutSignature() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
-
 		DidResults.CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, "{}").get();
 		String did = result.getDid();
 
 		String nymRequest = Ledger.buildNymRequest(did, did, null, null, null).get();
-		Ledger.submitRequest(pool, nymRequest).get();
+		String response = Ledger.submitRequest(pool, nymRequest).get();
+		checkResponseType(response, "REQNACK");
 	}
 
 	@Test
@@ -115,9 +112,6 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 	@Test
 	public void testSendNymRequestsWorksForWrongSignerRole() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
-
 		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
@@ -131,14 +125,13 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 		String myDid2 = myDidResult2.getDid();
 
 		String nymRequest2 = Ledger.buildNymRequest(myDid, myDid2, null, null, null).get();
-		Ledger.signAndSubmitRequest(pool, wallet, myDid, nymRequest2).get();
+		String response = Ledger.signAndSubmitRequest(pool, wallet, myDid, nymRequest2).get();
+		checkResponseType(response, "REQNACK");
+
 	}
 
 	@Test
 	public void testSendNymRequestsWorksForUnknownSigner() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
-
 		String identityJson =
 				new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee9", null, null).toJson();
 
@@ -149,10 +142,11 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 		String myDid = myDidResult.getDid();
 
 		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, null, null, null).get();
-		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
+		String response = Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
+		checkResponseType(response, "REQNACK");
 	}
 
-	@Test
+	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testNymRequestsWorks() throws Exception {
 		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
@@ -165,13 +159,9 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
 
 		String getNymRequest = Ledger.buildGetNymRequest(myDid, myDid).get();
-		String getNymResponseJson = Ledger.submitRequest(pool, getNymRequest).get();
-
-		JSONObject getNymResponse = new JSONObject(getNymResponseJson);
-
-		assertEquals("REPLY", getNymResponse.getString("op"));
-		assertEquals("105", getNymResponse.getJSONObject("result").getString("type"));
-		assertEquals(myDid, getNymResponse.getJSONObject("result").getString("dest"));
+		String getNymResponse = PoolUtils.ensurePreviousRequestApplied(pool, getNymRequest,
+				response -> compareResponseType(response, "REPLY"));
+		assertNotNull(getNymResponse);
 	}
 
 	@Test

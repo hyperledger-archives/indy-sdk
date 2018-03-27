@@ -7,6 +7,7 @@ use commands::did::DidCommand;
 use utils::cstring::CStringUtils;
 
 use self::libc::c_char;
+use std::ptr;
 
 
 /// Creates keys (signing and encryption keys) for a new
@@ -358,10 +359,11 @@ pub extern fn indy_get_endpoint_for_did(command_handle: i32,
             pool_handle,
             did,
             Box::new(move |result| {
-                let (err, address, transport_vk) = result_to_err_code_2!(result, String::new(), String::new());
+                let (err, address, transport_vk) = result_to_err_code_2!(result, String::new(), None);
                 let address = CStringUtils::string_to_cstring(address);
-                let transport_vk = CStringUtils::string_to_cstring(transport_vk);
-                cb(command_handle, err, address.as_ptr(), transport_vk.as_ptr())
+                let transport_vk = transport_vk.map(CStringUtils::string_to_cstring);
+                cb(command_handle, err, address.as_ptr(),
+                   transport_vk.as_ref().map(|vk| vk.as_ptr()).unwrap_or(ptr::null()));
             })
         )));
 
@@ -494,6 +496,31 @@ pub extern fn indy_list_my_dids_with_meta(command_handle: i32,
                 let (err, dids) = result_to_err_code_1!(result, String::new());
                 let dids = CStringUtils::string_to_cstring(dids);
                 cb(command_handle, err, dids.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+/// Retrieves abbreviated verkey if it is possible otherwise return full verkey.
+#[no_mangle]
+pub  extern fn indy_abbreviate_verkey(command_handle: i32,
+                                      did: *const c_char,
+                                      full_verkey: *const c_char,
+                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                           verkey: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(full_verkey, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Did(DidCommand::AbbreviateVerkey(
+            did,
+            full_verkey,
+            Box::new(move |result| {
+                let (err, verkey) = result_to_err_code_1!(result, String::new());
+                let verkey = CStringUtils::string_to_cstring(verkey);
+                cb(command_handle, err, verkey.as_ptr())
             })
         )));
 

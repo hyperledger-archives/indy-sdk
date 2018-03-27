@@ -2,6 +2,7 @@ extern crate indy_crypto;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use errors::common::CommonError;
+use errors::did::DidError;
 use errors::wallet::WalletError;
 use errors::indy::IndyError;
 use services::crypto::types::{KeyInfo, MyDidInfo, TheirDidInfo, Did, Key};
@@ -20,6 +21,7 @@ use commands::ledger::LedgerCommand;
 use commands::{Command, CommandExecutor};
 use std::collections::HashMap;
 use utils::sequence::SequenceUtils;
+use utils::crypto::base58::Base58;
 
 use super::utils::check_wallet_and_pool_handles_consistency;
 
@@ -67,7 +69,7 @@ pub enum DidCommand {
         i32, // wallet handle
         i32, // pool handle
         String, // did
-        Box<Fn(Result<(String, String), IndyError>) + Send>),
+        Box<Fn(Result<(String, Option<String>), IndyError>) + Send>),
     SetDidMetadata(
         i32, // wallet handle
         String, // did
@@ -76,6 +78,10 @@ pub enum DidCommand {
     GetDidMetadata(
         i32, // wallet handle
         String, // did
+        Box<Fn(Result<String, IndyError>) + Send>),
+    AbbreviateVerkey(
+        String, // did
+        String, // verkey
         Box<Fn(Result<String, IndyError>) + Send>),
     // Internal commands
     GetNymAck(
@@ -178,6 +184,10 @@ impl DidCommandExecutor {
                 info!("GetDidMetadata command received");
                 cb(self.get_did_metadata(wallet_handle, did));
             }
+            DidCommand::AbbreviateVerkey(did, verkey, cb) => {
+                info!("AbbreviateVerkey command received");
+                cb(self.abbreviate_verkey(did, verkey));
+            }
             DidCommand::GetNymAck(wallet_handle, result, deferred_cmd_id) => {
                 info!("GetNymAck command received");
                 self.get_nym_ack(wallet_handle, result, deferred_cmd_id);
@@ -195,6 +205,12 @@ impl DidCommandExecutor {
             .map_err(|err|
                 CommonError::InvalidStructure(
                     format!("Invalid MyDidInfo json: {}", err.description())))?;
+
+        if let Some(ref did) = my_did_info.did.as_ref() {
+            if self.wallet_service.get(wallet_handle, &format!("my_did::{}", did)).is_ok() {
+                return Err(IndyError::DidError(DidError::AlreadyExistsError(format!("Did already exists"))));
+            };
+        }
 
         let (my_did, key) = self.crypto_service.create_my_did(&my_did_info)?;
 
@@ -343,7 +359,7 @@ impl DidCommandExecutor {
         self.crypto_service.validate_did(&did)?;
         self.crypto_service.validate_key(&transport_key)?;
 
-        let endpoint = Endpoint::new(address.to_string(), transport_key.to_string());
+        let endpoint = Endpoint::new(address.to_string(), Some(transport_key.to_string()));
 
         self._wallet_set_did_endpoint(wallet_handle, &did, &endpoint)?;
         Ok(())
@@ -353,7 +369,7 @@ impl DidCommandExecutor {
                             wallet_handle: i32,
                             pool_handle: i32,
                             did: String,
-                            cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+                            cb: Box<Fn(Result<(String, Option<String>), IndyError>) + Send>) {
         try_cb!(self.crypto_service.validate_did(&did), cb);
 
         match self._wallet_get_did_endpoint(wallet_handle, &did) {
@@ -387,6 +403,22 @@ impl DidCommandExecutor {
         self.crypto_service.validate_did(&did)?;
         let res = self._wallet_get_did_metadata(wallet_handle, &did)?;
         Ok(res)
+    }
+
+    fn abbreviate_verkey(&self,
+                         did: String,
+                         verkey: String) -> Result<String, IndyError> {
+        self.crypto_service.validate_did(&did)?;
+        self.crypto_service.validate_key(&verkey)?;
+
+        let did = Base58::decode(&did)?;
+        let dverkey = Base58::decode(&verkey)?;
+
+        let (first_part, second_part) = dverkey.split_at(16);
+
+        if first_part.eq(did.as_slice()) {
+            Ok(format!("~{}", Base58::encode(second_part)))
+        } else { Ok(verkey) }
     }
 
     fn get_nym_ack(&self,
@@ -526,7 +558,7 @@ impl DidCommandExecutor {
         let deferred_cmd_id = self._defer_command(deferred_cmd);
 
         // TODO we need passing of my_did as identifier
-        let get_attrib_request = self.ledger_service.build_get_attrib_request(did, did, "endpoint")
+        let get_attrib_request = self.ledger_service.build_get_attrib_request(did, did, Some("endpoint"), None, None)
             .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::InvalidState(

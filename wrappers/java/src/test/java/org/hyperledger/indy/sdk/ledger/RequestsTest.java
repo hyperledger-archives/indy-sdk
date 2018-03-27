@@ -53,9 +53,6 @@ public class RequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
 	@Test
 	public void testSignAndSubmitRequestWorksForNotFoundSigner() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
-
 		DidJSONParameters.CreateAndStoreMyDidJSONParameter signerDidJson =
 				new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, "00000000000000000000UnknowSigner", null, null);
 
@@ -63,7 +60,8 @@ public class RequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 		String signerDid = trusteeDidResult.getDid();
 
 		String schemaRequest = Ledger.buildSchemaRequest(signerDid, SCHEMA_DATA).get();
-		Ledger.signAndSubmitRequest(pool, wallet, signerDid, schemaRequest).get();
+		String response = Ledger.signAndSubmitRequest(pool, wallet, signerDid, schemaRequest).get();
+		checkResponseType(response,"REQNACK" );
 	}
 
 	@Test

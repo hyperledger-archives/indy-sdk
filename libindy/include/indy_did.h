@@ -139,6 +139,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: Command handle to map callback to caller context.
+    /// pool_handle: Pool handle to resolve information from the ledger.
     /// wallet_handle: Wallet handle (created by open_wallet).
     /// did - The DID to resolve key.
     /// cb: Callback that takes command result as parameter.
@@ -192,7 +193,6 @@ extern "C" {
     /// Wallet*
     /// Crypto*
     extern indy_error_t indy_key_for_local_did(indy_handle_t     command_handle,
-                                              indy_handle_t     pool_handle,
                                               indy_handle_t     wallet_handle,
                                               const char *const did,
 
@@ -290,6 +290,15 @@ extern "C" {
                                                     indy_handle_t wallet_handle,
                                                     void          (*fn)(indy_handle_t xcommand_handle, indy_error_t err, const char *const dids)
                                                    );
+
+    /// Retrieves abbreviated verkey if it is possible otherwise return full verkey
+    extern indy_error_t indy_abbreviate_verkey(indy_handle_t command_handle,
+                                             const char *const did,
+                                             const char *const full_verkey,
+                                             void          (*fn)(indy_handle_t xcommand_handle,
+                                                                 indy_error_t err,
+                                                                 const char *const verkey)
+                                            );
 
 #ifdef __cplusplus
 }

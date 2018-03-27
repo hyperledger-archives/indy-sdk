@@ -2,13 +2,13 @@ extern crate indy_crypto;
 
 use errors::common::CommonError;
 
-use services::anoncreds::types::PredicateInfo;
+use services::anoncreds::types::{PredicateInfo, SchemaKey};
 use self::indy_crypto::cl::{issuer, verifier, ClaimSchema, ClaimValues, SubProofRequest};
 
 use std::collections::{HashSet, HashMap};
 
-pub fn get_composite_id(issuer_did: &str, schema_seq_no: i32) -> String {
-    issuer_did.to_string() + ":" + &schema_seq_no.to_string()
+pub fn get_composite_id(issuer_did: &str, schema_key: &SchemaKey) -> String {
+    format!("{}:{}:{}:{}", issuer_did, schema_key.name, schema_key.version, schema_key.did)
 }
 
 pub fn build_claim_schema(attrs: &HashSet<String>) -> Result<ClaimSchema, CommonError> {

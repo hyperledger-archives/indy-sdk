@@ -59,7 +59,7 @@ async def issuer_create_and_store_claim_def(wallet_handle: int,
 
 async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                                             issuer_did: str,
-                                            schema_seq_no: int,
+                                            schema_json: str,
                                             max_claim_num: int) -> str:
     """
     Create a new revocation registry for the given claim definition.
@@ -67,17 +67,17 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param issuer_did: a DID of the issuer signing revoc_reg transaction to the Ledger
-    :param schema_seq_no: seq no of a schema transaction in Ledger
+    :param schema_json: schema as a json
     :param max_claim_num: maximum number of claims the new registry can process.
     :return: Revoc registry json
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("issuer_create_and_store_revoc_reg: >>> wallet_handle: %r, issuer_did: %r, schema_seq_no: %r,"
+    logger.debug("issuer_create_and_store_revoc_reg: >>> wallet_handle: %r, issuer_did: %r, schema_json: %r,"
                  " max_claim_num: %r",
                  wallet_handle,
                  issuer_did,
-                 schema_seq_no,
+                 schema_json,
                  max_claim_num)
 
     if not hasattr(issuer_create_and_store_revoc_reg, "cb"):
@@ -86,17 +86,60 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_issuer_did = c_char_p(issuer_did.encode('utf-8'))
-    c_schema_seq_no = c_int32(schema_seq_no)
+    c_schema_json = c_char_p(schema_json.encode('utf-8'))
     c_max_claim_num = c_int32(max_claim_num)
 
     revoc_reg_json = await do_call('indy_issuer_create_and_store_revoc_reg',
                                    c_wallet_handle,
                                    c_issuer_did,
-                                   c_schema_seq_no,
+                                   c_schema_json,
                                    c_max_claim_num,
                                    issuer_create_and_store_revoc_reg.cb)
     res = revoc_reg_json.decode()
     logger.debug("issuer_create_and_store_revoc_reg: <<< res: %r", res)
+    return res
+
+
+async def issuer_create_claim_offer(wallet_handle: int,
+                                    schema_json: str,
+                                    issuer_did: str,
+                                    prover_did: str) -> str:
+    """
+    Create claim offer in Wallet.
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param issuer_did: a DID of the issuer signing claim_def transaction to the Ledger
+    :param prover_did: a DID of the target use
+    :param schema_json: schema as a json
+    :return: claim offer json: { issued DID, schema_key, nonce, key correctness proof, prover_did }
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("issuer_create_claim_offer: >>> wallet_handle: %r, schema_json: %r, issuer_did: %r,"
+                 " prover_did: %r",
+                 wallet_handle,
+                 schema_json,
+                 issuer_did,
+                 prover_did)
+
+    if not hasattr(issuer_create_claim, "cb"):
+        logger.debug("issuer_create_claim_offer: Creating callback")
+        issuer_create_claim_offer.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_schema_json = c_char_p(schema_json.encode('utf-8'))
+    c_issuer_did = c_char_p(issuer_did.encode('utf-8'))
+    c_prover_did = c_char_p(prover_did.encode('utf-8'))
+
+    claim_offer_json = await do_call('indy_issuer_create_claim_offer',
+                                     c_wallet_handle,
+                                     c_schema_json,
+                                     c_issuer_did,
+                                     c_prover_did,
+                                     issuer_create_claim_offer.cb)
+
+    res = claim_offer_json.decode()
+    logger.debug("issuer_create_claim_offer: <<< res: %r", res)
     return res
 
 
@@ -109,15 +152,16 @@ async def issuer_create_claim(wallet_handle: int,
     The corresponding claim definition and revocation registry must be already created
     an stored into the wallet.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param claim_req_json: a claim request with a blinded secret
         from the user (returned by prover_create_and_store_claim_req).
-        Also contains schema_seq_no and issuer_did
+        Also contains schema_key and issuer_did
         Example:
         {
             "blinded_ms" : <blinded_master_secret>,
-            "schema_seq_no" : <schema_seq_no>,
-            "issuer_did" : <issuer_did>
+            "schema_key" : {name: string, version: string, did: string},
+            "issuer_did" : string
+            "prover_did" : string
         }
     :param claim_json: a claim containing attribute values for each of requested attribute names.
         Example:
@@ -128,13 +172,14 @@ async def issuer_create_claim(wallet_handle: int,
     :param user_revoc_index: index of a new user in the revocation registry
      (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
     :return: Revocation registry update json with a newly issued claim
-        Claim json containing issued claim, issuer_did, and schema_seq_no
+        Claim json containing issued claim, issuer_did, and schema_key
         used for issuance
         {
-            "claim": <see claim_json above>,
+            "values": <see claim_json above>,
             "signature": <signature>,
             "issuer_did", string,
-            "schema_seq_no", string,
+            "schema_key", {name, version, did},
+            "revoc_reg_seq_no": int,
         }
     """
 
@@ -168,7 +213,7 @@ async def issuer_create_claim(wallet_handle: int,
 
 async def issuer_revoke_claim(wallet_handle: int,
                               issuer_did: str,
-                              schema_seq_no: int,
+                              schema_json: str,
                               user_revoc_index: int) -> str:
     """
     Revokes a user identified by a revoc_id in a given revoc-registry.
@@ -177,17 +222,18 @@ async def issuer_revoke_claim(wallet_handle: int,
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param issuer_did: a DID of the issuer signing claim_def transaction to the Ledger
-    :param schema_seq_no: seq no of a schema transaction in Ledger
+    :param schema_json:  schema as a json
     :param user_revoc_index: index of the user in the revocation registry
     :return: Revocation registry update json with a revoked claim
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("issuer_revoke_claim: >>> wallet_handle: %r, revoc_reg_seq_no: %r, user_revoc_index: %r",
-                 wallet_handle,
-                 issuer_did,
-                 schema_seq_no,
-                 user_revoc_index)
+    logger.debug(
+        "issuer_revoke_claim: >>> wallet_handle: %r, revoc_reg_seq_no: %r, schema_json: %r, user_revoc_index: %r",
+        wallet_handle,
+        issuer_did,
+        schema_json,
+        user_revoc_index)
 
     if not hasattr(issuer_revoke_claim, "cb"):
         logger.debug("issuer_revoke_claim: Creating callback")
@@ -195,13 +241,13 @@ async def issuer_revoke_claim(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_issuer_did = c_char_p(issuer_did.encode('utf-8'))
-    c_schema_seq_no = c_int32(schema_seq_no)
+    c_schema_json = c_char_p(schema_json.encode('utf-8'))
     c_user_revoc_index = c_int32(user_revoc_index)
 
     revoc_reg_update_json = await do_call('indy_issuer_revoke_claim',
                                           c_wallet_handle,
                                           c_issuer_did,
-                                          c_schema_seq_no,
+                                          c_schema_json,
                                           c_user_revoc_index,
                                           issuer_revoke_claim.cb)
     res = revoc_reg_update_json.decode()
@@ -218,7 +264,7 @@ async def prover_store_claim_offer(wallet_handle: int,
     :param claim_offer_json: claim offer as a json containing information about the issuer and a claim:
         {
             "issuer_did": string,
-            "schema_seq_no": string
+            "schema_key": {name: string, version: string, did: string}
         }
     :return: None.
     """
@@ -254,13 +300,13 @@ async def prover_get_claim_offers(wallet_handle: int,
     :param filter_json: optional filter to get claim offers for specific Issuer, claim_def or schema only only
         Each of the filters is optional and can be combines
             {
-                "issuer_did": string,
-                "schema_seq_no": string
+                "issuer_did": string,  (Optional)
+                "schema_key": {name: string (Optional), version: string (Optional), did: string (Optional)}  (Optional)
             }
     :return: A json with a list of claim offers for the filter.
         {
             [{"issuer_did": string,
-            "schema_seq_no": string}]
+            "schema_key": {name: string, version: string, did: string}}]
         }
     """
 
@@ -325,8 +371,7 @@ async def prover_create_and_store_claim_req(wallet_handle: int,
                                             master_secret_name: str) -> str:
     """
     Creates a clam request json for the given claim offer and stores it in a secure wallet.
-    The claim offer contains the information about Issuer (DID, schema_seq_no),
-    and the schema (schema_seq_no).
+    The claim offer contains the information about Issuer DID and the schema (schema_key),
     The method gets public key and schema from the ledger, stores them in a wallet,
     and creates a blinded master secret for a master secret identified by a provided name.
     The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
@@ -337,15 +382,16 @@ async def prover_create_and_store_claim_req(wallet_handle: int,
     :param claim_offer_json: claim offer as a json containing information about the issuer and a claim:
         {
             "issuer_did": string,
-            "schema_seq_no": string
+            "schema_key": {name: string, version: string, did: string}
         }
     :param claim_def_json: claim definition json associated with issuer_did and schema_seq_no in the claim_offer
     :param master_secret_name: the name of the master secret stored in the wallet
     :return: Claim request json.
         {
             "blinded_ms" : <blinded_master_secret>,
-            "schema_seq_no" : <schema_seq_no>,
-            "issuer_did" : <issuer_did>
+            "schema_key" : {name: string, version: string, did: string},
+            "issuer_did" : string,
+            "prover_did" : string
         }
     """
 
@@ -382,11 +428,12 @@ async def prover_create_and_store_claim_req(wallet_handle: int,
 
 
 async def prover_store_claim(wallet_handle: int,
-                             claims_json: str) -> None:
+                             claims_json: str,
+                             rev_reg_json: Optional[str]) -> None:
     """
     Updates the claim by a master secret and stores in a secure wallet.
     The claim contains the information about
-    schema_seq_no, issuer_did, revoc_reg_seq_no (see issuer_create_claim).
+    schema_key, issuer_did, revoc_reg_seq_no (see issuer_create_claim).
     Seq_no is a sequence number of the corresponding transaction in the ledger.
     The method loads a blinded secret for this key from the wallet,
     updates the claim and stores it in a wallet.
@@ -394,19 +441,21 @@ async def prover_store_claim(wallet_handle: int,
     :param wallet_handle: wallet handler (created by open_wallet).
     :param claims_json: claim json:
         {
-            "claim": {attr1:[value, value_as_int]}
+            "values": {attr1:[value, value_as_int]}
             "signature": <signature>,
-            "schema_seq_no": string,
+            "schema_key": {name: string, version: string, did: string}
             "revoc_reg_seq_no", string
             "issuer_did", string
         }
+    :param rev_reg_json: revocation registry json
     :return: None.
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("prover_store_claim: >>> wallet_handle: %r, claims_json: %r",
+    logger.debug("prover_store_claim: >>> wallet_handle: %r, claims_json: %r, rev_reg_json: %r",
                  wallet_handle,
-                 claims_json)
+                 claims_json,
+                 rev_reg_json)
 
     if not hasattr(prover_store_claim, "cb"):
         logger.debug("prover_store_claim: Creating callback")
@@ -414,10 +463,12 @@ async def prover_store_claim(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_claims_json = c_char_p(claims_json.encode('utf-8'))
+    c_rev_reg_json = c_char_p(rev_reg_json.encode('utf-8')) if rev_reg_json else None
 
     res = await do_call('indy_prover_store_claim',
                         c_wallet_handle,
                         c_claims_json,
+                        c_rev_reg_json,
                         prover_store_claim.cb)
 
     logger.debug("prover_store_claim: <<< res: %r", res)
@@ -434,14 +485,14 @@ async def prover_get_claims(wallet_handle: int,
     :param wallet_handle: wallet handler (created by open_wallet).
     :param filter_json: filter for claims
         {
-            "issuer_did": string,
-            "schema_seq_no": string
+            "issuer_did": string, (Optional)
+            "schema_key": {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)
         }
     :return: claims json
         [{
             "referent": <string>,
             "attrs": [{"attr_name" : "attr_value"}],
-            "schema_seq_no": string,
+            "schema_key": {name: string, version: string, did: string}
             "issuer_did": string,
             "revoc_reg_seq_no": string,
         }]
@@ -486,8 +537,32 @@ async def prover_get_claims_for_proof_req(wallet_handle: int,
             "requested_predicate_1_referent": <predicate_info>,
             "requested_predicate_2_referent": <predicate_info>,
         }
+        where attr_info:
+            {
+                "name": attribute name, (case insensitive and ignore spaces)
+                "restrictions": [
+                    {
+                        "schema_key": {name: string (Optional), version: string (Optional), did: string (Optional)}, (Optional)
+                        "issuer_did": string (Optional)
+                    }
+                ]  (Optional) - if specified, claim must be created for one of the given
+                                schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
+            }
+        predicate_info:
+            {
+                "attr_name": attribute name, (case insensitive and ignore spaces)
+                "p_type": predicate type (Currently >= only)
+                "value": requested value of attribute
+                "restrictions": [
+                    {
+                        "schema_key": {name: string (Optional), version: string (Optional), did: string (Optional)}, (Optional)
+                        "issuer_did": string (Optional)
+                    }
+                ]  (Optional) - if specified, claim must be created for one of the given
+                                schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
+            }
     :return: json with claims for the given pool request.
-        Claim consists of uuid, human-readable attributes (key-value map), schema_seq_no, issuer_did and revoc_reg_seq_no.
+        Claim consists of referent, human-readable attributes (key-value map), schema_key, issuer_did and revoc_reg_seq_no.
             {
                 "requested_attr1_referent": [claim1, claim2],
                 "requested_attr2_referent": [],
@@ -498,7 +573,7 @@ async def prover_get_claims_for_proof_req(wallet_handle: int,
             {
                 "referent": <string>,
                 "attrs": [{"attr_name" : "attr_value"}],
-                "schema_seq_no": string,
+                "schema_key": {name: string, version: string, did: string}
                 "issuer_did": string,
                 "revoc_reg_seq_no": string,
             }
@@ -509,7 +584,7 @@ async def prover_get_claims_for_proof_req(wallet_handle: int,
                  wallet_handle,
                  proof_request_json)
 
-    if not hasattr(prover_get_claims, "cb"):
+    if not hasattr(prover_get_claims_for_proof_req, "cb"):
         logger.debug("prover_get_claims_for_proof_req: Creating callback")
         prover_get_claims_for_proof_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
@@ -554,27 +629,27 @@ async def prover_create_proof(wallet_handle: int,
         }
         where attr_info:
             {
-                "name": attribute name,
+                "name": attribute name, (case insensitive and ignore spaces)
                 "restrictions": [
                     {
-                        "schema_seq_no": int, (Optional)
+                        "schema_key": {name: string (Optional), version: string (Optional), did: string (Optional)}, (Optional)
                         "issuer_did": string (Optional)
                     }
                 ]  (Optional) - if specified, claim must be created for one of the given
-                                schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
+                                schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
             }
         predicate_info:
             {
-                "attr_name": attribute name,
+                "attr_name": attribute name, (case insensitive and ignore spaces)
                 "p_type": predicate type (Currently >= only)
                 "value": requested value of attribute
                 "restrictions": [
                     {
-                        "schema_seq_no": int, (Optional)
+                        "schema_key": {name: string (Optional), version: string (Optional), did: string(Optional) }, (Optional)
                         "issuer_did": string (Optional)
                     }
                 ]  (Optional) - if specified, claim must be created for one of the given
-                                schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
+                                schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
             }
         
     :param requested_claims_json: either a claim or self-attested attribute for each requested attribute
@@ -609,24 +684,27 @@ async def prover_create_proof(wallet_handle: int,
     :return: Proof json
         For each requested attribute either a proof (with optionally revealed attribute value) or
         self-attested attribute value is provided.
-        Each proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.
-        There ais also aggregated proof part common for all claim proofs.
-            {
-                "requested": {
-                    "requested_attr1_id": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
-                    "requested_attr2_id": [self_attested_attribute],
-                    "requested_attr3_id": [claim_proof2_referent]
-                    "requested_attr4_id": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
-                    "requested_predicate_1_referent": [claim_proof2_referent],
-                    "requested_predicate_2_referent": [claim_proof3_referent],
-                }
-                "claim_proofs": {
-                    "claim_proof1_referent": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-                    "claim_proof2_referent": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-                    "claim_proof3_referent": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
+        Each proof is associated with a claim and corresponding schema_key, issuer_did and revoc_reg_seq_no.
+        There is also aggregated proof part common for all claim proofs.
+        {
+            "requested": {
+                "requested_attr1_id": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
+                "requested_attr2_id": [self_attested_attribute],
+                "requested_attr3_id": [claim_proof2_referent]
+                "requested_attr4_id": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
+                "requested_predicate_1_referent": [claim_proof2_referent],
+                "requested_predicate_2_referent": [claim_proof3_referent],
+            }
+            "proof": {
+                "proofs": {
+                    "claim_proof1_referent": <claim_proof>,
+                    "claim_proof2_referent": <claim_proof>,
+                    "claim_proof3_referent": <claim_proof>
                 },
                 "aggregated_proof": <aggregated_proof>
             }
+            "identifiers": {"claim_proof1_referent": {issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}}
+        }
     """
 
     logger = logging.getLogger(__name__)
@@ -686,35 +764,11 @@ async def verifier_verify_proof(proof_request_json: str,
             "requested_predicate_1_referent": <predicate_info>,
             "requested_predicate_2_referent": <predicate_info>,
         }
-        where attr_info:
-            {
-                "name": attribute name,
-                "restrictions": [
-                    {
-                        "schema_seq_no": int, (Optional)
-                        "issuer_did": string (Optional)
-                    }
-                ]  (Optional) - if specified, claim must be created for one of the given
-                                schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
-            }
-        predicate_info:
-            {
-                "attr_name": attribute name,
-                "p_type": predicate type (Currently >= only)
-                "value": requested value of attribute
-                "restrictions": [
-                    {
-                        "schema_seq_no": int, (Optional)
-                        "issuer_did": string (Optional)
-                    }
-                ]  (Optional) - if specified, claim must be created for one of the given
-                                schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
-            }
     :param proof_json: proof json
         For each requested attribute either a proof (with optionally revealed attribute value) or
         self-attested attribute value is provided.
-        Each proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.
-        There ais also aggregated proof part common for all claim proofs.
+        Each proof is associated with a claim and corresponding schema_key, issuer_did and revoc_reg_seq_no.
+        There is also aggregated proof part common for all claim proofs.
             {
                 "requested": {
                     "requested_attr1_id": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
@@ -724,12 +778,15 @@ async def verifier_verify_proof(proof_request_json: str,
                     "requested_predicate_1_referent": [claim_proof2_referent],
                     "requested_predicate_2_referent": [claim_proof3_referent],
                 }
-                "claim_proofs": {
-                    "claim_proof1_referent": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-                    "claim_proof2_referent": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-                    "claim_proof3_referent": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
-                },
-                "aggregated_proof": <aggregated_proof>
+                "proof": {
+                    "proofs": {
+                        "claim_proof1_referent": <claim_proof>,
+                        "claim_proof2_referent": <claim_proof>,
+                        "claim_proof3_referent": <claim_proof>
+                    },
+                    "aggregated_proof": <aggregated_proof>
+                }
+                "identifiers": {"claim_proof1_referent": {issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}}
             }
     :param schemas_json: all schema jsons participating in the proof
         {

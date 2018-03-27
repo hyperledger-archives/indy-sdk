@@ -1,14 +1,14 @@
 import asyncio
 import time
 
-from src import anoncreds, signus, ledger, agent
+from src import anoncreds, crypto, ledger, getting_started
 
 
 async def main():
     await anoncreds.demo()
-    await signus.demo()
+    await crypto.demo()
     await ledger.demo()
-    await agent.demo()
+    await getting_started.run()
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()

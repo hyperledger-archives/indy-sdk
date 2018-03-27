@@ -8,7 +8,7 @@ use services::anoncreds::AnoncredsService;
 use services::anoncreds::types::*;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
-use self::indy_crypto::utils::json::{JsonDecodable};
+use self::indy_crypto::utils::json::JsonDecodable;
 
 pub enum VerifierCommand {
     VerifyProof(
@@ -104,8 +104,18 @@ impl VerifierCommandExecutor {
                 .into_iter()
                 .collect::<HashSet<String>>();
 
+        let received_self_attested_attrs: HashSet<String> =
+            proof_claims.requested_proof.self_attested_attrs
+                .keys()
+                .map(|referent| referent.clone())
+                .into_iter()
+                .collect::<HashSet<String>>();
+
         let received_attrs = received_revealed_attrs
             .union(&received_unrevealed_attrs)
+            .map(|attr| attr.clone())
+            .collect::<HashSet<String>>()
+            .union(&received_self_attested_attrs)
             .map(|attr| attr.clone())
             .collect::<HashSet<String>>();
 

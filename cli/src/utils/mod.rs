@@ -7,8 +7,6 @@ pub mod logger;
 pub mod term;
 #[allow(dead_code)] // FIXME
 pub mod test;
-#[allow(dead_code)] // FIXME
-pub mod timeout;
 pub mod sequence;
 pub mod table;
 

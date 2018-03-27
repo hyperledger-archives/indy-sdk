@@ -12,7 +12,7 @@ extern crate rand;
 extern crate rust_base58;
 extern crate sha2;
 extern crate time;
-extern crate zmq_pw as zmq;
+extern crate zmq;
 extern crate rmp_serde;
 extern crate indy_crypto;
 
@@ -172,7 +172,7 @@ impl PoolWorker {
         }
 
         let cnt = self.handler.nodes().len();
-        self.handler.set_f(PoolWorker::get_f(cnt)); //TODO set cnt to connect
+        self.handler.set_f(PoolWorker::get_f(cnt));
         if let PoolWorkerHandler::CatchupHandler(ref mut handler) = self.handler {
             handler.reset_nodes_votes();
         }
@@ -225,7 +225,7 @@ impl PoolWorker {
 
     pub fn run(&mut self) -> Result<(), PoolError> {
         self._run().or_else(|err: PoolError| {
-            self.handler.flush_requests(Err(PoolError::Terminate))?;
+            self.handler.flush_requests(Err(err.clone()))?;
             match err {
                 PoolError::Terminate => Ok(()),
                 _ => Err(err),
@@ -375,17 +375,18 @@ impl PoolWorker {
 
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
-            let line: String = line.map_err(map_err_trace!())?;
-            let genesis_txn: SJsonValue = serde_json::from_str(line.as_str()).unwrap(); /* FIXME resolve unwrap */
-            let bytes = rmp_serde::encode::to_vec_named(&genesis_txn).unwrap(); /* FIXME resolve unwrap */
+            let line: String = line.map_err(map_err_trace!())?.trim().to_string();
+            if line.is_empty() { continue };
+            let genesis_txn: SJsonValue = serde_json::from_str(line.as_str())
+                .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
+            let bytes = rmp_serde::encode::to_vec_named(&genesis_txn)
+                .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
             mt.append(bytes).map_err(map_err_trace!())?;
         }
         Ok(mt)
     }
 
-    #[allow(unreachable_code)]
     fn get_f(cnt: usize) -> usize {
-        return cnt / 2; /* FIXME ugly hack to work with pool instability, remove after pool will be fixed */
         if cnt < 4 {
             return 0;
         }
@@ -508,10 +509,13 @@ impl RemoteNode {
 
     fn connect(&mut self, ctx: &zmq::Context, key_pair: &zmq::CurveKeyPair) -> Result<(), PoolError> {
         let s = ctx.socket(zmq::SocketType::DEALER)?;
-        s.set_identity(zmq::z85_encode(&key_pair.public_key).unwrap().as_bytes())?;
+        s.set_identity(key_pair.public_key.as_bytes())?;
         s.set_curve_secretkey(&key_pair.secret_key)?;
         s.set_curve_publickey(&key_pair.public_key)?;
-        s.set_curve_serverkey(self.public_key.as_slice())?;
+        s.set_curve_serverkey(
+            zmq::z85_encode(self.public_key.as_slice())
+                .map_err(|err| { CommonError::InvalidStructure("Can't encode server key as z85".to_string()) })?
+                .as_str())?;
         s.set_linger(0)?; //TODO set correct timeout
         s.connect(&self.zaddr)?;
         self.zsock = Some(s);
@@ -528,17 +532,23 @@ impl RemoteNode {
         }
         let msg: String = self.zsock.as_ref()
             .ok_or(CommonError::InvalidState("Try to receive msg for unconnected RemoteNode".to_string()))?
-            .recv_string(zmq::DONTWAIT)??;
+            .recv_string(zmq::DONTWAIT)
+            .map_err(map_err_trace!())?
+            .map_err(|err| {
+                trace!("Can't parse UTF-8 string from bytes {:?}", err);
+                err
+            })?;
         info!("RemoteNode::recv_msg {} {}", self.name, msg);
 
         Ok(Some(msg))
     }
 
     fn send_str(&self, str: &str) -> Result<(), PoolError> {
-        info!("Sending {:?}", str);
+        info!("RemoteNode::send_str {} {}", self.name, str);
         self.zsock.as_ref()
             .ok_or(CommonError::InvalidState("Try to send str for unconnected RemoteNode".to_string()))?
-            .send(str, zmq::DONTWAIT)?;
+            .send(str.as_bytes(), 0)
+            .map_err(map_err_trace!())?;
         Ok(())
     }
 
@@ -944,7 +954,7 @@ mod tests {
         let handle: thread::JoinHandle<Vec<ZMQLoopAction>> = thread::spawn(move || {
             pw.poll_zmq().unwrap()
         });
-        send_cmd_sock.send("exit", zmq::DONTWAIT).expect("send");
+        send_cmd_sock.send("exit".as_bytes(), zmq::DONTWAIT).expect("send");
         let actions: Vec<ZMQLoopAction> = handle.join().unwrap();
 
         assert_eq!(actions.len(), 1);
@@ -962,7 +972,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] /* FIXME remove after get_f will be restored */
     fn pool_worker_get_f_works() {
         assert_eq!(PoolWorker::get_f(0), 0);
         assert_eq!(PoolWorker::get_f(3), 0);
@@ -1045,8 +1054,8 @@ mod tests {
                 dest: (&vk.0 as &[u8]).to_base58(),
             };
             let addr = format!("tcp://{}:{}", gt.data.client_ip.clone().unwrap(), gt.data.client_port.clone().unwrap());
-            s.set_curve_publickey(pkc.as_slice()).expect("set public key");
-            s.set_curve_secretkey(skc.as_slice()).expect("set secret key");
+            s.set_curve_publickey(&zmq::z85_encode(pkc.as_slice()).unwrap()).expect("set public key");
+            s.set_curve_secretkey(&zmq::z85_encode(skc.as_slice()).unwrap()).expect("set secret key");
             s.set_curve_server(true).expect("set curve server");
             s.bind(addr.as_str()).expect("bind");
             let handle = thread::spawn(move || {

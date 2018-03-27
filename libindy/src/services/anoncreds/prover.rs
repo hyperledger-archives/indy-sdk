@@ -3,7 +3,7 @@ extern crate indy_crypto;
 use errors::common::CommonError;
 use errors::anoncreds::AnoncredsError;
 use services::anoncreds::types::*;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use services::anoncreds::types::{ClaimInfo, RequestedClaims, ProofRequest, PredicateInfo, Identifier};
 
 use self::indy_crypto::cl::*;
@@ -27,30 +27,45 @@ impl Prover {
               claim_def_data, master_secret, prover_did);
 
         let issuer_pub_key = IssuerPublicKey::build_from_parts(&claim_def_data.primary, claim_def_data.revocation.as_ref())?;
-        let (blinded_ms, master_secret_blinding_data) = CryptoProver::blind_master_secret(&issuer_pub_key, master_secret)?;
+
+        let (blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof) =
+            CryptoProver::blind_master_secret(&issuer_pub_key,
+                                              &claim_offer.key_correctness_proof,
+                                              &master_secret,
+                                              &claim_offer.nonce)?;
+        let nonce = new_nonce()?;
 
         let claim_request = ClaimRequest {
             prover_did: prover_did.to_owned(),
             issuer_did: claim_offer.issuer_did.clone(),
-            schema_seq_no: claim_offer.schema_seq_no,
-            blinded_ms
+            schema_key: claim_offer.schema_key.clone(),
+            blinded_ms,
+            blinded_ms_correctness_proof,
+            nonce
         };
 
-        info!("new_claim_request <<< claim_request: {:?}, master_secret_blinding_data: {:?}",
-              claim_request, master_secret_blinding_data);
+        info!("new_claim_request <<< claim_request: {:?}, master_secret_blinding_data: {:?}", claim_request, master_secret_blinding_data);
 
         Ok((claim_request, master_secret_blinding_data))
     }
 
-    pub fn process_claim(&self, claim: &mut Claim, master_secret_blinding_data: &MasterSecretBlindingData,
+    pub fn process_claim(&self, claim: &mut Claim, claim_request_metadata: &ClaimRequestMetadata, master_secret: &MasterSecret,
                          claim_def_data: &ClaimDefinitionData, rev_reg_pub: Option<&RevocationRegistryPublic>) -> Result<(), CommonError> {
-        info!("process_claim >>> claim: {:?}, master_secret_blinding_data: {:?}, claim_def_data: {:?}, rev_reg_pub: {:?}",
-              claim, master_secret_blinding_data, claim_def_data, rev_reg_pub);
+        info!("process_claim >>> claim: {:?}, claim_request_metadata: {:?}, master_secret: {:?}, claim_def_data: {:?}, rev_reg_pub: {:?}",
+              claim, claim_request_metadata, master_secret, claim_def_data, rev_reg_pub);
+
 
         let issuer_pub_key = IssuerPublicKey::build_from_parts(&claim_def_data.primary, claim_def_data.revocation.as_ref())?;
+
+        let claim_values = build_claim_values(&claim.values)?;
+
         CryptoProver::process_claim_signature(&mut claim.signature,
-                                              &master_secret_blinding_data,
+                                              &claim_values,
+                                              &claim.signature_correctness_proof,
+                                              &claim_request_metadata.master_secret_blinding_data,
+                                              &master_secret,
                                               &issuer_pub_key,
+                                              &claim_request_metadata.nonce,
                                               rev_reg_pub)?;
 
         info!("process_claim <<<");
@@ -68,9 +83,9 @@ impl Prover {
             let mut claims_for_attribute: Vec<ClaimInfo> = Vec::new();
 
             for claim in claims {
-                let mut satisfy = claim.attrs.contains_key(&requested_attr.name);
+                let mut satisfy = Prover::_claim_value_for_attribute(&claim.attrs, &requested_attr.name).is_some();
 
-                satisfy = satisfy && Prover::_claim_satisfy_restrictions(claim, &requested_attr.restrictions);
+                satisfy = satisfy && self._claim_satisfy_restrictions(claim, &requested_attr.restrictions);
 
                 if satisfy { claims_for_attribute.push(claim.clone()); }
             }
@@ -82,12 +97,12 @@ impl Prover {
             let mut claims_for_predicate: Vec<ClaimInfo> = Vec::new();
 
             for claim in claims {
-                let mut satisfy = match claim.attrs.get(&requested_predicate.attr_name) {
-                    Some(attribute_value) => Prover::_attribute_satisfy_predicate(&requested_predicate, attribute_value)?,
+                let mut satisfy = match Prover::_claim_value_for_attribute(&claim.attrs, &requested_predicate.attr_name) {
+                    Some(attribute_value) => Prover::_attribute_satisfy_predicate(&requested_predicate, &attribute_value)?,
                     None => false
                 };
 
-                satisfy = satisfy && Prover::_claim_satisfy_restrictions(claim, &requested_predicate.restrictions);
+                satisfy = satisfy && self._claim_satisfy_restrictions(claim, &requested_predicate.restrictions);
 
                 if satisfy { claims_for_predicate.push(claim.clone()); }
             }
@@ -95,14 +110,13 @@ impl Prover {
             found_predicates.insert(predicate_id.clone(), claims_for_predicate);
         }
 
-        let claims_for_proof_requerst = ClaimsForProofRequest {
+        let claims_for_proof_request = ClaimsForProofRequest {
             attrs: found_attributes,
             predicates: found_predicates
         };
 
-
-        info!("get_claims_for_proof_req <<< claims_for_proof_requerst: {:?}", claims_for_proof_requerst);
-        Ok(claims_for_proof_requerst)
+        info!("get_claims_for_proof_req <<< claims_for_proof_requerst: {:?}", claims_for_proof_request);
+        Ok(claims_for_proof_request)
     }
 
     pub fn create_proof(&self,
@@ -118,7 +132,7 @@ impl Prover {
 
         let mut proof_builder = CryptoProver::new_proof_builder()?;
 
-        let mut identifiers: HashSet<Identifier> = HashSet::new();
+        let mut identifiers: HashMap<String, Identifier> = HashMap::new();
 
         for (referent, claim) in claims {
             let schema = schemas.get(referent.as_str())
@@ -144,8 +158,8 @@ impl Prover {
                                                 &issuer_pub_key,
                                                 revocation_registry.map(|rev_reg| &rev_reg.data).clone())?;
 
-            identifiers.insert(Identifier {
-                schema_seq_no: claim.schema_seq_no,
+            identifiers.insert(referent.to_string(), Identifier {
+                schema_key: claim.schema_key.clone(),
                 issuer_did: claim.issuer_did.clone(),
                 rev_reg_seq_no: claim.rev_reg_seq_no.clone()
             });
@@ -174,12 +188,23 @@ impl Prover {
         Ok(full_proof)
     }
 
-    fn _claim_satisfy_restrictions(claim: &ClaimInfo, restrictions: &Option<Vec<Filter>>) -> bool {
-        info!("_claim_satisfy_restrictions >>> claim: {:?}, restrictions: {:?}", claim, restrictions);
+    fn _claim_value_for_attribute(claim_attrs: &HashMap<String, String>, requested_attr: &str) -> Option<String> {
+        let _attr_common_view = |attr: &str|
+            attr.replace(" ", "").to_lowercase();
+
+        let requested_attr = _attr_common_view(&requested_attr);
+
+        claim_attrs.iter()
+            .find(|&(ref key, ref value)| _attr_common_view(key) == requested_attr)
+            .map(|(_, value)| value.to_string())
+    }
+
+    fn _claim_satisfy_restrictions(&self, claim_info: &ClaimInfo, restrictions: &Option<Vec<Filter>>) -> bool {
+        info!("_claim_satisfy_restrictions >>> claim_info: {:?}, restrictions: {:?}", claim_info, restrictions);
 
         let res = match restrictions {
             &Some(ref restrictions) => restrictions.iter().any(|restriction|
-                Prover::_claim_satisfy_restriction(claim, &restriction)),
+                self.claim_satisfy_restriction(claim_info, &restriction)),
             &None => true
         };
 
@@ -188,17 +213,24 @@ impl Prover {
         res
     }
 
-    fn _claim_satisfy_restriction(claim: &ClaimInfo, restriction: &Filter) -> bool {
-        info!("_claim_satisfy_restriction >>> claim: {:?}, restriction: {:?}", claim, restriction);
+    pub fn claim_satisfy_restriction(&self, claim_info: &ClaimInfo, restriction: &Filter) -> bool {
+        info!("_claim_satisfy_restriction >>> claim_info: {:?}, restriction: {:?}", claim_info, restriction);
 
         let mut res = true;
 
-        if let Some(schema_seq_no) = restriction.schema_seq_no {
-            res = res && claim.schema_seq_no == schema_seq_no;
-        }
-
         if let Some(issuer_did) = restriction.issuer_did.clone() {
-            res = res && claim.issuer_did == issuer_did;
+            res = res && claim_info.issuer_did == issuer_did;
+        }
+        if let Some(ref schema_key) = restriction.schema_key {
+            if let Some(ref name) = schema_key.name {
+                res = res && claim_info.schema_key.name == name.clone();
+            }
+            if let Some(ref version) = schema_key.version {
+                res = res && claim_info.schema_key.version == version.clone();
+            }
+            if let Some(ref did) = schema_key.did {
+                res = res && claim_info.schema_key.did == did.clone();
+            }
         }
 
         info!("_claim_satisfy_restriction >>> res: {:?}", res);
@@ -212,7 +244,7 @@ impl Prover {
         let res = match predicate.p_type.as_str() {
             ">=" => Ok({
                 let attribute_value = attribute_value.parse::<i32>()
-                    .map_err(|err| CommonError::InvalidStructure(format!("Ivalid format of predicate attribute: {}", attribute_value)))?;
+                    .map_err(|err| CommonError::InvalidStructure(format!("Invalid format of predicate attribute: {}", attribute_value)))?;
                 attribute_value >= predicate.value
             }),
             _ => return Err(CommonError::InvalidStructure(format!("Invalid predicate type: {:?}", predicate.p_type)))

@@ -149,6 +149,17 @@ def wallet_type():
 
 
 @pytest.fixture
+def credentials():
+    logger = logging.getLogger(__name__)
+    logger.debug("credentials: >>>")
+
+    res = None
+
+    logger.debug("credentials: <<< res: %r", res)
+    return res
+
+
+@pytest.fixture
 def wallet_config():
     logger = logging.getLogger(__name__)
     logger.debug("wallet_config: >>>")
@@ -172,16 +183,17 @@ def xwallet_cleanup():
 
 # noinspection PyUnusedLocal
 @pytest.fixture
-def xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home):
+def xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home, credentials):
     logger = logging.getLogger(__name__)
-    logger.debug("xwallet: >>> pool_name: %r, wallet_type: %r, xwallet_cleanup: %r, path_home: %r",
+    logger.debug("xwallet: >>> pool_name: %r, wallet_type: %r, xwallet_cleanup: %r, path_home: %r, credentials: %r",
                  pool_name,
                  wallet_type,
                  xwallet,
-                 path_home)
+                 path_home,
+                 credentials)
 
     logger.debug("xwallet: Creating wallet")
-    event_loop.run_until_complete(wallet.create_wallet(pool_name, wallet_name, wallet_type, None, None))
+    event_loop.run_until_complete(wallet.create_wallet(pool_name, wallet_name, wallet_type, None, credentials))
 
     logger.debug("xwallet: yield")
     yield
@@ -215,17 +227,19 @@ def wallet_handle_cleanup():
 
 
 @pytest.fixture
-def wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, wallet_handle_cleanup):
+def wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, credentials, wallet_handle_cleanup):
     logger = logging.getLogger(__name__)
     logger.debug(
-        "wallet_handle: >>> wallet_name: %r, xwallet: %r, wallet_runtime_config: %r, wallet_handle_cleanup: %r",
+        "wallet_handle: >>> wallet_name: %r, xwallet: %r, wallet_runtime_config: %r, credentials: %r,"
+        " wallet_handle_cleanup: %r",
         wallet_name,
         xwallet,
         wallet_runtime_config,
+        credentials,
         wallet_handle_cleanup)
 
     logger.debug("wallet_handle: Opening wallet")
-    wallet_handle = event_loop.run_until_complete(wallet.open_wallet(wallet_name, wallet_runtime_config, None))
+    wallet_handle = event_loop.run_until_complete(wallet.open_wallet(wallet_name, wallet_runtime_config, credentials))
     assert type(wallet_handle) is int
 
     logger.debug("wallet_handle: yield %r", wallet_handle)
@@ -421,6 +435,18 @@ async def identity_my1(wallet_handle, pool_handle, identity_trustee1, seed_my1, 
 
     (my_did, my_verkey) = await did.create_and_store_my_did(wallet_handle,
                                                             json.dumps({"seed": seed_my1, 'cid': True}))
+
+    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, None)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
+
+    return my_did, my_verkey
+
+
+@pytest.fixture
+async def identity_my(wallet_handle, pool_handle, identity_trustee1, seed_my1, ):
+    (trustee_did, trustee_verkey) = identity_trustee1
+
+    (my_did, my_verkey) = await did.create_and_store_my_did(wallet_handle, "{}")
 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)

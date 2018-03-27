@@ -90,4 +90,15 @@ public class CreateMyDidTest extends IndyIntegrationTestWithSingleWallet {
 		assertEquals(DID, result.getDid());
 		assertEquals(VERKEY_MY1, result.getVerkey());
 	}
+
+	@Test
+	public void testCreateMyDidWorksForDuplicate() throws Exception {
+		CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(this.wallet, "{}").get();
+
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(isA(DidAlreadyExistsException.class));
+
+		String didJson = new DidJSONParameters.CreateAndStoreMyDidJSONParameter(result.getDid(), null, null, null).toJson();
+		Did.createAndStoreMyDid(this.wallet, didJson).get();
+	}
 }

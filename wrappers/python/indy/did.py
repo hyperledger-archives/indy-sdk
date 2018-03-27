@@ -29,7 +29,7 @@ async def create_and_store_my_did(wallet_handle: int,
                       currently only 'ed25519' value is supported for this field)
             "cid": bool, (optional; if not set then false is used;)
         }
-    :return: DID, verkey (for verification of signature) and public_key (for decryption)
+    :return: DID and verkey (for verification of signature)
     """
 
     logger = logging.getLogger(__name__)
@@ -434,7 +434,9 @@ async def get_endpoint_for_did(wallet_handle: int,
                                            c_did,
                                            get_endpoint_for_did.cb)
 
-    res = (endpoint.decode(), transport_vk.decode())
+    endpoint = endpoint.decode()
+    transport_vk = transport_vk.decode() if transport_vk else None
+    res = (endpoint, transport_vk)
 
     logger.debug("get_endpoint_for_did: <<< res: %r", res)
     return res
@@ -505,4 +507,96 @@ async def get_did_metadata(wallet_handle: int,
     res = metadata.decode()
 
     logger.debug("get_did_metadata: <<< res: %r", res)
+    return res
+
+
+async def get_my_did_with_meta(wallet_handle: int, did: str) -> str:
+    """
+    Get DID metadata and verkey stored in the wallet.
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param did: The DID to retrieve metadata.
+    :return: DID with verkey and metadata.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("get_my_did_with_meta: >>> wallet_handle: %r, did: %r",
+                 wallet_handle,
+                 did)
+
+    if not hasattr(get_my_did_with_meta, "cb"):
+        logger.debug("get_my_did_with_meta: Creating callback")
+        get_my_did_with_meta.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_did = c_char_p(did.encode('utf-8'))
+
+    did_with_meta = await do_call('indy_get_my_did_with_meta',
+                                  c_wallet_handle,
+                                  c_did,
+                                  get_my_did_with_meta.cb)
+
+    res = did_with_meta.decode()
+
+    logger.debug("get_my_did_with_meta: <<< res: %r", res)
+    return res
+
+
+async def list_my_dids_with_meta(wallet_handle: int) -> str:
+    """
+    List DIDs and metadata stored in the wallet.
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :return: List of DIDs with verkeys and meta data.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("list_my_dids_with_meta: >>> wallet_handle: %r",
+                 wallet_handle)
+
+    if not hasattr(list_my_dids_with_meta, "cb"):
+        logger.debug("list_my_dids_with_meta: Creating callback")
+        list_my_dids_with_meta.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+
+    dids_with_meta = await do_call('indy_list_my_dids_with_meta',
+                                    c_wallet_handle,
+                                    list_my_dids_with_meta.cb)
+
+    res = dids_with_meta.decode()
+
+    logger.debug("list_my_dids_with_meta: <<< res: %r", res)
+    return res
+
+
+async def abbreviate_verkey(did: str,
+                          full_verkey: str) -> str:
+    """
+    Retrieves abbreviated verkey if it is possible otherwise return full verkey.
+
+    :param did: The DID.
+    :param full_verkey: The Verkey.
+    :return: metadata: Either abbreviated or full verkey.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("abbreviate_verkey: >>> did: %r, full_verkey: %r",
+                 did, full_verkey)
+
+    if not hasattr(abbreviate_verkey, "cb"):
+        logger.debug("abbreviate_verkey: Creating callback")
+        abbreviate_verkey.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_did = c_char_p(did.encode('utf-8'))
+    c_full_verkey = c_char_p(full_verkey.encode('utf-8'))
+
+    metadata = await do_call('indy_abbreviate_verkey',
+                             c_did,
+                             c_full_verkey,
+                             abbreviate_verkey.cb)
+
+    res = metadata.decode()
+
+    logger.debug("abbreviate_verkey: <<< res: %r", res)
     return res

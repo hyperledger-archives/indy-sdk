@@ -25,9 +25,18 @@ async def test_prover_get_claims_works_for_filter_by_issuer_did(wallet_handle, p
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_prover_get_claims_works_for_filter_by_schema(wallet_handle, prepopulated_wallet, schema_seq_no):
+async def test_prover_get_claims_works_for_filter_by_schema(wallet_handle, prepopulated_wallet, schema_key):
     claims = json.loads(
-        await prover_get_claims(wallet_handle, json.dumps({"schema_seq_no": schema_seq_no})))
+        await prover_get_claims(wallet_handle, json.dumps({"schema_key": schema_key})))
+
+    assert len(claims) == 2
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
+async def test_prover_get_claims_works_for_filter_by_part_of_schema(wallet_handle, prepopulated_wallet, schema_key):
+    claims = json.loads(
+        await prover_get_claims(wallet_handle, json.dumps({"schema_key": {"name": "gvt"}})))
 
     assert len(claims) == 2
 
@@ -44,10 +53,10 @@ async def test_prover_get_claims_works_for_filter_by_issuer_did_and_schema_seq_n
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_prover_get_claims_works_for_empty_result(wallet_handle, prepopulated_wallet, schema_seq_no):
+async def test_prover_get_claims_works_for_empty_result(wallet_handle, prepopulated_wallet, issuer_did):
     claims = json.loads(
         await prover_get_claims(
-            wallet_handle, json.dumps({"schema_seq_no": schema_seq_no + 100})))
+            wallet_handle, json.dumps({"issuer_did": issuer_did + 'a'})))
 
     assert len(claims) == 0
 

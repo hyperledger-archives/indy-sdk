@@ -7,8 +7,8 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_prover_create_proof_works(wallet_handle, prepopulated_wallet, gvt_schema, master_secret_name,
-                                         schema_seq_no):
-    claim_def_json, = prepopulated_wallet
+                                         schema_key):
+    claim_def_json, _, _, _ = prepopulated_wallet
 
     proof_req = {
         "nonce": "123432421212",
@@ -17,7 +17,7 @@ async def test_prover_create_proof_works(wallet_handle, prepopulated_wallet, gvt
         "requested_attrs": {
             "attr1_referent": {
                 "name": "name",
-                "restrictions":[{"schema_seq_no":schema_seq_no}]
+                "restrictions": [{"schema_key": schema_key}]
             }
         },
         "requested_predicates": {
@@ -58,9 +58,8 @@ async def test_prover_create_proof_works(wallet_handle, prepopulated_wallet, gvt
 
 @pytest.mark.asyncio
 async def test_prover_create_proof_works_for_using_not_satisfy_claim(wallet_handle, prepopulated_wallet, gvt_schema,
-                                                                     master_secret_name,
-                                                                     schema_seq_no):
-    claim_def_json, = prepopulated_wallet
+                                                                     master_secret_name, schema_key):
+    claim_def_json, _, _, _ = prepopulated_wallet
     claims = json.loads(await prover_get_claims(wallet_handle, "{}"))
     referent = claims[0]['referent']
 
@@ -71,7 +70,7 @@ async def test_prover_create_proof_works_for_using_not_satisfy_claim(wallet_hand
         "requested_attrs": {
             "attr1_referent": {
                 "name": "some_attr",
-                "restrictions":[{"schema_seq_no":schema_seq_no}]
+                "restrictions": [{"schema_key": schema_key}]
             }
         },
         "requested_predicates": {}
@@ -105,9 +104,8 @@ async def test_prover_create_proof_works_for_using_not_satisfy_claim(wallet_hand
 
 @pytest.mark.asyncio
 async def test_prover_create_proof_works_for_invalid_wallet_handle(wallet_handle, prepopulated_wallet, gvt_schema,
-                                                                   master_secret_name,
-                                                                   schema_seq_no):
-    claim_def_json, = prepopulated_wallet
+                                                                   master_secret_name, schema_key):
+    claim_def_json, _, _, _ = prepopulated_wallet
 
     proof_req = {
         "nonce": "123432421212",
@@ -116,7 +114,7 @@ async def test_prover_create_proof_works_for_invalid_wallet_handle(wallet_handle
         "requested_attrs": {
             "attr1_referent": {
                 "name": "name",
-                "restrictions":[{"schema_seq_no":schema_seq_no}]
+                "restrictions": [{"schema_key": schema_key}]
             }
         },
         "requested_predicates": {

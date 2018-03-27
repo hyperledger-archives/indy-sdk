@@ -253,21 +253,27 @@ async def build_attrib_request(submitter_did: str,
 
 async def build_get_attrib_request(submitter_did: str,
                                    target_did: str,
-                                   data: str) -> str:
+                                   raw: Optional[str],
+                                   xhash: Optional[str],
+                                   enc: Optional[str]) -> str:
     """
     Builds a GET_ATTRIB request.
 
     :param submitter_did: Id of Identity stored in secured Wallet.
     :param target_did: Id of Identity stored in secured Wallet.
-    :param data: name (attribute name)
+    :param xhash: Hash of attribute data
+    :param raw: represented as json, where key is attribute name and value is it's value
+    :param enc: Encrypted attribute data
     :return: Request result as json.
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_attrib_request: >>> submitter_did: %r, target_did: %r, data: %r",
+    logger.debug("build_get_attrib_request: >>> submitter_did: %r, target_did: %r, raw: %r, xhash: %r, enc: %r",
                  submitter_did,
                  target_did,
-                 data)
+                 raw,
+                 xhash,
+                 enc)
 
     if not hasattr(build_get_attrib_request, "cb"):
         logger.debug("build_get_attrib_request: Creating callback")
@@ -275,12 +281,16 @@ async def build_get_attrib_request(submitter_did: str,
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_target_did = c_char_p(target_did.encode('utf-8'))
-    c_data = c_char_p(data.encode('utf-8'))
+    c_raw = c_char_p(raw.encode('utf-8')) if raw else None
+    c_xhash = c_char_p(xhash.encode('utf-8')) if xhash else None
+    c_enc = c_char_p(enc.encode('utf-8')) if enc else None
 
     request_json = await do_call('indy_build_get_attrib_request',
                                  c_submitter_did,
                                  c_target_did,
-                                 c_data,
+                                 c_raw,
+                                 c_xhash,
+                                 c_enc,
                                  build_get_attrib_request.cb)
 
     res = request_json.decode()

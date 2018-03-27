@@ -265,8 +265,10 @@
                                                               submitterDid:myDid
                                                                requestJson:nymRequest
                                                            outResponseJson:&nymResponse];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequest() returned not Success");
     XCTAssertNotNil(nymResponse, @"nymResponse is nil!");
+    NSDictionary *response = [NSDictionary fromString:nymResponse];
+    XCTAssertTrue([response[@"op"] isEqualToString:@"REJECT"], @"wrong response type");
 
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
@@ -334,9 +336,11 @@
                                                               submitterDid:trusteeDid
                                                                requestJson:nymRequest
                                                            outResponseJson:&nymResponse];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequest() returned not Success");
     XCTAssertNotNil(nymResponse, @"nymResponse is nil!");
-    
+    NSDictionary *response = [NSDictionary fromString:nymResponse];
+    XCTAssertTrue([response[@"op"] isEqualToString:@"REQNACK"], @"wrong response type");
+
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }

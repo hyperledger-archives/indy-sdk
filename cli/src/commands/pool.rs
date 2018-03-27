@@ -5,7 +5,7 @@ use commands::*;
 
 use libindy::ErrorCode;
 use libindy::pool::Pool;
-use utils::table::print_table;
+use utils::table::print_list_table;
 
 pub mod group {
     use super::*;
@@ -18,7 +18,8 @@ pub mod create_command {
 
     command!(CommandMetadata::build("create", "Create new pool ledger config with specified name")
                 .add_main_param("name", "The name of new pool ledger config")
-                .add_param("gen_txn_file", false, "Path to file with genesis transactions")
+                .add_required_param("gen_txn_file", "Path to file with genesis transactions")
+                .add_example("pool create pool1 gen_txn_file=/home/pool_genesis_transactions")
                 .finalize()
     );
 
@@ -39,6 +40,8 @@ pub mod create_command {
 
         let res = match res {
             Ok(()) => Ok(println_succ!("Pool config \"{}\" has been created", name)),
+            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Pool genesis file is invalid or does not exist.")),
+            Err(ErrorCode::CommonIOError) => Err(println_err!("Pool genesis file is invalid or does not exist.")),
             Err(ErrorCode::PoolLedgerConfigAlreadyExistsError) => Err(println_err!("Pool config \"{}\" already exists", name)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
@@ -53,6 +56,7 @@ pub mod connect_command {
 
     command_with_cleanup!(CommandMetadata::build("connect", "Connect to pool with specified name. Also disconnect from previously connected.")
                 .add_main_param("name", "The name of pool")
+                .add_example("pool connect pool1")
                 .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
@@ -68,6 +72,8 @@ pub mod connect_command {
                             set_connected_pool(ctx, None);
                             Ok(println_succ!("Pool \"{}\" has been disconnected", name))
                         }
+                        Err(ErrorCode::PoolLedgerTerminated) => Err(println_err!("Pool \"{}\" does not exist.", name)),
+                        Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid pool ledger config.")),
                         Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
                     }
                 } else {
@@ -80,6 +86,9 @@ pub mod connect_command {
                         set_connected_pool(ctx, Some((handle, name.to_owned())));
                         Ok(println_succ!("Pool \"{}\" has been connected", name))
                     }
+                    Err(ErrorCode::CommonIOError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
+                    Err(ErrorCode::PoolLedgerTerminated) => Err(println_err!("Pool \"{}\" does not exist.", name)),
+                    Err(ErrorCode::PoolLedgerTimeout) => Err(println_err!("Pool \"{}\" has not been connected.", name)),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                 }
             });
@@ -121,18 +130,15 @@ pub mod list_command {
                 let pools: Vec<serde_json::Value> = serde_json::from_str(&pools)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                if pools.len() > 0 {
-                    print_table(&pools, &vec![("pool", "Pool")]);
-                } else {
-                    println_succ!("There are no pool");
-                }
+                print_list_table(&pools, &vec![("pool", "Pool")], "There are no pool");
+
                 if let Some((_, cur_pool)) = get_connected_pool(ctx) {
                     println_succ!("Current pool \"{}\"", cur_pool);
                 }
 
                 Ok(())
             }
-            Err(ErrorCode::CommonIOError) => Err(println_succ!("There are no pool")),
+            Err(ErrorCode::CommonIOError) => Err(println_succ!("There is no opened pool now")),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -175,6 +181,7 @@ pub mod delete_command {
 
     command!(CommandMetadata::build("delete", "Delete pool config with specified name")
                 .add_main_param("name", "The name of deleted pool config")
+                .add_example("pool delete pool1")
                 .finalize()
     );
 
@@ -190,7 +197,9 @@ pub mod delete_command {
         trace!(r#"Pool::delete return: {:?}"#, res);
 
         let res = match res {
-            Ok(()) => Ok(println_succ!("Pool \"{}\" has been deleted", name)),
+            Ok(()) => Ok(println_succ!("Pool \"{}\" has been deleted.", name)),
+            Err(ErrorCode::CommonInvalidState) => Err(println_err!("Connected pool cannot be deleted. Please disconnect first.")),
+            Err(ErrorCode::CommonIOError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 

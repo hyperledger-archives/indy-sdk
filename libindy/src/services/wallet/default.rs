@@ -17,7 +17,7 @@ use std::path::PathBuf;
 use std::ops::Sub;
 
 
-use self::indy_crypto::utils::json::{JsonDecodable};
+use self::indy_crypto::utils::json::JsonDecodable;
 
 #[derive(Deserialize)]
 struct DefaultWalletRuntimeConfig {
@@ -75,6 +75,10 @@ impl DefaultWallet {
 
 impl Wallet for DefaultWallet {
     fn set(&self, key: &str, value: &str) -> Result<(), WalletError> {
+        if self.credentials.rekey.is_some() {
+            return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
+        }
+        
         _open_connection(self.name.as_str(), &self.credentials)?
             .execute(
                 "INSERT OR REPLACE INTO wallet (key, value, time_created) VALUES (?1, ?2, ?3)",
@@ -83,6 +87,10 @@ impl Wallet for DefaultWallet {
     }
 
     fn get(&self, key: &str) -> Result<String, WalletError> {
+        if self.credentials.rekey.is_some() {
+            return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
+        }
+
         let record = _open_connection(self.name.as_str(), &self.credentials)?
             .query_row(
                 "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
@@ -97,6 +105,10 @@ impl Wallet for DefaultWallet {
     }
 
     fn list(&self, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError> {
+        if self.credentials.rekey.is_some() {
+            return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
+        }
+
         let connection = _open_connection(self.name.as_str(), &self.credentials)?;
         let mut stmt = connection.prepare("SELECT key, value, time_created FROM wallet WHERE key like ?1 order by key")?;
         let records = stmt.query_map(&[&format!("{}%", key_prefix)], |row| {
@@ -118,6 +130,10 @@ impl Wallet for DefaultWallet {
     }
 
     fn get_not_expired(&self, key: &str) -> Result<String, WalletError> {
+        if self.credentials.rekey.is_some() {
+            return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
+        }
+
         let record = _open_connection(self.name.as_str(), &self.credentials)?
             .query_row(
                 "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
@@ -131,20 +147,20 @@ impl Wallet for DefaultWallet {
 
         if self.config.freshness_time != 0
             && time::get_time().sub(record.time_created).num_seconds() > self.config.freshness_time {
-            return Err(WalletError::NotFound(key.to_string()))
+            return Err(WalletError::NotFound(key.to_string()));
         }
 
-        return Ok(record.value)
+        return Ok(record.value);
     }
 
-    fn close(&self) -> Result<(), WalletError>{ Ok(()) }
+    fn close(&self) -> Result<(), WalletError> { Ok(()) }
 
     fn get_pool_name(&self) -> String {
         self.pool_name.clone()
     }
 
     fn get_name(&self) -> String {
-       self.name.clone()
+        self.name.clone()
     }
 }
 
@@ -162,13 +178,17 @@ impl WalletType for DefaultWalletType {
         let path = _db_path(name);
         if path.exists() {
             trace!("DefaultWalletType.create << path exists");
-            return Err(WalletError::AlreadyExists(name.to_string()))
+            return Err(WalletError::AlreadyExists(name.to_string()));
         }
 
         let runtime_auth = match credentials {
             Some(auth) => DefaultWalletCredentials::from_json(auth)?,
             None => DefaultWalletCredentials::default()
         };
+
+        if runtime_auth.rekey.is_some() {
+            return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
+        }
 
         _open_connection(name, &runtime_auth).map_err(map_err_trace!())?
             .execute("CREATE TABLE wallet (key TEXT CONSTRAINT constraint_name PRIMARY KEY, value TEXT NOT NULL, time_created TEXT NOT_NULL)", &[])
@@ -189,10 +209,19 @@ impl WalletType for DefaultWalletType {
             None => DefaultWalletRuntimeConfig::default()
         };
 
-        let runtime_auth = match credentials {
+        let mut runtime_auth = match credentials {
             Some(auth) => DefaultWalletCredentials::from_json(auth)?,
             None => DefaultWalletCredentials::default()
         };
+
+        _open_connection(name, &runtime_auth).map_err(map_err_trace!())?
+            .query_row("SELECT sql FROM sqlite_master", &[], |_| {})
+            .map_err(map_err_trace!())?;
+
+        if let Some(rekey) = runtime_auth.rekey {
+            runtime_auth.key = rekey;
+            runtime_auth.rekey = None;
+        }
 
         Ok(Box::new(
             DefaultWallet::new(
@@ -240,7 +269,7 @@ fn _export_encrypted_to_unencrypted(conn: Connection, name: &str) -> Result<Conn
     path.push("plaintext.db");
 
     conn.execute(&format!("ATTACH DATABASE {:?} AS plaintext KEY ''", path), &[])?;
-    conn.query_row(&"SELECT sqlcipher_export('plaintext')", &[], |row|{})?;
+    conn.query_row(&"SELECT sqlcipher_export('plaintext')", &[], |row| {})?;
     conn.execute(&"DETACH DATABASE plaintext", &[])?;
     let r = conn.close();
     if let Err((c, w)) = r {
@@ -280,11 +309,12 @@ impl From<rusqlcipher::Error> for WalletError {
     fn from(err: rusqlcipher::Error) -> WalletError {
         match err {
             rusqlcipher::Error::QueryReturnedNoRows => WalletError::NotFound(format!("Wallet record is not found: {}", err.description())),
+            rusqlcipher::Error::SqliteFailure(err, _) if err.code == rusqlcipher::ErrorCode::NotADatabase =>
+                WalletError::AccessFailed(format!("Wallet security error: {}", err.description())),
             _ => WalletError::CommonError(CommonError::InvalidState(format!("Unexpected SQLite error: {}", err.description())))
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -295,7 +325,7 @@ mod tests {
     use serde_json;
     use self::serde_json::Error as JsonError;
 
-    use std::time::{Duration};
+    use std::time::Duration;
     use std::thread;
 
     #[test]
@@ -634,14 +664,11 @@ mod tests {
         }
         {
             let default_wallet_type = DefaultWalletType::new();
-            let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, None).unwrap();
+            let wallet_error = default_wallet_type.open("encrypted_wallet", "pool1", None, None, None);
 
-            let wallet_error = wallet.list("key1::").err();
             match wallet_error {
-                Some(error) => {
-                    assert_eq!(error.description(), String::from("Unexpected SQLite error: file is encrypted or is not a database"));
-                }
-                None => assert!(false)
+                Ok(_) => assert!(false),
+                Err(error) => assert_eq!(error.description(), String::from("Wallet security error: File opened that is not a database file"))
             };
         }
 

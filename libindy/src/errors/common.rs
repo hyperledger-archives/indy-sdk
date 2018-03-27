@@ -1,4 +1,4 @@
-extern crate zmq_pw as zmq;
+extern crate zmq;
 extern crate indy_crypto;
 
 use std::cell::{BorrowError, BorrowMutError};
@@ -26,6 +26,25 @@ pub enum CommonError {
     InvalidState(String),
     InvalidStructure(String),
     IOError(io::Error),
+}
+
+impl Clone for CommonError {
+    fn clone(&self) -> CommonError {
+        match self {
+            &CommonError::InvalidParam1(ref err) => CommonError::InvalidParam1(err.to_string()),
+            &CommonError::InvalidParam2(ref err) => CommonError::InvalidParam2(err.to_string()),
+            &CommonError::InvalidParam3(ref err) => CommonError::InvalidParam3(err.to_string()),
+            &CommonError::InvalidParam4(ref err) => CommonError::InvalidParam4(err.to_string()),
+            &CommonError::InvalidParam5(ref err) => CommonError::InvalidParam5(err.to_string()),
+            &CommonError::InvalidParam6(ref err) => CommonError::InvalidParam6(err.to_string()),
+            &CommonError::InvalidParam7(ref err) => CommonError::InvalidParam7(err.to_string()),
+            &CommonError::InvalidParam8(ref err) => CommonError::InvalidParam8(err.to_string()),
+            &CommonError::InvalidParam9(ref err) => CommonError::InvalidParam9(err.to_string()),
+            &CommonError::InvalidState(ref err) => CommonError::InvalidState(err.to_string()),
+            &CommonError::InvalidStructure(ref err) => CommonError::InvalidStructure(err.to_string()),
+            &CommonError::IOError(ref err) => CommonError::IOError(io::Error::new(err.kind(), err.description()))
+        }
+    }
 }
 
 impl fmt::Display for CommonError {
