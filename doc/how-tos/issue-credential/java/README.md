@@ -1,5 +1,5 @@
 # Issue a Credential
-Indy-SDK Developer Walkthrough #5, Java Edition
+Indy-SDK Developer Walkthrough #4, Java Edition
 
 [ [Python](../python/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
 
