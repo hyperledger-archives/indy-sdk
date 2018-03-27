@@ -34,7 +34,7 @@ If the concepts of cryptography and blockchain details feel mysterious, fear not
 
 Our goal is to introduce you to many of the concepts of Indy and give you some idea of what happens behind the scenes to make it all work.
 
-We're going to frame the exploration with a story. Alice, a graduate of the fictional Faber College, wants to apply for a job at the fictional company Acme Corp. As soon as she has the job she wants to apply for a loan in Thrift Bank so she can buy a car. She would like to use her college transcript as proof of her education on the job application and once hired, Alice would like to use the fact of employment as evidence of her creditworthiness for the loan.
+We're going to frame the exploration with a story. Alice, a graduate of the fictional Faber College, wants to apply for a job at the fictional company Acme Corp. As soon as she has the job, she wants to apply for a loan in Thrift Bank so she can buy a car. She would like to use her college transcript as proof of her education on the job application and once hired, Alice would like to use the fact of employment as evidence of her creditworthiness for the loan.
 
 The sorts of identity and trust interactions required to pull this off are messy in the world today; they are slow, they violate privacy, and they are susceptible to fraud. We’ll show you how Indy is a quantum leap forward.
 
@@ -58,11 +58,12 @@ For this guide, however, we’ll be using an **Indy SDK API** (as provided by li
 
 ### Step 1: Getting Trust Anchor Credentials for Faber, Acme, Thrift and Government
 
-Faber College and another actors have done some preparation to offer this service to Alice. To understand these steps let's start with some definitions.
+Faber College and other actors have done some preparation to offer this service to Alice. To understand these steps let's start with some definitions.
+
 
 The ledger is intended to store **Identity Records** that describe a **Ledger Entity**. Identity Records are public data and may include Public Keys, Service Endpoints, Credential Schemas, Credential Definitions. Every **Identity Record** is associated with exactly one **DID** (Decentralized Identifier) that is globally unique and resolvable (via a ledger) without requiring any centralized resolution authority. To maintain privacy each **Identity Owner** can own multiple DIDs.
 
-In this tutorial we will use two types of DIDs. The first one is a **Verinym**. **Verinym** is associated with the **Legal Identity** of the **Identity Owner**. For example, all parties should be able to verify that some DID is used by a Government to publish schemas for some document type. The second type is a **Pseudonym** - a **Blinded Identifier** used to maintain privacy in the context on an ongoing digital relationship (**Connection**). If the Pseudonym is used to maintain only one digital relationship we will call it a Pairwise-Unique Identifier. We will use Pairwise-Unique Identifiers to maintain secure connections between actors in this tutorial.
+In this tutorial we will use two types of DIDs. The first one is a **Verinym**. **Verinym** is associated with the **Legal Identity** of the **Identity Owner**. For example, all parties should be able to verify that some DID is used by a Government to publish schemas for some document type. The second type is a **Pseudonym** - a **Blinded Identifier** used to maintain privacy in the context of an ongoing digital relationship (**Connection**). If the Pseudonym is used to maintain only one digital relationship we will call it a Pairwise-Unique Identifier. We will use Pairwise-Unique Identifiers to maintain secure connections between actors in this tutorial.
 
 The creation of a DID known to the Ledger is an **Identity Record** itself (NYM transaction). The NYM transaction can be used for creation of new DIDs that is known to that ledger, the setting and rotation of a verification key, and the setting and changing of roles. The most important fields of this transaction are `dest` (target DID), `role` (role of a user NYM record being created for) and the `verkey` (target verification key). See [Requests](https://github.com/hyperledger/indy-node/blob/master/docs/requests.md) to get more information about supported ledger transactions.
 
@@ -174,7 +175,7 @@ Let's look the process of connection establishment between **Steward** and **Fab
     faber_wallet = await wallet.open_wallet('faber_wallet', None, None)
     ```
 
-8. **Faber** creates a new DID record in his wallet by calling ``did.create_and_store_my_did`` that he will use only for secure interactions with the **Steward**.
+8. **Faber** creates a new DID record in its wallet by calling ``did.create_and_store_my_did`` that it will use only for secure interactions with the **Steward**.
     ```python
     # Faber Agent
     (faber_steward_did, faber_steward_key) = await did.create_and_store_my_did(faber_wallet, "{}")
@@ -226,11 +227,11 @@ Please note that despite the fact that the Steward is the sender of this transac
     await ledger.sign_and_submit_request(pool_handle, steward_wallet, steward_did, nym_request)
     ```
 
-At this point **Faber** is connected to the **Steward** and can interact in a secure peer-to-peer way. **Faber** and can trust the response is from **Steward** because:
+At this point **Faber** is connected to the **Steward** and can interact in a secure peer-to-peer way. **Faber** can trust the response is from **Steward** because:
 
-* he connects to the current endpoint
+* it connects to the current endpoint
 * no replay - attack is possible, due to her random challenge
-* he knows the verification key used to verify **Steward** digital signature is the correct one because he just confirmed it on the ledger
+* it knows the verification key used to verify **Steward** digital signature is the correct one because it just confirmed it on the ledger
 
 **Note:** All parties must not use the same DID's to establish other relationships.
 By having independent pairwise relationships, you're reducing the ability for others to correlate your activities across multiple interactions.
@@ -240,7 +241,7 @@ By having independent pairwise relationships, you're reducing the ability for ot
 It is important to understand that earlier created **Faber** DID is not, in and of itself, the same thing as self-sovereign identity. This DID must be used only for secure interaction with the **Steward**.
 After the connection is established **Faber** must create new DID record that he will use as Verinym in the Ledger.
 
-1. **Faber** creates a new DID in his wallet by calling ``did.create_and_store_my_did``.
+1. **Faber** creates a new DID in its wallet by calling ``did.create_and_store_my_did``.
     ```python        
     # Faber Agent
     (faber_did, faber_key) = await did.create_and_store_my_did(faber_wallet, "{}")
@@ -285,7 +286,7 @@ After the connection is established **Faber** must create new DID record that he
     ```
 
 8. **Steward** sends the corresponded NYM transaction to the Ledger with `TRUST ANCHOR` role.
-Please note that despite the fact that the Steward is sender of this transaction the owner of DID will be Faber as it uses Verkey provided by Faber.
+Please note that despite the fact that the Steward is the sender of this transaction the owner of DID will be Faber as it uses Verkey provided by Faber.
     ```python    
     # Steward Agen
     nym_request = await ledger.build_nym_request(steward_did, decrypted_faber_did_info_json['did'],
@@ -429,8 +430,9 @@ An issuer may be any identity owner known to the Ledger and any issuer may issue
 The usefulness and reliability of a claim are tied to the reputation of the issuer with respect to the claim at hand.
 For Alice to self-issue a claim that she likes chocolate ice cream may be perfectly reasonable, but for her to self-issue a claim that she graduated from Faber College should not impress anyone.
 
+
 As we mentioned in [About Alice](#about-alice) **Alice** graduated from **Faber College**.
-After **Faber College** had established a connection with Alice, he created for her a Credential Offer about the issuance of the **Transcript** Claim.
+After **Faber College** had established a connection with Alice, it created for her a Credential Offer about the issuance of the **Transcript** Claim.
 ```python
   # Faber Agent
     transcript_claim_offer_json = \
@@ -456,7 +458,8 @@ These attributes are known because a Credential Schema for **Transcript** has be
       'name': transcript_claim_offer['transcript_claim_offer']['name'],
       'version': transcript_claim_offer['transcript_claim_offer']['version']
   })
-  get_schema_request = await ledger.build_get_schema_request(alice_faber_did, transcript_claim_offer['transcript_claim_offer']['did'], get_schema_data)
+  get_schema_request = await ledger.build_get_schema_request(alice_faber_did, 
+                                                             transcript_claim_offer['transcript_claim_offer']['did'], get_schema_data)
   get_schema_response = await ledger.submit_request(pool_handle, get_schema_request)
   transcript_schema = json.loads(get_schema_response)['result']
 
@@ -702,7 +705,7 @@ When Alice inspects her connection with Acme, she sees that a new Credential Off
 
 ## Apply for a Loan
 
-Now that Alice has a job, she’d like to apply for a loan. That will require proof of employment.
+Now that Alice has a job, she’d like to apply for a loan. That will require a proof of employment.
 She can get this from the **Job-Certificate** credential offered by Acme.
 Alice goes through a familiar sequence of interactions.
 
