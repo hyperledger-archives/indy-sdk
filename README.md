@@ -118,7 +118,8 @@ docker run -itd -p 9701-9708:9701-9708 indy_pool
 ## Wrappers documentation
 
 The following wrappers are tested and complete. There is also active work
-on wrappers for Go and node.js; visit #indy-sdk on Rocket.Chat for
+on wrappers for Go and node.js; visit
+[#indy-sdk on Rocket.Chat](https://chat.hyperledger.org/channel/indy-sdk) for
 details.
 
 * [.Net](wrappers/dotnet/README.md)
@@ -138,3 +139,8 @@ that explored the ecosystem via command line. That material is being
 rewritten but still contains some useful ideas.)
 
 * [Libindy Getting-Started Guide](doc/getting-started/getting-started.md)
+
+## How Tos
+
+Short, simple tutorials that demonstrate how to accomplish common tasks
+are also available. See [the doc/how-tos folder](doc/how-tos).
