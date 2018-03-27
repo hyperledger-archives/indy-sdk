@@ -1,4 +1,3 @@
-		// 9
 		System.out.println("\n9. Build the SCHEMA request to add new schema to the ledger as a Steward\n");
 		String name = "gvt";
 		String version = "1.0";
@@ -8,7 +7,6 @@
 		String schemaRequest = buildSchemaRequest(defautStewardDid, schemaDataJSON).get();
 		System.out.println("Schema request:\n" + schemaRequest);
 
-		// 10
 		System.out.println("\n10. Sending the SCHEMA request to the ledger\n");
 		String schemaResponse = signAndSubmitRequest(pool, walletHandle, defautStewardDid, schemaRequest).get();
 		System.out.println("Schema response:\n" + schemaResponse);

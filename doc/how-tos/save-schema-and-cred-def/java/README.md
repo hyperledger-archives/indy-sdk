@@ -18,7 +18,7 @@ choice and paste the code from [template.java](template.java)
 into a new doc. We will be modifying this code in later steps. Save the
 doc as `SaveSchemaAndCredDef.java`
 
-This is a very simple app framework into which you'll plug the code
+This is a simple app framework into which you'll plug the code
 you'll be writing.
 
 ### Step 2
@@ -69,7 +69,7 @@ Copy the contents of [step3.java](step3.java) into
 Notice how this schema is submitted to the ledger by the steward
 identity we created previously.
 
-## Step 4
+### Step 4
 
 Next, we create a *credential definition*. This references the schema
 that we just added, and announces who is going to be issuing credentials
@@ -81,9 +81,9 @@ plan to handle revocation, and so forth.
 Copy the contents of [step4.java](step4.java) into
 `SaveSchemaAndCredDef.java` on top of the `Step 4 code goes here` placeholder comment.
 
-## Step 5
+### Step 5
 
-Run the completed demo and observe the whole sequence.
+Run the [finished code](SaveSchemaAndCredDef.java) and observe the whole sequence.
 
 ## More experiments
 
