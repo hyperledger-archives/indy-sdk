@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Hyperledger.Indy.SignusApi
+namespace Hyperledger.Indy.DidApi
 {
     /// <summary>
     /// The result of encryption.

@@ -32,7 +32,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(commonWallet, claimRequest, claim, -1);
             var claimJson = createClaimResult.ClaimJson;
 
-            await AnonCreds.ProverStoreClaimAsync(proverWallet, claimJson);
+            await AnonCreds.ProverStoreClaimAsync(proverWallet, claimJson, createClaimResult.RevocRegUpdateJson);
 
             await proverWallet.CloseAsync();
             await Wallet.DeleteWalletAsync(proverWalletName, null);
@@ -51,7 +51,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "                          \"non_revocation_claim\":null}}}}", issuerDid2);
 
             var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-                AnonCreds.ProverStoreClaimAsync(commonWallet, claimJson)
+                AnonCreds.ProverStoreClaimAsync(commonWallet, claimJson, string.Empty)
             );
 
         }
@@ -71,7 +71,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                     "            \"schema_seq_no\":1}";
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.ProverStoreClaimAsync(commonWallet, claimJson)
+                AnonCreds.ProverStoreClaimAsync(commonWallet, claimJson, string.Empty)
             );
         }
     }

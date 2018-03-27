@@ -1,4 +1,4 @@
-﻿using Hyperledger.Indy.SignusApi;
+﻿using Hyperledger.Indy.DidApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
@@ -12,14 +12,14 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestStoreTheirDidWorks()
         {
-            await Signus.StoreTheirDidAsync(wallet, string.Format("{{\"did\":\"{0}\"}}", DID1));
+            await Did.StoreTheirDidAsync(wallet, string.Format("{{\"did\":\"{0}\"}}", DID1));
         }
 
         [TestMethod]
         public async Task TestCreateMyDidWorksForInvalidIdentityJson()
         {
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                Signus.StoreTheirDidAsync(wallet, "{\"field\":\"value\"}")
+                Did.StoreTheirDidAsync(wallet, "{\"field\":\"value\"}")
             );            
         }
 
@@ -28,14 +28,14 @@ namespace Hyperledger.Indy.Test.SignusTests
         {
             var json = string.Format(IDENTITY_JSON_TEMPLATE, DID1, _verkey);
 
-            await Signus.StoreTheirDidAsync(wallet, json);
+            await Did.StoreTheirDidAsync(wallet, json);
         }
 
         [TestMethod]
         public async Task TestStoreTheirDidWorksWithoutDid()
         {
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                Signus.StoreTheirDidAsync(wallet, string.Format("{{\"verkey\":\"{0}\"}}", _verkey))
+                Did.StoreTheirDidAsync(wallet, string.Format("{{\"verkey\":\"{0}\"}}", _verkey))
             );
         }
     }

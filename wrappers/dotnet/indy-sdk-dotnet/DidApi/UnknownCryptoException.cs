@@ -1,4 +1,4 @@
-﻿namespace Hyperledger.Indy.SignusApi
+﻿namespace Hyperledger.Indy.DidApi
 {
     /// <summary>
     /// Exception thrown when an unknown crypto format is used for DID entity keys.

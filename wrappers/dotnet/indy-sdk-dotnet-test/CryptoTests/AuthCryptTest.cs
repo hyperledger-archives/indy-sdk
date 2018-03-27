@@ -6,20 +6,20 @@ using System.Threading.Tasks;
 namespace Hyperledger.Indy.Test.CryptoTests
 {
     [TestClass]
-    public class BoxTest : IndyIntegrationTestWithSingleWallet
+    public class AuthCryptTest : IndyIntegrationTestWithSingleWallet
     {
         [TestMethod]
-        public async Task TestBoxWorks()
+        public async Task TestAuthCryptWorks()
         {
             var myVk = await Crypto.CreateKeyAsync(wallet, MY1_IDENTITY_KEY_JSON);
-            await Crypto.BoxAsync(wallet, myVk, VERKEY_MY2, MESSAGE);
+            await Crypto.AuthCryptAsync(wallet, myVk, VERKEY_MY2, MESSAGE);
         }
 
         [TestMethod]
-        public async Task TestBoxWorksForUnknownCoder()
+        public async Task TestAuthCryptWorksForUnknownCoder()
         {
             var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-               Crypto.BoxAsync(wallet, VERKEY_MY1, VERKEY_MY2, MESSAGE)
+                 Crypto.AuthCryptAsync(wallet, VERKEY_MY1, VERKEY_MY2, MESSAGE)
            );
         }
     }
