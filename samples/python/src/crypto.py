@@ -4,7 +4,6 @@ import json
 import logging
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 
 async def demo():

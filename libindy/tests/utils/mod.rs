@@ -14,6 +14,7 @@ pub mod anoncreds;
 pub mod types;
 pub mod pairwise;
 pub mod constants;
+pub mod blob_storage;
 pub mod results;
 
 #[macro_use]
@@ -34,3 +35,6 @@ pub mod cstring;
 
 #[path = "../../src/utils/inmem_wallet.rs"]
 pub mod inmem_wallet;
+
+#[path = "../../src/services/anoncreds/types.rs"]
+pub mod anoncreds_types;

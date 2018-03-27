@@ -2,44 +2,47 @@ extern crate indy_crypto;
 
 use errors::common::CommonError;
 
-use services::anoncreds::types::{PredicateInfo, SchemaKey};
-use self::indy_crypto::cl::{issuer, verifier, ClaimSchema, ClaimValues, SubProofRequest};
+use services::anoncreds::types::{AttributeInfo, PredicateInfo, AttributeValues};
+use services::anoncreds::constants::*;
+use self::indy_crypto::cl::{issuer, verifier, CredentialSchema, CredentialValues, SubProofRequest};
 
 use std::collections::{HashSet, HashMap};
 
-pub fn get_composite_id(issuer_did: &str, schema_key: &SchemaKey) -> String {
-    format!("{}:{}:{}:{}", issuer_did, schema_key.name, schema_key.version, schema_key.did)
+pub fn attr_common_view(attr: &str) -> String {
+    attr.replace(" ", "").to_lowercase()
 }
 
-pub fn build_claim_schema(attrs: &HashSet<String>) -> Result<ClaimSchema, CommonError> {
-    let mut claim_schema_builder = issuer::Issuer::new_claim_schema_builder()?;
+pub fn build_credential_schema(attrs: &HashSet<String>) -> Result<CredentialSchema, CommonError> {
+    let mut credential_schema_builder = issuer::Issuer::new_credential_schema_builder()?;
     for attr in attrs {
-        claim_schema_builder.add_attr(&attr)?;
+        credential_schema_builder.add_attr(&attr_common_view(attr))?;
     }
-    Ok(claim_schema_builder.finalize()?)
+    Ok(credential_schema_builder.finalize()?)
 }
 
-pub fn build_claim_values(claim_values: &HashMap<String, Vec<String>>) -> Result<ClaimValues, CommonError> {
-    let mut claim_values_builder = issuer::Issuer::new_claim_values_builder()?;
-    for (attr, values) in claim_values {
-        let dec_val = values.get(1)
-            .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?;
-
-        claim_values_builder.add_value(&attr, &dec_val)?;
+pub fn build_credential_values(credential_values: &HashMap<String, AttributeValues>) -> Result<CredentialValues, CommonError> {
+    let mut credential_values_builder = issuer::Issuer::new_credential_values_builder()?;
+    for (attr, values) in credential_values {
+        credential_values_builder.add_value(&attr_common_view(attr), &values.encoded)?;
     }
-    Ok(claim_values_builder.finalize()?)
+    Ok(credential_values_builder.finalize()?)
 }
 
-pub fn build_sub_proof_request(attrs_for_claim: &Vec<String>, predicates_for_claim: &Vec<PredicateInfo>) -> Result<SubProofRequest, CommonError> {
+pub fn build_sub_proof_request(attrs_for_credential: &Vec<AttributeInfo>, predicates_for_credential: &Vec<PredicateInfo>) -> Result<SubProofRequest, CommonError> {
     let mut sub_proof_request_builder = verifier::Verifier::new_sub_proof_request_builder()?;
 
-    for attr in attrs_for_claim {
-        sub_proof_request_builder.add_revealed_attr(&attr)?
+    for attr in attrs_for_credential {
+        sub_proof_request_builder.add_revealed_attr(&attr_common_view(&attr.name))?
     }
 
-    for predicate in predicates_for_claim {
-        sub_proof_request_builder.add_predicate(&predicate.attr_name, "GE", predicate.value)?;
+    for predicate in predicates_for_credential {
+        sub_proof_request_builder.add_predicate(&attr_common_view(&predicate.name), "GE", predicate.p_value)?;
     }
 
     Ok(sub_proof_request_builder.finalize()?)
+}
+
+pub fn build_id(identifier: &str, marker: &str, related_entity_id: Option<&str>, word1: &str, word2: &str) -> String {
+    let related_entity_id = related_entity_id.map(|s| format!("{}{}", s, DELIMITER)).unwrap_or(String::new());
+    format!("{}{}{}{}{}{}{}{}", identifier, DELIMITER, marker, DELIMITER, related_entity_id, word1, DELIMITER, word2)
 }

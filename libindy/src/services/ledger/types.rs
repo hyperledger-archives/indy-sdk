@@ -255,13 +255,13 @@ impl JsonEncodable for ClaimDefOperation {}
 
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct ClaimDefOperationData {
-    pub primary: IssuerPrimaryPublicKey,
+    pub primary: CredentialPrimaryPublicKey,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub revocation: Option<IssuerRevocationPublicKey>
+    pub revocation: Option<CredentialRevocationPublicKey>
 }
 
 impl ClaimDefOperationData {
-    pub fn new(primary: IssuerPrimaryPublicKey, revocation: Option<IssuerRevocationPublicKey>) -> ClaimDefOperationData {
+    pub fn new(primary: CredentialPrimaryPublicKey, revocation: Option<CredentialRevocationPublicKey>) -> ClaimDefOperationData {
         ClaimDefOperationData {
             primary,
             revocation

@@ -27,6 +27,11 @@ extern void IndyWrapperCommon4PCallback(indy_handle_t xcommand_handle,
                                           const char *const arg1,
                                           const char *const arg2);
 
+extern void IndyWrapperCommon4PSCallback(indy_handle_t xcommand_handle,
+                                          indy_error_t err,
+                                          const char *const arg1,
+                                          const char *const arg2);
+
 extern void IndyWrapperCommon4PDataCallback(indy_handle_t xcommand_handle,
                                             indy_error_t err,
                                             const uint8_t *const arg1,
@@ -56,6 +61,16 @@ extern void IndyWrapperCommon6PDataCallback(indy_handle_t xcommand_handle,
                                             uint32_t arg2,
                                             const uint8_t *const arg3,
                                             uint32_t arg4);
+
+extern void IndyWrapperCommon3TRHCallback(indy_handle_t xcommand_handle,
+                                          indy_error_t err,
+                                          indy_i32_t handle);
+
+extern void IndyWrapperCommon5PStrOpStrOpStrCallback(indy_handle_t xcommand_handle,
+                                                     indy_error_t err,
+                                                     const char *const arg1,
+                                                     const char *const arg2,
+                                                     const char *const arg3);
 
 @interface IndyCallbacks : NSObject
 

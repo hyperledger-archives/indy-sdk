@@ -1601,7 +1601,8 @@
     [TestUtils cleanupStorage];
 }
 
-// MARK: - Claim def requests
+// MARK: - Claim def request
+
 - (void)testBuildClaimDefRequestWorksForCorrectDataJson {
     [TestUtils cleanupStorage];
     NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
@@ -1801,7 +1802,7 @@
     getSchemaResponseJson = [NSDictionary toString:(NSDictionary *) getSchemaResponse[@"result"]];
 
     // 11. Create claim definition
-    NSString *claimDefJson = [[AnoncredsUtils sharedInstance] getGvtClaimDef];
+    NSString *claimDefJson = [[AnoncredsUtils sharedInstance] getGvtCredentialDef];
     NSDictionary *claimDef = [NSDictionary fromString:claimDefJson];
 
     NSMutableDictionary *claimDefData = [NSMutableDictionary new];
@@ -1952,7 +1953,7 @@
     getSchemaResponseJson = [NSDictionary toString:(NSDictionary *) getSchemaResponse[@"result"]];
 
     // 11. Create claim definition
-    NSString *claimDefJson = [[AnoncredsUtils sharedInstance] getGvtClaimDef];
+    NSString *claimDefJson = [[AnoncredsUtils sharedInstance] getGvtCredentialDef];
 
     NSDictionary *claimDef = [NSDictionary fromString:claimDefJson];
 

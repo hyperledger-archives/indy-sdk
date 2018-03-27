@@ -7,6 +7,7 @@ use indy::api as api;
 extern crate rust_base58;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
@@ -18,7 +19,6 @@ mod utils;
 use utils::wallet::WalletUtils;
 use utils::crypto::CryptoUtils;
 use utils::did::DidUtils;
-use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 use utils::constants::*;
 

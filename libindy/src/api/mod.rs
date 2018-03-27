@@ -7,6 +7,7 @@ pub mod pairwise;
 pub mod pool;
 pub mod did;
 pub mod wallet;
+pub mod blob_storage;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]

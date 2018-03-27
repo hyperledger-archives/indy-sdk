@@ -220,6 +220,26 @@ void IndyWrapperCommon3PHCallback(indy_handle_t xcommand_handle,
     }
 }
 
+void IndyWrapperCommon3TRHCallback(indy_handle_t xcommand_handle,
+        indy_error_t err,
+        indy_i32_t handle)
+{
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+
+    void (^completion)(NSError*, NSNumber *) = (void (^)(NSError*, NSNumber *arg1))block;
+    NSNumber* sarg1 = [NSNumber numberWithInt:handle];
+
+    if (completion)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^
+        {
+            NSError *error = [ NSError errorFromIndyError: err ];
+            completion(error, (NSNumber *) sarg1);
+        });
+    }
+}
+
 void IndyWrapperCommon3PSCallback(indy_handle_t xcommand_handle,
                                   indy_error_t err,
                                   const char *const arg1)
@@ -282,6 +302,91 @@ void IndyWrapperCommon4PCallback(indy_handle_t xcommand_handle,
     }
 }
 
+void IndyWrapperCommon4PSCallback(indy_handle_t xcommand_handle,
+        indy_error_t err,
+        const char *const arg1,
+        const char *const arg2)
+{
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+
+    void (^completion)(NSError*, NSString* arg1, NSString *arg2) = (void (^)(NSError*, NSString* arg1, NSString *arg2))block;
+
+    NSString *sarg1 = nil;
+    if (arg1)
+    {
+        sarg1 = [NSString stringWithUTF8String:arg1];
+    }
+    NSString* sarg2 = [ NSString stringWithUTF8String: arg2];
+
+    if (completion)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^
+        {
+            NSError *error = [ NSError errorFromIndyError: err ];
+            completion(error, sarg1, sarg2);
+        });
+    }
+}
+
+void IndyWrapperCommon5PStrOpStrOpStrCallback(indy_handle_t xcommand_handle,
+        indy_error_t err,
+        const char *const arg1,
+        const char *const arg2,
+        const char *const arg3)
+{
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+
+    void (^completion)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3) = (void (^)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3))block;
+
+    NSString* sarg1 = [ NSString stringWithUTF8String: arg1];
+    NSString *sarg2 = nil;
+    if (arg2)
+    {
+        sarg2 = [NSString stringWithUTF8String:arg2];
+    }
+    NSString *sarg3 = nil;
+    if (arg3)
+    {
+        sarg3 = [NSString stringWithUTF8String:arg3];
+    }
+
+    if (completion)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^
+        {
+            NSError *error = [ NSError errorFromIndyError: err ];
+            completion(error, sarg1, sarg2, sarg3);
+        });
+    }
+}
+
+void IndyWrapperCommon5PCallback(indy_handle_t xcommand_handle,
+                                 indy_error_t err,
+                                 const char *const arg1,
+                                 const char *const arg2,
+                                 const char *const arg3)
+{
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+
+    void (^completion)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3) = (void (^)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3))block;
+
+    NSString* sarg1 = [ NSString stringWithUTF8String: arg1];
+    NSString* sarg2 = [ NSString stringWithUTF8String: arg2];
+    NSString* sarg3 = [ NSString stringWithUTF8String: arg3];
+
+    if (completion)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^
+                       {
+                           NSError *error = [ NSError errorFromIndyError: err ];
+                           completion(error, sarg1, sarg2, sarg3);
+                       });
+    }
+}
+
 /// Arguments arg1 and arg2 will be converted to nsdata
 void IndyWrapperCommon4PDataCallback(indy_handle_t xcommand_handle,
                                  indy_error_t err,
@@ -301,31 +406,6 @@ void IndyWrapperCommon4PDataCallback(indy_handle_t xcommand_handle,
                        {
                            NSError *error = [ NSError errorFromIndyError: err ];
                            completion(error, sarg);
-                       });
-    }
-}
-
-void IndyWrapperCommon5PCallback(indy_handle_t xcommand_handle,
-                                 indy_error_t err,
-                                 const char* arg1,
-                                 const char *arg2,
-                                 const char *arg3)
-{
-    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
-    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
-
-    void (^completion)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3) = (void (^)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3))block;
-
-    NSString* sarg1 = [ NSString stringWithUTF8String: arg1];
-    NSString* sarg2 = [ NSString stringWithUTF8String: arg2];
-    NSString* sarg3 = [ NSString stringWithUTF8String: arg3];
-
-    if (completion)
-    {
-        dispatch_async(dispatch_get_main_queue(), ^
-                       {
-                           NSError *error = [ NSError errorFromIndyError: err ];
-                           completion(error, sarg1, sarg2, sarg3);
                        });
     }
 }

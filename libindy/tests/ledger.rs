@@ -9,6 +9,7 @@ use indy::api as api;
 
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
@@ -34,7 +35,6 @@ use utils::types::*;
 use utils::constants::*;
 
 use self::openssl::hash::{MessageDigest, Hasher};
-use self::hex::ToHex;
 use self::sodiumoxide::crypto::secretbox;
 
 mod high_cases {
@@ -410,6 +410,7 @@ mod high_cases {
 
     mod attrib_requests {
         use super::*;
+        use self::hex::ToHex;
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
@@ -805,7 +806,7 @@ mod high_cases {
 
             let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response_str).unwrap();
 
-            let claim_def_data_json = AnoncredsUtils::gvt_claim_def_data_json();
+            let claim_def_data_json = AnoncredsUtils::credential_def_value_json();
 
             let claim_def_request = LedgerUtils::build_claim_def_txn(&did, get_schema_response.result.seq_no.unwrap(),
                                                                      SIGNATURE_TYPE, &claim_def_data_json).unwrap();
@@ -838,7 +839,7 @@ mod high_cases {
             let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response_str).unwrap();
             let schema_seq_no = get_schema_response.result.seq_no.unwrap();
 
-            let claim_def_data_json = AnoncredsUtils::gvt_claim_def_data_json();
+            let claim_def_data_json = AnoncredsUtils::credential_def_value_json();
 
             let claim_def_request = LedgerUtils::build_claim_def_txn(&did, schema_seq_no,
                                                                      SIGNATURE_TYPE, &claim_def_data_json).unwrap();

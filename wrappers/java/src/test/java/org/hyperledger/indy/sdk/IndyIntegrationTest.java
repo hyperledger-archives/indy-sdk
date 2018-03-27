@@ -45,17 +45,13 @@ public class IndyIntegrationTest {
 	protected byte[] SIGNATURE = {20, - 65, 100, - 43, 101, 12, - 59, - 58, - 53, 49, 89, - 36, - 51, - 64, - 32, - 35, 97, 77, - 36, - 66, 90, 60, - 114, 23, 16, - 16, - 67, - 127, 45, - 108, - 11, 8, 102, 95, 95, - 7, 100, 89, 41, - 29, - 43, 25, 100, 1, - 24, - 68, - 11, - 21, - 70, 21, 52, - 80, - 20, 11, 99, 70, - 101, - 97, 89, - 41, - 59, - 17, - 118, 5};
 	protected byte[] ENCRYPTED_MESSAGE = {- 105, 30, 89, 75, 76, 28, - 59, - 45, 105, - 46, 20, 124, - 85, - 13, 109, 29, - 88, - 82, - 8, - 6, - 50, - 84, - 53, - 48, - 49, 56, 124, 114, 82, 126, 74, 99, - 72, - 78, - 117, 96, 60, 119, 50, - 40, 121, 21, 57, - 68, 89};
 	protected byte[] NONCE = {- 14, 102, - 41, - 57, 1, 4, 75, - 46, - 91, 87, 14, 41, - 39, 48, 42, - 126, - 121, 84, - 58, 59, - 27, 51, - 32, - 23};
-	protected String SCHEMA_KEY_TEMPLATE = "{\"name\":\"%s\",\"version\":\"1.0\",\"did\":\"%s\"}";
-	protected String CLAIM_OFFER_TEMPLATE = "{\"issuer_did\":\"%s\", \"schema_key\":%s}";
-	protected String SCHEMA_TEMPLATE = "{\n" +
-			"                    \"seqNo\":%d,\n" +
-			"                    \"dest\":\"%s\",\n" +
-			"                    \"data\": {\n" +
-			"                        \"name\":\"%s\",\n" +
-			"                        \"version\":\"1.0\",\n" +
-			"                        \"attr_names\":%s\n" +
-			"                    }\n" +
-			"                }";
+	protected String DEFAULT_CRED_DEF_CONFIG = "{\"support_revocation\":false}";
+	protected String TAG = "tag1";
+	protected String GVT_SCHEMA_NAME = "gvt";
+	protected String XYZ_SCHEMA_NAME = "xyz";
+	protected String SCHEMA_VERSION = "1.0";
+	protected String GVT_SCHEMA_ATTRIBUTES = "[\"name\", \"age\", \"sex\", \"height\"]";
+	protected String XYZ_SCHEMA_ATTRIBUTES = "[\"status\", \"period\"]";
 
 	protected static final String TRUSTEE_IDENTITY_JSON =
 			new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null).toJson();

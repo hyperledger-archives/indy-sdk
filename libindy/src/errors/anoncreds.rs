@@ -33,8 +33,8 @@ impl fmt::Display for AnoncredsError {
             AnoncredsError::RevocationRegistryFull(ref description) => write!(f, "Revocation registry is full: {}", description),
             AnoncredsError::InvalidUserRevocIndex(ref description) => write!(f, "Invalid revocation index: {}", description),
             AnoncredsError::AccumulatorIsFull(ref description) => write!(f, "Accumulator is full: {}", description),
-            AnoncredsError::ClaimRevoked(ref description) => write!(f, "Claim revoked: {}", description),
-            AnoncredsError::ClaimDefAlreadyExists(ref description) => write!(f, "Claim definition already exists: {}", description),
+            AnoncredsError::ClaimRevoked(ref description) => write!(f, "Credential revoked: {}", description),
+            AnoncredsError::ClaimDefAlreadyExists(ref description) => write!(f, "Credential definition already exists: {}", description),
             AnoncredsError::CommonError(ref err) => err.fmt(f)
         }
     }
