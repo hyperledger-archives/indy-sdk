@@ -1,7 +1,7 @@
 extern crate serde_json;
 
-use utils::error;
 use serde_json::Value;
+use error::issuer_cred::IssuerCredError;
 
 static ISSUER_DID: &'static str = "issuer_did";
 static SEQUENCE_NUMBER: &'static str = "schema_seq_no";
@@ -48,11 +48,13 @@ impl ClaimRequest {
        }
     }
 
-    pub fn from_str(payload:&str) -> Result<ClaimRequest, u32> {
+    pub fn from_str(payload:&str) -> Result<ClaimRequest, IssuerCredError> {
         match serde_json::from_str(payload) {
             Ok(p) => Ok(p),
-            Err(_) => {warn!("{}",error::INVALID_CLAIM_REQUEST.message);
-                        Err(error::INVALID_CLAIM_REQUEST.code_num)},
+            Err(_) => {
+                warn!("{}", IssuerCredError::InvalidCredRequest());
+                Err(IssuerCredError::InvalidCredRequest())
+            }
         }
     }
 }
@@ -137,5 +139,12 @@ mod tests {
         let v = String::from(response).replace("\\\"", "\"");
         let claim_req:ClaimRequest = ClaimRequest::from_str(&v).unwrap();
         assert_eq!(claim_req.issuer_did,"V4SGRU86Z58d6TV7PBUe6f");
+    }
+
+    #[test]
+    fn test_error(){
+        let invalid_json = r#"{bad:json"#;
+        let cred_req = ClaimRequest::from_str(invalid_json);
+        assert_eq!(cred_req.err(), Some(IssuerCredError::InvalidCredRequest()));
     }
 }

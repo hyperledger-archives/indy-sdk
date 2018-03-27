@@ -8,6 +8,7 @@ use connection;
 use disclosed_proof;
 use std::thread;
 use std::ptr;
+use error::ToErrorCode;
 
 /// Create a proof for fulfilling a corresponding proof request
 ///
@@ -48,8 +49,8 @@ pub extern fn vcx_disclosed_proof_create_with_request(command_handle: u32,
             },
             Err(x) => {
                 error!("vcx_disclosed_proof_create_with_request_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(x), 0);
-                cb(command_handle, x, 0);
+                      command_handle, error_string(x.to_error_code()), 0);
+                cb(command_handle, x.to_error_code(), 0);
             },
         };
     });
@@ -100,8 +101,8 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: u32,
             },
             Err(x) => {
                 error!("vcx_disclosed_proof_send_proof_cb(command_handle: {}, rc: {}), source_id: {:?}",
-                      command_handle, error_string(x), source_id);
-                cb(command_handle,x);
+                      command_handle, error_string(x.to_error_code()), source_id);
+                cb(command_handle,x.to_error_code());
             },
         };
     });
@@ -298,8 +299,8 @@ pub extern fn vcx_disclosed_proof_deserialize(command_handle: u32,
             },
             Err(x) => {
                 error!("vcx_disclosed_proof_deserialize_cb(command_handle: {}, rc: {}, proof_handle: {}), source_id: {:?}",
-                       command_handle, error_string(x), 0, "");
-                cb(command_handle, x, 0);
+                       command_handle, error_string(x.to_error_code()), 0, "");
+                cb(command_handle, x.to_error_code(), 0);
             },
         };
     });

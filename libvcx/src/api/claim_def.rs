@@ -8,6 +8,7 @@ use std::thread;
 use std::ptr;
 use claim_def;
 use settings;
+use error::ToErrorCode;
 
 /// Create a new ClaimDef object that can create claim definitions on the ledger
 ///
@@ -69,8 +70,8 @@ pub extern fn vcx_claimdef_create(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_claim_def_create_cb(command_handle: {}, rc: {}, claimdef_handle: {}), source_id: {:?}",
-                      command_handle, error_string(x), 0, "");
-                (x, 0)
+                      command_handle, error_string(x.to_error_code()), 0, "");
+                (x.to_error_code(), 0)
             },
         };
         cb(command_handle, rc, handle);

@@ -30,6 +30,7 @@ use utils::httpclient;
 use utils::constants::SEND_MESSAGE_RESPONSE;
 
 use serde_json::Value;
+use error::ToErrorCode;
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<Claim>  = Default::default();
@@ -82,7 +83,7 @@ impl Claim {
             .retrieve_claim_def("GGBDg1j8bsKmr4h5T9XqYf",
                                 schema_seq_num,
                                 Some(SigTypes::CL),
-                                issuer_did)
+                                issuer_did).map_err(|e| e.to_error_code())
     }
 
     fn _build_request(&self, my_did: &str, their_did: &str) -> Result<ClaimRequest, u32> {

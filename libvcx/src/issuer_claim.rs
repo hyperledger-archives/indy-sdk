@@ -19,6 +19,8 @@ use utils::openssl::encode;
 use utils::httpclient;
 use utils::constants::SEND_MESSAGE_RESPONSE;
 use utils::libindy::anoncreds::{ libindy_issuer_create_claim };
+use error::issuer_cred::IssuerCredError;
+use utils::error::INVALID_JSON;
 
 lazy_static! {
     static ref ISSUER_CLAIM_MAP: Mutex<HashMap<u32, Box<IssuerClaim>>> = Default::default();
@@ -64,41 +66,42 @@ pub struct ClaimOffer {
 }
 
 impl IssuerClaim {
-    fn validate_claim_offer(&self) -> Result<u32, u32> {
+    fn validate_claim_offer(&self) -> Result<u32, IssuerCredError> {
         //TODO: validate claim_attributes against claim_def
         debug!("successfully validated issuer_claim {}", self.handle);
         Ok(error::SUCCESS.code_num)
     }
 
-    fn send_claim_offer(&mut self, connection_handle: u32) -> Result<u32, u32> {
+    fn send_claim_offer(&mut self, connection_handle: u32) -> Result<u32, IssuerCredError> {
         debug!("sending claim offer for issuer_claim handle {} to connection handle {}", self.handle, connection_handle);
         if self.state != VcxStateType::VcxStateInitialized {
             warn!("claim {} has invalid state {} for sending claimOffer", self.handle, self.state as u32);
-            return Err(error::NOT_READY.code_num);
+            return Err(IssuerCredError::NotReadyError())
         }
 
         if connection::is_valid_handle(connection_handle) == false {
             warn!("invalid connection handle ({})", connection_handle);
-            return Err(error::INVALID_CONNECTION_HANDLE.code_num);
+            return Err(IssuerCredError::CommonError(error::INVALID_CONNECTION_HANDLE.code_num));
         }
 
-        self.agent_did = connection::get_agent_did(connection_handle)?;
-        self.agent_vk = connection::get_agent_verkey(connection_handle)?;
-        self.issued_did = connection::get_pw_did(connection_handle)?;
-        self.issued_vk = connection::get_pw_verkey(connection_handle)?;
-        self.remote_vk = connection::get_their_pw_verkey(connection_handle)?;
+        self.agent_did = connection::get_agent_did(connection_handle).map_err(|x| IssuerCredError::CommonError(x))?;
+        self.agent_vk = connection::get_agent_verkey(connection_handle).map_err(|x| IssuerCredError::CommonError(x))?;
+        self.issued_did = connection::get_pw_did(connection_handle).map_err(|x| IssuerCredError::CommonError(x))?;
+        self.issued_vk = connection::get_pw_verkey(connection_handle).map_err(|x| IssuerCredError::CommonError(x))?;
+        self.remote_vk = connection::get_their_pw_verkey(connection_handle).map_err(|x| IssuerCredError::CommonError(x))?;
 
         let claim_offer = self.generate_claim_offer(&self.issued_did)?;
         let payload = match serde_json::to_string(&claim_offer) {
             Ok(p) => p,
-            Err(_) => return Err(error::INVALID_JSON.code_num)
+            Err(_) => return Err(IssuerCredError::CommonError(error::INVALID_JSON.code_num))
         };
 
         debug!("claim offer data: {}", payload);
 
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_MESSAGE_RESPONSE.to_vec()); }
 
-        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &payload, "CLAIM_OFFER")?;
+        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &payload, "CLAIM_OFFER")
+            .map_err(|x| IssuerCredError::CommonError(x))?;
 
         match messages::send_message().to(&self.issued_did)
             .to_vk(&self.issued_vk)
@@ -110,31 +113,30 @@ impl IssuerClaim {
             .send_secure() {
             Err(x) => {
                 warn!("could not send claimOffer: {}", x);
-                return Err(x);
+                return Err(IssuerCredError::CommonError(x));
             },
             Ok(response) => {
-                self.msg_uid = parse_msg_uid(&response[0])?;
+                self.msg_uid = parse_msg_uid(&response[0]).map_err(|ec| IssuerCredError::CommonError(ec))?;
                 self.state = VcxStateType::VcxStateOfferSent;
                 debug!("sent claim offer for: {}", self.handle);
                 return Ok(error::SUCCESS.code_num);
             }
         }
-
     }
 
-    fn send_claim(&mut self, connection_handle: u32) -> Result<u32, u32> {
+    fn send_claim(&mut self, connection_handle: u32) -> Result<u32, IssuerCredError> {
         debug!("sending claim for issuer_claim handle {} to connection handle {}", self.handle, connection_handle);
         if self.state != VcxStateType::VcxStateRequestReceived {
             warn!("claim {} has invalid state {} for sending claim", self.handle, self.state as u32);
-            return Err(error::NOT_READY.code_num);
+            return Err(IssuerCredError::NotReadyError());
         }
 
         if connection::is_valid_handle(connection_handle) == false {
             warn!("invalid connection handle ({}) in send_claim_offer", connection_handle);
-            return Err(error::INVALID_CONNECTION_HANDLE.code_num);
+            return Err(IssuerCredError::InvalidHandle());
         }
 
-        let to = connection::get_pw_did(connection_handle)?;
+        let to = connection::get_pw_did(connection_handle).map_err(|x| IssuerCredError::CommonError(x))?;
         let attrs_with_encodings = self.create_attributes_encodings()?;
         let mut data;
         if settings::test_indy_mode_enabled() {
@@ -142,8 +144,10 @@ impl IssuerClaim {
         } else {
             data = match self.claim_request.clone() {
                 Some(d) => create_claim_payload_using_wallet(&self.claim_id, &d, &attrs_with_encodings, wallet::get_wallet_handle())?,
-                None => { warn!("Unable to create claim payload using the wallet");
-                    return Err(error::INVALID_CLAIM_REQUEST.code_num)},
+                None => {
+                    warn!("Unable to create claim payload using the wallet");
+                    return Err(IssuerCredError::InvalidCredRequest())
+                },
             };
             // append values we need for example 'from_did' and 'claim_id'
             data = append_value(&data, CLAIM_OFFER_ID_KEY, &self.msg_uid)?;
@@ -153,8 +157,9 @@ impl IssuerClaim {
         }
 
         debug!("claim data: {}", data);
-        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &data, "CLAIM")?;
 
+        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &data, "CLAIM")
+            .map_err(|x| IssuerCredError::CommonError(x))?;
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_MESSAGE_RESPONSE.to_vec()); }
 
         match messages::send_message().to(&self.issued_did)
@@ -167,10 +172,10 @@ impl IssuerClaim {
             .send_secure() {
             Err(x) => {
                 warn!("could not send claim: {}", x);
-                return Err(x);
+                return Err(IssuerCredError::CommonError(x));
             },
             Ok(response) => {
-                self.msg_uid = parse_msg_uid(&response[0])?;
+                self.msg_uid = parse_msg_uid(&response[0]).map_err(|ec| IssuerCredError::CommonError(ec))?;
                 self.state = VcxStateType::VcxStateAccepted;
                 debug!("issued claim: {}", self.handle);
                 return Ok(error::SUCCESS.code_num);
@@ -178,12 +183,12 @@ impl IssuerClaim {
         }
     }
 
-    pub fn create_attributes_encodings(&self) -> Result<String, u32> {
+    pub fn create_attributes_encodings(&self) -> Result<String, IssuerCredError> {
         let mut attributes: serde_json::Value = match serde_json::from_str(&self.claim_attributes) {
             Ok(x) => x,
             Err(x) => {
                 warn!("Invalid Json for Attribute data");
-                return Err(error::INVALID_JSON.code_num)
+                return Err(IssuerCredError::CommonError(INVALID_JSON.code_num))
             }
         };
 
@@ -191,7 +196,7 @@ impl IssuerClaim {
             Some(x) => x,
             None => {
                 warn!("Invalid Json for Attribute data");
-                return Err(error::INVALID_JSON.code_num)
+                return Err(IssuerCredError::CommonError(INVALID_JSON.code_num))
             }
         };
 
@@ -200,7 +205,7 @@ impl IssuerClaim {
                 Some(x) => x,
                 None => {
                     warn!("Invalid Json for Attribute data");
-                    return Err(error::INVALID_JSON.code_num)
+                    return Err(IssuerCredError::CommonError(INVALID_JSON.code_num))
                 }
             };
             let i = list[0].clone();
@@ -208,10 +213,10 @@ impl IssuerClaim {
                 Some(v) => v,
                 None => {
                     warn!("Cannot encode attribute: {}", error::INVALID_ATTRIBUTES_STRUCTURE.message);
-                    return Err(error::INVALID_ATTRIBUTES_STRUCTURE.code_num)
+                    return Err(IssuerCredError::CommonError(error::INVALID_ATTRIBUTES_STRUCTURE.code_num))
                 },
             };
-            let encoded = encode(value)?;
+            let encoded = encode(value).map_err(|x| IssuerCredError::CommonError(x))?;
             let encoded_as_value: serde_json::Value = serde_json::Value::from(encoded);
             list.push(encoded_as_value);
         }
@@ -220,11 +225,13 @@ impl IssuerClaim {
             Ok(x) => Ok(x),
             Err(x) => {
                 warn!("Invalid Json for Attribute data");
-                Err(error::INVALID_JSON.code_num)
+                Err(IssuerCredError::CommonError(INVALID_JSON.code_num))
             }
         }
     }
 
+    // TODO: The error arm of this Result is never used in any calling functions.
+    // So currently there is no way to test the error status.
     fn get_claim_offer_status(&mut self) -> Result<u32, u32> {
         debug!("updating state for claim offer: {}", self.handle);
         if self.state == VcxStateType::VcxStateRequestReceived {
@@ -255,8 +262,7 @@ impl IssuerClaim {
     }
 
     fn get_source_id(&self) -> &String { &self.source_id }
-
-    fn generate_claim_offer(&self, to_did: &str) -> Result<ClaimOffer, u32> {
+    fn generate_claim_offer(&self, to_did: &str) -> Result<ClaimOffer, IssuerCredError> {
         let attr_map = convert_to_map(&self.claim_attributes)?;
 
         Ok(ClaimOffer {
@@ -274,19 +280,20 @@ impl IssuerClaim {
     }
 }
 
-pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRequest, claim_data: &str, wallet_handle: i32) -> Result< String, u32> {
+pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRequest,
+                                             claim_data: &str, wallet_handle: i32) -> Result< String, IssuerCredError> {
     debug!("claim data: {}", claim_data);
 
     if claim_req.blinded_ms.is_none() {
         error!("No Master Secret in the Claim Request!");
-        return Err(error::INVALID_MASTER_SECRET.code_num);
+        return Err(IssuerCredError::CommonError(error::INVALID_MASTER_SECRET.code_num));
     }
 
     let claim_req_str = match serde_json::to_string(claim_req) {
         Ok(s) => s,
         Err(x) => {
             error!("Claim Request is not properly formatted/formed: {}", x);
-            return Err(error::INVALID_JSON.code_num);
+            return Err(IssuerCredError::CommonError(error::INVALID_JSON.code_num));
         },
     };
     debug!("claim request: {}", claim_req_str);
@@ -294,7 +301,7 @@ pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRe
     let (_, xclaim_json) = libindy_issuer_create_claim(wallet_handle,
                                                        &claim_req_str,
                                                        claim_data,
-                                                       -1)?;
+                                                       -1).map_err(|x| IssuerCredError::CommonError(x))?;
     debug!("xclaim_json: {:?}", xclaim_json);
     Ok(xclaim_json)
 }
@@ -320,11 +327,12 @@ fn parse_claim_req_payload(payload: &Vec<u8>) -> Result<ClaimRequest, u32> {
     Ok(my_claim_req)
 }
 
+// TODO: The error arm of this Result is never thrown.  aka this method is never Err.
 pub fn issuer_claim_create(schema_seq_no: u32,
                            source_id: String,
                            issuer_did: String,
                            claim_name: String,
-                           claim_data: String) -> Result<u32, u32> {
+                           claim_data: String) -> Result<u32, IssuerCredError> {
 
     let new_handle = rand::thread_rng().gen::<u32>();
 
@@ -372,10 +380,10 @@ pub fn get_state(handle: u32) -> u32 {
     }
 }
 
-pub fn release(handle: u32) -> u32 {
+pub fn release(handle: u32) -> Result< u32, IssuerCredError> {
     match ISSUER_CLAIM_MAP.lock().unwrap().remove(&handle) {
-        Some(t) => error::SUCCESS.code_num,
-        None => error::INVALID_ISSUER_CLAIM_HANDLE.code_num,
+        Some(t) => Ok(error::SUCCESS.code_num),
+        None => Err(IssuerCredError::InvalidHandle()),
     }
 }
 
@@ -392,10 +400,10 @@ pub fn is_valid_handle(handle: u32) -> bool {
     }
 }
 
-pub fn to_string(handle: u32) -> Result<String,u32> {
+pub fn to_string(handle: u32) -> Result<String, IssuerCredError> {
     match ISSUER_CLAIM_MAP.lock().unwrap().get(&handle) {
         Some(c) => Ok(serde_json::to_string(&c).unwrap().to_owned()),
-        None => Err(error::INVALID_ISSUER_CLAIM_HANDLE.code_num),
+        None => Err(IssuerCredError::InvalidHandle()),
     }
 }
 
@@ -419,46 +427,68 @@ pub fn from_string(claim_data: &str) -> Result<u32,u32> {
     Ok(new_handle)
 }
 
-pub fn send_claim_offer(handle: u32, connection_handle: u32) -> Result<u32,u32> {
+pub fn send_claim_offer(handle: u32, connection_handle: u32) -> Result<u32,IssuerCredError> {
     match ISSUER_CLAIM_MAP.lock().unwrap().get_mut(&handle) {
         Some(c) => Ok(c.send_claim_offer(connection_handle)?),
-        None => Err(error::INVALID_ISSUER_CLAIM_HANDLE.code_num),
+        None => Err(IssuerCredError::InvalidHandle()),
     }
 }
 
-pub fn send_claim(handle: u32, connection_handle: u32) -> Result<u32,u32> {
+pub fn send_claim(handle: u32, connection_handle: u32) -> Result<u32,IssuerCredError> {
     match ISSUER_CLAIM_MAP.lock().unwrap().get_mut(&handle) {
         Some(c) => Ok(c.send_claim(connection_handle)?),
-        None => Err(error::INVALID_ISSUER_CLAIM_HANDLE.code_num),
+        None => Err(IssuerCredError::InvalidHandle()),
     }
 }
 
-pub fn set_claim_request(handle: u32, claim_request: ClaimRequest) -> Result<u32,u32>{
+fn get_offer_details(response: &str) -> Result<String, IssuerCredError> {
+    match serde_json::from_str(response) {
+        Ok(json) => {
+            let json: serde_json::Value = json;
+            let detail = match json["uid"].as_str(){
+                Some(x) => x,
+                None => {
+                    warn!("response had no uid");
+                    return Err(IssuerCredError::CommonError(error::INVALID_JSON.code_num))
+                },
+            };
+            Ok(String::from(detail))
+        },
+        Err(_) => {
+            warn!("get_messages called without a valid response from server");
+            Err(IssuerCredError::CommonError(error::INVALID_JSON.code_num))
+        },
+    }
+}
+
+pub fn set_claim_request(handle: u32, claim_request: ClaimRequest) -> Result<u32,IssuerCredError>{
     match ISSUER_CLAIM_MAP.lock().unwrap().get_mut(&handle) {
         Some(c) => {c.set_claim_request(claim_request);
             Ok(error::SUCCESS.code_num)},
-        None => Err(error::INVALID_ISSUER_CLAIM_HANDLE.code_num),
+        None => Err(IssuerCredError::InvalidHandle()),
     }
 }
 
-pub fn append_value(original_payload: &str,key: &str,  value: &str) -> Result<String, u32> {
+pub fn append_value(original_payload: &str,key: &str,  value: &str) -> Result<String, IssuerCredError> {
     use serde_json::Value;
     let mut payload_json: Value = match serde_json::from_str(original_payload) {
         Ok(s) => s,
-        Err(_) => return Err(error::INVALID_JSON.code_num),
+        Err(_) => return Err(IssuerCredError::CommonError(error::INVALID_JSON.code_num)),
     };
     payload_json[key] = json!(&value);
     match serde_json::to_string(&payload_json) {
         Ok(s) => Ok(s),
-        Err(_) => Err(error::INVALID_JSON.code_num),
+        Err(_) => return Err(IssuerCredError::CommonError(error::INVALID_JSON.code_num)),
     }
 }
 
-pub fn convert_to_map(s:&str) -> Result<serde_json::Map<String, serde_json::Value>, u32>{
+pub fn convert_to_map(s:&str) -> Result<serde_json::Map<String, serde_json::Value>, IssuerCredError>{
     let v:serde_json::Map<String, serde_json::Value> = match serde_json::from_str(s) {
         Ok(m) => m,
-        Err(_) => { warn!("{}", error::INVALID_ATTRIBUTES_STRUCTURE.message);
-            return Err(error::INVALID_ATTRIBUTES_STRUCTURE.code_num)},
+        Err(_) => {
+            warn!("{}", error::INVALID_ATTRIBUTES_STRUCTURE.message);
+            return Err(IssuerCredError::CommonError(error::INVALID_ATTRIBUTES_STRUCTURE.code_num))
+        },
     };
     Ok(v)
 }
@@ -472,6 +502,7 @@ pub fn get_source_id(handle: u32) -> Result<String, u32> {
 
 #[cfg(test)]
 pub mod tests {
+    use super::*;
     use settings;
     use connection::build_connection;
     use utils::libindy::{ set_libindy_rc };
@@ -479,7 +510,8 @@ pub mod tests {
     use utils::libindy::anoncreds::libindy_create_and_store_claim_def;
     use claim_request::ClaimRequest;
     use utils::constants::*;
-    use super::*;
+    use error::issuer_cred::IssuerCredError;
+    use error::ToErrorCode;
 
     static DEFAULT_CLAIM_NAME: &str = "Claim";
     static DEFAULT_CLAIM_ID: &str = "defaultClaimId";
@@ -617,7 +649,7 @@ pub mod tests {
                                          "{\"attr\":\"value\"}".to_owned()).unwrap();
 
         set_libindy_rc(error::TIMEOUT_LIBINDY_ERROR.code_num);
-        assert_eq!(send_claim_offer(handle, connection_handle), Err(error::TIMEOUT_LIBINDY_ERROR.code_num));
+        assert_eq!(send_claim_offer(handle, connection_handle), Err(IssuerCredError::CommonError(error::TIMEOUT_LIBINDY_ERROR.code_num)));
         assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
         assert_eq!(get_offer_uid(handle).unwrap(), "");
 
@@ -648,8 +680,8 @@ pub mod tests {
         match claim.send_claim(connection_handle) {
             Ok(_) => assert_eq!(0, 0),
             Err(x) => {
-                println!("error message: {}", error::error_message(&x));
-                assert_eq!(x, 0)
+                println!("error message: {}", error::error_message(&x.to_error_code()));
+                assert_eq!(x.to_error_code(), 0)
             },
         };
         assert_eq!(claim.msg_uid, "ntc2ytb");
@@ -679,7 +711,7 @@ pub mod tests {
         match claim.send_claim(connection_handle) {
             Ok(_) => assert_eq!(0, 1),
             Err(x) => {
-                assert_eq!(x, error::TIMEOUT_LIBINDY_ERROR.code_num)
+                assert_eq!(x, IssuerCredError::CommonError(error::TIMEOUT_LIBINDY_ERROR.code_num))
             },
         };
         assert_eq!(claim.msg_uid, "1234");
@@ -688,7 +720,7 @@ pub mod tests {
         match claim.send_claim(connection_handle) {
             Ok(_) => assert_eq!(0, 0),
             Err(x) => {
-                assert_eq!(x, 0)
+                assert_eq!(x.to_error_code(), 0)
             },
         };
         assert_eq!(claim.msg_uid, "ntc2ytb");
@@ -705,7 +737,7 @@ pub mod tests {
                                          "{\"attr\":\"value\"}".to_owned()).unwrap();
         let string = to_string(handle).unwrap();
         assert!(!string.is_empty());
-        release(handle);
+        assert!(release(handle).is_ok());
         let new_handle = from_string(&string).unwrap();
         let new_string = to_string(new_handle).unwrap();
         assert_eq!(new_string, string);
@@ -867,7 +899,7 @@ pub mod tests {
                 error!("basic_add_attribute_encoding test should raise error.");
                 assert_ne!(1, 1);
             },
-            Err(e) => assert_eq!(error::INVALID_JSON.code_num, e),
+            Err(e) => assert_eq!(e, IssuerCredError::CommonError(error::INVALID_JSON.code_num)),
         }
     }
 
@@ -886,8 +918,8 @@ pub mod tests {
         match claim.send_claim(connection_handle) {
             Ok(_) => assert_eq!(0, 0),
             Err(x) => {
-                println!("error message: {}", error::error_message(&x));
-                assert_eq!(x, 0)
+                println!("error message: {}", error::error_message(&x.to_error_code()));
+                assert_eq!(x.to_error_code(), 0)
             },
         };
         assert_eq!(claim.state, VcxStateType::VcxStateAccepted);
@@ -904,10 +936,19 @@ pub mod tests {
         let h4 = issuer_claim_create(0,"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
         let h5 = issuer_claim_create(0,"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
         release_all();
-        assert_eq!(release(h1),error::INVALID_ISSUER_CLAIM_HANDLE.code_num);
-        assert_eq!(release(h2),error::INVALID_ISSUER_CLAIM_HANDLE.code_num);
-        assert_eq!(release(h3),error::INVALID_ISSUER_CLAIM_HANDLE.code_num);
-        assert_eq!(release(h4),error::INVALID_ISSUER_CLAIM_HANDLE.code_num);
-        assert_eq!(release(h5),error::INVALID_ISSUER_CLAIM_HANDLE.code_num);
+        assert_eq!(release(h1),Err(IssuerCredError::InvalidHandle()));
+        assert_eq!(release(h2),Err(IssuerCredError::InvalidHandle()));
+        assert_eq!(release(h3),Err(IssuerCredError::InvalidHandle()));
+        assert_eq!(release(h4),Err(IssuerCredError::InvalidHandle()));
+        assert_eq!(release(h5),Err(IssuerCredError::InvalidHandle()));
+    }
+
+    #[test]
+    fn test_errors(){
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        let invalid_handle = 478620;
+        assert_eq!(to_string(invalid_handle).err(), Some(IssuerCredError::InvalidHandle()));
+        assert_eq!(release(invalid_handle).err(), Some(IssuerCredError::InvalidHandle()));
     }
 }

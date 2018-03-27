@@ -8,6 +8,7 @@ use proof;
 use connection;
 use std::thread;
 use std::ptr;
+use error::ToErrorCode;
 
 /// Create a new Proof object that requests a proof for an enterprise
 ///
@@ -55,8 +56,8 @@ pub extern fn vcx_proof_create(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_proof_create_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
-                      command_handle, error_string(x), 0, proof::get_source_id(x).unwrap_or_default());
-                (x, 0)
+                      command_handle, error_string(x.to_error_code()), 0, proof::get_source_id(x.to_error_code()).unwrap_or_default());
+                (x.to_error_code(), 0)
             },
         };
         cb(command_handle, rc, handle);
@@ -159,8 +160,8 @@ pub extern fn vcx_proof_serialize(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_proof_serialize_cb(command_handle: {}, proof_handle: {}, rc: {}, state: {}), source_id: {:?}",
-                      command_handle, proof_handle, error_string(x), "null", source_id);
-                cb(command_handle, x, ptr::null_mut());
+                      command_handle, proof_handle, error_string(x.to_error_code()), "null", source_id);
+                cb(command_handle, x.to_error_code(), ptr::null_mut());
             },
         };
 
@@ -202,8 +203,8 @@ pub extern fn vcx_proof_deserialize(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_proof_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
-                      command_handle, error_string(x), 0, "");
-                (x, 0)
+                      command_handle, error_string(x.to_error_code()), 0, "");
+                (x.to_error_code(), 0)
             },
         };
         cb(command_handle, rc, handle);
@@ -223,7 +224,10 @@ pub extern fn vcx_proof_deserialize(command_handle: u32,
 pub extern fn vcx_proof_release(proof_handle: u32) -> u32 {
     info!("vcx_proof_release(proof_handle: {}), source_id: {:?}",
           proof_handle, proof::get_source_id(proof_handle).unwrap_or_default());
-    proof::release(proof_handle)
+    match proof::release(proof_handle) {
+        Ok(x) => x,
+        Err(e) => e.to_error_code(),
+    }
 }
 
 /// Sends a proof request to pairwise connection
@@ -263,8 +267,8 @@ pub extern fn vcx_proof_send_request(command_handle: u32,
                 x
             },
             Err(x) => {
-                warn!("vcx_proof_send_request_cb(command_handle: {}, rc: {}, proof_handle: {})", command_handle, x, proof_handle);
-                x
+                warn!("vcx_proof_send_request_cb(command_handle: {}, rc: {}, proof_handle: {})", command_handle, x.to_error_code(), proof_handle);
+                x.to_error_code()
             },
         };
 
@@ -315,7 +319,7 @@ pub extern fn vcx_get_proof(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_get_proof_cb(command_handle: {}, proof_handle: {}, rc: {}, proof: {})", command_handle, proof_handle, x, "null");
-                cb(command_handle, x, proof::get_proof_state(proof_handle), ptr::null_mut());
+                cb(command_handle, x.to_error_code(), proof::get_proof_state(proof_handle), ptr::null_mut());
             },
         };
     });
@@ -373,7 +377,7 @@ mod tests {
     }
 
     extern "C" fn no_proof_cb(handle: u32, err: u32, proof_state: u32, proof_string: *const c_char) {
-        assert_eq!(err, error::INVALID_PROOF.code_num);
+        assert_eq!(err, error::INVALID_PROOF_HANDLE.code_num);
         assert!(proof_string.is_null());
         assert_eq!(proof_state, ProofStateType::ProofUndefined as u32);
         println!("successfully called no_proof_cb: null");
