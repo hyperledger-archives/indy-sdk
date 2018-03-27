@@ -87,10 +87,10 @@ Once we have an identity on the ledger, we can query it.
 Copy the contents of [step5.py](step5.py) into
 `write_did.py` on top of the `Step 5 code goes here` placeholder comment.
 
-Only a handful of lines of code matter here; the rest of this block is
-comments and cleanup (which you should not omit!). You should see similarities between the way this
-query "transaction" and the preceding write transaction are bundled, sent,
-and awaited.
+Only a handful of lines of code matter to our goal here; the rest of
+this block is comments and boilerplate cleanup (which you should not omit!).
+You should see similarities between the way this query "transaction" and
+the preceding write transaction are bundled, sent, and awaited.
 
 ## Step 6
 
