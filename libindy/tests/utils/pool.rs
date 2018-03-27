@@ -3,13 +3,10 @@ extern crate indy_crypto;
 extern crate serde_json;
 
 use indy::api::ErrorCode;
-use indy::api::pool::{indy_create_pool_ledger_config, indy_delete_pool_ledger_config};
-#[cfg(feature = "local_nodes_pool")]
-use indy::api::pool::{indy_close_pool_ledger, indy_open_pool_ledger, indy_refresh_pool_ledger};
+use indy::api::pool::*;
 
 use utils::callback::CallbackUtils;
 use utils::environment::EnvironmentUtils;
-use utils::timeout::TimeoutUtils;
 use self::indy_crypto::utils::json::JsonEncodable;
 
 use std::fs;
@@ -18,7 +15,6 @@ use std::io::Write;
 #[cfg(feature = "local_nodes_pool")]
 use std::ptr::null;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::channel;
 use utils::types::{Response, ResponseType};
 
 #[derive(Serialize, Deserialize)]
@@ -124,13 +120,7 @@ impl PoolUtils {
     }
 
     pub fn create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Result<(), ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err| {
-            sender.send(err).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_create_pool_ledger_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let pool_name = CString::new(pool_name).unwrap();
         let pool_config_str = pool_config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
@@ -140,29 +130,12 @@ impl PoolUtils {
                                                  if pool_config.is_some() { pool_config_str.as_ptr() } else { null() },
                                                  cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let err = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(())
+        super::results::result_to_empty(err, receiver)
     }
 
     #[cfg(feature = "local_nodes_pool")]
     pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<i32, ErrorCode> {
-        let (sender, receiver) = channel();
-
-
-        let cb = Box::new(move |err, pool_handle| {
-            sender.send((err, pool_handle)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_open_pool_ledger_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_i32();
 
         let pool_name = CString::new(pool_name).unwrap();
         let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
@@ -172,17 +145,7 @@ impl PoolUtils {
                                         if config.is_some() { config_str.as_ptr() } else { null() },
                                         cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, pool_handle) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(pool_handle)
+        super::results::result_to_int(err, receiver)
     }
 
     pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, ErrorCode> {
@@ -193,55 +156,29 @@ impl PoolUtils {
     }
 
     pub fn refresh(pool_handle: i32) -> Result<(), ErrorCode> {
-        let (sender, receiver) = channel();
-        let (command_handle, cb) = CallbackUtils::closure_to_refresh_pool_ledger_cb(
-            Box::new(move |res| sender.send(res).unwrap()));
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
-        let res = indy_refresh_pool_ledger(command_handle, pool_handle, cb);
-        if res != ErrorCode::Success {
-            return Err(res);
-        }
-        let res = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-        if res != ErrorCode::Success {
-            return Err(res);
-        }
+        let err = indy_refresh_pool_ledger(command_handle, pool_handle, cb);
 
-        Ok(())
+        super::results::result_to_empty(err, receiver)
     }
 
     pub fn close(pool_handle: i32) -> Result<(), ErrorCode> {
-        let (sender, receiver) = channel();
-        let (command_handle, cb) = CallbackUtils::closure_to_close_pool_ledger_cb(
-            Box::new(move |res| sender.send(res).unwrap()));
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
-        let res = indy_close_pool_ledger(command_handle, pool_handle, cb);
-        if res != ErrorCode::Success {
-            return Err(res);
-        }
-        let res = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-        if res != ErrorCode::Success {
-            return Err(res);
-        }
+        let err = indy_close_pool_ledger(command_handle, pool_handle, cb);
 
-        Ok(())
+        super::results::result_to_empty(err, receiver)
     }
 
     pub fn delete(pool_name: &str) -> Result<(), ErrorCode> {
-        let (sender, receiver) = channel();
-        let (cmd_id, cb) = CallbackUtils::closure_to_delete_pool_ledger_config_cb(Box::new(
-            move |res| sender.send(res).unwrap()));
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let pool_name = CString::new(pool_name).unwrap();
 
-        let res = indy_delete_pool_ledger_config(cmd_id, pool_name.as_ptr(), cb);
-        if res != ErrorCode::Success {
-            return Err(res)
-        }
-        let res = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-        if res != ErrorCode::Success {
-            return Err(res)
-        }
-        Ok(())
+        let err = indy_delete_pool_ledger_config(command_handle, pool_name.as_ptr(), cb);
+
+        super::results::result_to_empty(err, receiver)
     }
 
     pub fn get_req_id() -> u64 {
