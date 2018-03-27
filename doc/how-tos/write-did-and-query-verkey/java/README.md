@@ -1,7 +1,7 @@
 # Write a DID and Query Its Verkey
-Indy-SDK Developer Walkthrough #1, Python Edition
+Indy-SDK Developer Walkthrough #1, Java Edition
 
-[ [Java](../java/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
+[ [Python](../python/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
 
 
 ## Prerequisites
@@ -13,10 +13,10 @@ Setup your workstation and indy development VM. See [prerequisites](../../prereq
 
 ### Step 1
 
-In your normal workstation OS (not the VM), open a python editor of your
-choice and paste the code from [template.py](template.py)
+In your normal workstation OS (not the VM), open a java editor of your
+choice and paste the code from [template.java](template.java)
 into a new doc. We will be modifying this code in later steps. Save the
-doc as `write_did.py`
+doc as `WriteDIDAndQueryVerkey.java`
 
 This is a very simple app framework into which you'll plug the code
 you'll be writing.
@@ -34,9 +34,9 @@ material generated during the tutorial.
 
 ![more info on wallets](../wallet-slide.png)
 
-Copy the contents of [step2.py](step2.py) into
-`write_did.py` on top of the `Step 2 code goes here` placeholder comment.
-Save the updated version of `write_did.py`.
+Copy the contents of [step2.java](step2.java) into
+`WriteDIDAndQueryVerkey.java` on top of the `Step 2 code goes here` placeholder comment.
+Save the updated version of `WriteDIDAndQueryVerkey.java`.
 
 Study the changes. Scaffolding code like this is likely to appear in anything
 that uses indy.
@@ -44,8 +44,8 @@ that uses indy.
 ### Step 3
 
 Now we need to put some DIDs and keys in our identity
-wallet. Copy the contents of [step3.py](step3.py) into
-`write_did.py` on top of the `Step 3 code goes here` placeholder comment.
+wallet. Copy the contents of [step3.java](step3.java) into
+`WriteDIDAndQueryVerkey.java` on top of the `Step 3 code goes here` placeholder comment.
 
 Study the changes.
 
@@ -77,15 +77,15 @@ would not have known seeds.
 Now that preparations are complete, we can finally write the DID and verkey
 for our trust anchor identity to the ledger.
 
-Copy the contents of [step4.py](step4.py) into
-`write_did.py` on top of the `Step 4 code goes here` placeholder comment.
+Copy the contents of [step4.java](step4.java) into
+`WriteDIDAndQueryVerkey.java` on top of the `Step 4 code goes here` placeholder comment.
 
 ## Step 5
 
 Once we have an identity on the ledger, we can query it.
 
-Copy the contents of [step5.py](step5.py) into
-`write_did.py` on top of the `Step 5 code goes here` placeholder comment.
+Copy the contents of [step5.java](step5.java) into
+`WriteDIDAndQueryVerkey.java` on top of the `Step 5 code goes here` placeholder comment.
 
 Only a handful of lines of code matter here; the rest of this block is
 comments and cleanup (which you should not omit!). You should see similarities between the way this
@@ -103,7 +103,7 @@ Now that you have a trust anchor identity, you can write or query
 any number of additional identities to the ledger, with just a handful of
 lines of code. Try creating some.
 
-You might try the ["Rotate a Key"](../../rotate-key/python/README.md)
+You might try the ["Rotate a Key"](../../rotate-key/java/README.md)
 how-to, which can be done in only one step one you complete this one.
 
 You could also try to create a new steward identity without a seed, or
