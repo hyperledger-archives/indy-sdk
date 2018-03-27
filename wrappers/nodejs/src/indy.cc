@@ -167,7 +167,7 @@ class IndyCallback : public Nan::AsyncResource {
             case CB_STRING_BUFFER:
                 tuple = Nan::New<v8::Array>();
                 tuple->Set(0, Nan::New<v8::String>(icb->str0).ToLocalChecked());
-                tuple->Set(0, Nan::NewBuffer(icb->buffer0data, icb->buffer0len).ToLocalChecked());
+                tuple->Set(1, Nan::NewBuffer(icb->buffer0data, icb->buffer0len).ToLocalChecked());
                 argv[1] = tuple;
                 break;
             case CB_STRING_STRING:
