@@ -6,6 +6,7 @@ use utils::error;
 use utils::error::error_string;
 use std::ptr;
 use std::thread;
+use error::ToErrorCode;
 use connection::{get_source_id, build_connection, build_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details};
 
 /**
@@ -40,8 +41,9 @@ pub extern fn vcx_connection_create(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(x), 0);
-                cb(command_handle, x, 0)
+                    //TODO remove to_error_code()
+                      command_handle, error_string(x.to_error_code()), 0);
+                cb(command_handle, x.to_error_code(), 0)
             },
         };
     });
@@ -75,7 +77,7 @@ pub extern fn vcx_connection_create_with_invite(command_handle: u32,
     thread::spawn(move|| {
         match build_connection_with_invite(&source_id, &invite_details) {
             Ok(handle) => cb(command_handle, error::SUCCESS.code_num, handle),
-            Err(x) => cb(command_handle, x, 0),
+            Err(x) => cb(command_handle, x.to_error_code(), 0),
         };
     });
 
@@ -140,9 +142,9 @@ pub extern fn vcx_connection_connect(command_handle:u32,
                 }
             },
             Err(x) => {
-                warn!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
-                      command_handle, connection_handle, error_string(x), "null", source_id);
-                cb(command_handle,x, ptr::null_mut())
+                warn!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}, source_id: {})",
+                      command_handle, connection_handle, x.to_string(), "null", source_id);
+                cb(command_handle,x.to_error_code(), ptr::null_mut())
             },
         };
     });
@@ -227,10 +229,9 @@ pub extern fn vcx_connection_deserialize(command_handle: u32,
                 (error::SUCCESS.code_num, x)
             },
             Err(x) => {
-                let source_id = get_source_id(x).unwrap_or_default();
-                warn!("vcx_connection_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
-                      command_handle, error_string(x), 0, source_id);
-                (x, 0)
+                warn!("vcx_connection_deserialize_cb(command_handle: {}, rc: {}, handle: {} )",
+                      command_handle, error_string(x.to_error_code()), 0);
+                (x.to_error_code(), 0)
             },
         };
 
@@ -277,8 +278,9 @@ pub extern fn vcx_connection_update_state(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
-                      command_handle, error_string(x), connection_handle, get_state(connection_handle), source_id);
-                x
+                      // TODO: Refactor Error
+                      command_handle, error_string(x.to_error_code()), connection_handle, get_state(connection_handle), source_id);
+                x.to_error_code()
             },
         };
         let state = get_state(connection_handle);
@@ -352,9 +354,9 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                warn!("vcx_connection_invite_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
-                      command_handle, connection_handle, error_string(x), "null", source_id);
-                cb(command_handle, x, ptr::null_mut());
+                warn!("vcx_connection_invite_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}, source_id: {:?})",
+                      command_handle, connection_handle, error_string(x.to_error_code()), "null", source_id);
+                cb(command_handle, x.to_error_code(), ptr::null_mut());
             }
         }
     });
@@ -373,7 +375,10 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
 pub extern fn vcx_connection_release(connection_handle: u32) -> u32 {
     let source_id = get_source_id(connection_handle).unwrap_or_default();
     info!("vcx_connection_release(connection_handle: {}), source_id: {:?}", connection_handle, source_id);
-    release(connection_handle)
+    match release(connection_handle) {
+        Ok(s) => s,
+        Err(e) => e.to_error_code(),
+    }
 }
 
 #[cfg(test)]

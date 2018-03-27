@@ -8,6 +8,7 @@ use std::thread;
 use std::ptr;
 use schema;
 use settings;
+use error::ToErrorCode;
 
 /// Create a new Schema object that can create or look up schemas on the ledger
 ///
@@ -54,9 +55,9 @@ pub extern fn vcx_schema_create(command_handle: u32,
                 (error::SUCCESS.code_num, x)
             },
             Err(x) => {
-                warn!("vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
-                      command_handle, error_string(x), 0, &source_id);
-                (x, 0) },
+                warn!("vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {}, source_id: {:?})",
+                      command_handle, error_string(x.to_error_code()), 0, source_id);
+                (x.to_error_code(), 0) },
         };
 
         cb(command_handle, rc, handle);
@@ -101,8 +102,8 @@ pub extern fn vcx_schema_serialize(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}), source_id: {:?}",
-                      command_handle, schema_handle, error_string(x), "null", source_id);
-                cb(command_handle, x, ptr::null_mut());
+                      command_handle, schema_handle, error_string(x.to_error_code()), "null", source_id);
+                cb(command_handle, x.to_error_code(), ptr::null_mut());
             },
         };
 
@@ -142,8 +143,8 @@ pub extern fn vcx_schema_deserialize(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
-                      command_handle, error_string(x), 0, "");
-                (x, 0)
+                      command_handle, error_string(x.to_error_code()), 0, "");
+                (x.to_error_code(), 0)
             },
         };
         cb(command_handle, rc, handle);
@@ -163,7 +164,10 @@ pub extern fn vcx_schema_deserialize(command_handle: u32,
 pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
     info!("vcx_schema_release(schema_handle: {}), source_id: {:?}",
           schema_handle, schema::get_source_id(schema_handle).unwrap_or_default());
-    schema::release(schema_handle)
+    match schema::release(schema_handle) {
+        Ok(x) => x,
+        Err(e) => e.to_error_code(),
+    }
 }
 
 /// Retrieves schema's sequence number
@@ -195,8 +199,8 @@ pub extern fn vcx_schema_get_sequence_no(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_schema_get_sequence_no_cb(command_handle: {}, schema_handle: {}, rc: {}, schema_seq_no: {})",
-                      command_handle, schema_handle, error_string(x), 0);
-                (0, x)
+                      command_handle, schema_handle, error_string(x.to_error_code()), 0);
+                (0, x.to_error_code())
             },
         };
         cb(command_handle, rc, schema_no);
@@ -236,8 +240,8 @@ pub extern fn vcx_schema_get_attributes(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_schema_get_attributes_cb(command_handle: {}, rc: {}, handle: {}, attrs: {})",
-                      command_handle, error_string(x), 0, "");
-                cb(command_handle, x, 0, ptr::null_mut());
+                      command_handle, error_string(x.to_error_code()), 0, "");
+                cb(command_handle, x.to_error_code(), 0, ptr::null_mut());
             },
         };
 

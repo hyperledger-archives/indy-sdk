@@ -1,17 +1,17 @@
 use messages::proofs::proof_message::{ ProofMessage, Attr };
 use messages::proofs::proof_request::{ ProofRequestData };
 use std::collections::HashMap;
-use utils::error;
+use error::proof::ProofError;
 
 
-pub fn proof_compliance(request: &ProofRequestData, proof: &ProofMessage) -> Result<(), u32> {
+pub fn proof_compliance(request: &ProofRequestData, proof: &ProofMessage) -> Result<(), ProofError> {
     debug!("starting vcx proof verification");
 
     verify_requested_attributes(request, proof)?;
     verify_requested_predicates(request, proof)
 }
 
-fn verify_requested_predicates(request: &ProofRequestData, proof: &ProofMessage) -> Result<(), u32> {
+fn verify_requested_predicates(request: &ProofRequestData, proof: &ProofMessage) -> Result<(), ProofError> {
     let provided_predicates = &proof.requested_proof.predicates;
     let requested_predicates = &request.requested_predicates;
 
@@ -20,7 +20,7 @@ fn verify_requested_predicates(request: &ProofRequestData, proof: &ProofMessage)
             Some(uuid) => uuid,
             None => {
                 warn!("Proof Compliance: requested predicate id not found in proof");
-                return Err(error::FAILED_PROOF_COMPLIANCE.code_num);
+                return Err(ProofError::FailedProofCompliance())
             }
         };
 
@@ -28,10 +28,12 @@ fn verify_requested_predicates(request: &ProofRequestData, proof: &ProofMessage)
             Some(x) => x,
             None => {
                 warn!("Proof Compliance: proof id not found in proofs");
-                return Err(error::FAILED_PROOF_COMPLIANCE.code_num);
+                return Err(ProofError::FailedProofCompliance())
             }
         };
-        let proved_predicates = proof_data.proof.primary_proof.get_predicates_from_claim(proof_id)?;
+        let proved_predicates = proof_data.proof.primary_proof
+            .get_predicates_from_claim(proof_id)
+            .map_err(|ec| ProofError::ProofMessageError(ec))?;
         let predicate = proved_predicates.iter().find(|predicate| {
             predicate.attr_info.clone().unwrap_or(Attr::new()).name == requested_predicate.attr_name
         });
@@ -43,21 +45,22 @@ fn verify_requested_predicates(request: &ProofRequestData, proof: &ProofMessage)
 
                 if !check_value(requested_predicate.issuer_did.clone(),
                                &proof_data.issuer_did) {
-                    return Err(error::FAILED_PROOF_COMPLIANCE.code_num)
+                    return Err(ProofError::FailedProofCompliance())
                 }
 
                 if !check_value(requested_predicate.schema_seq_no,
                                 &proof_data.schema_seq_no) {
-                    return Err(error::FAILED_PROOF_COMPLIANCE.code_num)
+                    return Err(ProofError::FailedProofCompliance())
                 }
             },
-            None => return Err(error::FAILED_PROOF_COMPLIANCE.code_num)
+
+            None => return Err(ProofError::FailedProofCompliance())
         }
     }
     Ok(())
 }
 
-fn verify_requested_attributes(request: &ProofRequestData, proof: &ProofMessage) -> Result<(), u32> {
+fn verify_requested_attributes(request: &ProofRequestData, proof: &ProofMessage) -> Result<(), ProofError> {
     let proof_revealed_attrs = &proof.requested_proof.revealed_attrs;
     let self_attested_attrs = &proof.requested_proof.self_attested_attrs;
     let requested_attrs = &request.requested_attrs;
@@ -75,7 +78,7 @@ fn verify_requested_attributes(request: &ProofRequestData, proof: &ProofMessage)
                     continue
                 }
                 warn!("Proof Compliance: attr_id not found in proof");
-                return Err(error::FAILED_PROOF_COMPLIANCE.code_num);
+                return Err(ProofError::FailedProofCompliance())
             }
         };
         let proof_id = match proof_attr_data.get(0){
@@ -83,12 +86,12 @@ fn verify_requested_attributes(request: &ProofRequestData, proof: &ProofMessage)
                 Some(id_str) => id_str,
                 None => {
                     warn!("Proof Compliance: proof_id is not a string");
-                    return Err(error::FAILED_PROOF_COMPLIANCE.code_num);
+                    return Err(ProofError::FailedProofCompliance())
                 }
             },
             None => {
                 warn!("Proof Compliance: no data found in the revealed_attr");
-                return Err(error::FAILED_PROOF_COMPLIANCE.code_num);
+                return Err(ProofError::FailedProofCompliance())
             }
         };
 
@@ -96,7 +99,7 @@ fn verify_requested_attributes(request: &ProofRequestData, proof: &ProofMessage)
             Some(data) => data,
             None => {
                 warn!("Proof Compliance: proof id not found in proofs");
-                return Err(error::FAILED_PROOF_COMPLIANCE.code_num);
+                return Err(ProofError::FailedProofCompliance())
             }
         };
 
@@ -105,24 +108,24 @@ fn verify_requested_attributes(request: &ProofRequestData, proof: &ProofMessage)
 
         if !check_value(issuer_did,
                         proof_issuer_did) {
-            return Err(error::FAILED_PROOF_COMPLIANCE.code_num)
+            return Err(ProofError::FailedProofCompliance())
         }
 
         if !check_value(schema_seq_no,
                         &proof_schema_seq_no) {
-            return Err(error::FAILED_PROOF_COMPLIANCE.code_num)
+            return Err(ProofError::FailedProofCompliance())
         }
     }
 
     Ok(())
 }
 
-fn self_attested(attr_name: &str, self_attested_attrs: &HashMap<String, String>) -> Result<bool, u32> {
+fn self_attested(attr_name: &str, self_attested_attrs: &HashMap<String, String>) -> Result<bool, ProofError> {
     match self_attested_attrs.get(attr_name) {
         Some(_) => Ok(true),
         None => {
             warn!("Proof Compliance: attr_id not found in proof");
-            Err(error::FAILED_PROOF_COMPLIANCE.code_num)
+            Err(ProofError::FailedProofCompliance())
         }
     }
 }
@@ -140,11 +143,11 @@ fn check_value<T: PartialEq>(control: Option<T>, val: &T) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use ::proof_compliance::{proof_compliance, self_attested};
     use ::messages::proofs::proof_message::{ ProofMessage, Proofs };
     use messages::proofs::proof_request::{ ProofRequestData, Attr, Predicate };
     use serde_json::{ from_str };
-    use ::utils::error;
     use ::proof_compliance::check_value;
     use ::std::collections::HashMap;
 
@@ -281,8 +284,7 @@ mod tests {
         let failing_predicate: Predicate = from_str(r#"{"attr_name":"missing","p_type":"GE","value":22,"schema_seq_no":664,"issuer_did":"456"}"#).unwrap();
         proof_req.requested_predicates.insert("pred_uuid".to_string(), added_predicate.clone());
         proof_req.requested_predicates.insert("fail_uuid".to_string(), failing_predicate.clone());
-        let err = proof_compliance(&proof_req, &proof);
-        assert_eq!(Err(error::FAILED_PROOF_COMPLIANCE.code_num), err);
+        assert_eq!(proof_compliance(&proof_req, &proof).err(), Some(ProofError::FailedProofCompliance()));
     }
 
     #[test]
@@ -294,8 +296,7 @@ mod tests {
         let mut proof_req: ProofRequestData = from_str(REQUEST).unwrap();
         let added_predicate: Predicate = from_str(r#"{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();
         proof_req.requested_predicates.insert("pred_uuid".to_string(), added_predicate.clone());
-        let err = proof_compliance(&proof_req, &proof);
-        assert_eq!(Err(error::FAILED_PROOF_COMPLIANCE.code_num), err);
+        assert_eq!(proof_compliance(&proof_req, &proof).err(), Some(ProofError::FailedProofCompliance()));
     }
 
     #[test]
@@ -307,8 +308,7 @@ mod tests {
         let mut proof_req: ProofRequestData = from_str(REQUEST).unwrap();
         let added_predicate: Predicate = from_str(r#"{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();
         proof_req.requested_predicates.insert("pred_uuid".to_string(), added_predicate.clone());
-        let err = proof_compliance(&proof_req, &proof);
-        assert_eq!(Err(error::FAILED_PROOF_COMPLIANCE.code_num), err);
+        assert_eq!(proof_compliance(&proof_req, &proof).err(), Some(ProofError::FailedProofCompliance()));
     }
 
     #[test]
@@ -337,8 +337,7 @@ mod tests {
         proof_req.requested_attrs.insert("bbb".to_string(),
                                          Attr{ name: "cat".to_string(), issuer_did: Some("123".to_string()), schema_seq_no: None});
 
-        let err = proof_compliance(&proof_req, &proof_obj);
-        assert_eq!(Err(error::FAILED_PROOF_COMPLIANCE.code_num), err);
+        assert_eq!(proof_compliance(&proof_req, &proof_obj).err(), Some(ProofError::FailedProofCompliance()));
     }
 
     #[test]
@@ -348,7 +347,7 @@ mod tests {
         self_attested_vals.insert("dog".to_string(), "sally".to_string());
         self_attested_vals.insert("cat".to_string(), "matt".to_string());
         assert_eq!(true, self_attested("dog", &self_attested_vals).unwrap());
-        let err = self_attested("random", &self_attested_vals);
-        assert_eq!(err, Err(error::FAILED_PROOF_COMPLIANCE.code_num));
+        assert_eq!(self_attested("random", &self_attested_vals).err(),
+                   Some(ProofError::FailedProofCompliance()));
     }
 }

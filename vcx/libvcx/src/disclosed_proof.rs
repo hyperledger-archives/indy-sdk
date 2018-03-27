@@ -26,6 +26,9 @@ use settings;
 use utils::httpclient;
 use utils::constants::SEND_MESSAGE_RESPONSE;
 
+use error::ToErrorCode;
+use error::proof::ProofError;
+
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<DisclosedProof>  = Default::default();
 }
@@ -107,28 +110,28 @@ fn _match_claim(claims: &Value, id: &str) -> Option<(String, String, u32)> {
     None
 }
 
-fn claim_def_identifiers(claims: &str) -> Result<Vec<(String, String, String, u64)>,u32>{
+fn claim_def_identifiers(claims: &str) -> Result<Vec<(String, String, String, u64)>, ProofError>{
     let mut rtn = Vec::new();
 
     let claims: Value = serde_json::from_str(&claims)
-        .or(Err(error::INVALID_JSON.code_num))?;
+        .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
 
     if let Value::Object(ref map) = claims["attrs"] {
         for (key, value) in map {
             if let Value::Object(ref attr_obj) = value[0] {
                 let claim_uuid = match attr_obj.get("claim_uuid") {
-                    Some(i) => if i.is_string() { i.as_str().unwrap() } else { return Err(error::INVALID_JSON.code_num) },
-                    None => return Err(error::INVALID_JSON.code_num),
+                    Some(i) => if i.is_string() { i.as_str().unwrap() } else { return Err(ProofError::CommonError(error::INVALID_JSON.code_num))},
+                    None => return Err(ProofError::CommonError(error::INVALID_JSON.code_num)),
                 };
 
                 let issuer_did = match attr_obj.get("issuer_did") {
-                    Some(i) => if i.is_string() { i.as_str().unwrap() } else { return Err(error::INVALID_JSON.code_num) },
-                    None => return Err(error::INVALID_JSON.code_num),
+                    Some(i) => if i.is_string() { i.as_str().unwrap() } else { return Err(ProofError::CommonError(error::INVALID_JSON.code_num))},
+                    None => return Err(ProofError::CommonError(error::INVALID_JSON.code_num)),
                 };
 
                 let schema_seq_no = match attr_obj.get("schema_seq_no") {
-                    Some(i) => if i.is_number() { i.as_u64().unwrap() } else { return Err(error::INVALID_JSON.code_num) },
-                    None => return Err(error::INVALID_JSON.code_num),
+                    Some(i) => if i.is_number() { i.as_u64().unwrap() } else { return Err(ProofError::CommonError(error::INVALID_JSON.code_num))},
+                    None => return Err(ProofError::CommonError(error::INVALID_JSON.code_num)),
                 };
 
                 rtn.push((key.to_owned(),
@@ -139,7 +142,7 @@ fn claim_def_identifiers(claims: &str) -> Result<Vec<(String, String, String, u6
         }
     }
     else {
-        return Err(error::INVALID_JSON.code_num);
+        return Err(ProofError::CommonError(error::INVALID_JSON.code_num))
     }
 
     Ok(rtn)
@@ -153,27 +156,27 @@ impl DisclosedProof {
     fn get_state(&self) -> u32 {self.state as u32}
     fn set_state(&mut self, state: VcxStateType) {self.state = state}
 
-    fn _find_schemas(&self, claims_identifers: &Vec<(String, String, String, u64)>) -> Result<String, u32> {
+    fn _find_schemas(&self, claims_identifers: &Vec<(String, String, String, u64)>) -> Result<String, ProofError> {
         let mut rtn = Map::new();
 
         for &(ref attr_id, ref claim_uuid, ref issuer_did, schema_seq_num) in claims_identifers {
-            let schema = LedgerSchema::new_from_ledger(schema_seq_num as i32)?;
-            let schema = schema.data.ok_or(error::INVALID_SCHEMA.code_num)?;
+            let schema = LedgerSchema::new_from_ledger(schema_seq_num as i32).map_err(|_| ProofError::InvalidSchema())?;
+            let schema = schema.data.ok_or(ProofError::CommonError(error::INVALID_SCHEMA.code_num))?;
 
             let schema: Value = serde_json::to_value(schema)
-                .or(Err(error::INVALID_JSON.code_num))?;
+                .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
 
             rtn.insert(claim_uuid.to_owned(), schema);
         }
 
         match rtn.is_empty() {
             false => Ok(serde_json::to_string(&Value::Object(rtn))
-                .or(Err(error::INVALID_JSON.code_num))?),
-            true => Err(error::INVALID_JSON.code_num)
+                .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?),
+            true => Err(ProofError::CommonError(error::INVALID_JSON.code_num))
         }
     }
 
-    fn _find_claim_def(&self, claims_identifers: &Vec<(String, String, String, u64)>) -> Result<String, u32> {
+    fn _find_claim_def(&self, claims_identifers: &Vec<(String, String, String, u64)>) -> Result<String, ProofError> {
 
         let mut rtn = Map::new();
 
@@ -182,20 +185,20 @@ impl DisclosedProof {
                 .retrieve_claim_def("GGBDg1j8bsKmr4h5T9XqYf",
                                     schema_seq_num as u32,
                                     Some(SigTypes::CL),
-                                    &issuer_did)?;
+                                    &issuer_did).map_err(|_| ProofError::InvalidCredData())?;
 
-            let claim_def: Value = serde_json::from_str(&claim_def).or(Err(error::INVALID_JSON.code_num))?;
+            let claim_def: Value = serde_json::from_str(&claim_def).or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
 
             rtn.insert(claim_uuid.to_owned(), claim_def);
         }
 
         match rtn.is_empty() {
-            false => Ok(serde_json::to_string(&Value::Object(rtn)).or(Err(error::INVALID_JSON.code_num))?),
-            true => Err(error::INVALID_JSON.code_num)
+            false => Ok(serde_json::to_string(&Value::Object(rtn)).or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?),
+            true => Err(ProofError::CommonError(error::INVALID_JSON.code_num))
         }
     }
 
-    fn _build_requested_claims(&self, claims_identifiers: &Vec<(String, String, String, u64)>) -> Result<String, u32> {
+    fn _build_requested_claims(&self, claims_identifiers: &Vec<(String, String, String, u64)>) -> Result<String, ProofError> {
         let mut rtn: Value = json!({
               "self_attested_attributes":{},
               "requested_attrs":{},
@@ -208,20 +211,23 @@ impl DisclosedProof {
             }
         }
 
-        let rtn = serde_json::to_string_pretty(&rtn).or(Err(error::INVALID_JSON.code_num))?;
+        let rtn = serde_json::to_string_pretty(&rtn).or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
         Ok(rtn)
 
     }
 
-    fn _build_proof(&self) -> Result<ProofMessage, u32> {
+    fn _build_proof(&self) -> Result<ProofMessage, ProofError> {
 
         let wallet_h = wallet::get_wallet_handle();
 
-        let proof_req = self.proof_request.as_ref().ok_or(error::CREATE_PROOF_ERROR.code_num)?;
-        let proof_req_data_json = serde_json::to_string(&proof_req.proof_request_data).or(Err(error::INVALID_JSON.code_num))?;
+        let proof_req = self.proof_request.as_ref()
+            .ok_or(ProofError::CreateProofError())?;
+        let proof_req_data_json = serde_json::to_string(&proof_req.proof_request_data)
+            .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
 
         let claims = anoncreds::libindy_prover_get_claims(wallet_h,
-                                                          &proof_req_data_json)?;
+                                                          &proof_req_data_json)
+            .map_err(|ec| ProofError::CommonError(ec))?;
 
         debug!("claims: {}", claims);
         let claims_identifiers = claim_def_identifiers(&claims)?;
@@ -239,22 +245,23 @@ impl DisclosedProof {
                                                           &schemas,
                                                           &self.link_secret_alias,
                                                           &claim_defs_json,
-                                                          revoc_regs_json)?;
+                                                          revoc_regs_json).map_err(|ec| ProofError::CommonError(ec))?;
 
         let proof: ProofMessage = serde_json::from_str(&proof)
-            .or(Err(error::UNKNOWN_LIBINDY_ERROR.code_num))?;
+            .or(Err(ProofError::CommonError(error::UNKNOWN_LIBINDY_ERROR.code_num)))?;
 
         Ok(proof)
     }
 
-    fn send_proof(&mut self, connection_handle: u32) -> Result<u32, u32> {
+    fn send_proof(&mut self, connection_handle: u32) -> Result<u32, ProofError> {
         debug!("sending proof via connection connection: {}", connection_handle);
-        self.my_did = Some(connection::get_pw_did(connection_handle)?);
-        self.my_vk = Some(connection::get_pw_verkey(connection_handle)?);
-        self.agent_did = Some(connection::get_agent_did(connection_handle)?);
-        self.agent_vk = Some(connection::get_agent_verkey(connection_handle)?);
-        self.their_did = Some(connection::get_their_pw_did(connection_handle)?);
-        self.their_vk = Some(connection::get_their_pw_verkey(connection_handle)?);
+        // There feels like there's a much more rusty way to do the below.
+        self.my_did = Some(connection::get_pw_did(connection_handle).or(Err(ProofError::ProofConnectionError()))?);
+        self.my_vk = Some(connection::get_pw_verkey(connection_handle).or(Err(ProofError::ProofConnectionError()))?);
+        self.agent_did = Some(connection::get_agent_did(connection_handle).or(Err(ProofError::ProofConnectionError()))?);
+        self.agent_vk = Some(connection::get_agent_verkey(connection_handle).or(Err(ProofError::ProofConnectionError()))?);
+        self.their_did = Some(connection::get_their_pw_did(connection_handle).or(Err(ProofError::ProofConnectionError()))?);
+        self.their_vk = Some(connection::get_their_pw_verkey(connection_handle).or(Err(ProofError::ProofConnectionError()))?);
 
 
         debug!("verifier_did: {:?} -- verifier_vk: {:?} -- agent_did: {:?} -- agent_vk: {:?} -- remote_vk: {:?}",
@@ -266,25 +273,26 @@ impl DisclosedProof {
 
         let e_code: u32 = error::INVALID_CONNECTION_HANDLE.code_num;
 
-        let local_their_did = self.their_did.as_ref().ok_or(e_code)?;
-        let local_their_vk = self.their_vk.as_ref().ok_or(e_code)?;
-        let local_agent_did = self.agent_did.as_ref().ok_or(e_code)?;
-        let local_agent_vk = self.agent_vk.as_ref().ok_or(e_code)?;
-        let local_my_did = self.my_did.as_ref().ok_or(e_code)?;
-        let local_my_vk = self.my_vk.as_ref().ok_or(e_code)?;
+        let local_their_did = self.their_did.as_ref().ok_or(ProofError::ProofConnectionError())?;
+        let local_their_vk = self.their_vk.as_ref().ok_or(ProofError::ProofConnectionError())?;
+        let local_agent_did = self.agent_did.as_ref().ok_or(ProofError::ProofConnectionError())?;
+        let local_agent_vk = self.agent_vk.as_ref().ok_or(ProofError::ProofConnectionError())?;
+        let local_my_did = self.my_did.as_ref().ok_or(ProofError::ProofConnectionError())?;
+        let local_my_vk = self.my_vk.as_ref().ok_or(ProofError::ProofConnectionError())?;
 
-        let proof_req = self.proof_request.as_ref().ok_or(error::CREATE_PROOF_ERROR.code_num)?;
-        let ref_msg_uid = proof_req.msg_ref_id.as_ref().ok_or(error::CREATE_PROOF_ERROR.code_num)?;
+        let proof_req = self.proof_request.as_ref().ok_or(ProofError::CreateProofError())?;
+        let ref_msg_uid = proof_req.msg_ref_id.as_ref().ok_or(ProofError::CreateProofError())?;
 
         let proof = match settings::test_indy_mode_enabled() {
             false => {
                 let proof: ProofMessage = self._build_proof()?;
-                serde_json::to_string(&proof).or(Err(error::INVALID_JSON.code_num))?
+                serde_json::to_string(&proof).or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?
             },
             true => String::from("dummytestmodedata")
         };
 
-        let data: Vec<u8> = connection::generate_encrypted_payload(local_my_vk, local_their_vk, &proof, "PROOF")?;
+        let data: Vec<u8> = connection::generate_encrypted_payload(local_my_vk, local_their_vk, &proof, "PROOF")
+            .or(Err(ProofError::ProofConnectionError()))?;
 
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_MESSAGE_RESPONSE.to_vec()); }
 
@@ -302,7 +310,7 @@ impl DisclosedProof {
             },
             Err(x) => {
                 warn!("could not send proof: {}", x);
-                return Err(x);
+                return Err(ProofError::CommonError(x));
             }
         }
     }
@@ -323,18 +331,18 @@ fn handle_err(code_num: u32) -> u32 {
     }
 }
 
-pub fn create_proof(source_id: String, proof_req: String) -> Result<u32, u32> {
+pub fn create_proof(source_id: String, proof_req: String) -> Result<u32, ProofError> {
     debug!("creating disclosed proof with id: {}", source_id);
 
     let mut new_proof: DisclosedProof = Default::default();
 
     new_proof.set_source_id(&source_id);
     new_proof.set_proof_request(serde_json::from_str(&proof_req)
-        .map_err(|_|error::INVALID_JSON.code_num)?);
+        .map_err(|_| ProofError::CommonError(error::INVALID_JSON.code_num))?);
 
     new_proof.set_state(VcxStateType::VcxStateRequestReceived);
 
-    Ok(HANDLE_MAP.add(new_proof)?)
+    Ok(HANDLE_MAP.add(new_proof).map_err(|ec| ProofError::CommonError(ec))?)
 }
 
 pub fn get_state(handle: u32) -> Result<u32, u32> {
@@ -359,13 +367,13 @@ pub fn to_string(handle: u32) -> Result<String, u32> {
     })
 }
 
-pub fn from_string(proof_data: &str) -> Result<u32, u32> {
+pub fn from_string(proof_data: &str) -> Result<u32, ProofError> {
     let derived_proof: DisclosedProof = match serde_json::from_str(proof_data) {
         Ok(x) => x,
-        Err(y) => return Err(error::INVALID_JSON.code_num),
+        Err(y) => return Err(ProofError::CommonError(error::INVALID_JSON.code_num)),
     };
 
-    let new_handle = HANDLE_MAP.add(derived_proof)?;
+    let new_handle = HANDLE_MAP.add(derived_proof).map_err(|ec| ProofError::CommonError(ec))?;
 
     info!("inserting handle {} into proof table", new_handle);
 
@@ -376,10 +384,10 @@ pub fn release(handle: u32) -> Result<(), u32> {
     HANDLE_MAP.release(handle).map_err(handle_err)
 }
 
-pub fn send_proof(handle: u32, connection_handle: u32) -> Result<u32,u32> {
+pub fn send_proof(handle: u32, connection_handle: u32) -> Result<u32, ProofError> {
     HANDLE_MAP.get_mut(handle, |obj|{
-        obj.send_proof(connection_handle)
-    })
+        obj.send_proof(connection_handle).map_err(|e| e.to_error_code())
+    }).map_err(|ec| ProofError::CommonError(ec))
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
@@ -457,10 +465,8 @@ mod tests {
     #[test]
     fn test_create_fails() {
         settings::set_defaults();
-        match create_proof("1".to_string(),"{}".to_string()) {
-            Ok(_) => panic!("should have failed"),
-            Err(x) => assert_eq!(x, error::INVALID_JSON.code_num),
-        };
+        assert_eq!(create_proof("1".to_string(),"{}".to_string()).err(),
+                   Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
     }
 
     #[test]
@@ -502,10 +508,8 @@ mod tests {
 
     #[test]
     fn test_deserialize_fails() {
-        match from_string("{}") {
-            Ok(_) => panic!("should fail"),
-            Err(x) => assert_eq!(x, error::INVALID_JSON.code_num),
-        };
+        assert_eq!(from_string("{}").err(),
+        Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
     }
 
     #[test]
@@ -519,16 +523,12 @@ mod tests {
 
     #[test]
     fn test_claim_def_identifiers_failures() {
-        match claim_def_identifiers("{}") {
-            Ok(_) => panic!("should fail"),
-            Err(x) => assert_eq!(x, error::INVALID_JSON.code_num),
-        };
+        assert_eq!(claim_def_identifiers("{}").err(),
+                   Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
 
         let claims = r#"{"attrs":{"state_3":[{"claim_uuid":"uuid","issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}]}}"#;
-        match claim_def_identifiers(claims) {
-            Ok(_) => panic!("should fail"),
-            Err(x) => assert_eq!(x, error::INVALID_JSON.code_num),
-        };
+        assert_eq!(claim_def_identifiers(claims).err(),
+                   Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
 
         let claims = r#"{"attrs":{"state_3":[{"claim_uuid":"uuid","attrs":{"state":"UT","zip":"84000"},"schema_seq_no":22,"issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}]}}"#;
         let claims_identifiers = claim_def_identifiers(&claims).unwrap();
@@ -552,10 +552,8 @@ mod tests {
 
         let claim_ids = Vec::new();
         let proof: DisclosedProof = Default::default();
-        match proof._find_schemas(&claim_ids) {
-            Ok(_) => panic!("should fail"),
-            Err(x) => assert_eq!(x, error::INVALID_JSON.code_num),
-        };
+        assert_eq!(proof._find_schemas(&claim_ids).err(),
+                   Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
     }
 
     #[test]
@@ -576,10 +574,8 @@ mod tests {
 
         let claim_ids = Vec::new();
         let proof: DisclosedProof = Default::default();
-        match proof._find_claim_def(&claim_ids) {
-            Ok(_) => panic!("should fail"),
-            Err(x) => assert_eq!(x, error::INVALID_JSON.code_num),
-        }
+        assert_eq!(proof._find_claim_def(&claim_ids).err(),
+                   Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
     }
 
     #[test]

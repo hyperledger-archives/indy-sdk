@@ -22,6 +22,8 @@ use utils::libindy::anoncreds::libindy_verifier_verify_proof;
 use claim_def::{ RetrieveClaimDef, ClaimDefCommon, ClaimDefinition };
 use schema::{ LedgerSchema, SchemaTransaction };
 use proof_compliance::{ proof_compliance };
+use error::ToErrorCode;
+use error::proof::ProofError;
 
 lazy_static! {
     static ref PROOF_MAP: Mutex<HashMap<u32, Box<Proof>>> = Default::default();
@@ -52,6 +54,8 @@ pub struct Proof {
 }
 
 impl Proof {
+    // leave this returning a u32 until we actually implement this method to do something
+    // other than return success.
     fn validate_proof_request(&self) -> Result<u32, u32> {
         //TODO: validate proof request
         debug!("successfully validated proof request {}", self.handle);
@@ -63,7 +67,7 @@ impl Proof {
                            proof_json: &str,
                            schemas_json: &str,
                            claim_defs_json: &str,
-                           revoc_regs_json: &str) -> Result<u32, u32> {
+                           revoc_regs_json: &str) -> Result<u32, ProofError> {
         if settings::test_indy_mode_enabled() {return Ok(error::SUCCESS.code_num);}
 
         debug!("starting libindy proof verification");
@@ -74,7 +78,7 @@ impl Proof {
                                                   revoc_regs_json).map_err(|err| {
                 error!("Error: {}, Proof {} wasn't valid", err, self.handle);
                 self.proof_state = ProofStateType::ProofInvalid;
-                error::INVALID_PROOF.code_num
+                ProofError::InvalidProof()
         })?;
 
         if !valid {
@@ -87,96 +91,101 @@ impl Proof {
         Ok(error::SUCCESS.code_num)
     }
 
-    fn build_claim_defs_json(&self, claim_data:&Vec<ClaimData>) -> Result<String, u32> {
+    fn build_claim_defs_json(&self, claim_data:&Vec<ClaimData>) -> Result<String, ProofError> {
         debug!("building claimdef json for proof validation");
         let mut claim_json: HashMap<String, ClaimDefinition> = HashMap::new();
         for claim in claim_data.iter() {
             let schema_seq_no = match claim.schema_seq_no {
                 Some(x) => x,
-                None => return Err(error::INVALID_CLAIM_DEF_JSON.code_num)
+                None => return Err(ProofError::CommonError(error::INVALID_CLAIM_DEF_JSON.code_num))
             };
             let issuer_did = match claim.issuer_did {
                 Some(ref x) => x,
-                None => return Err(error::INVALID_CLAIM_DEF_JSON.code_num)
+                None => return Err(ProofError::CommonError(error::INVALID_CLAIM_DEF_JSON.code_num))
             };
             let claim_uuid = match claim.claim_uuid {
                 Some(ref x) => x,
-                None => return Err(error::INVALID_CLAIM_DEF_JSON.code_num)
+                None => return Err(ProofError::CommonError(error::INVALID_CLAIM_DEF_JSON.code_num))
             };
+
             let claim_def = RetrieveClaimDef::new()
-                .retrieve_claim_def("GGBDg1j8bsKmr4h5T9XqYf", schema_seq_no, Some(SigTypes::CL), issuer_did)?;
+                .retrieve_claim_def("GGBDg1j8bsKmr4h5T9XqYf",
+                                    schema_seq_no,
+                                    Some(SigTypes::CL),
+                                    issuer_did)
+                .map_err(|ec| ProofError::CommonError(ec.to_error_code()))?;
+
             let claim_obj: ClaimDefinition = serde_json::from_str(&claim_def)
-                .map_err(|err| {
-                    error!("Invalid json format for ClaimDefinition.");
-                    error::INVALID_JSON.code_num
-                })?;
+                .map_err(|_| ProofError::CommonError(error::INVALID_JSON.code_num))?;
             claim_json.insert(claim_uuid.to_string(), claim_obj);
         }
 
         serde_json::to_string(&claim_json).map_err(|err| {
             warn!("{} with serde error: {}",error::INVALID_CLAIM_DEF_JSON.message, err);
-            error::INVALID_CLAIM_DEF_JSON.code_num
+            ProofError::CommonError(error::INVALID_CLAIM_DEF_JSON.code_num)
         })
     }
 
-    fn build_proof_json(&self) -> Result<String, u32> {
+    fn build_proof_json(&self) -> Result<String, ProofError> {
         debug!("building proof json for proof validation");
         match self.proof {
-            Some(ref x) => x.to_string(),
-            None => Err(error::INVALID_PROOF.code_num),
+            Some(ref x) => x.to_string().map_err(|ec| ProofError::CommonError(ec)),
+            None => Err(ProofError::InvalidProof()),
         }
     }
 
-    fn build_schemas_json(&self, claim_data:&Vec<ClaimData>) -> Result<String, u32> {
+    fn build_schemas_json(&self, claim_data:&Vec<ClaimData>) -> Result<String, ProofError> {
         debug!("building schemas json for proof validation");
 
         let mut schema_json: HashMap<String, SchemaTransaction> = HashMap::new();
         for schema in claim_data.iter() {
             let schema_seq_no = match schema.schema_seq_no {
                 Some(x) => x,
-                None => return Err(error::INVALID_SCHEMA.code_num)
+                None => return Err(ProofError::InvalidSchema())
             };
             let claim_uuid = match schema.claim_uuid {
                 Some(ref x) => x,
-                None => return Err(error::INVALID_SCHEMA.code_num)
+                None => return Err(ProofError::InvalidSchema())
             };
-            let schema_obj = LedgerSchema::new_from_ledger(schema_seq_no as i32)?;
+            let schema_obj = LedgerSchema::new_from_ledger(schema_seq_no as i32).map_err(|x| ProofError::CommonError(x.to_error_code()))?;
             let data = match schema_obj.data {
                 Some(x) => x,
-                None => return Err(error::INVALID_PROOF.code_num)
+                None => return Err(ProofError::InvalidProof())
             };
             schema_json.insert(claim_uuid.to_string(), data);
         }
 
         serde_json::to_string(&schema_json).map_err(|err| {
             warn!("{} with serde error: {}",error::INVALID_SCHEMA.message, err);
-            error::INVALID_SCHEMA.code_num
+            ProofError::InvalidSchema()
         })
     }
 
-    fn build_proof_req_json(&self) -> Result<String, u32> {
+    fn build_proof_req_json(&self) -> Result<String, ProofError> {
         debug!("building proof request json for proof validation");
         match self.proof_request {
             Some(ref x) => {
                 Ok(x.get_proof_request_data())
             },
-            None => Err(error::INVALID_PROOF.code_num)
+            None => Err(ProofError::InvalidProof()),
         }
     }
 
-    fn proof_validation(&mut self) -> Result<u32, u32> {
-        let proof_req_msg = match self.proof_request {
-            Some(ref x) => x.clone(),
-            None => return Err(error::INVALID_PROOF.code_num),
+    fn proof_validation(&mut self) -> Result<u32, ProofError> {
+        let proof_req_msg = match self.proof_request.clone() {
+            Some(x) => x,
+            None => return Err(ProofError::InvalidProof()),
         };
-        let proof_msg = match self.proof {
-            Some(ref x) => x.clone(),
-            None => return Err(error::INVALID_PROOF.code_num),
+
+        let proof_msg = match self.proof.clone() {
+            Some(x) => x,
+            None => return Err(ProofError::InvalidProof()),
         };
-        let claim_data = proof_msg.get_claim_info()?;
+
+        let claim_data = proof_msg.get_claim_info().map_err(|ec| ProofError::CommonError(ec))?;
 
         if claim_data.len() == 0 {
-            return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
+            return Err(ProofError::InvalidCredData())
         }
         let claim_def_msg = self.build_claim_defs_json(&claim_data)?;
         let schemas_json = self.build_schemas_json(&claim_data)?;
@@ -190,17 +199,17 @@ impl Proof {
         self.validate_proof_indy(&proof_req_json, &proof_json, &schemas_json, &claim_def_msg, INDY_REVOC_REGS_JSON)
     }
 
-    fn send_proof_request(&mut self, connection_handle: u32) -> Result<u32, u32> {
+    fn send_proof_request(&mut self, connection_handle: u32) -> Result<u32, ProofError> {
         if self.state != VcxStateType::VcxStateInitialized {
             warn!("proof {} has invalid state {} for sending proofRequest", self.handle, self.state as u32);
-            return Err(error::NOT_READY.code_num);
+            return Err(ProofError::ProofNotReadyError())
         }
         debug!("sending proof request with proof: {}, and connection {}", self.handle, connection_handle);
-        self.prover_did = connection::get_pw_did(connection_handle)?;
-        self.agent_did = connection::get_agent_did(connection_handle)?;
-        self.agent_vk = connection::get_agent_verkey(connection_handle)?;
-        self.remote_vk = connection::get_their_pw_verkey(connection_handle)?;
-        self.prover_vk = connection::get_pw_verkey(connection_handle)?;
+        self.prover_did = connection::get_pw_did(connection_handle).map_err(|ec| ProofError::InvalidConnection())?;
+        self.agent_did = connection::get_agent_did(connection_handle).map_err(|ec| ProofError::InvalidConnection())?;
+        self.agent_vk = connection::get_agent_verkey(connection_handle).map_err(|ec| ProofError::InvalidConnection())?;
+        self.remote_vk = connection::get_their_pw_verkey(connection_handle).map_err(|ec| ProofError::InvalidConnection())?;
+        self.prover_vk = connection::get_pw_verkey(connection_handle).map_err(|ec| ProofError::InvalidConnection())?;
 
         debug!("prover_did: {} -- agent_did: {} -- agent_vk: {} -- remote_vk: {} -- prover_vk: {}",
                self.prover_did,
@@ -220,10 +229,11 @@ impl Proof {
             .proof_data_version(data_version)
             .requested_attrs(&self.requested_attrs)
             .requested_predicates(&self.requested_predicates)
-            .serialize_message()?;
+            .serialize_message()
+            .map_err(|ec| ProofError::ProofMessageError(ec))?;
 
         self.proof_request = Some(proof_obj);
-        let data = connection::generate_encrypted_payload(&self.prover_vk, &self.remote_vk, &proof_request, "PROOF_REQUEST")?;
+        let data = connection::generate_encrypted_payload(&self.prover_vk, &self.remote_vk, &proof_request, "PROOF_REQUEST").map_err(|_| ProofError::ProofConnectionError())?;
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_CLAIM_OFFER_RESPONSE.to_vec()); }
         let title = format!("{} wants you to share {}", settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap(), self.name);
 
@@ -243,20 +253,20 @@ impl Proof {
             },
             Err(x) => {
                 warn!("could not send proofReq: {}", x);
-                return Err(x);
+                return Err(ProofError::ProofMessageError(x));
             }
         }
     }
 
-    fn get_proof(&self) -> Result<String, u32> {
+    fn get_proof(&self) -> Result<String, ProofError> {
         let proof = match self.proof {
             Some(ref x) => x,
-            None => return Err(error::INVALID_PROOF.code_num),
+            None => return Err(ProofError::InvalidHandle()),
         };
-        proof.get_proof_attributes()
+        proof.get_proof_attributes().map_err(|ec| ProofError::CommonError(ec))
     }
 
-    fn get_proof_request_status(&mut self) -> Result<u32, u32> {
+    fn get_proof_request_status(&mut self) -> Result<u32, ProofError> {
         debug!("updating state for proof {}", self.handle);
         if self.state == VcxStateType::VcxStateAccepted {
             return Ok(error::SUCCESS.code_num);
@@ -265,7 +275,10 @@ impl Proof {
             return Ok(error::SUCCESS.code_num);
         }
 
-        let payload = messages::get_message::get_ref_msg(&self.msg_uid, &self.prover_did, &self.prover_vk, &self.agent_did, &self.agent_vk)?;
+        let payload = messages::get_message::get_ref_msg(&self.msg_uid, &self.prover_did,
+                                                         &self.prover_vk, &self.agent_did,
+                                                         &self.agent_vk)
+            .map_err(|ec| ProofError::ProofMessageError(ec))?;
 
         self.proof = match parse_proof_payload(&payload) {
             Err(_) => return Ok(error::SUCCESS.code_num),
@@ -283,7 +296,7 @@ impl Proof {
             }
             Err(x) => {
                 self.state = VcxStateType::VcxStateRequestReceived;
-                if x == error::TIMEOUT_LIBINDY_ERROR.code_num {
+                if x == ProofError::CommonError(error::TIMEOUT_LIBINDY_ERROR.code_num) {
                     warn!("Proof {} unable to be validated", self.handle);
                     self.proof_state = ProofStateType::ProofUndefined;
                 } else {
@@ -312,7 +325,13 @@ impl Proof {
 pub fn create_proof(source_id: String,
                     requested_attrs: String,
                     requested_predicates: String,
-                    name: String) -> Result<u32, u32> {
+                    name: String) -> Result<u32, ProofError> {
+
+    // TODO: Get this to actually validate as json, not just check length.
+    let length = requested_attrs.len();
+    if length <= 0 {
+        return Err(ProofError::CommonError(error::INVALID_JSON.code_num))
+    }
 
     let new_handle = rand::thread_rng().gen::<u32>();
     debug!("creating proof with source_id: {}, name: {}, requested_attrs: {}, requested_predicates: {}", source_id, name, requested_attrs, requested_predicates);
@@ -330,7 +349,7 @@ pub fn create_proof(source_id: String,
         proof_state: ProofStateType::ProofUndefined,
         name,
         version: String::from("1.0"),
-        nonce: generate_nonce()?,
+        nonce: generate_nonce().map_err(|ec| ProofError::CommonError(ec))?,
         proof: None,
         proof_request: None,
         remote_did: String::new(),
@@ -339,7 +358,7 @@ pub fn create_proof(source_id: String,
         agent_vk: String::new(),
     });
 
-    new_proof.validate_proof_request()?;
+    new_proof.validate_proof_request().map_err(|ec| ProofError::CommonError(ec))?;
 
     new_proof.state = VcxStateType::VcxStateInitialized;
 
@@ -380,10 +399,10 @@ pub fn get_proof_state(handle: u32) -> u32 {
     }
 }
 
-pub fn release(handle: u32) -> u32 {
+pub fn release(handle: u32) -> Result<u32, ProofError> {
     match PROOF_MAP.lock().unwrap().remove(&handle) {
-        Some(t) => error::SUCCESS.code_num,
-        None => error::INVALID_PROOF_HANDLE.code_num,
+        Some(t) => Ok(error::SUCCESS.code_num),
+        None => Err(ProofError::InvalidHandle()),
     }
 }
 
@@ -393,24 +412,24 @@ pub fn release_all() {
     map.drain();
 }
 
-pub fn to_string(handle: u32) -> Result<String, u32> {
+pub fn to_string(handle: u32) -> Result<String, ProofError> {
     match PROOF_MAP.lock().unwrap().get(&handle) {
-        Some(p) => Ok(serde_json::to_string(&p).unwrap()),
-        None => Err(error::INVALID_PROOF_HANDLE.code_num)
+        Some(p) => Ok(serde_json::to_string(&p).unwrap().to_owned()),
+        None => Err(ProofError::InvalidHandle())
     }
 }
 
-pub fn get_source_id(handle: u32) -> Result<String, u32> {
+pub fn get_source_id(handle: u32) -> Result<String, ProofError> {
     match PROOF_MAP.lock().unwrap().get(&handle) {
         Some(p) => Ok(p.get_source_id().clone()),
-        None => Err(error::INVALID_PROOF_HANDLE.code_num)
+        None => Err(ProofError::InvalidHandle())
     }
 }
 
-pub fn from_string(proof_data: &str) -> Result<u32, u32> {
+pub fn from_string(proof_data: &str) -> Result<u32, ProofError> {
     let derived_proof: Proof = serde_json::from_str(proof_data).map_err(|err| {
         warn!("{} with serde error: {}",error::INVALID_JSON.message, err);
-        error::INVALID_JSON.code_num
+        ProofError::CommonError(error::INVALID_JSON.code_num)
     })?;
 
     let new_handle = rand::thread_rng().gen::<u32>();
@@ -425,14 +444,14 @@ pub fn from_string(proof_data: &str) -> Result<u32, u32> {
     Ok(new_handle)
 }
 
-pub fn send_proof_request(handle: u32, connection_handle: u32) -> Result<u32,u32> {
+pub fn send_proof_request(handle: u32, connection_handle: u32) -> Result<u32, ProofError> {
     match PROOF_MAP.lock().unwrap().get_mut(&handle) {
         Some(c) => Ok(c.send_proof_request(connection_handle)?),
-        None => Err(error::INVALID_PROOF_HANDLE.code_num),
+        None => Err(ProofError::InvalidHandle()),
     }
 }
 
-fn get_proof_details(response: &str) -> Result<String, u32> {
+fn get_proof_details(response: &str) -> Result<String, ProofError> {
     match serde_json::from_str(response) {
         Ok(json) => {
             let json: serde_json::Value = json;
@@ -440,14 +459,14 @@ fn get_proof_details(response: &str) -> Result<String, u32> {
                 Some(x) => x,
                 None => {
                     warn!("response had no uid");
-                    return Err(error::INVALID_JSON.code_num)
+                    return Err(ProofError::CommonError(error::INVALID_JSON.code_num))
                 },
             };
             Ok(String::from(detail))
         },
         Err(_) => {
             warn!("Proof called without a valid response from server");
-            Err(error::INVALID_JSON.code_num)
+            return Err(ProofError::CommonError(error::INVALID_JSON.code_num))
         },
     }
 }
@@ -470,13 +489,14 @@ fn parse_proof_payload(payload: &Vec<u8>) -> Result<ProofMessage, u32> {
     Ok(my_claim_req)
 }
 
-pub fn get_proof(handle: u32) -> Result<String,u32> {
+pub fn get_proof(handle: u32) -> Result<String, ProofError> {
     match PROOF_MAP.lock().unwrap().get(&handle) {
         Some(proof) => Ok(proof.get_proof()?),
-        None => Err(error::INVALID_PROOF.code_num),
+        None => Err(ProofError::InvalidHandle()),
     }
 }
 
+// TODO: This doesnt feel like it should be here (maybe utils?)
 pub fn generate_nonce() -> Result<String, u32> {
     let mut bn = BigNum::new().map_err(|err| error::BIG_NUMBER_ERROR.code_num)?;
 
@@ -491,10 +511,10 @@ mod tests {
     use connection::build_connection;
     use utils::libindy::{pool, set_libindy_rc};
     use messages::proofs::proof_message::{Attr};
-
+    use utils::error::POST_MSG_FAILURE;
     static REQUESTED_ATTRS: &'static str = "[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]";
     static REQUESTED_PREDICATES: &'static str = r#"[{"attr_name":"age","p_type":"GE","value":18,"schema_seq_no":1,"issuer_did":"8XFh8yBzrpJQmNyZzgoTqB"},{"attr_name":"num","p_type":"LE","value":99,"schema_seq_no":1,"issuer_did":"8XFh8yBzrpJQmNyZzgoTqB"}]"#;
-
+    static PROOF_MSG: &str = r#"{"msg_type":"proof","version":"0.1","to_did":"BnRXf8yDMUwGyZVDkSENeq","from_did":"GxtnGN6ypZYgEqcftSQFnC","proof_request_id":"cCanHnpFAD","proofs":{"claim::e5fec91f-d03d-4513-813c-ab6db5715d55":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"state":"96473275571522321025213415717206189191162"},"a_prime":"22605045280481376895214546474258256134055560453004805058368015338423404000586901936329279496160366852115900235316791489357953785379851822281248296428005020302405076144264617943389810572564188437603815231794326272302243703078443007359698858400857606408856314183672828086906560155576666631125808137726233827430076624897399072853872527464581329767287002222137559918765406079546649258389065217669558333867707240780369514832185660287640444094973804045885379406641474693993903268791773620198293469768106363470543892730424494655747935463337367735239405840517696064464669905860189004121807576749786474060694597244797343224031","e":"70192089123105616042684481760592174224585053817450673797400202710878562748001698340846985261463026529360990669802293480312441048965520897","v":"1148619141217957986496757711054111791862691178309410923416837802801708689012670430650138736456223586898110113348220116209094530854607083005898964558239710027534227973983322542548800291320747321452329327824406430787211689678096549398458892087551551587767498991043777397791000822007896620414888602588897806008609113730393639807814070738699614969916095861363383223421727858670289337712185089527052065958362840287749622133424503902085247641830693297082507827948006947829401008622239294382186995101394791468192083810475776455445579931271665980788474331866572497866962452476638881287668931141052552771328556458489781734943404258692308937784221642452132005267809852656378394530342203469943982066011466088478895643800295937901139711103301249691253510784029114718919483272055970725860849610885050165709968510696738864528287788491998027072378656038991754015693216663830793243584350961586874315757599094357535856429087122365865868729","m":{"address2":"11774234640096848605908744857306447015748098256395922562149769943967941106193320512788344020652220849708117081570187385467979956319507248530701654682748372348387275979419669108338","city":"4853213962270369118453000522408430296589146124488849630769837449684434138367659379663124155088827069418193027370932024893343033367076071757003149452226758383807126385017161888440","address1":"12970590675851114145396120869959510754345567924518524026685086869487243290925032320159287997675756075512889990901552679591155319959039145119122576164798225386578339739435869622811","zip":"8333721522340131864419931745588776943042067606218561135102011966361165456174036379901390244538991611895455576519950813910672825465382312504250936740379785802177629077591444977329"},"m1":"92853615502250003546205004470333326341901175168428906399291824325990659330595200000112546157141090642053863739870044907457400076448073272490169488870502566172795456430489790324815765612798273406119873266684053517977802902202155082987833343670942161987285661291655743810590661447300059024966135828466539810035","m2":"14442362430453309930284822850357071315613831915865367971974791350454381198894252834180803515368579729220423713315556807632571621646127926114010380486713602821529657583905131582938"},"ge_proofs":[]},"non_revoc_proof":null},"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH"}},"aggregated_proof":{"c_hash":"68430476900085482958838239880418115228681348197588159723604944078288347793331","c_list":[[179,17,2,242,194,227,92,203,28,32,255,113,112,20,5,243,9,111,220,111,21,210,116,12,167,119,253,181,37,40,143,215,140,42,179,97,75,229,96,94,54,248,206,3,48,14,61,219,160,122,139,227,166,183,37,43,197,200,28,220,217,10,65,42,6,195,124,44,164,65,114,206,51,231,254,156,170,141,21,153,50,251,237,65,147,97,243,17,157,116,213,201,80,119,106,70,88,60,55,36,33,160,135,106,60,212,191,235,116,57,78,177,61,86,44,226,205,100,134,118,93,6,26,58,220,66,232,166,202,62,90,174,231,207,19,239,233,223,70,191,199,100,157,62,139,176,28,184,9,70,116,199,142,237,198,183,12,32,53,84,207,202,77,56,97,177,154,169,223,201,212,163,212,101,184,255,215,167,16,163,136,44,25,123,49,15,229,41,149,133,159,86,106,208,234,73,207,154,194,162,141,63,159,145,94,47,174,51,225,91,243,2,221,202,59,11,212,243,197,208,116,42,242,131,221,137,16,169,203,215,239,78,254,150,42,169,202,132,172,106,179,130,178,130,147,24,173,213,151,251,242,44,54,47,208,223]]},"requested_proof":{"revealed_attrs":{"sdf":["claim::e5fec91f-d03d-4513-813c-ab6db5715d55","UT","96473275571522321025213415717206189191162"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{}}}"#;
     extern "C" fn create_cb(command_handle: u32, err: u32, connection_handle: u32) {
         assert_eq!(err, 0);
         assert!(connection_handle > 0);
@@ -504,6 +524,31 @@ mod tests {
     fn set_default_and_enable_test_mode() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+    }
+
+    fn create_boxed_proof() -> Box<Proof> {
+        let new_handle = rand::thread_rng().gen::<u32>();
+        Box::new(Proof {
+            handle: new_handle,
+            source_id: "12".to_string(),
+            msg_uid: String::from("1234"),
+            ref_msg_id: String::new(),
+            requested_attrs: String::from("[]"),
+            requested_predicates: String::from("[]"),
+            prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
+            prover_vk: VERKEY.to_string(),
+            state: VcxStateType::VcxStateOfferSent,
+            proof_state: ProofStateType::ProofUndefined,
+            name: String::new(),
+            version: String::from("1.0"),
+            nonce: generate_nonce().unwrap(),
+            proof: Some(ProofMessage::from_str(PROOF_MSG).unwrap()),
+            proof_request: None,
+            remote_did: DID.to_string(),
+            remote_vk: VERKEY.to_string(),
+            agent_did: DID.to_string(),
+            agent_vk: VERKEY.to_string(),
+        })
     }
 
     #[test]
@@ -543,7 +588,7 @@ mod tests {
                                   "Optional".to_owned()).unwrap();
         let proof_data = to_string(handle).unwrap();
         let mut proof1: Proof = serde_json::from_str(&proof_data).unwrap();
-        release(handle);
+        assert!(release(handle).is_ok());
         let new_handle = from_string(&proof_data).unwrap();
         let proof2 : Proof = serde_json::from_str(&to_string(new_handle).unwrap()).unwrap();
         proof1.handle = proof2.handle;
@@ -557,7 +602,7 @@ mod tests {
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();
-        assert_eq!(release(handle), 0);
+        assert!(release(handle).is_ok());
         assert!(!is_valid_handle(handle));
     }
 
@@ -596,10 +641,9 @@ mod tests {
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();
-        match send_proof_request(handle, connection_handle) {
-            Ok(x) => panic!("Should have failed in send_proof_request"),
-            Err(y) => assert_eq!(y, error::INVALID_DID.code_num)
-        }
+
+        assert_eq!(send_proof_request(handle, connection_handle).err(),
+                  Some(ProofError::CommonError(error::INVALID_DID.code_num)));
     }
 
     #[test]
@@ -610,14 +654,7 @@ mod tests {
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();
         assert!(is_valid_handle(handle));
-
-        match get_proof(handle) {
-            Ok(x) => {
-                warn!("Should have failed with no proof");
-                assert_eq!(0, 1)
-            },
-            Err(x) => assert_eq!(x, error::INVALID_PROOF.code_num),
-        }
+        assert!(get_proof(handle).is_err())
     }
 
     #[test]
@@ -883,11 +920,11 @@ mod tests {
         let h4 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
         let h5 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
         release_all();
-        assert_eq!(release(h1), error::INVALID_PROOF_HANDLE.code_num);
-        assert_eq!(release(h2), error::INVALID_PROOF_HANDLE.code_num);
-        assert_eq!(release(h3), error::INVALID_PROOF_HANDLE.code_num);
-        assert_eq!(release(h4), error::INVALID_PROOF_HANDLE.code_num);
-        assert_eq!(release(h5), error::INVALID_PROOF_HANDLE.code_num);
+        assert_eq!(release(h1).err(), Some(ProofError::InvalidHandle()));
+        assert_eq!(release(h2).err(), Some(ProofError::InvalidHandle()));
+        assert_eq!(release(h3).err(), Some(ProofError::InvalidHandle()));
+        assert_eq!(release(h4).err(), Some(ProofError::InvalidHandle()));
+        assert_eq!(release(h5).err(), Some(ProofError::InvalidHandle()));
     }
 
     #[ignore]
@@ -946,7 +983,7 @@ mod tests {
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();
         set_libindy_rc(error::TIMEOUT_LIBINDY_ERROR.code_num);
-        assert_eq!(send_proof_request(handle, connection_handle), Err(error::TIMEOUT_LIBINDY_ERROR.code_num));
+        assert_eq!(send_proof_request(handle, connection_handle).err(), Some(ProofError::CommonError(error::TIMEOUT_LIBINDY_ERROR.code_num)));
         assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
         assert_eq!(get_proof_uuid(handle).unwrap(), "");
 
@@ -963,29 +1000,10 @@ mod tests {
 
         let connection_handle = build_connection("test_send_proof_request").unwrap();
 
-        let proof_msg = r#"{"msg_type":"proof","version":"0.1","to_did":"BnRXf8yDMUwGyZVDkSENeq","from_did":"GxtnGN6ypZYgEqcftSQFnC","proof_request_id":"cCanHnpFAD","proofs":{"claim::e5fec91f-d03d-4513-813c-ab6db5715d55":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"state":"96473275571522321025213415717206189191162"},"a_prime":"22605045280481376895214546474258256134055560453004805058368015338423404000586901936329279496160366852115900235316791489357953785379851822281248296428005020302405076144264617943389810572564188437603815231794326272302243703078443007359698858400857606408856314183672828086906560155576666631125808137726233827430076624897399072853872527464581329767287002222137559918765406079546649258389065217669558333867707240780369514832185660287640444094973804045885379406641474693993903268791773620198293469768106363470543892730424494655747935463337367735239405840517696064464669905860189004121807576749786474060694597244797343224031","e":"70192089123105616042684481760592174224585053817450673797400202710878562748001698340846985261463026529360990669802293480312441048965520897","v":"1148619141217957986496757711054111791862691178309410923416837802801708689012670430650138736456223586898110113348220116209094530854607083005898964558239710027534227973983322542548800291320747321452329327824406430787211689678096549398458892087551551587767498991043777397791000822007896620414888602588897806008609113730393639807814070738699614969916095861363383223421727858670289337712185089527052065958362840287749622133424503902085247641830693297082507827948006947829401008622239294382186995101394791468192083810475776455445579931271665980788474331866572497866962452476638881287668931141052552771328556458489781734943404258692308937784221642452132005267809852656378394530342203469943982066011466088478895643800295937901139711103301249691253510784029114718919483272055970725860849610885050165709968510696738864528287788491998027072378656038991754015693216663830793243584350961586874315757599094357535856429087122365865868729","m":{"address2":"11774234640096848605908744857306447015748098256395922562149769943967941106193320512788344020652220849708117081570187385467979956319507248530701654682748372348387275979419669108338","city":"4853213962270369118453000522408430296589146124488849630769837449684434138367659379663124155088827069418193027370932024893343033367076071757003149452226758383807126385017161888440","address1":"12970590675851114145396120869959510754345567924518524026685086869487243290925032320159287997675756075512889990901552679591155319959039145119122576164798225386578339739435869622811","zip":"8333721522340131864419931745588776943042067606218561135102011966361165456174036379901390244538991611895455576519950813910672825465382312504250936740379785802177629077591444977329"},"m1":"92853615502250003546205004470333326341901175168428906399291824325990659330595200000112546157141090642053863739870044907457400076448073272490169488870502566172795456430489790324815765612798273406119873266684053517977802902202155082987833343670942161987285661291655743810590661447300059024966135828466539810035","m2":"14442362430453309930284822850357071315613831915865367971974791350454381198894252834180803515368579729220423713315556807632571621646127926114010380486713602821529657583905131582938"},"ge_proofs":[]},"non_revoc_proof":null},"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH"}},"aggregated_proof":{"c_hash":"68430476900085482958838239880418115228681348197588159723604944078288347793331","c_list":[[179,17,2,242,194,227,92,203,28,32,255,113,112,20,5,243,9,111,220,111,21,210,116,12,167,119,253,181,37,40,143,215,140,42,179,97,75,229,96,94,54,248,206,3,48,14,61,219,160,122,139,227,166,183,37,43,197,200,28,220,217,10,65,42,6,195,124,44,164,65,114,206,51,231,254,156,170,141,21,153,50,251,237,65,147,97,243,17,157,116,213,201,80,119,106,70,88,60,55,36,33,160,135,106,60,212,191,235,116,57,78,177,61,86,44,226,205,100,134,118,93,6,26,58,220,66,232,166,202,62,90,174,231,207,19,239,233,223,70,191,199,100,157,62,139,176,28,184,9,70,116,199,142,237,198,183,12,32,53,84,207,202,77,56,97,177,154,169,223,201,212,163,212,101,184,255,215,167,16,163,136,44,25,123,49,15,229,41,149,133,159,86,106,208,234,73,207,154,194,162,141,63,159,145,94,47,174,51,225,91,243,2,221,202,59,11,212,243,197,208,116,42,242,131,221,137,16,169,203,215,239,78,254,150,42,169,202,132,172,106,179,130,178,130,147,24,173,213,151,251,242,44,54,47,208,223]]},"requested_proof":{"revealed_attrs":{"sdf":["claim::e5fec91f-d03d-4513-813c-ab6db5715d55","UT","96473275571522321025213415717206189191162"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{}}}"#;
+
         let new_handle = 1;
-        let mut proof = Box::new(Proof {
-            handle: new_handle,
-            source_id: "12".to_string(),
-            msg_uid: String::from("1234"),
-            ref_msg_id: String::new(),
-            requested_attrs: String::from("[]"),
-            requested_predicates: String::from("[]"),
-            prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
-            prover_vk: VERKEY.to_string(),
-            state: VcxStateType::VcxStateOfferSent,
-            proof_state: ProofStateType::ProofUndefined,
-            name: String::new(),
-            version: String::from("1.0"),
-            nonce: generate_nonce().unwrap(),
-            proof: Some(ProofMessage::from_str(&proof_msg).unwrap()),
-            proof_request: None,
-            remote_did: DID.to_string(),
-            remote_vk: VERKEY.to_string(),
-            agent_did: DID.to_string(),
-            agent_vk: VERKEY.to_string(),
-        });
+
+        let mut proof = create_boxed_proof();
 
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
         httpclient::set_next_u8_response(UPDATE_PROOF_RESPONSE.to_vec());
@@ -1005,6 +1023,38 @@ mod tests {
         proof.update_state();
         assert_eq!(proof.get_state(), VcxStateType::VcxStateRequestReceived as u32);
         assert_eq!(proof.get_proof_state(), ProofStateType::ProofInvalid as u32);
+    }
+
+    #[test]
+    fn test_errors() {
+        use utils::error::INVALID_JSON;
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+
+        let mut proof = create_boxed_proof();
+
+        assert_eq!(proof.validate_proof_indy("{}", "{}", "{}", "{}","").err(),
+                   Some(ProofError::InvalidProof()));
+
+        // TODO: Do something to guarantee that this handle is bad
+        let bad_handle = rand::thread_rng().gen::<u32>();
+        assert_eq!(proof.send_proof_request(bad_handle).err(),
+                   Some(ProofError::ProofNotReadyError()));
+        // TODO: Add test that returns a INVALID_PROOF_CLAIM_DATA
+        assert_eq!(proof.get_proof_request_status().err(),
+                   Some(ProofError::ProofMessageError(POST_MSG_FAILURE.code_num)));
+
+        let empty = r#""#;
+
+        assert_eq!(create_proof("my source id".to_string(),
+                                empty.to_string(),
+                                "{}".to_string(),
+                                "my name".to_string()).err(),
+            Some(ProofError::CommonError(INVALID_JSON.code_num)));
+
+        assert_eq!(to_string(bad_handle).err(), Some(ProofError::InvalidHandle()));
+        assert_eq!(get_source_id(bad_handle).err(), Some(ProofError::InvalidHandle()));
+        assert_eq!(from_string(empty).err(), Some(ProofError::CommonError(INVALID_JSON.code_num)));
     }
 }
 

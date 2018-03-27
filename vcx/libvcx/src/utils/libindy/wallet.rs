@@ -57,6 +57,7 @@ pub fn init_wallet(wallet_name: &str) -> Result<i32, u32> {
         unsafe {WALLET_HANDLE = 1;}
         return Ok(1);
     }
+
     let pool_name = match settings::get_config_value(settings::CONFIG_POOL_NAME) {
         Ok(x) => x,
         Err(_) => "pool1".to_owned(),
