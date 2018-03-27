@@ -50,7 +50,8 @@ Now we need to create and define a schema. Schemas in indy are very simple
 JSON documents that specify their name and version, and that list attributes
 that will appear in a credential. Today, they do not describe data type,
 recurrence rules, nesting, and other elaborate constructs. There is work
-underway to make them fancier; visit #indy-sdk on Rocket Chat to learn
+underway to make them fancier; visit
+[#indy-sdk on Rocket.Chat](https://chat.hyperledger.org/channel/indy-sdk) to learn
 more.
 
 A sample schema might look like this:
