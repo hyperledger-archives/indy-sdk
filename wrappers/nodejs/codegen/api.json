@@ -44,7 +44,7 @@
   },
   "functions": {
     "indy_issuer_create_and_store_claim_def": {
-      "docs": "",
+      "docs": "Create keys (both primary and revocation) for the given schema and signature type (currently only CL signature type is supported).\nStore the keys together with signature type and schema in a secure wallet as a claim definition.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nissuer_did: a DID of the issuer signing claim_def transaction to the Ledger\nschema_json: schema as a json\nsignature_type: signature type (optional). Currently only 'CL' is supported.\ncreate_non_revoc: whether to request non-revocation claim.\ncb: Callback that takes command result as parameter.\n\n#Returns\nclaim definition json containing information about signature type, schema and issuer's public key.\n\n#Errors\nCommon*\nWallet*\nAnoncreds*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -65,7 +65,7 @@
       "ret": "indy_error_t"
     },
     "indy_issuer_create_and_store_revoc_reg": {
-      "docs": "",
+      "docs": "Create a new revocation registry for the given claim definition.\nStores it in a secure wallet.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nissuer_did: a DID of the issuer signing revoc_reg transaction to the Ledger\nschema_json: schema as a json\nmax_claim_num: maximum number of claims the new registry can process.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRevocation registry json\n\n#Errors\nCommon*\nWallet*\nAnoncreds*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -85,7 +85,7 @@
       "ret": "indy_error_t"
     },
     "indy_issuer_create_claim_offer": {
-      "docs": "",
+      "docs": "Create claim offer in Wallet\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nschema_json: schema as a json\nissuer_did: a DID of the issuer created Claim definition\nprover_did: a DID of the target user\ncb: Callback that takes command result as parameter.\n\n#Returns\nclaim offer json:\n{\n\"issuer_did\": string,\n\"schema_key\" : {name: string, version: string, did: string},\n\"nonce\": string,\n\"key_correctness_proof\" : <key_correctness_proof>\n}\n\n#Errors\nCommon*\nWallet*\nAnoncreds*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -105,7 +105,7 @@
       "ret": "indy_error_t"
     },
     "indy_issuer_create_claim": {
-      "docs": "",
+      "docs": "Signs a given claim values for the given user by a given key (claim def).\nThe corresponding claim definition and revocation registry must be already created\nan stored into the wallet.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nclaim_req_json: a claim request with a blinded secret\nfrom the user (returned by prover_create_and_store_claim_req).\nAlso contains schema_key and issuer_did\nExample:\n{\n\"blinded_ms\" : <blinded_master_secret>,\n\"schema_key\" : {name: string, version: string, did: string},\n\"issuer_did\" : string,\n\"prover_did\" : string,\n\"blinded_ms_correctness_proof\" : <blinded_ms_correctness_proof>,\n\"nonce\": string\n}\nclaim_values_json: a claim containing attribute values for each of requested attribute names.\nExample:\n{\n\"attr1\" : [\"value1\", \"value1_as_int\"],\n\"attr2\" : [\"value2\", \"value2_as_int\"]\n}\nuser_revoc_index: index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)\ncb: Callback that takes command result as parameter.\n\n#Returns\nRevocation registry update json with a newly issued claim\nClaim json containing signed claim values, issuer_did, schema_key, and revoc_reg_seq_no\nused for issuance\n{\n\"values\": <see claim_values_json above>,\n\"signature\": <signature>,\n\"revoc_reg_seq_no\": int,\n\"issuer_did\", string,\n\"schema_key\" : {name: string, version: string, did: string},\n\"signature_correctness_proof\": <signature_correctness_proof>\n}\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -126,7 +126,7 @@
       "ret": "indy_error_t"
     },
     "indy_issuer_revoke_claim": {
-      "docs": "",
+      "docs": "Revokes a user identified by a user_revoc_index in a given revoc-registry.\nThe corresponding claim definition and revocation registry must be already\ncreated an stored into the wallet.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nissuer_did: a DID of the issuer signing claim_def transaction to the Ledger\nschema_json: schema as a json\nuser_revoc_index: index of the user in the revocation registry\ncb: Callback that takes command result as parameter.\n\n#Returns\nRevocation registry update json with a revoked claim\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -146,7 +146,7 @@
       "ret": "indy_error_t"
     },
     "indy_prover_store_claim_offer": {
-      "docs": "",
+      "docs": "Stores a claim offer from the given issuer in a secure storage.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nclaim_offer_json: claim offer as a json containing information about the issuer and a claim:\n{\n\"issuer_did\": string,\n\"schema_key\" : {name: string, version: string, did: string},\n\"nonce\": string,\n\"key_correctness_proof\" : <key_correctness_proof>\n}\n#Returns\nNone.\n\n#Errors\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -163,7 +163,7 @@
       "ret": "indy_error_t"
     },
     "indy_prover_get_claim_offers": {
-      "docs": "",
+      "docs": "Gets all stored claim offers (see prover_store_claim_offer).\nA filter can be specified to get claim offers for specific Issuer, claim_def or schema only.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nfilter_json: optional filter to get claim offers for specific Issuer, claim_def or schema only only\nEach of the filters is optional and can be combines\n{\n\"issuer_did\": string, (Optional)\n\"schema_key\" : {name: string (Optional), version: string (Optional), did: string(Optional) }  (Optional)\n}\n\n#Returns\nA json with a list of claim offers for the filter.\n{\n[{\n\"issuer_did\": string,\n\"schema_key\" : {name: string, version: string, did: string},\n\"nonce\": string,\n\"key_correctness_proof\" : <key_correctness_proof>\n}]\n}\n\n#Errors\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -181,7 +181,7 @@
       "ret": "indy_error_t"
     },
     "indy_prover_create_master_secret": {
-      "docs": "",
+      "docs": "Creates a master secret with a given name and stores it in the wallet.\nThe name must be unique.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nmaster_secret_name: a new master secret name\n\n#Returns\nNone.\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -198,7 +198,7 @@
       "ret": "indy_error_t"
     },
     "indy_prover_create_and_store_claim_req": {
-      "docs": "",
+      "docs": "Creates a clam request json for the given claim offer and stores it in a secure wallet.\nThe claim offer contains the information about Issuer (DID, schema_seq_no),\nand the schema (schema_key).\nThe method creates a blinded master secret for a master secret identified by a provided name.\nThe master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)\nThe blinded master secret is a part of the claim request.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nprover_did: a DID of the prover\nclaim_offer_json: claim offer as a json containing information about the issuer and a claim:\n{\n\"issuer_did\": string,\n\"schema_key\" : {name: string, version: string, did: string},\n\"nonce\": string,\n\"key_correctness_proof\" : <key_correctness_proof>\n}\nclaim_def_json: claim definition json associated with issuer_did and schema_seq_no in the claim_offer\nmaster_secret_name: the name of the master secret stored in the wallet\ncb: Callback that takes command result as parameter.\n\n#Returns\nClaim request json.\n{\n\"blinded_ms\" : <blinded_master_secret>,\n\"schema_key\" : {name: string, version: string, did: string},\n\"issuer_did\" : string,\n\"prover_did\" : string,\n\"blinded_ms_correctness_proof\" : <blinded_ms_correctness_proof>,\n\"nonce\": string\n}\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -219,7 +219,7 @@
       "ret": "indy_error_t"
     },
     "indy_prover_store_claim": {
-      "docs": "",
+      "docs": "Updates the claim by a master secret and stores in a secure wallet.\nThe claim contains the information about\nschema_key, issuer_did, revoc_reg_seq_no (see issuer_create_claim).\nSeq_no is a sequence number of the corresponding transaction in the ledger.\nThe method loads a blinded secret for this key from the wallet,\nupdates the claim and stores it in a wallet.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nclaims_json: claim json:\n{\n\"values\": <see claim_values_json above>,\n\"signature\": <signature>,\n\"revoc_reg_seq_no\": int,\n\"issuer_did\", string,\n\"schema_key\" : {name: string, version: string, did: string},\n\"signature_correctness_proof\": <signature_correctness_proof>\n}\nrev_reg_json: revocation registry json\ncb: Callback that takes command result as parameter.\n\n#Returns\nNone\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -237,7 +237,7 @@
       "ret": "indy_error_t"
     },
     "indy_prover_get_claims": {
-      "docs": "",
+      "docs": "Gets human readable claims according to the filter.\nIf filter is NULL, then all claims are returned.\nClaims can be filtered by Issuer, claim_def and/or Schema.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\nfilter_json: filter for claims\n{\n\"issuer_did\": string (Optional),\n\"schema_key\" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)\n}\ncb: Callback that takes command result as parameter.\n\n#Returns\nclaims json\n[{\n\"referent\": <string>,\n\"attrs\": [{\"attr_name\" : \"attr_raw_value\"}],\n\"schema_key\" : {name: string, version: string, did: string},\n\"issuer_did\": string,\n\"revoc_reg_seq_no\": int,\n}]\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -255,7 +255,7 @@
       "ret": "indy_error_t"
     },
     "indy_prover_get_claims_for_proof_req": {
-      "docs": "",
+      "docs": "Gets human readable claims matching the given proof request.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\nproof_request_json: proof request json\n{\n\"name\": string,\n\"version\": string,\n\"nonce\": string,\n\"requested_attr1_referent\": <attr_info>,\n\"requested_attr2_referent\": <attr_info>,\n\"requested_attr3_referent\": <attr_info>,\n\"requested_predicate_1_referent\": <predicate_info>,\n\"requested_predicate_2_referent\": <predicate_info>,\n}\ncb: Callback that takes command result as parameter.\n\nwhere attr_info:\n{\n\"name\": attribute name, (case insensitive and ignore spaces)\n\"restrictions\": [\n{\n\"schema_key\" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)\n\"issuer_did\": string (Optional)\n}\n]  (Optional) - if specified, claim must be created for one of the given\nschema_key/issuer_did pairs, or just schema_key, or just issuer_did.\n}\npredicate_info:\n{\n\"attr_name\": attribute name, (case insensitive and ignore spaces)\n\"p_type\": predicate type (Currently >= only)\n\"value\": requested value of attribute\n\"restrictions\": [\n{\n\"schema_key\" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)\n\"issuer_did\": string (Optional)\n}\n]  (Optional) - if specified, claim must be created for one of the given\nschema_key/issuer_did pairs, or just schema_key, or just issuer_did.\n}\n#Returns\njson with claims for the given pool request.\nClaim consists of referent, human-readable attributes (key-value map), schema_key, issuer_did and revoc_reg_seq_no.\n{\n\"requested_attr1_referent\": [claim1, claim2],\n\"requested_attr2_referent\": [],\n\"requested_attr3_referent\": [claim3],\n\"requested_predicate_1_referent\": [claim1, claim3],\n\"requested_predicate_2_referent\": [claim2],\n}, where claim is\n{\n\"referent\": <string>,\n\"attrs\": [{\"attr_name\" : \"attr_raw_value\"}],\n\"schema_key\" : {name: string, version: string, did: string},\n\"issuer_did\": string,\n\"revoc_reg_seq_no\": int\n}\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -273,7 +273,7 @@
       "ret": "indy_error_t"
     },
     "indy_prover_create_proof": {
-      "docs": "",
+      "docs": "Creates a proof according to the given proof request\nEither a corresponding claim with optionally revealed attributes or self-attested attribute must be provided\nfor each requested attribute (see indy_prover_get_claims_for_pool_req).\nA proof request may request multiple claims from different schemas and different issuers.\nAll required schemas, public keys and revocation registries must be provided.\nThe proof request also contains nonce.\nThe proof contains either proof or self-attested attribute value for each requested attribute.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nproof_req_json: proof request json as come from the verifier\n{\n\"nonce\": string,\n\"requested_attr1_referent\": <attr_info>,\n\"requested_attr2_referent\": <attr_info>,\n\"requested_attr3_referent\": <attr_info>,\n\"requested_predicate_1_referent\": <predicate_info>,\n\"requested_predicate_2_referent\": <predicate_info>,\n}\nrequested_claims_json: either a claim or self-attested attribute for each requested attribute\n{\n\"requested_attr1_referent\": [claim1_referent_in_wallet, true <reveal_attr>],\n\"requested_attr2_referent\": [self_attested_attribute],\n\"requested_attr3_referent\": [claim2_seq_no_in_wallet, false]\n\"requested_attr4_referent\": [claim2_seq_no_in_wallet, true]\n\"requested_predicate_1_referent\": [claim2_seq_no_in_wallet],\n\"requested_predicate_2_referent\": [claim3_seq_no_in_wallet],\n}\nschemas_jsons: all schema jsons participating in the proof request\n{\n\"claim1_referent_in_wallet\": <schema1>,\n\"claim2_referent_in_wallet\": <schema2>,\n\"claim3_referent_in_wallet\": <schema3>,\n}\n\nmaster_secret_name: the name of the master secret stored in the wallet\nclaim_def_jsons: all claim definition jsons participating in the proof request\n{\n\"claim1_referent_in_wallet\": <claim_def1>,\n\"claim2_referent_in_wallet\": <claim_def2>,\n\"claim3_referent_in_wallet\": <claim_def3>,\n}\nrevoc_regs_jsons: all revocation registry jsons participating in the proof request\n{\n\"claim1_referent_in_wallet\": <revoc_reg1>,\n\"claim2_referent_in_wallet\": <revoc_reg2>,\n\"claim3_referent_in_wallet\": <revoc_reg3>,\n}\ncb: Callback that takes command result as parameter.\n\nwhere attr_info:\n{\n\"name\": attribute name, (case insensitive and ignore spaces)\n\"restrictions\": [\n{\n\"schema_key\": {name (Optional), version (Optional), did (Optional)}, (Optional)\n\"issuer_did\": string (Optional)\n}\n]  (Optional)\n}\npredicate_info:\n{\n\"attr_name\": attribute name, (case insensitive and ignore spaces)\n\"p_type\": predicate type (Currently >= only)\n\"value\": requested value of attribute\n\"restrictions\": [\n{\n\"schema_key\": {name (Optional), version (Optional), did (Optional)}, (Optional)\n\"issuer_did\": string (Optional)\n}\n]  (Optional)\n}\n\n#Returns\nProof json\nFor each requested attribute either a proof (with optionally revealed attribute value) or\nself-attested attribute value is provided.\nEach proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.\nThere ais also aggregated proof part common for all claim proofs.\n{\n\"requested\": {\n\"requested_attr1_id\": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],\n\"requested_attr2_id\": [self_attested_attribute],\n\"requested_attr3_id\": [claim_proof2_referent]\n\"requested_attr4_id\": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],\n\"requested_predicate_1_referent\": [claim_proof2_referent],\n\"requested_predicate_2_referent\": [claim_proof3_referent],\n}\n\"proof\": {\n\"proofs\": {\n\"claim_proof1_referent\": <claim_proof>,\n\"claim_proof2_referent\": <claim_proof>,\n\"claim_proof3_referent\": <claim_proof>\n},\n\"aggregated_proof\": <aggregated_proof>\n}\n\"identifiers\": {\"claim_proof1_referent\":{issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}}\n}\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -296,7 +296,7 @@
       "ret": "indy_error_t"
     },
     "indy_verifier_verify_proof": {
-      "docs": "",
+      "docs": "Verifies a proof (of multiple claim).\nAll required schemas, public keys and revocation registries must be provided.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nproof_request_json: initial proof request as sent by the verifier\n{\n\"nonce\": string,\n\"requested_attr1_referent\": <attr_info>,\n\"requested_attr2_referent\": <attr_info>,\n\"requested_attr3_referent\": <attr_info>,\n\"requested_predicate_1_referent\": <predicate_info>,\n\"requested_predicate_2_referent\": <predicate_info>,\n}\nproof_json: proof json\nFor each requested attribute either a proof (with optionally revealed attribute value) or\nself-attested attribute value is provided.\nEach proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.\nThere ais also aggregated proof part common for all claim proofs.\n{\n\"requested\": {\n\"requested_attr1_id\": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],\n\"requested_attr2_id\": [self_attested_attribute],\n\"requested_attr3_id\": [claim_proof2_referent]\n\"requested_attr4_id\": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],\n\"requested_predicate_1_referent\": [claim_proof2_referent],\n\"requested_predicate_2_referent\": [claim_proof3_referent],\n}\n\"proof\": {\n\"proofs\": {\n\"claim_proof1_referent\": <claim_proof>,\n\"claim_proof2_referent\": <claim_proof>,\n\"claim_proof3_referent\": <claim_proof>\n},\n\"aggregated_proof\": <aggregated_proof>\n}\n\"identifiers\": {\"claim_proof1_referent\":{issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}}\n}\nschemas_jsons: all schema jsons participating in the proof\n{\n\"claim_proof1_referent\": <schema>,\n\"claim_proof2_referent\": <schema>,\n\"claim_proof3_referent\": <schema>\n}\nclaim_defs_jsons: all claim definition jsons participating in the proof\n{\n\"claim_proof1_referent\": <claim_def>,\n\"claim_proof2_referent\": <claim_def>,\n\"claim_proof3_referent\": <claim_def>\n}\nrevoc_regs_jsons: all revocation registry jsons participating in the proof\n{\n\"claim_proof1_referent\": <revoc_reg>,\n\"claim_proof2_referent\": <revoc_reg>,\n\"claim_proof3_referent\": <revoc_reg>\n}\ncb: Callback that takes command result as parameter.\n\n#Returns\nvalid: true - if signature is valid, false - otherwise\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -570,7 +570,7 @@
       "ret": "indy_error_t"
     },
     "indy_key_for_did": {
-      "docs": "Returns ver key (key id) for the given DID.\n\n\"indy_key_for_did\" call follow the idea that we resolve information about their DID from\nthe ledger with cache in the local wallet. The \"indy_open_wallet\" call has freshness parameter\nthat is used for checking the freshness of cached pool value.\n\nNote if you don't want to resolve their DID info from the ledger you can use\n\"indy_key_for_local_did\" call instead that will look only to local wallet and skip\nfreshness checking\n\nNote that indy_create_and_store_my_did makes similar wallet record as indy_create_key.\nAs result we can use returned ver key in all generic crypto and messaging functions.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\npool_handle: Pool handle to resolve information from the ledger.\nwallet_handle: Wallet handle (created by open_wallet).\ndid - The DID to resolve key.\ncb: Callback that takes command result as parameter.\n\n#Returns\nError Code\ncb:\n- xcommand_handle: Command handle to map callback to caller context.\n- err: Error code.\n- key - The DIDs ver key (key id).\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "docs": "Creates keys (signing and encryption keys) for a new\nDID (owned by the caller of the library).\nIdentity's DID must be either explicitly provided, or taken as the first 16 bit of verkey.\nSaves the Identity DID with keys in a secured Wallet, so that it can be used to sign\nand encrypt transactions.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\ndid_json: Identity information as json. Example:\n{\n\"did\": string, (optional;\nif not provided and cid param is false then the first 16 bit of the verkey will be used as a new DID;\nif not provided and cid is true then the full verkey will be used as a new DID;\nif provided, then keys will be replaced - key rotation use case)\n\"seed\": string, (optional; if not provide then a random one will be created)\n\"crypto_type\": string, (optional; if not set then ed25519 curve is used;\ncurrently only 'ed25519' value is supported for this field)\n\"cid\": bool, (optional; if not set then false is used;)\n}\ncb: Callback that takes command result as parameter.\n\n#Returns\nDID, verkey (for verification of signature) and public_key (for decryption)\n\n#Errors\nCommon*\nWallet*\nCrypto*\nGenerated temporary keys (signing and encryption keys) for an existing\nDID (owned by the caller of the library).\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nidentity_json: Identity information as json. Example:\n{\n\"seed\": string, (optional; if not provide then a random one will be created)\n\"crypto_type\": string, (optional; if not set then ed25519 curve is used;\ncurrently only 'ed25519' value is supported for this field)\n}\ncb: Callback that takes command result as parameter.\n\n#Returns\nverkey (for verification of signature) and public_key (for decryption)\n\n#Errors\nCommon*\nWallet*\nCrypto*\nApply temporary keys as main for an existing DID (owned by the caller of the library).\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\ndid\ncb: Callback that takes command result as parameter.\n\n#Errors\nCommon*\nWallet*\nCrypto*\nSaves their DID for a pairwise connection in a secured Wallet,\nso that it can be used to verify transaction.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nidentity_json: Identity information as json. Example:\n{\n\"did\": string, (required)\n\"verkey\": string (optional, can be avoided if did is cryptonym: did == verkey),\n}\ncb: Callback that takes command result as parameter.\n\n#Returns\nNone\n\n#Errors\nCommon*\nWallet*\nCrypto*\nReturns ver key (key id) for the given DID.\n\n\"indy_key_for_did\" call follow the idea that we resolve information about their DID from\nthe ledger with cache in the local wallet. The \"indy_open_wallet\" call has freshness parameter\nthat is used for checking the freshness of cached pool value.\n\nNote if you don't want to resolve their DID info from the ledger you can use\n\"indy_key_for_local_did\" call instead that will look only to the local wallet and skip\nfreshness checking.\n\nNote that \"indy_create_and_store_my_did\" makes similar wallet record as \"indy_create_key\".\nAs result we can use returned ver key in all generic crypto and messaging functions.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: Wallet handle (created by open_wallet).\ndid - The DID to resolve key.\ncb: Callback that takes command result as parameter.\n\n#Returns\nError Code\ncb:\n- xcommand_handle: Command handle to map callback to caller context.\n- err: Error code.\n- key - The DIDs ver key (key id).\n\n#Errors\nCommon*\nWallet*\nCrypto*",
       "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -589,7 +589,7 @@
       "ret": "indy_error_t"
     },
     "indy_key_for_local_did": {
-      "docs": "Returns ver key (key id) for the given DID.\n\n\"indy_key_for_local_did\" call looks data stored in the local wallet only and skips freshness checking.\n\nNote if you want to get fresh data from the ledger you can use \"indy_key_for_did\" call\ninstead.\n\nNote that \"indy_create_and_store_my_did\" makes similar wallet record as \"indy_create_key\".\nAs result we can use returned ver key in all generic crypto and messaging functions.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: Wallet handle (created by open_wallet).\ndid - The DID to resolve key.\ncb: Callback that takes command result as parameter.\n\n#Returns\nError Code\ncb:\n- xcommand_handle: Command handle to map callback to caller context.\n- err: Error code.\n- key - The DIDs ver key (key id).\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "docs": "Returns ver key (key id) for the given DID.\n\n\"indy_key_for_local_did\" call looks data stored in the local wallet only and skips freshness\nchecking.\n\nNote if you want to get fresh data from the ledger you can use \"indy_key_for_did\" call\ninstead.\n\nNote that \"indy_create_and_store_my_did\" makes similar wallet record as \"indy_create_key\".\nAs result we can use returned ver key in all generic crypto and messaging functions.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: Wallet handle (created by open_wallet).\ndid - The DID to resolve key.\ncb: Callback that takes command result as parameter.\n\n#Returns\nError Code\ncb:\n- xcommand_handle: Command handle to map callback to caller context.\n- err: Error code.\n- key - The DIDs ver key (key id).\n\n#Errors\nCommon*\nWallet*\nCrypto*",
       "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -607,7 +607,7 @@
       "ret": "indy_error_t"
     },
     "indy_set_endpoint_for_did": {
-      "docs": "",
+      "docs": "Returns endpoint information for the given DID.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: Wallet handle (created by open_wallet).\ndid - The DID to resolve endpoint.\ncb: Callback that takes command result as parameter.\n\n#Returns\nError Code\ncb:\n- xcommand_handle: Command handle to map callback to caller context.\n- err: Error code.\n- endpoint - The DIDs endpoint.\n- transport_vk - The DIDs transport key (ver key, key id).\n\n#Errors\nCommon*\nWallet*\nCrypto*",
       "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -810,7 +810,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_nym_request": {
-      "docs": "Builds a NYM request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ntarget_did: Id of Identity stored in secured Wallet.\nverkey: verification key\nalias\nrole: Role of a user NYM record\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a NYM request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ntarget_did: Id of Identity stored in secured Wallet.\nverkey: verification key\nalias: alias\nrole: Role of a user NYM record\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -852,7 +852,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_get_attrib_request": {
-      "docs": "Builds a GET_ATTRIB request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ntarget_did: Id of Identity stored in secured Wallet.\nhash: Hash of attribute data\nraw: represented as json, where key is attribute name and value is it's value\nenc: Encrypted attribute data\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a GET_ATTRIB request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ntarget_did: Id of Identity stored in secured Wallet.\ndata: name (attribute name)\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -928,7 +928,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_claim_def_txn": {
-      "docs": "Builds an CLAIM_DEF request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\nxref: Seq. number of schema\nsignature_type\ndata: components of a key in json: N, R, S, Z\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds an CLAIM_DEF request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\nxref: Seq. number of schema\nsignature_type: signature type (only CL supported now)\ndata: components of a key in json: N, R, S, Z\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1140,7 +1140,7 @@
       "ret": "indy_error_t"
     },
     "indy_create_pool_ledger_config": {
-      "docs": "",
+      "docs": "Creates a new local pool ledger configuration that can be used later to connect pool nodes.\n\n#Params\nconfig_name: Name of the pool ledger configuration.\nconfig (optional): Pool configuration json. if NULL, then default config will be used. Example:\n{\n\"genesis_txn\": string (optional), A path to genesis transaction file. If NULL, then a default one will be used.\nIf file doesn't exists default one will be created.\n}\n\n#Returns\nError code\n\n#Errors\nCommon*\nLedger*",
       "group": "pool",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1157,7 +1157,7 @@
       "ret": "indy_error_t"
     },
     "indy_open_pool_ledger": {
-      "docs": "",
+      "docs": "Opens pool ledger and performs connecting to pool nodes.\n\nPool ledger configuration with corresponded name must be previously created\nwith indy_create_pool_ledger_config method.\nIt is impossible to open pool with the same name more than once.\n\nconfig_name: Name of the pool ledger configuration.\nconfig (optional): Runtime pool configuration json.\nif NULL, then default config will be used. Example:\n{\n\"refresh_on_open\": bool (optional), Forces pool ledger to be refreshed immediately after opening.\nDefaults to true.\n\"auto_refresh_time\": int (optional), After this time in minutes pool ledger will be automatically refreshed.\nUse 0 to disable automatic refresh. Defaults to 24*60.\n\"network_timeout\": int (optional), Network timeout for communication with nodes in milliseconds.\nDefaults to 20000.\n}\n\n#Returns\nHandle to opened pool to use in methods that require pool connection.\n\n#Errors\nCommon*\nLedger*",
       "group": "pool",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1175,7 +1175,7 @@
       "ret": "indy_error_t"
     },
     "indy_refresh_pool_ledger": {
-      "docs": "",
+      "docs": "Refreshes a local copy of a pool ledger and updates pool nodes connections.\n\n#Params\nhandle: pool handle returned by indy_open_pool_ledger\n\n#Returns\nError code\n\n#Errors\nCommon*\nLedger*",
       "group": "pool",
       "params": [
         {"name": "command_hangle", "type": "indy_handle_t"},
@@ -1191,7 +1191,7 @@
       "ret": "indy_error_t"
     },
     "indy_list_pools": {
-      "docs": "",
+      "docs": "Lists names of created pool ledgers",
       "group": "pool",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1207,7 +1207,7 @@
       "ret": "indy_error_t"
     },
     "indy_close_pool_ledger": {
-      "docs": "",
+      "docs": "Closes opened pool ledger, opened nodes connections and frees allocated resources.\n\n#Params\nhandle: pool handle returned by indy_open_pool_ledger.\n\n#Returns\nError code\n\n#Errors\nCommon*\nLedger*",
       "group": "pool",
       "params": [
         {"name": "command_hangle", "type": "indy_handle_t"},
@@ -1223,7 +1223,7 @@
       "ret": "indy_error_t"
     },
     "indy_delete_pool_ledger_config": {
-      "docs": "",
+      "docs": "Deletes created pool ledger configuration.\n\n#Params\nconfig_name: Name of the pool ledger configuration to delete.\n\n#Returns\nError code\n\n#Errors\nCommon*\nLedger*",
       "group": "pool",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1239,7 +1239,7 @@
       "ret": "indy_error_t"
     },
     "indy_register_wallet_type": {
-      "docs": "Registers custom wallet implementation.\n\nIt allows library user to provide custom wallet implementation.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nxtype: Wallet type name.\ncreate: WalletType create operation handler\nopen: WalletType open operation handler\nset: Wallet set operation handler\nget: Wallet get operation handler\nget_not_expired: Wallet get_not_expired operation handler\nlist: Wallet list operation handler\nclose: Wallet close operation handler\ndelete: WalletType delete operation handler\nfree: Handler that allows to de-allocate strings allocated in caller code\n\n#Returns\nError code",
+      "docs": "Registers custom wallet implementation.\n\nIt allows library user to provide custom wallet implementation.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nxtype: Wallet type name.\ncreate: WalletType create operation handler\nopen: WalletType open operation handler\nset: Wallet set operation handler\nget: Wallet get operation handler\nget_not_expired: Wallet get_not_expired operation handler\nlist: Wallet list operation handler(must to return data in the following format: {\"values\":[{\"key\":\"\", \"value\":\"\"}, {\"key\":\"\", \"value\":\"\"}]}\nclose: Wallet close operation handler\ndelete: WalletType delete operation handler\nfree: Handler that allows to de-allocate strings allocated in caller code\n\n#Returns\nError code",
       "group": "wallet",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},

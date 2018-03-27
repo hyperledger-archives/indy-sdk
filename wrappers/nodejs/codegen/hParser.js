@@ -189,4 +189,36 @@ fs.readFileSync(path.resolve(__dirname, '../../../libindy/include/indy_mod.h'), 
     api.errors['c' + pair[0]] = pair[1]
   })
 
+// parse docs from rust code api
+dir = path.resolve(__dirname, '../../../libindy/src/api')
+fs.readdirSync(dir).forEach(function (file) {
+  file = path.resolve(dir, file)
+
+  var rustSrc = fs.readFileSync(file, 'utf8')
+
+  var lines = rustSrc.split('\n')
+  var i = 0
+  var docs = ''
+  while (i < lines.length) {
+    let line = lines[i]
+    i++
+    while (/^\/\//.test(line) && i < lines.length) {
+      docs += line.replace(/^\/\/+/, '').trim() + '\n'
+      line = lines[i]
+      i++
+    }
+    var m = /^pub extern fn ([a-zA-Z0-9_]+) *\(/.exec(line)
+    if (m) {
+      let fnName = m[1].trim()
+      api.functions[fnName].docs = docs.trim()
+      docs = ''
+    }
+  }
+})
+
+// set some json: true's
+api.functions.indy_create_pool_ledger_config.params[2].json = true
+api.functions.indy_list_pools.params[1].params[2].json = true
+api.functions.indy_list_wallets.params[1].params[2].json = true
+
 fs.writeFileSync(path.resolve(__dirname, 'api.json'), stringify(api, {maxLength: 100}), 'utf8')
