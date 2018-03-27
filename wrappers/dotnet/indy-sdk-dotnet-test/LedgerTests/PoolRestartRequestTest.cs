@@ -13,7 +13,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         public async Task TestBuildPoolRestartRequestWorks()
         {                   
             var expectedResult = string.Format("\"identifier\":\"%s\"," +
-                "\"operation\":{\"type\":\"116\"," +
+                "\"operation\":{\"type\":\"118\"," +
                 "\"action\":\"start\"," +
                 "\"schedule\":{}", DID1);
 

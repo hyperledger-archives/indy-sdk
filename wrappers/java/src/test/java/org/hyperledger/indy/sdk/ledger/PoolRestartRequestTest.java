@@ -9,7 +9,7 @@ public class PoolRestartRequestTest extends IndyIntegrationTestWithPoolAndSingle
     @Test
     public void testBuildPoolRestartRequestWorksForStartAction() throws Exception {
         String expectedResult = String.format("\"identifier\":\"%s\"," +
-                "\"operation\":{\"type\":\"116\"," +
+                "\"operation\":{\"type\":\"118\"," +
                 "\"action\":\"start\"," +
                 "\"schedule\":{}", DID);
 

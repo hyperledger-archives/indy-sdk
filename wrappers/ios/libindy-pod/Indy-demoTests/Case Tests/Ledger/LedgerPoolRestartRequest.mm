@@ -32,7 +32,7 @@
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
 
     expectedResult[@"operation"] = [NSMutableDictionary new];
-    expectedResult[@"operation"][@"type"] = @"116";
+    expectedResult[@"operation"][@"type"] = @"118";
     expectedResult[@"operation"][@"action"] = @"start";
     expectedResult[@"operation"][@"schedule"] = @"{}";
 

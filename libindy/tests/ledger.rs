@@ -1008,7 +1008,7 @@ mod high_cases {
         fn indy_build_pool_restart_request_works_for_start_action() {
             TestUtils::cleanup_storage();
 
-            let expected_result = r#""operation":{"type":"116","action":"start","schedule":{}"#;
+            let expected_result = r#""operation":{"type":"118","action":"start","schedule":{}"#;
             let request = LedgerUtils::build_pool_restart_request(DID_TRUSTEE,
                                                                   "start",
                                                                   Some("{}")).unwrap();

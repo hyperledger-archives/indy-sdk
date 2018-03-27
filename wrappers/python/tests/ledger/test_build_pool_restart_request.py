@@ -11,7 +11,7 @@ async def test_build_pool_restart_request_work_for_start_action():
     expected_response = {
         "identifier": identifier,
         "operation": {
-            "type": "116",
+            "type": "118",
             "action": "start",
             "schedule": {},
         }
