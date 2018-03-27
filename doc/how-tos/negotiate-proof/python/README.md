@@ -1,4 +1,5 @@
 # Negotiate a Proof
+
 Indy-SDK Developer Walkthrough #5, Python Edition
 
 [ [Java](../java/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
@@ -6,17 +7,18 @@ Indy-SDK Developer Walkthrough #5, Python Edition
 
 ## Prerequisites
 
-Setup your workstation and indy development VM. See [prerequisites](../../prerequisites).
+Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../../prerequisites).
 
 
 ## Steps
 
 ### Step 1
 
-In your normal workstation OS (not the VM), open a python editor of your
+In your normal workstation operating system (not the VM), open a python editor of your
 choice and paste the code from [template.py](template.py)
-into a new doc. We will be modifying this code in later steps. Save the
-doc as `negotiate_proof.py`
+into a new doc. We will be modifying this code in later steps.
+
+Save the doc as `negotiate_proof.py`.
 
 This is a very simple app framework into which you'll plug the code
 you'll be writing.
@@ -29,14 +31,15 @@ copy that code as our starting point.
 
 Copy the contents of [step2.py](step2.py) into
 `negotiate_proof.py` on top of the `Step 2 code goes here` placeholder comment.
+
 Save the updated version of `negotiate_proof.py`.
 
 ### Step 3
 
 Proof negotiation typically begins when a *verifier* (also called a *relying party*)
-requests proof. (As with credential issuance, the process has 3 logical
+requests proof. (As with credential issuance, the process has three logical
 phases, but it is rare to begin with a proof offer. However, if an initial
-proof request is met with a counter-offer, the offering phase of the
+proof request is met with a [counter-offer](https://github.com/TechWritingWhiz/indy-sdk/tree/master/doc/how-tos/negotiate-proof/python), the offering phase of the
 sequence becomes relevant.)
 
 ![3 phases of proof negotiation; first phase is uncommon](../3-phases.png)
@@ -56,6 +59,7 @@ to learn more.)
 
 Copy the contents of [step3.py](step3.py) into
 `negotiate_proof.py` on top of the `Step 3 code goes here` placeholder comment.
+
 Save the updated version of `negotiate_proof.py`.
 
 ### Step 4
@@ -70,6 +74,8 @@ proof is created.
 Copy the contents of [step4.py](step4.py) into
 `negotiate_proof.py` on top of the `Step 4 code goes here` placeholder comment.
 
+Save the updated version of `negotiate_proof.py`.
+
 ### Step 6
 
 Finally, the verifier needs to check to be sure the proof that's presented
@@ -78,6 +84,7 @@ satisfies their criteria. This is easy; just call `anoncreds.verifier_verify_pro
 Copy the contents of [step5.py](step5.py) into
 `negotiate_proof.py` on top of the `Step 5 code goes here` placeholder comment.
 
+Save the updated version of `negotiate_proof.py`.
 
 ### Step 6
 
@@ -87,4 +94,3 @@ Run the [finished code](negotiate_proof.py) and observe the whole sequence.
 
 You might try the ["Send a Secure Message"](../../send-secure-msg/python/README.md)
 how-to.
-
