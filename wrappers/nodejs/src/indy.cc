@@ -46,7 +46,7 @@ class IndyCallback : public Nan::AsyncResource {
         callback.Reset();
         delete str0;
         delete str1;
-        free(buffer0data);
+        // NOTE: do not `free(buffer0data)` b/c Nan::NewBuffer assumes ownership and node's garbage collector will free it.
     }
 
     void cbNone(indy_error_t xerr){
