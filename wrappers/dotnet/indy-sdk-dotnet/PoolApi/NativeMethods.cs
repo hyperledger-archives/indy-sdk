@@ -65,5 +65,19 @@ namespace Hyperledger.Indy.PoolApi
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_close_pool_ledger(int command_handle, IntPtr handle, IndyMethodCompletedDelegate cb);
+   
+        /// <summary>
+        /// Lists names of created pool ledgers
+        /// </summary>
+        /// <returns>The list pools.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="cb">Cb.</param>
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_list_pools(int command_handle, ListPoolsCompletedDelegate cb);
+
+        /// <summary>
+        /// Delegate to be uses on completion of calls to indy_list_pools.
+        /// </summary>
+        internal delegate void ListPoolsCompletedDelegate(int xcommand_handle, int err, string pools);
     }
 }
