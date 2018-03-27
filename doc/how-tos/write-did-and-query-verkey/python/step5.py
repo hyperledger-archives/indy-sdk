@@ -21,7 +21,7 @@
         print_log('GET_NYM response: ')
         pprint.pprint(get_nym_response)
 
-        # See whether we received the same info that we wrote the ledger in step 5.
+        # See whether we received the same info that we wrote the ledger in step 4.
         print_log('\n12. Comparing Trust Anchor verkey as written by Steward and as retrieved in GET_NYM '
                   'response submitted by Client\n')
         print_log('Written by Steward: ', trust_anchor_verkey)
