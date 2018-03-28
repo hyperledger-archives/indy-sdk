@@ -18,3 +18,5 @@ prebuilds/
 *.1sdk.pdb
 *.lastbuildstate
 npm-debug.log
+package-lock.json
+yarn.lock

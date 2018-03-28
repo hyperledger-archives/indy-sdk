@@ -5,6 +5,7 @@
 Native bindings for [Hyperledger Indy](https://www.hyperledger.org/projects/hyperledger-indy).
 
 - [Installing](#installing)
+- [Usage](#usage)
 - [API](#api)
   * [IndyError](#indyerror)
   * [anoncreds](#anoncreds)
@@ -23,7 +24,7 @@ This module has a native compile step. It compiles C++ code and dynamically link
 You will need:
 
 * C++ build tools and Python 2. See [this](https://github.com/nodejs/node-gyp#installation) for platform recommendations.
-* `libindy` on your system in a library path. (i.e. `/usr/lib/libindy.so` for linux)
+* `libindy` v1.3.1+ in your system library path. (i.e. `/usr/lib/libindy.so` for linux)
 
 Then you can install via npm:
 
@@ -31,7 +32,7 @@ Then you can install via npm:
 npm install --save indy-sdk
 ```
 
-## API
+## Usage
 
 ```js
 var indy = require('indy-sdk')
@@ -54,6 +55,8 @@ All the functions may yield an IndyError. The errors are based on libindy error 
 
 * `err.indy_code` - the code number from libindy
 * `err.indy_name` - the name string for the code
+
+## API
 
 [//]: # (CODEGEN-START - don't edit by hand see `codegen/index.js`)
 ### anoncreds
