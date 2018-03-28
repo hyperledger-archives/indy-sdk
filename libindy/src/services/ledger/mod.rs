@@ -9,7 +9,8 @@ pub mod constants;
 use self::types::*;
 use errors::common::CommonError;
 use serde_json::Value;
-use services::ledger::constants::{NYM, REVOC_REG_DEF_MARKER};
+use services::ledger::constants::{NYM, REVOC_REG_DEF};
+use services::anoncreds::types::RevocationRegistryDefinition;
 use self::indy_crypto::utils::json::JsonDecodable;
 
 use std::collections::HashMap;
@@ -99,9 +100,15 @@ impl LedgerService {
     }
 
     pub fn build_schema_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
-        let data = SchemaOperationData::from_json(&data)
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {:?}", err)))?;
-        let operation = SchemaOperation::new(data);
+        let schema: Schemas = serde_json::from_str(data)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Schema: {:?}", err)))?;
+
+        let schema_data = match schema {
+            Schemas::SchemaOld { name, version, attr_names } => SchemaOperationData::new(name, version, attr_names),
+            Schemas::SchemaNew { id, name, version, attr_names } => SchemaOperationData::new(name, version, attr_names)
+        };
+
+        let operation = SchemaOperation::new(schema_data);
         Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("SCHEMA request json is invalid {:?}.", err)))
     }
@@ -182,23 +189,42 @@ impl LedgerService {
             .map_err(|err| CommonError::InvalidState(format!("POOL_UPGRADE request json is invalid {:?}.", err)))
     }
 
-    pub fn build_revoc_reg_def_request(&self, identifier: &str, _type: &str, tag: &str, cred_def_id: &str, value: &str) -> Result<String, CommonError> {
-        let id = LedgerService::build_id(identifier, REVOC_REG_DEF_MARKER, Some(cred_def_id), _type, tag);
-        let value = RevocationRegistryDefOperationValue::from_json(value)?;
+    pub fn build_revoc_reg_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
+        serde_json::from_str::<RevocationRegistryDefinition>(data)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistryDefinition: {:?}", err)))?;
 
-        let operation = RevocationRegistryDefOperation::new(&id, tag, cred_def_id, value);
+        let mut rev_reg_def_operation: Value = serde_json::from_str(&data)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistryDefinition: {:?}", err)))?;
+        rev_reg_def_operation["type"] = Value::String(REVOC_REG_DEF.to_string());
 
-        Request::build_request(identifier, operation)
+        Request::build_request(identifier, rev_reg_def_operation)
             .map_err(|err| CommonError::InvalidState(format!("REVOC_REG_DEF request json is invalid {:?}.", err)))
     }
 
-    pub fn build_revoc_reg_entry_request(&self, identifier: &str, _type: &str, revoc_reg_def_id: &str, value: &str) -> Result<String, CommonError> {
-        let value = RevocationRegistryEntryOperationValue::from_json(value)?;
+    pub fn build_get_revoc_reg_def_request(&self, identifier: &str, id: &str) -> Result<String, CommonError> {
+        let operation = GetRevRegDefOperation::new(id);
+        Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("GET_REVOC_REG_DEF request json is invalid {:?}.", err)))
+    }
 
-        let operation = RevocationRegistryEntryOperation::new(revoc_reg_def_id, value);
+    pub fn build_revoc_reg_entry_request(&self, identifier: &str, revoc_reg_def_id: &str, revoc_def_type: &str, value: &str) -> Result<String, CommonError> {
+        let value = RevocationRegistryEntryOperationValue::from_json(value)?;
+        let operation = RevocationRegistryEntryOperation::new(revoc_def_type, revoc_reg_def_id, value);
 
         Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("REVOC_REG_ENTRY request json is invalid {:?}.", err)))
+    }
+
+    pub fn build_get_revoc_reg_request(&self, identifier: &str, revoc_reg_def_id: &str, timestamp: i64) -> Result<String, CommonError> {
+        let operation = GetRevRegOperation::new(revoc_reg_def_id, timestamp);
+        Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("GET_REVOC_REG request json is invalid {:?}.", err)))
+    }
+
+    pub fn build_get_revoc_reg_delta_request(&self, identifier: &str, revoc_reg_def_id: &str, from: Option<i64>, to: i64) -> Result<String, CommonError> {
+        let operation = GetRevRegDeltaOperation::new(revoc_reg_def_id, from, to);
+        Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("GET_REVOC_REG_DELTA request json is invalid {:?}.", err)))
     }
 
     fn get_req_id() -> u64 {

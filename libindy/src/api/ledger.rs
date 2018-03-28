@@ -753,16 +753,20 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: DID of the submitter stored in secured Wallet.
-/// _type: Revocation Registry type (only CL_ACCUM is supported for now).
-/// cred_def_id: ID of the corresponding ClaimDef.
-/// tag: Unique descriptive ID of the Registry.
-/// value: Registry-specific data: {
-///     issuance_type: string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
-///     max_cred_num: number - Maximum number of credentials the Registry can serve.
-///     public_keys: <public_keys> - Registry's public key.
-///     tails_hash: string - Hash of tails.
-///     tails_locaiton: string - Location of tails file.
-/// }
+/// data: Revocation Registry data:
+///     {
+///         "id": string - ID of the Revocation Registry,
+///         "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+///         "tag": string - Unique descriptive ID of the Registry,
+///         "credDefId": string - ID of the corresponding ClaimDef,
+///         "value": Registry-specific data {
+///             "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+///             "maxCredNum": number - Maximum number of credentials the Registry can serve.
+///             "tailsHash": string - Hash of tails.
+///             "tailsLocation": string - Location of tails file.
+///             "publicKeys": <public_keys> - Registry's public key.
+///         }
+///     }
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -773,26 +777,55 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_build_revoc_reg_def_request(command_handle: i32,
                                                submitter_did: *const c_char,
-                                               _type: *const c_char,
-                                               tag: *const c_char,
-                                               cred_def_id: *const c_char,
-                                               value: *const c_char,
+                                               data: *const c_char,
                                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                    request_json: *const c_char)>) -> ErrorCode {
+                                                                    rev_reg_def_req: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(_type, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(tag, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(value, ErrorCode::CommonInvalidParam6);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+    check_useful_c_str!(data, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildRevocRegDefRequest(
             submitter_did,
-            _type,
-            tag,
-            cred_def_id,
-            value,
+            data,
+            Box::new(move |result| {
+                let (err, rev_reg_def_req) = result_to_err_code_1!(result, String::new());
+                let rev_reg_def_req = CStringUtils::string_to_cstring(rev_reg_def_req);
+                cb(command_handle, err, rev_reg_def_req.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+/// Builds a GET_REVOC_REG_DEF request. Request to get a revocation registry definition,
+/// that Issuer creates for a particular Claim Definition.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: DID of the read request sender.
+/// id:  ID of the corresponding RevocRegDef.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_get_revoc_reg_def_request(command_handle: i32,
+                                                   submitter_did: *const c_char,
+                                                   id: *const c_char,
+                                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                        request_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildGetRevocRegDefRequest(
+            submitter_did,
+            id,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
@@ -811,13 +844,13 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: DID of the submitter stored in secured Wallet.
-/// _type: Revocation Registry type (only CL_ACCUM is supported for now).
 /// revoc_reg_def_id: ID of the corresponding RevocRegDef.
+/// rev_def_type: Revocation Registry type (only CL_ACCUM is supported for now).
 /// value: Registry-specific data: {
+///     prevAccum: string - previous accumulator value.
+///     accum: string - current accumulator value.
 ///     issued: array<number> - an array of issued indices.
-///     revoked: array<number> an array of revoked indices
-///     prev_accum: previous accumulator value.
-///     accum: current accumulator value.
+///     revoked: array<number> an array of revoked indices.
 /// }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -827,25 +860,113 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_revoc_reg_delta_request(command_handle: i32,
+pub extern fn indy_build_revoc_reg_entry_request(command_handle: i32,
                                                  submitter_did: *const c_char,
-                                                 _type: *const c_char,
                                                  revoc_reg_def_id: *const c_char,
+                                                 rev_def_type: *const c_char,
                                                  value: *const c_char,
                                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                       request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(_type, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(revoc_reg_def_id, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(rev_def_type, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(value, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildRevocRegEntryRequest(
             submitter_did,
-            _type,
             revoc_reg_def_id,
+            rev_def_type,
             value,
+            Box::new(move |result| {
+                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let request_json = CStringUtils::string_to_cstring(request_json);
+                cb(command_handle, err, request_json.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+/// Builds a GET_REVOC_REG request. Request to get the accumulated state of the Revocation Registry
+/// by ID. The state is defined by the given timestamp.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: DID of the read request sender.
+/// revoc_reg_def_id:  ID of the corresponding RevocRegDef.
+/// timestamp: Requested time represented as a total number of seconds from Unix Epoch
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_get_revoc_reg_request(command_handle: i32,
+                                               submitter_did: *const c_char,
+                                               revoc_reg_def_id: *const c_char,
+                                               timestamp: i64,
+                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                    request_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildGetRevocRegRequest(
+            submitter_did,
+            revoc_reg_def_id,
+            timestamp,
+            Box::new(move |result| {
+                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let request_json = CStringUtils::string_to_cstring(request_json);
+                cb(command_handle, err, request_json.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+/// Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
+/// The Delta is defined by from and to timestamp fields.
+/// If from is not specified, then the whole state till to will be returned.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: DID of the read request sender.
+/// revoc_reg_def_id:  ID of the corresponding RevocRegDef.
+/// from: Requested time represented as a total number of seconds from Unix Epoch
+/// to: Requested time represented as a total number of seconds from Unix Epoch
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: i32,
+                                                     submitter_did: *const c_char,
+                                                     revoc_reg_def_id: *const c_char,
+                                                     from: i64,
+                                                     to: i64,
+                                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                          request_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let from = if from != -1 { Some(from) } else { None };
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildGetRevocRegDeltaRequest(
+            submitter_did,
+            revoc_reg_def_id,
+            from,
+            to,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);

@@ -158,15 +158,33 @@ impl SchemaOperation {
 
 impl JsonEncodable for SchemaOperation {}
 
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum Schemas {
+    SchemaOld {
+        name: String,
+        version: String,
+        attr_names: HashSet<String>
+    },
+    SchemaNew {
+        id: String,
+        name: String,
+        version: String,
+        #[serde(rename = "attrNames")]
+        attr_names: HashSet<String>
+    }
+}
+
+
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct SchemaOperationData {
     name: String,
     version: String,
-    attr_names: Vec<String>
+    attr_names: HashSet<String>
 }
 
 impl SchemaOperationData {
-    pub fn new(name: String, version: String, keys: Vec<String>) -> SchemaOperationData {
+    pub fn new(name: String, version: String, keys: HashSet<String>) -> SchemaOperationData {
         SchemaOperationData {
             name,
             version,
@@ -518,44 +536,9 @@ pub struct RevocationRegistryKeys {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct RevocationRegistryDefOperationValue {
-    pub issuance_type: bool,
-    pub max_cred_num: u32,
-    pub public_keys: RevocationRegistryKeys,
-    pub tails_hash: String,
-    pub tails_location: String
-}
-
-impl JsonEncodable for RevocationRegistryDefOperationValue {}
-
-impl<'a> JsonDecodable<'a> for RevocationRegistryDefOperationValue {}
-
-#[derive(Serialize, PartialEq, Debug)]
-pub struct RevocationRegistryDefOperation {
-    pub id: String,
-    #[serde(rename = "type")]
-    pub _type: String,
-    pub tag: String,
-    pub cred_def_id: String,
-    pub value: RevocationRegistryDefOperationValue,
-}
-
-impl RevocationRegistryDefOperation {
-    pub fn new(id: &str, tag: &str, cred_def_id: &str, value: RevocationRegistryDefOperationValue) -> RevocationRegistryDefOperation {
-        RevocationRegistryDefOperation {
-            _type: REVOC_REG_DEF.to_string(),
-            id: id.to_string(),
-            tag: tag.to_string(),
-            cred_def_id: cred_def_id.to_string(),
-            value
-        }
-    }
-}
-
-impl JsonEncodable for RevocationRegistryDefOperation {}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct RevocationRegistryEntryOperationValue {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub prev_accum: Option<String>,
     pub accum: String,
     pub issued: Option<HashSet<u32>>,
@@ -567,17 +550,20 @@ impl JsonEncodable for RevocationRegistryEntryOperationValue {}
 impl<'a> JsonDecodable<'a> for RevocationRegistryEntryOperationValue {}
 
 #[derive(Serialize, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct RevocationRegistryEntryOperation {
     #[serde(rename = "type")]
     pub _type: String,
     pub revoc_reg_def_id: String,
+    pub revoc_def_type: String,
     pub value: RevocationRegistryEntryOperationValue,
 }
 
 impl RevocationRegistryEntryOperation {
-    pub fn new(revoc_reg_def_id: &str, value: RevocationRegistryEntryOperationValue) -> RevocationRegistryEntryOperation {
+    pub fn new(rev_def_type: &str, revoc_reg_def_id: &str, value: RevocationRegistryEntryOperationValue) -> RevocationRegistryEntryOperation {
         RevocationRegistryEntryOperation {
             _type: REVOC_REG_ENTRY.to_string(),
+            revoc_def_type: rev_def_type.to_string(),
             revoc_reg_def_id: revoc_reg_def_id.to_string(),
             value
         }
@@ -585,3 +571,67 @@ impl RevocationRegistryEntryOperation {
 }
 
 impl JsonEncodable for RevocationRegistryEntryOperation {}
+
+#[derive(Serialize, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRevRegDefOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub id: String
+}
+
+impl GetRevRegDefOperation {
+    pub fn new(id: &str) -> GetRevRegDefOperation {
+        GetRevRegDefOperation {
+            _type: GET_REVOC_REG_DEF.to_string(),
+            id: id.to_string()
+        }
+    }
+}
+
+impl JsonEncodable for GetRevRegDefOperation {}
+
+#[derive(Serialize, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRevRegOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub revoc_reg_def_id: String,
+    pub timestamp: i64,
+}
+
+impl GetRevRegOperation {
+    pub fn new(revoc_reg_def_id: &str, timestamp: i64) -> GetRevRegOperation {
+        GetRevRegOperation {
+            _type: GET_REVOC_REG.to_string(),
+            revoc_reg_def_id: revoc_reg_def_id.to_string(),
+            timestamp
+        }
+    }
+}
+
+impl JsonEncodable for GetRevRegOperation {}
+
+#[derive(Serialize, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRevRegDeltaOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub revoc_reg_def_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub from: Option<i64>,
+    pub to: i64
+}
+
+impl GetRevRegDeltaOperation {
+    pub fn new(revoc_reg_def_id: &str, from: Option<i64>, to: i64) -> GetRevRegDeltaOperation {
+        GetRevRegDeltaOperation {
+            _type: GET_REVOC_REG_DELTA.to_string(),
+            revoc_reg_def_id: revoc_reg_def_id.to_string(),
+            from,
+            to
+        }
+    }
+}
+
+impl JsonEncodable for GetRevRegDeltaOperation {}

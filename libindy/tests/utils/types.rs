@@ -79,6 +79,18 @@ pub struct GetSchemaReplyResult {
     pub  dest: Option<String>
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetOperationResult {
+    pub identifier: String,
+    pub req_id: u64,
+    //For tests/ In normal case seq_no exists
+    #[serde(rename = "type")]
+    pub  _type: String,
+    pub seq_no: Option<i32>,
+    pub  data: Option<serde_json::Value>
+}
+
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 pub struct GetSchemaResultData {
     pub attr_names: HashSet<String>,

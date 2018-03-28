@@ -104,7 +104,7 @@ impl RevocationRegistryTypes {
 #[serde(rename_all = "camelCase")]
 pub struct RevocationRegistryDefinition {
     pub id: String,
-    #[serde(rename = "type")]
+    #[serde(rename = "revocDefType")]
     pub type_: RevocationRegistryTypes,
     pub tag: String,
     pub cred_def_id: String,
@@ -116,6 +116,7 @@ impl JsonEncodable for RevocationRegistryDefinition {}
 impl<'a> JsonDecodable<'a> for RevocationRegistryDefinition {}
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct RevocationRegistryDefinitionValue {
     pub issuance_type: IssuanceTypes,
     pub max_cred_num: u32,
@@ -125,6 +126,7 @@ pub struct RevocationRegistryDefinitionValue {
 }
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct RevocationRegistryDefinitionValuePublicKeys {
     pub accum_key: RevocationKeyPublic
 }

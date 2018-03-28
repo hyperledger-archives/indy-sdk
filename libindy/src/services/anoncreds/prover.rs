@@ -183,7 +183,7 @@ impl Prover {
                                                 rev_state.as_ref().map(|r_info| &r_info.witness))?;
 
             identifiers.push(Identifier {
-                schema_id: credential_definition.schema_id.clone(),
+                schema_id: credential.schema_id(),
                 cred_def_id: credential.cred_def_id.clone(),
                 rev_reg_id: credential.rev_reg_id.clone(),
                 timestamp: cred_key.timestamp.clone()

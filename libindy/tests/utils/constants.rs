@@ -41,3 +41,4 @@ pub const ATTRIB_HASH_DATA: &'static str = r#"83d907821df1c87db829e96569a11f6fc2
 pub const ATTRIB_ENC_DATA: &'static str = r#"aa3f41f619aa7e5e6b6d0de555e05331787f9bf9aa672b94b57ab65b9b66c3ea960b18a98e3834b1fc6cebf49f463b81fd6e3181"#;
 pub const NODE_DATA: &'static str = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1, "alias":"some", "services": ["VALIDATOR"], "blskey": "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}"#;
 pub const TAG_1: &'static str = "TAG_1";
+pub const REVOC_REG_TYPE: &'static str = "CL_ACCUM";
