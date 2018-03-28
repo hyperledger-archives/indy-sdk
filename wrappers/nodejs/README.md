@@ -1,6 +1,7 @@
 # Indy SDK for Node.js
 
 [![stability - experimental](https://img.shields.io/badge/stability-experimental-orange.svg)](https://nodejs.org/api/documentation.html#documentation_stability_index)
+![Node version](https://img.shields.io/node/v/indy-sdk.svg)
 
 Native bindings for [Hyperledger Indy](https://www.hyperledger.org/projects/hyperledger-indy).
 
@@ -49,14 +50,14 @@ indy.abbreviate_verkey(did, fullVerkey, function(err, verkey){
 var verkey = await indy.abbreviate_verkey(did, fullVerkey)
 ```
 
+# API
+
 ### IndyError
 
 All the functions may yield an IndyError. The errors are based on libindy error codes defined [here](https://github.com/hyperledger/indy-sdk/blob/master/libindy/include/indy_mod.h).
 
 * `err.indy_code` - the code number from libindy
 * `err.indy_name` - the name string for the code
-
-## API
 
 [//]: # (CODEGEN-START - don't edit by hand see `codegen/index.js`)
 ### anoncreds
