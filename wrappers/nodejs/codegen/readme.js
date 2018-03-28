@@ -46,7 +46,7 @@ apiFunctions.forEach(function (fn) {
 var readme = ''
 
 Object.keys(apiFunctionsGrouped).forEach(function (group) {
-  readme += '#### ' + group + '\n\n'
+  readme += '### ' + group + '\n\n'
   apiFunctionsGrouped[group].forEach(readmeFn)
 })
 
@@ -54,7 +54,7 @@ function readmeFn (fn) {
   var docAST = parseDocString(fn.docs)
 
   var signature = fn.jsName + '(' + fn.jsParams.map(arg => arg.jsName).join(', ') + ')' + ' -> ' + fn.humanReturnValue
-  readme += '##### ' + mdEscape(signature) + '\n\n'
+  readme += '#### ' + mdEscape(signature) + '\n\n'
 
   readme += mdEscape(docAST.desc) + '\n\n'
 

@@ -21,16 +21,19 @@ var fixBufferParams = function (params) {
   return out
 }
 
+var toJsName = function (name) {
+  return name
+    .replace(/_json$/, '')
+    .replace(/_(\w)/g, function (matches, letter) {
+      return letter.toUpperCase()
+    })
+}
+
 var toJsParams = function (params) {
   return fixBufferParams(params)
     .map(function (param) {
-      var name = param.name
-        .replace(/_json$/, '')
-        .replace(/_(\w)/g, function (matches, letter) {
-          return letter.toUpperCase()
-        })
       return Object.assign({}, param, {
-        jsName: name
+        jsName: toJsName(param.name)
       })
     })
 }
@@ -81,9 +84,9 @@ Object.keys(api.functions).forEach(function (name) {
 
   fn.humanReturnValue = 'void'
   if (fn.jsCbParams.length === 1) {
-    fn.humanReturnValue = fn.jsCbParams[0].name
+    fn.humanReturnValue = toJsName(fn.jsCbParams[0].name)
   } else if (fn.jsCbParams.length > 1) {
-    fn.humanReturnValue = '[' + fn.jsCbParams.map(arg => arg.name).join(', ') + ']'
+    fn.humanReturnValue = '[' + fn.jsCbParams.map(arg => toJsName(arg.name)).join(', ') + ']'
   }
 
   var humanArgs = fn.jsParams.map(arg => arg.name)

@@ -4,6 +4,18 @@
 
 Native bindings for [Hyperledger Indy](https://www.hyperledger.org/projects/hyperledger-indy).
 
+- [Installing](#installing)
+- [API](#api)
+  * [IndyError](#indyerror)
+  * [anoncreds](#anoncreds)
+  * [crypto](#crypto)
+  * [did](#did)
+  * [ledger](#ledger)
+  * [pairwise](#pairwise)
+  * [pool](#pool)
+  * [wallet](#wallet)
+- [How to contribute to this wrapper](#how-to-contribute-to-this-wrapper)
+
 ## Installing
 
 This module has a native compile step. It compiles C++ code and dynamically links to `libindy`.
@@ -44,9 +56,9 @@ All the functions may yield an IndyError. The errors are based on libindy error 
 * `err.indy_name` - the name string for the code
 
 [//]: # (CODEGEN-START - don't edit by hand see `codegen/index.js`)
-#### anoncreds
+### anoncreds
 
-##### issuer\_create\_and\_store\_claim\_def\(walletHandle, issuerDid, schema, signatureType, createNonRevoc\) -&gt; claim\_def\_json
+#### issuer\_create\_and\_store\_claim\_def\(walletHandle, issuerDid, schema, signatureType, createNonRevoc\) -&gt; claimDef
 
 Create keys \(both primary and revocation\) for the given schema and signature type \(currently only CL signature type is supported\).
 Store the keys together with signature type and schema in a secure wallet as a claim definition.
@@ -60,7 +72,7 @@ Store the keys together with signature type and schema in a secure wallet as a c
 
 Errors: Common\*, Wallet\*, Anoncreds\*
 
-##### issuer\_create\_and\_store\_revoc\_reg\(walletHandle, issuerDid, schema, maxClaimNum\) -&gt; revoc\_reg\_json
+#### issuer\_create\_and\_store\_revoc\_reg\(walletHandle, issuerDid, schema, maxClaimNum\) -&gt; revocReg
 
 Create a new revocation registry for the given claim definition.
 Stores it in a secure wallet.
@@ -73,7 +85,7 @@ Stores it in a secure wallet.
 
 Errors: Common\*, Wallet\*, Anoncreds\*
 
-##### issuer\_create\_claim\_offer\(walletHandle, schema, issuerDid, proverDid\) -&gt; claim\_offer\_json
+#### issuer\_create\_claim\_offer\(walletHandle, schema, issuerDid, proverDid\) -&gt; claimOffer
 
 Create claim offer in Wallet
 
@@ -91,7 +103,7 @@ Create claim offer in Wallet
 
 Errors: Common\*, Wallet\*, Anoncreds\*
 
-##### issuer\_create\_claim\(walletHandle, claimReq, claim, userRevocIndex\) -&gt; \[revoc\_reg\_update\_json, xclaim\_json\]
+#### issuer\_create\_claim\(walletHandle, claimReq, claim, userRevocIndex\) -&gt; \[revocRegUpdate, xclaim\]
 
 Signs a given claim values for the given user by a given key \(claim def\).
 The corresponding claim definition and revocation registry must be already created
@@ -115,7 +127,7 @@ used for issuance
 
 Errors: Annoncreds\*, Common\*, Wallet\*
 
-##### issuer\_revoke\_claim\(walletHandle, issuerDid, schema, userRevocIndex\) -&gt; revoc\_reg\_update\_json
+#### issuer\_revoke\_claim\(walletHandle, issuerDid, schema, userRevocIndex\) -&gt; revocRegUpdate
 
 Revokes a user identified by a user\_revoc\_index in a given revoc-registry.
 The corresponding claim definition and revocation registry must be already
@@ -129,7 +141,7 @@ created an stored into the wallet.
 
 Errors: Annoncreds\*, Common\*, Wallet\*
 
-##### prover\_store\_claim\_offer\(walletHandle, claimOffer\) -&gt; void
+#### prover\_store\_claim\_offer\(walletHandle, claimOffer\) -&gt; void
 
 Stores a claim offer from the given issuer in a secure storage.
 
@@ -139,7 +151,7 @@ Stores a claim offer from the given issuer in a secure storage.
 
 Errors: Common\*, Wallet\*
 
-##### prover\_get\_claim\_offers\(walletHandle, filter\) -&gt; claim\_offers\_json
+#### prover\_get\_claim\_offers\(walletHandle, filter\) -&gt; claimOffers
 
 Gets all stored claim offers \(see prover\_store\_claim\_offer\).
 A filter can be specified to get claim offers for specific Issuer, claim\_def or schema only.
@@ -158,7 +170,7 @@ A filter can be specified to get claim offers for specific Issuer, claim\_def or
 
 Errors: Common\*, Wallet\*
 
-##### prover\_create\_master\_secret\(walletHandle, masterSecretName\) -&gt; void
+#### prover\_create\_master\_secret\(walletHandle, masterSecretName\) -&gt; void
 
 Creates a master secret with a given name and stores it in the wallet.
 The name must be unique.
@@ -169,7 +181,7 @@ The name must be unique.
 
 Errors: Annoncreds\*, Common\*, Wallet\*
 
-##### prover\_create\_and\_store\_claim\_req\(walletHandle, proverDid, claimOffer, claimDef, masterSecretName\) -&gt; claim\_req\_json
+#### prover\_create\_and\_store\_claim\_req\(walletHandle, proverDid, claimOffer, claimDef, masterSecretName\) -&gt; claimReq
 
 Creates a clam request json for the given claim offer and stores it in a secure wallet.
 The claim offer contains the information about Issuer \(DID, schema\_seq\_no\),
@@ -195,7 +207,7 @@ The blinded master secret is a part of the claim request.
 
 Errors: Annoncreds\*, Common\*, Wallet\*
 
-##### prover\_store\_claim\(walletHandle, claims, revReg\) -&gt; void
+#### prover\_store\_claim\(walletHandle, claims, revReg\) -&gt; void
 
 Updates the claim by a master secret and stores in a secure wallet.
 The claim contains the information about
@@ -211,7 +223,7 @@ updates the claim and stores it in a wallet.
 
 Errors: Annoncreds\*, Common\*, Wallet\*
 
-##### prover\_get\_claims\(walletHandle, filter\) -&gt; claims\_json
+#### prover\_get\_claims\(walletHandle, filter\) -&gt; claims
 
 Gets human readable claims according to the filter.
 If filter is NULL, then all claims are returned.
@@ -230,7 +242,7 @@ Claims can be filtered by Issuer, claim\_def and\/or Schema.
 
 Errors: Annoncreds\*, Common\*, Wallet\*
 
-##### prover\_get\_claims\_for\_proof\_req\(walletHandle, proofRequest\) -&gt; claims\_json
+#### prover\_get\_claims\_for\_proof\_req\(walletHandle, proofRequest\) -&gt; claims
 
 Gets human readable claims matching the given proof request.
 
@@ -255,7 +267,7 @@ Claim consists of referent, human-readable attributes \(key-value map\), schema\
 
 Errors: Annoncreds\*, Common\*, Wallet\*
 
-##### prover\_create\_proof\(walletHandle, proofReq, requestedClaims, schemas, masterSecretName, claimDefs, revocRegs\) -&gt; proof\_json
+#### prover\_create\_proof\(walletHandle, proofReq, requestedClaims, schemas, masterSecretName, claimDefs, revocRegs\) -&gt; proof
 
 Creates a proof according to the given proof request
 Either a corresponding claim with optionally revealed attributes or self-attested attribute must be provided
@@ -299,7 +311,7 @@ There ais also aggregated proof part common for all claim proofs.
 
 Errors: Annoncreds\*, Common\*, Wallet\*
 
-##### verifier\_verify\_proof\(proofRequest, proof, schemas, claimDefsJsons, revocRegs\) -&gt; valid
+#### verifier\_verify\_proof\(proofRequest, proof, schemas, claimDefsJsons, revocRegs\) -&gt; valid
 
 Verifies a proof \(of multiple claim\).
 All required schemas, public keys and revocation registries must be provided.
@@ -313,9 +325,9 @@ All required schemas, public keys and revocation registries must be provided.
 
 Errors: Annoncreds\*, Common\*, Wallet\*
 
-#### crypto
+### crypto
 
-##### create\_key\(walletHandle, key\) -&gt; vk
+#### create\_key\(walletHandle, key\) -&gt; vk
 
 Creates keys pair and stores in the wallet.
 
@@ -329,7 +341,7 @@ cb:
 
 Errors: Common\*, Wallet\*, Crypto\*
 
-##### set\_key\_metadata\(walletHandle, verkey, metadata\) -&gt; void
+#### set\_key\_metadata\(walletHandle, verkey, metadata\) -&gt; void
 
 Saves\/replaces the meta information for the giving key in the wallet.
 
@@ -343,7 +355,7 @@ cb:
 
 Errors: Common\*, Wallet\*, Crypto\*
 
-##### get\_key\_metadata\(walletHandle, verkey\) -&gt; metadata
+#### get\_key\_metadata\(walletHandle, verkey\) -&gt; metadata
 
 Retrieves the meta information for the giving key in the wallet.
 
@@ -357,7 +369,7 @@ cb:
 
 Errors: Common\*, Wallet\*, Crypto\*
 
-##### crypto\_sign\(walletHandle, myVk, messageRaw\) -&gt; signature\_raw
+#### crypto\_sign\(walletHandle, myVk, messageRaw\) -&gt; signatureRaw
 
 Signs a message with a key.
 
@@ -371,7 +383,7 @@ for specific DID.
 
 Errors: Common\*, Wallet\*, Crypto\*
 
-##### crypto\_verify\(theirVk, messageRaw, signatureRaw\) -&gt; valid
+#### crypto\_verify\(theirVk, messageRaw, signatureRaw\) -&gt; valid
 
 Verify a signature with a verkey.
 
@@ -385,7 +397,7 @@ for specific DID.
 
 Errors: Common\*, Wallet\*, Ledger\*, Crypto\*
 
-##### crypto\_auth\_crypt\(walletHandle, myVk, theirVk, messageRaw\) -&gt; encrypted\_msg\_raw
+#### crypto\_auth\_crypt\(walletHandle, myVk, theirVk, messageRaw\) -&gt; encryptedMsgRaw
 
 Encrypt a message by authenticated-encryption scheme.
 
@@ -406,7 +418,7 @@ for specific DID.
 
 Errors: Common\*, Wallet\*, Ledger\*, Crypto\*
 
-##### crypto\_auth\_decrypt\(walletHandle, myVk, encryptedMsgRaw\) -&gt; \[their\_vk, decrypted\_msg\_raw\]
+#### crypto\_auth\_decrypt\(walletHandle, myVk, encryptedMsgRaw\) -&gt; \[theirVk, decryptedMsgRaw\]
 
 Decrypt a message by authenticated-encryption scheme.
 
@@ -426,7 +438,7 @@ for specific DID.
 
 Errors: Common\*, Wallet\*, Crypto\*
 
-##### crypto\_anon\_crypt\(theirVk, messageRaw\) -&gt; encrypted\_msg\_raw
+#### crypto\_anon\_crypt\(theirVk, messageRaw\) -&gt; encryptedMsgRaw
 
 Encrypts a message by anonymous-encryption scheme.
 
@@ -443,7 +455,7 @@ for specific DID.
 
 Errors: Common\*, Wallet\*, Ledger\*, Crypto\*
 
-##### crypto\_anon\_decrypt\(walletHandle, myVk, encryptedMsg\) -&gt; decrypted\_msg\_raw
+#### crypto\_anon\_decrypt\(walletHandle, myVk, encryptedMsg\) -&gt; decryptedMsgRaw
 
 Decrypts a message by anonymous-encryption scheme.
 
@@ -461,9 +473,9 @@ for specific DID.
 
 Errors: Common\*, Wallet\*, Crypto\*
 
-#### did
+### did
 
-##### create\_and\_store\_my\_did\(walletHandle, did\) -&gt; \[did, verkey\]
+#### create\_and\_store\_my\_did\(walletHandle, did\) -&gt; \[did, verkey\]
 
 Creates keys \(signing and encryption keys\) for a new
 DID \(owned by the caller of the library\).
@@ -477,7 +489,7 @@ and encrypt transactions.
 
 Errors: Common\*, Wallet\*, Crypto\*
 
-##### replace\_keys\_start\(walletHandle, did, identity\) -&gt; verkey
+#### replace\_keys\_start\(walletHandle, did, identity\) -&gt; verkey
 
 Generated temporary keys \(signing and encryption keys\) for an existing
 DID \(owned by the caller of the library\).
@@ -489,7 +501,7 @@ DID \(owned by the caller of the library\).
 
 Errors: Common\*, Wallet\*, Crypto\*
 
-##### replace\_keys\_apply\(walletHandle, did\) -&gt; void
+#### replace\_keys\_apply\(walletHandle, did\) -&gt; void
 
 Apply temporary keys as main for an existing DID \(owned by the caller of the library\).
 
@@ -499,7 +511,7 @@ Apply temporary keys as main for an existing DID \(owned by the caller of the li
 
 Errors: Common\*, Wallet\*, Crypto\*
 
-##### store\_their\_did\(walletHandle, identity\) -&gt; void
+#### store\_their\_did\(walletHandle, identity\) -&gt; void
 
 Saves their DID for a pairwise connection in a secured Wallet,
 so that it can be used to verify transaction.
@@ -510,7 +522,7 @@ so that it can be used to verify transaction.
 
 Errors: Common\*, Wallet\*, Crypto\*
 
-##### key\_for\_did\(poolHandle, walletHandle, did\) -&gt; key
+#### key\_for\_did\(poolHandle, walletHandle, did\) -&gt; key
 
 Returns ver key \(key id\) for the given DID.
 
@@ -536,7 +548,7 @@ cb:
 
 Errors: Common\*, Wallet\*, Crypto\*
 
-##### key\_for\_local\_did\(walletHandle, did\) -&gt; key
+#### key\_for\_local\_did\(walletHandle, did\) -&gt; key
 
 Returns ver key \(key id\) for the given DID.
 
@@ -559,7 +571,7 @@ cb:
 
 Errors: Common\*, Wallet\*, Crypto\*
 
-##### set\_endpoint\_for\_did\(walletHandle, did, address, transportKey\) -&gt; void
+#### set\_endpoint\_for\_did\(walletHandle, did, address, transportKey\) -&gt; void
 
 Returns endpoint information for the given DID.
 
@@ -576,7 +588,7 @@ cb:
 
 Errors: Common\*, Wallet\*, Crypto\*
 
-##### get\_endpoint\_for\_did\(walletHandle, poolHandle, did\) -&gt; \[address, transport\_vk\]
+#### get\_endpoint\_for\_did\(walletHandle, poolHandle, did\) -&gt; \[address, transportVk\]
 
 
 
@@ -586,7 +598,7 @@ Errors: Common\*, Wallet\*, Crypto\*
 * __->__ [`address`: String, `transportVk`: String]
 
 
-##### set\_did\_metadata\(walletHandle, did, metadata\) -&gt; void
+#### set\_did\_metadata\(walletHandle, did, metadata\) -&gt; void
 
 Saves\/replaces the meta information for the giving DID in the wallet.
 
@@ -600,7 +612,7 @@ cb:
 
 Errors: Common\*, Wallet\*, Crypto\*
 
-##### get\_did\_metadata\(walletHandle, did\) -&gt; metadata
+#### get\_did\_metadata\(walletHandle, did\) -&gt; metadata
 
 Retrieves the meta information for the giving DID in the wallet.
 
@@ -614,7 +626,7 @@ cb:
 
 Errors: Common\*, Wallet\*, Crypto\*
 
-##### get\_my\_did\_with\_meta\(walletHandle, myDid\) -&gt; did\_with\_meta
+#### get\_my\_did\_with\_meta\(walletHandle, myDid\) -&gt; didWithMeta
 
 Get info about My DID in format: DID, verkey, metadata
 
@@ -623,7 +635,7 @@ Get info about My DID in format: DID, verkey, metadata
 * __->__ `didWithMeta`: String
 
 
-##### list\_my\_dids\_with\_meta\(walletHandle\) -&gt; dids
+#### list\_my\_dids\_with\_meta\(walletHandle\) -&gt; dids
 
 Lists created DIDs with metadata as JSON array with each DID in format: DID, verkey, metadata
 
@@ -631,7 +643,7 @@ Lists created DIDs with metadata as JSON array with each DID in format: DID, ver
 * __->__ `dids`: String
 
 
-##### abbreviate\_verkey\(did, fullVerkey\) -&gt; verkey
+#### abbreviate\_verkey\(did, fullVerkey\) -&gt; verkey
 
 Retrieves abbreviated verkey if it is possible otherwise return full verkey.
 
@@ -640,9 +652,9 @@ Retrieves abbreviated verkey if it is possible otherwise return full verkey.
 * __->__ `verkey`: String
 
 
-#### ledger
+### ledger
 
-##### sign\_and\_submit\_request\(poolHandle, walletHandle, submitterDid, request\) -&gt; request\_result\_json
+#### sign\_and\_submit\_request\(poolHandle, walletHandle, submitterDid, request\) -&gt; requestResult
 
 Signs and submits request message to validator pool.
 
@@ -658,7 +670,7 @@ to validator pool \(see write\_request\).
 
 Errors: Common\*, Wallet\*, Ledger\*, Crypto\*
 
-##### submit\_request\(poolHandle, request\) -&gt; request\_result\_json
+#### submit\_request\(poolHandle, request\) -&gt; requestResult
 
 Publishes request message to validator pool \(no signing, unlike sign\_and\_submit\_request\).
 
@@ -670,7 +682,7 @@ The request is sent to the validator pool as is. It's assumed that it's already 
 
 Errors: Common\*, Ledger\*
 
-##### sign\_request\(walletHandle, submitterDid, request\) -&gt; signed\_request\_json
+#### sign\_request\(walletHandle, submitterDid, request\) -&gt; signedRequest
 
 Signs request message.
 
@@ -684,7 +696,7 @@ sign key \(see wallet\_sign\).
 
 Errors: Common\*, Wallet\*, Ledger\*, Crypto\*
 
-##### build\_get\_ddo\_request\(submitterDid, targetDid\) -&gt; request\_result\_json
+#### build\_get\_ddo\_request\(submitterDid, targetDid\) -&gt; requestResult
 
 Builds a request to get a DDO.
 
@@ -694,7 +706,7 @@ Builds a request to get a DDO.
 
 Errors: Common\*
 
-##### build\_nym\_request\(submitterDid, targetDid, verkey, alias, role\) -&gt; request\_json
+#### build\_nym\_request\(submitterDid, targetDid, verkey, alias, role\) -&gt; request
 
 Builds a NYM request.
 
@@ -707,7 +719,7 @@ Builds a NYM request.
 
 Errors: Common\*
 
-##### build\_attrib\_request\(submitterDid, targetDid, hash, raw, enc\) -&gt; request\_json
+#### build\_attrib\_request\(submitterDid, targetDid, hash, raw, enc\) -&gt; request
 
 Builds an ATTRIB request.
 
@@ -720,7 +732,7 @@ Builds an ATTRIB request.
 
 Errors: Common\*
 
-##### build\_get\_attrib\_request\(submitterDid, targetDid, hash, raw, enc\) -&gt; request\_json
+#### build\_get\_attrib\_request\(submitterDid, targetDid, hash, raw, enc\) -&gt; request
 
 Builds a GET\_ATTRIB request.
 
@@ -733,7 +745,7 @@ Builds a GET\_ATTRIB request.
 
 Errors: Common\*
 
-##### build\_get\_nym\_request\(submitterDid, targetDid\) -&gt; request\_json
+#### build\_get\_nym\_request\(submitterDid, targetDid\) -&gt; request
 
 Builds a GET\_NYM request.
 
@@ -743,7 +755,7 @@ Builds a GET\_NYM request.
 
 Errors: Common\*
 
-##### build\_schema\_request\(submitterDid, data\) -&gt; request\_json
+#### build\_schema\_request\(submitterDid, data\) -&gt; request
 
 Builds a SCHEMA request.
 
@@ -753,7 +765,7 @@ Builds a SCHEMA request.
 
 Errors: Common\*
 
-##### build\_get\_schema\_request\(submitterDid, dest, data\) -&gt; request\_json
+#### build\_get\_schema\_request\(submitterDid, dest, data\) -&gt; request
 
 Builds a GET\_SCHEMA request.
 
@@ -764,7 +776,7 @@ Builds a GET\_SCHEMA request.
 
 Errors: Common\*
 
-##### build\_claim\_def\_txn\(submitterDid, xref, signatureType, data\) -&gt; request\_json
+#### build\_claim\_def\_txn\(submitterDid, xref, signatureType, data\) -&gt; request
 
 Builds an CLAIM\_DEF request.
 
@@ -776,7 +788,7 @@ Builds an CLAIM\_DEF request.
 
 Errors: Common\*
 
-##### build\_get\_claim\_def\_txn\(submitterDid, xref, signatureType, origin\) -&gt; request\_json
+#### build\_get\_claim\_def\_txn\(submitterDid, xref, signatureType, origin\) -&gt; request
 
 Builds a GET\_CLAIM\_DEF request.
 
@@ -788,7 +800,7 @@ Builds a GET\_CLAIM\_DEF request.
 
 Errors: Common\*
 
-##### build\_node\_request\(submitterDid, targetDid, data\) -&gt; request\_json
+#### build\_node\_request\(submitterDid, targetDid, data\) -&gt; request
 
 Builds a NODE request.
 
@@ -799,7 +811,7 @@ Builds a NODE request.
 
 Errors: Common\*
 
-##### build\_get\_txn\_request\(submitterDid, data\) -&gt; request\_json
+#### build\_get\_txn\_request\(submitterDid, data\) -&gt; request
 
 Builds a GET\_TXN request.
 
@@ -809,7 +821,7 @@ Builds a GET\_TXN request.
 
 Errors: Common\*
 
-##### build\_pool\_config\_request\(submitterDid, writes, force\) -&gt; request\_json
+#### build\_pool\_config\_request\(submitterDid, writes, force\) -&gt; request
 
 Builds a POOL\_CONFIG request.
 
@@ -820,7 +832,7 @@ Builds a POOL\_CONFIG request.
 
 Errors: Common\*
 
-##### build\_pool\_upgrade\_request\(submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force\) -&gt; request\_json
+#### build\_pool\_upgrade\_request\(submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force\) -&gt; request
 
 Builds a POOL\_UPGRADE request.
 
@@ -838,9 +850,9 @@ Builds a POOL\_UPGRADE request.
 
 Errors: Common\*
 
-#### pairwise
+### pairwise
 
-##### is\_pairwise\_exists\(walletHandle, theirDid\) -&gt; exists
+#### is\_pairwise\_exists\(walletHandle, theirDid\) -&gt; exists
 
 Check if pairwise is exists.
 
@@ -850,7 +862,7 @@ Check if pairwise is exists.
 
 Errors: Common\*, Wallet\*
 
-##### create\_pairwise\(walletHandle, theirDid, myDid, metadata\) -&gt; void
+#### create\_pairwise\(walletHandle, theirDid, myDid, metadata\) -&gt; void
 
 Creates pairwise.
 
@@ -862,7 +874,7 @@ Creates pairwise.
 
 Errors: Common\*, Wallet\*
 
-##### list\_pairwise\(walletHandle\) -&gt; list\_pairwise
+#### list\_pairwise\(walletHandle\) -&gt; listPairwise
 
 Get list of saved pairwise.
 
@@ -871,7 +883,7 @@ Get list of saved pairwise.
 
 Errors: Common\*, Wallet\*
 
-##### get\_pairwise\(walletHandle, theirDid\) -&gt; pairwise\_info\_json
+#### get\_pairwise\(walletHandle, theirDid\) -&gt; pairwiseInfo
 
 Gets pairwise information for specific their\_did.
 
@@ -881,7 +893,7 @@ Gets pairwise information for specific their\_did.
 
 Errors: Common\*, Wallet\*
 
-##### set\_pairwise\_metadata\(walletHandle, theirDid, metadata\) -&gt; void
+#### set\_pairwise\_metadata\(walletHandle, theirDid, metadata\) -&gt; void
 
 Save some data in the Wallet for pairwise associated with Did.
 
@@ -892,9 +904,9 @@ Save some data in the Wallet for pairwise associated with Did.
 
 Errors: Common\*, Wallet\*
 
-#### pool
+### pool
 
-##### create\_pool\_ledger\_config\(configName, config\) -&gt; void
+#### create\_pool\_ledger\_config\(configName, config\) -&gt; void
 
 Creates a new local pool ledger configuration that can be used later to connect pool nodes.
 
@@ -907,7 +919,7 @@ Creates a new local pool ledger configuration that can be used later to connect 
 
 Errors: Common\*, Ledger\*
 
-##### open\_pool\_ledger\(configName, config\) -&gt; pool\_handle
+#### open\_pool\_ledger\(configName, config\) -&gt; poolHandle
 
 Opens pool ledger and performs connecting to pool nodes.
 
@@ -933,7 +945,7 @@ config \(optional\): Runtime pool configuration json.
 
 Errors: Common\*, Ledger\*
 
-##### refresh\_pool\_ledger\(handle\) -&gt; void
+#### refresh\_pool\_ledger\(handle\) -&gt; void
 
 Refreshes a local copy of a pool ledger and updates pool nodes connections.
 
@@ -942,14 +954,14 @@ Refreshes a local copy of a pool ledger and updates pool nodes connections.
 
 Errors: Common\*, Ledger\*
 
-##### list\_pools\(\) -&gt; pools
+#### list\_pools\(\) -&gt; pools
 
 Lists names of created pool ledgers
 
 * __->__ `pools`: Json
 
 
-##### close\_pool\_ledger\(handle\) -&gt; void
+#### close\_pool\_ledger\(handle\) -&gt; void
 
 Closes opened pool ledger, opened nodes connections and frees allocated resources.
 
@@ -958,7 +970,7 @@ Closes opened pool ledger, opened nodes connections and frees allocated resource
 
 Errors: Common\*, Ledger\*
 
-##### delete\_pool\_ledger\_config\(configName\) -&gt; void
+#### delete\_pool\_ledger\_config\(configName\) -&gt; void
 
 Deletes created pool ledger configuration.
 
@@ -967,9 +979,9 @@ Deletes created pool ledger configuration.
 
 Errors: Common\*, Ledger\*
 
-#### wallet
+### wallet
 
-##### create\_wallet\(poolName, name, xtype, config, credentials\) -&gt; void
+#### create\_wallet\(poolName, name, xtype, config, credentials\) -&gt; void
 
 Creates a new secure wallet with the given unique name.
 
@@ -982,7 +994,7 @@ Creates a new secure wallet with the given unique name.
 
 Errors: Common\*, Wallet\*
 
-##### open\_wallet\(name, runtimeConfig, credentials\) -&gt; handle
+#### open\_wallet\(name, runtimeConfig, credentials\) -&gt; handle
 
 Opens the wallet with specific name.
 
@@ -1000,14 +1012,14 @@ It is impossible to open wallet with the same name more than once.
 
 Errors: Common\*, Wallet\*
 
-##### list\_wallets\(\) -&gt; wallets
+#### list\_wallets\(\) -&gt; wallets
 
 Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool
 
 * __->__ `wallets`: Json
 
 
-##### close\_wallet\(handle\) -&gt; void
+#### close\_wallet\(handle\) -&gt; void
 
 Closes opened wallet and frees allocated resources.
 
@@ -1016,7 +1028,7 @@ Closes opened wallet and frees allocated resources.
 
 Errors: Common\*, Wallet\*
 
-##### delete\_wallet\(name, credentials\) -&gt; void
+#### delete\_wallet\(name, credentials\) -&gt; void
 
 Deletes created wallet.
 
