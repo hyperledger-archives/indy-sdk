@@ -1,9 +1,3 @@
-//
-// ABANDON ALL HOPE, ALL YE WHO ENTER HERE
-//
-// This is just a quick-n-dirty parser to bootstrap src/api.json
-// This code may be thrown away, so don't love it.
-//
 var fs = require('fs')
 var path = require('path')
 var stringify = require('json-stringify-pretty-compact')
@@ -203,11 +197,11 @@ fs.readdirSync(dir).forEach(function (file) {
     let line = lines[i]
     i++
     while (/^\/\//.test(line) && i < lines.length) {
-      docs += line.replace(/^\/\/+/, '').trim() + '\n'
+      docs += line.replace(/^\/\/+ ?/, '').replace(/\s+$/, '') + '\n'
       line = lines[i]
       i++
     }
-    var m = /^pub extern fn ([a-zA-Z0-9_]+) *\(/.exec(line)
+    var m = /^pub *extern *fn *([a-zA-Z0-9_]+) *\(/.exec(line)
     if (m) {
       let fnName = m[1].trim()
       api.functions[fnName].docs = docs.trim()

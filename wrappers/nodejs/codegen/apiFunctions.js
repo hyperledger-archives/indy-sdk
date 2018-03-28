@@ -30,7 +30,7 @@ var toJsParams = function (params) {
           return letter.toUpperCase()
         })
       return Object.assign({}, param, {
-        name: name
+        jsName: name
       })
     })
 }
@@ -42,14 +42,12 @@ Object.keys(api.functions).forEach(function (name) {
     return
   }
 
-  var fn = {
+  var fn = Object.assign({}, api.functions[name], {
     name: name,
-    params: api.functions[name].params,
-    ret: api.functions[name].ret,
     jsName: name.replace(/^indy_/, ''),
     jsParams: [],
     jsCbParams: []
-  }
+  })
 
   if (fn.ret !== 'indy_error_t') {
     throw new Error('Does not return an IndyError: ' + fn.name)
