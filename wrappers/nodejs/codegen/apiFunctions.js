@@ -86,7 +86,7 @@ Object.keys(api.functions).forEach(function (name) {
   if (fn.jsCbParams.length === 1) {
     fn.humanReturnValue = toJsName(fn.jsCbParams[0].name)
   } else if (fn.jsCbParams.length > 1) {
-    fn.humanReturnValue = '[' + fn.jsCbParams.map(arg => toJsName(arg.name)).join(', ') + ']'
+    fn.humanReturnValue = '[ ' + fn.jsCbParams.map(arg => toJsName(arg.name)).join(', ') + ' ]'
   }
 
   var humanArgs = fn.jsParams.map(arg => arg.name)

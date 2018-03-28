@@ -53,7 +53,7 @@ Object.keys(apiFunctionsGrouped).forEach(function (group) {
 function readmeFn (fn) {
   var docAST = parseDocString(fn.docs)
 
-  var signature = fn.jsName + '(' + fn.jsParams.map(arg => arg.jsName).join(', ') + ')' + ' -> ' + fn.humanReturnValue
+  var signature = fn.jsName + ' ( ' + fn.jsParams.map(arg => arg.jsName).join(', ') + ' ) -> ' + fn.humanReturnValue
   readme += '#### ' + mdEscape(signature) + '\n\n'
 
   readme += mdEscape(docAST.desc) + '\n\n'
@@ -76,7 +76,7 @@ function readmeFn (fn) {
   } else if (fn.jsCbParams.length === 1) {
     readme += readmeParam(fn.jsCbParams[0])
   } else if (fn.jsCbParams.length > 1) {
-    readme += '[' + fn.jsCbParams.map(readmeParam).join(', ') + ']'
+    readme += '[ ' + fn.jsCbParams.map(readmeParam).join(', ') + ' ]'
   }
   if (docAST.returns.length > 0) {
     readme += ' - ' + mdEscape(docAST.returns)
@@ -104,7 +104,7 @@ function parseDocString (docs) {
         section: section,
         text: buff
       })
-      section = line
+      section = line + '\n'
       buff = ''
     } else {
       buff += line + '\n'
@@ -155,7 +155,10 @@ function parseDocStringParams (params) {
     if (line.trim().length === 0) {
       return
     }
-    var m = /^\s*([a-zA-Z0-9]+)\s*(\([^)]*\)\s*)?:(.*)$/.exec(line)
+    if (line.trim() === 'cb: Callback that takes command result as parameter.') {
+      return
+    }
+    var m = /^\s*([a-zA-Z0-9_]+)\s*(\([^)]*\)\s*)?:(.*)$/.exec(line)
     if (m) {
       if (m[2] && !/optional/i.test(m[2])) {
         throw new Error('Expected param (optional): ' + line)
@@ -164,7 +167,7 @@ function parseDocStringParams (params) {
       curr = {
         name: m[1],
         optional: !!m[2],
-        text: m[3]
+        text: m[3] + '\n'
       }
     } else {
       curr.text += line + '\n'
@@ -180,7 +183,7 @@ function parseDocStringParams (params) {
     if (!ast[o.name]) {
       ast[o.name] = {text: '', optional: false}
     }
-    ast[o.name].text += o.text
+    ast[o.name].text += o.text + '\n'
     ast[o.name].optional = ast[o.name].optional || o.optional
   })
   Object.keys(ast).forEach(function (name) {

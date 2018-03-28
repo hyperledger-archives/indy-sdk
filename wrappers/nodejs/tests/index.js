@@ -13,12 +13,12 @@ test('abbreviate_verkey', async function (t) {
   err = await t.throws(function () {
     indy.abbreviate_verkey(1, verkey)
   }, Error)
-  t.is(err.message, 'Expected String or null for did: abbreviate_verkey(did, fullVerkey, cb(err, verkey))')
+  t.is(err.message, 'Expected String or null for did: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
 
   err = await t.throws(function () {
     indy.abbreviate_verkey(did, [1, 2, 3])
   }, Error)
-  t.is(err.message, 'Expected String or null for fullVerkey: abbreviate_verkey(did, fullVerkey, cb(err, verkey))')
+  t.is(err.message, 'Expected String or null for full_verkey: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
 
   err = await t.throws(indy.abbreviate_verkey(null, verkey))
   t.is(err.indy_name, 'CommonInvalidParam3')
