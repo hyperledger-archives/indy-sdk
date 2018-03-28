@@ -56,6 +56,7 @@
 		ADF5F072D66857F8E8F5EF89 /* LedgerPoolConfigRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FC55674BDCE214933132 /* LedgerPoolConfigRequest.mm */; };
 		ADF5FEFC9E28F7FBBC11828B /* LedgerPoolUpgradeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FF3A492118F1F40C2D4C /* LedgerPoolUpgradeRequest.mm */; };
 		C1BA94778E40060E56814C61 /* libPods-Indy-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 49682051B863F7784F1A8CAE /* libPods-Indy-demo.a */; };
+		DD287A642068F6A1003EF9A7 /* LedgerPoolRestartRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = DD287A632068F6A1003EF9A7 /* LedgerPoolRestartRequest.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -164,6 +165,7 @@
 		ADF5FF3A492118F1F40C2D4C /* LedgerPoolUpgradeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerPoolUpgradeRequest.mm; sourceTree = "<group>"; };
 		B87BB39216A2B13E57165BF9 /* libPods-libindy-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DACC1FF866C0BAFAF74DC73B /* Pods-libindy-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.debug.xcconfig"; sourceTree = "<group>"; };
+		DD287A632068F6A1003EF9A7 /* LedgerPoolRestartRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerPoolRestartRequest.mm; sourceTree = "<group>"; };
 		ED81D70B4C1CD531B86E9E9F /* Pods-libindy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
 		EE41F07D6A899FDD613605CE /* Pods-Indy-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demo/Pods-Indy-demo.release.xcconfig"; sourceTree = "<group>"; };
 		F54627AA7BB604ED15A77C6E /* Pods-Indy-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demo/Pods-Indy-demo.debug.xcconfig"; sourceTree = "<group>"; };
@@ -284,6 +286,7 @@
 		5DB57B1F1F712A5200EB4C90 /* Ledger */ = {
 			isa = PBXGroup;
 			children = (
+				DD287A632068F6A1003EF9A7 /* LedgerPoolRestartRequest.mm */,
 				5DB57B201F712A5200EB4C90 /* LedgerAttribRequest.mm */,
 				5DB57B211F712A5200EB4C90 /* LedgerHignCases.mm */,
 				5DB57B221F712A5200EB4C90 /* LedgerNodeRequest.mm */,
@@ -648,6 +651,7 @@
 				5DB57B5F1F712A5200EB4C90 /* LedgerNymRequest.mm in Sources */,
 				5DB57B681F712A5200EB4C90 /* AnoncredsDemo.mm in Sources */,
 				5DB57B691F712A5200EB4C90 /* LedgerDemo.mm in Sources */,
+				DD287A642068F6A1003EF9A7 /* LedgerPoolRestartRequest.mm in Sources */,
 				5DB57B781F712A5200EB4C90 /* NSString+Validation.m in Sources */,
 				5DB57B611F712A5200EB4C90 /* PoolHighCases.m in Sources */,
 				5DB57B731F712A5200EB4C90 /* DidUtils.mm in Sources */,
@@ -799,7 +803,13 @@
 				INFOPLIST_FILE = "Indy-demo/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				"LIBRARY_SEARCH_PATHS[arch=*]" = "$(inherited) \"$PODS_CONFIGURATION_BUILD_DIR/CoreBitcoin\" \"$PODS_CONFIGURATION_BUILD_DIR/ISO8601DateFormatter\" $(inherited) \"${PODS_ROOT}/OpenSSL-Universal/lib-ios\"";
+				"LIBRARY_SEARCH_PATHS[arch=*]" = (
+					"$(inherited)",
+					"\"$PODS_CONFIGURATION_BUILD_DIR/CoreBitcoin\"",
+					"\"$PODS_CONFIGURATION_BUILD_DIR/ISO8601DateFormatter\"",
+					"$(inherited)",
+					"\"${PODS_ROOT}/OpenSSL-Universal/lib-ios\"",
+				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
