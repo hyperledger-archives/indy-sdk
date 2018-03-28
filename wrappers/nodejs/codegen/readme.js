@@ -50,13 +50,40 @@ Object.keys(apiFunctionsGrouped).forEach(function (group) {
   apiFunctionsGrouped[group].forEach(readmeFn)
 })
 
+function markdownify (src) {
+  var lines = src.split('\n')
+  var out = []
+  var line
+  var i = 0
+  while (i < lines.length) {
+    line = lines[i]
+    i++
+    if (line.trim() === '{' || line.trim() === '[{') {
+      out.push('```js')
+      out.push(line)
+      while (i < lines.length) {
+        line = lines[i]
+        i++
+        out.push(line)
+      }
+      out.push('````')
+    } else {
+      line = mdEscape(line)
+        .replace(/\s+/, ' ')
+        .trim()
+      out.push(line)
+    }
+  }
+  return out.join('\n')
+}
+
 function readmeFn (fn) {
   var docAST = parseDocString(fn.docs)
 
   var signature = fn.jsName + ' ( ' + fn.jsParams.map(arg => arg.jsName).join(', ') + ' ) -> ' + fn.humanReturnValue
-  readme += '#### ' + mdEscape(signature) + '\n\n'
+  readme += '#### ' + markdownify(signature) + '\n\n'
 
-  readme += mdEscape(docAST.desc) + '\n\n'
+  readme += markdownify(docAST.desc) + '\n\n'
 
   fn.jsParams.forEach(function (arg) {
     readme += '* ' + readmeParam(arg)
@@ -65,7 +92,7 @@ function readmeFn (fn) {
         readme += '?'
       }
       if (docAST.params[arg.name].text.trim().length > 0) {
-        readme += ' - ' + mdEscape(docAST.params[arg.name].text)
+        readme += ' - ' + markdownify(docAST.params[arg.name].text)
       }
     }
     readme += '\n'
@@ -79,12 +106,12 @@ function readmeFn (fn) {
     readme += '[ ' + fn.jsCbParams.map(readmeParam).join(', ') + ' ]'
   }
   if (docAST.returns.length > 0) {
-    readme += ' - ' + mdEscape(docAST.returns)
+    readme += ' - ' + markdownify(docAST.returns)
   }
   readme += '\n'
   readme += '\n'
   if (docAST.errors.length > 0) {
-    readme += 'Errors: ' + mdEscape(docAST.errors.join(', ')) + '\n'
+    readme += 'Errors: `' + docAST.errors.join('`, `') + '`\n'
   }
   readme += '\n'
 }
