@@ -51,4 +51,30 @@
     [TestUtils cleanupStorage];
 }
 
+- (void)testBuildPoolRestartRequestsWorksForCancelAction
+{
+    [TestUtils cleanupStorage];
+    NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
+    
+    NSMutableDictionary *expectedResult = [NSMutableDictionary new];
+    
+    expectedResult[@"operation"] = [NSMutableDictionary new];
+    expectedResult[@"operation"][@"type"] = @"118";
+    expectedResult[@"operation"][@"action"] = @"cancel";
+    
+    NSString *poolRestartRequestJson;
+    NSError *ret = [[LedgerUtils sharedInstance] buildPoolRestartRequestWithSubmitterDid:identifier
+                                                                                  action:@"cancel"
+                                                                                schedule:nil
+                                                                              resultJson:&poolRestartRequestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildPoolRestartRequestWithSubmitterDid() failed");
+    XCTAssertNotNil(poolRestartRequestJson, @"poolRestartRequestJson is nil!");
+    NSLog(@"poolRestartRequestJson: %@", poolRestartRequestJson);
+    
+    NSDictionary *request = [NSDictionary fromString:poolRestartRequestJson];
+    XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");
+    
+    [TestUtils cleanupStorage];
+}
+
 @end
