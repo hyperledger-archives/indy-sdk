@@ -10,7 +10,7 @@ function wrapIndyCallback (cb, returnsJson) {
       }
     })
   }
-  var callback = function callback (err, data) {
+  function callback (err, data) {
     if (err) {
       cb(new IndyError(err))
       return

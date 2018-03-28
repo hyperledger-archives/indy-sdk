@@ -479,11 +479,7 @@ Creates keys pair and stores in the wallet.
     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
 }
 ````
-* __->__ `vk`: String - Error Code
-cb:
-- xcommand\_handle: command handle to map callback to caller context.
-- err: Error code.
-- verkey: Ver key of generated key pair, also used as key identifier
+* __->__ `vk`: String - Ver key of generated key pair, also used as key identifier
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
@@ -496,10 +492,7 @@ verkey - the key \(verkey, key id\) to store metadata.
 metadata - the meta information that will be store with the key.
 * `verkey`: String
 * `metadata`: String
-* __->__ void - Error Code
-cb:
-- xcommand\_handle: command handle to map callback to caller context.
-- err: Error code.
+* __->__ void
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
@@ -510,11 +503,7 @@ Retrieves the meta information for the giving key in the wallet.
 * `walletHandle`: Number - Wallet handle \(created by open\_wallet\).
 verkey - The key \(verkey, key id\) to retrieve metadata.
 * `verkey`: String
-* __->__ `metadata`: String - Error Code
-cb:
-- xcommand\_handle: Command handle to map callback to caller context.
-- err: Error code.
-- metadata - The meta information stored with the key; Can be null if no metadata was saved for this key.
+* __->__ `metadata`: String - The meta information stored with the key; Can be null if no metadata was saved for this key.
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
@@ -715,11 +704,7 @@ As result we can use returned ver key in all generic crypto and messaging functi
 * `walletHandle`: Number - Wallet handle \(created by open\_wallet\).
 did - The DID to resolve key.
 * `did`: String
-* __->__ `key`: String - Error Code
-cb:
-- xcommand\_handle: Command handle to map callback to caller context.
-- err: Error code.
-- key - The DIDs ver key \(key id\).
+* __->__ `key`: String - The DIDs ver key \(key id\).
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
@@ -739,11 +724,7 @@ As result we can use returned ver key in all generic crypto and messaging functi
 * `walletHandle`: Number - Wallet handle \(created by open\_wallet\).
 did - The DID to resolve key.
 * `did`: String
-* __->__ `key`: String - Error Code
-cb:
-- xcommand\_handle: Command handle to map callback to caller context.
-- err: Error code.
-- key - The DIDs ver key \(key id\).
+* __->__ `key`: String - The DIDs ver key \(key id\).
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
@@ -756,12 +737,7 @@ did - The DID to resolve endpoint.
 * `did`: String
 * `address`: String
 * `transportKey`: String
-* __->__ void - Error Code
-cb:
-- xcommand\_handle: Command handle to map callback to caller context.
-- err: Error code.
-- endpoint - The DIDs endpoint.
-- transport\_vk - The DIDs transport key \(ver key, key id\).
+* __->__ void
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
@@ -784,10 +760,7 @@ did - the DID to store metadata.
 metadata - the meta information that will be store with the DID.
 * `did`: String
 * `metadata`: String
-* __->__ void - Error Code
-cb:
-- xcommand\_handle: command handle to map callback to caller context.
-- err: Error code.
+* __->__ void
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
@@ -798,11 +771,7 @@ Retrieves the meta information for the giving DID in the wallet.
 * `walletHandle`: Number - Wallet handle \(created by open\_wallet\).
 did - The DID to retrieve metadata.
 * `did`: String
-* __->__ `metadata`: String - Error Code
-cb:
-- xcommand\_handle: Command handle to map callback to caller context.
-- err: Error code.
-- metadata - The meta information stored with the DID; Can be null if no metadata was saved for this DID.
+* __->__ `metadata`: String - The meta information stored with the DID; Can be null if no metadata was saved for this DID.
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 

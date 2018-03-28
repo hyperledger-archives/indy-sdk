@@ -105,7 +105,7 @@ function readmeFn (fn) {
   } else if (fn.jsCbParams.length > 1) {
     readme += '[ ' + fn.jsCbParams.map(readmeParam).join(', ') + ' ]'
   }
-  if (docAST.returns.length > 0) {
+  if (fn.jsCbParams.length > 0 && docAST.returns.length > 0) {
     readme += ' - ' + markdownify(docAST.returns)
   }
   readme += '\n'
@@ -133,6 +133,27 @@ function parseDocString (docs) {
       })
       section = line + '\n'
       buff = ''
+    } else if (line.trim() === 'cb:') {
+      grouped.push({
+        section: section,
+        text: buff
+      })
+      section = 'returns'
+      buff = ''
+      while (i < lines.length) {
+        line = lines[i]
+        if (!/^- /.test(line)) {
+          break
+        }
+        i++
+        if (/^- xcommand_handle:/.test(line)) {
+          // ignore line
+        } else if (/^- err:/.test(line)) {
+          // ignore line
+        } else {
+          buff += line + '\n'
+        }
+      }
     } else {
       buff += line + '\n'
     }
@@ -220,7 +241,9 @@ function parseDocStringParams (params) {
 }
 
 function parseDocStringReturns (src) {
-  var out = src.trim()
+  var out = src
+    .replace(/^\s*Error\s*Code/, '')
+    .trim()
   switch (src.toLowerCase().replace(/[^a-z]+/g, '')) {
     case 'none':
     case 'errorcode':
@@ -229,6 +252,9 @@ function parseDocStringReturns (src) {
       out = ''
       break
   }
+  out = out
+    .replace(/^-\s*[a-z0-9_]+\s*[-:]/, '')
+    .trim()
   return out
 }
 

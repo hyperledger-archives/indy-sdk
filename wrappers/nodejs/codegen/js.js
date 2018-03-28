@@ -24,7 +24,7 @@ js += 'var indy = {}\n\n'
 apiFunctions.forEach(function (fn) {
   js += 'indy.' + fn.jsName + ' = function ' + fn.jsName + ' ('
   fn.jsParams.forEach(function (arg) {
-    js += arg.name + ', '
+    js += arg.jsName + ', '
   })
   js += 'cb) {\n'
   js += '  cb = wrapIndyCallback(cb'
@@ -35,9 +35,9 @@ apiFunctions.forEach(function (fn) {
   js += '  capi.' + fn.jsName + '('
   fn.jsParams.forEach(function (arg) {
     if (arg.json) {
-      js += 'jsonify(' + arg.name + '), '
+      js += 'jsonify(' + arg.jsName + '), '
     } else {
-      js += arg.name + ', '
+      js += arg.jsName + ', '
     }
   })
   js += 'cb)\n'
