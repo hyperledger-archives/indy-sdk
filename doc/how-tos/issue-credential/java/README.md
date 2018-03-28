@@ -6,17 +6,18 @@ Indy-SDK Developer Walkthrough #4, Java Edition
 
 ## Prerequisites
 
-Setup your workstation and indy development VM. See [prerequisites](../../prerequisites).
+Setup your workstation with an indy development virtual machine(VM). See [prerequisites](../../prerequisites).
 
 
 ## Steps
 
 ### Step 1
 
-In your normal workstation OS (not the VM), open a java editor of your
+In your normal workstation operating system (not the VM), open a java editor of your
 choice and paste the code from [template.java](template.java)
-into a new doc. We will be modifying this code in later steps. Save the
-doc as `IssueCredential.java`
+into a new doc. We will be modifying this code in later steps.
+
+Save the doc as `IssueCredential.java`.
 
 This is a very simple app framework into which you'll plug the code
 you'll be writing.
@@ -29,6 +30,7 @@ copy that code as our starting point.
 
 Copy the contents of [step2.java](step2.java) into
 `IssueCredential.java` on top of the `Step 2 code goes here` placeholder comment.
+
 Save the updated version of `IssueCredential.java`.
 
 ### Step 3
@@ -38,6 +40,7 @@ We need another one, now, that can be used to hold credentials once they're issu
 
 Copy the contents of [step3.java](step3.java) into
 `IssueCredential.java` on top of the `Step 3 code goes here` placeholder comment.
+
 Save the updated version of `IssueCredential.java`.
 
 Notice that this identity creates something called a *link secret* (formerly
@@ -65,7 +68,7 @@ These three steps embody a negotiation pattern that is used in many
 indy interactions (e.g., in proving). Either party can begin; the other
 party acknowledges and accepts--or makes a counter proposal. In the case
 of a counter proposal, a new negotiation cycle begins; in the simpler
-case, the negotiation is concluded successfully. Negotation could be used
+case, the negotiation is concluded successfully. Negotiation could be used
 during credential issuance to negotiate a change to a credential (e.g.,
 to correct a typo or to ask an issuer to include or omit a piece of data
 that they didn't initially propose); however, we don't cover that
@@ -73,12 +76,14 @@ advanced workflow here.
 
 One other note: the sample code in this step uses the word "claim" in
 places where you might expect "credential." These used to be synonyms,
-but usage has evolved in the W3C since the Indy SDK was built. "Credential"
+but usage has evolved in the [W3C](https://github.com/TechWritingWhiz/indy-sdk/blob/master/doc/how-tos/issue-credential/dotnet/README.md) since the Indy SDK was built. "Credential"
 is the newer word, and function and parameter names that refer to "claims"
 are now deprecated. Eventually, all usage will show "credential."
 
 Copy the contents of [step4.java](step4.java) into
 `IssueCredential.java` on top of the `Step 4 code goes here` placeholder comment.
+
+Save the updated version of `IssueCredential.java`.
 
 ### Step 5
 
@@ -87,5 +92,4 @@ Run the [finished code](IssueCredential.java) and observe the whole sequence.
 ## More experiments
 
 You might try the ["Negotiate a Proof"](../../negotiate-proof/java/README.md)
-how-to, which can be done in only one step one you complete this one.
-
+how-to, which can be done in only one step once you complete this one.
