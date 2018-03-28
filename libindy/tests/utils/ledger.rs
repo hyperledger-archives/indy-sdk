@@ -276,7 +276,6 @@ impl LedgerUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    /* Sergey Palamarchuk */
     pub fn build_pool_restart_request(submitter_did: &str,
                                       action: &str,
                                       schedule: Option<&str>) -> Result<String, ErrorCode> {

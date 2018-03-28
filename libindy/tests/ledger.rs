@@ -1017,14 +1017,31 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
 
-        fn is_success(res_json : String) -> bool{
-            true
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_pool_restart_request_works_for_cancel_action() {
+            TestUtils::cleanup_storage();
+
+            let expected_result = r#""operation":{"type":"118","action":"cancel""#;
+            let request = LedgerUtils::build_pool_restart_request(DID_TRUSTEE,
+                                                                  "cancel",
+                                                                  None).unwrap();
+            assert!(request.contains(expected_result));
+
+            TestUtils::cleanup_storage();
+        }
+
+        lazy_static! {
+            static ref SCHEDULE: String = {
+                let next_year = time::now().tm_year + 1900 + 1;
+                format!("{}-01-25T12:49:05.258870+00:00", next_year)
+            };
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         #[ignore] //FIXME currently unstable because pool isn't maintain restart transaction yet.
-        fn indy_pool_restart_request_works_with_valid_data() {
+        fn indy_pool_restart_request_works_for_start_cancel_works() {
             TestUtils::cleanup_storage();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
@@ -1032,40 +1049,21 @@ mod high_cases {
 
             let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
-            let request = LedgerUtils::build_pool_restart_request(&trustee_did, "start", Some("{}")).unwrap();
-            let submit_res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request);
+            //start
+            let request = LedgerUtils::build_pool_restart_request(&trustee_did,
+                                                                  "start",
+                                                                  Some(&SCHEDULE)).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
 
-            let ret_value = submit_res.unwrap();
-
-            println!("Ret value is {} ", ret_value);
-            assert!(is_success(ret_value));
-
-            PoolUtils::close(pool_handle).unwrap();
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        #[ignore] //FIXME currently unstable because pool isn't maintain restart transaction yet.
-        fn indy_pool_restart_request_works_with_steward_role() {
-            TestUtils::cleanup_storage();
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let (steward_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(STEWARD_SEED)).unwrap();
-
-            let request = LedgerUtils::build_pool_restart_request(&steward_did, "start", Some("{}")).unwrap();
-            let submit_res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request);
-
-            let ret_value = submit_res.unwrap();
-
-            println!("Ret value is {} ", ret_value);
-            assert!(is_success(ret_value));
+            //cancel
+            let request = LedgerUtils::build_pool_restart_request(&trustee_did,
+                                                                  "cancel",
+                                                                  None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
+
             TestUtils::cleanup_storage();
         }
     }
