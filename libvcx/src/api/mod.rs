@@ -2,12 +2,12 @@ extern crate libc;
 
 pub mod vcx;
 pub mod connection;
-pub mod issuer_claim;
+pub mod issuer_credential;
 pub mod utils;
 pub mod proof;
-pub mod claim_def;
+pub mod credential_def;
 pub mod schema;
-pub mod claim;
+pub mod credential;
 pub mod disclosed_proof;
 
 use std::fmt;

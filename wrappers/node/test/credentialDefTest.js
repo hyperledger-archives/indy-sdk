@@ -2,16 +2,16 @@ const assert = require('chai').assert
 const ffi = require('ffi')
 const vcx = require('../dist/index')
 const { stubInitVCX } = require('./helpers')
-const { ClaimDef, Error, rustAPI } = vcx
+const { CredentialDef, Error, rustAPI } = vcx
 
-const CLAIM_DEF = {
+const CREDENTIAL_DEF = {
   name: 'test',
   revocation: false,
   schemaNo: 15,
   sourceId: 'sourceId'
 }
 
-describe('A ClaimDef', function () {
+describe('A CredentialDef', function () {
   this.timeout(30000)
 
   before(async () => {
@@ -20,48 +20,48 @@ describe('A ClaimDef', function () {
   })
 
   it('can be created.', async () => {
-    const claimDef = await ClaimDef.create(CLAIM_DEF)
-    assert(claimDef)
+    const credentialDef = await CredentialDef.create(CREDENTIAL_DEF)
+    assert(credentialDef)
   })
 
   it('has a name of test after instanstiated', async () => {
-    const claimDef = await ClaimDef.create(CLAIM_DEF)
-    const name = await claimDef._name
+    const credentialDef = await CredentialDef.create(CREDENTIAL_DEF)
+    const name = await credentialDef._name
     assert.equal(name, 'test')
   })
 
   it('can be created, then serialized, then deserialized and have the same sourceId and name', async () => {
-    const claimDef = await ClaimDef.create(CLAIM_DEF)
-    const jsonDef = await claimDef.serialize()
+    const credentialDef = await CredentialDef.create(CREDENTIAL_DEF)
+    const jsonDef = await credentialDef.serialize()
     assert.equal(jsonDef.source_id, 'sourceId')
-    const claimDef2 = await ClaimDef.deserialize(jsonDef)
-    assert.equal(claimDef.name, claimDef2.name)
-    assert.equal(claimDef.source_id, claimDef2.source_id)
+    const credentialDef2 = await CredentialDef.deserialize(jsonDef)
+    assert.equal(credentialDef.name, credentialDef2.name)
+    assert.equal(credentialDef.source_id, credentialDef2.source_id)
   })
 
-  it('will throw error on serialize when claimDef has been released', async () => {
-    const claimDef = await ClaimDef.create(CLAIM_DEF)
-    const jsonDef = await claimDef.serialize()
-    let data = await claimDef.serialize()
+  it('will throw error on serialize when credentialDef has been released', async () => {
+    const credentialDef = await CredentialDef.create(CREDENTIAL_DEF)
+    const jsonDef = await credentialDef.serialize()
+    let data = await credentialDef.serialize()
     assert(data)
     assert.equal(data.handle, jsonDef.handle)
-    assert.equal(await claimDef.release(), Error.SUCCESS)
+    assert.equal(await credentialDef.release(), Error.SUCCESS)
     try {
-      await claimDef.serialize()
+      await credentialDef.serialize()
     } catch (error) {
       assert.equal(error.vcxCode, 1037)
-      assert.equal(error.vcxFunction, 'vcx_claimdef_serialize')
-      assert.equal(error.message, 'Invalid Claim Definition handle')
+      assert.equal(error.vcxFunction, 'vcx_credentialdef_serialize')
+      assert.equal(error.message, 'Invalid Credential Definition handle')
     }
   })
 
-  const claimDefCreateCheckAndDelete = async () => {
-    let claimDef = await ClaimDef.create(CLAIM_DEF)
-    let data = await claimDef.serialize()
+  const credentialDefCreateCheckAndDelete = async () => {
+    let credentialDef = await CredentialDef.create(CREDENTIAL_DEF)
+    let data = await credentialDef.serialize()
     assert(data)
-    const serialize = rustAPI().vcx_claimdef_serialize
-    const handle = claimDef._handle
-    claimDef = null
+    const serialize = rustAPI().vcx_credentialdef_serialize
+    const handle = credentialDef._handle
+    credentialDef = null
     return {
       handle,
       serialize
@@ -69,10 +69,10 @@ describe('A ClaimDef', function () {
   }
 
   // Fix the GC issue
-  it('claimdef and GC deletes object should return null when serialize is called ', async function () {
+  it('credentialdef and GC deletes object should return null when serialize is called ', async function () {
     this.timeout(30000)
 
-    const { handle, serialize } = await claimDefCreateCheckAndDelete()
+    const { handle, serialize } = await credentialDefCreateCheckAndDelete()
 
     global.gc()
 
@@ -107,7 +107,7 @@ describe('A ClaimDef', function () {
     }
 
     // this will timeout if condition is never met
-    // ill return "" because the claimdef object was released
+    // ill return "" because the credentialdef object was released
     return isComplete
   })
 })

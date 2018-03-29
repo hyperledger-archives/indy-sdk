@@ -10,7 +10,7 @@ use std::ptr::null;
 use std::ffi::CString;
 use utils::timeout::TimeoutUtils;
 use utils::cstring::CStringUtils;
-//use utils::demo::{build_claim_def_txn, sign_and_send_request};
+//use utils::demo::{build_credential_def_txn, sign_and_send_request};
 
 #[allow(dead_code)]
 extern {
@@ -21,7 +21,7 @@ extern {
                                               signature_type: *const c_char,
                                               create_non_revoc: bool,
                                               cb: Option<extern fn(xcommand_handle: i32, err: i32,
-                                                                   claim_def_json: *const c_char)>) -> i32;
+                                                                   credential_def_json: *const c_char)>) -> i32;
 }
 lazy_static! {
     static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
@@ -41,40 +41,40 @@ pub fn create_default_schema(schema_seq_no: u32) -> String {
 }
 
 #[allow(dead_code)]
-pub fn put_claim_def_in_wallet(wallet_handle: i32, issuer_did: &str, schema_json_str: &str) -> i32{
-    fn closure_to_store_claim_def( closure: Box<FnMut(i32) + Send>) ->
-        (i32, Option<extern fn(command_handle: i32, err: i32, claim_def:*const c_char)>){
+pub fn put_credential_def_in_wallet(wallet_handle: i32, issuer_did: &str, schema_json_str: &str) -> i32{
+    fn closure_to_store_credential_def( closure: Box<FnMut(i32) + Send>) ->
+        (i32, Option<extern fn(command_handle: i32, err: i32, credential_def:*const c_char)>){
         lazy_static! {
-            static ref CALLBACK_CLAIM_DEF_TO_WALLET: Mutex<HashMap<i32, Box<FnMut(i32) + Send>>> = Default::default();
+            static ref CALLBACK_CREDENTIAL_DEF_TO_WALLET: Mutex<HashMap<i32, Box<FnMut(i32) + Send>>> = Default::default();
             }
 
-        extern "C" fn callback(command_handle: i32, err: i32, claim_def_string: *const c_char) {
-            let mut callback = CALLBACK_CLAIM_DEF_TO_WALLET.lock().unwrap();
+        extern "C" fn callback(command_handle: i32, err: i32, credential_def_string: *const c_char) {
+            let mut callback = CALLBACK_CREDENTIAL_DEF_TO_WALLET.lock().unwrap();
             let mut cb = callback.remove(&command_handle).unwrap();
             assert_eq!(err,0);
-            if claim_def_string.is_null() {
-                panic!("claim def is empty");
+            if credential_def_string.is_null() {
+                panic!("credential def is empty");
             }
-            check_useful_c_str!(claim_def_string, ());
-//            let claim_def: serde_json::Value = serde_json::from_str(claim_def_string).unwrap();
-//            let claim_def_data = claim_def.get("data").unwrap().to_string();
-//            let claim_def_txn = build_claim_def_txn(issuer_did, 103, "CL", &claim_def_data).unwrap();
-//            let claim_def = sign_and_send_request(get_pool_handle().unwrap() as u32,
+            check_useful_c_str!(credential_def_string, ());
+//            let credential_def: serde_json::Value = serde_json::from_str(credential_def_string).unwrap();
+//            let credential_def_data = credential_def.get("data").unwrap().to_string();
+//            let credential_def_txn = build_credential_def_txn(issuer_did, 103, "CL", &credential_def_data).unwrap();
+//            let credential_def = sign_and_send_request(get_pool_handle().unwrap() as u32,
 //                                                  wallet_handle,
 //                                                  issuer_did,
-//                                                  &claim_def_txn).unwrap();
-            println!("successfully called store claim def: {}", claim_def_string);
+//                                                  &credential_def_txn).unwrap();
+            println!("successfully called store credential def: {}", credential_def_string);
             cb(err)
         }
 
-        let mut callbacks = CALLBACK_CLAIM_DEF_TO_WALLET.lock().unwrap();
+        let mut callbacks = CALLBACK_CREDENTIAL_DEF_TO_WALLET.lock().unwrap();
         let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
         callbacks.insert(command_handle, closure);
         (command_handle, Some(callback))
     }
     let (sender, receiver) = channel();
     let cb = Box::new(move |err|{sender.send(err).unwrap();});
-    let (command_handle, cb) = closure_to_store_claim_def(cb);
+    let (command_handle, cb) = closure_to_store_credential_def(cb);
     unsafe {
         let did = CString::new(issuer_did.clone()).unwrap().as_ptr();
         let schema = CString::new(schema_json_str.clone()).unwrap().as_ptr();

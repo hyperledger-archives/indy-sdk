@@ -53,7 +53,7 @@ struct Connection {
     agent_did: String,
     agent_vk: String,
     their_pw_did: String,
-    their_pw_verkey: String, // used by proofs/claims when sending to edge device
+    their_pw_verkey: String, // used by proofs/credentials when sending to edge device
 }
 
 impl Connection {
@@ -643,7 +643,7 @@ pub fn parse_invite_detail(response: &str) -> Result<InviteDetail, ConnectionErr
 }
 
 // TODO: Refactor Error
-// this will become a CommonError, because multiple types (Connection/Issuer Claim) use this function
+// this will become a CommonError, because multiple types (Connection/Issuer Credential) use this function
 // Possibly this function moves out of this file.
 // On second thought, this should stick as a ConnectionError.
 pub fn generate_encrypted_payload(my_vk: &str, their_vk: &str, data: &str, msg_type: &str) -> Result<Vec<u8>, u32> {

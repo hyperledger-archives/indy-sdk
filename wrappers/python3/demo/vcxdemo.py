@@ -4,9 +4,9 @@ from demo.vcxbase import VCXBase
 import json
 import asyncio
 from vcx.state import State
-from vcx.api.issuer_claim import IssuerClaim
+from vcx.api.issuer_credential import IssuerCredential
 from vcx.api.schema import Schema
-from vcx.api.claim_def import ClaimDef
+from vcx.api.credential_def import CredentialDef
 from vcx.api.proof import Proof
 import qrcode
 
@@ -17,7 +17,7 @@ class Vcxdemo(VCXBase):
 
     proof_requests = {}
     schemas = []
-    claim_defs = {}
+    credential_defs = {}
     did = ENTERPRISE_DID
 
     def __init__(self, source_id, details=None, phone_number='8888675309'):
@@ -25,10 +25,10 @@ class Vcxdemo(VCXBase):
         self.details = details
         self.state = {}
         self.state['connection'] = State.Undefined
-        self.state['claim'] = State.Undefined
+        self.state['credential'] = State.Undefined
         self.loop = Vcxdemo.get_loop()
         self.connection = None
-        self.claim = None
+        self.credential = None
         self.phone_number = phone_number
         self.invite_details = None
 
@@ -44,13 +44,13 @@ class Vcxdemo(VCXBase):
         img = qrcode.make(str(json.dumps(self.invite_details)))
         img.save(dest)
 
-    async def _wait_for_claim_state(self, target_state):
-        self.state['claim'] = await self.claim.update_state()
-        while self.state['claim'] != target_state:
-            print('waiting for claim to be [%s]...\ncurrent %s' % (target_state, self.state['claim']))
+    async def _wait_for_credential_state(self, target_state):
+        self.state['credential'] = await self.credential.update_state()
+        while self.state['credential'] != target_state:
+            print('waiting for credential to be [%s]...\ncurrent %s' % (target_state, self.state['credential']))
             await asyncio.sleep(5)
-            self.state['claim'] = await self.claim.update_state()
-        print('Successful state change for claim to be [%s]...\ncurrent %s' % (target_state, self.state['claim']))
+            self.state['credential'] = await self.credential.update_state()
+        print('Successful state change for credential to be [%s]...\ncurrent %s' % (target_state, self.state['credential']))
 
     async def create_and_connect(self):
         self.connection = await Connection.create(self.source_id)
@@ -64,14 +64,14 @@ class Vcxdemo(VCXBase):
     def connect(self):
         self.loop.run_until_complete(asyncio.gather(self.create_and_connect()))
 
-    def create_claim(self, schema_seq_number, attr, claim_name):
-        self.loop.run_until_complete(asyncio.gather(self._create_claim(schema_seq_number, attr, claim_name)))
+    def create_credential(self, schema_seq_number, attr, credential_name):
+        self.loop.run_until_complete(asyncio.gather(self._create_credential(schema_seq_number, attr, credential_name)))
 
-    async def _create_claim(self, schema_seq_number, attr, claim_name):
-        self.claim = await IssuerClaim.create(self.source_id,
+    async def _create_credential(self, schema_seq_number, attr, credential_name):
+        self.credential = await IssuerCredential.create(self.source_id,
                                               attr,
                                               schema_seq_number,
-                                              claim_name)
+                                              credential_name)
 
     def request_proof(self, proof_id):
         proof = self.get_proof_request(proof_id)
@@ -85,19 +85,19 @@ class Vcxdemo(VCXBase):
         if len(res) > 0:
             return res[0]
 
-    async def _serialize_claim(self):
-        return await self.claim.serialize()
+    async def _serialize_credential(self):
+        return await self.credential.serialize()
 
-    def serialize_claim(self):
-        res = self.loop.run_until_complete(asyncio.gather(self._serialize_claim()))
+    def serialize_credential(self):
+        res = self.loop.run_until_complete(asyncio.gather(self._serialize_credential()))
         if len(res) > 0:
             return res[0]
 
     async def _deserialize_connection(self, data):
         self.connection = await Connection.deserialize(data)
 
-    async def _deserialize_claim(self, data):
-        self.claim = await IssuerClaim.deserialize(data)
+    async def _deserialize_credential(self, data):
+        self.credential = await IssuerCredential.deserialize(data)
 
     def deserialize_connection(self, filename):
         try:
@@ -106,15 +106,15 @@ class Vcxdemo(VCXBase):
         except IOError as e:
             print("Error opening file %s: %s" % (filename, e))
 
-    def deserialize_claim(self,filename):
+    def deserialize_credential(self,filename):
         try:
             with open(filename) as in_file:
-                res = self.loop.run_until_complete(asyncio.gather(self._deserialize_claim(json.load(in_file))))
+                res = self.loop.run_until_complete(asyncio.gather(self._deserialize_credential(json.load(in_file))))
         except IOError as e:
             print("Error opening file %s: %s" % (filename, e))
 
-    async def _update_claim_state(self):
-        self.state['claim'] = await self.claim.update_state()
+    async def _update_credential_state(self):
+        self.state['credential'] = await self.credential.update_state()
 
     async def _update_proof_state(self, proof_id):
         await self.get_proof_request(proof_id).update_state()
@@ -129,27 +129,27 @@ class Vcxdemo(VCXBase):
         res = Vcxdemo.get_loop().run_until_complete(asyncio.gather(self._get_proof_state(proof_id)))
         return res[0]
 
-    def update_claim_state(self):
-        res = self.loop.run_until_complete(asyncio.gather(self._update_claim_state()))
+    def update_credential_state(self):
+        res = self.loop.run_until_complete(asyncio.gather(self._update_credential_state()))
         if len(res) > 0:
             return res[0]
 
     async def _send_offer(self):
-        await self.claim.send_offer(self.connection)
-        await self.claim.update_state()
-        self.state['claim'] = await self.claim.get_state()
+        await self.credential.send_offer(self.connection)
+        await self.credential.update_state()
+        self.state['credential'] = await self.credential.get_state()
 
-    def issue_claim_offer(self):
+    def issue_credential_offer(self):
         res = self.loop.run_until_complete(asyncio.gather(self._send_offer()))
         if len(res) > 0:
             return res[0]
 
-    async def _send_issuer_claim(self):
-        await self.claim.send_claim(self.connection)
-        await self.claim.update_state()
+    async def _send_issuer_credential(self):
+        await self.credential.send_credential(self.connection)
+        await self.credential.update_state()
 
-    def send_issuer_claim(self):
-        res = self.loop.run_until_complete(asyncio.gather(self._send_issuer_claim()))
+    def send_issuer_credential(self):
+        res = self.loop.run_until_complete(asyncio.gather(self._send_issuer_credential()))
         if len(res) > 0:
             return res[0]
 
@@ -186,8 +186,8 @@ class Vcxdemo(VCXBase):
             print('Error opening %s: %s', (filename, e))
 
     @classmethod
-    def create_claim_def(cls, source_id, name, schema_number, revocation=False):
-        cls.claim_defs[name] = Vcxdemo.get_loop().run_until_complete(ClaimDef.create(source_id, name, schema_number, revocation))
+    def create_credential_def(cls, source_id, name, schema_number, revocation=False):
+        cls.credential_defs[name] = Vcxdemo.get_loop().run_until_complete(CredentialDef.create(source_id, name, schema_number, revocation))
 
     def create_proof_request(self, source_id, name, proof_attr):
         res = Vcxdemo.get_loop().run_until_complete(asyncio.gather(Proof.create(source_id, name, proof_attr)))
@@ -221,8 +221,8 @@ class Vcxdemo(VCXBase):
             state = await self.connection.get_state()
         return state
 
-    def wait_for_claim_state(self, target_state):
-        self.loop.run_until_complete(asyncio.gather(self._wait_for_claim_state(target_state)))
+    def wait_for_credential_state(self, target_state):
+        self.loop.run_until_complete(asyncio.gather(self._wait_for_credential_state(target_state)))
 
     def wait_for_proof_state(self, proof_id, target_state):
         proof = self.get_proof_request(proof_id)

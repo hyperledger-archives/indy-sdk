@@ -159,13 +159,12 @@ async def test_get_proof_with_invalid_proof():
     data['proof'] = json.loads(proof_msg)
     data['state'] = State.Accepted
     data['proof_state'] = ProofState.Invalid
-    data['handle'] = random.randint(0, 99999)
     proof2 = await Proof.deserialize(data)
     await proof2.update_state()
     proof_data = await proof2.get_proof(connection)
     assert proof2.proof_state == ProofState.Invalid
     attrs = [{"schema_seq_no": 15,
               "issuer_did": "4fUDR9R7fjwELRvH9JT6HH",
-              "claim_uuid": "claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b",
+              "credential_uuid": "claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b",
               "attr_info": {"name": "state", "value": "UT", "type": "revealed"}}]
     assert proof_data[0] == attrs[0]
