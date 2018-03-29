@@ -30,14 +30,14 @@ use std::path::Path;
 
 pub mod api;
 pub mod connection;
-pub mod issuer_claim;
-pub mod claim_request;
+pub mod issuer_credential;
+pub mod credential_request;
 pub mod proof;
 pub mod schema;
-pub mod claim_def;
+pub mod credential_def;
 pub mod proof_compliance;
 pub mod error;
-pub mod claim;
+pub mod credential;
 pub mod object_cache;
 pub mod disclosed_proof;
 pub fn create_path(s:&str) -> &Path {

@@ -14,9 +14,9 @@ use std::ffi::CString;
 use vcx::api;
 use std::sync::mpsc::channel;
 
-static CLAIM_DATA: &str = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
+static CREDENTIAL_DATA: &str = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
 // STAGING is 245, SANDBOX is 36, DEV is 22
-static CLAIM_DEF_SCHEMA_SEQ_NUM: u32 = 22;
+static CREDENTIAL_DEF_SCHEMA_SEQ_NUM: u32 = 22;
 
 #[test]
 fn test_demo(){
@@ -30,21 +30,21 @@ fn test_demo(){
 fn demo(){
     let wallet_name = "test_demo";
     let serialize_connection_fn = api::connection::vcx_connection_serialize;
-    let serialize_claim_fn = api::issuer_claim::vcx_issuer_claim_serialize;
+    let serialize_credential_fn = api::issuer_credential::vcx_issuer_credential_serialize;
     let invite_details = api::connection::vcx_connection_invite_details;
 
     self::vcx::utils::logger::LoggerUtils::init();
     // Init DEV ENV  *********************************************************************
     self::vcx::utils::devsetup::setup_dev_env(wallet_name);
 
-    // Create Claim Offer ***************************************************************
+    // Create Credential Offer ***************************************************************
     let source_id = "Name and Sex";
-    let claim_name = "Name and Sex";
-    let claim_data:serde_json::Value = serde_json::from_str(CLAIM_DATA).unwrap(); // this format will make it easier to modify in the futre
-    let ledger_schema_seq_num = CLAIM_DEF_SCHEMA_SEQ_NUM;
-    let (err, claim_handle) = create_claim_offer(claim_name, source_id, claim_data, self::vcx::utils::devsetup::INSTITUTION_DID, ledger_schema_seq_num);
+    let credential_name = "Name and Sex";
+    let credential_data:serde_json::Value = serde_json::from_str(CREDENTIAL_DATA).unwrap(); // this format will make it easier to modify in the futre
+    let ledger_schema_seq_num = CREDENTIAL_DEF_SCHEMA_SEQ_NUM;
+    let (err, credential_handle) = create_credential_offer(credential_name, source_id, credential_data, self::vcx::utils::devsetup::INSTITUTION_DID, ledger_schema_seq_num);
     assert_eq!(err, 0);
-    assert!(claim_handle>0);
+    assert!(credential_handle>0);
 
     // Create Proof **************************************************************
     let requested_attrs = json!([
@@ -87,7 +87,7 @@ fn demo(){
     #[allow(unused_variables)]
     let id = CString::new("{\"id\":\"ckmMPiEDcH4R5URY\"}").unwrap();
     #[allow(unused_variables)]
-    let claim_data = CString::new("{\"claim\":\"attributes\"}").unwrap();
+    let credential_data = CString::new("{\"credential\":\"attributes\"}").unwrap();
     //    let issuer_did_cstring = CString::new(issuer_did).unwrap();
     let rc = api::connection::vcx_connection_create(
         command_handle,CString::new("test_vcx_connection_connect").unwrap().into_raw(),create_connection_cb);
@@ -120,41 +120,41 @@ fn demo(){
     let connection_state = wait_for_updated_state(connection_handle, 4, api::connection::vcx_connection_update_state);
     assert_eq!(connection_state, 4);
 
-    // update claim *******************************************************************
-    let target_claim_state = 1;
-    let claim_state = wait_for_updated_state(claim_handle, target_claim_state, api::issuer_claim::vcx_issuer_claim_update_state);
-    assert_eq!(claim_state, target_claim_state);
+    // update credential *******************************************************************
+    let target_credential_state = 1;
+    let credential_state = wait_for_updated_state(credential_handle, target_credential_state, api::issuer_credential::vcx_issuer_credential_update_state);
+    assert_eq!(credential_state, target_credential_state);
 
-    // Send Claim Offer ***************************************************************
-    println!("ABOUT TO SEND CLAIM OFFER");
+    // Send Credential Offer ***************************************************************
+    println!("ABOUT TO SEND CREDENTIAL OFFER");
     std::thread::sleep(Duration::from_millis(5000));
-    let err = send_claim_offer(claim_handle, connection_handle);
+    let err = send_credential_offer(credential_handle, connection_handle);
     assert_eq!(err,0);
 
     // Serialize again ****************************************************************
     let err = serialize_vcx_object(connection_handle, serialize_connection_fn);
     assert_eq!(err,0);
 
-    // Serialize claim ****************************************************************
-    let err = serialize_vcx_object(claim_handle, serialize_claim_fn);
+    // Serialize credential ****************************************************************
+    let err = serialize_vcx_object(credential_handle, serialize_credential_fn);
     assert_eq!(err,0);
 
-    receive_request_send_claim(connection_handle,claim_handle);
+    receive_request_send_credential(connection_handle,credential_handle);
 
     send_proof_request_and_receive_proof(connection_handle, proof_handle);
     self::vcx::utils::devsetup::cleanup_dev_env(wallet_name);
 }
 
-fn receive_request_send_claim(connection_handle: u32, claim_handle:u32){
+fn receive_request_send_credential(connection_handle: u32, credential_handle:u32){
 
-    // update claim *******************************************************************
-    let target_claim_state = 3;
-    let claim_state = wait_for_updated_state(claim_handle, target_claim_state, api::issuer_claim::vcx_issuer_claim_update_state);
-    assert_eq!(claim_state, target_claim_state);
+    // update credential *******************************************************************
+    let target_credential_state = 3;
+    let credential_state = wait_for_updated_state(credential_handle, target_credential_state, api::issuer_credential::vcx_issuer_credential_update_state);
+    assert_eq!(credential_state, target_credential_state);
 
 
-    // Send claim *********************************************************************
-    let err = utils::demo::send_claim(claim_handle, connection_handle);
+    // Send credential *********************************************************************
+    let err = utils::demo::send_credential(credential_handle, connection_handle);
     assert_eq!(err, 0);
 }
 

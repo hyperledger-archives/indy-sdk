@@ -11,7 +11,7 @@ use messages::proofs::proof_request::{ ProofRequestMessage };
 use messages::extract_json_payload;
 use messages::to_u8;
 
-use claim_def::{ RetrieveClaimDef, ClaimDefCommon };
+use credential_def::{ RetrieveCredentialDef, CredentialDefCommon };
 use schema::LedgerSchema;
 
 use utils::libindy::anoncreds;
@@ -65,14 +65,14 @@ struct DisclosedProof {
     agent_vk: Option<String>,
 }
 
-fn _match_claim(claims: &Value, id: &str) -> Option<(String, String, u32)> {
-    let claims = match claims {
+fn _match_credential(credentials: &Value, id: &str) -> Option<(String, String, u32)> {
+    let credentials = match credentials {
         &Value::Array(ref list) => list,
         _ => return None
     };
-    for claim in claims.iter() {
-        let claim_id = &claim["claim_uuid"];
-        if let &Value::String(ref str) = claim_id {
+    for credential in credentials.iter() {
+        let credential_id = &credential["claim_uuid"];
+        if let &Value::String(ref str) = credential_id {
             if str.eq(id) {
 
                 fn get_val(val: Option<&Value>) -> Option<&String> {
@@ -86,13 +86,13 @@ fn _match_claim(claims: &Value, id: &str) -> Option<(String, String, u32)> {
                         None => None
                     }
                 }
-                let issuer_did = get_val(claim.get("issuer_did"));
+                let issuer_did = get_val(credential.get("issuer_did"));
                 let issuer_did = match issuer_did {
                     Some(v) => v,
                     None => continue
                 };
 
-                let schema_seq_no = get_val(claim.get("schema_seq_no"));
+                let schema_seq_no = get_val(credential.get("schema_seq_no"));
                 let schema_seq_no = match schema_seq_no {
                     Some(v) => v,
                     None => continue
@@ -110,13 +110,13 @@ fn _match_claim(claims: &Value, id: &str) -> Option<(String, String, u32)> {
     None
 }
 
-fn claim_def_identifiers(claims: &str) -> Result<Vec<(String, String, String, u64)>, ProofError>{
+fn credential_def_identifiers(credentials: &str) -> Result<Vec<(String, String, String, u64)>, ProofError>{
     let mut rtn = Vec::new();
 
-    let claims: Value = serde_json::from_str(&claims)
+    let credentials: Value = serde_json::from_str(&credentials)
         .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
 
-    if let Value::Object(ref map) = claims["attrs"] {
+    if let Value::Object(ref map) = credentials["attrs"] {
         for (key, value) in map {
             if let Value::Object(ref attr_obj) = value[0] {
                 let claim_uuid = match attr_obj.get("claim_uuid") {
@@ -156,10 +156,10 @@ impl DisclosedProof {
     fn get_state(&self) -> u32 {self.state as u32}
     fn set_state(&mut self, state: VcxStateType) {self.state = state}
 
-    fn _find_schemas(&self, claims_identifers: &Vec<(String, String, String, u64)>) -> Result<String, ProofError> {
+    fn _find_schemas(&self, credentials_identifers: &Vec<(String, String, String, u64)>) -> Result<String, ProofError> {
         let mut rtn = Map::new();
 
-        for &(ref attr_id, ref claim_uuid, ref issuer_did, schema_seq_num) in claims_identifers {
+        for &(ref attr_id, ref claim_uuid, ref issuer_did, schema_seq_num) in credentials_identifers {
             let schema = LedgerSchema::new_from_ledger(schema_seq_num as i32).map_err(|_| ProofError::InvalidSchema())?;
             let schema = schema.data.ok_or(ProofError::CommonError(error::INVALID_SCHEMA.code_num))?;
 
@@ -176,20 +176,20 @@ impl DisclosedProof {
         }
     }
 
-    fn _find_claim_def(&self, claims_identifers: &Vec<(String, String, String, u64)>) -> Result<String, ProofError> {
+    fn _find_credential_def(&self, credentials_identifers: &Vec<(String, String, String, u64)>) -> Result<String, ProofError> {
 
         let mut rtn = Map::new();
 
-        for &(ref attr_id, ref claim_uuid, ref issuer_did, schema_seq_num) in claims_identifers {
-            let claim_def = RetrieveClaimDef::new()
-                .retrieve_claim_def("GGBDg1j8bsKmr4h5T9XqYf",
+        for &(ref attr_id, ref claim_uuid, ref issuer_did, schema_seq_num) in credentials_identifers {
+            let credential_def = RetrieveCredentialDef::new()
+                .retrieve_credential_def("GGBDg1j8bsKmr4h5T9XqYf",
                                     schema_seq_num as u32,
                                     Some(SigTypes::CL),
                                     &issuer_did).map_err(|_| ProofError::InvalidCredData())?;
 
-            let claim_def: Value = serde_json::from_str(&claim_def).or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
+            let credential_def: Value = serde_json::from_str(&credential_def).or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
 
-            rtn.insert(claim_uuid.to_owned(), claim_def);
+            rtn.insert(claim_uuid.to_owned(), credential_def);
         }
 
         match rtn.is_empty() {
@@ -198,14 +198,14 @@ impl DisclosedProof {
         }
     }
 
-    fn _build_requested_claims(&self, claims_identifiers: &Vec<(String, String, String, u64)>) -> Result<String, ProofError> {
+    fn _build_requested_credentials(&self, credentials_identifiers: &Vec<(String, String, String, u64)>) -> Result<String, ProofError> {
         let mut rtn: Value = json!({
               "self_attested_attributes":{},
               "requested_attrs":{},
               "requested_predicates":{}
         });
         if let Value::Object(ref mut map) = rtn["requested_attrs"] {
-            for &(ref attr_id, ref claim_uuid, ref issuer_did, schema_seq_num) in claims_identifiers {
+            for &(ref attr_id, ref claim_uuid, ref issuer_did, schema_seq_num) in credentials_identifiers {
                 let insert_val = json!([claim_uuid, true]);
                 map.insert(attr_id.to_owned(), insert_val);
             }
@@ -225,26 +225,26 @@ impl DisclosedProof {
         let proof_req_data_json = serde_json::to_string(&proof_req.proof_request_data)
             .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
 
-        let claims = anoncreds::libindy_prover_get_claims(wallet_h,
+        let credentials = anoncreds::libindy_prover_get_credentials(wallet_h,
                                                           &proof_req_data_json)
             .map_err(|ec| ProofError::CommonError(ec))?;
 
-        debug!("claims: {}", claims);
-        let claims_identifiers = claim_def_identifiers(&claims)?;
-        let requested_claims = self._build_requested_claims(&claims_identifiers)?;
+        debug!("credentials: {}", credentials);
+        let credentials_identifiers = credential_def_identifiers(&credentials)?;
+        let requested_credentials = self._build_requested_credentials(&credentials_identifiers)?;
 
-        let schemas = self._find_schemas(&claims_identifiers)?;
+        let schemas = self._find_schemas(&credentials_identifiers)?;
         debug!("schemas: {}", schemas);
-        let claim_defs_json = self._find_claim_def(&claims_identifiers)?;
-        debug!("claim_defs: {}", claim_defs_json);
+        let credential_defs_json = self._find_credential_def(&credentials_identifiers)?;
+        debug!("credential_defs: {}", credential_defs_json);
         let revoc_regs_json = Some("{}");
 
         let proof = anoncreds::libindy_prover_create_proof(wallet_h,
                                                           &proof_req_data_json,
-                                                           &requested_claims,
+                                                           &requested_credentials,
                                                           &schemas,
                                                           &self.link_secret_alias,
-                                                          &claim_defs_json,
+                                                          &credential_defs_json,
                                                           revoc_regs_json).map_err(|ec| ProofError::CommonError(ec))?;
 
         let proof: ProofMessage = serde_json::from_str(&proof)
@@ -394,7 +394,7 @@ pub fn is_valid_handle(handle: u32) -> bool {
     HANDLE_MAP.has_handle(handle)
 }
 
-//TODO one function with claim
+//TODO one function with credential
 pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&str>) -> Result<String, u32> {
     let my_did = connection::get_pw_did(connection_handle)?;
     let my_vk = connection::get_pw_verkey(connection_handle)?;
@@ -445,14 +445,14 @@ mod tests {
 
     use super::*;
     use utils::httpclient;
-    use issuer_claim;
+    use issuer_credential;
     use proof;
-    use claim;
+    use credential;
     use std::thread;
     use std::time::Duration;
     use api::ProofStateType;
 
-    const CLAIMS: &str = r#"{"attrs":{"address1_0":[{"claim_uuid":"claim::b3817a07-afe2-42cc-9341-771d58ab3a8a","attrs":{"state":"UT","zip":"84000","city":"Draper","address2":"Suite 3","address1":"123 Main St"},"schema_seq_no":22,"issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}],"zip_4":[{"claim_uuid":"claim::b3817a07-afe2-42cc-9341-771d58ab3a8a","attrs":{"state":"UT","zip":"84000","city":"Draper","address2":"Suite 3","address1":"123 Main St"},"schema_seq_no":22,"issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}],"address2_1":[{"claim_uuid":"claim::b3817a07-afe2-42cc-9341-771d58ab3a8a","attrs":{"state":"UT","zip":"84000","city":"Draper","address2":"Suite 3","address1":"123 Main St"},"schema_seq_no":22,"issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}],"city_2":[{"claim_uuid":"claim::b3817a07-afe2-42cc-9341-771d58ab3a8a","attrs":{"state":"UT","zip":"84000","city":"Draper","address2":"Suite 3","address1":"123 Main St"},"schema_seq_no":22,"issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}],"state_3":[{"claim_uuid":"claim::b3817a07-afe2-42cc-9341-771d58ab3a8a","attrs":{"state":"UT","zip":"84000","city":"Draper","address2":"Suite 3","address1":"123 Main St"},"schema_seq_no":22,"issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}]},"predicates":{}}"#;
+    const CREDENTIALS: &str = r#"{"attrs":{"address1_0":[{"claim_uuid":"claim::b3817a07-afe2-42cc-9341-771d58ab3a8a","attrs":{"state":"UT","zip":"84000","city":"Draper","address2":"Suite 3","address1":"123 Main St"},"schema_seq_no":22,"issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}],"zip_4":[{"claim_uuid":"claim::b3817a07-afe2-42cc-9341-771d58ab3a8a","attrs":{"state":"UT","zip":"84000","city":"Draper","address2":"Suite 3","address1":"123 Main St"},"schema_seq_no":22,"issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}],"address2_1":[{"claim_uuid":"claim::b3817a07-afe2-42cc-9341-771d58ab3a8a","attrs":{"state":"UT","zip":"84000","city":"Draper","address2":"Suite 3","address1":"123 Main St"},"schema_seq_no":22,"issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}],"city_2":[{"claim_uuid":"claim::b3817a07-afe2-42cc-9341-771d58ab3a8a","attrs":{"state":"UT","zip":"84000","city":"Draper","address2":"Suite 3","address1":"123 Main St"},"schema_seq_no":22,"issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}],"state_3":[{"claim_uuid":"claim::b3817a07-afe2-42cc-9341-771d58ab3a8a","attrs":{"state":"UT","zip":"84000","city":"Draper","address2":"Suite 3","address1":"123 Main St"},"schema_seq_no":22,"issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}]},"predicates":{}}"#;
     const PROOF_OBJECT_JSON: &str = r#"{"source_id":"","my_did":null,"my_vk":null,"state":3,"proof_request":{"@type":{"name":"PROOF_REQUEST","version":"1.0"},"@topic":{"mid":9,"tid":1},"proof_request_data":{"nonce":"838186471541979035208225","name":"Account Certificate","version":"0.1","requested_attrs":{"name_0":{"name":"name","schema_seq_no":52},"business_2":{"name":"business","schema_seq_no":52},"email_1":{"name":"email","schema_seq_no":52}},"requested_predicates":{}},"msg_ref_id":"ymy5nth"},"link_secret_alias":"main","their_did":null,"their_vk":null,"agent_did":null,"agent_vk":null}"#;
     const DEFAULT_PROOF_NAME: &'static str = "PROOF_NAME";
 
@@ -474,7 +474,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        let connection_h = connection::build_connection("test_send_claim_offer").unwrap();
+        let connection_h = connection::build_connection("test_send_credential_offer").unwrap();
 
         httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
 
@@ -482,7 +482,7 @@ mod tests {
         let requests:Value = serde_json::from_str(&requests).unwrap();
         let requests = serde_json::to_string(&requests[0]).unwrap();
 
-        let handle = create_proof("TEST_CLAIM".to_owned(), requests).unwrap();
+        let handle = create_proof("TEST_CREDENTIAL".to_owned(), requests).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(handle).unwrap());
         send_proof(handle, connection_h).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(handle).unwrap());
@@ -513,25 +513,25 @@ mod tests {
     }
 
     #[test]
-    fn test_claim_def_identifiers() {
-        let claims_identifiers = claim_def_identifiers(CLAIMS).unwrap();
+    fn test_credential_def_identifiers() {
+        let credentials_identifiers = credential_def_identifiers(CREDENTIALS).unwrap();
 
-        assert_eq!(claims_identifiers.len(), 5);
-        assert_eq!(claims_identifiers[1],("address2_1".to_string(),"claim::b3817a07-afe2-42cc-9341-771d58ab3a8a".to_string(),"2hoqvcwupRTUNkXn6ArYzs".to_string(), 22));
-        assert_eq!(claims_identifiers[2],("city_2".to_string(),"claim::b3817a07-afe2-42cc-9341-771d58ab3a8a".to_string(),"2hoqvcwupRTUNkXn6ArYzs".to_string(), 22));
+        assert_eq!(credentials_identifiers.len(), 5);
+        assert_eq!(credentials_identifiers[1],("address2_1".to_string(),"claim::b3817a07-afe2-42cc-9341-771d58ab3a8a".to_string(),"2hoqvcwupRTUNkXn6ArYzs".to_string(), 22));
+        assert_eq!(credentials_identifiers[2],("city_2".to_string(),"claim::b3817a07-afe2-42cc-9341-771d58ab3a8a".to_string(),"2hoqvcwupRTUNkXn6ArYzs".to_string(), 22));
     }
 
     #[test]
-    fn test_claim_def_identifiers_failures() {
-        assert_eq!(claim_def_identifiers("{}").err(),
+    fn test_credential_def_identifiers_failures() {
+        assert_eq!(credential_def_identifiers("{}").err(),
                    Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
 
-        let claims = r#"{"attrs":{"state_3":[{"claim_uuid":"uuid","issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}]}}"#;
-        assert_eq!(claim_def_identifiers(claims).err(),
+        let credentials = r#"{"attrs":{"state_3":[{"claim_uuid":"uuid","issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}]}}"#;
+        assert_eq!(credential_def_identifiers(credentials).err(),
                    Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
 
-        let claims = r#"{"attrs":{"state_3":[{"claim_uuid":"uuid","attrs":{"state":"UT","zip":"84000"},"schema_seq_no":22,"issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}]}}"#;
-        let claims_identifiers = claim_def_identifiers(&claims).unwrap();
+        let credentials = r#"{"attrs":{"state_3":[{"claim_uuid":"uuid","attrs":{"state":"UT","zip":"84000"},"schema_seq_no":22,"issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}]}}"#;
+        let credentials_identifiers = credential_def_identifiers(&credentials).unwrap();
     }
 
     #[test]
@@ -539,9 +539,9 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
 
-        let claim_ids = claim_def_identifiers(CLAIMS).unwrap();
+        let credential_ids = credential_def_identifiers(CREDENTIALS).unwrap();
         let proof: DisclosedProof = Default::default();
-        let schemas = proof._find_schemas(&claim_ids).unwrap();
+        let schemas = proof._find_schemas(&credential_ids).unwrap();
         assert!(schemas.len() > 0);
     }
 
@@ -550,43 +550,43 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
 
-        let claim_ids = Vec::new();
+        let credential_ids = Vec::new();
         let proof: DisclosedProof = Default::default();
-        assert_eq!(proof._find_schemas(&claim_ids).err(),
+        assert_eq!(proof._find_schemas(&credential_ids).err(),
                    Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
     }
 
     #[test]
-    fn test_find_claim_def() {
+    fn test_find_credential_def() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
 
-        let claim_ids = claim_def_identifiers(CLAIMS).unwrap();
+        let credential_ids = credential_def_identifiers(CREDENTIALS).unwrap();
         let proof: DisclosedProof = Default::default();
-        let claim_def = proof._find_claim_def(&claim_ids).unwrap();
-        assert!(claim_def.len() > 0);
+        let credential_def = proof._find_credential_def(&credential_ids).unwrap();
+        assert!(credential_def.len() > 0);
     }
 
     #[test]
-    fn test_find_claim_def_fails() {
+    fn test_find_credential_def_fails() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
 
-        let claim_ids = Vec::new();
+        let credential_ids = Vec::new();
         let proof: DisclosedProof = Default::default();
-        assert_eq!(proof._find_claim_def(&claim_ids).err(),
+        assert_eq!(proof._find_credential_def(&credential_ids).err(),
                    Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
     }
 
     #[test]
-    fn test_build_requested_claims() {
+    fn test_build_requested_credentials() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
 
-        let claim_ids = claim_def_identifiers(CLAIMS).unwrap();
+        let credential_ids = credential_def_identifiers(CREDENTIALS).unwrap();
         let proof: DisclosedProof = Default::default();
-        let requested_claim = proof._build_requested_claims(&claim_ids).unwrap();
-        assert!(requested_claim.len() > 0);
+        let requested_credential = proof._build_requested_credentials(&credential_ids).unwrap();
+        assert!(requested_credential.len() > 0);
     }
 
     #[ignore]
@@ -611,36 +611,36 @@ mod tests {
         thread::sleep(Duration::from_millis(2000));
         connection::update_state(alice).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, connection::get_state(alice));
-        // AS INSTITUTION SEND CLAIM OFFER
-        let claim_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
+        // AS INSTITUTION SEND CREDENTIAL OFFER
+        let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
         let schema_seq_no = 22;
-        let claim_offer = issuer_claim::issuer_claim_create(schema_seq_no,
+        let credential_offer = issuer_credential::issuer_credential_create(schema_seq_no,
                                                             "1".to_string(),
                                                             settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap(),
-                                                            "claim_name".to_string(),
-                                                            claim_data.to_owned()).unwrap();
-        issuer_claim::send_claim_offer(claim_offer, alice).unwrap();
+                                                            "credential_name".to_string(),
+                                                            credential_data.to_owned()).unwrap();
+        issuer_credential::send_credential_offer(credential_offer, alice).unwrap();
         thread::sleep(Duration::from_millis(2000));
-        // AS CONSUMER SEND CLAIM REQUEST
+        // AS CONSUMER SEND CREDENTIAL REQUEST
         ::utils::devsetup::be_consumer();
-        let claim_offers = claim::get_claim_offer_messages(faber, None).unwrap();
-        let offers:Value = serde_json::from_str(&claim_offers).unwrap();
+        let credential_offers = credential::get_credential_offer_messages(faber, None).unwrap();
+        let offers:Value = serde_json::from_str(&credential_offers).unwrap();
         let offers = serde_json::to_string(&offers[0]).unwrap();
-        println!("claim_offer: {}", offers);
-        let claim = claim::claim_create_with_offer("TEST_CLAIM", &offers).unwrap();
-        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, claim::get_state(claim).unwrap());
-        claim::send_claim_request(claim, faber).unwrap();
+        println!("credential_offer: {}", offers);
+        let credential = credential::credential_create_with_offer("TEST_CREDENTIAL", &offers).unwrap();
+        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, credential::get_state(credential).unwrap());
+        credential::send_credential_request(credential, faber).unwrap();
         thread::sleep(Duration::from_millis(2000));
-        // AS INSTITUTION SEND CLAIM
+        // AS INSTITUTION SEND CREDENTIAL
         ::utils::devsetup::be_institution();
-        issuer_claim::update_state(claim_offer);
-        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, issuer_claim::get_state(claim_offer));
-        issuer_claim::send_claim(claim_offer, alice).unwrap();
+        issuer_credential::update_state(credential_offer);
+        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, issuer_credential::get_state(credential_offer));
+        issuer_credential::send_credential(credential_offer, alice).unwrap();
         thread::sleep(Duration::from_millis(2000));
-        // AS CONSUMER STORE CLAIM
+        // AS CONSUMER STORE CREDENTIAL
         ::utils::devsetup::be_consumer();
-        claim::update_state(claim).unwrap();
-        assert_eq!(VcxStateType::VcxStateAccepted as u32, claim::get_state(claim).unwrap());
+        credential::update_state(credential).unwrap();
+        assert_eq!(VcxStateType::VcxStateAccepted as u32, credential::get_state(credential).unwrap());
         // AS INSTITUTION SEND PROOF REQUEST
         ::utils::devsetup::be_institution();
         let requested_attrs = json!([

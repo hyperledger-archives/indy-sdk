@@ -2,9 +2,9 @@ const assert = require('chai').assert
 const ffi = require('ffi')
 const vcx = require('../dist/index')
 const { stubInitVCX } = require('./helpers')
-const { Claim, Connection, rustAPI } = vcx
+const { Credential, Connection, rustAPI } = vcx
 
-describe('A Claim', function () {
+describe('A Credential', function () {
   this.timeout(30000)
 
   const OFFER = {
@@ -27,12 +27,12 @@ describe('A Claim', function () {
     msg_ref_id: null
   }
 
-  const SERIALIZED_CLAIM = {
+  const SERIALIZED_CREDENTIAL = {
     source_id: 'wrapper_tests',
     state: 3,
-    claim_name: null,
-    claim_request: null,
-    claim_offer: {
+    credential_name: null,
+    credential_request: null,
+    credential_offer: {
       msg_type: 'CLAIM_OFFER',
       version: '0.1',
       to_did: 'LtMgSjtFcyPwenK9SHCyb8',
@@ -60,7 +60,7 @@ describe('A Claim', function () {
   })
 
   it('can be created.', async () => {
-    const obj = await Claim.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
+    const obj = await Credential.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
     assert(obj)
   })
 
@@ -68,7 +68,7 @@ describe('A Claim', function () {
 
   it(' a call to create with no sourceId returns an error', async () => {
     try {
-      await Claim.create({offer: JSON.stringify(OFFER)})
+      await Credential.create({offer: JSON.stringify(OFFER)})
     } catch (error) {
       assert.equal(error.vcxCode, 1007)
     }
@@ -76,7 +76,7 @@ describe('A Claim', function () {
 
   it(' a call to create with no offer returns an error', async () => {
     try {
-      await Claim.create({sourceId: 'Test'})
+      await Credential.create({sourceId: 'Test'})
     } catch (error) {
       assert.equal(error.vcxCode, 1007)
     }
@@ -84,7 +84,7 @@ describe('A Claim', function () {
 
   it(' a call to create with a bad offer returns an error', async () => {
     try {
-      await Claim.create({sourceId: 'Test', offer: '{}'})
+      await Credential.create({sourceId: 'Test', offer: '{}'})
     } catch (error) {
       assert.equal(error.vcxCode, 1016)
     }
@@ -93,32 +93,32 @@ describe('A Claim', function () {
   // serialize/deserialize tests
 
   it('can be serialized.', async () => {
-    const obj = await Claim.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
+    const obj = await Credential.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
     assert(obj)
     const val = await obj.serialize()
     assert(val)
   })
 
   it('can be deserialized.', async () => {
-    const obj = await Claim.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
+    const obj = await Credential.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
     assert(obj)
     const val = await obj.serialize()
     assert(val)
-    const obj2 = await Claim.deserialize(val)
+    const obj2 = await Credential.deserialize(val)
     assert(obj2)
   })
 
   // state tests
 
   it('can get state.', async () => {
-    const obj = await Claim.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
+    const obj = await Credential.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
     assert(obj)
     const state = await obj.getState()
     assert(state === 3)
   })
 
   it('can update state.', async () => {
-    const obj = await Claim.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
+    const obj = await Credential.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
     assert(obj)
     await obj.updateState()
     const state = await obj.getState()
@@ -127,32 +127,32 @@ describe('A Claim', function () {
 
   // sendRequest tests
 
-  it('can send a claim request.', async () => {
+  it('can send a credential request.', async () => {
     let connection = await Connection.create({ id: '234' })
     assert(connection)
     await connection.connect()
-    const obj = await Claim.deserialize(SERIALIZED_CLAIM)
+    const obj = await Credential.deserialize(SERIALIZED_CREDENTIAL)
     await obj.sendRequest(connection)
     const state = await obj.getState()
     assert(state === 2)
   })
 
-  it('can query for claim offers.', async () => {
+  it('can query for credential offers.', async () => {
     let connection = await Connection.create({ id: '234' })
     assert(connection)
     await connection.connect()
-    let val = await Claim.get_offers(connection)
+    let val = await Credential.get_offers(connection)
     assert(val)
   })
 
-  const claimCreateCheckAndDelete = async () => {
-    let claim = await Claim.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
-    assert(claim)
-    const val = await claim.serialize()
+  const credentialCreateCheckAndDelete = async () => {
+    let credential = await Credential.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
+    assert(credential)
+    const val = await credential.serialize()
     assert(val)
-    const serialize = rustAPI().vcx_claim_serialize
-    const handle = claim._handle
-    claim = null
+    const serialize = rustAPI().vcx_credential_serialize
+    const handle = credential._handle
+    credential = null
     return {
       handle,
       serialize
@@ -160,10 +160,10 @@ describe('A Claim', function () {
   }
 
   // Fix the GC issue
-  it('claim and GC deletes object should return null when serialize is called ', async function () {
+  it('credential and GC deletes object should return null when serialize is called ', async function () {
     this.timeout(30000)
 
-    const { handle, serialize } = await claimCreateCheckAndDelete()
+    const { handle, serialize } = await credentialCreateCheckAndDelete()
 
     global.gc()
 

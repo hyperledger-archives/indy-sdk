@@ -50,9 +50,9 @@ pub extern fn vcx_set_next_agency_response(message_index: u32) {
         1 => CREATE_KEYS_RESPONSE.to_vec(),
         2 => UPDATE_PROFILE_RESPONSE.to_vec(),
         3 => GET_MESSAGES_RESPONSE.to_vec(),
-        4 => UPDATE_CLAIM_RESPONSE.to_vec(),
+        4 => UPDATE_CREDENTIAL_RESPONSE.to_vec(),
         5 => UPDATE_PROOF_RESPONSE.to_vec(),
-        6 => CLAIM_REQ_RESPONSE.to_vec(),
+        6 => CREDENTIAL_REQ_RESPONSE.to_vec(),
         7 => PROOF_RESPONSE.to_vec(),
         _ => Vec::new(),
     };
