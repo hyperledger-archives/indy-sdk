@@ -2,10 +2,13 @@ const assert = require('chai').assert
 const ffi = require('ffi')
 const vcx = require('../dist/index')
 const { stubInitVCX } = require('./helpers')
-const { Connection, Proof, StateType, Error, ProofState, rustAPI } = vcx
+const { Connection, Proof, StateType, Error, ProofState, rustAPI, VCXMock, VCXMockMessage } = vcx
 
+const connectionConfigDefault = { id: '234' }
 const ATTR = [{issuerDid: '8XFh8yBzrpJQmNyZzgoTqB', schemaSeqNo: 1, name: 'test'}]
 const PROOF_MSG = '{"version":"0.1","to_did":"BnRXf8yDMUwGyZVDkSENeq","from_did":"GxtnGN6ypZYgEqcftSQFnC","proof_request_id":"cCanHnpFAD","proofs":{"claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"state":"96473275571522321025213415717206189191162"},"a_prime":"921....546","e":"158....756","v":"114....069","m":{"address2":"140....691","city":"209....294","address1":"111...738","zip":"149....066"},"m1":"777....518","m2":"515....229"},"ge_proofs":[]},"non_revoc_proof":null},"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH"}},"aggregated_proof":{"c_hash":"25105671496406009212798488318112715144459298495509265715919744143493847046467","c_list":[[72,245,38,"....",46,195,18]]},"requested_proof":{"revealed_attrs":{"attr_key_id":["claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b","UT","96473275571522321025213415717206189191162"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{}}}'
+
+const proofConfigDefault = { sourceId: 'proofConfigDefaultSourceId', attrs: ATTR, name: 'TestProof' }
 
 describe('A Proof', function () {
   this.timeout(30000)
@@ -74,13 +77,34 @@ describe('A Proof', function () {
     assert.equal(await proof2.getState(), StateType.Initialized)
   })
 
-  it('has state of OfferSent after sending proof request', async () => {
-    let connection = await Connection.create({ id: '234' })
+  const proofSendOffer = async ({
+    connectionConfig = connectionConfigDefault,
+    proofConfig = proofConfigDefault
+  } = {}) => {
+    const connection = await Connection.create(connectionConfig)
     await connection.connect()
-    const sourceId = 'SerializeDeserialize'
-    const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
+    const proof = await Proof.create(proofConfig)
     await proof.requestProof(connection)
     assert.equal(await proof.getState(), StateType.OfferSent)
+    return {
+      connection,
+      proof
+    }
+  }
+  it('has state of OfferSent after sending proof request', async () => {
+    await proofSendOffer()
+  })
+
+  const acceptProofOffer = async ({ proof }) => {
+    VCXMock.setVcxMock(VCXMockMessage.Proof)
+    VCXMock.setVcxMock(VCXMockMessage.UpdateProof)
+    await proof.updateState()
+    const newState = await proof.getState()
+    assert.equal(newState, StateType.RequestReceived) // VcxMock can't verify a proof currently
+  }
+  it(`updating proof's state with mocked agent reply should return ${StateType.RequestReceived}`, async () => {
+    const { proof } = await proofSendOffer()
+    await acceptProofOffer({ proof })
   })
 
   it('requesting a proof throws invalid connection error with released connection', async () => {
