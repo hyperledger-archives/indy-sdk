@@ -4,9 +4,9 @@ const ffi = require('ffi')
 const vcx = require('../dist')
 const { stubInitVCX, shouldThrow } = require('./helpers')
 
-const { IssuerClaim, Connection, StateType, Error, rustAPI } = vcx
+const { IssuerClaim, Connection, StateType, Error, rustAPI, VCXMock, VCXMockMessage } = vcx
 
-const config = {
+const claimConfigDefault = {
   sourceId: 'jsonCreation',
   schemaNum: 1234,
   issuerDid: 'arandomdidfoobar',
@@ -16,6 +16,9 @@ const config = {
     key3: 'value3'
   },
   claimName: 'Claim Name'
+}
+const connectionConfigDefault = {
+  id: '123'
 }
 const formattedAttrs = {
   key: ['value'],
@@ -56,32 +59,39 @@ describe('An issuerClaim', async function () {
 
   it('has a claimHandle and a sourceId after it is created', async function () {
     const sourceId = 'Claim'
-    const claim = await IssuerClaim.create({ ...config, sourceId })
+    const claim = await IssuerClaim.create({ ...claimConfigDefault, sourceId })
     assert(claim.handle > 0)
     assert.equal(claim.sourceId, sourceId)
   })
 
   it('has state that can be found', async function () {
     const sourceId = 'TestState'
-    const claim = await IssuerClaim.create({ ...config, sourceId })
+    const claim = await IssuerClaim.create({ ...claimConfigDefault, sourceId })
     await claim.updateState()
     assert.equal(await claim.getState(), 1)
   })
 
-  it('can be sent with a valid connection', async function () {
-    const sourceId = 'Bank Claim'
-    let connection = await Connection.create({ id: '234' })
-    await connection.connect()
-    assert.equal(StateType.OfferSent, await connection.getState())
-    const claim = await IssuerClaim.create({ ...config, sourceId })
+  const sendClaimOffer = async ({
+    claimConfig = claimConfigDefault,
+    connectionConfig = connectionConfigDefault
+  } = {}) => {
+    const connection = await Connection.create(connectionConfig)
+    await connection.connect({ sms: true })
+    const claim = await IssuerClaim.create(claimConfig)
     await claim.sendOffer(connection)
-    await claim.updateState()
     assert.equal(await claim.getState(), StateType.OfferSent)
+    return {
+      claim,
+      connection
+    }
+  }
+  it('can be sent with a valid connection', async function () {
+    await sendClaimOffer()
   })
 
   it('can be created, then serialized, then deserialized and have the same sourceId and state', async function () {
     const sourceId = 'SerializeDeserialize'
-    const claim = await IssuerClaim.create({ ...config, sourceId })
+    const claim = await IssuerClaim.create({ ...claimConfigDefault, sourceId })
     const jsonClaim = await claim.serialize()
     assert.equal(jsonClaim.state, StateType.Initialized)
     const claim2 = await IssuerClaim.deserialize(jsonClaim)
@@ -95,7 +105,7 @@ describe('An issuerClaim', async function () {
     await connection.connect()
 
     const sourceId = 'SendSerializeDeserialize'
-    const claim = await IssuerClaim.create({ ...config, sourceId })
+    const claim = await IssuerClaim.create({ ...claimConfigDefault, sourceId })
 
     await claim.sendOffer(connection)
     const claimData = await claim.serialize()
@@ -120,20 +130,20 @@ describe('An issuerClaim', async function () {
 
   it('is created from a static method', async function () {
     const sourceId = 'staticMethodCreation'
-    const claim = await IssuerClaim.create({ ...config, sourceId })
+    const claim = await IssuerClaim.create({ ...claimConfigDefault, sourceId })
     assert(claim.sourceId, sourceId)
   })
 
   it('will have different claim handles even with the same sourceIds', async function () {
     const sourceId = 'sameSourceIds'
-    const claim = await IssuerClaim.create({ ...config, sourceId })
-    const claim2 = await IssuerClaim.create({ ...config, sourceId })
+    const claim = await IssuerClaim.create({ ...claimConfigDefault, sourceId })
+    const claim2 = await IssuerClaim.create({ ...claimConfigDefault, sourceId })
     assert.notEqual(claim.handle, claim2.handle)
   })
 
   it('deserialize is a static method', async function () {
     const sourceId = 'deserializeStatic'
-    const claim = await IssuerClaim.create({ ...config, sourceId })
+    const claim = await IssuerClaim.create({ ...claimConfigDefault, sourceId })
     const serializedJson = await claim.serialize()
 
     const claimDeserialized = await IssuerClaim.deserialize(serializedJson)
@@ -142,14 +152,14 @@ describe('An issuerClaim', async function () {
 
   it('accepts claim attributes and schema sequence number', async function () {
     const sourceId = 'attributesAndSequenceNumber'
-    const claim = await IssuerClaim.create({ ...config, sourceId })
+    const claim = await IssuerClaim.create({ ...claimConfigDefault, sourceId })
     assert.equal(claim.sourceId, sourceId)
-    assert.equal(claim.schemaNum, config.schemaNum)
+    assert.equal(claim.schemaNum, claimConfigDefault.schemaNum)
     assert.deepEqual(claim.attr, formattedAttrs)
   })
 
   it('throws exception for sending claim with invalid claim handle', async function () {
-    let connection = await Connection.create({id: '123'})
+    let connection = await Connection.create(connectionConfigDefault)
     const claim = new IssuerClaim(null, {})
     try {
       await claim.sendClaim(connection)
@@ -160,10 +170,10 @@ describe('An issuerClaim', async function () {
   })
 
   it('throws exception for sending claim with invalid connection handle', async function () {
-    let releasedConnection = await Connection.create({id: '123'})
+    let releasedConnection = await Connection.create(connectionConfigDefault)
     await releasedConnection.release()
     const sourceId = 'Claim'
-    const claim = await IssuerClaim.create({ ...config, sourceId })
+    const claim = await IssuerClaim.create({ ...claimConfigDefault, sourceId })
     try {
       await claim.sendClaim(releasedConnection)
     } catch (error) {
@@ -175,7 +185,7 @@ describe('An issuerClaim', async function () {
   it('sending claim with no claim offer should throw exception', async function () {
     let connection = await Connection.create({id: '123'})
     const sourceId = 'Claim'
-    const claim = await IssuerClaim.create({ ...config, sourceId })
+    const claim = await IssuerClaim.create({ ...claimConfigDefault, sourceId })
     const error = await shouldThrow(() => claim.sendClaim(connection))
     assert.equal(error.vcxCode, Error.NOT_READY)
     assert.equal(error.vcxFunction, 'vcx_issuer_send_claim')
@@ -185,7 +195,7 @@ describe('An issuerClaim', async function () {
   it('will throw error on serialize when issuer_claim has been released', async () => {
     const sourceId = 'SendSerializeDeserialize'
     const connection = await Connection.create({id: '123'})
-    const claim = await IssuerClaim.create({ ...config, sourceId })
+    const claim = await IssuerClaim.create({ ...claimConfigDefault, sourceId })
     await claim.sendOffer(connection)
     try {
       await claim.serialize()
@@ -196,33 +206,38 @@ describe('An issuerClaim', async function () {
     }
   })
 
-  it('sending claim with valid claim offer should have state VcxStateAccepted', async function () {
-    let connection = await Connection.create({id: '123'})
-    await connection.connect({ sms: true })
-    const sourceId = 'Claim'
-    let claim = await IssuerClaim.create({ ...config, sourceId })
-    await claim.sendOffer(connection)
-    assert.equal(await claim.getState(), StateType.OfferSent)
-    // we serialize and deserialize because this is the only
-    // way to fool libvcx into thinking we've received a
-    // valid claim requset.
-    let jsonClaim = await claim.serialize()
-    jsonClaim.state = StateType.RequestReceived
-    claim = await IssuerClaim.deserialize(jsonClaim)
+  const acceptClaimOffer = async ({ claim }) => {
+    VCXMock.setVcxMock(VCXMockMessage.ClaimReq)
+    VCXMock.setVcxMock(VCXMockMessage.UpdateClaim)
+    await claim.updateState()
+    const newState = await claim.getState()
+    assert.equal(newState, StateType.RequestReceived)
+  }
+  it(`updating claim's state with mocked agent reply should return ${StateType.RequestReceived}`, async function () {
+    const { claim } = await sendClaimOffer()
+    await acceptClaimOffer({ claim })
+  })
+
+  const sendClaim = async ({ claim, connection }) => {
     await claim.sendClaim(connection)
     assert.equal(await claim.getState(), StateType.Accepted)
+  }
+  it('sending claim with valid claim offer should have state VcxStateAccepted', async function () {
+    const { claim, connection } = await sendClaimOffer()
+    await acceptClaimOffer({ claim })
+    await sendClaim({ claim, connection })
   })
 
   it('can be created from a json', async function () {
-    const claim = await IssuerClaim.create(config)
-    expect(claim.sourceId).to.equal(config.sourceId)
+    const claim = await IssuerClaim.create(claimConfigDefault)
+    expect(claim.sourceId).to.equal(claimConfigDefault.sourceId)
   })
 
   const issuerClaimOfferCheckAndDelete = async () => {
     let connection = await Connection.create({id: '123'})
     await connection.connect({ sms: true })
     const sourceId = 'Claim'
-    let claim = await IssuerClaim.create({ ...config, sourceId })
+    let claim = await IssuerClaim.create({ ...claimConfigDefault, sourceId })
     await claim.sendOffer(connection)
     const serialize = rustAPI().vcx_issuer_claim_serialize
     const handle = claim._handle
