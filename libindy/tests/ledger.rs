@@ -31,13 +31,11 @@ use utils::ledger::LedgerUtils;
 use utils::did::DidUtils;
 #[cfg(feature = "local_nodes_pool")]
 use utils::anoncreds::AnoncredsUtils;
-use utils::anoncreds_types::CredentialDefinition;
 use utils::types::*;
 use utils::constants::*;
 
 use self::openssl::hash::{MessageDigest, Hasher};
 use self::sodiumoxide::crypto::secretbox;
-use std::thread;
 
 mod high_cases {
     use super::*;
@@ -643,7 +641,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_schema_requests_works_for_correct_data_json() {
-            let expected_result = r#""operation":{"type":"101","data":{"name":"name","version":"1.0","attr_names":["name","male"]}},"protocolVersion":1"#;
+            let expected_result = r#""operation":{"type":"101","data":{"name":"name","version":"1.0","attr_names":["name","male"]}}"#;
 
             let schema_request = LedgerUtils::build_schema_request(IDENTIFIER, SCHEMA_DATA).unwrap();
             assert!(schema_request.contains(expected_result));
@@ -690,7 +688,7 @@ mod high_cases {
 
             let (did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
-            let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(&did,
+            let (_, schema_json) = AnoncredsUtils::issuer_create_schema(&did,
                                                                                 GVT_SCHEMA_NAME,
                                                                                 SCHEMA_VERSION,
                                                                                 GVT_SCHEMA_ATTRIBUTES).unwrap();
@@ -718,7 +716,7 @@ mod high_cases {
 
         #[test]
         fn indy_build_node_request_works_for_correct_data_json() {
-            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"0","dest":"{}","data":{{"node_ip":"10.0.0.100","node_port":1,"client_ip":"10.0.0.100","client_port":1,"alias":"some","services":["VALIDATOR"],"blskey":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}}}},"protocolVersion":1"#,
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"0","dest":"{}","data":{{"node_ip":"10.0.0.100","node_port":1,"client_ip":"10.0.0.100","client_port":1,"alias":"some","services":["VALIDATOR"],"blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba"}}}},"protocolVersion":1"#,
                                           IDENTIFIER, DEST);
 
             let node_request = LedgerUtils::build_node_request(IDENTIFIER, DEST, NODE_DATA).unwrap();
@@ -807,20 +805,13 @@ mod high_cases {
 
             let (did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
-            let schema_request = LedgerUtils::build_schema_request(&did, SCHEMA_DATA).unwrap();
-            let schema_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
-
-            let get_schema_request = LedgerUtils::build_get_schema_request(&did, &did, GET_SCHEMA_DATA).unwrap();
-            let get_schema_response_str = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_req_resp).unwrap();
-
-            let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response_str).unwrap();
+            let (schema_seq_no, _) = LedgerUtils::post_schema_to_ledger(pool_handle, wallet_handle, &did);
 
             let claim_def_data_json = AnoncredsUtils::credential_def_value_json();
 
-            let claim_def_request = LedgerUtils::build_claim_def_txn(&did, get_schema_response.result.seq_no.unwrap(),
-                                                                     SIGNATURE_TYPE, &claim_def_data_json).unwrap();
+            let claim_def_request = LedgerUtils::build_claim_def_txn(&did, schema_seq_no, SIGNATURE_TYPE, &claim_def_data_json).unwrap();
 
-            let response = LedgerUtils::submit_request_with_retries(pool_handle, &claim_def_request, &get_schema_response_str).unwrap();
+            let response = LedgerUtils::submit_request(pool_handle, &claim_def_request).unwrap();
             PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -839,32 +830,15 @@ mod high_cases {
 
             let (did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
-            let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(&did,
-                                                                                GVT_SCHEMA_NAME,
-                                                                                SCHEMA_VERSION,
-                                                                                GVT_SCHEMA_ATTRIBUTES).unwrap();
+            let (schema_seq_no, schema_json) = LedgerUtils::post_schema_to_ledger(pool_handle, wallet_handle, &did);
 
-            let schema_request = LedgerUtils::build_schema_request(&did, &schema_json).unwrap();
-            let schema_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
+            let (_, cred_def_data) = LedgerUtils::prepare_claim_def(wallet_handle, &did, &schema_json);
 
-            let schema_seq_no = serde_json::from_str::<serde_json::Value>(&schema_req_resp).unwrap()["result"]["seqNo"].as_i64().unwrap() as i32;
-
-            let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
-                                                                                                   &did,
-                                                                                                   &schema_json,
-                                                                                                   TAG_1,
-                                                                                                   None,
-                                                                                                   &AnoncredsUtils::default_cred_def_config()).unwrap();
-            let cred_def = serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap();
-            let cred_def_value_json = serde_json::to_string(&&cred_def.value).unwrap();
-
-            let claim_def_request = LedgerUtils::build_claim_def_txn(&did, schema_seq_no,
-                                                                     SIGNATURE_TYPE, &cred_def_value_json).unwrap();
+            let claim_def_request = LedgerUtils::build_claim_def_txn(&did, schema_seq_no, SIGNATURE_TYPE, &cred_def_data).unwrap();
 
             let claim_def_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &claim_def_request).unwrap();
 
-            let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(&did, schema_seq_no,
-                                                                             &SIGNATURE_TYPE, &did).unwrap();
+            let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(&did, schema_seq_no, &SIGNATURE_TYPE, &did).unwrap();
 
             let get_claim_def_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_claim_def_request, &claim_def_req_resp).unwrap();
             let get_claim_def_response: Reply<GetOperationResult> = serde_json::from_str(&get_claim_def_response).unwrap();
@@ -933,14 +907,9 @@ mod high_cases {
 
             let (did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
-            let schema_request = LedgerUtils::build_schema_request(&did, &SCHEMA_DATA).unwrap();
-            let schema_response_str = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
-            let schema_response: Reply<SchemaResult> = serde_json::from_str(&schema_response_str).unwrap();
+            let (seq_no, _) = LedgerUtils::post_schema_to_ledger(pool_handle, wallet_handle, &did);
 
-            let get_schema_request = LedgerUtils::build_get_schema_request(&did, &did, GET_SCHEMA_DATA).unwrap();
-            LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_response_str).unwrap();
-
-            let seq_no = schema_response.result.seq_no + 1;
+            let seq_no = seq_no + 1;
 
             let get_txn_request = LedgerUtils::build_get_txn_request(&did, seq_no).unwrap();
 
@@ -1178,31 +1147,13 @@ mod high_cases {
 
             let (did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
-            let schema_seq_no = LedgerUtils::post_schema_to_ledger(pool_handle, wallet_handle, &did);
+            let (schema_seq_no, schema_json) = LedgerUtils::post_schema_to_ledger(pool_handle, wallet_handle, &did);
 
-            let cred_def_id = LedgerUtils::post_claim_def_to_ledger(pool_handle, wallet_handle, &did, schema_seq_no);
+            let (cred_def_id_in_wallet, cred_def_id_in_ledger) = LedgerUtils::post_claim_def_to_ledger(pool_handle, wallet_handle, &did, schema_seq_no, &schema_json);
 
-            let rev_reg_id = AnoncredsUtils::build_id(&did, "\x04", Some(&cred_def_id), REVOC_REG_TYPE, TAG_1);
+            let (rev_reg_id, revoc_reg_def_json, _) = LedgerUtils::prepare_rev_reg(wallet_handle, &did, &cred_def_id_in_wallet, &cred_def_id_in_ledger);
 
-            let data = json!({
-                "id": rev_reg_id,
-                "revocDefType": REVOC_REG_TYPE,
-                "tag": TAG_1,
-                "credDefId": cred_def_id,
-                "value": json!({
-                    "issuanceType":"ISSUANCE_ON_DEMAND",
-                    "maxCredNum":5,
-                    "tailsHash":"s",
-                    "tailsLocation":"http://tails.location.com",
-                    "publicKeys": json!({
-                        "accumKey": json!({
-                            "z": ""
-                        })
-                    })
-                })
-            }).to_string();
-
-            let rev_reg_def_request = LedgerUtils::build_revoc_reg_def_request(&did, &data).unwrap();
+            let rev_reg_def_request = LedgerUtils::build_revoc_reg_def_request(&did, &revoc_reg_def_json).unwrap();
             let rev_reg_def_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &rev_reg_def_request).unwrap();
 
             let get_rev_reg_def_request = LedgerUtils::build_get_revoc_reg_def_request(&did, &rev_reg_id).unwrap();
@@ -1247,15 +1198,13 @@ mod high_cases {
 
             let (did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
-            let schema_seq_no = LedgerUtils::post_schema_to_ledger(pool_handle, wallet_handle, &did);
+            let (schema_seq_no, schema_json) = LedgerUtils::post_schema_to_ledger(pool_handle, wallet_handle, &did);
 
-            let cred_def_id = LedgerUtils::post_claim_def_to_ledger(pool_handle, wallet_handle, &did, schema_seq_no);
+            let (cred_def_id_in_wallet, cred_def_id_in_ledger) = LedgerUtils::post_claim_def_to_ledger(pool_handle, wallet_handle, &did, schema_seq_no, &schema_json);
 
-            let rev_reg_id = LedgerUtils::post_rev_reg_def(pool_handle, wallet_handle, &did, &cred_def_id);
+            let (rev_reg_id, _, rev_reg_entry_json) = LedgerUtils::post_rev_reg_def(pool_handle, wallet_handle, &did, &cred_def_id_in_wallet, &cred_def_id_in_ledger);
 
-            let rev_reg_entry_value = r#"{"accum":"123456789", "issued":[], "revoked":[]}"#;
-
-            let rev_reg_entry_request = LedgerUtils::build_revoc_reg_entry_request(&did, &rev_reg_id, REVOC_REG_TYPE, rev_reg_entry_value).unwrap();
+            let rev_reg_entry_request = LedgerUtils::build_revoc_reg_entry_request(&did, &rev_reg_id, REVOC_REG_TYPE, &rev_reg_entry_json).unwrap();
             let rev_reg_entry_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &rev_reg_entry_request).unwrap();
 
             serde_json::from_str::<serde_json::Value>(&rev_reg_entry_req_resp).unwrap()["result"]["seqNo"].as_i64().unwrap();
@@ -1293,13 +1242,13 @@ mod high_cases {
 
             let (did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
-            let schema_seq_no = LedgerUtils::post_schema_to_ledger(pool_handle, wallet_handle, &did);
+            let (schema_seq_no, schema_json) = LedgerUtils::post_schema_to_ledger(pool_handle, wallet_handle, &did);
 
-            let cred_def_id = LedgerUtils::post_claim_def_to_ledger(pool_handle, wallet_handle, &did, schema_seq_no);
+            let (cred_def_id_in_wallet, cred_def_id_in_ledger) = LedgerUtils::post_claim_def_to_ledger(pool_handle, wallet_handle, &did, schema_seq_no, &schema_json);
 
-            let rev_reg_id = LedgerUtils::post_rev_reg_def(pool_handle, wallet_handle, &did, &cred_def_id);
+            let (rev_reg_id, _, rev_reg_entry_json) = LedgerUtils::post_rev_reg_def(pool_handle, wallet_handle, &did, &cred_def_id_in_wallet, &cred_def_id_in_ledger);
 
-            let rev_reg_entry_req_resp = LedgerUtils::post_rev_reg_entry(pool_handle, wallet_handle, &did, &rev_reg_id);
+            let rev_reg_entry_req_resp = LedgerUtils::post_rev_reg_entry(pool_handle, wallet_handle, &did, &rev_reg_id, &rev_reg_entry_json);
 
             let timestamp = time::get_time().sec + 1000;
 
@@ -1344,17 +1293,24 @@ mod high_cases {
 
             let (did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
-            let schema_seq_no = LedgerUtils::post_schema_to_ledger(pool_handle, wallet_handle, &did);
+            let (schema_seq_no, schema_json) = LedgerUtils::post_schema_to_ledger(pool_handle, wallet_handle, &did);
 
-            let cred_def_id = LedgerUtils::post_claim_def_to_ledger(pool_handle, wallet_handle, &did, schema_seq_no);
+            let (cred_def_id_in_wallet, cred_def_id_in_ledger) = LedgerUtils::post_claim_def_to_ledger(pool_handle, wallet_handle, &did, schema_seq_no, &schema_json);
 
-            let rev_reg_id = LedgerUtils::post_rev_reg_def(pool_handle, wallet_handle, &did, &cred_def_id);
+            let (rev_reg_id, _, rev_reg_entry_json) = LedgerUtils::post_rev_reg_def(pool_handle, wallet_handle, &did, &cred_def_id_in_wallet, &cred_def_id_in_ledger);
 
-            let rev_reg_entry_req_resp = LedgerUtils::post_rev_reg_entry(pool_handle, wallet_handle, &did, &rev_reg_id);
+            let rev_reg_entry_req_resp = LedgerUtils::post_rev_reg_entry(pool_handle, wallet_handle, &did, &rev_reg_id, &rev_reg_entry_json);
 
-            let now = time::get_time().sec;
+            let to = time::get_time().sec + 1000;
 
-            let get_rev_reg_delta_req = LedgerUtils::build_get_revoc_reg_delta_request(&did, &rev_reg_id, None, now).unwrap();
+            let get_rev_reg_req = LedgerUtils::build_get_revoc_reg_request(&did, &rev_reg_id, to).unwrap();
+            let get_rev_reg_resp = LedgerUtils::submit_request_with_retries(pool_handle, &get_rev_reg_req, &rev_reg_entry_req_resp).unwrap();
+
+            let get_rev_reg_resp: Reply<GetOperationResult> = serde_json::from_str(&get_rev_reg_resp).unwrap();
+            assert!(get_rev_reg_resp.result.seq_no.is_some());
+            assert!(get_rev_reg_resp.result.data.is_some());
+
+            let get_rev_reg_delta_req = LedgerUtils::build_get_revoc_reg_delta_request(&did, &rev_reg_id, None, to).unwrap();
             let get_rev_reg_delta_resp = LedgerUtils::submit_request_with_retries(pool_handle, &get_rev_reg_delta_req, &rev_reg_entry_req_resp).unwrap();
 
             let get_rev_reg_delta_resp: Reply<GetOperationResult> = serde_json::from_str(&get_rev_reg_delta_resp).unwrap();

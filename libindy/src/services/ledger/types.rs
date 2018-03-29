@@ -164,14 +164,14 @@ pub enum Schemas {
     SchemaOld {
         name: String,
         version: String,
-        attr_names: HashSet<String>
+        attr_names: Vec<String>
     },
     SchemaNew {
         id: String,
         name: String,
         version: String,
         #[serde(rename = "attrNames")]
-        attr_names: HashSet<String>
+        attr_names: Vec<String>
     }
 }
 
@@ -180,15 +180,15 @@ pub enum Schemas {
 pub struct SchemaOperationData {
     name: String,
     version: String,
-    attr_names: HashSet<String>
+    attr_names: Vec<String>
 }
 
 impl SchemaOperationData {
-    pub fn new(name: String, version: String, keys: HashSet<String>) -> SchemaOperationData {
+    pub fn new(name: String, version: String, attr_names: Vec<String>) -> SchemaOperationData {
         SchemaOperationData {
             name,
             version,
-            attr_names: keys
+            attr_names
         }
     }
 }
@@ -541,7 +541,9 @@ pub struct RevocationRegistryEntryOperationValue {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prev_accum: Option<String>,
     pub accum: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub issued: Option<HashSet<u32>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub revoked: Option<HashSet<u32>>
 }
 
