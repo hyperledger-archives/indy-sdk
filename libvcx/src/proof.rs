@@ -1025,6 +1025,7 @@ mod tests {
         assert_eq!(proof.get_proof_state(), ProofStateType::ProofInvalid as u32);
     }
 
+    #[ignore]
     #[test]
     fn test_errors() {
         use utils::error::INVALID_JSON;

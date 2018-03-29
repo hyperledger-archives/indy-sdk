@@ -1,12 +1,14 @@
 {
-   "pool_name":"my_pool",
-   "config_name":"my_config",
-   "wallet_name":"my_wallet",
-   "agency_did":"72x8p4HubxzUK1dwxcc5FU",
-   "remote_to_sdk_did":"UJGjM6Cea2YVixjWwHN9wq",
-   "sdk_to_remote_did":"AB3JM851T4EQmhh8CdagSP",
-   "institution_name":"enterprise",
-   "agency_verkey":"7118p4HubxzUK1dwxcc5FU",
-   "remote_to_sdk_verkey":"U22jM6Cea2YVixjWwHN9wq",
-   "institution_logo_url":"http://www.evernym.com"
+  "agency_did": "L5nbFwXJRmdnJVYhCsy52j",
+  "agency_verkey": "BQEgx9PJ7JJgt1LadyP45a7JrWdyqkrzrCBGRZ9QVrvL",
+  "agency_endpoint": "https://cagency.pdev.evernym.com",
+  "genesis_path":"/var/lib/indy/verity-staging/pool_transactions_genesis",
+  "institution_name": "institution",
+  "institution_logo_url": "http://robohash.org/234",
+  "institution_did": "EwsFhWVoc3Fwqzrwe998aQ",
+  "institution_verkey": "8brs38hPDkw5yhtzyk2tz7zkp8ijTyWnER165zDQbpK6",
+  "remote_to_sdk_did": "EtfeMFytvYTKnWwqTScp9D",
+  "remote_to_sdk_verkey": "8a7hZDyJK1nNCizRCKMr4H4QbDm8Gg2vcbDRab8SVfsi",
+  "sdk_to_remote_did": "KacwZ2ndG6396KXJ9NDDw6",
+  "sdk_to_remote_verkey": "B8LgZGxEPcpTJfZkeqXuKNLihM1Awm8yidqsNwYi5QGc"
 }

@@ -3,8 +3,6 @@ extern crate tempfile;
 extern crate libc;
 extern crate serde_json;
 
-use utils::timeout::TimeoutUtils;
-use utils::cstring::CStringUtils;
 use std::ptr;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
@@ -13,8 +11,23 @@ use std::thread;
 use std::time::Duration;
 use std::ffi::CString;
 use vcx::api;
+use vcx::utils::cstring::CStringUtils;
+use vcx::utils::timeout::TimeoutUtils;
 use std::sync::Mutex;
 use std::sync::mpsc::channel;
+
+macro_rules! check_useful_c_str {
+    ($x:ident, $e:expr) => {
+        let $x = match CStringUtils::c_str_to_string($x) {
+            Ok(Some(val)) => val,
+            _ => return $e,
+        };
+
+        if $x.is_empty() {
+            return $e
+        }
+    }
+}
 
 lazy_static! {
     static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
