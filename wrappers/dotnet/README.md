@@ -7,6 +7,10 @@ The wrapper is designed to be platform independent and targets the .NET Standard
 
 Pull requests welcome!
 
+### Documentation
+
+Documentation for the .NET wrapper is available [here](http://hyperledger.github.io/indy-sdk/wrappers/dotnet/docs/index.html).
+
 ### How to build
 
 Simply build the indy-sdk-dotnet.sln file using Visual Studio, msbuild, dotnet or whatever build system your .NET implementation and platform supports.  

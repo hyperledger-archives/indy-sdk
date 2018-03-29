@@ -1,8 +1,12 @@
+import time
+
 from indy import anoncreds, wallet
 
 import json
 
 import logging
+
+from src.utils import run_coroutine
 
 logger = logging.getLogger(__name__)
 
@@ -129,3 +133,8 @@ async def demo():
     await wallet.delete_wallet(prover_wallet_name, None)
 
     logger.info("Anoncreds sample -> completed")
+
+
+if __name__ == '__main__':
+    run_coroutine(demo)
+    time.sleep(1)  # FIXME waiting for libindy thread complete

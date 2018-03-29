@@ -1,5 +1,5 @@
 ﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
@@ -24,7 +24,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var expectedSignature = "\"signature\":\"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW\"";
 
-            var result = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var result = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var did = result.Did;
 
             var signedMessage = await Ledger.SignRequestAsync(wallet, did, msg);
@@ -46,7 +46,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestSignWorksForInvalidMessageFormat()
         {
-            var result = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var result = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var did = result.Did;
 
             var msg = "\"reqId\":1496822211362017764";

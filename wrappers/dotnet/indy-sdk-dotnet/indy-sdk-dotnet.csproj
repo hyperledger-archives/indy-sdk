@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard1.1</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Hyperledger.Indy.Sdk</AssemblyName>
     <RootNamespace>Hyperledger.Indy</RootNamespace>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
@@ -26,5 +26,5 @@ Please note that to function the C-Callable Hyperledger Indy SDK and its depende
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors></WarningsAsErrors>
   </PropertyGroup>
-  
+
 </Project>
