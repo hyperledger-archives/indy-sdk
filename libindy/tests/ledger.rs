@@ -1008,10 +1008,11 @@ mod high_cases {
         fn indy_build_pool_restart_request_works_for_start_action() {
             TestUtils::cleanup_storage();
 
-            let expected_result = r#""operation":{"type":"118","action":"start","schedule":{}"#;
+            let expected_result = r#""operation":{"type":"118","action":"start","datetime":"0""#;
             let request = LedgerUtils::build_pool_restart_request(DID_TRUSTEE,
                                                                   "start",
-                                                                  Some("{}")).unwrap();
+                                                                  Some("0")).unwrap();
+            println!("Request restart look like {}", request);
             assert!(request.contains(expected_result));
 
             TestUtils::cleanup_storage();
@@ -1032,7 +1033,7 @@ mod high_cases {
         }
 
         lazy_static! {
-            static ref SCHEDULE: String = {
+            static ref DATETIME: String = {
                 let next_year = time::now().tm_year + 1900 + 1;
                 format!("{}-01-25T12:49:05.258870+00:00", next_year)
             };
@@ -1052,7 +1053,7 @@ mod high_cases {
             //start
             let request = LedgerUtils::build_pool_restart_request(&trustee_did,
                                                                   "start",
-                                                                  Some(&SCHEDULE)).unwrap();
+                                                                  Some(&DATETIME)).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
 
             //cancel

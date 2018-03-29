@@ -114,7 +114,7 @@ pub enum LedgerCommand {
     BuildPoolRestartRequest(
         String, //submitter did
         String, //action
-        Option<String>, //schedule
+        Option<String>, //datetime
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildPoolUpgradeRequest(
         String, // submitter did
@@ -230,9 +230,9 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildPoolConfigRequest command received");
                 cb(self.build_pool_config_request(&submitter_did, writes, force));
             }
-            LedgerCommand::BuildPoolRestartRequest(submitter_did, action, schedule, cb) => {
+            LedgerCommand::BuildPoolRestartRequest(submitter_did, action, datetime, cb) => {
                 info!(target: "ledger_command_executor", "BuildPoolRestartRequest command received");
-                cb(self.build_pool_restart_request(&submitter_did, &action, schedule.as_ref().map(String::as_str)));
+                cb(self.build_pool_restart_request(&submitter_did, &action, datetime.as_ref().map(String::as_str)));
             }
             LedgerCommand::BuildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb) => {
                 info!(target: "ledger_command_executor", "BuildPoolUpgradeRequest command received");
@@ -532,12 +532,12 @@ impl LedgerCommandExecutor {
     }
 
     fn build_pool_restart_request(&self, submitter_did: &str, action: &str,
-                                  schedule: Option<&str>) -> Result<String, IndyError> {
-        info!("build_pool_restart_request >>> submitter_did: {:?}, action: {:?}, schedule: {:?}", submitter_did, action, schedule);
+                                  datetime: Option<&str>) -> Result<String, IndyError> {
+        info!("build_pool_restart_request >>> submitter_did: {:?}, action: {:?}, datetime: {:?}", submitter_did, action, datetime);
 
         self.crypto_service.validate_did(submitter_did)?;
 
-        let res = self.ledger_service.build_pool_restart(submitter_did, action, schedule)?;
+        let res = self.ledger_service.build_pool_restart(submitter_did, action, datetime)?;
 
         info!("build_pool_config_request  <<< res: {:?}", res);
 
