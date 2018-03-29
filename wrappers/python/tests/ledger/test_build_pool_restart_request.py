@@ -13,12 +13,12 @@ async def test_build_pool_restart_request_work_for_start_action():
         "operation": {
             "type": "118",
             "action": "start",
-            "schedule": {},
+            "datetime": "0",
         }
     }
 
     request = json.loads(
-        await ledger.build_pool_restart_request(identifier, 'start', '{}'))
+        await ledger.build_pool_restart_request(identifier, 'start', '0'))
     assert expected_response.items() <= request.items()
 
 

@@ -16,9 +16,9 @@ public class PoolRestartRequestTest extends IndyIntegrationTestWithPoolAndSingle
         String expectedResult = String.format("\"identifier\":\"%s\"," +
                 "\"operation\":{\"type\":\"118\"," +
                 "\"action\":\"start\"," +
-                "\"schedule\":{}}", DID);
+                "\"datetime\":\"0\"}", DID);
 
-        String request = Ledger.buildPoolRestartRequest(DID, "start","{}").get();
+        String request = Ledger.buildPoolRestartRequest(DID, "start","0").get();
 
         assertTrue(request.contains(expectedResult));
     }
@@ -43,8 +43,8 @@ public class PoolRestartRequestTest extends IndyIntegrationTestWithPoolAndSingle
         String did = didResult.getDid();
 
         //start
-        String schedule = String.format("\"%s-01-25T12:49:05.258870+00:00\"", nextYear);
-        String request = Ledger.buildPoolRestartRequest(did, "start", schedule).get();
+        String datetime = String.format("\"%s-01-25T12:49:05.258870+00:00\"", nextYear);
+        String request = Ledger.buildPoolRestartRequest(did, "start", datetime).get();
         Ledger.signAndSubmitRequest(pool, wallet, did, request).get();
 
         //cancel

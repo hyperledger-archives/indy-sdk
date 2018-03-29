@@ -820,7 +820,7 @@ public class Ledger extends IndyJava.API {
 	public static CompletableFuture<String> buildPoolRestartRequest(
 			String submitterDid,
 			String action,
-			String schedule) throws IndyException {
+			String datetime) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 
@@ -831,7 +831,7 @@ public class Ledger extends IndyJava.API {
 				commandHandle,
 				submitterDid,
 				action,
-				schedule,
+				datetime,
 				buildPoolRestartRequestCb);
 
 		checkResult(result);

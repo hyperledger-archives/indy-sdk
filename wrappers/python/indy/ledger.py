@@ -588,18 +588,19 @@ async def build_pool_config_request(submitter_did: str,
     logger.debug("build_pool_config_request: <<< res: %r", res)
     return res
 
-async def build_pool_restart_request(submitter_did: str, action: str, schedule: Optional[str]) ->str:
+
+async def build_pool_restart_request(submitter_did: str, action: str, datetime: str) ->str:
     """
     Builds a POOL_RESTART request
 
     :param submitter_did: Id of Identity that sender transaction
     :param action       : Action that pool has to do after received transaction.
                           Can be "start" or "cancel"
-    :schedule           : Time when pool must be restarted.
+    :param datetime           : Time when pool must be restarted.
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_pool_restart_request: >>> submitter_did: %r, action: %r, schedule: %r")
+    logger.debug("build_pool_restart_request: >>> submitter_did: %r, action: %r, datetime: %r")
 
     if not hasattr(build_pool_restart_request, "cb"):
         logger.debug("build_pool_restart_request: Creating callback")
@@ -607,12 +608,12 @@ async def build_pool_restart_request(submitter_did: str, action: str, schedule: 
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_action = c_char_p(action.encode('utf-8'))
-    c_schedule = c_char_p(schedule.encode('utf-8')) if schedule else None
+    c_datetime = c_char_p(datetime.encode('utf-8'))if datetime else None
 
     request_json = await do_call('indy_build_pool_restart_request',
                                  c_submitter_did,
                                  c_action,
-                                 c_schedule,
+                                 c_datetime,
                                  build_pool_restart_request.cb)
 
     res = request_json.decode()
