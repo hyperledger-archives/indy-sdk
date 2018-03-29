@@ -349,7 +349,7 @@
 
 - (NSError *)buildPoolRestartRequestWithSubmitterDid:(NSString *)submitterDid
                                               action:(NSString *)action
-                                            schedule:(NSString *)schedule
+                                            datetime:(NSString *)datetime
                                           resultJson:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
@@ -357,7 +357,7 @@
     
     [IndyLedger buildPoolRestartRequestWithSubmitterDid:submitterDid
                                                  action:action
-                                               schedule:schedule
+                                               datetime:datetime
                                              completion:^(NSError *error, NSString *request) {
                                                  err = error;
                                                  result = request;

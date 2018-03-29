@@ -243,12 +243,12 @@
  @param submitterDid - Id of Identity stored in secured Wallet.
  @param action  - Action that pool has to do after received transaction.
         Can be "start" or "cancel".
- @param schedule - Time when pool must be restarted
+ @param datetime - Time when pool must be restarted
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildPoolRestartRequestWithSubmitterDid:(NSString *)submitterDid
                                          action:(NSString *)action
-                                       schedule:(NSString *)schedule
+                                       datetime:(NSString *)datetime
                                      completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 // MARK: - Pool upgrade request

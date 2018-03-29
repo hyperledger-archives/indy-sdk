@@ -34,12 +34,12 @@
     expectedResult[@"operation"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"type"] = @"118";
     expectedResult[@"operation"][@"action"] = @"start";
-    expectedResult[@"operation"][@"schedule"] = @"{}";
+    expectedResult[@"operation"][@"datetime"] = @"0";
 
     NSString *poolRestartRequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildPoolRestartRequestWithSubmitterDid:identifier
                                                                                action:@"start"
-                                                                               schedule:@"{}"
+                                                                               datetime:@"0"
                                                                          resultJson:&poolRestartRequestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildPoolRestartRequestWithSubmitterDid() failed");
     XCTAssertNotNil(poolRestartRequestJson, @"poolRestartRequestJson is nil!");

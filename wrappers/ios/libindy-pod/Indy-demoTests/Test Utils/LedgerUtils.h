@@ -96,7 +96,7 @@
 // MARK: - Pool Restart request
 - (NSError *)buildPoolRestartRequestWithSubmitterDid:(NSString *)submitterDid
                                               action:(NSString *)action
-                                            schedule:(NSString *)schedule
+                                            datetime:(NSString *)datetime
                                           resultJson:(NSString **)resultJson;
 
 // MARK: - Pool Upgrade request

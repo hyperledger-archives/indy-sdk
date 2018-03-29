@@ -379,7 +379,7 @@
 
 + (void)buildPoolRestartRequestWithSubmitterDid:(NSString *)submitterDid
                                          action:(NSString *)action
-                                       schedule:(NSString *)schedule
+                                       datetime:(NSString *)datetime
                                      completion:(void (^)(NSError *error, NSString *requestJSON))completion {
     indy_error_t ret;
 
@@ -388,7 +388,7 @@
     ret = indy_build_pool_restart_request(handle,
             [submitterDid UTF8String],
             [action UTF8String],
-            [schedule UTF8String],
+            [datetime UTF8String],
             IndyWrapperCommon3PSCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
