@@ -21,7 +21,14 @@ use utils::callback::CallbackUtils;
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
-use utils::anoncreds_types::{CredentialsForProofRequest, FullProof, RevocationRegistryDefinition, RevocationState};
+use utils::anoncreds_types::{
+    CredentialDefinition,
+    CredentialsForProofRequest,
+    FullProof,
+    RevocationRegistryDefinition,
+    RevocationState,
+    Schema,
+};
 use utils::environment::EnvironmentUtils;
 
 use indy::api::ErrorCode;
@@ -334,9 +341,12 @@ fn anoncreds_demo_works() {
         }
     }).to_string();
 
-    let schemas_json = format!(r#"{{"{}":{}}}"#, schema_id, schema_json);
-    let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential_def_id, credential_def_json);
-    let revoc_infos_jsons = rev_states_json;
+    let schemas_json = json!({
+        schema_id.clone(): serde_json::from_str::<Schema>(&schema_json).unwrap()
+    }).to_string();
+    let credential_defs_json = json!({
+        credential_def_id.clone(): serde_json::from_str::<CredentialDefinition>(&credential_def_json).unwrap()
+    }).to_string();
 
     // 11. Prover create Proof for Proof Request
     let err =
@@ -347,7 +357,7 @@ fn anoncreds_demo_works() {
                                  CString::new(master_secret_id).unwrap().as_ptr(),
                                  CString::new(schemas_json.clone()).unwrap().as_ptr(),
                                  CString::new(credential_defs_json.clone()).unwrap().as_ptr(),
-                                 CString::new(revoc_infos_jsons.clone()).unwrap().as_ptr(),
+                                 CString::new(rev_states_json.clone()).unwrap().as_ptr(),
                                  prover_create_proof_callback);
 
     assert_eq!(ErrorCode::Success, err);
