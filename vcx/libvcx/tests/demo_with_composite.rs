@@ -9,7 +9,6 @@ extern crate serde_json;
 extern crate lazy_static;
 mod utils;
 use utils::demo::*;
-use utils::timeout::TimeoutUtils;
 
 use self::tempfile::NamedTempFileOptions;
 use std::io::Write;
@@ -18,6 +17,7 @@ use std::time::Duration;
 use std::ffi::CString;
 use vcx::api;
 use vcx::utils::libindy::pool;
+use vcx::utils::timeout::TimeoutUtils;
 use std::sync::mpsc::channel;
 
 #[allow(dead_code)]
@@ -254,7 +254,7 @@ fn demo_full(){
                                                      connection_handle,
                                                      CString::new(connection_opt.to_string()).unwrap().into_raw(),cb);
     assert_eq!(rc, 0);
-    let err = receiver.recv_timeout(utils::timeout::TimeoutUtils::long_timeout()).unwrap();
+    let err = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(err,0);
 
     // serialize connection to see the connection invite ******************************

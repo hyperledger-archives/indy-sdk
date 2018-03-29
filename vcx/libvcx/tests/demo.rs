@@ -7,11 +7,11 @@ extern crate serde_json;
 extern crate lazy_static;
 mod utils;
 use utils::demo::*;
-use utils::timeout::TimeoutUtils;
 
 use std::time::Duration;
 use std::ffi::CString;
 use vcx::api;
+use vcx::utils::timeout::TimeoutUtils;
 use std::sync::mpsc::channel;
 
 static CREDENTIAL_DATA: &str = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
@@ -106,7 +106,7 @@ fn demo(){
                                                      connection_handle,
                                                      CString::new(connection_opt.to_string()).unwrap().into_raw(),cb);
     assert_eq!(rc, 0);
-    let err = receiver.recv_timeout(utils::timeout::TimeoutUtils::long_timeout()).unwrap();
+    let err = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(err,0);
 
     // serialize connection to see the connection invite ******************************

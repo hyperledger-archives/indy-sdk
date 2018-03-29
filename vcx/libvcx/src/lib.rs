@@ -26,8 +26,6 @@ pub mod utils;
 pub mod settings;
 pub mod messages;
 
-use std::path::Path;
-
 pub mod api;
 pub mod connection;
 pub mod issuer_credential;
@@ -40,7 +38,3 @@ pub mod error;
 pub mod credential;
 pub mod object_cache;
 pub mod disclosed_proof;
-pub fn create_path(s:&str) -> &Path {
-    Path::new(s)
-}
-

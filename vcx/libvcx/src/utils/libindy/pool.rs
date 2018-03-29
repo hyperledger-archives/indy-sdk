@@ -84,7 +84,6 @@ pub fn create_genesis_txn_file(pool_name: &str,
             .create(txn_file_path.parent().unwrap()).unwrap();
     }
 
-    println!("attempting to create file: {}", txn_file_path.to_string_lossy());
     let mut f = fs::File::create(txn_file_path.as_path()).unwrap();
     f.write_all(txn_file_data.as_bytes()).unwrap();
     f.flush().unwrap();
