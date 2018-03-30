@@ -65,7 +65,7 @@
     NSString *poolRestartRequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildPoolRestartRequestWithSubmitterDid:identifier
                                                                                   action:@"cancel"
-                                                                                schedule:nil
+                                                                                datetime:nil
                                                                               resultJson:&poolRestartRequestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildPoolRestartRequestWithSubmitterDid() failed");
     XCTAssertNotNil(poolRestartRequestJson, @"poolRestartRequestJson is nil!");
