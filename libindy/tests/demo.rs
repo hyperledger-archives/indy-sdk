@@ -21,14 +21,13 @@ use utils::callback::CallbackUtils;
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
-use utils::anoncreds_types::{
-    CredentialDefinition,
-    CredentialsForProofRequest,
-    FullProof,
-    RevocationRegistryDefinition,
-    RevocationState,
-    Schema,
-};
+use utils::domain::credential_definition::CredentialDefinition;
+use utils::domain::credential_for_proof_request::CredentialsForProofRequest;
+use utils::domain::proof::Proof;
+use utils::domain::revocation_registry_definition::RevocationRegistryDefinition;
+use utils::domain::revocation_state::RevocationState;
+use utils::domain::schema::Schema;
+
 use utils::environment::EnvironmentUtils;
 
 use indy::api::ErrorCode;
@@ -365,7 +364,7 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     // 12. Verifier verify proof
-    let proof: FullProof = serde_json::from_str(&proof_json).unwrap();
+    let proof: Proof = serde_json::from_str(&proof_json).unwrap();
 
     let revealed_attr_1 = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap();
     assert_eq!("Alex", revealed_attr_1.raw);
