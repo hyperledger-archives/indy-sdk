@@ -31,7 +31,8 @@ use self::indy_crypto::bls::Generator;
 
 const REQUESTS_FOR_STATE_PROOFS: [&'static str; 4] = [constants::GET_NYM, constants::GET_SCHEMA, constants::GET_CLAIM_DEF, constants::GET_ATTR];
 const RESENDABLE_REQUEST_TIMEOUT: i64 = 1;
-const REQUEST_TIMEOUT: i64 = 100;
+const REQUEST_TIMEOUT_ACK: i64 = 10;
+const REQUEST_TIMEOUT_REPLY: i64 = 2000;
 
 pub struct TransactionHandler {
     gen: Generator,
@@ -49,11 +50,26 @@ impl TransactionHandler {
             Message::Reject(response) | Message::ReqNACK(response) => {
                 self.process_reject(&response, raw_msg);
             }
+            Message::ReqACK(ack) => {
+                self.process_ack(&ack, raw_msg);
+            }
             _ => {
                 warn!("unhandled msg {:?}", msg);
             }
         };
         Ok(None)
+    }
+
+    fn process_ack(&mut self, ack: &Response, raw_msg: &str) {
+        trace!("TransactionHandler::process_ack: >>> ack: {:?}, raw_msg: {:?}", ack, raw_msg);
+
+        self.pending_commands.get_mut(&ack.req_id).map(|cmd| {
+            debug!("TransactionHandler::process_ack: update timeout for req_id: {:?}", ack.req_id);
+            cmd.full_cmd_timeout
+                = Some(time::now_utc().add(Duration::seconds(REQUEST_TIMEOUT_REPLY)))
+        });
+
+        trace!("TransactionHandler::process_ack: <<<");
     }
 
     fn process_reply(&mut self, req_id: u64, raw_msg: &str) {
@@ -184,7 +200,7 @@ impl TransactionHandler {
             nack_cnt: 0,
             replies: HashMap::new(),
             resendable_request: None,
-            full_cmd_timeout: Some(time::now_utc().add(Duration::seconds(REQUEST_TIMEOUT))),
+            full_cmd_timeout: Some(time::now_utc().add(Duration::seconds(REQUEST_TIMEOUT_ACK))),
         };
 
         if REQUESTS_FOR_STATE_PROOFS.contains(&req_json["operation"]["type"].as_str().unwrap_or("")) {
@@ -583,7 +599,7 @@ mod tests {
         let cmd = format!("{{\"reqId\": {}}}", req_id);
 
         th.try_send_request(&cmd, cmd_id).unwrap();
-        let expected_timeout = time::now_utc().add(Duration::seconds(REQUEST_TIMEOUT));
+        let expected_timeout = time::now_utc().add(Duration::seconds(REQUEST_TIMEOUT_ACK));
 
         assert_eq!(th.pending_commands.len(), 1);
         let pending_cmd = th.pending_commands.get(&req_id).unwrap();

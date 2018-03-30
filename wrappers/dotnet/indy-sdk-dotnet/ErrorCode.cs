@@ -162,6 +162,11 @@
         PoolLedgerConfigAlreadyExistsError = 306,
 
 
+        /// <summary>
+        /// Pool ledger timeout
+        /// </summary>
+        PoolLedgerTimeout = 307,
+
         // Crypto errors
 
         /// <summary>

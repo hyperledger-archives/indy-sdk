@@ -38,7 +38,7 @@ namespace Hyperledger.Indy.Test.WalletTests
             var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
             Assert.IsNotNull(wallet);
 
-            var schema = "{\"seqNo\":1,\"data\": {\"name\":\"gvt\",\"version\":\"1.0\",\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}}";
+            var schema = "{\"seqNo\":1,\"dest\":\"{}\",\"data\": {\"name\":\"gvt\",\"version\":\"1.0\",\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}}";
             var claimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(wallet, DID1, schema, null, false);
 
             var claimOfferTemplate = "{{\"issuer_did\":\"{0}\",\"schema_seq_no\":{1}}}";
@@ -65,7 +65,7 @@ namespace Hyperledger.Indy.Test.WalletTests
             var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(wallet, claimRequest, claim, -1);
             var claimJson = createClaimResult.ClaimJson;
 
-            await AnonCreds.ProverStoreClaimAsync(wallet, claimJson);
+            await AnonCreds.ProverStoreClaimAsync(wallet, claimJson, createClaimResult.RevocRegUpdateJson);
 
             var filter = string.Format("{{\"issuer_did\":\"{0}\"}}", DID1);
 

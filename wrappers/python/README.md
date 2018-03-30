@@ -7,6 +7,13 @@ This Python wrapper currently requires python 3.6.
 
 Pull requests welcome!
 
+
+### How to install
+    pip install python3-indy
+    
+Note that before you can use python wrapper you must install  c-callable SDK. 
+See the section "How-to-install" in [Indy SDK](README.md) 
+ 
 ### How to build
 
 - Install native "indy" library:

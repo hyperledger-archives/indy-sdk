@@ -1,0 +1,1272 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Class Signus
+   | Hyperledger Indy .NET Wrapper </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Class Signus
+   | Hyperledger Indy .NET Wrapper ">
+    <meta name="generator" content="docfx 2.25.1.0">
+    
+    <link rel="shortcut icon" href="../images/favicon.png">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="../">
+    <meta property="docfx:newtab" content="true">
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../images/hyperledger_logo.png" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+        
+        <div id="search-results">
+          <div class="search-list"></div>
+          <div class="sr-items"></div>
+          <ul id="pagination"></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="Hyperledger.Indy.SignusApi.Signus">
+  
+  
+  <h1 id="Hyperledger_Indy_SignusApi_Signus" data-uid="Hyperledger.Indy.SignusApi.Signus" class="text-break">Class Signus
+  </h1>
+  <div class="markdown level0 summary"><p>Provides cryptographic functionality.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.object(v=vs.110).aspx">Object</a></div>
+    <div class="level1"><span class="xref">Signus</span></div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.SignusApi.html">Hyperledger.Indy.SignusApi</a></h6>
+  <h6><strong>Assembly</strong>: Hyperledger.Indy.Sdk.dll</h6>
+  <h5 id="Hyperledger_Indy_SignusApi_Signus_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static class Signus : Object</code></pre>
+  </div>
+  <h3 id="methods">Methods
+  </h3>
+  <a id="Hyperledger_Indy_SignusApi_Signus_CreateAndStoreMyDidAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.CreateAndStoreMyDidAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_CreateAndStoreMyDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.SignusApi.Signus.CreateAndStoreMyDidAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">CreateAndStoreMyDidAsync(Wallet, String)</h4>
+  <div class="markdown level1 summary"><p>Creates signing and encryption keys in specified wallet for a new DID owned by the caller.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;CreateAndStoreMyDidResult&gt; CreateAndStoreMyDidAsync(Wallet wallet, string didJson)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet to store the DID in.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">didJson</span></td>
+        <td><p>The DID JSON.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.SignusApi.CreateAndStoreMyDidResult.html">CreateAndStoreMyDidResult</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to a <a class="xref" href="Hyperledger.Indy.SignusApi.CreateAndStoreMyDidResult.html">CreateAndStoreMyDidResult</a> when the operation completes.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_SignusApi_Signus_CreateAndStoreMyDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Saves the identity DID with keys in a wallet so that it can be used to sign
+and encrypt transactions.  Control over the created DID is provided through the 
+<code data-dev-comment-type="paramref" class="paramref">didJson</code> parameter which accepts a JSON string with the following
+optional parameters:
+</p>
+<pre><code>{
+    &quot;did&quot;: string,
+    &quot;seed&quot;: string, 
+    &quot;crypto_type&quot;: string, 
+    &quot;cid&quot;: bool
+}</code></pre>
+<p>The <code>did</code> member specifies the DID of the new entry.  If not 
+provided and the <code>cid</code> member is <code>false</code> then the first 16 bits of the VerKey value 
+generated will be used as a new DID.  If not provided and the <code>cid</code> member is <code>true</code> then the full 
+VerKey value will be used as a new DID.  If the <code>did</code> member is provided then the keys will be 
+replaced - this is normally used in the case of key rotation.</p>
+<p>The <code>seed</code> member specifies the seed to use when generating keys.  If not provided 
+then a random seed value will be created.</p>
+<p>The <code>crypto_type</code> member specifies the cryptographic algorithm used for generating
+keys.  If not provided then ed25519 curve is used.
+<div class="NOTE"><h5>note</h5><p>The only value currently supported for this member is &apos;ed25519&apos;.</p></div>
+</p>
+<p>The <code>cid</code> member indicates whether the DID should be used in creating the DID.
+If not provided then the value defaults to false.</p>
+</div>
+  <a id="Hyperledger_Indy_SignusApi_Signus_DecryptAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.DecryptAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_DecryptAsync_Hyperledger_Indy_WalletApi_Wallet_Hyperledger_Indy_PoolApi_Pool_System_String_System_String_System_Byte___System_Byte___" data-uid="Hyperledger.Indy.SignusApi.Signus.DecryptAsync(Hyperledger.Indy.WalletApi.Wallet,Hyperledger.Indy.PoolApi.Pool,System.String,System.String,System.Byte[],System.Byte[])">DecryptAsync(Wallet, Pool, String, String, Byte[], Byte[])</h4>
+  <div class="markdown level1 summary"><p>Decrypts the provided message using the public key associated with my DID.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;byte[]&gt; DecryptAsync(Wallet wallet, Pool pool, string myDid, string did, byte[] encryptedMsg, byte[] nonce)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet containing the DID and associated secret key to use for decryption.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html">Pool</a></td>
+        <td><span class="parametername">pool</span></td>
+        <td><p>The pool to use for resolving keys associated with the <code data-dev-comment-type="paramref" class="paramref">did</code> if not present in the wallet.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">myDid</span></td>
+        <td><p>The DID to use for decryption.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">did</span></td>
+        <td><p>The DID of the encrypting party to use for verification.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.byte(v=vs.110).aspx">Byte</a>[]</td>
+        <td><span class="parametername">encryptedMsg</span></td>
+        <td><p>The message to decrypt.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.byte(v=vs.110).aspx">Byte</a>[]</td>
+        <td><span class="parametername">nonce</span></td>
+        <td><p>The nonce used to encrypt the message.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.byte(v=vs.110).aspx">Byte</a>[]&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to a byte array containing the decrypted message.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_SignusApi_Signus_DecryptAsync_Hyperledger_Indy_WalletApi_Wallet_Hyperledger_Indy_PoolApi_Pool_System_String_System_String_System_Byte___System_Byte____remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+The DID specified in the <code data-dev-comment-type="paramref" class="paramref">myDid</code> parameter must have been previously created 
+with a secret key and stored in the wallet specified in the <code data-dev-comment-type="paramref" class="paramref">wallet</code> parameter or
+exist on the ledger on the node pool specified in the <code data-dev-comment-type="paramref" class="paramref">pool</code> parameter.
+</p>
+<p>
+For further information on storing a DID and its secret key see the 
+<a class="xref" href="Hyperledger.Indy.SignusApi.Signus.html#Hyperledger_Indy_SignusApi_Signus_CreateAndStoreMyDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">CreateAndStoreMyDidAsync(Wallet, String)</a> method.
+</p>
+</div>
+  <a id="Hyperledger_Indy_SignusApi_Signus_DecryptSealedAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.DecryptSealedAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_DecryptSealedAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_Byte___" data-uid="Hyperledger.Indy.SignusApi.Signus.DecryptSealedAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.Byte[])">DecryptSealedAsync(Wallet, String, Byte[])</h4>
+  <div class="markdown level1 summary"><p>Decrypts the provided message using the public key associated with the specified DID using the anonymous-encryption scheme.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;byte[]&gt; DecryptSealedAsync(Wallet wallet, string did, byte[] encryptedMsg)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet containing the DID and associated secret key to use for decryption.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">did</span></td>
+        <td><p>The DID of the encrypting party to use for verification.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.byte(v=vs.110).aspx">Byte</a>[]</td>
+        <td><span class="parametername">encryptedMsg</span></td>
+        <td><p>The message to decrypt.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.byte(v=vs.110).aspx">Byte</a>[]&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to a byte array containing the decrypted message.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_SignusApi_Signus_EncryptAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.EncryptAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_EncryptAsync_Hyperledger_Indy_WalletApi_Wallet_Hyperledger_Indy_PoolApi_Pool_System_String_System_String_System_Byte___" data-uid="Hyperledger.Indy.SignusApi.Signus.EncryptAsync(Hyperledger.Indy.WalletApi.Wallet,Hyperledger.Indy.PoolApi.Pool,System.String,System.String,System.Byte[])">EncryptAsync(Wallet, Pool, String, String, Byte[])</h4>
+  <div class="markdown level1 summary"><p>Encrypts the provided message with the public key of the specified DID.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;EncryptResult&gt; EncryptAsync(Wallet wallet, Pool pool, string myDid, string did, byte[] msg)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet containing the DID to use for encryption.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html">Pool</a></td>
+        <td><span class="parametername">pool</span></td>
+        <td><p>The node pool to read the public key from if required.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">myDid</span></td>
+        <td><p>The DID used to encrypt the message.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">did</span></td>
+        <td><p>The DID the message is to be encrypted for.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.byte(v=vs.110).aspx">Byte</a>[]</td>
+        <td><span class="parametername">msg</span></td>
+        <td><p>The message to encrypt.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.SignusApi.EncryptResult.html">EncryptResult</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to an <a class="xref" href="Hyperledger.Indy.SignusApi.EncryptResult.html">EncryptResult</a> once encryption is complete.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_SignusApi_Signus_EncryptAsync_Hyperledger_Indy_WalletApi_Wallet_Hyperledger_Indy_PoolApi_Pool_System_String_System_String_System_Byte____remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>If the wallet specified in the <code data-dev-comment-type="paramref" class="paramref">wallet</code> parameter contains the public key
+associated with the DID specified in the <code data-dev-comment-type="paramref" class="paramref">did</code> parameter and the value has
+not expired then this key will be used for encryption.
+</p>
+<p>On the other hand, if the public key is not present in the wallet or has expired the public
+key will be read from the ledger in the node pool specified in the <code data-dev-comment-type="paramref" class="paramref">pool</code> 
+parameter and the wallet will be updated with the new public key if required.
+</p>
+<p>For further information on registering a public key for a DID see the 
+<a class="xref" href="Hyperledger.Indy.SignusApi.Signus.html#Hyperledger_Indy_SignusApi_Signus_StoreTheirDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">StoreTheirDidAsync(Wallet, String)</a>method and for information on the expiry of 
+values in a wallet see the <a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_CreateWalletAsync_System_String_System_String_System_String_System_String_System_String_">CreateWalletAsync(String, String, String, String, String)</a>
+and <a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_OpenWalletAsync_System_String_System_String_System_String_">OpenWalletAsync(String, String, String)</a> methods.
+</p>
+</div>
+  <a id="Hyperledger_Indy_SignusApi_Signus_EncryptSealedAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.EncryptSealedAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_EncryptSealedAsync_Hyperledger_Indy_WalletApi_Wallet_Hyperledger_Indy_PoolApi_Pool_System_String_System_Byte___" data-uid="Hyperledger.Indy.SignusApi.Signus.EncryptSealedAsync(Hyperledger.Indy.WalletApi.Wallet,Hyperledger.Indy.PoolApi.Pool,System.String,System.Byte[])">EncryptSealedAsync(Wallet, Pool, String, Byte[])</h4>
+  <div class="markdown level1 summary"><p>Encrypts the provided message with the public key of the specified DID using the anonymous-encryption scheme.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;byte[]&gt; EncryptSealedAsync(Wallet wallet, Pool pool, string did, byte[] msg)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet containing the DID to use for encryption.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html">Pool</a></td>
+        <td><span class="parametername">pool</span></td>
+        <td><p>The node pool to read the public key from if required.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">did</span></td>
+        <td><p>The DID the message is to be encrypted for.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.byte(v=vs.110).aspx">Byte</a>[]</td>
+        <td><span class="parametername">msg</span></td>
+        <td><p>The message to encrypt.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.byte(v=vs.110).aspx">Byte</a>[]&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to a byte array containing the encrypted message once encryption is complete.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_SignusApi_Signus_EncryptSealedAsync_Hyperledger_Indy_WalletApi_Wallet_Hyperledger_Indy_PoolApi_Pool_System_String_System_Byte____remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>If the wallet specified in the <code data-dev-comment-type="paramref" class="paramref">wallet</code> parameter contains the public key
+associated with the DID specified in the <code data-dev-comment-type="paramref" class="paramref">did</code> parameter and the value has
+not expired then this key will be used for encryption.
+</p>
+<p>On the other hand, if the public key is not present in the wallet or has expired the public
+key will be read from the ledger in the node pool specified in the <code data-dev-comment-type="paramref" class="paramref">pool</code> 
+parameter and the wallet will be updated with the new public key if required.
+</p>
+<p>For further information on registering a public key for a DID see the 
+<a class="xref" href="Hyperledger.Indy.SignusApi.Signus.html#Hyperledger_Indy_SignusApi_Signus_StoreTheirDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">StoreTheirDidAsync(Wallet, String)</a>method and for information on the expiry of 
+values in a wallet see the <a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_CreateWalletAsync_System_String_System_String_System_String_System_String_System_String_">CreateWalletAsync(String, String, String, String, String)</a>
+and <a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_OpenWalletAsync_System_String_System_String_System_String_">OpenWalletAsync(String, String, String)</a> methods.
+</p>
+</div>
+  <a id="Hyperledger_Indy_SignusApi_Signus_GetDidMetadataAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.GetDidMetadataAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_GetDidMetadataAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.SignusApi.Signus.GetDidMetadataAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">GetDidMetadataAsync(Wallet, String)</h4>
+  <div class="markdown level1 summary"><p>Gets the metadata associated with the specified DID.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; GetDidMetadataAsync(Wallet wallet, string did)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet that contains the DID.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">did</span></td>
+        <td><p>The DID to get the metadata for.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to a string containing the metadata associated with the DID.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.WalletValueNotFoundException.html">WalletValueNotFoundException</a></td>
+        <td><p>Thrown if the wallet does not contain the specified <code data-dev-comment-type="paramref" class="paramref">did</code> or the DID did not have any metadata.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.InvalidStructureException.html">InvalidStructureException</a></td>
+        <td><p>Thrown if the value provided in the <code data-dev-comment-type="paramref" class="paramref">did</code> parameter is malformed.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_SignusApi_Signus_GetEndpointForDidAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.GetEndpointForDidAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_GetEndpointForDidAsync_Hyperledger_Indy_WalletApi_Wallet_Hyperledger_Indy_PoolApi_Pool_System_String_" data-uid="Hyperledger.Indy.SignusApi.Signus.GetEndpointForDidAsync(Hyperledger.Indy.WalletApi.Wallet,Hyperledger.Indy.PoolApi.Pool,System.String)">GetEndpointForDidAsync(Wallet, Pool, String)</h4>
+  <div class="markdown level1 summary"><p>Gets the endpoint details for the specified DID.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;EndpointForDidResult&gt; GetEndpointForDidAsync(Wallet wallet, Pool pool, string did)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet containing the DID.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html">Pool</a></td>
+        <td><span class="parametername">pool</span></td>
+        <td><p>The pool to resolve the endpoint data from if not present in the wallet.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">did</span></td>
+        <td><p>The DID to get the endpoint data for.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.SignusApi.EndpointForDidResult.html">EndpointForDidResult</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to an <a class="xref" href="Hyperledger.Indy.SignusApi.EndpointForDidResult.html">EndpointForDidResult</a> containing the endpoint information 
+associated with the DID.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_SignusApi_Signus_GetEndpointForDidAsync_Hyperledger_Indy_WalletApi_Wallet_Hyperledger_Indy_PoolApi_Pool_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>If the <code data-dev-comment-type="paramref" class="paramref">did</code> is present in the <code data-dev-comment-type="paramref" class="paramref">wallet</code> and is considered &quot;fresh&quot; then
+the endpoint will be resolved from the wallet.  If, on the other hand, the DID is not present in the wallet or
+is not fresh then the details will be resolved from the <code data-dev-comment-type="paramref" class="paramref">pool</code> and will be cached in the wallet.</p>
+</div>
+  <a id="Hyperledger_Indy_SignusApi_Signus_KeyForDidAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.KeyForDidAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_KeyForDidAsync_Hyperledger_Indy_PoolApi_Pool_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.SignusApi.Signus.KeyForDidAsync(Hyperledger.Indy.PoolApi.Pool,Hyperledger.Indy.WalletApi.Wallet,System.String)">KeyForDidAsync(Pool, Wallet, String)</h4>
+  <div class="markdown level1 summary"><p>Gets the verification key for the specified DID.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; KeyForDidAsync(Pool pool, Wallet wallet, string did)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html">Pool</a></td>
+        <td><span class="parametername">pool</span></td>
+        <td><p>The pool to use for resolving the DID if it does not exist in the <code data-dev-comment-type="paramref" class="paramref">wallet</code>.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet to resolve the DID from.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">did</span></td>
+        <td><p>The DID to get the verification key for.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to a string containing the verification key associated with the DID.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_SignusApi_Signus_KeyForDidAsync_Hyperledger_Indy_PoolApi_Pool_Hyperledger_Indy_WalletApi_Wallet_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>If the provided <code data-dev-comment-type="paramref" class="paramref">wallet</code> does not contain the verification key associated with the specified DID then 
+an attempt will be made to look up the key from the provided <code data-dev-comment-type="paramref" class="paramref">pool</code>. If resolved from the <code data-dev-comment-type="paramref" class="paramref">pool</code>
+then the DID and key will be automatically cached in the <code data-dev-comment-type="paramref" class="paramref">wallet</code>.
+<div class="NOTE"><h5>note</h5><p>
+The <a class="xref" href="Hyperledger.Indy.SignusApi.Signus.html#Hyperledger_Indy_SignusApi_Signus_CreateAndStoreMyDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">CreateAndStoreMyDidAsync(Wallet, String)</a> and <a class="xref" href="Hyperledger.Indy.CryptoApi.Crypto.html#Hyperledger_Indy_CryptoApi_Crypto_CreateKeyAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">CreateKeyAsync(Wallet, String)</a> methods both create
+similar wallet records so the returned verification key in all generic crypto and messaging functions.
+</p></div></p>
+</div>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.WalletValueNotFoundException.html">WalletValueNotFoundException</a></td>
+        <td><p>Thrown if the DID could not be resolved from the <code data-dev-comment-type="paramref" class="paramref">wallet</code> and <code data-dev-comment-type="paramref" class="paramref">pool</code>.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_SignusApi_Signus_KeyForLocalDidAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.KeyForLocalDidAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_KeyForLocalDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.SignusApi.Signus.KeyForLocalDidAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">KeyForLocalDidAsync(Wallet, String)</h4>
+  <div class="markdown level1 summary"><p>Gets the verification key for the specified DID.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; KeyForLocalDidAsync(Wallet wallet, string did)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet to resolve the DID from.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">did</span></td>
+        <td><p>The DID to get the verification key for.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to a string containing the verification key associated with the DID.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_SignusApi_Signus_KeyForLocalDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>This method will obtain the verification key associated with the specified <code data-dev-comment-type="paramref" class="paramref">did</code>from the provided <code data-dev-comment-type="paramref" class="paramref">wallet</code> but will
+not attempt to retrieve the key from the ledger if not present in the wallet, nor will it perform any freshness check against the ledger to determine 
+if the key is up-to-date.  To ensure that the key is fresh use the <a class="xref" href="Hyperledger.Indy.SignusApi.Signus.html#Hyperledger_Indy_SignusApi_Signus_KeyForDidAsync_Hyperledger_Indy_PoolApi_Pool_Hyperledger_Indy_WalletApi_Wallet_System_String_">KeyForDidAsync(Pool, Wallet, String)</a> method instead.
+<div class="NOTE"><h5>note</h5><p>
+The <a class="xref" href="Hyperledger.Indy.SignusApi.Signus.html#Hyperledger_Indy_SignusApi_Signus_CreateAndStoreMyDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">CreateAndStoreMyDidAsync(Wallet, String)</a> and <a class="xref" href="Hyperledger.Indy.CryptoApi.Crypto.html#Hyperledger_Indy_CryptoApi_Crypto_CreateKeyAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">CreateKeyAsync(Wallet, String)</a> methods both create
+similar wallet records so the returned verification key in all generic crypto and messaging functions.
+</p></div></p>
+</div>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.WalletValueNotFoundException.html">WalletValueNotFoundException</a></td>
+        <td><p>Thrown if the DID could not be resolved from the <code data-dev-comment-type="paramref" class="paramref">wallet</code>.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_SignusApi_Signus_ReplaceKeysApplyAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.ReplaceKeysApplyAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_ReplaceKeysApplyAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.SignusApi.Signus.ReplaceKeysApplyAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">ReplaceKeysApplyAsync(Wallet, String)</h4>
+  <div class="markdown level1 summary"><p>Applies temporary signing and encryption keys as main in the specified wallet for an existing DID owned by the caller</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task ReplaceKeysApplyAsync(Wallet wallet, string did)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet the DID is stored in.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">did</span></td>
+        <td><p>The did to replace the keys for.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a></td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a> that  with no return value the completes when the operation completes.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_SignusApi_Signus_ReplaceKeysStartAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.ReplaceKeysStartAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_ReplaceKeysStartAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_" data-uid="Hyperledger.Indy.SignusApi.Signus.ReplaceKeysStartAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)">ReplaceKeysStartAsync(Wallet, String, String)</h4>
+  <div class="markdown level1 summary"><p>Generates new signing and encryption keys in the specified wallet for an existing DID owned by the caller</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ReplaceKeysStartAsync(Wallet wallet, string did, string identityJson)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet the DID is stored in.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">did</span></td>
+        <td><p>The did to replace the keys for.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">identityJson</span></td>
+        <td><p>The identity information as JSON.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to a string containing the new verification key when the operation completes.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_SignusApi_Signus_ReplaceKeysStartAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The developer has some control over the generation of the new keys through the value passed to
+the <code data-dev-comment-type="paramref" class="paramref">identityJson</code> parameter.  This parameter expects a valid JSON string
+with the following optional members:</p>
+<pre><code>{
+    &quot;seed&quot;: string, 
+    &quot;crypto_type&quot;: string
+}</code></pre>
+<p>The <code>seed</code> member controls the seed that will be used to generate they keys.
+If not provided a random one will be created.</p>
+<p>The <code>crypto_type</code> member specifies the type of cryptographic algorithm will be 
+used to generate they keys.  If not provided then ed22519 curve will be used.
+<div class="NOTE"><h5>note</h5><p>The only value currently supported for this member is &apos;ed25519&apos;.</p></div>
+</p>
+</div>
+  <a id="Hyperledger_Indy_SignusApi_Signus_SetDidMetadataAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.SetDidMetadataAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_SetDidMetadataAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_" data-uid="Hyperledger.Indy.SignusApi.Signus.SetDidMetadataAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)">SetDidMetadataAsync(Wallet, String, String)</h4>
+  <div class="markdown level1 summary"><p>Sets metadata for the specified DID.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task SetDidMetadataAsync(Wallet wallet, string did, string metadata)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet containing the DID.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">did</span></td>
+        <td><p>The DID to set the metadata on.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">metadata</span></td>
+        <td><p>The metadata to store.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a></td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a> that completes when the operation completes.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_SignusApi_Signus_SetDidMetadataAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Any existing metadata stored for the DID will be replaced.</p>
+</div>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.WalletValueNotFoundException.html">WalletValueNotFoundException</a></td>
+        <td><p>Thrown if the <code data-dev-comment-type="paramref" class="paramref">wallet</code> does not contain the specified <code data-dev-comment-type="paramref" class="paramref">did</code>.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.InvalidStructureException.html">InvalidStructureException</a></td>
+        <td><p>Thrown if the value provided to the <code data-dev-comment-type="paramref" class="paramref">did</code> parameter is malformed.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_SignusApi_Signus_SetEndpointForDidAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.SetEndpointForDidAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_SetEndpointForDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.SignusApi.Signus.SetEndpointForDidAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)">SetEndpointForDidAsync(Wallet, String, String, String)</h4>
+  <div class="markdown level1 summary"><p>Sets the endpoint details for the specified DID.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task SetEndpointForDidAsync(Wallet wallet, string did, string address, string transportKey)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet containing the DID.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">did</span></td>
+        <td><p>The DID to set the endpoint details on.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">address</span></td>
+        <td><p>The address of the endpoint.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">transportKey</span></td>
+        <td><p>The transport key.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a></td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a> that completes when the operation completes.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="exceptions">Exceptions</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Condition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.InvalidStructureException.html">InvalidStructureException</a></td>
+        <td><p>Thrown if the <code data-dev-comment-type="paramref" class="paramref">did</code> or <code data-dev-comment-type="paramref" class="paramref">transportKey</code> values are malformed.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_SignusApi_Signus_SignAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.SignAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_SignAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_Byte___" data-uid="Hyperledger.Indy.SignusApi.Signus.SignAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.Byte[])">SignAsync(Wallet, String, Byte[])</h4>
+  <div class="markdown level1 summary"><p>Signs the provided message using the specified DID.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;byte[]&gt; SignAsync(Wallet wallet, string did, byte[] msg)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet that contains the DID.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">did</span></td>
+        <td><p>The DID to sign with.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.byte(v=vs.110).aspx">Byte</a>[]</td>
+        <td><span class="parametername">msg</span></td>
+        <td><p>The message to sign.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.byte(v=vs.110).aspx">Byte</a>[]&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to a byte array that contains signed message when signing is complete.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_SignusApi_Signus_SignAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_Byte____remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The DID specified in the <code data-dev-comment-type="paramref" class="paramref">did</code> parameter  must already be stored 
+in the <a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a> specified in the <code data-dev-comment-type="paramref" class="paramref">wallet</code> parameter
+with a signing key in order to be able to sign a message.  See the 
+<a class="xref" href="Hyperledger.Indy.SignusApi.Signus.html#Hyperledger_Indy_SignusApi_Signus_CreateAndStoreMyDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">CreateAndStoreMyDidAsync(Wallet, String)</a> method for details.</p>
+</div>
+  <a id="Hyperledger_Indy_SignusApi_Signus_StoreTheirDidAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.StoreTheirDidAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_StoreTheirDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.SignusApi.Signus.StoreTheirDidAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">StoreTheirDidAsync(Wallet, String)</h4>
+  <div class="markdown level1 summary"><p>Stores a remote party&apos;s DID for a pairwise connection in the specified wallet.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task StoreTheirDidAsync(Wallet wallet, string identityJson)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet to store the DID in.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">identityJson</span></td>
+        <td><p>The identity JSON.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a></td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a> that  with no return value the completes when the operation completes.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_SignusApi_Signus_StoreTheirDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+The DID and optional associated parameters must be provided in the <code data-dev-comment-type="paramref" class="paramref">identityJson</code>
+parameter as a JSON string:
+</p>
+<pre><code>{
+       &quot;did&quot;: string, 
+       &quot;verkey&quot;: string,
+       &quot;crypto_type&quot;: string
+}</code></pre>
+<p>The <code>did</code> member specifies the DID to store.  This value is required.</p>
+<p>The <code>verkey</code> member specifies the verification key and is optional.</p>
+<p>The <code>crypto_type</code> member specifies the type of cryptographic algorithm will be 
+used to generate they keys.  If not provided then ed22519 curve will be used.
+<div class="NOTE"><h5>note</h5><p>The only value currently supported for this member is &apos;ed25519&apos;.</p></div>
+</p>
+</div>
+  <a id="Hyperledger_Indy_SignusApi_Signus_VerifySignatureAsync_" data-uid="Hyperledger.Indy.SignusApi.Signus.VerifySignatureAsync*"></a>
+  <h4 id="Hyperledger_Indy_SignusApi_Signus_VerifySignatureAsync_Hyperledger_Indy_WalletApi_Wallet_Hyperledger_Indy_PoolApi_Pool_System_String_System_Byte___System_Byte___" data-uid="Hyperledger.Indy.SignusApi.Signus.VerifySignatureAsync(Hyperledger.Indy.WalletApi.Wallet,Hyperledger.Indy.PoolApi.Pool,System.String,System.Byte[],System.Byte[])">VerifySignatureAsync(Wallet, Pool, String, Byte[], Byte[])</h4>
+  <div class="markdown level1 summary"><p>Verifies a signature created by a key associated with the specified DID.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;bool&gt; VerifySignatureAsync(Wallet wallet, Pool pool, string did, byte[] msg, byte[] signature)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet containing the DID of the signed message.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html">Pool</a></td>
+        <td><span class="parametername">pool</span></td>
+        <td><p>The node pool to obtain the verkey from if required.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">did</span></td>
+        <td><p>The DID used to sign the message.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.byte(v=vs.110).aspx">Byte</a>[]</td>
+        <td><span class="parametername">msg</span></td>
+        <td><p>The message that was signed.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.byte(v=vs.110).aspx">Byte</a>[]</td>
+        <td><span class="parametername">signature</span></td>
+        <td><p>The signature to verify.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.boolean(v=vs.110).aspx">Boolean</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to true if the message is valid, otherwise false.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_SignusApi_Signus_VerifySignatureAsync_Hyperledger_Indy_WalletApi_Wallet_Hyperledger_Indy_PoolApi_Pool_System_String_System_Byte___System_Byte____remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>If the wallet specified in the <code data-dev-comment-type="paramref" class="paramref">wallet</code> parameter contains a 
+verkey associated with the DID provided in the <code data-dev-comment-type="paramref" class="paramref">did</code> parameter and the
+value has not expired this verkey will be used to verify the signature. 
+</p>
+<p>On the other hand, if the verkey value in the wallet has expired or the verkey was not 
+stored in the wallet then the verkey is read from the ledger in the node pool specified in the 
+<code data-dev-comment-type="paramref" class="paramref">pool</code> parameter and the wallet will be updated with the new verkey if required. 
+</p>
+<p>For further information on registering a verkey for a DID see the <a class="xref" href="Hyperledger.Indy.SignusApi.Signus.html#Hyperledger_Indy_SignusApi_Signus_StoreTheirDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">StoreTheirDidAsync(Wallet, String)</a>
+method and for information on the expiry of values in a wallet see the 
+<a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_CreateWalletAsync_System_String_System_String_System_String_System_String_System_String_">CreateWalletAsync(String, String, String, String, String)</a>
+and <a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_OpenWalletAsync_System_String_System_String_System_String_">OpenWalletAsync(String, String, String)</a> methods.
+</p>
+</div>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            Copyright &copy; 2017 The Linux Foundation&reg;
+            
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

@@ -1,5 +1,5 @@
 ﻿using Hyperledger.Indy.CryptoApi;
-using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.DidApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
