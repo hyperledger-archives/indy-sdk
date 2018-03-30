@@ -651,8 +651,8 @@ pub extern fn indy_build_pool_config_request(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: Id of Identity stored in secured Wallet.
-/// writes:
-/// force:
+/// action:
+/// datetime:
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
