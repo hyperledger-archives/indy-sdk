@@ -9,7 +9,6 @@ use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use std::collections::{HashMap, HashSet};
 
-
 #[derive(Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Request<T: serde::Serialize> {
@@ -216,18 +215,6 @@ impl GetSchemaOperation {
 }
 
 impl JsonEncodable for GetSchemaOperation {}
-
-#[derive(Deserialize, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct GetSchemaResultData {
-    pub attr_names: Vec<String>,
-    pub name: String,
-    pub origin: String,
-    pub seq_no: String,
-    #[serde(rename = "type")]
-    pub _type: Option<String>,
-    pub version: String
-}
 
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct GetSchemaOperationData {

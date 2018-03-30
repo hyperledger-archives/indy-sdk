@@ -9,10 +9,12 @@ use utils::timeout::TimeoutUtils;
 use utils::anoncreds::AnoncredsUtils;
 use utils::blob_storage::BlobStorageUtils;
 use utils::constants::*;
-use utils::anoncreds_types::{CredentialDefinition, RevocationRegistryDefinition};
 
 use std::ffi::CString;
 use std::ptr::null;
+
+use utils::domain::credential_definition::CredentialDefinitionV1 as CredentialDefinition;
+use utils::domain::revocation_registry_definition::RevocationRegistryDefinitionV1;
 
 pub struct LedgerUtils {}
 
@@ -398,9 +400,9 @@ impl LedgerUtils {
 
     pub fn post_schema_to_ledger(pool_handle: i32, wallet_handle: i32, did: &str) -> (i32, String) {
         let (_schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(&did,
-                                                                            GVT_SCHEMA_NAME,
-                                                                            SCHEMA_VERSION,
-                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
+                                                                             GVT_SCHEMA_NAME,
+                                                                             SCHEMA_VERSION,
+                                                                             GVT_SCHEMA_ATTRIBUTES).unwrap();
 
         let schema_request = LedgerUtils::build_schema_request(did, &schema_json).unwrap();
         let schema_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
@@ -444,7 +446,7 @@ impl LedgerUtils {
                                                                    &AnoncredsUtils::default_rev_reg_config(),
                                                                    tails_writer_handle).unwrap();
 
-        let mut revoc_reg_def = serde_json::from_str::<RevocationRegistryDefinition>(&revoc_reg_def_json).unwrap();
+        let mut revoc_reg_def = serde_json::from_str::<RevocationRegistryDefinitionV1>(&revoc_reg_def_json).unwrap();
 
         let rev_reg_id = AnoncredsUtils::build_id(&did, "\x04", Some(&cred_def_id_in_ledger), REVOC_REG_TYPE, TAG_1);
         revoc_reg_def.id = rev_reg_id.clone();
@@ -464,10 +466,8 @@ impl LedgerUtils {
         (rev_reg_id, revoc_reg_def_json, rev_reg_entry_json)
     }
 
-    pub fn post_rev_reg_entry(pool_handle: i32, wallet_handle: i32, did: &str, rev_reg_id: &str, _rev_reg_entry_json: &str) -> String {
-        let rev_reg_entry_value = r#"{"accum":"123456789", "issued":[], "revoked":[]}"#; // TODO: Node crashes without issued or revoked
-
-        let rev_reg_entry_request = LedgerUtils::build_revoc_reg_entry_request(&did, &rev_reg_id, REVOC_REG_TYPE, rev_reg_entry_value).unwrap();
+    pub fn post_rev_reg_entry(pool_handle: i32, wallet_handle: i32, did: &str, rev_reg_id: &str, rev_reg_entry_json: &str) -> String {
+        let rev_reg_entry_request = LedgerUtils::build_revoc_reg_entry_request(&did, &rev_reg_id, REVOC_REG_TYPE, rev_reg_entry_json).unwrap();
         LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &rev_reg_entry_request).unwrap()
     }
 

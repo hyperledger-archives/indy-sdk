@@ -10,7 +10,7 @@ use self::types::*;
 use errors::common::CommonError;
 use serde_json::Value;
 use services::ledger::constants::{NYM, REVOC_REG_DEF};
-use services::anoncreds::types::RevocationRegistryDefinition;
+use domain::revocation_registry_definition::RevocationRegistryDefinition;
 use self::indy_crypto::utils::json::JsonDecodable;
 
 use std::collections::HashMap;
@@ -229,10 +229,6 @@ impl LedgerService {
 
     fn get_req_id() -> u64 {
         time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64
-    }
-
-    fn build_id(identifier: &str, marker: &str, related_entity_id: Option<&str>, _type: &str, tag: &str) -> String {
-        format!("{}{}{}{}{}", identifier, marker, related_entity_id.unwrap_or(""), _type, tag)
     }
 }
 

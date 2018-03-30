@@ -4,7 +4,7 @@ extern crate sha2;
 
 use errors::common::CommonError;
 use services::blob_storage::BlobStorageService;
-use services::anoncreds::types::RevocationRegistryDefinition;
+use domain::revocation_registry_definition::RevocationRegistryDefinitionV1;
 
 use self::indy_crypto::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
 use self::indy_crypto::errors::IndyCryptoError;
@@ -25,7 +25,7 @@ pub struct SDKTailsAccessor {
 impl SDKTailsAccessor {
     pub fn new(tails_service: Rc<BlobStorageService>,
                tails_reader_handle: i32,
-               rev_reg_def: &RevocationRegistryDefinition) -> Result<SDKTailsAccessor, CommonError> {
+               rev_reg_def: &RevocationRegistryDefinitionV1) -> Result<SDKTailsAccessor, CommonError> {
         let tails_hash = base64::decode(&rev_reg_def.value.tails_hash)
             .map_err(|err| CommonError::InvalidState(format!("Invalid base64 for Tails hash")))?;
 

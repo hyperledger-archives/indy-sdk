@@ -18,15 +18,12 @@ use utils::constants::*;
 
 use std::collections::{HashSet, HashMap};
 
-use super::anoncreds_types::{
-    CredentialInfo,
-    CredentialsForProofRequest,
-    Schema,
-    AttributeValues,
-    CredentialDefinitionConfig,
-    RevocationRegistryConfig,
-    CredentialDefinition
-};
+use utils::domain::schema::{Schema, SchemaV1};
+use utils::domain::credential_definition::{CredentialDefinition, CredentialDefinitionConfig};
+use utils::domain::revocation_registry_definition::RevocationRegistryConfig;
+use utils::domain::credential::{AttributeValues, CredentialInfo};
+use utils::domain::credential_for_proof_request::CredentialsForProofRequest;
+
 
 pub struct AnoncredsUtils {}
 
@@ -379,8 +376,8 @@ impl AnoncredsUtils {
         AnoncredsUtils::build_id(ISSUER_DID, "\x02", None, GVT_SCHEMA_NAME, SCHEMA_VERSION)
     }
 
-    pub fn gvt_schema() -> Schema {
-        Schema {
+    pub fn gvt_schema() -> SchemaV1 {
+        SchemaV1 {
             id: AnoncredsUtils::gvt_schema_id().to_string(),
             version: SCHEMA_VERSION.to_string(),
             name: GVT_SCHEMA_NAME.to_string(),
@@ -389,15 +386,15 @@ impl AnoncredsUtils {
     }
 
     pub fn gvt_schema_json() -> String {
-        serde_json::to_string(&AnoncredsUtils::gvt_schema()).unwrap()
+        serde_json::to_string(&Schema::SchemaV1(AnoncredsUtils::gvt_schema())).unwrap()
     }
 
     pub fn xyz_schema_id() -> String {
         AnoncredsUtils::build_id(ISSUER_DID, "\x02", None, XYZ_SCHEMA_NAME, SCHEMA_VERSION)
     }
 
-    pub fn xyz_schema() -> Schema {
-        Schema {
+    pub fn xyz_schema() -> SchemaV1 {
+        SchemaV1 {
             id: AnoncredsUtils::xyz_schema_id().to_string(),
             version: SCHEMA_VERSION.to_string(),
             name: XYZ_SCHEMA_NAME.to_string(),
@@ -406,7 +403,7 @@ impl AnoncredsUtils {
     }
 
     pub fn xyz_schema_json() -> String {
-        serde_json::to_string(&AnoncredsUtils::xyz_schema()).unwrap()
+        serde_json::to_string(&Schema::SchemaV1(AnoncredsUtils::xyz_schema())).unwrap()
     }
 
     pub fn issuer_1_gvt_cred_def_id() -> String {
@@ -515,6 +512,7 @@ impl AnoncredsUtils {
 
     pub fn credential_def_json() -> String {
         r#"{
+           "ver":"1",
            "id":"NcYxiDXkpYi6ov5FcYDi1e:\u0003:NcYxiDXkpYi6ov5FcYDi1e:\u0002:gvt:1.0:CL:TAG_1",
            "schemaId":"NcYxiDXkpYi6ov5FcYDi1e:\u0002:gvt:1.0",
            "type":"CL",
