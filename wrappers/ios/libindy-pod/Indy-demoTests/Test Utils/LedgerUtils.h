@@ -106,6 +106,22 @@
                                                force:(BOOL)force
                                           resultJson:(NSString **)resultJson;
 
+// MARK: - Revocation registry definition request
+- (NSError *)buildRevocRegDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                                type:(NSString *)type
+                                                 tag:(NSString *)tag
+                                           credDefId:(NSString *)credDefId
+                                               value:(NSString *)value
+                                          resultJson:(NSString **)resultJson;
+
+
+// MARK: - Revocation registry delta request
+- (NSError *)buildRevocRegDeltaRequestWithSubmitterDid:(NSString *)submitterDid
+                                                  type:(NSString *)type
+                                         revocRegDefId:(NSString *)revocRegDefId
+                                                 value:(NSString *)value
+                                            resultJson:(NSString **)resultJson;
+
 // MARK: - Sign Request
 - (NSError *)signRequestWithWalletHandle:(IndyHandle)walletHandle
                             submitterdid:(NSString *)submitterDid

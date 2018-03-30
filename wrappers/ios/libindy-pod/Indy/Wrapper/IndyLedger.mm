@@ -413,4 +413,58 @@
     }
 }
 
+// MARK: - Revocation registry definition request
+
++ (void)buildRevocRegDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                           type:(NSString *)type
+                                            tag:(NSString *)tag
+                                      credDefId:(NSString *)credDefId
+                                          value:(NSString *)value
+                                     completion:(void (^)(NSError *error, NSString *requestJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_revoc_reg_def_request(handle,
+            [submitterDid UTF8String],
+            [type UTF8String],
+            [tag UTF8String],
+            [credDefId UTF8String],
+            [value UTF8String],
+            IndyWrapperCommon3PSCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
+// MARK: - Revocation registry delta request
+
++ (void)buildRevocRegDeltaRequestWithSubmitterDid:(NSString *)submitterDid
+                                             type:(NSString *)type
+                                    revocRegDefId:(NSString *)revocRegDefId
+                                            value:(NSString *)value
+                                       completion:(void (^)(NSError *error, NSString *requestJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_revoc_reg_delta_request(handle,
+            [submitterDid UTF8String],
+            [type UTF8String],
+            [revocRegDefId UTF8String],
+            [value UTF8String],
+            IndyWrapperCommon3PSCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 @end

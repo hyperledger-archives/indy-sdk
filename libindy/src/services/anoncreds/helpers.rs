@@ -2,9 +2,11 @@ extern crate indy_crypto;
 
 use errors::common::CommonError;
 
-use services::anoncreds::types::{AttributeInfo, PredicateInfo, AttributeValues};
-use services::anoncreds::constants::*;
+use domain::credential::AttributeValues;
+use domain::proof_request::{AttributeInfo, PredicateInfo};
+
 use self::indy_crypto::cl::{issuer, verifier, CredentialSchema, CredentialValues, SubProofRequest};
+
 
 use std::collections::{HashSet, HashMap};
 
@@ -40,9 +42,4 @@ pub fn build_sub_proof_request(attrs_for_credential: &Vec<AttributeInfo>, predic
     }
 
     Ok(sub_proof_request_builder.finalize()?)
-}
-
-pub fn build_id(identifier: &str, marker: &str, related_entity_id: Option<&str>, word1: &str, word2: &str) -> String {
-    let related_entity_id = related_entity_id.map(|s| format!("{}{}", s, DELIMITER)).unwrap_or(String::new());
-    format!("{}{}{}{}{}{}{}{}", identifier, DELIMITER, marker, DELIMITER, related_entity_id, word1, DELIMITER, word2)
 }

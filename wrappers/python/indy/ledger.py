@@ -165,11 +165,15 @@ async def build_nym_request(submitter_did: str,
     """
     Builds a NYM request.
 
-    :param submitter_did: Id of Identity stored in secured Wallet.
-    :param target_did: Id of Identity stored in secured Wallet.
-    :param ver_key: verification key
-    :param alias: alias
-    :param role: Role of a user NYM record
+    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
+    :param ver_key: Target identity verification key as base58-encoded string.
+    :param alias: NYM's alias.
+    :param role: Role of a user NYM record:
+                             null (common USER)
+                             TRUSTEE
+                             STEWARD
+                             TRUST_ANCHOR
     :return: Request result as json.
     """
 
@@ -212,11 +216,11 @@ async def build_attrib_request(submitter_did: str,
     """
     Builds an ATTRIB request.
 
-    :param submitter_did: Id of Identity stored in secured Wallet.
-    :param target_did: Id of Identity stored in secured Wallet.
-    :param xhash: Hash of attribute data
-    :param raw: represented as json, where key is attribute name and value is it's value
-    :param enc: Encrypted attribute data
+    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
+    :param xhash: (Optional) Hash of attribute data.
+    :param raw: (Optional) Json, where key is attribute name and value is attribute value.
+    :param enc: (Optional) Encrypted value attribute data.
     :return: Request result as json.
     """
 
@@ -259,11 +263,11 @@ async def build_get_attrib_request(submitter_did: str,
     """
     Builds a GET_ATTRIB request.
 
-    :param submitter_did: Id of Identity stored in secured Wallet.
-    :param target_did: Id of Identity stored in secured Wallet.
-    :param xhash: Hash of attribute data
-    :param raw: represented as json, where key is attribute name and value is it's value
-    :param enc: Encrypted attribute data
+    :param submitter_did: DID of the read request sender.
+    :param target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
+    :param xhash: (Optional) Requested attribute name.
+    :param raw: (Optional) Requested attribute hash.
+    :param enc: (Optional) Requested attribute encrypted value.
     :return: Request result as json.
     """
 
@@ -301,10 +305,10 @@ async def build_get_attrib_request(submitter_did: str,
 async def build_get_nym_request(submitter_did: str,
                                 target_did: str) -> str:
     """
-    Builds a GET_NYM request.
+    Builds a GET_NYM request. Request to get information about a DID (NYM).
 
-    :param submitter_did: Id of Identity stored in secured Wallet.
-    :param target_did: Id of Identity stored in secured Wallet.
+    :param submitter_did: DID of the read request sender.
+    :param target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
     :return: Request result as json.
     """
 
@@ -333,10 +337,14 @@ async def build_get_nym_request(submitter_did: str,
 async def build_schema_request(submitter_did: str,
                                data: str) -> str:
     """
-    Builds a SCHEMA request.
+    Builds a SCHEMA request. Request to add Claim's schema.
 
-    :param submitter_did: Id of Identity stored in secured Wallet.
-    :param data: name, version, type, attr_names (ip, port, keys)
+    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param data: {
+        attr_names: array of attribute name strings
+        name: Schema's name string
+        version: Schema's version string
+    }
     :return: Request result as json.
     """
 
@@ -366,11 +374,15 @@ async def build_get_schema_request(submitter_did: str,
                                    dest: str,
                                    data: str) -> str:
     """
-    Builds a GET_SCHEMA request.
+    Builds a GET_SCHEMA request. Request to get Claim's Schema.
 
-    :param submitter_did: Id of Identity stored in secured Wallet.
-    :param dest: Id of Identity stored in secured Wallet.
-    :param data: name, version
+    :param submitter_did: DID of the read request sender.
+    :param dest: Schema Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
+                 It differs from submitter_did field.
+    :param data: {
+        name (string): Schema's name string
+        version (string): Schema's version string
+    }
     :return: Request result as json.
     """
 
@@ -404,12 +416,16 @@ async def build_claim_def_txn(submitter_did: str,
                               signature_type: str,
                               data: str) -> str:
     """
-    Builds an CLAIM_DEF request.
+    Builds an CLAIM_DEF request. Request to add a claim definition (in particular, public key),
+    that Issuer creates for a particular Claim Schema.
 
-    :param submitter_did: Id of Identity stored in secured Wallet.
-    :param xref: Seq. number of schema
-    :param signature_type: signature type (only CL supported now)
-    :param data: components of a key in json: N, R, S, Z
+    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param xref: Sequence number of a Schema transaction the claim definition is created for.
+    :param signature_type: Type of the claim definition. CL is the only supported type now.
+    :param data: Dictionary with Claim Definition's data: {
+        primary: primary claim public key
+        revocation: revocation claim public key
+    }
     :return: Request result as json.
     """
 
@@ -446,12 +462,13 @@ async def build_get_claim_def_txn(submitter_did: str,
                                   signature_type: str,
                                   origin: str) -> str:
     """
-    Builds a GET_CLAIM_DEF request.
+   Builds a GET_CLAIM_DEF request. Request to get a claim definition (in particular, public key),
+   that Issuer creates for a particular Claim Schema.
 
-    :param submitter_did: Id of Identity stored in secured Wallet.
-    :param xref: Seq. number of schema
-    :param signature_type: signature type (only CL supported now)
-    :param origin: issuer did
+    :param submitter_did: DID of read request sender.
+    :param xref: Sequence number of a Schema transaction the claim definition is created for.
+    :param signature_type: Type of the claim definition. CL is the only supported type now.
+    :param origin: Claim Definition Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
     :return: Request result as json.
     """
 
@@ -487,11 +504,19 @@ async def build_node_request(submitter_did: str,
                              target_did: str,
                              data: str) -> str:
     """
-    Builds a NODE request.
+    Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
 
-    :param submitter_did: Id of Identity stored in secured Wallet.
-    :param target_did: Id of Identity stored in secured Wallet.
-    :param data: id of a target NYM record
+    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param target_did: Target Node's DID.  It differs from submitter_did field.
+    :param data: Data associated with the Node: {
+        alias: string - Node's alias
+        blskey: string - (Optional) BLS multi-signature key as base58-encoded string.
+        client_ip: string - (Optional) Node's client listener IP address.
+        client_port: string - (Optional) Node's client listener port.
+        node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.
+        node_port: string - (Optional) The port other Nodes use to communicate with this Node.
+        services: array<string> - (Optional) The service of the Node. VALIDATOR is the only supported one now.
+    }
     :return: Request result as json.
     """
 
@@ -523,10 +548,10 @@ async def build_node_request(submitter_did: str,
 async def build_get_txn_request(submitter_did: str,
                                 data: int) -> str:
     """
-    Builds a GET_TXN request.
+    Builds a GET_TXN request. Request to get any transaction by its seq_no.
 
-    :param submitter_did: Id of Identity stored in secured Wallet.
-    :param data: seq_no of transaction in ledger
+    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param data: seq_no of transaction in ledger.
     :return: Request result as json.
     """
 
@@ -556,11 +581,13 @@ async def build_pool_config_request(submitter_did: str,
                                     writes: bool,
                                     force: bool) -> str:
     """
-    Builds a POOL_CONFIG request.
+    Builds a POOL_CONFIG request. Request to change Pool's configuration.
 
-    :param submitter_did: Id of Identity stored in secured Wallet.
-    :param writes:
-    :param force:
+    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param writes: Whether any write requests can be processed by the pool
+                   (if false, then pool goes to read-only state). True by default.
+    :param force: Whether we should apply transaction (for example, move pool to read-only state)
+                  without waiting for consensus of this transaction
     :return: Request result as json.
     """
 
@@ -600,18 +627,21 @@ async def build_pool_upgrade_request(submitter_did: str,
                                      reinstall: bool,
                                      force: bool) -> str:
     """
-    Builds a POOL_UPGRADE request.
+    Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
+    It upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).
 
-    :param submitter_did: Id of Identity stored in secured Wallet.
-    :param name:
-    :param version:
-    :param action:
-    :param _sha256:
-    :param _timeout:
-    :param schedule:
-    :param justification:
-    :param reinstall:
-    :param force:
+    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param name: Human-readable name for the upgrade.
+    :param version: The version of indy-node package we perform upgrade to.
+                    Must be greater than existing one (or equal if reinstall flag is True).
+    :param action: Either start or cancel.
+    :param _sha256: sha256 hash of the package.
+    :param _timeout: (Optional) Limits upgrade time on each Node.
+    :param schedule: (Optional) Schedule of when to perform upgrade on each node. Map Node DIDs to upgrade time.
+    :param justification: (Optional) justification string for this particular Upgrade.
+    :param reinstall: Whether it's allowed to re-install the same version. False by default.
+    :param force: Whether we should apply transaction (schedule Upgrade) without waiting
+                  for consensus of this transaction.
     :return: Request result as json.
     """
 
@@ -650,4 +680,99 @@ async def build_pool_upgrade_request(submitter_did: str,
 
     res = request_json.decode()
     logger.debug("build_pool_upgrade_request: <<< res: %r", res)
+    return res
+
+
+async def build_revoc_reg_def_request(submitter_did: str,
+                                      _type: str,
+                                      tag: str,
+                                      cred_def_id: str,
+                                      value: str) -> str:
+    """
+    Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry to an exists claim definition.
+
+    :param submitter_did:DID of the submitter stored in secured Wallet.
+    :param _type: Revocation Registry type (only CL_ACCUM is supported for now).
+    :param tag: Unique descriptive ID of the Registry.
+    :param cred_def_id:  ID of the corresponding ClaimDef
+    :param value: Registry-specific data: {
+        issuance_type: string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+        max_cred_num: number - Maximum number of credentials the Registry can serve.
+        public_keys: <public_keys> - Registry's public key.
+        tails_hash: string - Hash of tails.
+        tails_locaiton: string - Location of tails file.
+    }
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_revoc_reg_def_request: >>> submitter_did: %r, _type: %r, tag: %r, cred_def_id: %r, value: %r",
+                 submitter_did, _type, tag, cred_def_id, value)
+
+    if not hasattr(build_revoc_reg_def_request, "cb"):
+        logger.debug("build_revoc_reg_def_request: Creating callback")
+        build_revoc_reg_def_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_type = c_char_p(_type.encode('utf-8'))
+    c_tag = c_char_p(tag.encode('utf-8'))
+    c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
+    c_value = c_char_p(value.encode('utf-8'))
+
+    request_json = await do_call('indy_build_revoc_reg_def_request',
+                                 c_submitter_did,
+                                 c_type,
+                                 c_tag,
+                                 c_cred_def_id,
+                                 c_value,
+                                 build_revoc_reg_def_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_revoc_reg_def_request: <<< res: %r", res)
+    return res
+
+
+async def build_revoc_reg_delta_request(submitter_did: str,
+                                        _type: str,
+                                        revoc_reg_def_id: str,
+                                        value: str) -> str:
+    """
+    Builds a REVOC_REG_ENTRY request.
+    Request to add the RevocReg entry containing the new accumulator value and issued/revoked indices.
+    This is just a delta of indices, not the whole list. So, it can be sent each time a new claim is issued/revoked.
+
+    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param _type: Revocation Registry type (only CL_ACCUM is supported for now).
+    :param revoc_reg_def_id:  ID of the corresponding RevocRegDef.
+    :param value: Registry-specific data: {
+           issued: array<number> - an array of issued indices.
+           revoked: array<number> an array of revoked indices
+           prev_accum: previous accumulator value.
+           accum: current accumulator value.
+        }
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_revoc_reg_delta_request: >>> submitter_did: %r, _type: %r, revoc_reg_def_id: %r, value: %r",
+                 submitter_did, _type, revoc_reg_def_id, value)
+
+    if not hasattr(build_revoc_reg_delta_request, "cb"):
+        logger.debug("build_revoc_reg_delta_request: Creating callback")
+        build_revoc_reg_delta_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_type = c_char_p(_type.encode('utf-8'))
+    c_revoc_reg_def_id = c_char_p(revoc_reg_def_id.encode('utf-8'))
+    c_value = c_char_p(value.encode('utf-8'))
+
+    request_json = await do_call('indy_build_revoc_reg_delta_request',
+                                 c_submitter_did,
+                                 c_type,
+                                 c_revoc_reg_def_id,
+                                 c_value,
+                                 build_revoc_reg_delta_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_revoc_reg_delta_request: <<< res: %r", res)
     return res

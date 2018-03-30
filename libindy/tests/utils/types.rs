@@ -1,16 +1,6 @@
 extern crate serde_json;
-extern crate indy_crypto;
 
 use std::collections::HashSet;
-
-use self::indy_crypto::cl::*;
-
-
-#[derive(Deserialize, Debug, Serialize, PartialEq)]
-pub struct CredentialDefinitionData {
-    pub primary: CredentialPrimaryPublicKey,
-    pub revocation: Option<serde_json::Value>,
-}
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub enum ResponseType {
@@ -79,28 +69,24 @@ pub struct GetSchemaReplyResult {
     pub  dest: Option<String>
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetOperationResult {
+    pub identifier: String,
+    pub req_id: u64,
+    //For tests/ In normal case seq_no exists
+    #[serde(rename = "type")]
+    pub  _type: String,
+    pub seq_no: Option<i32>,
+    pub  data: Option<serde_json::Value>
+}
+
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 pub struct GetSchemaResultData {
     pub attr_names: HashSet<String>,
     pub name: String,
     pub origin: Option<String>,
     pub version: String
-}
-
-#[derive(Deserialize, PartialEq, Debug)]
-pub struct GetClaimDefReplyResult {
-    pub identifier: String,
-    #[serde(rename = "reqId")]
-    pub req_id: u64,
-    #[serde(rename = "seqNo")]
-    pub seq_no: i32,
-    #[serde(rename = "type")]
-    pub _type: String,
-    pub data: CredentialDefinitionData,
-    pub origin: String,
-    pub signature_type: String,
-    #[serde(rename = "ref")]
-    pub  _ref: i32
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -125,15 +111,6 @@ pub struct SchemaResult {
     #[serde(rename = "type")]
     pub _type: String,
     pub data: Option<SchemaData>
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Schema {
-    pub id: String,
-    pub name: String,
-    pub version: String,
-    #[serde(rename = "attrNames")]
-    pub attr_names: HashSet<String>
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

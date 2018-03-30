@@ -36,5 +36,5 @@ pub mod cstring;
 #[path = "../../src/utils/inmem_wallet.rs"]
 pub mod inmem_wallet;
 
-#[path = "../../src/services/anoncreds/types.rs"]
-pub mod anoncreds_types;
+#[path = "../../src/domain/mod.rs"]
+pub mod domain;

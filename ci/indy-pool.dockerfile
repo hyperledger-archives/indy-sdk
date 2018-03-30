@@ -24,9 +24,9 @@ RUN echo "deb https://repo.sovrin.org/deb xenial $indy_stream" >> /etc/apt/sourc
 
 RUN useradd -ms /bin/bash -u $uid indy
 
-ARG indy_plenum_ver=1.2.237
+ARG indy_plenum_ver=1.2.299
 ARG indy_anoncreds_ver=1.0.32
-ARG indy_node_ver=1.2.297
+ARG indy_node_ver=1.3.356
 ARG python3_indy_crypto_ver=0.2.0
 ARG indy_crypto_ver=0.2.0
 

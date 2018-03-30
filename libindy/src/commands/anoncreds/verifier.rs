@@ -5,11 +5,17 @@ use errors::common::CommonError;
 use errors::indy::IndyError;
 
 use services::anoncreds::AnoncredsService;
-use services::anoncreds::types::*;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use self::indy_crypto::cl::RevocationRegistry;
 use self::indy_crypto::utils::json::JsonDecodable;
+
+use domain::schema::{Schema, schemas_map_to_schemas_v1_map};
+use domain::credential_definition::{CredentialDefinition, cred_defs_map_to_cred_defs_v0_map};
+use domain::proof::Proof;
+use domain::proof_request::ProofRequest;
+use domain::revocation_registry_definition::{RevocationRegistryDefinition, rev_reg_defs_map_to_rev_reg_defs_v1_map};
+
 
 pub enum VerifierCommand {
     VerifyProof(
@@ -45,30 +51,30 @@ impl VerifierCommandExecutor {
     fn verify_proof(&self,
                     proof_request_json: &str,
                     proof_json: &str,
-                    credential_schemas_json: &str,
-                    credential_defs_json: &str,
+                    schemas_json: &str,
+                    cred_defs_json: &str,
                     rev_reg_defs_json: &str,
-                    rev_reg_entries_json: &str) -> Result<bool, IndyError> {
-        trace!("verify_proof >>> proof_request_json: {:?}, proof_json: {:?}, credential_schemas_json: {:?}, credential_defs_json: {:?},  \
-               rev_reg_defs_json: {:?}, rev_reg_entries_json: {:?}",
-               proof_request_json, proof_json, credential_schemas_json, credential_defs_json, rev_reg_defs_json, rev_reg_entries_json);
+                    rev_reg_json: &str) -> Result<bool, IndyError> {
+        trace!("verify_proof >>> proof_request_json: {:?}, proof_json: {:?}, schemas_json: {:?}, cred_defs_json: {:?},  \
+               rev_reg_defs_json: {:?}, rev_reg_json: {:?}",
+               proof_request_json, proof_json, schemas_json, cred_defs_json, rev_reg_defs_json, rev_reg_json);
 
         let proof_req: ProofRequest = ProofRequest::from_json(proof_request_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize ProofRequest: {:?}", err)))?;
 
-        let credential_schemas: HashMap<String, Schema> = serde_json::from_str(credential_schemas_json)
+        let schemas: HashMap<String, Schema> = serde_json::from_str(schemas_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of Schema: {:?}", err)))?;
 
-        let credential_defs: HashMap<String, CredentialDefinition> = serde_json::from_str(credential_defs_json)
+        let cred_defs: HashMap<String, CredentialDefinition> = serde_json::from_str(cred_defs_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of CredentialDefinition: {:?}", err)))?;
 
         let rev_reg_defs: HashMap<String, RevocationRegistryDefinition> = serde_json::from_str(rev_reg_defs_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationRegistryDef: {:?}", err)))?;
 
-        let rev_regs: HashMap<String, HashMap<u64, RevocationRegistry>> = serde_json::from_str(rev_reg_entries_json)
+        let rev_regs: HashMap<String, HashMap<u64, RevocationRegistry>> = serde_json::from_str(rev_reg_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationRegistryEntry: {:?}", err)))?;
 
-        let proof: FullProof = FullProof::from_json(&proof_json)
+        let proof: Proof = Proof::from_json(&proof_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Proof: {:?}", err)))?;
 
         let requested_attrs: HashSet<String> =
@@ -133,9 +139,9 @@ impl VerifierCommandExecutor {
 
         let result = self.anoncreds_service.verifier.verify(&proof,
                                                             &proof_req,
-                                                            &credential_schemas,
-                                                            &credential_defs,
-                                                            &rev_reg_defs,
+                                                            &schemas_map_to_schemas_v1_map(schemas),
+                                                            &cred_defs_map_to_cred_defs_v0_map(cred_defs),
+                                                            &rev_reg_defs_map_to_rev_reg_defs_v1_map(rev_reg_defs),
                                                             &rev_regs)?;
 
         trace!("verify_proof <<< result: {:?}", result);

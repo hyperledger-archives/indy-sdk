@@ -1,15 +1,29 @@
 extern crate indy_crypto;
 
+use domain::credential::{Credential, CredentialInfo, AttributeValues};
+use domain::credential_offer::CredentialOffer;
+use domain::credential_request::CredentialRequestMetadata;
+use domain::requested_credential::RequestedCredentials;
+use domain::proof_request::{ProofRequest, RequestedAttributeInfo, RequestedPredicateInfo, PredicateInfo, NonRevocedInterval};
+use domain::proof::{Identifier, RequestedProof, Proof, RevealedAttributeInfo, SubProofReferent};
+use domain::schema::SchemaV1;
+use domain::credential_definition::CredentialDefinitionV0;
+use domain::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use domain::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
+use domain::revocation_state::RevocationState;
+use domain::requested_credential::ProvingCredentialKey;
+use domain::filter::{Filter, Filtering};
+
 use errors::common::CommonError;
 use errors::anoncreds::AnoncredsError;
-use services::anoncreds::types::*;
-use std::collections::HashMap;
-use std::collections::hash_map::Entry;
-use services::anoncreds::types::{CredentialInfo, RequestedCredentials, ProofRequest, PredicateInfo, Identifier};
+
+use services::anoncreds::helpers::*;
 
 use self::indy_crypto::cl::*;
 use self::indy_crypto::cl::prover::Prover as CryptoProver;
-use services::anoncreds::helpers::*;
+
+use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 
 pub struct Prover {}
 
@@ -29,15 +43,15 @@ impl Prover {
     }
 
     pub fn new_credential_request(&self,
-                                  credential_def: &CredentialDefinition,
+                                  cred_def: &CredentialDefinitionV0,
                                   master_secret: &MasterSecret,
                                   credential_offer: &CredentialOffer) -> Result<(BlindedMasterSecret,
                                                                                  MasterSecretBlindingData,
                                                                                  BlindedMasterSecretCorrectnessProof), CommonError> {
-        trace!("new_credential_request >>> credential_def: {:?}, master_secret: {:?}, credential_offer: {:?}",
-               credential_def, master_secret, credential_offer);
+        trace!("new_credential_request >>> cred_def: {:?}, master_secret: {:?}, credential_offer: {:?}",
+               cred_def, master_secret, credential_offer);
 
-        let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.value.primary, credential_def.value.revocation.as_ref())?;
+        let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.primary, cred_def.revocation.as_ref())?;
 
         let (blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof) =
             CryptoProver::blind_master_secret(&credential_pub_key,
@@ -53,23 +67,23 @@ impl Prover {
 
     pub fn process_credential(&self,
                               credential: &mut Credential,
-                              credential_request_metadata: &CredentialRequestMetadata,
+                              cred_request_metadata: &CredentialRequestMetadata,
                               master_secret: &MasterSecret,
-                              credential_def: &CredentialDefinition,
-                              rev_reg_def: Option<&RevocationRegistryDefinition>) -> Result<(), CommonError> {
-        trace!("process_credential >>> credential: {:?}, credential_request_metadata: {:?}, master_secret: {:?}, credential_def: {:?}, rev_reg_def: {:?}",
-               credential, credential_request_metadata, master_secret, credential_def, rev_reg_def);
+                              cred_def: &CredentialDefinitionV0,
+                              rev_reg_def: Option<&RevocationRegistryDefinitionV1>) -> Result<(), CommonError> {
+        trace!("process_credential >>> credential: {:?}, cred_request_metadata: {:?}, master_secret: {:?}, cred_def: {:?}, rev_reg_def: {:?}",
+               credential, cred_request_metadata, master_secret, cred_def, rev_reg_def);
 
-        let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.value.primary, credential_def.value.revocation.as_ref())?;
+        let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.primary, cred_def.revocation.as_ref())?;
         let credential_values = build_credential_values(&credential.values)?;
 
         CryptoProver::process_credential_signature(&mut credential.signature,
                                                    &credential_values,
                                                    &credential.signature_correctness_proof,
-                                                   &credential_request_metadata.master_secret_blinding_data,
+                                                   &cred_request_metadata.master_secret_blinding_data,
                                                    &master_secret,
                                                    &credential_pub_key,
-                                                   &credential_request_metadata.nonce,
+                                                   &cred_request_metadata.nonce,
                                                    rev_reg_def.as_ref().map(|r_reg_def| &r_reg_def.value.public_keys.accum_key),
                                                    credential.rev_reg.as_ref(),
                                                    credential.witness.as_ref())?;
@@ -131,11 +145,11 @@ impl Prover {
                         proof_req: &ProofRequest,
                         requested_credentials: &RequestedCredentials,
                         master_secret: &MasterSecret,
-                        schemas: &HashMap<String, Schema>,
-                        credential_defs: &HashMap<String, CredentialDefinition>,
-                        rev_states: &HashMap<String, HashMap<u64, RevocationState>>) -> Result<FullProof, AnoncredsError> {
-        trace!("create_proof >>> credentials: {:?}, proof_req: {:?}, requested_credentials: {:?}, master_secret: {:?}, schemas: {:?}, credential_defs: {:?}, rev_states: {:?}",
-               credentials, proof_req, requested_credentials, master_secret, schemas, credential_defs, rev_states);
+                        schemas: &HashMap<String, SchemaV1>,
+                        cred_defs: &HashMap<String, CredentialDefinitionV0>,
+                        rev_states: &HashMap<String, HashMap<u64, RevocationState>>) -> Result<Proof, AnoncredsError> {
+        trace!("create_proof >>> credentials: {:?}, proof_req: {:?}, requested_credentials: {:?}, master_secret: {:?}, schemas: {:?}, cred_defs: {:?}, rev_states: {:?}",
+               credentials, proof_req, requested_credentials, master_secret, schemas, cred_defs, rev_states);
 
         let mut proof_builder = CryptoProver::new_proof_builder()?;
 
@@ -154,12 +168,12 @@ impl Prover {
         for (cred_key, &(ref req_attrs_for_cred, ref req_predicates_for_cred)) in credentials_for_proving.iter() {
             let credential: &Credential = credentials.get(cred_key.cred_id.as_str())
                 .ok_or(CommonError::InvalidStructure(format!("Credential not found by id: {:?}", cred_key.cred_id)))?;
-            let schema = schemas.get(&credential.schema_id())
+            let schema: &SchemaV1 = schemas.get(&credential.schema_id())
                 .ok_or(CommonError::InvalidStructure(format!("Schema not found by id: {:?}", credential.schema_id())))?;
-            let credential_definition: &CredentialDefinition = credential_defs.get(&credential.cred_def_id)
+            let cred_def: &CredentialDefinitionV0 = cred_defs.get(&credential.cred_def_id)
                 .ok_or(CommonError::InvalidStructure(format!("CredentialDefinition not found by id: {:?}", credential.cred_def_id)))?;
 
-            let rev_state = if credential_definition.value.revocation.is_some() {
+            let rev_state = if cred_def.revocation.is_some() {
                 let timestamp = cred_key.timestamp.clone().ok_or(CommonError::InvalidStructure(format!("Timestamp not found")))?;
                 let rev_reg_id = credential.rev_reg_id.clone().ok_or(CommonError::InvalidStructure(format!("Revocation Registry Id not found")))?;
                 let rev_states_for_timestamp = rev_states.get(&rev_reg_id)
@@ -168,7 +182,7 @@ impl Prover {
                     .ok_or(CommonError::InvalidStructure(format!("RevocationInfo not found by timestamp: {:?}", timestamp)))?)
             } else { None };
 
-            let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_definition.value.primary, credential_definition.value.revocation.as_ref())?;
+            let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.primary, cred_def.revocation.as_ref())?;
 
             let credential_schema = build_credential_schema(&schema.attr_names)?;
             let credential_values = build_credential_values(&credential.values)?;
@@ -183,7 +197,7 @@ impl Prover {
                                                 rev_state.as_ref().map(|r_info| &r_info.witness))?;
 
             identifiers.push(Identifier {
-                schema_id: credential_definition.schema_id.clone(),
+                schema_id: credential.schema_id(),
                 cred_def_id: credential.cred_def_id.clone(),
                 rev_reg_id: credential.rev_reg_id.clone(),
                 timestamp: cred_key.timestamp.clone()
@@ -200,7 +214,7 @@ impl Prover {
 
         let proof = proof_builder.finalize(&proof_req.nonce, &master_secret)?;
 
-        let full_proof = FullProof {
+        let full_proof = Proof {
             proof,
             requested_proof,
             identifiers
