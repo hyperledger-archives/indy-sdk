@@ -684,47 +684,43 @@ async def build_pool_upgrade_request(submitter_did: str,
 
 
 async def build_revoc_reg_def_request(submitter_did: str,
-                                      _type: str,
-                                      tag: str,
-                                      cred_def_id: str,
-                                      value: str) -> str:
+                                      data: str) -> str:
     """
-    Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry to an exists claim definition.
+    Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry
+    to an exists claim definition.
 
     :param submitter_did:DID of the submitter stored in secured Wallet.
-    :param _type: Revocation Registry type (only CL_ACCUM is supported for now).
-    :param tag: Unique descriptive ID of the Registry.
-    :param cred_def_id:  ID of the corresponding ClaimDef
-    :param value: Registry-specific data: {
-        issuance_type: string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
-        max_cred_num: number - Maximum number of credentials the Registry can serve.
-        public_keys: <public_keys> - Registry's public key.
-        tails_hash: string - Hash of tails.
-        tails_locaiton: string - Location of tails file.
-    }
+    :param data: Revocation Registry specific data:
+        {
+             "id": string - ID of the Revocation Registry,
+             "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+             "tag": string - Unique descriptive ID of the Registry,
+             "credDefId": string - ID of the corresponding ClaimDef,
+             "value": Registry-specific data {
+                 "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+                 "maxCredNum": number - Maximum number of credentials the Registry can serve.
+                 "tailsHash": string - Hash of tails.
+                 "tailsLocation": string - Location of tails file.
+                 "publicKeys": <public_keys> - Registry's public key.
+             }
+         }
+     
     :return: Request result as json.
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_revoc_reg_def_request: >>> submitter_did: %r, _type: %r, tag: %r, cred_def_id: %r, value: %r",
-                 submitter_did, _type, tag, cred_def_id, value)
+    logger.debug("build_revoc_reg_def_request: >>> submitter_did: %r, data: %r", submitter_did, data)
 
     if not hasattr(build_revoc_reg_def_request, "cb"):
         logger.debug("build_revoc_reg_def_request: Creating callback")
         build_revoc_reg_def_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
-    c_type = c_char_p(_type.encode('utf-8'))
-    c_tag = c_char_p(tag.encode('utf-8'))
-    c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
-    c_value = c_char_p(value.encode('utf-8'))
+    c_data = c_char_p(data.encode('utf-8'))
 
     request_json = await do_call('indy_build_revoc_reg_def_request',
                                  c_submitter_did,
-                                 c_type,
-                                 c_tag,
-                                 c_cred_def_id,
-                                 c_value,
+                                 c_data,
                                  build_revoc_reg_def_request.cb)
 
     res = request_json.decode()
@@ -732,18 +728,51 @@ async def build_revoc_reg_def_request(submitter_did: str,
     return res
 
 
-async def build_revoc_reg_delta_request(submitter_did: str,
-                                        _type: str,
+async def build_get_revoc_reg_def_request(submitter_did: str,
+                                          rev_reg_def_id: str) -> str:
+    """
+    Builds a GET_REVOC_REG_DEF request. Request to get a revocation registry definition,
+    that Issuer creates for a particular Credential Definition.
+
+    :param submitter_did:DID of the submitter stored in secured Wallet.
+    :param rev_reg_def_id: ID of the corresponding revocation registry definition.
+
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_get_revoc_reg_def_request: >>> submitter_did: %r, rev_reg_def_id: %r", submitter_did,
+                 rev_reg_def_id)
+
+    if not hasattr(build_get_revoc_reg_def_request, "cb"):
+        logger.debug("build_get_revoc_reg_def_request: Creating callback")
+        build_get_revoc_reg_def_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_rev_reg_def_id = c_char_p(rev_reg_def_id.encode('utf-8'))
+
+    request_json = await do_call('indy_build_get_revoc_reg_def_request',
+                                 c_submitter_did,
+                                 c_rev_reg_def_id,
+                                 build_get_revoc_reg_def_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_get_revoc_reg_def_request: <<< res: %r", res)
+    return res
+
+
+async def build_revoc_reg_entry_request(submitter_did: str,
                                         revoc_reg_def_id: str,
+                                        rev_def_type: str,
                                         value: str) -> str:
     """
-    Builds a REVOC_REG_ENTRY request.
-    Request to add the RevocReg entry containing the new accumulator value and issued/revoked indices.
+    Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
+    the new accumulator value and issued/revoked indices.
     This is just a delta of indices, not the whole list. So, it can be sent each time a new claim is issued/revoked.
 
     :param submitter_did: DID of the submitter stored in secured Wallet.
-    :param _type: Revocation Registry type (only CL_ACCUM is supported for now).
     :param revoc_reg_def_id:  ID of the corresponding RevocRegDef.
+    :param rev_def_type:  Revocation Registry type (only CL_ACCUM is supported for now).
     :param value: Registry-specific data: {
            issued: array<number> - an array of issued indices.
            revoked: array<number> an array of revoked indices
@@ -754,25 +783,102 @@ async def build_revoc_reg_delta_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_revoc_reg_delta_request: >>> submitter_did: %r, _type: %r, revoc_reg_def_id: %r, value: %r",
-                 submitter_did, _type, revoc_reg_def_id, value)
+    logger.debug("build_revoc_reg_entry_request: >>> submitter_did: %r, rev_def_type: %r, revoc_reg_def_id: %r, "
+                 "value: %r", submitter_did, rev_def_type, revoc_reg_def_id, value)
 
-    if not hasattr(build_revoc_reg_delta_request, "cb"):
-        logger.debug("build_revoc_reg_delta_request: Creating callback")
-        build_revoc_reg_delta_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    if not hasattr(build_revoc_reg_entry_request, "cb"):
+        logger.debug("build_revoc_reg_entry_request: Creating callback")
+        build_revoc_reg_entry_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
-    c_type = c_char_p(_type.encode('utf-8'))
+    c_rev_def_type = c_char_p(rev_def_type.encode('utf-8'))
     c_revoc_reg_def_id = c_char_p(revoc_reg_def_id.encode('utf-8'))
     c_value = c_char_p(value.encode('utf-8'))
 
-    request_json = await do_call('indy_build_revoc_reg_delta_request',
+    request_json = await do_call('indy_build_revoc_reg_entry_request',
                                  c_submitter_did,
-                                 c_type,
                                  c_revoc_reg_def_id,
+                                 c_rev_def_type,
                                  c_value,
-                                 build_revoc_reg_delta_request.cb)
+                                 build_revoc_reg_entry_request.cb)
 
     res = request_json.decode()
-    logger.debug("build_revoc_reg_delta_request: <<< res: %r", res)
+    logger.debug("build_revoc_reg_entry_request: <<< res: %r", res)
+    return res
+
+
+async def build_get_revoc_reg_request(submitter_did: str,
+                                      revoc_reg_def_id: str,
+                                      timestamp: int) -> str:
+    """
+    Builds a GET_REVOC_REG request. Request to get the accumulated state of the Revocation Registry
+    by ID. The state is defined by the given timestamp.
+
+    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param revoc_reg_def_id:  ID of the corresponding RevocRegDef.
+    :param timestamp: Requested time represented as a total number of seconds from Unix Epoch
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_get_revoc_reg_request: >>> submitter_did: %r, revoc_reg_def_id: %r, timestamp: %r",
+                 submitter_did, revoc_reg_def_id, timestamp)
+
+    if not hasattr(build_get_revoc_reg_request, "cb"):
+        logger.debug("build_get_revoc_reg_request: Creating callback")
+        build_get_revoc_reg_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_revoc_reg_def_id = c_char_p(revoc_reg_def_id.encode('utf-8'))
+    c_timestamp = c_int64(timestamp)
+
+    request_json = await do_call('indy_build_get_revoc_reg_request',
+                                 c_submitter_did,
+                                 c_revoc_reg_def_id,
+                                 c_timestamp,
+                                 build_get_revoc_reg_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_get_revoc_reg_request: <<< res: %r", res)
+    return res
+
+
+async def build_get_revoc_reg_delta_request(submitter_did: str,
+                                            revoc_reg_def_id: str,
+                                            from_: Optional[int],
+                                            to: int) -> str:
+    """
+    Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
+    The Delta is defined by from and to timestamp fields.
+    If from is not specified, then the whole state till to will be returned.
+
+    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param revoc_reg_def_id:  ID of the corresponding RevocRegDef.
+    :param from_: Requested time represented as a total number of seconds from Unix Epoch
+    :param to: Requested time represented as a total number of seconds from Unix Epoch
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_get_revoc_reg_delta_request: >>> submitter_did: %r, revoc_reg_def_id: %r, from: %r, to: %r",
+                 submitter_did, revoc_reg_def_id, from_, to)
+
+    if not hasattr(build_get_revoc_reg_delta_request, "cb"):
+        logger.debug("build_get_revoc_reg_delta_request: Creating callback")
+        build_get_revoc_reg_delta_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_revoc_reg_def_id = c_char_p(revoc_reg_def_id.encode('utf-8'))
+    c_from = c_int64(from_) if from_  else -1
+    c_to = c_int64(to)
+
+    request_json = await do_call('indy_build_get_revoc_reg_delta_request',
+                                 c_submitter_did,
+                                 c_revoc_reg_def_id,
+                                 c_from,
+                                 c_to,
+                                 build_get_revoc_reg_delta_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_get_revoc_reg_delta_request: <<< res: %r", res)
     return res

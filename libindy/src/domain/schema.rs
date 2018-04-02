@@ -16,10 +16,10 @@ pub const SCHEMA_MARKER: &'static str = "\x02";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SchemaV0 {
-    name: String,
-    version: String,
-    origin: String,
-    attr_names: HashSet<String>
+    pub name: String,
+    pub version: String,
+//    pub origin: String,
+    pub attr_names: HashSet<String>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -102,7 +102,7 @@ impl Serialize for Schema
 impl From<SchemaV0> for SchemaV1 {
     fn from(schema_v0: SchemaV0) -> Self {
         SchemaV1 {
-            id: Schema::schema_id(&schema_v0.origin, &schema_v0.name, &schema_v0.version),
+            id: Schema::schema_id(&String::new(), &schema_v0.name, &schema_v0.version), // TODO hear problem. need schema DID
             name: schema_v0.name,
             version: schema_v0.version,
             attr_names: schema_v0.attr_names,

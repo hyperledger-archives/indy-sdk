@@ -1300,16 +1300,8 @@ mod high_cases {
             let (rev_reg_id, _, rev_reg_entry_json) = LedgerUtils::post_rev_reg_def(pool_handle, wallet_handle, &did, &cred_def_id_in_wallet, &cred_def_id_in_ledger);
 
             let rev_reg_entry_req_resp = LedgerUtils::post_rev_reg_entry(pool_handle, wallet_handle, &did, &rev_reg_id, &rev_reg_entry_json);
-
+            
             let to = time::get_time().sec + 1000;
-
-            let get_rev_reg_req = LedgerUtils::build_get_revoc_reg_request(&did, &rev_reg_id, to).unwrap();
-            let get_rev_reg_resp = LedgerUtils::submit_request_with_retries(pool_handle, &get_rev_reg_req, &rev_reg_entry_req_resp).unwrap();
-
-            let get_rev_reg_resp: Reply<GetOperationResult> = serde_json::from_str(&get_rev_reg_resp).unwrap();
-            assert!(get_rev_reg_resp.result.seq_no.is_some());
-            assert!(get_rev_reg_resp.result.data.is_some());
-
             let get_rev_reg_delta_req = LedgerUtils::build_get_revoc_reg_delta_request(&did, &rev_reg_id, None, to).unwrap();
             let get_rev_reg_delta_resp = LedgerUtils::submit_request_with_retries(pool_handle, &get_rev_reg_delta_req, &rev_reg_entry_req_resp).unwrap();
 

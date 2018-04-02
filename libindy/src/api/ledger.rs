@@ -799,7 +799,7 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: i32,
 }
 
 /// Builds a GET_REVOC_REG_DEF request. Request to get a revocation registry definition,
-/// that Issuer creates for a particular Claim Definition.
+/// that Issuer creates for a particular Credential Definition.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.

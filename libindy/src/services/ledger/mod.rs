@@ -11,6 +11,7 @@ use errors::common::CommonError;
 use serde_json::Value;
 use services::ledger::constants::{NYM, REVOC_REG_DEF};
 use domain::revocation_registry_definition::RevocationRegistryDefinition;
+use domain::schema::Schema;
 use self::indy_crypto::utils::json::JsonDecodable;
 
 use std::collections::HashMap;
@@ -100,12 +101,12 @@ impl LedgerService {
     }
 
     pub fn build_schema_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
-        let schema: Schemas = serde_json::from_str(data)
+        let schema: Schema = serde_json::from_str(data)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Schema: {:?}", err)))?;
 
         let schema_data = match schema {
-            Schemas::SchemaOld { name, version, attr_names } => SchemaOperationData::new(name, version, attr_names),
-            Schemas::SchemaNew { id, name, version, attr_names } => SchemaOperationData::new(name, version, attr_names)
+            Schema::SchemaV0(schema) => SchemaOperationData::new(schema.name, schema.version, schema.attr_names),
+            Schema::SchemaV1(schema) => SchemaOperationData::new(schema.name, schema.version, schema.attr_names)
         };
 
         let operation = SchemaOperation::new(schema_data);

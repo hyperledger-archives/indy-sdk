@@ -157,24 +157,6 @@ impl SchemaOperation {
 
 impl JsonEncodable for SchemaOperation {}
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
-pub enum Schemas {
-    SchemaOld {
-        name: String,
-        version: String,
-        attr_names: Vec<String>
-    },
-    SchemaNew {
-        id: String,
-        name: String,
-        version: String,
-        #[serde(rename = "attrNames")]
-        attr_names: Vec<String>
-    }
-}
-
-
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct SchemaOperationData {
     name: String,
@@ -183,11 +165,11 @@ pub struct SchemaOperationData {
 }
 
 impl SchemaOperationData {
-    pub fn new(name: String, version: String, attr_names: Vec<String>) -> SchemaOperationData {
+    pub fn new(name: String, version: String, attr_names: HashSet<String>) -> SchemaOperationData {
         SchemaOperationData {
             name,
             version,
-            attr_names
+            attr_names: attr_names.iter().cloned().collect::<Vec<String>>()
         }
     }
 }
