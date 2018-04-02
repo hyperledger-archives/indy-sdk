@@ -21,6 +21,7 @@ use utils::constants::SEND_MESSAGE_RESPONSE;
 use utils::libindy::anoncreds::{ libindy_issuer_create_credential };
 use error::issuer_cred::IssuerCredError;
 use utils::error::INVALID_JSON;
+use error::ToErrorCode;
 
 lazy_static! {
     static ref ISSUER_CREDENTIAL_MAP: Mutex<HashMap<u32, Box<IssuerCredential>>> = Default::default();
@@ -84,11 +85,11 @@ impl IssuerCredential {
             return Err(IssuerCredError::CommonError(error::INVALID_CONNECTION_HANDLE.code_num));
         }
 
-        self.agent_did = connection::get_agent_did(connection_handle).map_err(|x| IssuerCredError::CommonError(x))?;
-        self.agent_vk = connection::get_agent_verkey(connection_handle).map_err(|x| IssuerCredError::CommonError(x))?;
-        self.issued_did = connection::get_pw_did(connection_handle).map_err(|x| IssuerCredError::CommonError(x))?;
-        self.issued_vk = connection::get_pw_verkey(connection_handle).map_err(|x| IssuerCredError::CommonError(x))?;
-        self.remote_vk = connection::get_their_pw_verkey(connection_handle).map_err(|x| IssuerCredError::CommonError(x))?;
+        self.agent_did = connection::get_agent_did(connection_handle).map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
+        self.agent_vk = connection::get_agent_verkey(connection_handle).map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
+        self.issued_did = connection::get_pw_did(connection_handle).map_err(|x| IssuerCredError::CommonError(x.to_error_code()))?;
+        self.issued_vk = connection::get_pw_verkey(connection_handle).map_err(|x| IssuerCredError::CommonError(x.to_error_code()))?;
+        self.remote_vk = connection::get_their_pw_verkey(connection_handle).map_err(|x| IssuerCredError::CommonError(x.to_error_code()))?;
 
         let credential_offer = self.generate_credential_offer(&self.issued_did)?;
         let payload = match serde_json::to_string(&credential_offer) {
@@ -101,7 +102,7 @@ impl IssuerCredential {
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_MESSAGE_RESPONSE.to_vec()); }
 
         let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &payload, "CLAIM_OFFER")
-            .map_err(|x| IssuerCredError::CommonError(x))?;
+            .map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
 
         match messages::send_message().to(&self.issued_did)
             .to_vk(&self.issued_vk)
@@ -136,7 +137,7 @@ impl IssuerCredential {
             return Err(IssuerCredError::InvalidHandle());
         }
 
-        let to = connection::get_pw_did(connection_handle).map_err(|x| IssuerCredError::CommonError(x))?;
+        let to = connection::get_pw_did(connection_handle).map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
         let attrs_with_encodings = self.create_attributes_encodings()?;
         let mut data;
         if settings::test_indy_mode_enabled() {
@@ -159,13 +160,13 @@ impl IssuerCredential {
         debug!("credential data: {}", data);
 
         let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &data, "CLAIM")
-            .map_err(|x| IssuerCredError::CommonError(x))?;
+            .map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_MESSAGE_RESPONSE.to_vec()); }
 
         match messages::send_message().to(&self.issued_did)
             .to_vk(&self.issued_vk)
             .msg_type("claim")
-            .status_code((&MessageAccepted.as_string()))
+            .status_code(&MessageAccepted.as_string())
             .edge_agent_payload(&data)
             .agent_did(&self.agent_did)
             .agent_vk(&self.agent_vk)
