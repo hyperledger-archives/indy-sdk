@@ -68,7 +68,7 @@ pub extern fn vcx_init (command_handle: u32,
                 Ok(_) => (),
             };
             ::utils::logger::LoggerUtils::init();
-            println!("config_path: {}", config_path);
+            info!("config_path: {}", config_path);
         }
     } else {
         error!("Cannot initialize with given config path: config path is null.");
@@ -164,7 +164,7 @@ pub extern fn vcx_init (command_handle: u32,
     }
 
     thread::spawn(move|| {
-        match wallet::init_wallet(&wallet_name) {
+        match wallet::open_wallet(&wallet_name) {
             Err(e) => {
                 warn!("Init Wallet Error {}.", e);
                 cb(command_handle, e);
