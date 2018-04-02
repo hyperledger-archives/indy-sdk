@@ -112,7 +112,7 @@ pub fn validate_config() -> Result<u32, String> {
                 Ok(_) => valid = true,
             }
         } else if setting.0 == CONFIG_LOG_CONFIG {
-            println!("log_config set to {}", setting.1);
+            info!("log_config set to {}", setting.1);
         } else if setting.0 == CONFIG_INSTITUTION_DID && !is_valid(setting.1) {
             valid = false;
         } else if setting.0 == CONFIG_AGENCY_VERKEY && !is_valid(setting.1) {

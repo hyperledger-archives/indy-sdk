@@ -531,7 +531,6 @@ pub fn update_state(handle: u32) -> Result<u32, ConnectionError> {
         .send_secure() {
         Err(x) => {
             error!("could not update state for handle {}: {}",  handle, x);
-            println!("could not update state");
             // TODO: Refactor Error
             Err(ConnectionError::CommonError(error::POST_MSG_FAILURE.code_num))
         }

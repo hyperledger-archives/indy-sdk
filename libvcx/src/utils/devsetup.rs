@@ -164,7 +164,7 @@ pub fn setup_dev_env(wallet_name: &str) {
     set_institution_dev_config(wallet_name);
 
     setup_wallet(wallet_name);
-    wallet::init_wallet(wallet_name).unwrap();
+    wallet::open_wallet(wallet_name).unwrap();
 }
 
 pub fn be_consumer() {
