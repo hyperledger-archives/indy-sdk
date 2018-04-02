@@ -11,6 +11,7 @@ use domain::credential_definition::CredentialDefinitionV0;
 use domain::revocation_registry_definition::RevocationRegistryDefinitionV1;
 use domain::proof::{Proof, RequestedProof};
 use domain::proof_request::{ProofRequest, AttributeInfo, PredicateInfo};
+use domain::revocation_registry::RevocationRegistryLocal;
 
 pub struct Verifier {}
 
@@ -25,7 +26,7 @@ impl Verifier {
                   schemas: &HashMap<String, SchemaV1>,
                   cred_defs: &HashMap<String, CredentialDefinitionV0>,
                   rev_reg_defs: &HashMap<String, RevocationRegistryDefinitionV1>,
-                  rev_regs: &HashMap<String, HashMap<u64, RevocationRegistry>>) -> Result<bool, CommonError> {
+                  rev_regs: &HashMap<String, HashMap<u64, RevocationRegistryLocal>>) -> Result<bool, CommonError> {
         trace!("verify >>> full_proof: {:?}, proof_req: {:?}, schemas: {:?}, cred_defs: {:?}, rev_reg_defs: {:?} rev_regs: {:?}",
                full_proof, proof_req, schemas, cred_defs, rev_reg_defs, rev_regs);
 

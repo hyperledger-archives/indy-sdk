@@ -9,6 +9,7 @@ pub mod proof_request;
 pub mod requested_credential;
 pub mod revocation_registry_definition;
 pub mod revocation_registry_delta;
+pub mod revocation_registry;
 pub mod revocation_state;
 pub mod schema;
 

@@ -7,7 +7,6 @@ use errors::indy::IndyError;
 use services::anoncreds::AnoncredsService;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
-use self::indy_crypto::cl::RevocationRegistry;
 use self::indy_crypto::utils::json::JsonDecodable;
 
 use domain::schema::{Schema, schemas_map_to_schemas_v1_map};
@@ -15,7 +14,7 @@ use domain::credential_definition::{CredentialDefinition, cred_defs_map_to_cred_
 use domain::proof::Proof;
 use domain::proof_request::ProofRequest;
 use domain::revocation_registry_definition::{RevocationRegistryDefinition, rev_reg_defs_map_to_rev_reg_defs_v1_map};
-
+use domain::revocation_registry::{RevocationRegistry, rev_regs_map_to_rev_regs_local_map};
 
 pub enum VerifierCommand {
     VerifyProof(
@@ -72,7 +71,7 @@ impl VerifierCommandExecutor {
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationRegistryDef: {:?}", err)))?;
 
         let rev_regs: HashMap<String, HashMap<u64, RevocationRegistry>> = serde_json::from_str(rev_reg_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationRegistryEntry: {:?}", err)))?;
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationRegistry: {:?}", err)))?;
 
         let proof: Proof = Proof::from_json(&proof_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Proof: {:?}", err)))?;
@@ -142,7 +141,7 @@ impl VerifierCommandExecutor {
                                                             &schemas_map_to_schemas_v1_map(schemas),
                                                             &cred_defs_map_to_cred_defs_v0_map(cred_defs),
                                                             &rev_reg_defs_map_to_rev_reg_defs_v1_map(rev_reg_defs),
-                                                            &rev_regs)?;
+                                                            &rev_regs_map_to_rev_regs_local_map(rev_regs))?;
 
         trace!("verify_proof <<< result: {:?}", result);
 

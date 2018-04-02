@@ -80,16 +80,11 @@ impl<'de> Deserialize<'de> for CredentialDefinition
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: Deserializer<'de>
     {
-        #[derive(Deserialize)]
-        struct VersionHelper {
-            ver: Option<String>,
-        }
-
         let v = Value::deserialize(deserializer)?;
 
-        let helper = VersionHelper::deserialize(&v).map_err(de::Error::custom)?;
+        let ver = v["ver"].clone();
 
-        match helper.ver {
+        match ver.as_str() {
             Some(version) => {
                 match version.as_ref() {
                     CredentialDefinitionV1::VERSION => {
