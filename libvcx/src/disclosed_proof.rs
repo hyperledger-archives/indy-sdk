@@ -395,16 +395,16 @@ pub fn is_valid_handle(handle: u32) -> bool {
 }
 
 //TODO one function with credential
-pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&str>) -> Result<String, u32> {
-    let my_did = connection::get_pw_did(connection_handle)?;
-    let my_vk = connection::get_pw_verkey(connection_handle)?;
-    let agent_did = connection::get_agent_did(connection_handle)?;
-    let agent_vk = connection::get_agent_verkey(connection_handle)?;
+pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&str>) -> Result<String, ProofError> {
+    let my_did = connection::get_pw_did(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
+    let my_vk = connection::get_pw_verkey(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
+    let agent_did = connection::get_agent_did(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
+    let agent_vk = connection::get_agent_verkey(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
 
     let payload = messages::get_message::get_all_message(&my_did,
                                                          &my_vk,
                                                          &agent_did,
-                                                         &agent_vk)?;
+                                                         &agent_vk).map_err(|ec| ProofError::CommonError(ec))?;
 
     let mut messages: Vec<ProofRequestMessage> = Default::default();
 
@@ -415,15 +415,16 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
             let msg_data = match msg.payload {
                 Some(ref data) => {
                     let data = to_u8(data);
-                    crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, data.as_slice())?
+                    crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, data.as_slice())
+                        .map_err(|ec| ProofError::CommonError(ec))?
                 },
-                None => return Err(error::INVALID_HTTP_RESPONSE.code_num)
+                None => return Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num))
             };
 
-            let req = extract_json_payload(&msg_data)?;
+            let req = extract_json_payload(&msg_data).map_err(|ec| ProofError::CommonError(ec))?;
 
             let mut req: ProofRequestMessage = serde_json::from_str(&req)
-                .or(Err(error::INVALID_HTTP_RESPONSE.code_num))?;
+                .or(Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num)))?;
 
             req.msg_ref_id = Some(msg.uid.to_owned());
             messages.push(req);

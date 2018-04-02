@@ -42,7 +42,7 @@ pub extern fn vcx_connection_create(command_handle: u32,
             Err(x) => {
                 warn!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {})",
                     //TODO remove to_error_code()
-                      command_handle, error_string(x.to_error_code()), 0);
+                      command_handle, x.to_string(), 0);
                 cb(command_handle, x.to_error_code(), 0)
             },
         };
@@ -134,7 +134,7 @@ pub extern fn vcx_connection_connect(command_handle:u32,
                         let msg = CStringUtils::string_to_cstring(x);
                         cb(command_handle, error::SUCCESS.code_num, msg.as_ptr())
                     },
-                    Err(_) => {
+                    Err(e) => {
                         warn!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
                               command_handle, connection_handle, error_string(0), "null", source_id);
                         cb(command_handle, error::SUCCESS.code_num, ptr::null_mut())

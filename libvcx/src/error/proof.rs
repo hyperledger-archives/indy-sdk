@@ -61,3 +61,4 @@ impl ToErrorCode for ProofError {
         }
     }
 }
+
