@@ -463,7 +463,7 @@ async def prover_store_claim(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_claims_json = c_char_p(claims_json.encode('utf-8'))
-    c_rev_reg_json = c_char_p(rev_reg_json.encode('utf-8')) if rev_reg_json else None
+    c_rev_reg_json = c_char_p(rev_reg_json.encode('utf-8')) if rev_reg_json is not None else None
 
     res = await do_call('indy_prover_store_claim',
                         c_wallet_handle,
