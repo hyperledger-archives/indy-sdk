@@ -41,10 +41,9 @@ impl From<RevocationRegistryDelta> for RevocationRegistryDeltaLocal {
         match rev_reg_delta {
             RevocationRegistryDelta::DeltaLocal(rev_reg_delta) => rev_reg_delta,
             RevocationRegistryDelta::DeltaFromLedger(rev_reg_delta) =>
-                RegistryDelta::from_parts(rev_reg_delta.value.accum_from.map(|accum| accum.value).as_ref(),
-                                          &rev_reg_delta.value.accum_to.value,
+                RegistryDelta::from_parts(&rev_reg_delta.value.accum_from.map(|accum| accum.value).unwrap(),
                                           &rev_reg_delta.value.issued,
-                                          &rev_reg_delta.value.revoked)
+                                          &rev_reg_delta.value.revoked).unwrap()
         }
     }
 }

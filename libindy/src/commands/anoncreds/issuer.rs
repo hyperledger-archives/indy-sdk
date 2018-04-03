@@ -455,9 +455,9 @@ impl IssuerCommandExecutor {
                 }
             };
 
-            let rev_reg_delta = RevocationRegistryDelta::from_parts(None, &r_reg, &issued, &revoked);
+            let rev_reg_delta = RevocationRegistryDelta::from_parts(&r_reg, &issued, &revoked);
 
-            let witness = Some(Witness::new(cred_rev_id.clone(), r_reg_def.value.max_cred_num, &rev_reg_delta, rev_tails_accessor)
+            let witness = Some(Witness::new(cred_rev_id.clone(), r_reg_def.value.max_cred_num, &rev_reg_delta.unwrap(), rev_tails_accessor)
                 .map_err(|err| IndyError::CommonError(CommonError::from(err)))?);
 
             let issued = serde_json::to_string(&issued.iter().map(|index| index.to_string()).collect::<HashSet<String>>())

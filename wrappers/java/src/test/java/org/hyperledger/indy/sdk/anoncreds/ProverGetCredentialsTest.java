@@ -1,7 +1,9 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
+
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -14,7 +16,10 @@ public class ProverGetCredentialsTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverGetCredentialsWorksForEmptyFilter() throws Exception {
 
-		String credentials = Anoncreds.proverGetCredentials(wallet, "{}").get();
+		JSONObject json = new JSONObject();
+		String filter = json.toString();
+
+		String credentials = Anoncreds.proverGetCredentials(wallet, filter).get();
 
 		JSONArray credentialsArray = new JSONArray(credentials);
 
@@ -24,7 +29,8 @@ public class ProverGetCredentialsTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverGetCredentialsWorksForFilterByIssuer() throws Exception {
 
-		String filter = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
+		JSONObject json = new JSONObject();
+		String filter = json.put("issuer_did", issuerDid).toString();
 
 		String credentials = Anoncreds.proverGetCredentials(wallet, filter).get();
 
@@ -36,7 +42,8 @@ public class ProverGetCredentialsTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverGetCredentialsWorksForFilterBySchema() throws Exception {
 
-		String filter = String.format("{\"schema_id\":\"%s\"}", gvtSchemaId);
+		JSONObject json = new JSONObject();
+		String filter = json.put("schema_id", gvtSchemaId).toString();
 
 		String credentials = Anoncreds.proverGetCredentials(wallet, filter).get();
 
@@ -48,7 +55,8 @@ public class ProverGetCredentialsTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverGetCredentialsWorksForFilterBySchemaName() throws Exception {
 
-		String filter = "{\"schema_name\": \"gvt\"}";
+		JSONObject json = new JSONObject();
+		String filter = json.put("schema_name", "gvt").toString();
 
 		String credentials = Anoncreds.proverGetCredentials(wallet, filter).get();
 
@@ -59,9 +67,8 @@ public class ProverGetCredentialsTest extends AnoncredsIntegrationTest {
 
 	@Test
 	public void testProverGetCredentialsWorksForFilterByCredDefId() throws Exception {
-
-		String filter = String.format("{\"cred_def_id\":\"%s\"}", issuer1gvtCredDefId);
-
+		JSONObject json = new JSONObject();
+		String filter = json.put("cred_def_id", issuer1gvtCredDefId).toString();
 		String credentials = Anoncreds.proverGetCredentials(wallet, filter).get();
 
 		JSONArray credentialsArray = new JSONArray(credentials);
@@ -72,7 +79,8 @@ public class ProverGetCredentialsTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverGetCredentialsWorksForEmptyResult() throws Exception {
 
-		String filter = String.format("{\"issuer_did\":\"%s\"}", issuerDid + "a");
+		JSONObject json = new JSONObject();
+		String filter = json.put("issuer_did", issuerDid + "a").toString();
 
 		String credentials = Anoncreds.proverGetCredentials(wallet, filter).get();
 
@@ -87,7 +95,8 @@ public class ProverGetCredentialsTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String filter = "{\"schema_name\":gvt}";
+		JSONObject json = new JSONObject();
+		String filter = json.put("schema_name", "gvt").toString();
 
 		Anoncreds.proverGetCredentials(wallet, filter).get();
 	}

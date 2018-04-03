@@ -14,7 +14,8 @@ import org.junit.*;
 
 public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 
-	private String tailsWriterConfig = String.format("{\"base_dir\":\"%s\", \"uri_pattern\":\"\"}", getIndyHomePath("tails"));
+	/* FIXME: getIndyHomePath hard coded forward slash "/". It will not work for Windows. */
+	private String tailsWriterConfig = String.format("{\"base_dir\":\"%s\", \"uri_pattern\":\"\"}", getIndyHomePath("tails")).replace('\\', '/');
 
 	@Test
 	public void testIssuerRevokeProofWorks() throws Exception {
@@ -34,7 +35,8 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 		String credDefJson = createCredentialDefResult.getCredDefJson();
 
 		//4. Issuer create revocation registry
-		BlobStorageWriter tailsWriter = BlobStorageWriter.openWriter("default", tailsWriterConfig).get();
+		BlobStorageWriter tailsWriter = BlobStorageWriter.openWriter("default",
+				new JSONObject(tailsWriterConfig).toString()).get();
 		String revRegConfig = "{\"issuance_type\":null,\"max_cred_num\":5}";
 		AnoncredsResults.IssuerCreateAndStoreRevocRegResult createRevRegResult = Anoncreds.issuerCreateAndStoreRevocReg(wallet, issuerDid, null, tag, credDefId, revRegConfig, tailsWriter).get();
 		String revRegId = createRevRegResult.getRevRegId();
@@ -53,7 +55,8 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 		String credentialReqMetadataJson = createCredReqResult.getCredentialRequestMetadataJson();
 
 		//8. Issuer open TailsReader
-		BlobStorageReader blobReaderCfg = BlobStorageReader.openReader("default", tailsWriterConfig).get();
+		BlobStorageReader blobReaderCfg = BlobStorageReader.openReader("default",
+				new JSONObject(tailsWriterConfig).toString()).get();
 		int blobStorageReaderHandleCfg = blobReaderCfg.getBlobStorageReaderHandle();
 
 		//9. Issuer create Credential
@@ -88,8 +91,9 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 		String credentialDefsJson = String.format("{\"%s\":%s}", credDefId, credDefJson);
 		String revStatesJson = String.format("{\"%s\": { \"%s\":%s }}", revRegId, timestamp, revStateJson);
 
-		String proofJson = Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, masterSecretId, schemasJson,
-				credentialDefsJson, revStatesJson).get();
+		String proofJson = Anoncreds.proverCreateProof(wallet, new JSONObject(proofRequest).toString(),
+				new JSONObject(requestedCredentialsJson).toString(), masterSecretId, new JSONObject(schemasJson).toString(),
+				new JSONObject(credentialDefsJson).toString(), new JSONObject(revStatesJson).toString()).get();
 		JSONObject proof = new JSONObject(proofJson);
 
 		//14. Issuer revoke Credential
@@ -102,7 +106,9 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 		String revRegDefsJson = String.format("{\"%s\":%s}", revRegId, revRegDef);
 		String revRegs = String.format("{\"%s\": { \"%s\":%s }}", revRegId, timestamp, revRegDelta);
 
-		boolean valid = Anoncreds.verifierVerifyProof(proofRequest, proofJson, schemasJson, credentialDefsJson, revRegDefsJson, revRegs).get();
+		boolean valid = Anoncreds.verifierVerifyProof(new JSONObject(proofRequest).toString(),
+				proofJson, new JSONObject(schemasJson).toString(), new JSONObject(credentialDefsJson).toString(),
+				new JSONObject(revRegDefsJson).toString(), new JSONObject(revRegs).toString()).get();
 		assertFalse(valid);
 
 		// 17. Close and Delete Wallet
