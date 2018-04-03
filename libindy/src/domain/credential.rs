@@ -25,7 +25,12 @@ pub struct Credential {
 
 impl Credential {
     pub fn schema_id(&self) -> String {
-        self.cred_def_id.split_terminator(":").collect::<Vec<&str>>()[2..6].join(":").to_string()
+        let parts: Vec<&str> = self.cred_def_id.split_terminator(":").collect::<Vec<&str>>(); // TODO: FIXME
+        if parts.len() == 4 {
+            parts[3].to_string()
+        } else {
+            parts[2..6].join(":").to_string()
+        }
     }
 }
 

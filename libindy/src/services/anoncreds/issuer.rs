@@ -9,9 +9,9 @@ use self::indy_crypto::cl::*;
 use self::indy_crypto::cl::issuer::Issuer as CryptoIssuer;
 
 use domain::schema::SchemaV1;
-use domain::credential_definition::CredentialDefinitionV0;
+use domain::credential_definition::{CredentialDefinitionV1 as CredentialDefinition, CredentialDefinitionData};
 use domain::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
-use domain::credential::{AttributeValues};
+use domain::credential::AttributeValues;
 use domain::credential_request::CredentialRequest;
 
 pub struct Issuer {}
@@ -24,7 +24,7 @@ impl Issuer {
     pub fn new_credential_definition(&self,
                                      issuer_did: &str,
                                      schema: &SchemaV1,
-                                     support_revocation: bool) -> Result<(CredentialDefinitionV0,
+                                     support_revocation: bool) -> Result<(CredentialDefinitionData,
                                                                           CredentialPrivateKey,
                                                                           CredentialKeyCorrectnessProof), AnoncredsError> {
         trace!("new_credential_definition >>> issuer_did: {:?}, schema: {:?}, support_revocation: {:?}", issuer_did, schema, support_revocation);
@@ -34,7 +34,7 @@ impl Issuer {
         let (credential_public_key, credential_private_key, credential_key_correctness_proof) =
             CryptoIssuer::new_credential_def(&credential_schema, support_revocation)?;
 
-        let credential_definition_value = CredentialDefinitionV0 {
+        let credential_definition_value = CredentialDefinitionData {
             primary: credential_public_key.get_primary_key()?.clone()?,
             revocation: credential_public_key.get_revocation_key()?.clone()
         };
@@ -46,7 +46,7 @@ impl Issuer {
     }
 
     pub fn new_revocation_registry(&self,
-                                   cred_def: &CredentialDefinitionV0,
+                                   cred_def: &CredentialDefinition,
                                    max_cred_num: u32,
                                    issuance_by_default: bool,
                                    issuer_did: &str) -> Result<(RevocationRegistryDefinitionValuePublicKeys,
@@ -57,7 +57,7 @@ impl Issuer {
                cred_def, max_cred_num, issuance_by_default, issuer_did);
 
         let credential_pub_key =
-            CredentialPublicKey::build_from_parts(&cred_def.primary, cred_def.revocation.as_ref())?;
+            CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
 
         let (rev_key_pub, rev_key_priv, rev_reg_entry, rev_tails_generator) =
             CryptoIssuer::new_revocation_registry_def(&credential_pub_key, max_cred_num, issuance_by_default)?;
@@ -73,7 +73,7 @@ impl Issuer {
     }
 
     pub fn new_credential<RTA>(&self,
-                               cred_def: &CredentialDefinitionV0,
+                               cred_def: &CredentialDefinition,
                                cred_priv_key: &CredentialPrivateKey,
                                master_secret_blinding_nonce: &Nonce,
                                cred_request: &CredentialRequest,
@@ -90,7 +90,7 @@ impl Issuer {
                cred_def, cred_priv_key, master_secret_blinding_nonce, cred_request, cred_values, rev_idx, rev_reg_def, rev_reg, rev_key_priv);
 
         let credential_values = build_credential_values(&cred_values)?;
-        let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.primary, cred_def.revocation.as_ref())?;
+        let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
 
         let (credential_signature, signature_correctness_proof, rev_reg_delta) =
             if rev_idx.is_some() {

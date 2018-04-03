@@ -464,10 +464,10 @@ public class Ledger extends IndyJava.API {
 	 * @param verkey       Target identity verification key as base58-encoded string.
 	 * @param alias        NYM's alias.
 	 * @param role         Role of a user NYM record:
-	 *                        null (common USER)
-	 *                        TRUSTEE
-	 *                        STEWARD
-	 *                        TRUST_ANCHOR
+	 *                     null (common USER)
+	 *                     TRUSTEE
+	 *                     STEWARD
+	 *                     TRUST_ANCHOR
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -608,9 +608,9 @@ public class Ledger extends IndyJava.API {
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
 	 * @param data         {
-	 *                        attr_names: array of attribute name strings
-	 *                        name: Schema's name string
-	 *                        version: Schema's version string
+	 *                     attr_names: array of attribute name strings
+	 *                     name: Schema's name string
+	 *                     version: Schema's version string
 	 *                     }
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -643,8 +643,8 @@ public class Ledger extends IndyJava.API {
 	 * @param dest         Schema Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
 	 *                     It differs from submitter_did field.
 	 * @param data         {
-	 *                        name (string): Schema's name string
-	 *                        version (string): Schema's version string
+	 *                     name (string): Schema's name string
+	 *                     version (string): Schema's version string
 	 *                     }
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -681,9 +681,9 @@ public class Ledger extends IndyJava.API {
 	 * @param xref          Sequence number of a Schema transaction the claim definition is created for.
 	 * @param signatureType Type of the claim definition. CL is the only supported type now.
 	 * @param data          Dictionary with Claim Definition's data: {
-	 *                         primary: primary claim public key
-	 *                         revocation: revocation claim public key
-	 *                     }
+	 *                      primary: primary claim public key
+	 *                      revocation: revocation claim public key
+	 *                      }
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -756,14 +756,14 @@ public class Ledger extends IndyJava.API {
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
 	 * @param targetDid    Target Node's DID.  It differs from submitter_did field.
 	 * @param data         Data associated with the Node: {
-	 *                        alias: string - Node's alias
-	 *                        blskey: string - (Optional) BLS multi-signature key as base58-encoded string.
-	 *                        client_ip: string - (Optional) Node's client listener IP address.
-	 *                        client_port: string - (Optional) Node's client listener port.
-	 *                        node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.
-	 *                        node_port: string - (Optional) The port other Nodes use to communicate with this Node.
-	 *                        services: array<string> - (Optional) The service of the Node. VALIDATOR is the only supported one now.
-	 *                    }
+	 *                     alias: string - Node's alias
+	 *                     blskey: string - (Optional) BLS multi-signature key as base58-encoded string.
+	 *                     client_ip: string - (Optional) Node's client listener IP address.
+	 *                     client_port: string - (Optional) Node's client listener port.
+	 *                     node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.
+	 *                     node_port: string - (Optional) The port other Nodes use to communicate with this Node.
+	 *                     services: array<string> - (Optional) The service of the Node. VALIDATOR is the only supported one now.
+	 *                     }
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -795,7 +795,7 @@ public class Ledger extends IndyJava.API {
 	 * Builds a GET_TXN request. Request to get any transaction by its seq_no.
 	 *
 	 * @param submitterDid DID of read request sender.
-	 * @param data seq_no of transaction in ledger.
+	 * @param data         seq_no of transaction in ledger.
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -823,10 +823,10 @@ public class Ledger extends IndyJava.API {
 	 * Builds a POOL_CONFIG request. Request to change Pool's configuration.
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
-	 * @param writes Whether any write requests can be processed by the pool
-	 *              (if false, then pool goes to read-only state). True by default.
-	 * @param force Whether we should apply transaction (for example, move pool to read-only state)
-	 *                 without waiting for consensus of this transaction.
+	 * @param writes       Whether any write requests can be processed by the pool
+	 *                     (if false, then pool goes to read-only state). True by default.
+	 * @param force        Whether we should apply transaction (for example, move pool to read-only state)
+	 *                     without waiting for consensus of this transaction.
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -857,16 +857,16 @@ public class Ledger extends IndyJava.API {
 	 * It upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).
 	 *
 	 * @param submitterDid  DID of the submitter stored in secured Wallet.
-	 * @param name Human-readable name for the upgrade.
-	 * @param version The version of indy-node package we perform upgrade to.
-	 *                Must be greater than existing one (or equal if reinstall flag is True).
-	 * @param action Either start or cancel.
-	 * @param sha256 sha256 hash of the package.
-	 * @param timeout (Optional) Limits upgrade time on each Node.
-	 * @param schedule (Optional) Schedule of when to perform upgrade on each node. Map Node DIDs to upgrade time.
+	 * @param name          Human-readable name for the upgrade.
+	 * @param version       The version of indy-node package we perform upgrade to.
+	 *                      Must be greater than existing one (or equal if reinstall flag is True).
+	 * @param action        Either start or cancel.
+	 * @param sha256        sha256 hash of the package.
+	 * @param timeout       (Optional) Limits upgrade time on each Node.
+	 * @param schedule      (Optional) Schedule of when to perform upgrade on each node. Map Node DIDs to upgrade time.
 	 * @param justification (Optional) justification string for this particular Upgrade.
-	 * @param reinstall Whether it's allowed to re-install the same version. False by default.
-	 * @param force Whether we should apply transaction (schedule Upgrade) without waiting for consensus of this transaction.
+	 * @param reinstall     Whether it's allowed to re-install the same version. False by default.
+	 * @param force         Whether we should apply transaction (schedule Upgrade) without waiting for consensus of this transaction.
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -911,25 +911,26 @@ public class Ledger extends IndyJava.API {
 	 * to an exists claim definition.
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
-	 * @param type Revocation Registry type (only CL_ACCUM is supported for now).
-	 * @param tag Unique descriptive ID of the Registry.
-	 * @param credDefId ID of the corresponding ClaimDef.
-	 * @param value Registry-specific data: {
-	 *                 issuance_type: string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
-	 *                 max_cred_num: number - Maximum number of credentials the Registry can serve.
-	 *                 public_keys: <public_keys> - Registry's public key.
-	 *                 tails_hash: string - Hash of tails.
-	 *                 tails_locaiton: string - Location of tails file.
-	 *             }
+	 * @param data         Revocation Registry data:
+	 *                     {
+	 *                     "id": string - ID of the Revocation Registry,
+	 *                     "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+	 *                     "tag": string - Unique descriptive ID of the Registry,
+	 *                     "credDefId": string - ID of the corresponding ClaimDef,
+	 *                     "value": Registry-specific data {
+	 *                     "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+	 *                     "maxCredNum": number - Maximum number of credentials the Registry can serve.
+	 *                     "tailsHash": string - Hash of tails.
+	 *                     "tailsLocation": string - Location of tails file.
+	 *                     "publicKeys": <public_keys> - Registry's public key.
+	 *                     }
+	 *                     }
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildRevocRegDefRequest(
 			String submitterDid,
-			String type,
-			String tag,
-			String credDefId,
-			String value) throws IndyException {
+			String data) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 
@@ -939,10 +940,7 @@ public class Ledger extends IndyJava.API {
 		int result = LibIndy.api.indy_build_revoc_reg_def_request(
 				commandHandle,
 				submitterDid,
-				type,
-				tag,
-				credDefId,
-				value,
+				data,
 				buildRevocRegDefRequestCb);
 
 		checkResult(result);
@@ -950,6 +948,35 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Builds a GET_REVOC_REG_DEF request. Request to get a revocation registry definition,
+	 * that Issuer creates for a particular Credential Definition.
+	 *
+	 * @param submitterDid DID of the submitter stored in secured Wallet.
+	 * @param id           ID of the corresponding RevocRegDef.
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildGetRevocRegDefRequest(
+			String submitterDid,
+			String id) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(id, "id");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_get_revoc_reg_def_request(
+				commandHandle,
+				submitterDid,
+				id,
+				buildRevocRegDefRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
 
 	/**
 	 * Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
@@ -957,36 +984,108 @@ public class Ledger extends IndyJava.API {
 	 * This is just a delta of indices, not the whole list.
 	 * So, it can be sent each time a new claim is issued/revoked.
 	 *
-	 * @param submitterDid DID of the submitter stored in secured Wallet.
-	 * @param type Revocation Registry type (only CL_ACCUM is supported for now).
+	 * @param submitterDid  DID of the submitter stored in secured Wallet.
 	 * @param revocRegDefId ID of the corresponding RevocRegDef.
-	 * @param value Registry-specific data: {
-	 *                 issued: array<number> - an array of issued indices.
-	 *                 revoked: array<number> an array of revoked indices.
-	 *                 prev_accum: previous accumulator value.
-	 *                 accum: current accumulator value.
-     *             }
+	 * @param revDefType    Revocation Registry type (only CL_ACCUM is supported for now).
+	 * @param value         Registry-specific data: {
+	 *                      issued: array<number> - an array of issued indices.
+	 *                      revoked: array<number> an array of revoked indices.
+	 *                      prev_accum: previous accumulator value.
+	 *                      accum: current accumulator value.
+	 *                      }
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> buildRevocRegDeltaRequest(
+	public static CompletableFuture<String> buildRevocRegEntryRequest(
 			String submitterDid,
-			String type,
 			String revocRegDefId,
+			String revDefType,
 			String value) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(revocRegDefId, "revocRegDefId");
+		ParamGuard.notNullOrWhiteSpace(revDefType, "revDefType");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_build_revoc_reg_delta_request(
+		int result = LibIndy.api.indy_build_revoc_reg_entry_request(
 				commandHandle,
 				submitterDid,
-				type,
 				revocRegDefId,
+				revDefType,
 				value,
 				buildRevocRegDeltaRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Builds a GET_REVOC_REG request. Request to get the accumulated state of the Revocation Registry
+	 * by ID. The state is defined by the given timestamp.
+	 *
+	 * @param submitterDid  DID of the submitter stored in secured Wallet.
+	 * @param revocRegDefId ID of the corresponding RevocRegDef.
+	 * @param timestamp     Requested time represented as a total number of seconds from Unix Epoch
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildGetRevocRegRequest(
+			String submitterDid,
+			String revocRegDefId,
+			int timestamp) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(revocRegDefId, "id");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_get_revoc_reg_request(
+				commandHandle,
+				submitterDid,
+				revocRegDefId,
+				timestamp,
+				buildRevocRegDefRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
+	 * The Delta is defined by from and to timestamp fields.
+	 * If from is not specified, then the whole state till to will be returned.
+	 *
+	 * @param submitterDid  DID of the submitter stored in secured Wallet.
+	 * @param revocRegDefId ID of the corresponding RevocRegDef.
+	 * @param from          Requested time represented as a total number of seconds from Unix Epoch
+	 * @param to            Requested time represented as a total number of seconds from Unix Epoch
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildGetRevocRegDeltaRequest(
+			String submitterDid,
+			String revocRegDefId,
+			int from,
+			int to) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(revocRegDefId, "id");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_get_revoc_reg_delta_request(
+				commandHandle,
+				submitterDid,
+				revocRegDefId,
+				from,
+				to,
+				buildRevocRegDefRequestCb);
 
 		checkResult(result);
 

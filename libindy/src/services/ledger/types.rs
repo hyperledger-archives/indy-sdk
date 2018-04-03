@@ -5,7 +5,13 @@ extern crate indy_crypto;
 use services::ledger::constants::*;
 
 use self::indy_crypto::cl::*;
+use self::indy_crypto::cl::RevocationRegistryDelta;
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+
+use domain::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1, SignatureType};
+use domain::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValue};
+use domain::revocation_registry::RevocationRegistryV1;
+use domain::revocation_registry_delta::RevocationRegistryDeltaV1;
 
 use std::collections::{HashMap, HashSet};
 
@@ -157,33 +163,15 @@ impl SchemaOperation {
 
 impl JsonEncodable for SchemaOperation {}
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
-pub enum Schemas {
-    SchemaOld {
-        name: String,
-        version: String,
-        attr_names: Vec<String>
-    },
-    SchemaNew {
-        id: String,
-        name: String,
-        version: String,
-        #[serde(rename = "attrNames")]
-        attr_names: Vec<String>
-    }
-}
-
-
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct SchemaOperationData {
-    name: String,
-    version: String,
-    attr_names: Vec<String>
+    pub name: String,
+    pub version: String,
+    pub attr_names: HashSet<String>
 }
 
 impl SchemaOperationData {
-    pub fn new(name: String, version: String, attr_names: Vec<String>) -> SchemaOperationData {
+    pub fn new(name: String, version: String, attr_names: HashSet<String>) -> SchemaOperationData {
         SchemaOperationData {
             name,
             version,
@@ -235,22 +223,22 @@ impl JsonEncodable for GetSchemaOperationData {}
 
 impl<'a> JsonDecodable<'a> for GetSchemaOperationData {}
 
-#[derive(Serialize, PartialEq, Debug)]
+#[derive(Serialize, Debug)]
 pub struct ClaimDefOperation {
     #[serde(rename = "ref")]
     pub _ref: i32,
-    pub data: ClaimDefOperationData,
+    pub data: CredentialDefinitionData,
     #[serde(rename = "type")]
     pub _type: String,
     pub signature_type: String
 }
 
 impl ClaimDefOperation {
-    pub fn new(_ref: i32, signature_type: String, data: ClaimDefOperationData) -> ClaimDefOperation {
+    pub fn new(data: CredentialDefinitionV1) -> ClaimDefOperation {
         ClaimDefOperation {
-            _ref,
-            signature_type,
-            data,
+            _ref: data.schema_id.parse::<i32>().unwrap_or(0), // TODO: FIXME
+            signature_type: data.signature_type.to_str().to_string(),
+            data: data.value,
             _type: CLAIM_DEF.to_string()
         }
     }
@@ -385,14 +373,6 @@ impl GetTxnOperation {
 impl JsonEncodable for GetTxnOperation {}
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
-pub struct Reply<T> {
-    pub op: String,
-    pub result: T,
-}
-
-impl<'a, T: JsonDecodable<'a>> JsonDecodable<'a> for Reply<T> {}
-
-#[derive(Deserialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GetNymReplyResult {
     pub identifier: String,
@@ -522,39 +502,51 @@ pub struct RevocationRegistryKeys {
     pub accum_key: serde_json::Value
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct RevocationRegistryEntryOperationValue {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub prev_accum: Option<String>,
-    pub accum: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub issued: Option<HashSet<u32>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub revoked: Option<HashSet<u32>>
+pub struct RevocationRegistryDefOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub id: String,
+    #[serde(rename = "revocDefType")]
+    pub type_: String,
+    pub tag: String,
+    pub cred_def_id: String,
+    pub value: RevocationRegistryDefinitionValue
 }
 
-impl JsonEncodable for RevocationRegistryEntryOperationValue {}
+impl RevocationRegistryDefOperation {
+    pub fn new(rev_reg_def: RevocationRegistryDefinitionV1) -> RevocationRegistryDefOperation {
+        RevocationRegistryDefOperation {
+            _type: REVOC_REG_DEF.to_string(),
+            id: rev_reg_def.id.to_string(),
+            type_: rev_reg_def.type_.to_str().to_string(),
+            tag: rev_reg_def.tag.to_string(),
+            cred_def_id: rev_reg_def.cred_def_id.to_string(),
+            value: rev_reg_def.value
+        }
+    }
+}
 
-impl<'a> JsonDecodable<'a> for RevocationRegistryEntryOperationValue {}
+impl JsonEncodable for RevocationRegistryDefOperation {}
 
-#[derive(Serialize, PartialEq, Debug)]
+#[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct RevocationRegistryEntryOperation {
     #[serde(rename = "type")]
     pub _type: String,
     pub revoc_reg_def_id: String,
     pub revoc_def_type: String,
-    pub value: RevocationRegistryEntryOperationValue,
+    pub value: RevocationRegistryDelta,
 }
 
 impl RevocationRegistryEntryOperation {
-    pub fn new(rev_def_type: &str, revoc_reg_def_id: &str, value: RevocationRegistryEntryOperationValue) -> RevocationRegistryEntryOperation {
+    pub fn new(rev_def_type: &str, revoc_reg_def_id: &str, value: RevocationRegistryDeltaV1) -> RevocationRegistryEntryOperation {
         RevocationRegistryEntryOperation {
             _type: REVOC_REG_ENTRY.to_string(),
             revoc_def_type: rev_def_type.to_string(),
             revoc_reg_def_id: revoc_reg_def_id.to_string(),
-            value
+            value: value.value
         }
     }
 }
@@ -624,3 +616,138 @@ impl GetRevRegDeltaOperation {
 }
 
 impl JsonEncodable for GetRevRegDeltaOperation {}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetSchemaReplyResult {
+    pub identifier: String,
+    pub req_id: u64,
+    pub seq_no: i32,
+    #[serde(rename = "type")]
+    pub  _type: String,
+    pub  data: SchemaOperationData,
+    pub  dest: String
+}
+
+impl<'a> JsonDecodable<'a> for GetSchemaReplyResult {}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct GetClaimDefReplyResult {
+    pub identifier: String,
+    #[serde(rename = "reqId")]
+    pub req_id: u64,
+    #[serde(rename = "ref")]
+    pub ref_: u64,
+    #[serde(rename = "seqNo")]
+    pub seq_no: i32,
+    #[serde(rename = "type")]
+    pub  _type: String,
+    pub  signature_type: SignatureType,
+    pub  origin: String,
+    pub  data: CredentialDefinitionData
+}
+
+impl<'a> JsonDecodable<'a> for GetClaimDefReplyResult {}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRevocRegDefReplyResult {
+    pub identifier: String,
+    pub req_id: u64,
+    pub seq_no: i32,
+    #[serde(rename = "type")]
+    pub  _type: String,
+    pub  data: RevocationRegistryDefinitionV1
+}
+
+impl<'a> JsonDecodable<'a> for GetRevocRegDefReplyResult {}
+
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRevocRegReplyResult {
+    pub identifier: String,
+    pub req_id: u64,
+    pub seq_no: i32,
+    #[serde(rename = "type")]
+    pub  _type: String,
+    pub revoc_reg_def_id: String,
+    pub  data: RevocationRegistryV1
+}
+
+impl<'a> JsonDecodable<'a> for GetRevocRegReplyResult {}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RevocationRegistryDeltaData {
+    pub value: RevocationRegistryDeltaValue
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct RevocationRegistryDeltaValue {
+    pub accum_from: Option<AccumulatorState>,
+    pub accum_to: AccumulatorState,
+    pub issued: HashSet<u32>,
+    pub revoked: HashSet<u32>
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AccumulatorState {
+    pub value: RevocationRegistry
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRevocRegDeltaReplyResult {
+    pub identifier: String,
+    pub req_id: u64,
+    pub seq_no: i32,
+    #[serde(rename = "type")]
+    pub  _type: String,
+    pub revoc_reg_def_id: String,
+    pub  data: RevocationRegistryDeltaData
+}
+
+impl<'a> JsonDecodable<'a> for GetRevocRegDeltaReplyResult {}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Response {
+    pub req_id: u64,
+    pub reason: String
+}
+
+impl JsonEncodable for Response {}
+
+impl<'a> JsonDecodable<'a> for Response {}
+
+
+#[derive(Deserialize, Debug)]
+pub struct ReplyResult<T> {
+    pub identifier: String,
+    pub req_id: u64,
+    pub seq_no: i32,
+    #[serde(rename = "type")]
+    pub  _type: String,
+    pub  data: T
+}
+
+impl<'a, T: JsonDecodable<'a>> JsonDecodable<'a> for ReplyResult<T> {}
+
+#[derive(Deserialize, Debug)]
+pub struct Reply<T> {
+    pub result: T,
+}
+
+impl<'a, T: JsonDecodable<'a>> JsonDecodable<'a> for Reply<T> {}
+
+#[serde(tag = "op")]
+#[derive(Deserialize, Debug)]
+pub enum Message<T> {
+    #[serde(rename = "REQNACK")]
+    ReqNACK(Response),
+    #[serde(rename = "REPLY")]
+    Reply(Reply<T>),
+    #[serde(rename = "REJECT")]
+    Reject(Response)
+}
