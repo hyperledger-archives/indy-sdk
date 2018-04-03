@@ -243,7 +243,8 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: DID of the submitter stored in secured Wallet.
-    /// data: {
+    /// {
+    ///     id: identifier of schema
     ///     attr_names: array of attribute name strings
     ///     name: Schema's name string
     ///     version: Schema's version string
@@ -293,6 +294,34 @@ extern "C" {
                                                                            indy_error_t  err,
                                                                            const char*   request_json)
                                                      );
+    /// Parse a GET_SCHEMA response.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// get_schema_response: response json
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Schema json.
+    /// {
+    ///     id: identifier of schema
+    ///     attr_names: array of attribute name strings
+    ///     name: Schema's name string
+    ///     version: Schema's version string
+    ///     ver: Version of the Schema json
+    /// }
+    ///
+    /// #Errors
+    /// Common*
+
+    extern indy_error_t indy_parse_get_schema_response(indy_handle_t command_handle,
+                                                       const char *  get_schema_response,
+
+                                                       void           (*cb)(indy_handle_t xcommand_handle,
+                                                                            indy_error_t  err,
+                                                                            const char*   schema_id,
+                                                                            const char*   schema_json)
+                                                       );
     
     /// Builds an CLAIM_DEF request. Request to add a claim definition (in particular, public key),
     /// that Issuer creates for a particular Claim Schema.
@@ -300,11 +329,16 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: DID of the submitter stored in secured Wallet.
-    /// xref: Sequence number of a Schema transaction the claim definition is created for.
-    /// signature_type: Type of the claim definition. CL is the only supported type now.
-    /// data: Dictionary with Claim Definition's data: {
-    ///     primary: primary claim public key
-    ///     revocation: revocation claim public key
+    /// data: credential definition json
+    /// {
+    ///     id: string - identifier of credential definition
+    ///     schemaId: string - identifier of stored in ledger schema
+    ///     type: string - type of the claim definition. CL is the only supported type now.
+    ///     tag: string - allows to distinct between credential definitions for the same issuer and schema
+    ///     value: Dictionary with Claim Definition's data: {
+    ///         primary: primary claim public key,
+    ///         Optional<revocation>: revocation claim public key
+    ///     }
     /// }
     /// cb: Callback that takes command result as parameter.
     ///
@@ -316,8 +350,6 @@ extern "C" {
     
     extern indy_error_t indy_build_claim_def_txn(indy_handle_t command_handle,
                                                  const char *  submitter_did,
-                                                 indy_i32_t  xref,
-                                                 const char *  signature_type,
                                                  const char *  data,
 
                                                  void           (*cb)(indy_handle_t xcommand_handle,
@@ -352,6 +384,37 @@ extern "C" {
                                                                            const char*   request_json)
                                                       );
 
+    /// Parse a GET_CLAIM_DEF response.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// get_claim_def_response: response json
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Credential Definition json.
+    /// {
+    ///     id: string - identifier of credential definition
+    ///     schemaId: string - identifier of stored in ledger schema
+    ///     type: string - type of the claim definition. CL is the only supported type now.
+    ///     tag: string - allows to distinct between credential definitions for the same issuer and schema
+    ///     value: Dictionary with Claim Definition's data: {
+    ///         primary: primary claim public key,
+    ///         Optional<revocation>: revocation claim public key
+    ///     } -
+    ///     ver: Version of the Credential Definition json
+    /// }
+    ///
+    /// #Errors
+    /// Common*
+
+     extern indy_error_t indy_parse_get_claim_def_response(indy_handle_t command_handle,
+                                                           const char *  get_claim_def_response,
+                                                           void           (*cb)(indy_handle_t xcommand_handle,
+                                                                                indy_error_t  err,
+                                                                                const char*   claim_def_id,
+                                                                                const char*   claim_def_json)
+                                                           );
 
     /// Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
     ///
@@ -539,6 +602,15 @@ extern "C" {
                                                                                   const char*   request_json)
                                                             );
 
+    extern indy_error_t indy_parse_get_revoc_reg_def_response(indy_handle_t command_handle,
+                                                              const char *  get_revoc_ref_def_response,
+
+                                                              void           (*cb)(indy_handle_t xcommand_handle,
+                                                                                   indy_error_t  err,
+                                                                                   const char*   revoc_reg_def_id,
+                                                                                   const char*   revoc_reg_def_json)
+                                                             );
+
     /// Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
     /// the new accumulator value and issued/revoked indices.
     /// This is just a delta of indices, not the whole list.
@@ -600,6 +672,34 @@ extern "C" {
                                                                               const char*   request_json)
                                                         );
 
+    /// Parse a GET_REVOC_REG response.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// get_revoc_reg_response: response json
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Revocation Registry json.
+    /// {
+    ///     "value": Registry-specific data {
+    ///         "accum": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+    ///     },
+    ///     "ver": string
+    /// }
+    ///
+    /// #Errors
+    /// Common*
+
+    extern indy_error_t indy_parse_get_revoc_reg_response(indy_handle_t command_handle,
+                                                          const char *  get_revoc_reg_response,
+
+                                                          void           (*cb)(indy_handle_t xcommand_handle,
+                                                                               indy_error_t  err,
+                                                                               const char*   revoc_reg_def_id,
+                                                                               const char*   revoc_reg_json)
+                                                         );
+
     /// Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
     /// The Delta is defined by from and to timestamp fields.
     /// If from is not specified, then the whole state till to will be returned.
@@ -628,7 +728,38 @@ extern "C" {
                                                                                     indy_error_t  err,
                                                                                     const char*   request_json)
                                                               );
-    
+
+    /// Parse a GET_REVOC_REG_DELTA response.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// get_revoc_reg_response: response json
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Revocation Registry Delta json.
+    /// {
+    ///     "value": Registry-specific data {
+    ///         prevAccum: string - previous accumulator value.
+    ///         accum: string - current accumulator value.
+    ///         issued: array<number> - an array of issued indices.
+    ///         revoked: array<number> an array of revoked indices.
+    ///     },
+    ///     "ver": string
+    /// }
+    ///
+    /// #Errors
+    /// Common*
+
+    extern indy_error_t indy_parse_get_revoc_reg_delta_response(indy_handle_t command_handle,
+                                                                const char *  get_revoc_reg_delta_response,
+
+                                                                void           (*cb)(indy_handle_t xcommand_handle,
+                                                                                     indy_error_t  err,
+                                                                                     const char*   revoc_reg_def_id,
+                                                                                     const char*   revoc_reg_delta_json)
+                                                               );
+
 #ifdef __cplusplus
 }
 #endif

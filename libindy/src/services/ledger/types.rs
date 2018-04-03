@@ -643,6 +643,7 @@ pub struct GetClaimDefReplyResult {
     #[serde(rename = "type")]
     pub  _type: String,
     pub  signature_type: SignatureType,
+    pub  origin: String,
     pub  data: CredentialDefinitionData
 }
 
@@ -670,12 +671,14 @@ pub struct GetRevocRegReplyResult {
     pub seq_no: i32,
     #[serde(rename = "type")]
     pub  _type: String,
+    pub revoc_reg_def_id: String,
     pub  data: RevocationRegistryV1
 }
 
 impl<'a> JsonDecodable<'a> for GetRevocRegReplyResult {}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RevocationRegistryDeltaData {
     pub value: RevocationRegistryDeltaValue
 }
@@ -701,6 +704,7 @@ pub struct GetRevocRegDeltaReplyResult {
     pub seq_no: i32,
     #[serde(rename = "type")]
     pub  _type: String,
+    pub revoc_reg_def_id: String,
     pub  data: RevocationRegistryDeltaData
 }
 

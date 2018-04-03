@@ -392,8 +392,8 @@ impl LedgerUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn parse_get_schema_response(get_schema_response: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+    pub fn parse_get_schema_response(get_schema_response: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
 
         let get_schema_response = CString::new(get_schema_response).unwrap();
 
@@ -402,11 +402,11 @@ impl LedgerUtils {
                                            get_schema_response.as_ptr(),
                                            cb);
 
-        super::results::result_to_string(err, receiver)
+        super::results::result_to_string_string(err, receiver)
     }
 
-    pub fn parse_get_claim_def_response(get_claim_def_response: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+    pub fn parse_get_claim_def_response(get_claim_def_response: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
 
         let get_claim_def_response = CString::new(get_claim_def_response).unwrap();
 
@@ -415,11 +415,11 @@ impl LedgerUtils {
                                               get_claim_def_response.as_ptr(),
                                               cb);
 
-        super::results::result_to_string(err, receiver)
+        super::results::result_to_string_string(err, receiver)
     }
 
-    pub fn parse_get_revoc_reg_def_response(get_revoc_reg_def_response: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+    pub fn parse_get_revoc_reg_def_response(get_revoc_reg_def_response: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
 
         let get_revoc_reg_def_response = CString::new(get_revoc_reg_def_response).unwrap();
 
@@ -428,11 +428,11 @@ impl LedgerUtils {
                                                   get_revoc_reg_def_response.as_ptr(),
                                                   cb);
 
-        super::results::result_to_string(err, receiver)
+        super::results::result_to_string_string(err, receiver)
     }
 
-    pub fn parse_get_revoc_reg_response(get_revoc_reg_response: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+    pub fn parse_get_revoc_reg_response(get_revoc_reg_response: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
 
         let get_revoc_reg_response = CString::new(get_revoc_reg_response).unwrap();
 
@@ -441,11 +441,11 @@ impl LedgerUtils {
                                               get_revoc_reg_response.as_ptr(),
                                               cb);
 
-        super::results::result_to_string(err, receiver)
+        super::results::result_to_string_string(err, receiver)
     }
 
-    pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+    pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
 
         let get_revoc_reg_delta_response = CString::new(get_revoc_reg_delta_response).unwrap();
 
@@ -454,7 +454,7 @@ impl LedgerUtils {
                                                     get_revoc_reg_delta_response.as_ptr(),
                                                     cb);
 
-        super::results::result_to_string(err, receiver)
+        super::results::result_to_string_string(err, receiver)
     }
 
     pub fn post_schema_to_ledger(pool_handle: i32, wallet_handle: i32, did: &str) -> (i32, String) {
@@ -464,15 +464,15 @@ impl LedgerUtils {
                                                                              GVT_SCHEMA_ATTRIBUTES).unwrap();
 
         let schema_request = LedgerUtils::build_schema_request(did, &schema_json).unwrap();
-        let schema_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
-        let schema_seq_no = serde_json::from_str::<serde_json::Value>(&schema_req_resp).unwrap()["result"]["seqNo"].as_i64().unwrap();
+        let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
 
         let get_schema_data = json!({"name": GVT_SCHEMA_NAME, "version": SCHEMA_VERSION}).to_string();
         let get_schema_request = LedgerUtils::build_get_schema_request(&did, &did, &get_schema_data).unwrap();
-        let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
-        let schema_json = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
+        let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
 
-        (schema_seq_no as i32, schema_json)
+        let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
+
+        (schema_id.parse::<i32>().unwrap(), schema_json)
     }
 
     pub fn prepare_cred_def(wallet_handle: i32, did: &str, schema_json: &str) -> (String, String) {
@@ -488,7 +488,7 @@ impl LedgerUtils {
     pub fn post_cred_def_to_ledger(pool_handle: i32, wallet_handle: i32, did: &str, schema_json: &str) -> String {
         let (cred_def_id, cred_def_json) = LedgerUtils::prepare_cred_def(wallet_handle, did, schema_json);
 
-        let claim_def_request = LedgerUtils::build_claim_def_txn(&did,  &cred_def_json).unwrap();
+        let claim_def_request = LedgerUtils::build_claim_def_txn(&did, &cred_def_json).unwrap();
         LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &claim_def_request).unwrap();
 
         cred_def_id
