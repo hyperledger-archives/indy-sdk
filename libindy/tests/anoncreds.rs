@@ -1150,7 +1150,7 @@ mod high_cases {
                "requested_attributes": json!({
                    "attr1_referent": json!({
                        "name":"name",
-                       "restrictions": [json!({ "schema_id": AnoncredsUtils::build_id(DID_TRUSTEE, "1", None, GVT_SCHEMA_NAME, SCHEMA_VERSION) })]
+                       "restrictions": [json!({ "schema_id": AnoncredsUtils::build_id(DID_TRUSTEE, "1", GVT_SCHEMA_NAME, SCHEMA_VERSION) })]
                    })
                }),
                "requested_predicates": json!({
@@ -1177,7 +1177,7 @@ mod high_cases {
                "requested_attributes": json!({
                    "attr1_referent": json!({
                        "name":"name",
-                       "restrictions": [json!({ "cred_def_id": AnoncredsUtils::build_id(DID_TRUSTEE, "2", Some(&AnoncredsUtils::gvt_schema_id()), GVT_SCHEMA_NAME, SCHEMA_VERSION) })]
+                       "restrictions": [json!({ "cred_def_id": AnoncredsUtils::build_id(DID_TRUSTEE, "2", &AnoncredsUtils::gvt_schema_id(), GVT_SCHEMA_NAME) })]
                    })
                }),
                "requested_predicates": json!({
@@ -1229,7 +1229,7 @@ mod high_cases {
                "requested_attributes": json!({}),
                "requested_predicates": json!({
                    "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
-                   "restrictions": [ json!({ "schema_id":AnoncredsUtils::build_id(DID_TRUSTEE, "1", None, GVT_SCHEMA_NAME, SCHEMA_VERSION) })] })
+                   "restrictions": [ json!({ "schema_id":AnoncredsUtils::build_id(DID_TRUSTEE, "1", GVT_SCHEMA_NAME, SCHEMA_VERSION) })] })
                }),
             }).to_string();
 
@@ -2505,7 +2505,7 @@ mod demos {
         let tails_writer_config = AnoncredsUtils::tails_writer_config();
         let tails_writer_handle = BlobStorageUtils::open_writer("default", &tails_writer_config).unwrap();
 
-        let (rev_reg_id, revoc_reg_def_json, entry) =
+        let (rev_reg_id, revoc_reg_def_json, _) =
             AnoncredsUtils::indy_issuer_create_and_store_revoc_reg(issuer_wallet_handle,
                                                                    &ISSUER_DID,
                                                                    None,
@@ -3598,10 +3598,7 @@ mod interaction {
     use utils::pool::PoolUtils;
     use utils::ledger::LedgerUtils;
     use utils::did::DidUtils;
-
-    use utils::domain::credential_definition::CredentialDefinitionV1;
-    use utils::domain::revocation_registry_definition::RevocationRegistryDefinitionV1;
-    use utils::domain::credential_offer::CredentialOffer;
+    use std::thread;
 
     #[cfg(feature = "revocation_tests")]
     #[test]
@@ -3630,59 +3627,60 @@ mod interaction {
         /* ISSUER post to Ledger Schema, CredentialDefinition, RevocationRegistry */
 
         // Issuer creates Schema
-        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(&issuer_did,
-                                                                            GVT_SCHEMA_NAME,
-                                                                            SCHEMA_VERSION,
-                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
+        let (_, schema_json) = AnoncredsUtils::issuer_create_schema(&issuer_did,
+                                                                    GVT_SCHEMA_NAME,
+                                                                    SCHEMA_VERSION,
+                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
 
-        // Issuer post Schema to Ledger
+        // Issuer posts Schema to Ledger
         let schema_request = LedgerUtils::build_schema_request(&issuer_did, &schema_json).unwrap();
         let schema_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
-        let schema_seq_no = serde_json::from_str::<serde_json::Value>(&schema_req_resp).unwrap()["result"]["seqNo"].as_i64().unwrap() as i32;
+
+        // Issuer get Schema from Ledger
+        let get_schema_data = json!({"name": GVT_SCHEMA_NAME, "version": SCHEMA_VERSION}).to_string();
+
+        let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &issuer_did, &get_schema_data).unwrap();
+        let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_req_resp).unwrap();
+
+        // !!IMPORTANT!!
+        // It is important to get Schema from Ledger and parse it to get the correct schema JSON and correspondent id in Ledger
+        // After that we can create CredentialDefinition for received Schema(not for result of indy_issuer_create_schema)
+        let schema_json = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
+        let schema = serde_json::from_str::<serde_json::Value>(&schema_json).unwrap();
+        let schema_id = schema["id"].as_str().unwrap();
 
         // Issuer creates CredentialDefinition
-        let (cred_def_id_in_wallet, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
-                                                                                                         &issuer_did,
-                                                                                                         &schema_json,
-                                                                                                         TAG_1,
-                                                                                                         None,
-                                                                                                         &AnoncredsUtils::revocation_cred_def_config()).unwrap();
-        let cred_def = serde_json::from_str::<CredentialDefinitionV1>(&cred_def_json).unwrap();
-        let cred_def_value_json = serde_json::to_string(&cred_def.value).unwrap();
+        let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
+                                                                                               &issuer_did,
+                                                                                               &schema_json,
+                                                                                               TAG_1,
+                                                                                               None,
+                                                                                               &AnoncredsUtils::revocation_cred_def_config()).unwrap();
 
         // Issuer post CredentialDefinition to Ledger
-        let cred_def_request = LedgerUtils::build_claim_def_txn(&issuer_did, schema_seq_no, SIGNATURE_TYPE, &cred_def_value_json).unwrap();
+        let cred_def_request = LedgerUtils::build_claim_def_txn(&issuer_did, &cred_def_json).unwrap();
         LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &cred_def_request).unwrap();
-        let cred_def_id_in_ledger = LedgerUtils::build_id(&issuer_did, "\x03", &schema_seq_no.to_string(), SIGNATURE_TYPE); // TODO FIXME
 
         // Issuer creates RevocationRegistry
         let tails_writer_config = AnoncredsUtils::tails_writer_config();
         let tails_writer_handle = BlobStorageUtils::open_writer("default", &tails_writer_config).unwrap();
 
-        let (rev_reg_id_in_wallet, rev_reg_def_json, rev_reg_entry_json) =
+        let (rev_reg_id, rev_reg_def_json, rev_reg_entry_json) =
             AnoncredsUtils::indy_issuer_create_and_store_revoc_reg(issuer_wallet_handle,
                                                                    &issuer_did,
                                                                    None,
                                                                    TAG_1,
-                                                                   &cred_def_id_in_wallet,
+                                                                   &cred_def_id,
                                                                    r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_ON_DEMAND"}"#,
                                                                    tails_writer_handle).unwrap();
 
         // Issuer posts RevocationRegistryDefinition to Ledger
-        let mut revoc_reg_def = serde_json::from_str::<RevocationRegistryDefinitionV1>(&rev_reg_def_json).unwrap();
-
-        let rev_reg_id_in_ledger = AnoncredsUtils::build_id(&issuer_did, "\x04", Some(&cred_def_id_in_ledger), REVOC_REG_TYPE, TAG_1);
-        revoc_reg_def.id = rev_reg_id_in_ledger.clone();
-        revoc_reg_def.cred_def_id = cred_def_id_in_ledger.to_string();
-
-        let revoc_reg_def_json = serde_json::to_string(&&revoc_reg_def).unwrap();
-
-        let rev_reg_def_request = LedgerUtils::build_revoc_reg_def_request(&issuer_did, &revoc_reg_def_json).unwrap();
+        let rev_reg_def_request = LedgerUtils::build_revoc_reg_def_request(&issuer_did, &rev_reg_def_json).unwrap();
         LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &rev_reg_def_request).unwrap();
 
         // Issuer posts RevocationRegistryEntry to Ledger
         let rev_reg_entry_request =
-            LedgerUtils::build_revoc_reg_entry_request(&issuer_did, &rev_reg_id_in_ledger, REVOC_REG_TYPE, &rev_reg_entry_json).unwrap();
+            LedgerUtils::build_revoc_reg_entry_request(&issuer_did, &rev_reg_id, REVOC_REG_TYPE, &rev_reg_entry_json).unwrap();
         LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &rev_reg_entry_request).unwrap();
 
 
@@ -3692,13 +3690,12 @@ mod interaction {
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
         // Issuer creates Credential Offer
-        let cred_offer_json = AnoncredsUtils::issuer_create_credential_offer(issuer_wallet_handle, &cred_def_id_in_wallet).unwrap();
+        let cred_offer_json = AnoncredsUtils::issuer_create_credential_offer(issuer_wallet_handle, &cred_def_id).unwrap();
 
         // Prover gets CredentialDefinition from Ledger
-        let get_cred_def_request = LedgerUtils::build_get_claim_def_txn(&prover_did, schema_seq_no, &SIGNATURE_TYPE, &issuer_did).unwrap();
+        let get_cred_def_request = LedgerUtils::build_get_claim_def_txn(&prover_did, schema_id.parse::<i32>().unwrap(), &SIGNATURE_TYPE, &issuer_did).unwrap();
         let get_cred_def_response = LedgerUtils::submit_request(pool_handle, &get_cred_def_request).unwrap();
-        let get_cred_def_response: Reply<GetOperationResult> = serde_json::from_str(&get_cred_def_response).unwrap();
-        let cred_def_json = serde_json::to_string(&get_cred_def_response.result.data.unwrap()).unwrap();
+        let cred_def_json = LedgerUtils::parse_get_claim_def_response(&get_cred_def_response).unwrap();
 
         // Prover creates Credential Request
         let (cred_req_json, cred_req_metadata_json) = AnoncredsUtils::prover_create_credential_req(prover_wallet_handle,
@@ -3716,40 +3713,20 @@ mod interaction {
                                                                                                       &cred_offer_json,
                                                                                                       &cred_req_json,
                                                                                                       &AnoncredsUtils::gvt_credential_values_json(),
-                                                                                                      Some(&rev_reg_id_in_wallet),
+                                                                                                      Some(&rev_reg_id),
                                                                                                       Some(blob_storage_reader_handle)).unwrap();
         let revoc_reg_delta_json = revoc_reg_delta_json.unwrap();
         let cred_rev_id = cred_rev_id.unwrap();
 
         // Issuer posts RevocationRegistryDelta to Ledger
         let rev_reg_entry_request =
-            LedgerUtils::build_revoc_reg_entry_request(&issuer_did, &rev_reg_id_in_ledger, REVOC_REG_TYPE, &revoc_reg_delta_json).unwrap();
-        let rev_reg_entry_response = LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &rev_reg_entry_request).unwrap();
-
-        /*
-                // ///////
-                let to = time::get_time().sec + 1000;
-
-                let get_rev_reg_req = LedgerUtils::build_get_revoc_reg_request(&issuer_did, &rev_reg_id_in_ledger, to).unwrap();
-                let get_rev_reg_resp = LedgerUtils::submit_request_with_retries(pool_handle, &get_rev_reg_req, &rev_reg_entry_response).unwrap();
-
-                let get_rev_reg_resp: Reply<GetOperationResult> = serde_json::from_str(&get_rev_reg_resp).unwrap();
-                assert!(get_rev_reg_resp.result.seq_no.is_some());
-
-
-                let get_rev_reg_delta_request = LedgerUtils::build_get_revoc_reg_delta_request(&issuer_did, &rev_reg_id_in_ledger, None, to).unwrap();
-                let get_rev_reg_delta_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_rev_reg_delta_request, &rev_reg_entry_response).unwrap();
-
-                let get_rev_reg_delta_response: Reply<GetOperationResult> = serde_json::from_str(&get_rev_reg_delta_response).unwrap();
-                let revoc_reg_delta_json = serde_json::to_string(&get_rev_reg_delta_response.result.data.unwrap()).unwrap();
-
-                panic!();*/
+            LedgerUtils::build_revoc_reg_entry_request(&issuer_did, &rev_reg_id, REVOC_REG_TYPE, &revoc_reg_delta_json).unwrap();
+        LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &rev_reg_entry_request).unwrap();
 
         // Prover gets RevocationRegistryDefinition
-        let get_rev_reg_def_request = LedgerUtils::build_get_revoc_reg_def_request(&prover_did, &rev_reg_id_in_ledger).unwrap();
+        let get_rev_reg_def_request = LedgerUtils::build_get_revoc_reg_def_request(&prover_did, &rev_reg_id).unwrap();
         let get_rev_reg_def_response = LedgerUtils::submit_request(pool_handle, &get_rev_reg_def_request).unwrap();
-        let get_rev_reg_def_response: Reply<GetOperationResult> = serde_json::from_str(&get_rev_reg_def_response).unwrap();
-        let revoc_reg_def_json = serde_json::to_string(&get_rev_reg_def_response.result.data.unwrap()).unwrap();
+        let revoc_reg_def_json = LedgerUtils::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap();
 
         // Prover store received Credential
         AnoncredsUtils::prover_store_credential(prover_wallet_handle,
@@ -3761,7 +3738,9 @@ mod interaction {
                                                 Some(&revoc_reg_def_json)).unwrap();
 
         /* Verifying Prover Credential */
-        let to = time::get_time().sec + 1000;
+        thread::sleep(std::time::Duration::from_secs(3));
+
+        let to = time::get_time().sec;
 
         let proof_request = json!({
            "nonce":"123432421212",
@@ -3783,13 +3762,9 @@ mod interaction {
         let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
         // Prover gets RevocationRegistryDelta from Ledger
-
-        // TODO: Replace on prover_did
-        let get_rev_reg_delta_request = LedgerUtils::build_get_revoc_reg_delta_request(&issuer_did, &rev_reg_id_in_ledger, None, to).unwrap();
+        let get_rev_reg_delta_request = LedgerUtils::build_get_revoc_reg_delta_request(&prover_did, &rev_reg_id, None, to).unwrap();
         let get_rev_reg_delta_response = LedgerUtils::submit_request(pool_handle, &get_rev_reg_delta_request).unwrap();
-
-        let get_rev_reg_delta_response: Reply<GetOperationResult> = serde_json::from_str(&get_rev_reg_delta_response).unwrap();
-        let revoc_reg_delta_json = serde_json::to_string(&get_rev_reg_delta_response.result.data.unwrap()).unwrap();
+        let revoc_reg_delta_json = LedgerUtils::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_response).unwrap();
 
         // Prover creates RevocationState
         let timestamp = to;
@@ -3803,8 +3778,7 @@ mod interaction {
         let get_schema_data = json!({"name": GVT_SCHEMA_NAME, "version": SCHEMA_VERSION}).to_string();
         let get_schema_request = LedgerUtils::build_get_schema_request(&prover_did, &issuer_did, &get_schema_data).unwrap();
         let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
-        let get_schema_response: Reply<GetOperationResult> = serde_json::from_str(&get_schema_response).unwrap();
-        let schema_json = serde_json::to_string(&get_schema_response.result.data.unwrap()).unwrap();
+        let schema_json = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
 
         // Prover creates Proof
         let requested_credentials_json = json!({
@@ -3822,11 +3796,11 @@ mod interaction {
         }).to_string();
 
         let cred_defs_json = json!({
-            cred_def_id_in_wallet.clone(): serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()
+            cred_def_id.clone(): serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()
         }).to_string();
 
         let rev_states_json = json!({
-            rev_reg_id_in_wallet.clone(): json!({
+            rev_reg_id.clone(): json!({
                 timestamp.to_string(): serde_json::from_str::<RevocationState>(&rev_state_json).unwrap()
             })
         }).to_string();
@@ -3841,21 +3815,19 @@ mod interaction {
         let proof: Proof = serde_json::from_str(&proof_json).unwrap();
 
         // Verifier gets RevocationRegistry from Ledger
-        // TODO replace on verifier_did
-        let get_rev_reg_req = LedgerUtils::build_get_revoc_reg_request(&issuer_did, &rev_reg_id_in_ledger, timestamp).unwrap();
+        let get_rev_reg_req = LedgerUtils::build_get_revoc_reg_request(DID_MY1, &rev_reg_id, timestamp).unwrap();
         let get_rev_reg_resp = LedgerUtils::submit_request(pool_handle, &get_rev_reg_req).unwrap();
-        let get_rev_reg_resp: Reply<GetOperationResult> = serde_json::from_str(&get_rev_reg_resp).unwrap();
-        let rev_reg_json = serde_json::to_string(&get_rev_reg_resp.result.data).unwrap();
+        let rev_reg_json = LedgerUtils::parse_get_revoc_reg_response(&get_rev_reg_resp).unwrap();
 
         // Verifier verifies proof
         assert_eq!("Alex", proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap().raw);
 
         let rev_reg_defs_json = json!({
-            rev_reg_id_in_wallet.clone(): serde_json::from_str::<RevocationRegistryDefinition>(&revoc_reg_def_json).unwrap()
+            rev_reg_id.clone(): serde_json::from_str::<RevocationRegistryDefinition>(&revoc_reg_def_json).unwrap()
         }).to_string();
 
         let rev_regs_json = json!({
-            rev_reg_id_in_wallet.clone(): json!({
+            rev_reg_id.clone(): json!({
                 timestamp.to_string(): serde_json::from_str::<RevocationRegistry>(&rev_reg_json).unwrap()
             })
         }).to_string();
@@ -3867,6 +3839,78 @@ mod interaction {
                                                           &rev_reg_defs_json,
                                                           &rev_regs_json).unwrap();
         assert!(valid);
+
+        // Issuer revokes credential
+        let rev_reg_delta_json = AnoncredsUtils::issuer_revoke_credential(issuer_wallet_handle, blob_storage_reader_handle, &rev_reg_id, &cred_rev_id).unwrap();
+
+        // Issuer post RevocationRegistryDelta to Ledger
+        let rev_reg_entry_request =
+            LedgerUtils::build_revoc_reg_entry_request(&issuer_did, &rev_reg_id, REVOC_REG_TYPE, &rev_reg_delta_json).unwrap();
+        LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &rev_reg_entry_request).unwrap();
+
+        /* Verifying Prover Credential after Revocation*/
+        thread::sleep(std::time::Duration::from_secs(3));
+
+        let from = to;
+        let to = time::get_time().sec;
+
+        // Prover gets RevocationRegistryDelta from Ledger
+        let get_rev_reg_delta_request = LedgerUtils::build_get_revoc_reg_delta_request(&prover_did, &rev_reg_id, Some(from), to).unwrap();
+        let get_rev_reg_delta_response = LedgerUtils::submit_request(pool_handle, &get_rev_reg_delta_request).unwrap();
+        let revoc_reg_delta_json = LedgerUtils::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_response).unwrap();
+
+        // Prover creates RevocationState
+        let timestamp = to;
+        let rev_state_json = AnoncredsUtils::create_revocation_state(blob_storage_reader_handle,
+                                                                     &revoc_reg_def_json,
+                                                                     &revoc_reg_delta_json,
+                                                                     timestamp as u64,
+                                                                     &cred_rev_id).unwrap();
+
+        let requested_credentials_json = json!({
+             "self_attested_attributes": json!({}),
+             "requested_attributes": json!({
+                "attr1_referent": json!({ "cred_id": credential.referent, "timestamp": timestamp,  "revealed":true })
+             }),
+             "requested_predicates": json!({
+                "predicate1_referent": json!({ "cred_id": credential.referent, "timestamp": timestamp })
+             })
+        }).to_string();
+
+        let rev_states_json = json!({
+            rev_reg_id.clone(): json!({
+                timestamp.to_string(): serde_json::from_str::<RevocationState>(&rev_state_json).unwrap()
+            })
+        }).to_string();
+
+        let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
+                                                             &proof_request,
+                                                             &requested_credentials_json,
+                                                             COMMON_MASTER_SECRET,
+                                                             &schemas_json,
+                                                             &cred_defs_json,
+                                                             &rev_states_json).unwrap();
+
+        // Verifier gets RevocationRegistry from Ledger
+        let get_rev_reg_req = LedgerUtils::build_get_revoc_reg_request(DID_MY1, &rev_reg_id, timestamp).unwrap();
+        let get_rev_reg_resp = LedgerUtils::submit_request(pool_handle, &get_rev_reg_req).unwrap();
+        let rev_reg_json = LedgerUtils::parse_get_revoc_reg_response(&get_rev_reg_resp).unwrap();
+
+        let timestamp = to;
+        let rev_regs_json = json!({
+            rev_reg_id.clone(): json!({
+                timestamp.to_string(): serde_json::from_str::<RevocationRegistry>(&rev_reg_json).unwrap()
+            })
+        }).to_string();
+
+        let valid = AnoncredsUtils::verifier_verify_proof(&proof_request,
+                                                          &proof_json,
+                                                          &schemas_json,
+                                                          &cred_defs_json,
+                                                          &rev_reg_defs_json,
+                                                          &rev_regs_json).unwrap();
+        assert!(!valid);
+
 
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();

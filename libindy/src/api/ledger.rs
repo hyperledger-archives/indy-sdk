@@ -376,6 +376,7 @@ pub extern fn indy_build_get_nym_request(command_handle: i32,
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: DID of the submitter stored in secured Wallet.
 /// data: {
+///     id: identifier of schema
 ///     attr_names: array of attribute name strings
 ///     name: Schema's name string
 ///     version: Schema's version string
@@ -456,6 +457,27 @@ pub extern fn indy_build_get_schema_request(command_handle: i32,
     result_to_err_code!(result)
 }
 
+#[no_mangle]
+pub extern fn indy_parse_get_schema_response(command_handle: i32,
+                                             get_schema_response: *const c_char,
+                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                  schema_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(get_schema_response, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::ParseGetSchemaResponse(
+            get_schema_response,
+            Box::new(move |result| {
+                let (err, schema_json) = result_to_err_code_1!(result, String::new());
+                let schema_json = CStringUtils::string_to_cstring(schema_json);
+                cb(command_handle, err, schema_json.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
 /// Builds an CLAIM_DEF request. Request to add a claim definition (in particular, public key),
 /// that Issuer creates for a particular Claim Schema.
 ///
@@ -478,21 +500,16 @@ pub extern fn indy_build_get_schema_request(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_build_claim_def_txn(command_handle: i32,
                                        submitter_did: *const c_char,
-                                       xref: i32,
-                                       signature_type: *const c_char,
                                        data: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             request_result_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(signature_type, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(data, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(data, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildClaimDefRequest(
             submitter_did,
-            xref,
-            signature_type,
             data,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
@@ -543,6 +560,27 @@ pub extern fn indy_build_get_claim_def_txn(command_handle: i32,
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+#[no_mangle]
+pub extern fn indy_parse_get_claim_def_response(command_handle: i32,
+                                                get_claim_def_response: *const c_char,
+                                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                     claim_def_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(get_claim_def_response, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::ParseGetClaimDefResponse(
+            get_claim_def_response,
+            Box::new(move |result| {
+                let (err, claim_def_json) = result_to_err_code_1!(result, String::new());
+                let claim_def_json = CStringUtils::string_to_cstring(claim_def_json);
+                cb(command_handle, err, claim_def_json.as_ptr())
             })
         )));
 
@@ -836,6 +874,27 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: i32,
     result_to_err_code!(result)
 }
 
+#[no_mangle]
+pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: i32,
+                                                    get_revoc_ref_def_response: *const c_char,
+                                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                         revoc_reg_def_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(get_revoc_ref_def_response, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::ParseGetRevocRegDefResponse(
+            get_revoc_ref_def_response,
+            Box::new(move |result| {
+                let (err, revoc_reg_def_json) = result_to_err_code_1!(result, String::new());
+                let revoc_reg_def_json = CStringUtils::string_to_cstring(revoc_reg_def_json);
+                cb(command_handle, err, revoc_reg_def_json.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
 /// Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
 /// the new accumulator value and issued/revoked indices.
 /// This is just a delta of indices, not the whole list.
@@ -930,6 +989,27 @@ pub extern fn indy_build_get_revoc_reg_request(command_handle: i32,
     result_to_err_code!(result)
 }
 
+#[no_mangle]
+pub extern fn indy_parse_get_revoc_reg_response(command_handle: i32,
+                                                get_revoc_reg_response: *const c_char,
+                                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                     revoc_reg_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(get_revoc_reg_response, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::ParseGetRevocRegResponse(
+            get_revoc_reg_response,
+            Box::new(move |result| {
+                let (err, revoc_reg_json) = result_to_err_code_1!(result, String::new());
+                let revoc_reg_json = CStringUtils::string_to_cstring(revoc_reg_json);
+                cb(command_handle, err, revoc_reg_json.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
 /// Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
 /// The Delta is defined by from and to timestamp fields.
 /// If from is not specified, then the whole state till to will be returned.
@@ -971,6 +1051,27 @@ pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: i32,
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+#[no_mangle]
+pub extern fn indy_parse_get_revoc_reg_delta_response(command_handle: i32,
+                                                      get_revoc_reg_delta_response: *const c_char,
+                                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                           revoc_reg_delta_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(get_revoc_reg_delta_response, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::ParseGetRevocRegDeltaResponse(
+            get_revoc_reg_delta_response,
+            Box::new(move |result| {
+                let (err, revoc_reg_delta_json) = result_to_err_code_1!(result, String::new());
+                let revoc_reg_delta_json = CStringUtils::string_to_cstring(revoc_reg_delta_json);
+                cb(command_handle, err, revoc_reg_delta_json.as_ptr())
             })
         )));
 

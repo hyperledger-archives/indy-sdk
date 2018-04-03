@@ -2,12 +2,10 @@ extern crate indy_crypto;
 extern crate serde;
 extern crate serde_json;
 
-use self::serde::ser::{self, Serialize, Serializer};
-
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use self::indy_crypto::cl::RevocationKeyPublic;
 
-use super::build_id;
+use super::DELIMITER;
 
 use std::collections::HashMap;
 
@@ -80,40 +78,21 @@ pub struct RevocationRegistryDefinitionV1 {
     pub value: RevocationRegistryDefinitionValue
 }
 
-impl RevocationRegistryDefinitionV1 {
-    const VERSION: &'static str = "1";
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "ver")]
 pub enum RevocationRegistryDefinition {
     RevocationRegistryDefinitionV1(RevocationRegistryDefinitionV1)
 }
 
 impl RevocationRegistryDefinition {
     pub fn rev_reg_id(did: &str, cred_def_id: &str, rev_reg_type: &RegistryType, tag: &str) -> String {
-        build_id(did, REV_REG_DEG_MARKER, Some(cred_def_id), rev_reg_type.to_str(), tag)
+        format!("{}{}{}{}{}{}{}{}{}", did, DELIMITER, REV_REG_DEG_MARKER, DELIMITER, cred_def_id, DELIMITER, rev_reg_type.to_str(), DELIMITER, tag)
     }
 }
 
 impl JsonEncodable for RevocationRegistryDefinition {}
 
 impl<'a> JsonDecodable<'a> for RevocationRegistryDefinition {}
-
-impl Serialize for RevocationRegistryDefinition
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer
-    {
-        match *self {
-            RevocationRegistryDefinition::RevocationRegistryDefinitionV1(ref rev_reg_def) => {
-                let mut v = serde_json::to_value(rev_reg_def).map_err(ser::Error::custom)?;
-                v["ver"] = serde_json::Value::String(RevocationRegistryDefinitionV1::VERSION.to_string());
-                v.serialize(serializer)
-            }
-        }
-    }
-}
 
 impl From<RevocationRegistryDefinition> for RevocationRegistryDefinitionV1 {
     fn from(rev_reg_def: RevocationRegistryDefinition) -> Self {

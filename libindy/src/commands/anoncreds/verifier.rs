@@ -10,7 +10,7 @@ use std::rc::Rc;
 use self::indy_crypto::utils::json::JsonDecodable;
 
 use domain::schema::{Schema, schemas_map_to_schemas_v1_map};
-use domain::credential_definition::{CredentialDefinition, cred_defs_map_to_cred_defs_v0_map};
+use domain::credential_definition::{CredentialDefinition, cred_defs_map_to_cred_defs_v1_map};
 use domain::proof::Proof;
 use domain::proof_request::ProofRequest;
 use domain::revocation_registry_definition::{RevocationRegistryDefinition, rev_reg_defs_map_to_rev_reg_defs_v1_map};
@@ -139,7 +139,7 @@ impl VerifierCommandExecutor {
         let result = self.anoncreds_service.verifier.verify(&proof,
                                                             &proof_req,
                                                             &schemas_map_to_schemas_v1_map(schemas),
-                                                            &cred_defs_map_to_cred_defs_v0_map(cred_defs),
+                                                            &cred_defs_map_to_cred_defs_v1_map(cred_defs),
                                                             &rev_reg_defs_map_to_rev_reg_defs_v1_map(rev_reg_defs),
                                                             &rev_regs_map_to_rev_regs_local_map(rev_regs))?;
 

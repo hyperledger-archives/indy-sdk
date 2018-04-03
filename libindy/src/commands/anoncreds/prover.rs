@@ -17,12 +17,12 @@ use super::tails::SDKTailsAccessor;
 
 use domain::schema::{Schema, schemas_map_to_schemas_v1_map};
 use domain::credential::{Credential, CredentialInfo};
-use domain::credential_definition::{CredentialDefinition, CredentialDefinitionV0, cred_defs_map_to_cred_defs_v0_map};
+use domain::credential_definition::{CredentialDefinition, CredentialDefinitionV1, cred_defs_map_to_cred_defs_v1_map};
 use domain::credential_offer::CredentialOffer;
 use domain::credential_request::{CredentialRequest, CredentialRequestMetadata};
 use domain::filter::Filter;
 use domain::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
-use domain::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaLocal};
+use domain::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
 use domain::proof::Proof;
 use domain::proof_request::ProofRequest;
 use domain::requested_credential::RequestedCredentials;
@@ -187,7 +187,7 @@ impl ProverCommandExecutor {
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialOffer: {:?}", err)))?;
 
         let (blinded_ms, ms_blinding_data, blinded_ms_correctness_proof) =
-            self.anoncreds_service.prover.new_credential_request(&CredentialDefinitionV0::from(cred_def),
+            self.anoncreds_service.prover.new_credential_request(&CredentialDefinitionV1::from(cred_def),
                                                                  &master_secret,
                                                                  &cred_offer)?;
 
@@ -259,7 +259,7 @@ impl ProverCommandExecutor {
         self.anoncreds_service.prover.process_credential(&mut credential,
                                                          &cred_request_metadata,
                                                          &master_secret,
-                                                         &CredentialDefinitionV0::from(cred_def),
+                                                         &CredentialDefinitionV1::from(cred_def),
                                                          rev_reg_def.as_ref())?;
 
         credential.rev_reg = None;
@@ -402,7 +402,7 @@ impl ProverCommandExecutor {
                                                                &requested_credentials,
                                                                &master_secret,
                                                                &schemas_map_to_schemas_v1_map(schemas),
-                                                               &cred_defs_map_to_cred_defs_v0_map(cred_defs),
+                                                               &cred_defs_map_to_cred_defs_v1_map(cred_defs),
                                                                &rev_states)?;
 
         let proof_json = Proof::to_json(&proof)
@@ -436,14 +436,14 @@ impl ProverCommandExecutor {
                                                        blob_storage_reader_handle,
                                                        &revocation_registry_definition)?;
 
-        let rev_reg_delta_local = RevocationRegistryDeltaLocal::from(rev_reg_delta);
+        let rev_reg_delta = RevocationRegistryDeltaV1::from(rev_reg_delta);
 
-        let witness = Witness::new(rev_idx, revocation_registry_definition.value.max_cred_num, &rev_reg_delta_local, &sdk_tails_accessor)
+        let witness = Witness::new(rev_idx, revocation_registry_definition.value.max_cred_num, &rev_reg_delta.value, &sdk_tails_accessor)
             .map_err(|err| IndyError::CommonError(CommonError::from(err)))?;
 
         let revocation_state = RevocationState {
             witness,
-            rev_reg: RevocationRegistry::from(rev_reg_delta_local),
+            rev_reg: RevocationRegistry::from(rev_reg_delta.value),
             timestamp,
         };
 
@@ -482,12 +482,12 @@ impl ProverCommandExecutor {
                                                        blob_storage_reader_handle,
                                                        &revocation_registry_definition)?;
 
-        let rev_reg_delta_local = RevocationRegistryDeltaLocal::from(rev_reg_delta);
+        let rev_reg_delta = RevocationRegistryDeltaV1::from(rev_reg_delta);
 
-        rev_state.witness.update(rev_idx, revocation_registry_definition.value.max_cred_num, &rev_reg_delta_local, &sdk_tails_accessor)
+        rev_state.witness.update(rev_idx, revocation_registry_definition.value.max_cred_num, &rev_reg_delta.value, &sdk_tails_accessor)
             .map_err(|err| IndyError::CommonError(CommonError::from(err)))?;
 
-        rev_state.rev_reg = RevocationRegistry::from(rev_reg_delta_local);
+        rev_state.rev_reg = RevocationRegistry::from(rev_reg_delta.value);
         rev_state.timestamp = timestamp;
 
         let rev_state_json = rev_state.to_json()
