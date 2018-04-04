@@ -10,52 +10,52 @@ from tests.conftest import path_home as x_path_home, pool_name as x_pool_name, w
     xwallet as x_xwallet
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def path_home():
     # noinspection PyTypeChecker
     for i in x_path_home():
         yield i
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def pool_name():
     return x_pool_name()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def wallet_name():
     return x_wallet_name()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def wallet_type():
     return x_wallet_type()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def wallet_runtime_config():
     return x_wallet_runtime_config()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def xwallet_cleanup():
     return x_xwallet_cleanup()
 
 
 # noinspection PyUnusedLocal
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home):
     xwallet_gen = x_xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home, None)
     yield next(xwallet_gen)
     next(xwallet_gen)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def wallet_handle_cleanup():
     return x_wallet_handle_cleanup()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, wallet_handle_cleanup):
     wallet_handle_gen = \
         x_wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, None, wallet_handle_cleanup)
@@ -63,47 +63,47 @@ def wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, walle
     next(wallet_handle_gen)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def issuer_did():
     return "NcYxiDXkpYi6ov5FcYDi1e"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def issuer_did_2():
     return "NcYxiDXkpYi6ov5FcYDi1e3"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def prover_did():
     return "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def schema_seq_no():
     return 1
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def schema_seq_no_2():
     return 2
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def master_secret_name():
     return "common_master_secret_name"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def master_secret_name_1():
     return "common_master_secret_name_1"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def master_secret_name_2():
     return "common_master_secret_name_2"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def schema_key(issuer_did):
     return {
         'name': 'gvt',
@@ -112,12 +112,12 @@ def schema_key(issuer_did):
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def schema_key_json(schema_key):
     return json.dumps(schema_key)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def xyz_schema_key(issuer_did):
     return {
         'name': 'xyz',
@@ -126,7 +126,7 @@ def xyz_schema_key(issuer_did):
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def schema_key_json(schema_key):
     return json.dumps(schema_key)
 
@@ -149,47 +149,47 @@ def claim_offer(issuer_did, schema_key):
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def claim_offer_issuer_1_schema_1(issuer_did, schema_key, prover_did):
     return claim_offer(issuer_did, schema_key)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def claim_offer_issuer_1_schema_1_json(claim_offer_issuer_1_schema_1):
     return json.dumps(claim_offer_issuer_1_schema_1)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def claim_offer_issuer_1_schema_2(issuer_did, xyz_schema_key, prover_did):
     return claim_offer(issuer_did, xyz_schema_key)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def claim_offer_issuer_1_schema_2_json(claim_offer_issuer_1_schema_2):
     return json.dumps(claim_offer_issuer_1_schema_2)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def claim_offer_issuer_2_schema_1(issuer_did_2, schema_key, prover_did):
     return claim_offer(issuer_did_2, schema_key)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def claim_offer_issuer_2_schema_1_json(claim_offer_issuer_2_schema_1):
     return json.dumps(claim_offer_issuer_2_schema_1)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def claim_offer_prover_2(prover_did, xyz_schema_key):
     return claim_offer(prover_did, xyz_schema_key)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def claim_offer_prover_2_json(claim_offer_prover_2):
     return json.dumps(claim_offer_prover_2)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def gvt_schema(schema_seq_no: int, issuer_did: str):
     return {
         "seqNo": schema_seq_no,
@@ -202,7 +202,7 @@ def gvt_schema(schema_seq_no: int, issuer_did: str):
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def xyz_schema(schema_seq_no: int, issuer_did: str):
     return {
         "seqNo": 2,
@@ -215,17 +215,17 @@ def xyz_schema(schema_seq_no: int, issuer_did: str):
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def gvt_schema_json(gvt_schema):
     return json.dumps(gvt_schema)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def xyz_schema_json(xyz_schema):
     return json.dumps(xyz_schema)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def gvt_claim():
     return {
         "sex": ["male", "5944657099558967239210949258394887428692050081607692519917050011144233115103"],
@@ -235,12 +235,12 @@ def gvt_claim():
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def gvt_claim_json(gvt_claim):
     return json.dumps(gvt_claim)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def gvt_claim_2():
     return {
         "sex": ["male", "2142657394558967239210949258394838228692050081607692519917028371144233115103"],
@@ -250,12 +250,12 @@ def gvt_claim_2():
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def gvt_2_claim_json(gvt_claim):
     return json.dumps(gvt_claim)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def xyz_claim():
     return {
         "status": ["partial", "51792877103171595686471452153480627530895"],
@@ -263,17 +263,17 @@ def xyz_claim():
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def xyz_claim_json(xyz_claim):
     return json.dumps(xyz_claim)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def predicate_value():
     return 18
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def proof_req(predicate_value, schema_key):
     return {
         "nonce": "123432421212",
@@ -296,12 +296,12 @@ def proof_req(predicate_value, schema_key):
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def proof_req_json(proof_req):
     return json.dumps(proof_req)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def claim_def(issuer_did):
     return {
         "ref": 1,
@@ -326,12 +326,12 @@ def claim_def(issuer_did):
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def claim_def_json(claim_def):
     return json.dumps(claim_def)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, gvt_claim_json, gvt_2_claim_json,
                               xyz_claim_json, issuer_did, issuer_did_2, master_secret_name, prover_did):
     # Create GVT Claim by Issuer1
