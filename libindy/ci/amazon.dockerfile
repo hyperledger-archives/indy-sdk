@@ -18,7 +18,7 @@ RUN \
            spectool
 
 RUN cd /tmp && \
-   curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.12.tar.gz | tar -xz && \
+   curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.12.tar.gz | tar -xz && \
     cd /tmp/libsodium-1.0.12 && \
     ./configure && \
     make && \
