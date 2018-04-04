@@ -1,8 +1,8 @@
 extern crate libc;
 extern crate indy_crypto;
 
-mod default;
-mod plugged;
+mod storage;
+mod encryption;
 
 use self::default::DefaultWalletType;
 use self::plugged::PluggedWalletType;
@@ -22,20 +22,180 @@ use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use self::libc::c_char;
 
-pub trait Wallet {
-    fn set(&self, key: &str, value: &str) -> Result<(), WalletError>;
-    fn get(&self, key: &str) -> Result<String, WalletError>;
-    fn list(&self, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError>;
-    fn get_not_expired(&self, key: &str) -> Result<String, WalletError>;
-    fn close(&self) -> Result<(), WalletError>;
-    fn get_pool_name(&self) -> String;
-    fn get_name(&self) -> String;
+use self::storage::StorageType;
+
+#[derive(Debug, Default)]
+struct Keys {
+   class_key: [u8; 32],
+   name_key: [u8; 32],
+   value_key: [u8; 32],
+   item_hmac_key: [u8; 32],
+   tag_name_key: [u8; 32],
+   tag_value_key: [u8; 32],
+   tags_hmac_key: [u8; 32]
 }
 
-trait WalletType {
-    fn create(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError>;
-    fn delete(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError>;
-    fn open(&self, name: &str, pool_name: &str, config: Option<&str>, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError>;
+impl Keys {
+    fn new(keys_vector: Vec<u8>) -> Keys {
+        let mut keys: Keys = Default::default();
+
+        keys.class_key.clone_from_slice(&keys_vector[0..32]);
+        keys.name_key.clone_from_slice(&keys_vector[32..64]);
+        keys.value_key.clone_from_slice(&keys_vector[64..96]);
+        keys.item_hmac_key.clone_from_slice(&keys_vector[96..128]);
+        keys.tag_name_key.clone_from_slice(&keys_vector[128..160]);
+        keys.tag_value_key.clone_from_slice(&keys_vector[160..192]);
+        keys.tags_hmac_key.clone_from_slice(&keys_vector[192..224]);
+
+        return keys;
+    }
+
+    fn gen_keys(master_key: [u8; 32]) -> Vec<u8>{
+        let xchacha20poly1305_ietf::Key(class_key) = xchacha20poly1305_ietf::gen_key();
+        let xchacha20poly1305_ietf::Key(name_key) = xchacha20poly1305_ietf::gen_key();
+        let xchacha20poly1305_ietf::Key(value_key) = xchacha20poly1305_ietf::gen_key();
+        let xchacha20poly1305_ietf::Key(item_hmac_key) = xchacha20poly1305_ietf::gen_key();
+        let xchacha20poly1305_ietf::Key(tag_name_key) = xchacha20poly1305_ietf::gen_key();
+        let xchacha20poly1305_ietf::Key(tag_value_key) = xchacha20poly1305_ietf::gen_key();
+        let xchacha20poly1305_ietf::Key(tags_hmac_key) = xchacha20poly1305_ietf::gen_key();
+
+        let mut keys: Vec<u8> = Vec::new();
+        keys.extend_from_slice(&class_key);
+        keys.extend_from_slice(&name_key);
+        keys.extend_from_slice(&value_key);
+        keys.extend_from_slice(&item_hmac_key);
+        keys.extend_from_slice(&tag_name_key);
+        keys.extend_from_slice(&tag_value_key);
+        keys.extend_from_slice(&tags_hmac_key);
+
+        return _encrypt_as_not_searchable(&keys, master_key);
+    }
+}
+
+pub struct WalletEntity {
+    name: String,
+    value: Option<String>,
+    tags: Option<HashMap<String, String>>,
+}
+
+impl WalletEntity {
+    fn new(name: &str, value: Option<String>, tags: Option<HashMap<String, String>>) -> WalletEntity {
+        WalletEntity {
+            name: name.to_string(),
+            value: value,
+            tags: tags,
+        }
+    }
+
+    fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    fn get_value(&self) -> Result<&str, WalletError> {
+        match self.value {
+            Some(ref value) => Ok(&value),
+            None => Err(WalletError::NotFound)
+        }
+    }
+
+    fn get_tags(&self) -> Result<&HashMap<String, String>, WalletError> {
+        match self.tags {
+            Some(ref tags) => Ok(&tags),
+            None => Err(WalletError::NotFound)
+        }
+    }
+}
+
+struct Wallet {
+    name: String,
+    pool_name: String,
+    storage: Box<storage::Storage>,
+    keys: Keys,
+}
+
+impl Wallet {
+    fn new(name: &str, pool_name: &str, storage: Box<storage::Storage>, keys: Keys, master_key: [u8; 32]) -> Result<GenericWallet, WalletError> {
+        let keys = _decrypt(&encrypted_keys, master_key)?;
+        GenericWallet {
+            name: name.to_string(),
+            pool_name: pool_name.to_string(),
+            storage: storage,
+            keys: keys,
+        }
+    }
+
+    fn add(&self, class: &str, name: &str, value: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
+        let eclass = _encrypt_as_searchable(class.as_bytes(), self.keys.class_key, self.keys.item_hmac_key);
+        let ename = _encrypt_as_searchable(name.as_bytes(), self.keys.name_key, self.keys.item_hmac_key);
+        let xchacha20poly1305_ietf::Key(value_key) = xchacha20poly1305_ietf::gen_key();
+        let evalue = _encrypt_as_not_searchable(value.as_bytes(), value_key);
+        let evalue_key = _encrypt_as_not_searchable(&value_key, self.keys.value_key);
+
+        let etags = _encrypt_tags(tags, self.keys.tag_name_key, self.keys.tag_value_key, self.keys.tags_hmac_key);
+
+        self.storage.add(&eclass, &ename, &evalue, &evalue_key, &etags)?;
+        Ok(())
+    }
+
+    fn get(&self, class: &str, name: &str, options: &str) -> Result<WalletEntity, WalletError> {
+        let eclass = _encrypt_as_searchable(class.as_bytes(), self.keys.class_key, self.keys.item_hmac_key);
+        let ename = _encrypt_as_searchable(name.as_bytes(), self.keys.name_key, self.keys.item_hmac_key);
+
+        let result = self.storage.get(&eclass, &ename, options)?;
+
+        let value = match result.value {
+            None => None,
+            Some(storage_value) => {
+                let value_key = _decrypt(&storage_value.key, self.keys.value_key)?;
+                if value_key.len() != 32 {
+                    return Err(WalletError::EncryptionError("Value key is not right size".to_string()));
+                }
+                let mut vkey: [u8; 32] = Default::default();
+                vkey.copy_from_slice(&value_key);
+                Some(String::from_utf8(_decrypt(&storage_value.data, vkey)?)?)
+            }
+        };
+
+        Ok(WalletEntity::new(name, value,_decrypt_tags(&result.tags, self.keys.tag_name_key, self.keys.tag_value_key)?))
+    }
+
+    fn delete(&self, class: &str, name: &str) -> Result<(), WalletError> {
+        let eclass = _encrypt_as_searchable(class.as_bytes(), self.keys.class_key, self.keys.item_hmac_key);
+        let ename = _encrypt_as_searchable(name.as_bytes(), self.keys.name_key, self.keys.item_hmac_key);
+
+        self.storage.delete(&eclass, &ename)?;
+        Ok(())
+    }
+
+    fn search<'a>(&'a self, class: &str, query: &str, options: Option<&str>) -> Result<Box<WalletIterator + 'a>, WalletError> {
+        let parsed_query = language::parse_from_json(query)?;
+        let encrypted_query = encrypt_query(parsed_query, &self.keys);
+        let encrypted_class = _encrypt_as_searchable(class.as_bytes(), self.keys.class_key, self.keys.item_hmac_key);
+        let storage_iterator = self.storage.search(&encrypted_class, &encrypted_query, options)?;
+        let wallet_iterator = GenericWalletIterator::new(storage_iterator, &self.keys);
+        Ok(Box::new(wallet_iterator))
+    }
+
+    fn close(&mut self) -> Result<(), WalletError> {
+        self.storage.close()?;
+        Ok(())
+    }
+
+    fn get_pool_name(&self) -> String {
+        self.pool_name.clone()
+    }
+
+    fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn export(&self, writer: Box<Write>, key: [u8; 32]) -> Result<(), WalletError> {
+        Err(WalletError::NotImplemented)
+    }
+
+    fn import(&self, reader: Box<Read>, key: [u8; 32], clear_before: bool) -> Result<(), WalletError> {
+        Err(WalletError::NotImplemented)
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -82,7 +242,7 @@ impl JsonEncodable for WalletMetadata {}
 impl<'a> JsonDecodable<'a> for WalletMetadata {}
 
 pub struct WalletService {
-    types: RefCell<HashMap<String, Box<WalletType>>>,
+    types: RefCell<HashMap<String, Box<StorageType>>>,
     wallets: RefCell<HashMap<i32, Box<Wallet>>>
 }
 
@@ -142,8 +302,8 @@ impl WalletService {
                   credentials: Option<&str>) -> Result<(), WalletError> {
         let xtype = xtype.unwrap_or("default");
 
-        let wallet_types = self.types.borrow();
-        if !wallet_types.contains_key(xtype) {
+        let storage_types = self.types.borrow();
+        if !storage_types.contains_key(xtype) {
             return Err(WalletError::UnknownType(xtype.to_string()));
         }
 
@@ -155,8 +315,8 @@ impl WalletService {
             .recursive(true)
             .create(wallet_path)?;
 
-        let wallet_type = wallet_types.get(xtype).unwrap();
-        wallet_type.create(name, config, credentials)?;
+        let storage_type = storage_types.get(xtype).unwrap();
+        storage_type.create(name, config, credentials, &Keys::gen_keys(master_key))?;
 
         let mut descriptor_file = File::create(_wallet_descriptor_path(name))?;
         descriptor_file
@@ -220,11 +380,11 @@ impl WalletService {
             descriptor_json.as_str()
         })?;
 
-        let wallet_types = self.types.borrow();
-        if !wallet_types.contains_key(descriptor.xtype.as_str()) {
+        let storage_types = self.types.borrow();
+        if !storage_types.contains_key(descriptor.xtype.as_str()) {
             return Err(WalletError::UnknownType(descriptor.xtype));
         }
-        let wallet_type = wallet_types.get(descriptor.xtype.as_str()).unwrap();
+        let storage_type = storage_types.get(descriptor.xtype.as_str()).unwrap();
 
         let mut wallets = self.wallets.borrow_mut();
         if wallets.values().any(|ref wallet| wallet.get_name() == name) {
@@ -244,11 +404,13 @@ impl WalletService {
             }
         };
 
-        let wallet = wallet_type.open(name,
+        let storage, enc_keys = storage_type.open(name,
                                       descriptor.pool_name.as_str(),
                                       config.as_ref().map(String::as_str),
                                       runtime_config,
                                       credentials)?;
+
+        let wallet = Wallet::new(name, pool_name, storage, enc_keys)?;
 
         let wallet_handle = SequenceUtils::get_next_id();
         wallets.insert(wallet_handle, wallet);
