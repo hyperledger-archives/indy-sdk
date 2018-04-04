@@ -3,7 +3,7 @@ package org.hyperledger.indy.sdk.anoncreds;
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
 import org.junit.Test;
-
+import org.json.JSONObject;
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
@@ -20,11 +20,11 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverCreateProofWorks() throws Exception {
 
-		String schemasJson = String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema);
-		String credentialDefsJson = String.format("{\"%s\":%s}", issuer1gvtCredDefId, issuer1gvtCredDef);
-		String revocStatesJson = "{}";
+		String schemasJson = new JSONObject().put(gvtSchemaId, new JSONObject(gvtSchema)).toString();
+		String credentialDefsJson = new JSONObject().put(issuer1gvtCredDefId, new JSONObject(issuer1gvtCredDef)).toString();
+		String revocStatesJson = new JSONObject().toString();
 
-		String proofJson = Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson,
+		String proofJson = Anoncreds.proverCreateProof(wallet, proofRequest, new JSONObject(requestedCredentialsJson).toString(),
 				masterSecretId, schemasJson, credentialDefsJson, revocStatesJson).get();
 		assertNotNull(proofJson);
 	}
@@ -40,24 +40,26 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 				"                                    \"requested_predicates\":{}\n" +
 				"                                   }", credentialId2);
 
-		String schemasJson = String.format("{\"%s\":%s}", xyzSchemaId, xyzSchema);
-		String credentialDefsJson = String.format("{\"%s\":%s}", issuer1xyzCredDef, issuer1xyzCredDef);
-		String revocStatesJson = "{}";
+		String schemasJson = new JSONObject().put(xyzSchemaId, xyzSchema).toString();
+		String credentialDefsJson = new JSONObject().put(issuer1xyzCredDef, issuer1xyzCredDef).toString();
+		String revocStatesJson = new JSONObject().toString();
 
-		Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, masterSecretId, schemasJson, credentialDefsJson, revocStatesJson).get();
+		Anoncreds.proverCreateProof(wallet, proofRequest, new JSONObject(requestedCredentialsJson).toString(),
+				masterSecretId, schemasJson, credentialDefsJson, revocStatesJson).get();
 	}
 
 	@Test
 	public void testProverCreateProofWorksForInvalidMasterSecret() throws Exception {
 
-		String schemasJson = String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema);
-		String credentialDefsJson = String.format("{\"%s\":%s}", issuer1gvtCredDefId, issuer1gvtCredDef);
-		String revocStatesJson = "{}";
+		String schemasJson = new JSONObject().put(gvtSchemaId, new JSONObject(gvtSchema)).toString();
+		String credentialDefsJson = new JSONObject().put(issuer1gvtCredDefId, new JSONObject(issuer1gvtCredDef)).toString();
+		String revocStatesJson = new JSONObject().toString();
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, "wrong_master_secret", schemasJson, credentialDefsJson, revocStatesJson).get();
+		Anoncreds.proverCreateProof(wallet, proofRequest, new JSONObject(requestedCredentialsJson).toString(),
+				"wrong_master_secret", schemasJson, credentialDefsJson, revocStatesJson).get();
 	}
 
 	@Test
@@ -66,11 +68,12 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String schemasJson = "{}";
-		String credentialDefsJson = String.format("{\"%s\":%s}", issuer1gvtCredDefId, issuer1gvtCredDef);
-		String revocStatesJson = "{}";
+		String schemasJson = new JSONObject().toString();;
+		String credentialDefsJson = new JSONObject().put(issuer1gvtCredDefId, issuer1gvtCredDef).toString();
+		String revocStatesJson = new JSONObject().toString();
 
-		Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, masterSecretId, schemasJson, credentialDefsJson, revocStatesJson).get();
+		Anoncreds.proverCreateProof(wallet, proofRequest, new JSONObject(requestedCredentialsJson).toString(),
+				masterSecretId, schemasJson, credentialDefsJson, revocStatesJson).get();
 	}
 
 	@Test
@@ -79,13 +82,16 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String schemasJson = String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema);
-		String credentialDefsJson = String.format("{\"%s\":%s}", issuer1gvtCredDefId, issuer1gvtCredDef);
-		String revocStatesJson = "{}";
+		String schemasJson = new JSONObject().put(gvtSchemaId, gvtSchema).toString();
+		String credentialDefsJson = new JSONObject().put(issuer1gvtCredDefId, issuer1gvtCredDef).toString();
+		String revocStatesJson = new JSONObject().toString();
+		String requestedCredentialsJson = new JSONObject().put("self_attested_attributes", new JSONObject()).
+														   put("requested_predicates", new JSONObject()).toString();
 
-		String requestedCredentialsJson = "{\"self_attested_attributes\":{},\n" +
+
+		/*String requestedCredentialsJson = "{\"self_attested_attributes\":{},\n" +
 				"                      \"requested_predicates\":{}\n" +
-				"                    }";
+				"                    }";*/
 
 		Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, masterSecretId, schemasJson, credentialDefsJson, revocStatesJson).get();
 	}
