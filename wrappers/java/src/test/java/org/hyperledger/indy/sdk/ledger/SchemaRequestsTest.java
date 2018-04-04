@@ -2,6 +2,8 @@ package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
+import org.hyperledger.indy.sdk.anoncreds.Anoncreds;
+import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults;
 import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.did.DidResults;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
@@ -12,24 +14,22 @@ import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
 	@Test
 	public void testBuildSchemaRequestWorks() throws Exception {
-		String data = "{\"name\":\"name\",\"version\":\"1.0\",\"attr_names\":[\"name\",\"male\"]}";
+		String data = "{\"id\":\"1\",\"name\":\"name\",\"version\":\"1.0\",\"attrNames\":[\"male\"]}";
 
-		String expectedResult = String.format("\"identifier\":\"%s\"," +
-				"\"operation\":{" +
-				"\"type\":\"101\"," +
-				"\"data\":%s" +
-				"}", DID, data);
+		String expectedResult = "\"operation\": {\n" +
+				"            \"type\": \"101\",\n" +
+				"            \"data\": {\"name\": \"name\", \"version\": \"1.0\", \"attr_names\": [\"male\"]}\n" +
+				"        }";
 
 		String schemaRequest = Ledger.buildSchemaRequest(DID, data).get();
 
-		assertTrue(schemaRequest.replace("\\", "").contains(expectedResult));
+		assertTrue(schemaRequest.replaceAll("\\s+", "").contains(expectedResult.replaceAll("\\s+", "")));
 	}
 
 	@Test
@@ -61,21 +61,22 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 	public void testSchemaRequestsWorks() throws Exception {
 		String did = createStoreAndPublishDidFromTrustee();
 
-		String schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"attr_names\": [\"name\", \"male\"]}";
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(did, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String schema = createSchemaResult.getSchemaJson();
 
-		String schemaRequest = Ledger.buildSchemaRequest(did, schemaData).get();
+		String schemaRequest = Ledger.buildSchemaRequest(did, schema).get();
 		Ledger.signAndSubmitRequest(pool, wallet, did, schemaRequest).get();
 
-		String getSchemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
+		String getSchemaData = String.format("{\"name\":\"%s\",\"version\":\"%s\"}", GVT_SCHEMA_NAME, SCHEMA_VERSION);
 		String getSchemaRequest = Ledger.buildGetSchemaRequest(did, did, getSchemaData).get();
 		String getSchemaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaRequest, response -> {
-
 			JSONObject getSchemaResponseObject = new JSONObject(response);
-
-			return "gvt2".equals(getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("name")) &&
-					"2.0".equals(getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("version"));
+			return !getSchemaResponseObject.getJSONObject("result").isNull("seqNo") &&
+					GVT_SCHEMA_NAME.equals(getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("name")) &&
+					SCHEMA_VERSION.equals(getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("version"));
 		});
-		assertNotNull(getSchemaResponse);
+
+		Ledger.parseGetSchemaResponse(getSchemaResponse).get();
 	}
 
 	@Test

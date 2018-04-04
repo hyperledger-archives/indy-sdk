@@ -321,7 +321,7 @@ public class Anoncreds extends IndyJava.API {
 	 * @param name       Human-readable name of schema.
 	 * @param version    Version of schema.
 	 * @param attrs: List of schema attributes descriptions
-	 * @return A future resolving to IssuerCreateSchemaResult containing
+	 * @return A future resolving to ParseResponseResult containing
 	 * schemaId: identifier of created schema
 	 * schemaJson: schema as json
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.

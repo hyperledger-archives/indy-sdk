@@ -11,20 +11,19 @@ public class RevocRegDefRequestTest extends IndyIntegrationTestWithPoolAndSingle
 	public void testBuildRevocRegDefRequestWorks() throws Exception {
 		String expectedResult =
 				"\"operation\":{" +
-						"\"credDefId\":\"CredDefID\"," +
+						"\"type\":\"113\"," +
 						"\"id\":\"RevocRegID\"," +
 						"\"revocDefType\":\"CL_ACCUM\"," +
 						"\"tag\":\"TAG1\"," +
-						"\"type\":\"113\"," +
+						"\"credDefId\":\"CredDefID\"," +
 						"\"value\":{" +
 						"   \"issuanceType\":\"ISSUANCE_ON_DEMAND\"," +
 						"   \"maxCredNum\":5," +
 						"   \"publicKeys\":{" +
-						"       \"accumKey\":{\"z\":\"\"}" +
-						"   }," +
-						"   \"tailsHash\":\"s\"," +
-						"   \"tailsLocation\":\"http://tails.location.com\"" +
-						"}}";
+						"       \"accumKey\":{" +
+						"           \"z\":\"1111 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\"" +
+						"       }" +
+						"   }";
 
 		String data = "{\n" +
 				"        \"id\": \"RevocRegID\",\n" +
@@ -38,14 +37,15 @@ public class RevocRegDefRequestTest extends IndyIntegrationTestWithPoolAndSingle
 				"            \"tailsLocation\": \"http://tails.location.com\",\n" +
 				"            \"publicKeys\": {\n" +
 				"                \"accumKey\": {\n" +
-				"                    \"z\": \"\"\n" +
+				"                    \"z\": \"1111 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\"\n" +
 				"                }\n" +
 				"            }\n" +
 				"        }\n" +
 				"    }";
 
 		String request = Ledger.buildRevocRegDefRequest(DID, data).get();
-
+		System.out.println(request);
+		System.out.println(expectedResult);
 		assertTrue(request.replaceAll("\\s+","").contains(expectedResult.replaceAll("\\s+","")));
 	}
 }

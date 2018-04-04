@@ -6,9 +6,10 @@ import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.ParamGuard;
-import org.hyperledger.indy.sdk.StringUtils;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.wallet.Wallet;
+
+import org.hyperledger.indy.sdk.ledger.LedgerResults.ParseResponseResult;
 
 import com.sun.jna.Callback;
 
@@ -78,9 +79,9 @@ public class Ledger extends IndyJava.API {
 	};
 
 	/**
-	 * Callback used when buildGetDdoRequest completes.
+	 * Callback used when buildRequest completes.
 	 */
-	private static Callback buildGetDdoRequestCb = new Callback() {
+	private static Callback buildRequestCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String request_json) {
@@ -94,229 +95,21 @@ public class Ledger extends IndyJava.API {
 	};
 
 	/**
-	 * Callback used when buildNymRequest completes.
+	 * Callback used when parseRequest completes.
 	 */
-	private static Callback buildNymRequestCb = new Callback() {
+	private static Callback parseRequestCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String request_json) {
+		public void callback(int xcommand_handle, int err, String id, String object_json) {
 
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			CompletableFuture<ParseResponseResult> future = (CompletableFuture<ParseResponseResult>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			String result = request_json;
+			ParseResponseResult result = new ParseResponseResult(id, object_json);
 			future.complete(result);
 		}
 	};
-
-	/**
-	 * Callback used when buildAttribRequest completes.
-	 */
-	private static Callback buildAttribRequestCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String request_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = request_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when buildGetAttribRequest completes.
-	 */
-	private static Callback buildGetAttribRequestCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String request_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = request_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when buildGetNymRequest completes.
-	 */
-	private static Callback buildGetNymRequestCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String request_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = request_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when buildSchemaRequest completes.
-	 */
-	private static Callback buildSchemaRequestCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String request_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = request_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when buildGetSchemaRequest completes.
-	 */
-	private static Callback buildGetSchemaRequestCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String request_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = request_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when buildClaimDefTxn completes.
-	 */
-	private static Callback buildClaimDefTxnCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String request_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = request_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when buildGetClaimDefTxn completes.
-	 */
-	private static Callback buildGetClaimDefTxnCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String request_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = request_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when buildNodeRequest completes.
-	 */
-	private static Callback buildNodeRequestCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String request_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = request_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when buildGetTxnRequest completes.
-	 */
-	public static Callback buildGetTxnRequestCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String request_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = request_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when buildPoolConfigRequest completes.
-	 */
-	public static Callback buildPoolConfigRequestCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String request_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = request_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when buildPoolUpgradeRequest completes.
-	 */
-	public static Callback buildPoolUpgradeRequestCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String request_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = request_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when buildRrevocRegDefRequest completes.
-	 */
-	public static Callback buildRevocRegDefRequestCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String request_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = request_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when buildRrevocRegDeltaRequest completes.
-	 */
-	public static Callback buildRevocRegDeltaRequestCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String request_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = request_json;
-			future.complete(result);
-		}
-	};
-
+	
 	/*
 	 * STATIC METHODS
 	 */
@@ -449,7 +242,7 @@ public class Ledger extends IndyJava.API {
 				commandHandle,
 				submitterDid,
 				targetDid,
-				buildGetDdoRequestCb);
+				buildRequestCb);
 
 		checkResult(result);
 
@@ -491,7 +284,7 @@ public class Ledger extends IndyJava.API {
 				verkey,
 				alias,
 				role,
-				buildNymRequestCb);
+				buildRequestCb);
 
 		checkResult(result);
 
@@ -529,7 +322,7 @@ public class Ledger extends IndyJava.API {
 				hash,
 				raw,
 				enc,
-				buildAttribRequestCb);
+				buildRequestCb);
 
 		checkResult(result);
 
@@ -567,7 +360,7 @@ public class Ledger extends IndyJava.API {
 				raw,
 				hash,
 				enc,
-				buildGetAttribRequestCb);
+				buildRequestCb);
 
 		checkResult(result);
 
@@ -596,7 +389,7 @@ public class Ledger extends IndyJava.API {
 				commandHandle,
 				submitterDid,
 				targetDid,
-				buildGetNymRequestCb);
+				buildRequestCb);
 
 		checkResult(result);
 
@@ -607,8 +400,10 @@ public class Ledger extends IndyJava.API {
 	 * Builds a SCHEMA request. Request to add Claim's schema.
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
-	 * @param data         {
-	 *                     attr_names: array of attribute name strings
+	 * @param data         Schema data.
+	 *                     {
+	 *                     id: identifier of schema
+	 *                     attrNames: array of attribute name strings
 	 *                     name: Schema's name string
 	 *                     version: Schema's version string
 	 *                     }
@@ -629,7 +424,7 @@ public class Ledger extends IndyJava.API {
 				commandHandle,
 				submitterDid,
 				data,
-				buildSchemaRequestCb);
+				buildRequestCb);
 
 		checkResult(result);
 
@@ -642,9 +437,10 @@ public class Ledger extends IndyJava.API {
 	 * @param submitterDid DID of read request sender.
 	 * @param dest         Schema Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
 	 *                     It differs from submitter_did field.
-	 * @param data         {
-	 *                     name (string): Schema's name string
-	 *                     version (string): Schema's version string
+	 * @param data         Schema data.
+	 *                     {
+	 *                     name: Schema's name string
+	 *                     version: Schema's version string
 	 *                     }
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -666,7 +462,39 @@ public class Ledger extends IndyJava.API {
 				submitterDid,
 				dest,
 				data,
-				buildGetSchemaRequestCb);
+				buildRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Parse a GET_SCHEMA response.
+	 *
+	 * @param getSchemaResponse response json
+	 * @return A future resolving to a Schema Id and Schema json.
+	 * {
+	 * id: identifier of schema
+	 * attrNames: array of attribute name strings
+	 * name: Schema's name string
+	 * version: Schema's version string
+	 * ver: Version of the Schema json
+	 * }
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<ParseResponseResult> parseGetSchemaResponse(
+			String getSchemaResponse) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(getSchemaResponse, "data");
+
+		CompletableFuture<ParseResponseResult> future = new CompletableFuture<ParseResponseResult>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_parse_get_schema_response(
+				commandHandle,
+				getSchemaResponse,
+				parseRequestCb);
 
 		checkResult(result);
 
@@ -677,24 +505,26 @@ public class Ledger extends IndyJava.API {
 	 * Builds an CLAIM_DEF request. Request to add a claim definition (in particular, public key),
 	 * that Issuer creates for a particular Claim Schema.
 	 *
-	 * @param submitterDid  DID of the submitter stored in secured Wallet.
-	 * @param xref          Sequence number of a Schema transaction the claim definition is created for.
-	 * @param signatureType Type of the claim definition. CL is the only supported type now.
-	 * @param data          Dictionary with Claim Definition's data: {
-	 *                      primary: primary claim public key
-	 *                      revocation: revocation claim public key
-	 *                      }
+	 * @param submitterDid DID of the submitter stored in secured Wallet.
+	 * @param data         Credential Definition json
+	 *                     {
+	 *                     id: string - identifier of credential definition
+	 *                     schemaId: string - identifier of stored in ledger schema
+	 *                     type: string - type of the claim definition. CL is the only supported type now.
+	 *                     tag: string - allows to distinct between credential definitions for the same issuer and schema
+	 *                     value: Dictionary with Claim Definition's data: {
+	 *                     primary: primary claim public key,
+	 *                     Optional<revocation>: revocation claim public key
+	 *                     }
+	 *                     }
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildClaimDefTxn(
 			String submitterDid,
-			int xref,
-			String signatureType,
 			String data) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
-		ParamGuard.notNullOrWhiteSpace(signatureType, "signatureType");
 		ParamGuard.notNullOrWhiteSpace(data, "data");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
@@ -703,10 +533,8 @@ public class Ledger extends IndyJava.API {
 		int result = LibIndy.api.indy_build_claim_def_txn(
 				commandHandle,
 				submitterDid,
-				xref,
-				signatureType,
 				data,
-				buildClaimDefTxnCb);
+				buildRequestCb);
 
 		checkResult(result);
 
@@ -743,7 +571,43 @@ public class Ledger extends IndyJava.API {
 				xref,
 				signatureType,
 				origin,
-				buildGetClaimDefTxnCb);
+				buildRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Parse a GET_CLAIM_DEF response.
+	 *
+	 * @param getClaimDefResponse response json
+	 * @return A future resolving to a Credential Definition Id and Credential Definition json.
+	 * {
+	 * id: string - identifier of credential definition
+	 * schemaId: string - identifier of stored in ledger schema
+	 * type: string - type of the claim definition. CL is the only supported type now.
+	 * tag: string - allows to distinct between credential definitions for the same issuer and schema
+	 * value: Dictionary with Claim Definition's data: {
+	 * primary: primary claim public key,
+	 * Optional<revocation>: revocation claim public key
+	 * } -
+	 * ver: Version of the Credential Definition json
+	 * }
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<ParseResponseResult> parseGetClaimDefResponse(
+			String getClaimDefResponse) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(getClaimDefResponse, "data");
+
+		CompletableFuture<ParseResponseResult> future = new CompletableFuture<ParseResponseResult>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_parse_get_claim_def_response(
+				commandHandle,
+				getClaimDefResponse,
+				parseRequestCb);
 
 		checkResult(result);
 
@@ -784,7 +648,7 @@ public class Ledger extends IndyJava.API {
 				submitterDid,
 				targetDid,
 				data,
-				buildNodeRequestCb);
+				buildRequestCb);
 
 		checkResult(result);
 
@@ -812,7 +676,7 @@ public class Ledger extends IndyJava.API {
 				commandHandle,
 				submitterDid,
 				data,
-				buildGetTxnRequestCb);
+				buildRequestCb);
 
 		checkResult(result);
 
@@ -845,7 +709,7 @@ public class Ledger extends IndyJava.API {
 				submitterDid,
 				writes,
 				force,
-				buildPoolConfigRequestCb);
+				buildRequestCb);
 
 		checkResult(result);
 
@@ -899,7 +763,7 @@ public class Ledger extends IndyJava.API {
 				justification,
 				reinstall,
 				force,
-				buildPoolUpgradeRequestCb);
+				buildRequestCb);
 
 		checkResult(result);
 
@@ -941,7 +805,7 @@ public class Ledger extends IndyJava.API {
 				commandHandle,
 				submitterDid,
 				data,
-				buildRevocRegDefRequestCb);
+				buildRequestCb);
 
 		checkResult(result);
 
@@ -971,7 +835,46 @@ public class Ledger extends IndyJava.API {
 				commandHandle,
 				submitterDid,
 				id,
-				buildRevocRegDefRequestCb);
+				buildRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Parse a GET_REVOC_REG_DEF response.
+	 *
+	 * @param getRevocRegDefResponse response json
+	 * @return A future resolving to a Revocation Registry Definition Id and Revocation Registry Definition json.
+	 * {
+	 * "id": string - ID of the Revocation Registry,
+	 * "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+	 * "tag": string - Unique descriptive ID of the Registry,
+	 * "credDefId": string - ID of the corresponding ClaimDef,
+	 * "value": Registry-specific data {
+	 * "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+	 * "maxCredNum": number - Maximum number of credentials the Registry can serve.
+	 * "tailsHash": string - Hash of tails.
+	 * "tailsLocation": string - Location of tails file.
+	 * "publicKeys": <public_keys> - Registry's public key.
+	 * },
+	 * "ver": string
+	 * }
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<ParseResponseResult> parseGetRevocRegDefResponse(
+			String getRevocRegDefResponse) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(getRevocRegDefResponse, "data");
+
+		CompletableFuture<ParseResponseResult> future = new CompletableFuture<ParseResponseResult>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_parse_get_revoc_reg_def_response(
+				commandHandle,
+				getRevocRegDefResponse,
+				parseRequestCb);
 
 		checkResult(result);
 
@@ -1015,7 +918,7 @@ public class Ledger extends IndyJava.API {
 				revocRegDefId,
 				revDefType,
 				value,
-				buildRevocRegDeltaRequestCb);
+				buildRequestCb);
 
 		checkResult(result);
 
@@ -1048,7 +951,38 @@ public class Ledger extends IndyJava.API {
 				submitterDid,
 				revocRegDefId,
 				timestamp,
-				buildRevocRegDefRequestCb);
+				buildRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Parse a GET_REVOC_REG response.
+	 *
+	 * @param getRevocRegResponse response json
+	 * @return A future resolving to a Revocation Registry Definition Id and Revocation Registry json.
+	 * {
+	 * "value": Registry-specific data {
+	 * "accum": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+	 * },
+	 * "ver": string
+	 * }
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<ParseResponseResult> parseGetRevocRegResponse(
+			String getRevocRegResponse) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(getRevocRegResponse, "data");
+
+		CompletableFuture<ParseResponseResult> future = new CompletableFuture<ParseResponseResult>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_parse_get_revoc_reg_response(
+				commandHandle,
+				getRevocRegResponse,
+				parseRequestCb);
 
 		checkResult(result);
 
@@ -1085,7 +1019,41 @@ public class Ledger extends IndyJava.API {
 				revocRegDefId,
 				from,
 				to,
-				buildRevocRegDefRequestCb);
+				buildRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Parse a GET_REVOC_REG_DELTA response.
+	 *
+	 * @param getRevocRegDeltaResponse response json
+	 * @return A future resolving to a Revocation Registry Definition Id and Revocation Registry Delta json.
+	 * {
+	 * "value": Registry-specific data {
+	 * prevAccum: string - previous accumulator value.
+	 * accum: string - current accumulator value.
+	 * issued: array<number> - an array of issued indices.
+	 * revoked: array<number> an array of revoked indices.
+	 * },
+	 * "ver": string
+	 * }
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<ParseResponseResult> parseGetRevocRegDeltaResponse(
+			String getRevocRegDeltaResponse) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(getRevocRegDeltaResponse, "data");
+
+		CompletableFuture<ParseResponseResult> future = new CompletableFuture<ParseResponseResult>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_parse_get_revoc_reg_delta_response(
+				commandHandle,
+				getRevocRegDeltaResponse,
+				parseRequestCb);
 
 		checkResult(result);
 

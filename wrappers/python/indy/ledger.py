@@ -342,7 +342,7 @@ async def build_schema_request(submitter_did: str,
     :param submitter_did: DID of the submitter stored in secured Wallet.
     :param data: {
         id: identifier of schema
-        attr_names: array of attribute name strings
+        attrNames: array of attribute name strings
         name: Schema's name string
         version: Schema's version string
     }
@@ -420,7 +420,7 @@ async def parse_get_schema_response(get_schema_response: str) -> (str, str):
     :return: Schema Id and Schema json.
      {
          id: identifier of schema
-         attr_names: array of attribute name strings
+         attrNames: array of attribute name strings
          name: Schema's name string
          version: Schema's version string
          ver: Version of the Schema json

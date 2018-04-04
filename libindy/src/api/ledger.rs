@@ -375,9 +375,10 @@ pub extern fn indy_build_get_nym_request(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: DID of the submitter stored in secured Wallet.
+/// data: Schema data.
 /// {
 ///     id: identifier of schema
-///     attr_names: array of attribute name strings
+///     attrNames: array of attribute name strings
 ///     name: Schema's name string
 ///     version: Schema's version string
 /// }
@@ -468,7 +469,7 @@ pub extern fn indy_build_get_schema_request(command_handle: i32,
 /// Schema Id and Schema json.
 /// {
 ///     id: identifier of schema
-///     attr_names: array of attribute name strings
+///     attrNames: array of attribute name strings
 ///     name: Schema's name string
 ///     version: Schema's version string
 ///     ver: Version of the Schema json
@@ -929,7 +930,7 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// get_revoc_ref_def_response: response json
+/// get_revoc_reg_def_response: response json
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -953,16 +954,16 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: i32,
 /// Common*
 #[no_mangle]
 pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: i32,
-                                                    get_revoc_ref_def_response: *const c_char,
+                                                    get_revoc_reg_def_response: *const c_char,
                                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                          revoc_reg_def_id: *const c_char,
                                                                          revoc_reg_def_json: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(get_revoc_ref_def_response, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(get_revoc_reg_def_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::ParseGetRevocRegDefResponse(
-            get_revoc_ref_def_response,
+            get_revoc_reg_def_response,
             Box::new(move |result| {
                 let (err, revoc_reg_def_id, revoc_reg_def_json) = result_to_err_code_2!(result, String::new(), String::new());
                 let revoc_reg_def_id = CStringUtils::string_to_cstring(revoc_reg_def_id);

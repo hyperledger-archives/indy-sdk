@@ -21,7 +21,8 @@ async def test_build_revoc_reg_entry_request_work():
             "type": "114",
             "revocRegDefId": "RevocRegID",
             "revocDefType": "CL_ACCUM",
-            "value": {"accum": "false 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"}}
+            "value": {"accum": "false 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"}
+        }
     }
 
     request = json.loads(await ledger.build_revoc_reg_entry_request(identifier, rev_reg_def_id, rev_reg_type,

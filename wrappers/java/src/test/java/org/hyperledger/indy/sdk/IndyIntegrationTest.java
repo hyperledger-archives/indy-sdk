@@ -35,7 +35,7 @@ public class IndyIntegrationTest {
 	protected static final String INVALID_DID = "invalid_base58string";
 	protected static final String IDENTITY_JSON_TEMPLATE = "{\"did\":\"%s\",\"verkey\":\"%s\"}";
 	protected static final byte[] MESSAGE = "{\"reqId\":1496822211362017764}".getBytes();
-	protected static final String SCHEMA_DATA = "{\"name\":\"gvt2\",\"version\":\"3.0\",\"attr_names\": [\"name\", \"male\"]}";
+	protected static final String SCHEMA_DATA = "{\"id\":\"id\",\"name\":\"gvt2\",\"version\":\"3.0\",\"attrNames\": [\"name\", \"male\"]}";
 	protected static final String POOL = "Pool1";
 	protected static final String WALLET = "Wallet1";
 	protected static final String TYPE = "default";

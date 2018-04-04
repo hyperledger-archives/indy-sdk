@@ -9,25 +9,16 @@ public class RevocRegEntryRequestTest extends IndyIntegrationTestWithPoolAndSing
 
 	@Test
 	public void testBuildRevocRegEntryRequestWorks() throws Exception {
-		String expectedResult =
-				"\"operation\": {\n" +
+		String expectedResult ="\"operation\": {\n" +
 						"            \"type\": \"114\",\n" +
 						"            \"revocRegDefId\": \"RevocRegID\",\n" +
 						"            \"revocDefType\": \"CL_ACCUM\",\n" +
-						"            \"value\": {\n" +
-						"                \"prevAccum\": \"123456789\",\n" +
-						"                \"accum\": \"123456789\",\n" +
-						"                \"issued\": [],\n" +
-						"                \"revoked\": []\n" +
-						"           }\n" +
+						"            \"value\": {\"accum\": \"false 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\"}\n" +
 						"        }";
 
-		String value = "{\n" +
-				"        \"accum\": \"123456789\",\n" +
-				"        \"prevAccum\": \"123456789\",\n" +
-				"        \"issued\": [],\n" +
-				"        \"revoked\": []\n" +
-				"    }";
+		String value = "{\"value\": {\n" +
+				"            \"accum\": \"false 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\"\n" +
+				"        }}";
 
 		String request = Ledger.buildRevocRegEntryRequest(DID, "RevocRegID", "CL_ACCUM", value).get();
 
