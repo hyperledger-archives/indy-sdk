@@ -1,0 +1,133 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor Alice as al
+participant "Alice\nEdge Agent" as aea
+participant "Alice\nCloud Agent" as aca
+participant "Recovery Connection\nCloud Agent" as rca
+participant "Recovery Connection\nEdge Agent" as rea
+actor "Recovery\nConnection" as rb
+
+note over al, rb #f0f0e0
+Assumptions: Alice has lost her edge agent(s) and needs to recover using her recovery buddies.
+Alice has performed all steps in the <b>Provision New Agent</b> and <b>Add Cloud Agent</b> diagrams.
+end note
+
+== social recovery process Part 1 ==
+
+al -> aea: initiate recovery
+
+aea -> aea: prepare recovery request
+
+al <- aea: prompt to establish connections
+
+loop for each recovery connection...
+
+al --> rb: conversation
+
+note over al,rb
+Alice convinces recovery connection to accept her temporary connection request
+end note
+
+rb -> rea: create recovery connection
+
+note left
+This is how Alice becomes reconnected to her cloud agent—
+her recovery connection knows how to identify her connection,
+her connection knows the location of Alice's recovery share,
+and the recovery share knows Alice's recovery endpoint
+end note
+
+rea -> rb: identify connection to recover
+
+rb -> rea: choose Alice
+
+par2
+rea -[#blue]> rca: recovery request
+else
+rca -[#blue]> aca: \n
+else
+aca -[#blue]> aea: \n
+else
+aea -> al: \naccept request
+end
+
+note over al, rb #77ccff
+include <b>Add Connection to Private DID (Provisioned)</b> diagram
+end note
+
+aea -> al: recovery challenge
+
+al -> aea: challenge response
+
+note right
+A challenge comes as part of a recovery connection
+end note
+
+par2
+aea -[#blue]> aca: forward response
+else
+aca -[#blue]> rca: \n
+else
+rca -[#blue]> rea: \n
+else
+rea -> rb: \n
+end
+
+rb -> rb: verify Alice
+note left
+This is the most powerful feature of social recovery: Alice's recovery connections
+can verify that it is really her attempting to recover and know there is no
+man in the middle.
+end note
+rea -> rea: decrypt recovery share
+note left
+The recovery share was encrypted with the Recovery Connection's private key
+end note
+rea -> rea: extract recovery endpoint
+rea -> rea: encrypt recovery share
+note left
+Re-encrypted with the public key of Alice's new edge agent
+end note
+
+par2
+rea -[#blue]> rca: recovery share
+else
+rca -[#blue]> aca: <i> </i>
+else
+aca -[#blue]> aea: <i> </i>
+end
+
+end
+
+newpage
+
+== social recovery process Part 2 ==
+
+aea -> aea: decrypt and assemble shares
+aea -[#blue]> aca: request encrypted backup
+
+aca -[#blue]> aea: encrypted backup
+aea -> aea: decrypt and read backup data
+aea -> aea: replace old agent keys with new agent keys
+
+note over al, rb #77ccff
+include <b>Update Agent Policy Registry</b> diagram
+include <b>Rotate DID Key</b> diagram
+end note
+
+@enduml
