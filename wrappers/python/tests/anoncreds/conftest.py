@@ -11,52 +11,52 @@ from tests.conftest import path_home as x_path_home, pool_name as x_pool_name, w
     xwallet as x_xwallet
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def path_home():
     # noinspection PyTypeChecker
     for i in x_path_home():
         yield i
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def pool_name():
     return x_pool_name()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def wallet_name():
     return x_wallet_name()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def wallet_type():
     return x_wallet_type()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def wallet_runtime_config():
     return x_wallet_runtime_config()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def xwallet_cleanup():
     return x_xwallet_cleanup()
 
 
 # noinspection PyUnusedLocal
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home):
     xwallet_gen = x_xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home, None)
     yield next(xwallet_gen)
     next(xwallet_gen)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def wallet_handle_cleanup():
     return x_wallet_handle_cleanup()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, wallet_handle_cleanup):
     wallet_handle_gen = \
         x_wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, None, wallet_handle_cleanup)
@@ -64,110 +64,115 @@ def wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, walle
     next(wallet_handle_gen)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def default_cred_def_config():
     return json.dumps({"support_revocation": False})
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def tag():
     return "tag1"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def id_credential_1():
     return "id_credential_1"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def id_credential_2():
     return "id_credential_2"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def id_credential_3():
     return "id_credential_3"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def issuer_did():
     return "NcYxiDXkpYi6ov5FcYDi1e"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def issuer_did_2():
     return "VsKV7grR1BUE29mG2Fm2kX"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def prover_did():
     return "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
 
 
-def build_id(identifier: str, marker: str, related_entity_id: Optional[str], word1: str, word2: str):
+def build_id(identifier: str, marker: str, word1: str, word2: str):
     delimiter = ":"
-    related_entity_id = related_entity_id + delimiter if related_entity_id else ""
-    return identifier + delimiter + marker + delimiter + related_entity_id + word1 + delimiter + word2
+    return identifier + delimiter + marker + delimiter + word1 + delimiter + word2
 
 
-@pytest.fixture(scope="module")
-def gvt_schema_id(issuer_did):
-    return build_id(issuer_did, "2", None, "gvt", "1.0")
+@pytest.fixture(scope="session")
+async def gvt_schema_tuple(issuer_did):
+    return await anoncreds.issuer_create_schema(issuer_did, "gvt", "1.0", json.dumps(["name", "age", "sex", "height"]))
 
 
-@pytest.fixture(scope="module")
-def gvt_schema(gvt_schema_id):
-    return {
-        "id": gvt_schema_id,
-        "name": "gvt",
-        "version": "1.0",
-        "attrNames": ["name", "age", "sex", "height"]
-    }
+@pytest.fixture(scope="session")
+def gvt_schema_id(gvt_schema_tuple):
+    (schema_id, _) = gvt_schema_tuple
+    return schema_id
 
 
-@pytest.fixture(scope="module")
-def gvt_schema_json(gvt_schema):
-    return json.dumps(gvt_schema)
+@pytest.fixture(scope="session")
+def gvt_schema(gvt_schema_tuple):
+    (_, schema_json) = gvt_schema_tuple
+    return json.loads(schema_json)
 
 
-@pytest.fixture(scope="module")
-def xyz_schema_id(issuer_did):
-    return build_id(issuer_did, "2", None, "xyz", "1.0")
+@pytest.fixture(scope="session")
+async def gvt_schema_json(gvt_schema_tuple):
+    (_, schema_json) = gvt_schema_tuple
+    return schema_json
 
 
-@pytest.fixture(scope="module")
-def xyz_schema(xyz_schema_id):
-    return {
-        "id": xyz_schema_id,
-        "name": "xyz",
-        "version": "1.0",
-        "attrNames": ["status", "period"]
-    }
+@pytest.fixture(scope="session")
+async def xyz_schema_tuple(issuer_did):
+    return await anoncreds.issuer_create_schema(issuer_did, "xyz", "1.0", json.dumps(["status", "period"]))
 
 
-@pytest.fixture(scope="module")
-def xyz_schema_json(issuer_did, xyz_schema_id, xyz_schema):
-    return json.dumps(xyz_schema)
+@pytest.fixture(scope="session")
+def xyz_schema_id(xyz_schema_tuple):
+    (schema_id, _) = xyz_schema_tuple
+    return schema_id
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
+def xyz_schema(xyz_schema_tuple):
+    (_, schema_json) = xyz_schema_tuple
+    return json.loads(schema_json)
+
+
+@pytest.fixture(scope="session")
+async def xyz_schema_json(xyz_schema_tuple):
+    (_, schema_json) = xyz_schema_tuple
+    return schema_json
+
+
+@pytest.fixture(scope="session")
 def master_secret_id():
     return "common_master_secret_name"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def issuer_1_gvt_cred_def_id(issuer_did, gvt_schema_id):
-    return build_id(issuer_did, "3", gvt_schema_id, "CL", "tag1")
+    return build_id(issuer_did, "\u0003", "CL", gvt_schema_id)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def issuer_1_xyz_cred_def_id(issuer_did, xyz_schema_id):
-    return build_id(issuer_did, "3", xyz_schema_id, "CL", "tag1")
+    return build_id(issuer_did, "\u0003", "CL", xyz_schema_id)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def issuer_2_gvt_cred_def_id(issuer_did_2, gvt_schema_id):
-    return build_id(issuer_did_2, "3", gvt_schema_id, "CL", "tag1")
+    return build_id(issuer_did_2, "\u0003", "CL", gvt_schema_id)
 
 
 def credential_offer(credential_def_id):
@@ -187,37 +192,37 @@ def credential_offer(credential_def_id):
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def issuer_1_gvt_cred_offer(issuer_1_gvt_cred_def_id):
     return credential_offer(issuer_1_gvt_cred_def_id)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def issuer_1_gvt_cred_offer_json(credential_offer_issuer_1_schema_1):
     return json.dumps(credential_offer_issuer_1_schema_1)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def issuer_1_xyz_cred_offer_json(issuer_1_xyz_cred_def_id):
     return credential_offer(issuer_1_xyz_cred_def_id)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def issuer_1_xyz_cred_offer_json(credential_offer_issuer_1_schema_2):
     return json.dumps(credential_offer_issuer_1_schema_2)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def issuer_2_gvt_cred_offer(issuer_2_gvt_cred_def_id):
     return credential_offer(issuer_2_gvt_cred_def_id)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def issuer_2_gvt_cred_offer_json(credential_offer_issuer_2_schema_1):
     return json.dumps(credential_offer_issuer_2_schema_1)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def gvt_cred_values():
     return {
         "sex": {
@@ -228,12 +233,12 @@ def gvt_cred_values():
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def gvt_cred_values_json(gvt_cred_values):
     return json.dumps(gvt_cred_values)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def gvt_cred_values_2():
     return {
         "sex": {
@@ -244,12 +249,12 @@ def gvt_cred_values_2():
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def gvt_2_cred_values_json(gvt_cred_values_2):
     return json.dumps(gvt_cred_values_2)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def xyz_cred_values():
     return {
         "status": {"raw": "partial", "encoded": "51792877103171595686471452153480627530895"},
@@ -257,17 +262,17 @@ def xyz_cred_values():
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def xyz_cred_values_json(xyz_cred_values):
     return json.dumps(xyz_cred_values)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def predicate_value():
     return 18
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def proof_req(predicate_value):
     return {
         "nonce": "123432421212",
@@ -286,14 +291,15 @@ def proof_req(predicate_value):
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def proof_req_json(proof_req):
     return json.dumps(proof_req)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def credential_def(gvt_schema_id, issuer_1_gvt_cred_def_id):
     return {
+        "ver": "1.0",
         "id": issuer_1_gvt_cred_def_id,
         "schemaId": gvt_schema_id,
         "type": "CL",
@@ -317,12 +323,12 @@ def credential_def(gvt_schema_id, issuer_1_gvt_cred_def_id):
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def credential_def_json(credential_def):
     return json.dumps(credential_def)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, gvt_cred_values_json,
                               gvt_2_cred_values_json, xyz_cred_values_json, issuer_did, issuer_did_2, master_secret_id,
                               prover_did, tag, default_cred_def_config, id_credential_1, id_credential_2,
