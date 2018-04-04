@@ -1,0 +1,60 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+participant "Agent" as ea
+participant "Secure Element" as se
+participant "Wallet" as w
+
+ea -> ea: create secure element credential
+note right
+This can be a PIN or a
+biometric that can be used
+to securely access keys stored in
+the secure element. Multiple
+factors may be used as desired.
+end note
+
+ea -> se: request the agent policy keypair
+se -> se: create agent policy keys
+note right
+create A<sub>p</sub><sup>1-pk</sup> and A<sub>p</sub><sup>1-sk</sup> and
+encrypt with SE credential
+end note
+
+ea -> se: request agent-to-agent communication keypair
+se -> se: create agent-to-agent keys
+note right
+create A<sub>A</sub><sup>1-vk</sup> and A<sub>A</sub><sup>1-sk</sup> and
+encrypt with SE credential.
+These keys allow this agent to talk to other
+agents within Alice's domain.
+end note
+
+ea -> ea: create agent-to-agent ID A<sub>A</sub><sup>1-ID</sup>
+ea -> w: store A<sub>A</sub><sup>1-ID</sup>
+ea -> se: request for new wallet encryption key
+se -> se: create wallet encryption key
+note right
+create A<sub>W</sub><sup>1-k</sup> and encrypt
+ with SE credential
+end note
+
+se -> ea: A<sub>W</sub><sup>1-k</sup>
+
+ea -> w: encrypt wallet with A<sub>W</sub><sup>1-k</sup>
+
+@enduml
