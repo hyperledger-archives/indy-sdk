@@ -3,11 +3,9 @@ import json
 import pytest
 
 from indy import anoncreds
-from tests.conftest import path_home as x_path_home, pool_name as x_pool_name, wallet_name as x_wallet_name, \
-    wallet_type as x_wallet_type, wallet_runtime_config as x_wallet_runtime_config, \
-    xwallet_cleanup as x_xwallet_cleanup, wallet_handle_cleanup as x_wallet_handle_cleanup, \
-    wallet_handle as x_wallet_handle, \
-    xwallet as x_xwallet
+from tests.conftest import path_home as x_path_home, pool_name as x_pool_name, wallet_type as x_wallet_type, \
+    wallet_runtime_config as x_wallet_runtime_config, wallet_handle_cleanup as x_wallet_handle_cleanup, \
+    wallet_handle as x_wallet_handle, xwallet as x_xwallet
 
 
 @pytest.fixture(scope="session")
@@ -24,7 +22,7 @@ def pool_name():
 
 @pytest.fixture(scope="session")
 def wallet_name():
-    return x_wallet_name()
+    return "anoncreds_common_wallet"
 
 
 @pytest.fixture(scope="session")
@@ -39,7 +37,7 @@ def wallet_runtime_config():
 
 @pytest.fixture(scope="session")
 def xwallet_cleanup():
-    return x_xwallet_cleanup()
+    return False
 
 
 # noinspection PyUnusedLocal
