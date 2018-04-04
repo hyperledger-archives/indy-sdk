@@ -1,0 +1,114 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor Alice as al
+participant "Alice\nEdge\nAgent 1" as a1
+participant "Alice\nEdge\nAgent 2" as a2
+participant "Remote\nAgent" as ca
+actor Mallory as ma
+participant Ledger as le
+
+note over al, le #f0f0e0
+Mallory has physically stolen edge agent 2 from Alice.
+Alice was not using the software when Mallory took it, so
+Mallory must use brute force to unlock it.
+Alice's key management policy is 2 out of 3 to
+provision and revoke. The policy includes these
+three agents.
+
+Remote agent can be any that is trusted by Alice
+end note
+== Revoking Agent 2 ==
+
+al -> a1: revoke agent 2
+a1 -[#blue]> le: policy request
+le -[#blue]> a1: policy
+note over a1
+Edge agent knows it
+needs another key
+to revoke agent 2 and
+remove agent 2 from
+changing the policy
+end note
+
+a1 -[#blue]> ca: request signature to revoke\nagent 2
+
+alt If Alice controls Remote Agent
+ca -[#blue]> al: please authenticate
+al -[#blue]> ca: authenticate to agent
+ca -[#blue]> al: confirm request to revoke
+al -[#blue]> ca: confirm
+else If Remote Agent is controlled by Third Party Bob
+ca --> al: authenticate Alice
+note right
+This is done out of band
+end note
+al --> ca: authenticate to Bob
+ca -> ca: confirm request to revoke
+end
+
+
+ca -[#blue]> a1: signature to remove agent 2 \
+from all policies
+note right
+The ledger needs to two signatures
+to complete the transaction
+end note
+
+a1 -[#blue]> le: signature to remove agent 2 \
+from all policies
+le -> le: update policy
+note right
+Ledger can now complete
+the revocation transaction
+Agent 2 cannot use claims in proofs
+end note
+
+le -[#blue]> a1: result
+
+a1 -> a1: remove all agent 2 keys from DIDs
+note over al, le #77ccff
+include <b>Revoke DID</b> diagram
+end note
+a1 -[#blue]> ca: remove all agent 2 keys from DIDs
+ca -[#blue]> a1: completed
+
+note over al, le #f0f0e0
+Eventually mallory manages to break into agent 2
+end note
+ma -> a2: revoke agent 1
+a2 -[#blue]> le: policy request
+le -[#blue]> a2: policy
+note over a2
+Edge agent sees it
+can't revoke agent 1
+end note
+a2 -> ma: access denied
+
+note over al, le
+Race condition happens if Mallory is able to
+revoke Agent 1 before Alice can revoke.
+
+Policy could be defined to only allow 1 to revoke 2
+but not the reverse. This adds complexity.
+Another recovery key only used for
+this situation could also prevent this. But
+Alice could lose the paper wallet or her
+recovery buddies could lose it and what then?
+end note
+
+@enduml
