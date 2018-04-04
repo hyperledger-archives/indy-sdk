@@ -96,7 +96,7 @@ public class ProverGetCredentialsTest extends AnoncredsIntegrationTest {
 		thrown.expectCause(isA(InvalidStructureException.class));
 
 		JSONObject json = new JSONObject();
-		String filter = json.put("schema_name", "gvt").toString();
+		String filter = json.put("schema_name", 1).toString();
 
 		Anoncreds.proverGetCredentials(wallet, filter).get();
 	}

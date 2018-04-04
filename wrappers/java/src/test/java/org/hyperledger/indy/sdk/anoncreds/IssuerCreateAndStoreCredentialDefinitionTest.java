@@ -6,11 +6,29 @@ import org.hyperledger.indy.sdk.InvalidStructureException;
 
 import static org.junit.Assert.assertNotNull;
 
+import org.hyperledger.indy.sdk.wallet.Wallet;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
 public class IssuerCreateAndStoreCredentialDefinitionTest extends AnoncredsIntegrationTest {
+
+	private Wallet wallet;
+	private String walletName = "createAndStoreClaimDefWallet";
+
+	@Before
+	public void createWallet() throws Exception {
+		Wallet.createWallet("default", walletName, "default", null, null).get();
+		wallet = Wallet.openWallet(walletName, null, null).get();
+	}
+
+	@After
+	public void deleteWallet() throws Exception {
+		wallet.closeWallet().get();
+		Wallet.deleteWallet(walletName, null).get();
+	}
 
 	@Test
 	public void testIssuerCreateAndStoreCredentialDefWorks() throws Exception {

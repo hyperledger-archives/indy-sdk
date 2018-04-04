@@ -6,6 +6,7 @@ import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateSchemaResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreCredentialDefResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.ProverCreateCredentialRequestResult;
+import org.json.JSONObject;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
@@ -46,17 +47,17 @@ public class AnoncredsIntegrationTest {
 	String gvtSchemaAttributes = "[\"name\", \"age\", \"sex\", \"height\"]";
 	String credentialId1 = "id1";
 	String credentialId2 = "id2";
-	String gvtCredentialValuesJson = "{\n" +
+	String gvtCredentialValuesJson = new JSONObject("{\n" +
 			"               \"sex\":{\"raw\":\"male\",\"encoded\":\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"},\n" +
 			"               \"name\":{\"raw\":\"Alex\",\"encoded\":\"1139481716457488690172217916278103335\"},\n" +
 			"               \"height\":{\"raw\":\"175\",\"encoded\":\"175\"},\n" +
 			"               \"age\":{\"raw\":\"28\",\"encoded\":\"28\"}\n" +
-			"        }";
-	String xyzCredentialValuesJson = "{\n" +
+			"        }").toString();
+	String xyzCredentialValuesJson = new JSONObject("{\n" +
 			"               \"status\":{\"raw\":\"partial\",\"encoded\":\"51792877103171595686471452153480627530895\"},\n" +
 			"               \"period\":{\"raw\":\"8\",\"encoded\":\"8\"}\n" +
-			"        }";
-	String proofRequest = "{\n" +
+			"        }").toString();
+	String proofRequest = new JSONObject("{\n" +
 			"                   \"nonce\":\"123432421212\",\n" +
 			"                   \"name\":\"proof_req_1\",\n" +
 			"                   \"version\":\"0.1\", " +
@@ -66,7 +67,7 @@ public class AnoncredsIntegrationTest {
 			"                    \"requested_predicates\":{" +
 			"                          \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
 			"                    }" +
-			"               }";
+			"               }").toString();
 
 	@Before
 	public void setUp() throws Exception {

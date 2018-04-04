@@ -45,16 +45,16 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 	private String credentialId2 = "id2";
 	private String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 	private String proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-	private String gvtCredentialValues = "{\n" +
+	private String gvtCredentialValues = new JSONObject("{\n" +
 			"               \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
 			"               \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
 			"               \"height\":[\"175\",\"175\"],\n" +
 			"               \"age\":[\"28\",\"28\"]\n" +
-			"        }";
-	private String xyzCredentialValues = "{\n" +
+			"        }").toString();
+	private String xyzCredentialValues = new JSONObject("{\n" +
 			"               \"status\":[\"partial\",\"51792877103171595686471452153480627530895\"],\n" +
 			"               \"period\":[\"8\",\"8\"]\n" +
-			"        }";
+			"        }").toString();
 
 	@Before
 	public void createWallet() throws Exception {
@@ -117,7 +117,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverStoreCredential(proverWallet, credentialId1, credReq, credReqMetadata, credential, credDef, null).get();
 
 		//11. Prover gets Credentials for Proof Request
-		String proofRequestJson = "{" +
+		String proofRequestJson = new JSONObject("{" +
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
@@ -129,7 +129,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"requested_predicates\":{" +
 				"                         \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
 				"                    }" +
-				"                  }";
+				"                  }").toString();
 
 		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson).get();
 
@@ -146,21 +146,19 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//12. Prover create Proof
 		String selfAttestedValue = "8-800-300";
-		String requestedCredentialsJson = String.format("{\n" +
+		String requestedCredentialsJson = new JSONObject(String.format("{\n" +
 				"                                          \"self_attested_attributes\":{\"attr3_referent\":\"%s\"},\n" +
 				"                                          \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true},\n" +
 				"                                                                    \"attr2_referent\":{\"cred_id\":\"%s\", \"revealed\":false}},\n" +
 				"                                          \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\"}}\n" +
-				"                                        }", selfAttestedValue, credentialUuid, credentialUuid, credentialUuid);
+				"                                        }", selfAttestedValue, credentialUuid, credentialUuid, credentialUuid)).toString();
 
-		String schemas = String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema);
-		String credentialDefs = String.format("{\"%s\":%s}", credDefId, credDef);
-		String revocStates = "{}";
+		String schemas = new JSONObject(String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema)).toString();
+		String credentialDefs = new JSONObject(String.format("{\"%s\":%s}", credDefId, credDef)).toString();
+		String revocStates = new JSONObject("{}").toString();
 
 		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequestJson, requestedCredentialsJson,
 				masterSecretId, schemas, credentialDefs, revocStates).get();
-		assertNotNull(proofJson);
-
 		JSONObject proof = new JSONObject(proofJson);
 
 		//13. Verifier verify Proof
@@ -171,8 +169,8 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("attr3_referent"));
 
-		String revocRegDefs = "{}";
-		String revocRegs = "{}";
+		String revocRegDefs = new JSONObject("{}").toString();
+		String revocRegs = new JSONObject("{}").toString();
 
 		Boolean valid = Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemas, credentialDefs, revocRegDefs, revocRegs).get();
 		assertTrue(valid);
@@ -243,7 +241,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverStoreCredential(proverWallet, credentialId2, xyzCredReq, xyzCredReqMetadata, xyzCredential, xyzCredDef, null).get();
 
 		//15. Prover gets Credentials for Proof Request
-		String proofRequestJson = "{" +
+		String proofRequestJson = new JSONObject("{" +
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
@@ -255,7 +253,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                         \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}," +
 				"                          \"predicate2_referent\":{\"name\":\"period\",\"p_type\":\">=\",\"p_value\":5}" +
 				"                    }" +
-				"                  }";
+				"                  }").toString();
 
 		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson).get();
 		assertNotNull(credentialsForProofJson);
@@ -277,22 +275,20 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String credentialUuidForPredicate2 = credentialsForPredicate2.getJSONObject(0).getJSONObject("cred_info").getString("referent");
 
 		//16. Prover create Proof
-		String requestedCredentialsJson = String.format("{\n" +
+		String requestedCredentialsJson = new JSONObject(String.format("{\n" +
 				"                                          \"self_attested_attributes\":{},\n" +
 				"                                          \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true},\n" +
 				"                                                                    \"attr2_referent\":{\"cred_id\":\"%s\", \"revealed\":true}},\n" +
 				"                                          \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\"}," +
 				"                                                                    \"predicate2_referent\":{\"cred_id\":\"%s\"}}\n" +
-				"                                        }", credentialUuidForAttr1, credentialUuidForAttr2, credentialUuidForPredicate1, credentialUuidForPredicate2);
+				"                                        }", credentialUuidForAttr1, credentialUuidForAttr2, credentialUuidForPredicate1, credentialUuidForPredicate2)).toString();
 
-		String schemas = String.format("{\"%s\":%s, \"%s\":%s}", gvtSchemaId, gvtSchema, xyzSchemaId, xyzSchema);
-		String credentialDefs = String.format("{\"%s\":%s, \"%s\":%s}", gvtCredDefId, gvtCredDef, xyzCredDefId, xyzCredDef);
-		String revocStates = "{}";
+		String schemas = new JSONObject(String.format("{\"%s\":%s, \"%s\":%s}", gvtSchemaId, gvtSchema, xyzSchemaId, xyzSchema)).toString();
+		String credentialDefs = new JSONObject(String.format("{\"%s\":%s, \"%s\":%s}", gvtCredDefId, gvtCredDef, xyzCredDefId, xyzCredDef)).toString();
+		String revocStates = new JSONObject("{}").toString();
 
 		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequestJson, requestedCredentialsJson,
 				masterSecretId, schemas, credentialDefs, revocStates).get();
-		assertNotNull(proofJson);
-
 		JSONObject proof = new JSONObject(proofJson);
 
 		//17. Verifier verify Proof
@@ -302,8 +298,8 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		JSONObject revealedAttr2 = proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONObject("attr2_referent");
 		assertEquals("partial", revealedAttr2.getString("raw"));
 
-		String revocRegDefs = "{}";
-		String revocRegs = "{}";
+		String revocRegDefs = new JSONObject("{}").toString();
+		String revocRegs = new JSONObject("{}").toString();
 
 		Boolean valid = Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemas, credentialDefs, revocRegDefs, revocRegs).get();
 		assertTrue(valid);
@@ -372,7 +368,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverStoreCredential(proverWallet, credentialId2, xyzCredReq, xyzCredReqMetadata, xyzCredential, xyzCredDef, null).get();
 
 		//15. Prover gets Credentials for Proof Request
-		String proofRequestJson = "{" +
+		String proofRequestJson = new JSONObject("{" +
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
@@ -384,7 +380,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                         \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}," +
 				"                          \"predicate2_referent\":{\"name\":\"period\",\"p_type\":\">=\",\"p_value\":5}" +
 				"                    }" +
-				"                  }";
+				"                  }").toString();
 
 		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson).get();
 		assertNotNull(credentialsForProofJson);
@@ -414,14 +410,12 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                                                                    \"predicate2_referent\":{\"cred_id\":\"%s\"}}\n" +
 				"                                        }", credentialUuidForAttr1, credentialUuidForAttr2, credentialUuidForPredicate1, credentialUuidForPredicate2);
 
-		String schemas = String.format("{\"%s\":%s, \"%s\":%s}", gvtSchemaId, gvtSchema, xyzSchemaId, xyzSchema);
-		String credentialDefs = String.format("{\"%s\":%s, \"%s\":%s}", gvtCredDefId, gvtCredDef, xyzCredDefId, xyzCredDef);
-		String revocStates = "{}";
+		String schemas = new JSONObject(String.format("{\"%s\":%s, \"%s\":%s}", gvtSchemaId, gvtSchema, xyzSchemaId, xyzSchema)).toString();
+		String credentialDefs = new JSONObject(String.format("{\"%s\":%s, \"%s\":%s}", gvtCredDefId, gvtCredDef, xyzCredDefId, xyzCredDef)).toString();
+		String revocStates = new JSONObject("{}").toString();
 
 		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequestJson, requestedCredentialsJson,
 				masterSecretId, schemas, credentialDefs, revocStates).get();
-		assertNotNull(proofJson);
-
 		JSONObject proof = new JSONObject(proofJson);
 
 		//17. Verifier verify Proof
@@ -431,8 +425,8 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		JSONObject revealedAttr2 = proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONObject("attr2_referent");
 		assertEquals("partial", revealedAttr2.getString("raw"));
 
-		String revocRegDefs = "{}";
-		String revocRegs = "{}";
+		String revocRegDefs = new JSONObject("{}").toString();
+		String revocRegs = new JSONObject("{}").toString();
 
 		Boolean valid = Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemas, credentialDefs, revocRegDefs, revocRegs).get();
 		assertTrue(valid);
@@ -453,8 +447,8 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String credDef = createCredentialDefResult.getCredDefJson();
 
 		//3. Issuer create revocation registry
-		String revRegConfig = "{\"issuance_type\":null,\"max_cred_num\":5}";
-		String tailsWriterConfig = String.format("{\"base_dir\":\"%s\", \"uri_pattern\":\"\"}", getIndyHomePath("tails"));
+		String revRegConfig = new JSONObject("{\"issuance_type\":null,\"max_cred_num\":5}").toString();
+		String tailsWriterConfig = new JSONObject(String.format("{\"base_dir\":\"%s\", \"uri_pattern\":\"\"}", getIndyHomePath("tails")).replace('\\', '/')).toString();
 		BlobStorageWriter tailsWriter = BlobStorageWriter.openWriter("default", tailsWriterConfig).get();
 
 		AnoncredsResults.IssuerCreateAndStoreRevocRegResult createRevRegResult = Anoncreds.issuerCreateAndStoreRevocReg(issuerWallet, issuerDid, null, TAG, credDefId, revRegConfig, tailsWriter).get();
@@ -488,7 +482,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverStoreCredential(proverWallet, credentialId1, credReq, credReqMetadata, credential, credDef, revRegDef).get();
 
 		//10. Prover gets Credentials for Proof Request
-		String proofRequest = "{\n" +
+		String proofRequest = new JSONObject("{\n" +
 				"                   \"nonce\":\"123432421212\",\n" +
 				"                   \"name\":\"proof_req_1\",\n" +
 				"                   \"version\":\"0.1\", " +
@@ -498,7 +492,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"requested_predicates\":{" +
 				"                          \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
 				"                    }" +
-				"               }";
+				"               }").toString();
 
 		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequest).get();
 		JSONObject credentials = new JSONObject(credentialsJson);
@@ -512,15 +506,15 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 
 		//12. Prover create Proof
-		String requestedCredentialsJson = String.format("{" +
+		String requestedCredentialsJson = new JSONObject(String.format("{" +
 				"\"self_attested_attributes\":{}," +
 				"\"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true, \"timestamp\":%d }}," +
 				"\"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\", \"timestamp\":%d}}" +
-				"}", credentialUuid, timestamp, credentialUuid, timestamp);
+				"}", credentialUuid, timestamp, credentialUuid, timestamp)).toString();
 
-		String schemas = String.format("{\"%s\":%s}", gvtSchemaId, schemaJson);
-		String credentialDefs = String.format("{\"%s\":%s}", credDefId, credDef);
-		String revStates = String.format("{\"%s\": { \"%s\":%s }}", revRegId, timestamp, revStateJson);
+		String schemas = new JSONObject(String.format("{\"%s\":%s}", gvtSchemaId, schemaJson)).toString();
+		String credentialDefs = new JSONObject(String.format("{\"%s\":%s}", credDefId, credDef)).toString();
+		String revStates = new JSONObject(String.format("{\"%s\": { \"%s\":%s }}", revRegId, timestamp, revStateJson)).toString();
 
 		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequest, requestedCredentialsJson, masterSecretId, schemas,
 				credentialDefs, revStates).get();
@@ -530,8 +524,8 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		JSONObject revealedAttr1 = proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONObject("attr1_referent");
 		assertEquals("Alex", revealedAttr1.getString("raw"));
 
-		String revRegDefs = String.format("{\"%s\":%s}", revRegId, revRegDef);
-		String revRegs = String.format("{\"%s\": { \"%s\":%s }}", revRegId, timestamp, revRegDelta);
+		String revRegDefs = new JSONObject(String.format("{\"%s\":%s}", revRegId, revRegDef)).toString();
+		String revRegs = new JSONObject(String.format("{\"%s\": { \"%s\":%s }}", revRegId, timestamp, revRegDelta)).toString();
 
 		boolean valid = Anoncreds.verifierVerifyProof(proofRequest, proofJson, schemas, credentialDefs, revRegDefs, revRegs).get();
 		assertTrue(valid);
@@ -574,16 +568,16 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverStoreCredential(proverWallet, credentialId1, credReq, credReqMetadata, credential, credDef, null).get();
 
 		//9. Prover gets Credentials for Proof Request
-		String proofRequestJson = String.format("{" +
+		String proofRequestJson = new JSONObject(String.format("{" +
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
-				"                    \"requested_attributes\": {" +
-				"                          \"attr1_referent\":{ \"name\":\"name\", \"restrictions\":[{\"schema_id\":%s}]}," +
+				"                    \"requested_attrs\": {" +
+				"                          \"attr1_referent\":{ \"name\":\"name\", \"restrictions\":[{\"schema_id\":\"%s\"}]}," +
 				"                          \"attr2_referent\":{ \"name\":\"phone\"}" +
 				"                     }," +
 				"                    \"requested_predicates\":{}" +
-				"                  }", gvtSchemaId);
+				"                  }", gvtSchemaId)).toString();
 
 		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson).get();
 		assertNotNull(credentialsForProofJson);
@@ -597,20 +591,18 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//9. Prover create Proof
 		String selfAttestedValue = "8-800-300";
-		String requestedCredentialsJson = String.format("{\n" +
+		String requestedCredentialsJson = new JSONObject(String.format("{\n" +
 				"                                          \"self_attested_attributes\":{\"attr2_referent\":\"%s\"},\n" +
 				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true]},\n" +
 				"                                          \"requested_predicates\":{}\n" +
-				"                                        }", selfAttestedValue, credentialUuid);
+				"                                        }", selfAttestedValue, credentialUuid)).toString();
 
-		String schemas = String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema);
-		String credentialDefs = String.format("{\"%s\":%s}", credDefId, credDef);
-		String revocInfos = "{}";
+		String schemas = new JSONObject(String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema)).toString();
+		String credentialDefs = new JSONObject(String.format("{\"%s\":%s}", credDefId, credDef)).toString();
+		String revocInfos = new JSONObject("{}").toString();
 
 		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequestJson, requestedCredentialsJson,
 				masterSecretId, schemas, credentialDefs, revocInfos).get();
-		assertNotNull(proofJson);
-
 		JSONObject proof = new JSONObject(proofJson);
 
 		//10. Verifier verify Proof
@@ -619,10 +611,10 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("attr3_referent"));
 
-		String revocRegDefs = "{}";
-		String revocRegs = "{}";
+		String revocRegDefs = new JSONObject("{}").toString();
+		String revocRegs = new JSONObject("{}").toString();
 
-		proofRequestJson = String.format("{" +
+		proofRequestJson = new JSONObject(String.format("{" +
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
@@ -632,7 +624,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"requested_predicates\":{" +
 				"                          \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
 				"                    }" +
-				"                  }", gvtSchemaId);
+				"                  }", gvtSchemaId)).toString();
 
 
 		Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemas, credentialDefs, revocRegDefs, revocRegs).get();
