@@ -85,6 +85,7 @@ impl TransactionHandler {
         };
         let mut msg_result_without_proof: SJsonValue = msg_result.clone();
         msg_result_without_proof.as_object_mut().map(|obj| obj.remove("state_proof"));
+        msg_result_without_proof["data"].as_object_mut().map(|obj| obj.remove("stateProofFrom"));
         let msg_result_without_proof = HashableValue { inner: msg_result_without_proof };
 
         let reply_cnt = *self.pending_commands

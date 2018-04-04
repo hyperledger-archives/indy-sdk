@@ -7,6 +7,7 @@ use errors::anoncreds::AnoncredsError;
 use errors::common::CommonError;
 
 use services::anoncreds::AnoncredsService;
+use services::anoncreds::helpers::parse_cred_rev_id;
 use services::blob_storage::BlobStorageService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
@@ -404,8 +405,9 @@ impl IssuerCommandExecutor {
         let cred_values: HashMap<String, AttributeValues> = serde_json::from_str(cred_values_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialValues: {:?}", err)))?;
 
-        let cred_def: CredentialDefinition =
-            self.wallet_service.get_object(wallet_handle, &format!("credential_definition::{}", &cred_offer.cred_def_id), "CredentialDefinition", &mut String::new())?;
+        let cred_def: CredentialDefinitionV1 =
+            CredentialDefinitionV1::from(
+                self.wallet_service.get_object::<CredentialDefinition>(wallet_handle, &format!("credential_definition::{}", &cred_offer.cred_def_id), "CredentialDefinition", &mut String::new())?);
 
         let cred_priv_key: CredentialPrivateKey =
             self.wallet_service.get_object(wallet_handle, &format!("credential_private_key::{}", cred_request.cred_def_id), "CredentialPrivateKey", &mut String::new())?;
@@ -425,8 +427,7 @@ impl IssuerCommandExecutor {
                     self.wallet_service.get_object(wallet_handle, &format!("revocation_key_private::{}", r_reg_id), "RevocationKeyPrivate", &mut String::new())?;
 
                 let current_id = self.wallet_service.get(wallet_handle, &format!("current_credential_id::{}", r_reg_id))?;
-
-                let cred_rev_id = 1 + IssuerCommandExecutor::parse_rev_index(&current_id)?;
+                let cred_rev_id = 1 + parse_cred_rev_id(&current_id)?;
 
                 if cred_rev_id > rev_reg_def.value.max_cred_num {
                     return Err(IndyError::AnoncredsError(AnoncredsError::AccumulatorIsFull(format!("RevocationRegistryAccumulator is full"))));
@@ -445,7 +446,7 @@ impl IssuerCommandExecutor {
         };
 
         let (credential_signature, signature_correctness_proof, rev_reg_delta) =
-            self.anoncreds_service.issuer.new_credential(&CredentialDefinitionV1::from(cred_def),
+            self.anoncreds_service.issuer.new_credential(&cred_def,
                                                          &cred_priv_key,
                                                          &cred_offer.nonce,
                                                          &cred_request,
@@ -456,42 +457,32 @@ impl IssuerCommandExecutor {
                                                          rev_key_priv.as_ref(),
                                                          sdk_tails_accessor.as_ref())?;
 
-        let (witness, issued, revoked) = if let (&Some(ref r_reg_def), &Some(ref r_reg), &Some(ref r_reg_id), &Some(ref rev_tails_accessor), &Some(ref cred_rev_id)) =
-        (&rev_reg_def, &rev_reg, &rev_reg_id, &sdk_tails_accessor, &cred_rev_id) {
-            let (issued, revoked) = match r_reg_def.value.issuance_type {
-                IssuanceType::ISSUANCE_ON_DEMAND => {
-                    let mut issued = self.get_ids_list(wallet_handle, &format!("issued_credential_ids::{}", r_reg_id))?;
-                    issued.insert(cred_rev_id.to_string());
+        let (witness, issued) =
+            if let (&Some(ref r_reg_def), &Some(ref r_reg), &Some(ref r_reg_id), &Some(ref rev_tails_accessor), &Some(ref cred_rev_id)) =
+            (&rev_reg_def, &rev_reg, &rev_reg_id, &sdk_tails_accessor, &cred_rev_id) {
+                let (issued, revoked) = match r_reg_def.value.issuance_type {
+                    IssuanceType::ISSUANCE_ON_DEMAND => {
+                        let mut issued = self.get_indexes_list(wallet_handle, &format!("issued_credential_ids::{}", r_reg_id))?;
+                        issued.insert(cred_rev_id.clone());
 
-                    let issued = issued.iter().map(|id| IssuerCommandExecutor::parse_rev_index(id).unwrap().clone()).collect::<HashSet<u32>>();
-                    let revoked = HashSet::new();
-                    (issued, revoked)
-                }
-                IssuanceType::ISSUANCE_BY_DEFAULT => {
-                    let mut revoked = self.get_ids_list(wallet_handle, &format!("revoked_credential_ids::{}", r_reg_id))?;
-                    revoked.insert(cred_rev_id.to_string());
+                        (issued, HashSet::new())
+                    }
+                    IssuanceType::ISSUANCE_BY_DEFAULT => {
+                        let revoked = self.get_indexes_list(wallet_handle, &format!("revoked_credential_ids::{}", r_reg_id))?;
 
-                    let revoked = revoked.iter().map(|id| IssuerCommandExecutor::parse_rev_index(id).unwrap().clone()).collect::<HashSet<u32>>();
-                    let issued = (1..r_reg_def.value.max_cred_num + 1).collect::<HashSet<u32>>().difference(&revoked).cloned().collect::<HashSet<u32>>();
-                    (issued, revoked)
-                }
+                        (HashSet::new(), revoked)
+                    }
+                };
+
+                let rev_reg_delta = CryptoRevocationRegistryDelta::from_parts(None, &r_reg.value, &issued, &revoked);
+
+                let witness = Some(Witness::new(cred_rev_id.clone(), r_reg_def.value.max_cred_num, r_reg_def.value.issuance_type.to_bool(), &rev_reg_delta, rev_tails_accessor)
+                    .map_err(|err| IndyError::CommonError(CommonError::from(err)))?);
+
+                (witness, issued)
+            } else {
+                (None, HashSet::new())
             };
-
-            let rev_reg_delta = CryptoRevocationRegistryDelta::from_parts(None, &r_reg.value, &issued, &revoked);
-
-            let witness = Some(Witness::new(cred_rev_id.clone(), r_reg_def.value.max_cred_num, &rev_reg_delta, rev_tails_accessor)
-                .map_err(|err| IndyError::CommonError(CommonError::from(err)))?);
-
-            let issued = serde_json::to_string(&issued.iter().map(|index| index.to_string()).collect::<HashSet<String>>())
-                .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of Revocation Ids: {:?}", err)))?;
-
-            let revoked = serde_json::to_string(&revoked.iter().map(|index| index.to_string()).collect::<HashSet<String>>())
-                .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of Revocation Ids: {:?}", err)))?;
-
-            (witness, issued, revoked)
-        } else {
-            (None, String::new(), String::new())
-        };
 
 
         let credential = Credential {
@@ -524,11 +515,11 @@ impl IssuerCommandExecutor {
             self.wallet_service.set_object(wallet_handle, &format!("revocation_registry::{}", r_reg_id), &revocation_registry, "RevocationRegistry")?;
             self.wallet_service.set(wallet_handle, &format!("current_credential_id::{}", r_reg_id), &cred_r_id)?;
 
-            match r_reg_def.value.issuance_type {
-                IssuanceType::ISSUANCE_ON_DEMAND =>
-                    self.wallet_service.set(wallet_handle, &format!("issued_credential_ids::{}", r_reg_id), &issued)?,
-                IssuanceType::ISSUANCE_BY_DEFAULT =>
-                    self.wallet_service.set(wallet_handle, &format!("revoked_credential_ids::{}", r_reg_id), &revoked)?
+            if r_reg_def.value.issuance_type == IssuanceType::ISSUANCE_ON_DEMAND {
+                let issued = serde_json::to_string(&issued)
+                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of indexes: {:?}", err)))?;
+
+                self.wallet_service.set(wallet_handle, &format!("issued_credential_ids::{}", r_reg_id), &issued)?;
             }
         };
 
@@ -537,14 +528,9 @@ impl IssuerCommandExecutor {
         Ok((cred_json, cred_rev_id, rev_reg_delta_json))
     }
 
-    fn parse_rev_index(cred_rev_id: &str) -> Result<u32, IndyError> {
-        Ok(cred_rev_id.parse::<u32>()
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot parse CredentialRevocationIndex: {}", err)))?)
-    }
-
-    fn get_ids_list(&self, wallet_handle: i32, key: &str) -> Result<HashSet<String>, IndyError> {
+    fn get_indexes_list(&self, wallet_handle: i32, key: &str) -> Result<HashSet<u32>, IndyError> {
         let ids = self.wallet_service.get(wallet_handle, key)?;
-        Ok(serde_json::from_str::<HashSet<String>>(&ids)
+        Ok(serde_json::from_str::<HashSet<u32>>(&ids)
             .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize list of Revocation Ids: {:?}", err)))?)
     }
 
@@ -556,8 +542,7 @@ impl IssuerCommandExecutor {
         trace!("revoke_credential >>> wallet_handle: {:?}, blob_storage_reader_handle:  {:?}, rev_reg_id: {:?}, cred_revoc_id: {:?}",
                wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id);
 
-        let rev_idx = cred_revoc_id.parse::<u32>()
-            .map_err(|_| CommonError::InvalidStructure(format!("Cannot parse CredentialRevocationIndex: {}", cred_revoc_id)))?;
+        let cred_revoc_id = parse_cred_rev_id(cred_revoc_id)?;
 
         let revocation_registry_definition: RevocationRegistryDefinitionV1 =
             RevocationRegistryDefinitionV1::from(
@@ -571,36 +556,51 @@ impl IssuerCommandExecutor {
                                                        blob_storage_reader_handle,
                                                        &revocation_registry_definition)?;
 
-        let revocation_registry_delta =
-            self.anoncreds_service.issuer.revoke(&mut revocation_registry.value, revocation_registry_definition.value.max_cred_num, rev_idx, &sdk_tails_accessor)?;
+        if cred_revoc_id > revocation_registry_definition.value.max_cred_num + 1 {
+            return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+        }
 
-        let revocation_registry_delta = RevocationRegistryDelta::RevocationRegistryDeltaV1(RevocationRegistryDeltaV1 {value: revocation_registry_delta});
+        let indexes = match revocation_registry_definition.value.issuance_type {
+            IssuanceType::ISSUANCE_ON_DEMAND => {
+                let mut issued = self.get_indexes_list(wallet_handle, &format!("issued_credential_ids::{}", rev_reg_id))?;
+
+                if !issued.remove(&cred_revoc_id) {
+                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+                };
+
+                serde_json::to_string(&issued)
+                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of indexes: {:?}", err)))?
+            }
+            IssuanceType::ISSUANCE_BY_DEFAULT => {
+                let mut revoked = self.get_indexes_list(wallet_handle, &format!("revoked_credential_ids::{}", rev_reg_id))?;
+
+                if !revoked.insert(cred_revoc_id) {
+                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+                }
+
+                serde_json::to_string(&revoked)
+                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of indexes: {:?}", err)))?
+            }
+        };
+
+        let revocation_registry_delta =
+            self.anoncreds_service.issuer.revoke(&mut revocation_registry.value, revocation_registry_definition.value.max_cred_num, cred_revoc_id, &sdk_tails_accessor)?;
+
+        let revocation_registry_delta = RevocationRegistryDelta::RevocationRegistryDeltaV1(RevocationRegistryDeltaV1 { value: revocation_registry_delta });
 
         let revocation_registry_delta_json = revocation_registry_delta.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta: {:?}", err)))?;
 
+        let revocation_registry = RevocationRegistry::RevocationRegistryV1(revocation_registry);
+
         match revocation_registry_definition.value.issuance_type {
             IssuanceType::ISSUANCE_ON_DEMAND => {
-                let mut issued = self.get_ids_list(wallet_handle, &format!("issued_credential_ids::{}", rev_reg_id))?;
-
-                if !issued.remove(cred_revoc_id) {
-                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
-                };
-                self.wallet_service.set(wallet_handle, &format!("issued_credential_ids::{}", rev_reg_id), &serde_json::to_string(&issued).unwrap())?;
+                self.wallet_service.set(wallet_handle, &format!("issued_credential_ids::{}", rev_reg_id), &indexes)?;
             }
             IssuanceType::ISSUANCE_BY_DEFAULT => {
-                let mut revoked = self.get_ids_list(wallet_handle, &format!("revoked_credential_ids::{}", rev_reg_id))?;
-
-                if revoked.contains(&cred_revoc_id.to_string()) {
-                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
-                }
-
-                revoked.insert(cred_revoc_id.to_string());
-                self.wallet_service.set(wallet_handle, &format!("revoked_credential_ids::{}", rev_reg_id), &serde_json::to_string(&revoked).unwrap())?;
+                self.wallet_service.set(wallet_handle, &format!("revoked_credential_ids::{}", rev_reg_id), &&indexes)?;
             }
         };
-
-        let revocation_registry = RevocationRegistry::RevocationRegistryV1(revocation_registry);
 
         self.wallet_service.set_object(wallet_handle, &format!("revocation_registry::{}", rev_reg_id), &revocation_registry, "RevocationRegistry")?;
 
@@ -617,8 +617,7 @@ impl IssuerCommandExecutor {
         trace!("recovery_credential >>> wallet_handle: {:?}, blob_storage_reader_handle: {:?}, rev_reg_id: {:?}, cred_revoc_id: {:?}",
                wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id);
 
-        let rev_idx = cred_revoc_id.parse::<u32>()
-            .map_err(|_| CommonError::InvalidStructure(format!("Cannot parse CredentialRevocationIndex: {}", cred_revoc_id)))?;
+        let cred_revoc_id = parse_cred_rev_id(cred_revoc_id)?;
 
         let revocation_registry_definition: RevocationRegistryDefinitionV1 =
             RevocationRegistryDefinitionV1::from(
@@ -632,37 +631,52 @@ impl IssuerCommandExecutor {
                                                        blob_storage_reader_handle,
                                                        &revocation_registry_definition)?;
 
-        let revocation_registry_delta =
-            self.anoncreds_service.issuer.recovery(&mut revocation_registry.value, revocation_registry_definition.value.max_cred_num, rev_idx, &sdk_tails_accessor)?;
+        if cred_revoc_id > revocation_registry_definition.value.max_cred_num + 1 {
+            return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+        }
 
-        let revocation_registry_delta = RevocationRegistryDelta::RevocationRegistryDeltaV1(RevocationRegistryDeltaV1 {value: revocation_registry_delta});
+        let indexes = match revocation_registry_definition.value.issuance_type {
+            IssuanceType::ISSUANCE_ON_DEMAND => {
+                let mut issued = self.get_indexes_list(wallet_handle, &format!("issued_credential_ids::{}", rev_reg_id))?;
+
+                if !issued.insert(cred_revoc_id) {
+                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+                }
+
+                serde_json::to_string(&issued)
+                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of indexes: {:?}", err)))?
+            }
+            IssuanceType::ISSUANCE_BY_DEFAULT => {
+                let mut revoked = self.get_indexes_list(wallet_handle, &format!("revoked_credential_ids::{}", rev_reg_id))?;
+
+                if !revoked.remove(&cred_revoc_id) {
+                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+                }
+
+                serde_json::to_string(&revoked)
+                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of indexes: {:?}", err)))?
+
+            }
+        };
+
+        let revocation_registry_delta =
+            self.anoncreds_service.issuer.recovery(&mut revocation_registry.value, revocation_registry_definition.value.max_cred_num, cred_revoc_id, &sdk_tails_accessor)?;
+
+        let revocation_registry_delta = RevocationRegistryDelta::RevocationRegistryDeltaV1(RevocationRegistryDeltaV1 { value: revocation_registry_delta });
 
         let revocation_registry_delta_json = revocation_registry_delta.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta: {:?}", err)))?;
 
+        let revocation_registry = RevocationRegistry::RevocationRegistryV1(revocation_registry);
+
         match revocation_registry_definition.value.issuance_type {
             IssuanceType::ISSUANCE_ON_DEMAND => {
-                let mut issued = self.get_ids_list(wallet_handle, &format!("issued_credential_ids::{}", rev_reg_id))?;
-
-                if issued.contains(&cred_revoc_id.to_string()) {
-                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
-                }
-
-                issued.insert(cred_revoc_id.to_string());
-                self.wallet_service.set(wallet_handle, &format!("issued_credential_ids::{}", rev_reg_id), &format!("{:?}", issued))?;
+                self.wallet_service.set(wallet_handle, &format!("issued_credential_ids::{}", rev_reg_id), &indexes)?;
             }
             IssuanceType::ISSUANCE_BY_DEFAULT => {
-                let mut revoked = self.get_ids_list(wallet_handle, &format!("revoked_credential_ids::{}", rev_reg_id))?;
-
-                if !revoked.remove(cred_revoc_id) {
-                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
-                }
-
-                self.wallet_service.set(wallet_handle, &format!("revoked_credential_ids::{}", rev_reg_id), &format!("{:?}", revoked))?;
+                self.wallet_service.set(wallet_handle, &format!("revoked_credential_ids::{}", rev_reg_id), &indexes)?;
             }
         };
-
-        let revocation_registry = RevocationRegistry::RevocationRegistryV1(revocation_registry);
 
         self.wallet_service.set_object(wallet_handle, &format!("revocation_registry::{}", rev_reg_id), &revocation_registry, "RevocationRegistry")?;
 

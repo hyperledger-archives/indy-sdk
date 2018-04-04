@@ -504,7 +504,7 @@ impl LedgerUtils {
                                                                    None,
                                                                    TAG_1,
                                                                    &cred_def_id,
-                                                                   &AnoncredsUtils::default_rev_reg_config(),
+                                                                   &AnoncredsUtils::issuance_on_demand_rev_reg_config(),
                                                                    tails_writer_handle).unwrap();
 
         (rev_reg_id, revoc_reg_def_json, rev_reg_entry_json)

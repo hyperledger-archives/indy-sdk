@@ -20,12 +20,9 @@ use std::collections::{HashSet, HashMap};
 
 use utils::domain::schema::{Schema, SchemaV1};
 use utils::domain::credential_definition::{CredentialDefinition, CredentialDefinitionConfig};
-use utils::domain::revocation_registry_definition::RevocationRegistryConfig;
-use utils::domain::revocation_registry::RevocationRegistryV1;
-use utils::domain::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
+use utils::domain::revocation_registry_definition::{RevocationRegistryConfig};
 use utils::domain::credential::{AttributeValues, CredentialInfo};
 use utils::domain::credential_for_proof_request::CredentialsForProofRequest;
-use self::indy_crypto::cl::RevocationRegistryDelta as CryptoRevocationRegistryDelta;
 
 pub struct AnoncredsUtils {}
 
@@ -38,9 +35,6 @@ pub const COMMON_MASTER_SECRET: &'static str = "common_master_secret_name";
 pub const CREDENTIAL1_ID: &'static str = "credential1_id";
 pub const CREDENTIAL2_ID: &'static str = "credential2_id";
 pub const CREDENTIAL3_ID: &'static str = "credential3_id";
-pub const GVT_SEQ_NO: i32 = 1;
-pub const XYZ_SEQ_NO: i32 = 2;
-pub const SUB_PROOF_ID: &'static str = "58479554-187f-40d9-b0a5-a95cfb0338c3";
 
 macro_rules! map (
     { $($key:expr => $value:expr),+ } => {
@@ -374,8 +368,12 @@ impl AnoncredsUtils {
         serde_json::to_string(&CredentialDefinitionConfig { support_revocation: true }).unwrap()
     }
 
-    pub fn default_rev_reg_config() -> String {
+    pub fn issuance_on_demand_rev_reg_config() -> String {
         serde_json::to_string(&RevocationRegistryConfig { max_cred_num: Some(5), issuance_type: None }).unwrap()
+    }
+
+    pub fn issuance_by_default_rev_reg_config() -> String {
+        serde_json::to_string(&RevocationRegistryConfig { max_cred_num: Some(5), issuance_type: Some("ISSUANCE_BY_DEFAULT".to_string()) }).unwrap()
     }
 
     pub fn gvt_schema_id() -> String {
@@ -641,15 +639,6 @@ impl AnoncredsUtils {
         json.to_string()
     }
 
-    pub fn full_delta(rev_reg: &str, max_cred_num: u32) -> String {
-        let revoc_reg: RevocationRegistryV1 = serde_json::from_str(&rev_reg).unwrap();
-        let issued = (1..max_cred_num + 1).collect::<HashSet<u32>>();
-
-        serde_json::to_string(&RevocationRegistryDelta::RevocationRegistryDeltaV1(
-            RevocationRegistryDeltaV1 { value: CryptoRevocationRegistryDelta::from_parts(None, &revoc_reg.value, &issued, &HashSet::new()) }
-        )).unwrap()
-    }
-
     pub fn init_common_wallet() -> (i32, &'static str, &'static str, &'static str, &'static str) {
         lazy_static! {
                     static ref COMMON_WALLET_INIT: Once = ONCE_INIT;
@@ -797,16 +786,17 @@ impl AnoncredsUtils {
         }
     }
 
-    pub fn multi_steps_create_credential(prover_master_secret_id: &str,
-                                         prover_wallet_handle: i32,
-                                         issuer_wallet_handle: i32,
-                                         credential_id: &str,
-                                         cred_def_id: &str,
-                                         cred_def_json: &str,
-                                         rev_reg_id: &str,
-                                         revoc_reg_def_json: &str,
-                                         blob_storage_reader_handle: i32)
-                                         -> (String, String) {
+    pub fn multi_steps_create_revocation_credential(prover_master_secret_id: &str,
+                                                    prover_wallet_handle: i32,
+                                                    issuer_wallet_handle: i32,
+                                                    credential_id: &str,
+                                                    cred_values: &str,
+                                                    cred_def_id: &str,
+                                                    cred_def_json: &str,
+                                                    rev_reg_id: &str,
+                                                    revoc_reg_def_json: &str,
+                                                    blob_storage_reader_handle: i32)
+                                                    -> (String, Option<String>) {
         // Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, prover_master_secret_id).unwrap();
 
@@ -824,10 +814,10 @@ impl AnoncredsUtils {
         let (prover1_cred_json, prover1_cred_rev_id, revoc_reg_delta1_json) = AnoncredsUtils::issuer_create_credential(issuer_wallet_handle,
                                                                                                                        &cred_offer_for_prover1_json,
                                                                                                                        &prover1_cred_req_json,
-                                                                                                                       &AnoncredsUtils::gvt_credential_values_json(),
+                                                                                                                       &cred_values,
                                                                                                                        Some(rev_reg_id),
                                                                                                                        Some(blob_storage_reader_handle)).unwrap();
-        let revoc_reg_delta1_json = revoc_reg_delta1_json.unwrap();
+        let revoc_reg_delta1_json = revoc_reg_delta1_json;
         let prover1_cred_rev_id = prover1_cred_rev_id.unwrap();
 
         // Prover1 stores Credential
