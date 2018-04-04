@@ -29,7 +29,7 @@ impl Credential {
         if parts.len() == 4 {
             parts[3].to_string()
         } else {
-            parts[2..6].join(":").to_string()
+            parts[3..].join(":").to_string()
         }
     }
 }
@@ -54,10 +54,16 @@ impl CredentialInfo {
 }
 
 impl Filtering for CredentialInfo {
-    fn schema_id(&self) -> String { self.parts()[2..6].join(":").to_string() }
-    fn schema_issuer_did(&self) -> String { self.parts()[2].to_string() }
-    fn schema_name(&self) -> String { self.parts()[4].to_string() }
-    fn schema_version(&self) -> String { self.parts()[5].to_string() }
+    fn schema_id(&self) -> String {
+        if self.parts().len() == 4 {
+            self.parts()[3].to_string()
+        } else {
+            self.parts()[3..].join(":").to_string()
+        }
+    }
+    fn schema_issuer_did(&self) -> String { self.parts().get(3).map(|s|s.to_string()).unwrap_or(String::new()) }
+    fn schema_name(&self) -> String { self.parts().get(5).map(|s|s.to_string()).unwrap_or(String::new()) }
+    fn schema_version(&self) -> String { self.parts().get(6).map(|s|s.to_string()).unwrap_or(String::new()) }
     fn issuer_did(&self) -> String { self.parts()[0].to_string() }
     fn cred_def_id(&self) -> String { self.cred_def_id.to_string() }
 }

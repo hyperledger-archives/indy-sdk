@@ -22,6 +22,7 @@ pub struct SchemaV1 {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "ver")]
 pub enum Schema {
+    #[serde(rename = "1.0")]
     SchemaV1(SchemaV1)
 }
 

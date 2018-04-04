@@ -57,6 +57,7 @@ impl<'a> JsonDecodable<'a> for CredentialDefinitionV1 {}
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "ver")]
 pub enum CredentialDefinition {
+    #[serde(rename = "1.0")]
     CredentialDefinitionV1(CredentialDefinitionV1)
 }
 

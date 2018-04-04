@@ -4,8 +4,12 @@ extern crate indy_crypto;
 
 use services::ledger::constants::*;
 
-use self::indy_crypto::cl::*;
-use self::indy_crypto::cl::RevocationRegistryDelta;
+use self::indy_crypto::cl::{
+    CredentialPrimaryPublicKey,
+    CredentialRevocationPublicKey,
+    RevocationRegistry,
+    RevocationRegistryDelta
+};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use domain::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1, SignatureType};

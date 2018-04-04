@@ -13,8 +13,14 @@ use services::wallet::WalletService;
 use services::crypto::CryptoService;
 use std::rc::Rc;
 use std::collections::{HashMap, HashSet};
-use self::indy_crypto::cl::*;
-use self::indy_crypto::cl::RevocationRegistryDelta as CryptoRevocationRegistryDelta;
+use self::indy_crypto::cl::{
+    CredentialKeyCorrectnessProof,
+    CredentialPrivateKey,
+    RevocationKeyPrivate,
+    RevocationRegistryDelta as CryptoRevocationRegistryDelta,
+    Witness,
+    new_nonce
+};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use super::tails::{SDKTailsAccessor, store_tails_from_generator};
 use domain::schema::{Schema, SchemaV1};

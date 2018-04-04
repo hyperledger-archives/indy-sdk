@@ -19,8 +19,16 @@ use errors::anoncreds::AnoncredsError;
 
 use services::anoncreds::helpers::*;
 
-use self::indy_crypto::cl::*;
+use self::indy_crypto::cl::{
+    BlindedMasterSecret,
+    BlindedMasterSecretCorrectnessProof,
+    CredentialPublicKey,
+    MasterSecret,
+    MasterSecretBlindingData,
+    SubProofRequest
+};
 use self::indy_crypto::cl::prover::Prover as CryptoProver;
+use self::indy_crypto::cl::verifier::Verifier as CryptoVerifier;
 
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
@@ -411,7 +419,7 @@ impl Prover {
         trace!("_build_sub_proof_request <<< req_attrs_for_credential: {:?}, req_predicates_for_credential: {:?}",
                req_attrs_for_credential, req_predicates_for_credential);
 
-        let mut sub_proof_request_builder = verifier::Verifier::new_sub_proof_request_builder()?;
+        let mut sub_proof_request_builder = CryptoVerifier::new_sub_proof_request_builder()?;
 
         for attr in req_attrs_for_credential {
             if attr.revealed {

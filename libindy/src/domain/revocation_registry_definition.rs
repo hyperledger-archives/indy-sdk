@@ -81,6 +81,7 @@ pub struct RevocationRegistryDefinitionV1 {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "ver")]
 pub enum RevocationRegistryDefinition {
+    #[serde(rename = "1.0")]
     RevocationRegistryDefinitionV1(RevocationRegistryDefinitionV1)
 }
 

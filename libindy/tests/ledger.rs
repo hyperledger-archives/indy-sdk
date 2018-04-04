@@ -1128,13 +1128,13 @@ mod high_cases {
                     "tailsLocation":"http://tails.location.com",
                     "publicKeys": json!({
                         "accumKey": json!({
-                            "z": ""
+                            "z": "1111 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
                         })
                     })
                 })
             }).to_string();
 
-            let expected_result = r#""operation":{"type":"113","id":"RevocRegID","revocDefType":"CL_ACCUM","tag":"TAG_1","credDefId":"CredDefID","value":{"issuanceType":"ISSUANCE_ON_DEMAND","maxCredNum":5,"publicKeys":{"accumKey":{"z":"0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"}},"tailsHash":"s","tailsLocation":"http://tails.location.com"}}"#;
+            let expected_result = r#""operation":{"type":"113","id":"RevocRegID","revocDefType":"CL_ACCUM","tag":"TAG_1","credDefId":"CredDefID","value":{"issuanceType":"ISSUANCE_ON_DEMAND","maxCredNum":5,"publicKeys":{"accumKey":{"z":"1111 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"}},"tailsHash":"s","tailsLocation":"http://tails.location.com"}}"#;
 
             let request = LedgerUtils::build_revoc_reg_def_request(DID, &data).unwrap();
             assert!(request.contains(expected_result));

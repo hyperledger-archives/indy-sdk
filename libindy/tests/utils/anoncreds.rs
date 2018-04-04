@@ -413,15 +413,15 @@ impl AnoncredsUtils {
     }
 
     pub fn issuer_1_gvt_cred_def_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID, "\x03", &AnoncredsUtils::gvt_schema_id(), SIGNATURE_TYPE)
+        AnoncredsUtils::build_id(ISSUER_DID, "\x03", SIGNATURE_TYPE, &AnoncredsUtils::gvt_schema_id())
     }
 
     pub fn issuer_2_gvt_cred_def_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID_2, "\x03", &AnoncredsUtils::gvt_schema_id(), SIGNATURE_TYPE)
+        AnoncredsUtils::build_id(ISSUER_DID_2, "\x03", SIGNATURE_TYPE, &AnoncredsUtils::gvt_schema_id())
     }
 
     pub fn issuer_1_xyz_cred_def_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID, "\x03", &AnoncredsUtils::xyz_schema_id(), SIGNATURE_TYPE)
+        AnoncredsUtils::build_id(ISSUER_DID, "\x03", SIGNATURE_TYPE, &AnoncredsUtils::xyz_schema_id())
     }
 
     pub fn issuer_1_gvt_cred_offer_info() -> CredentialOfferInfo {
@@ -597,7 +597,7 @@ impl AnoncredsUtils {
             "identifiers":[
                 {
                     "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:\u0002:gvt:1.0",
-                    "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:\u0003:NcYxiDXkpYi6ov5FcYDi1e:\u0002:gvt:1.0:CL",
+                    "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:\u0003:CL:NcYxiDXkpYi6ov5FcYDi1e:\u0002:gvt:1.0",
                     "rev_reg_id":null,
                     "timestamp":null
                 }
