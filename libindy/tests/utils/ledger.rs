@@ -8,10 +8,17 @@ use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
 use utils::anoncreds::AnoncredsUtils;
 use utils::blob_storage::BlobStorageUtils;
+use utils::did::DidUtils;
+use utils::wallet::WalletUtils;
 use utils::constants::*;
 
 use std::ffi::CString;
 use std::ptr::null;
+use std::sync::{Once, ONCE_INIT};
+use std::mem;
+
+pub static mut SCHEMA_ID: &'static str = "";
+pub const SCHEMA_DATA: &'static str = r#"{"id":"id","name":"gvt","version":"1.0","attr_names":["name", "age", "sex", "height"]}"#;
 
 pub struct LedgerUtils {}
 
@@ -190,18 +197,16 @@ impl LedgerUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_schema_request(submitter_did: &str, dest: &str, data: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_schema_request(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
-        let dest = CString::new(dest).unwrap();
-        let data = CString::new(data).unwrap();
+        let id = CString::new(id).unwrap();
 
         let err =
             indy_build_get_schema_request(command_handle,
                                           submitter_did.as_ptr(),
-                                          dest.as_ptr(),
-                                          data.as_ptr(),
+                                          id.as_ptr(),
                                           cb);
 
         super::results::result_to_string(err, receiver)
@@ -222,19 +227,16 @@ impl LedgerUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_claim_def_txn(submitter_did: &str, xref: i32, signature_type: &str, origin: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_claim_def_txn(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
-        let signature_type = CString::new(signature_type).unwrap();
-        let origin = CString::new(origin).unwrap();
+        let id = CString::new(id).unwrap();
 
         let err =
             indy_build_get_claim_def_txn(command_handle,
                                          submitter_did.as_ptr(),
-                                         xref,
-                                         signature_type.as_ptr(),
-                                         origin.as_ptr(),
+                                         id.as_ptr(),
                                          cb);
 
         super::results::result_to_string(err, receiver)
@@ -458,16 +460,12 @@ impl LedgerUtils {
     }
 
     pub fn post_schema_to_ledger(pool_handle: i32, wallet_handle: i32, did: &str) -> (i32, String) {
-        let (_schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(&did,
-                                                                             GVT_SCHEMA_NAME,
-                                                                             SCHEMA_VERSION,
-                                                                             GVT_SCHEMA_ATTRIBUTES).unwrap();
-
-        let schema_request = LedgerUtils::build_schema_request(did, &schema_json).unwrap();
+        let schema_request = LedgerUtils::build_schema_request(did, SCHEMA_DATA).unwrap();
         let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
+        let schema: serde_json::Value = serde_json::from_str(&schema_response).unwrap();
+        let schema_seq_no = schema["result"]["seqNo"].as_i64().unwrap().to_string();
 
-        let get_schema_data = json!({"name": GVT_SCHEMA_NAME, "version": SCHEMA_VERSION}).to_string();
-        let get_schema_request = LedgerUtils::build_get_schema_request(&did, &did, &get_schema_data).unwrap();
+        let get_schema_request = LedgerUtils::build_get_schema_request(&did, &schema_seq_no).unwrap();
         let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
 
         let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
@@ -522,5 +520,36 @@ impl LedgerUtils {
     pub fn post_rev_reg_entry(pool_handle: i32, wallet_handle: i32, did: &str, rev_reg_id: &str, rev_reg_entry_json: &str) -> String {
         let rev_reg_entry_request = LedgerUtils::build_revoc_reg_entry_request(&did, &rev_reg_id, REVOC_REG_TYPE, rev_reg_entry_json).unwrap();
         LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &rev_reg_entry_request).unwrap()
+    }
+
+    pub fn publish_schema_in_ledger(pool_handle: i32) ->&'static str {
+        lazy_static! {
+                    static ref COMMON_SCHEMA_INIT: Once = ONCE_INIT;
+
+                }
+
+        unsafe {
+            COMMON_SCHEMA_INIT.call_once(|| {
+                let schema_issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+                // Issuer create DID
+                let (schema_issuer_did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(schema_issuer_wallet_handle, pool_handle).unwrap();
+
+                let schema_request = LedgerUtils::build_schema_request(&schema_issuer_did, SCHEMA_DATA).unwrap();
+                let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, schema_issuer_wallet_handle, &schema_issuer_did, &schema_request).unwrap();
+                let schema: serde_json::Value = serde_json::from_str(&schema_response).unwrap();
+                let schema_seq_no = schema["result"]["seqNo"].as_i64().unwrap().to_string();
+
+                let get_schema_request = LedgerUtils::build_get_schema_request(&schema_issuer_did, &schema_seq_no).unwrap();
+                let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
+                let (schema_id, _) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
+
+                let res = mem::transmute(&schema_id as &str);
+                mem::forget(schema_id);
+                SCHEMA_ID = res;
+            });
+
+            SCHEMA_ID
+        }
     }
 }

@@ -5,7 +5,7 @@
 extern "C" {
 #endif
     
-    extern indy_error_t indy_issuer_create_schema(indy_handle_t command_handle,
+/*    extern indy_error_t indy_issuer_create_schema(indy_handle_t command_handle,
                                                   const char *  issuer_did,
                                                   const char *  name,
                                                   const char *  version,
@@ -15,7 +15,7 @@ extern "C" {
                                                                        indy_error_t  err,
                                                                        const char*   id,
                                                                        const char*   schema_json)
-                                                  );
+                                                  );*/
 
     extern indy_error_t indy_issuer_create_and_store_credential_def(indy_handle_t command_handle,
                                                                     indy_handle_t wallet_handle,

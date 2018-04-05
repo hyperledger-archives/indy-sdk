@@ -49,7 +49,7 @@ macro_rules! map (
 );
 
 impl AnoncredsUtils {
-    pub fn issuer_create_schema(issuer_did: &str, name: &str, version: &str, attr_names: &str) -> Result<(String, String), ErrorCode> {
+/*    pub fn issuer_create_schema(issuer_did: &str, name: &str, version: &str, attr_names: &str) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
 
         let issuer_did = CString::new(issuer_did).unwrap();
@@ -66,7 +66,7 @@ impl AnoncredsUtils {
                                       cb);
 
         super::results::result_to_string_string(err, receiver)
-    }
+    }*/
 
     pub fn issuer_create_credential_definition(wallet_handle: i32, issuer_did: &str, schema: &str, tag: &str,
                                                signature_type: Option<&str>, config: &str) -> Result<(String, String), ErrorCode> {
@@ -377,37 +377,65 @@ impl AnoncredsUtils {
     }
 
     pub fn gvt_schema_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID, "\x02", GVT_SCHEMA_NAME, SCHEMA_VERSION)
-    }
-
-    pub fn gvt_schema() -> SchemaV1 {
-        SchemaV1 {
-            id: AnoncredsUtils::gvt_schema_id().to_string(),
-            version: SCHEMA_VERSION.to_string(),
-            name: GVT_SCHEMA_NAME.to_string(),
-            attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap()
-        }
+        "1".to_string()
     }
 
     pub fn gvt_schema_json() -> String {
-        serde_json::to_string(&Schema::SchemaV1(AnoncredsUtils::gvt_schema())).unwrap()
+        serde_json::to_string(
+            &Schema::SchemaV1(
+                SchemaV1 {
+                    id: AnoncredsUtils::gvt_schema_id().to_string(),
+                    version: SCHEMA_VERSION.to_string(),
+                    name: GVT_SCHEMA_NAME.to_string(),
+                    attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap()
+                }
+            )
+        ).unwrap()
+    }
+
+    pub fn gvt_schema() -> (String, String) {
+        (AnoncredsUtils::gvt_schema_id(), AnoncredsUtils::gvt_schema_json())
     }
 
     pub fn xyz_schema_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID, "\x02", XYZ_SCHEMA_NAME, SCHEMA_VERSION)
-    }
-
-    pub fn xyz_schema() -> SchemaV1 {
-        SchemaV1 {
-            id: AnoncredsUtils::xyz_schema_id().to_string(),
-            version: SCHEMA_VERSION.to_string(),
-            name: XYZ_SCHEMA_NAME.to_string(),
-            attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap()
-        }
+        "2".to_string()
     }
 
     pub fn xyz_schema_json() -> String {
-        serde_json::to_string(&Schema::SchemaV1(AnoncredsUtils::xyz_schema())).unwrap()
+        serde_json::to_string(
+            &Schema::SchemaV1(
+                SchemaV1 {
+                    id: AnoncredsUtils::xyz_schema_id().to_string(),
+                    version: SCHEMA_VERSION.to_string(),
+                    name: XYZ_SCHEMA_NAME.to_string(),
+                    attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap()
+                }
+            )).unwrap()
+    }
+
+    pub fn xyz_schema() -> (String, String) {
+        (AnoncredsUtils::xyz_schema_id(), AnoncredsUtils::xyz_schema_json())
+    }
+
+    pub fn abc_schema_id() -> String {
+        "3".to_string()
+    }
+
+    pub fn abc_schema_json() -> String {
+        serde_json::to_string(
+            &Schema::SchemaV1(
+                SchemaV1 {
+                    id: AnoncredsUtils::abc_schema_id().to_string(),
+                    version: SCHEMA_VERSION.to_string(),
+                    name: GVT_SCHEMA_NAME.to_string(),
+                    attr_names: serde_json::from_str::<HashSet<String>>(r#"["name", "second_name", "experience"]"#).unwrap()
+                }
+            )
+        ).unwrap()
+    }
+
+    pub fn abc_schema() -> (String, String) {
+        (AnoncredsUtils::abc_schema_id(), AnoncredsUtils::abc_schema_json())
     }
 
     pub fn issuer_1_gvt_cred_def_id() -> String {
@@ -610,8 +638,8 @@ impl AnoncredsUtils {
             },
             "identifiers":[
                 {
-                    "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:\u0002:gvt:1.0",
-                    "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:\u0003:CL:NcYxiDXkpYi6ov5FcYDi1e:\u0002:gvt:1.0",
+                    "schema_id":"1",
+                    "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:\u0003:CL:1",
                     "rev_reg_id":null,
                     "timestamp":null
                 }
@@ -809,24 +837,23 @@ impl AnoncredsUtils {
                                          cred_values: &str,
                                          cred_def_id: &str,
                                          cred_def_json: &str) {
-
         // Issuer creates Credential Offer
         let cred_offer_json = AnoncredsUtils::issuer_create_credential_offer(issuer_wallet_handle, &cred_def_id).unwrap();
 
         // Prover creates Credential Request
         let (cred_req, cred_req_metadata) = AnoncredsUtils::prover_create_credential_req(prover_wallet_handle,
-                                                                                                     DID_MY1,
-                                                                                                     &cred_offer_json,
-                                                                                                     &cred_def_json,
+                                                                                         DID_MY1,
+                                                                                         &cred_offer_json,
+                                                                                         &cred_def_json,
                                                                                          prover_master_secret_id).unwrap();
 
         // Issuer creates Credential
         let (cred_json, _, _) = AnoncredsUtils::issuer_create_credential(issuer_wallet_handle,
-                                                                               &cred_offer_json,
-                                                                               &cred_req,
-                                                                               &cred_values,
-                                                                               None,
-                                                                               None).unwrap();
+                                                                         &cred_offer_json,
+                                                                         &cred_req,
+                                                                         &cred_values,
+                                                                         None,
+                                                                         None).unwrap();
 
         // Prover stores received Credential
         AnoncredsUtils::prover_store_credential(prover_wallet_handle,

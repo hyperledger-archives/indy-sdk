@@ -82,8 +82,7 @@ pub enum LedgerCommand {
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetSchemaRequest(
         String, // submitter did
-        String, // dest
-        String, // data
+        String, // id
         Box<Fn(Result<String, IndyError>) + Send>),
     ParseGetSchemaResponse(
         String, // get schema response json
@@ -94,9 +93,7 @@ pub enum LedgerCommand {
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetClaimDefRequest(
         String, // submitter did
-        i32, // xref
-        String, // signature_type
-        String, // origin
+        String, // id
         Box<Fn(Result<String, IndyError>) + Send>),
     ParseGetClaimDefResponse(
         String, // get claim definition response
@@ -239,9 +236,9 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildSchemaRequest command received");
                 cb(self.build_schema_request(&submitter_did, &data));
             }
-            LedgerCommand::BuildGetSchemaRequest(submitter_did, dest, data, cb) => {
+            LedgerCommand::BuildGetSchemaRequest(submitter_did, id, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetSchemaRequest command received");
-                cb(self.build_get_schema_request(&submitter_did, &dest, &data));
+                cb(self.build_get_schema_request(&submitter_did, &id));
             }
             LedgerCommand::ParseGetSchemaResponse(get_schema_response, cb) => {
                 info!(target: "ledger_command_executor", "ParseGetSchemaResponse command received");
@@ -251,9 +248,9 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildClaimDefRequest command received");
                 cb(self.build_claim_def_request(&submitter_did, &data));
             }
-            LedgerCommand::BuildGetClaimDefRequest(submitter_did, xref, signature_type, origin, cb) => {
+            LedgerCommand::BuildGetClaimDefRequest(submitter_did, id, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetClaimDefRequest command received");
-                cb(self.build_get_claim_def_request(&submitter_did, xref, &signature_type, &origin));
+                cb(self.build_get_claim_def_request(&submitter_did, &id));
             }
             LedgerCommand::ParseGetClaimDefResponse(get_claim_def_response, cb) => {
                 info!(target: "ledger_command_executor", "ParseGetClaimDefResponse command received");
@@ -492,16 +489,12 @@ impl LedgerCommandExecutor {
 
     fn build_get_schema_request(&self,
                                 submitter_did: &str,
-                                dest: &str,
-                                data: &str) -> Result<String, IndyError> {
-        info!("build_get_schema_request >>> submitter_did: {:?}, dest: {:?}", submitter_did, dest);
+                                id: &str) -> Result<String, IndyError> {
+        info!("build_get_schema_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
         self.crypto_service.validate_did(submitter_did)?;
-        self.crypto_service.validate_did(dest)?;
 
-        let res = self.ledger_service.build_get_schema_request(submitter_did,
-                                                               dest,
-                                                               data)?;
+        let res = self.ledger_service.build_get_schema_request(submitter_did, id)?;
 
         info!("build_get_schema_request <<< res: {:?}", res);
 
@@ -536,19 +529,12 @@ impl LedgerCommandExecutor {
 
     fn build_get_claim_def_request(&self,
                                    submitter_did: &str,
-                                   xref: i32,
-                                   signature_type: &str,
-                                   origin: &str) -> Result<String, IndyError> {
-        info!("build_get_claim_def_request >>> submitter_did: {:?}, xref: {:?}, signature_type: {:?}, origin: {:?}",
-              submitter_did, xref, signature_type, origin);
+                                   id: &str) -> Result<String, IndyError> {
+        info!("build_get_claim_def_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
         self.crypto_service.validate_did(submitter_did)?;
-        self.crypto_service.validate_did(origin)?;
 
-        let res = self.ledger_service.build_get_claim_def_request(submitter_did,
-                                                                  xref,
-                                                                  signature_type,
-                                                                  origin)?;
+        let res = self.ledger_service.build_get_claim_def_request(submitter_did, id)?;
 
         info!("build_get_claim_def_request <<< res: {:?}", res);
 

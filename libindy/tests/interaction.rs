@@ -59,28 +59,15 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     let nym_request = LedgerUtils::build_nym_request(&issuer_did, &prover_did, Some(&prover_verkey), None, None).unwrap();
     LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &nym_request).unwrap();
 
-    // ISSUER post to Ledger Schema, CredentialDefinition, RevocationRegistry
+    // Assume that somebody posted Schema in Ledger and Issuer got it
+    let schema_id = LedgerUtils::publish_schema_in_ledger(pool_handle);
 
-    // Issuer creates Schema
-    let (_, schema_json) = AnoncredsUtils::issuer_create_schema(&issuer_did,
-                                                                GVT_SCHEMA_NAME,
-                                                                SCHEMA_VERSION,
-                                                                GVT_SCHEMA_ATTRIBUTES).unwrap();
-
-    // Issuer posts Schema to Ledger
-    let schema_request = LedgerUtils::build_schema_request(&issuer_did, &schema_json).unwrap();
-    let schema_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
-
-    // Issuer get Schema from Ledger
-    let get_schema_data = json!({"name": GVT_SCHEMA_NAME, "version": SCHEMA_VERSION}).to_string();
-
-    let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &issuer_did, &get_schema_data).unwrap();
-    let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_req_resp).unwrap();
-
-    // !!IMPORTANT!!
-    // It is important to get Schema from Ledger and parse it to get the correct schema JSON and correspondent id in Ledger
-    // After that we can create CredentialDefinition for received Schema(not for result of indy_issuer_create_schema)
+    // Issuer gets Schema from Ledger
+    let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &schema_id).unwrap();
+    let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
     let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
+
+    // ISSUER post to Ledger CredentialDefinition, RevocationRegistry
 
     // Issuer creates CredentialDefinition
     let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -126,7 +113,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     let cred_offer_json = AnoncredsUtils::issuer_create_credential_offer(issuer_wallet_handle, &cred_def_id).unwrap();
 
     // Prover gets CredentialDefinition from Ledger
-    let get_cred_def_request = LedgerUtils::build_get_claim_def_txn(&prover_did, schema_id.parse::<i32>().unwrap(), &SIGNATURE_TYPE, &issuer_did).unwrap();
+    let get_cred_def_request = LedgerUtils::build_get_claim_def_txn(&prover_did, &cred_def_id).unwrap();
     let get_cred_def_response = LedgerUtils::submit_request(pool_handle, &get_cred_def_request).unwrap();
     let (cred_def_id, cred_def_json) = LedgerUtils::parse_get_claim_def_response(&get_cred_def_response).unwrap();
 
@@ -208,8 +195,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
                                                                  &cred_rev_id).unwrap();
 
     // Prover gets Schema from Ledger
-    let get_schema_data = json!({"name": GVT_SCHEMA_NAME, "version": SCHEMA_VERSION}).to_string();
-    let get_schema_request = LedgerUtils::build_get_schema_request(&prover_did, &issuer_did, &get_schema_data).unwrap();
+    let get_schema_request = LedgerUtils::build_get_schema_request(&prover_did, &schema_id).unwrap();
     let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
     let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
 
@@ -348,6 +334,8 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
     WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
+    PoolUtils::close(pool_handle).unwrap();
+
     TestUtils::cleanup_storage();
 }
 
@@ -375,28 +363,15 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
     let nym_request = LedgerUtils::build_nym_request(&issuer_did, &prover_did, Some(&prover_verkey), None, None).unwrap();
     LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &nym_request).unwrap();
 
-    // ISSUER post to Ledger Schema, CredentialDefinition, RevocationRegistry
+    // Assume that somebody posted Schema in Ledger and Issuer got it
+    let schema_id = LedgerUtils::publish_schema_in_ledger(pool_handle);
 
-    // Issuer creates Schema
-    let (_, schema_json) = AnoncredsUtils::issuer_create_schema(&issuer_did,
-                                                                GVT_SCHEMA_NAME,
-                                                                SCHEMA_VERSION,
-                                                                GVT_SCHEMA_ATTRIBUTES).unwrap();
-
-    // Issuer posts Schema to Ledger
-    let schema_request = LedgerUtils::build_schema_request(&issuer_did, &schema_json).unwrap();
-    let schema_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
-
-    // Issuer get Schema from Ledger
-    let get_schema_data = json!({"name": GVT_SCHEMA_NAME, "version": SCHEMA_VERSION}).to_string();
-
-    let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &issuer_did, &get_schema_data).unwrap();
-    let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_req_resp).unwrap();
-
-    // !!IMPORTANT!!
-    // It is important to get Schema from Ledger and parse it to get the correct schema JSON and correspondent id in Ledger
-    // After that we can create CredentialDefinition for received Schema(not for result of indy_issuer_create_schema)
+    // Issuer gets Schema from Ledger
+    let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &schema_id).unwrap();
+    let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
     let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
+
+    // ISSUER post to Ledger CredentialDefinition, RevocationRegistry
 
     // Issuer creates CredentialDefinition
     let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -442,7 +417,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
     let cred_offer_json = AnoncredsUtils::issuer_create_credential_offer(issuer_wallet_handle, &cred_def_id).unwrap();
 
     // Prover gets CredentialDefinition from Ledger
-    let get_cred_def_request = LedgerUtils::build_get_claim_def_txn(&prover_did, schema_id.parse::<i32>().unwrap(), &SIGNATURE_TYPE, &issuer_did).unwrap();
+    let get_cred_def_request = LedgerUtils::build_get_claim_def_txn(&prover_did, &cred_def_id).unwrap();
     let get_cred_def_response = LedgerUtils::submit_request(pool_handle, &get_cred_def_request).unwrap();
     let (cred_def_id, cred_def_json) = LedgerUtils::parse_get_claim_def_response(&get_cred_def_response).unwrap();
 
@@ -519,8 +494,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
                                                                  &cred_rev_id).unwrap();
 
     // Prover gets Schema from Ledger
-    let get_schema_data = json!({"name": GVT_SCHEMA_NAME, "version": SCHEMA_VERSION}).to_string();
-    let get_schema_request = LedgerUtils::build_get_schema_request(&prover_did, &issuer_did, &get_schema_data).unwrap();
+    let get_schema_request = LedgerUtils::build_get_schema_request(&prover_did, &schema_id).unwrap();
     let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
     let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
 
@@ -659,6 +633,8 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
     WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
     WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
+    PoolUtils::close(pool_handle).unwrap();
+
     TestUtils::cleanup_storage();
 }
 
@@ -688,28 +664,15 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     // Prover1 create DID
     let (prover1_did, _) = DidUtils::create_my_did(prover1_wallet_handle, "{}").unwrap();
 
-    // ISSUER post to Ledger Schema, CredentialDefinition, RevocationRegistry
+    // Assume that somebody posted Schema in Ledger and Issuer got it
+    let schema_id = LedgerUtils::publish_schema_in_ledger(pool_handle);
 
-    // Issuer creates Schema
-    let (_, schema_json) = AnoncredsUtils::issuer_create_schema(&issuer_did,
-                                                                GVT_SCHEMA_NAME,
-                                                                SCHEMA_VERSION,
-                                                                GVT_SCHEMA_ATTRIBUTES).unwrap();
-
-    // Issuer posts Schema to Ledger
-    let schema_request = LedgerUtils::build_schema_request(&issuer_did, &schema_json).unwrap();
-    let schema_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
-
-    // Issuer get Schema from Ledger
-    let get_schema_data = json!({"name": GVT_SCHEMA_NAME, "version": SCHEMA_VERSION}).to_string();
-
-    let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &issuer_did, &get_schema_data).unwrap();
-    let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_req_resp).unwrap();
+    // Issuer gets Schema from Ledger
+    let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &schema_id).unwrap();
+    let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
     let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
 
-    // !!IMPORTANT!!
-    // It is important to get Schema from Ledger and parse it to get the correct schema JSON and correspondent id in Ledger
-    // After that we can create CredentialDefinition for received Schema(not for result of indy_issuer_create_schema)
+    // ISSUER post to Ledger CredentialDefinition, RevocationRegistry
 
     // Issuer creates CredentialDefinition
     let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -749,7 +712,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     let blob_storage_reader_handle = BlobStorageUtils::open_reader(TYPE, &tails_writer_config).unwrap();
 
     // Gets CredentialDefinition from Ledger
-    let get_cred_def_request = LedgerUtils::build_get_claim_def_txn(&prover1_did, schema_id.parse::<i32>().unwrap(), &SIGNATURE_TYPE, &issuer_did).unwrap();
+    let get_cred_def_request = LedgerUtils::build_get_claim_def_txn(&prover1_did, &cred_def_id).unwrap();
     let get_cred_def_response = LedgerUtils::submit_request(pool_handle, &get_cred_def_request).unwrap();
     let (cred_def_id, cred_def_json) = LedgerUtils::parse_get_claim_def_response(&get_cred_def_response).unwrap();
 
@@ -867,8 +830,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
                                                                  &prover1_cred_rev_id).unwrap();
 
     // Prover1 gets Schema from Ledger
-    let get_schema_data = json!({"name": GVT_SCHEMA_NAME, "version": SCHEMA_VERSION}).to_string();
-    let get_schema_request = LedgerUtils::build_get_schema_request(&prover1_did, &issuer_did, &get_schema_data).unwrap();
+    let get_schema_request = LedgerUtils::build_get_schema_request(&prover1_did, &schema_id).unwrap();
     let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
     let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
 
@@ -935,6 +897,8 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     WalletUtils::close_wallet(prover2_wallet_handle).unwrap();
     WalletUtils::close_wallet(prover3_wallet_handle).unwrap();
 
+    PoolUtils::close(pool_handle).unwrap();
+
     TestUtils::cleanup_storage();
 }
 
@@ -972,26 +936,13 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 
     // ISSUER post to Ledger Schema, CredentialDefinition, RevocationRegistry
 
-    // Issuer creates Schema
-    let (_, schema_json) = AnoncredsUtils::issuer_create_schema(&issuer_did,
-                                                                GVT_SCHEMA_NAME,
-                                                                SCHEMA_VERSION,
-                                                                GVT_SCHEMA_ATTRIBUTES).unwrap();
+    // Assume that somebody posted Schema in Ledger and Issuer got it
+    let schema_id = LedgerUtils::publish_schema_in_ledger(pool_handle);
 
-    // Issuer posts Schema to Ledger
-    let schema_request = LedgerUtils::build_schema_request(&issuer_did, &schema_json).unwrap();
-    let schema_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
-
-    // Issuer get Schema from Ledger
-    let get_schema_data = json!({"name": GVT_SCHEMA_NAME, "version": SCHEMA_VERSION}).to_string();
-
-    let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &issuer_did, &get_schema_data).unwrap();
-    let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_req_resp).unwrap();
+    // Issuer gets Schema from Ledger
+    let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &schema_id).unwrap();
+    let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
     let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
-
-    // !!IMPORTANT!!
-    // It is important to get Schema from Ledger and parse it to get the correct schema JSON and correspondent id in Ledger
-    // After that we can create CredentialDefinition for received Schema(not for result of indy_issuer_create_schema)
 
     // Issuer creates CredentialDefinition
     let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -1031,7 +982,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     let blob_storage_reader_handle = BlobStorageUtils::open_reader(TYPE, &tails_writer_config).unwrap();
 
     // Gets CredentialDefinition from Ledger
-    let get_cred_def_request = LedgerUtils::build_get_claim_def_txn(&prover1_did, schema_id.parse::<i32>().unwrap(), &SIGNATURE_TYPE, &issuer_did).unwrap();
+    let get_cred_def_request = LedgerUtils::build_get_claim_def_txn(&prover1_did, &cred_def_id).unwrap();
     let get_cred_def_response = LedgerUtils::submit_request(pool_handle, &get_cred_def_request).unwrap();
     let (cred_def_id, cred_def_json) = LedgerUtils::parse_get_claim_def_response(&get_cred_def_response).unwrap();
 
@@ -1144,8 +1095,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
                                                                  &prover1_cred_rev_id).unwrap();
 
     // Prover1 gets Schema from Ledger
-    let get_schema_data = json!({"name": GVT_SCHEMA_NAME, "version": SCHEMA_VERSION}).to_string();
-    let get_schema_request = LedgerUtils::build_get_schema_request(&prover1_did, &issuer_did, &get_schema_data).unwrap();
+    let get_schema_request = LedgerUtils::build_get_schema_request(&prover1_did, &schema_id).unwrap();
     let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
     let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
 
@@ -1316,6 +1266,8 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     WalletUtils::close_wallet(prover1_wallet_handle).unwrap();
     WalletUtils::close_wallet(prover2_wallet_handle).unwrap();
     WalletUtils::close_wallet(prover3_wallet_handle).unwrap();
+
+    PoolUtils::close(pool_handle).unwrap();
 
     TestUtils::cleanup_storage();
 }

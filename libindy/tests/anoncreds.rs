@@ -20,7 +20,6 @@ use utils::anoncreds::AnoncredsUtils;
 use utils::blob_storage::BlobStorageUtils;
 use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, CREDENTIAL2_ID, CREDENTIAL3_ID};
 use utils::test::TestUtils;
-use std::collections::HashSet;
 use utils::types::*;
 
 use indy::api::ErrorCode;
@@ -42,7 +41,7 @@ fn a() {}
 mod high_cases {
     use super::*;
 
-    mod issuer_create_schema {
+    /*mod issuer_create_schema {
         use super::*;
 
         #[test]
@@ -53,7 +52,7 @@ mod high_cases {
                                                                       GVT_SCHEMA_ATTRIBUTES).unwrap();
             assert_eq!(AnoncredsUtils::gvt_schema_id(), schema_id);
         }
-    }
+    }*/
 
     mod issuer_create_and_store_credential_def {
         use super::*;
@@ -325,6 +324,7 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore]
         fn prover_get_credentials_works_for_filter_by_schema_name() {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
@@ -337,6 +337,7 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore]
         fn prover_get_credentials_works_for_filter_by_schema_version() {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
@@ -350,6 +351,7 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore]
         fn prover_get_credentials_works_for_filter_by_schema_issuer_did() {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
@@ -576,6 +578,7 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_name() {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
@@ -602,6 +605,7 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_version() {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
@@ -628,6 +632,7 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_issuer_did() {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
@@ -1150,7 +1155,7 @@ mod high_cases {
                "requested_attributes": json!({
                    "attr1_referent": json!({
                        "name":"name",
-                       "restrictions": [json!({ "schema_id": AnoncredsUtils::build_id(DID_TRUSTEE, "1", GVT_SCHEMA_NAME, SCHEMA_VERSION) })]
+                       "restrictions": [json!({ "schema_id": "100" })]
                    })
                }),
                "requested_predicates": json!({
@@ -1229,7 +1234,7 @@ mod high_cases {
                "requested_attributes": json!({}),
                "requested_predicates": json!({
                    "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
-                   "restrictions": [ json!({ "schema_id":AnoncredsUtils::build_id(DID_TRUSTEE, "1", GVT_SCHEMA_NAME, SCHEMA_VERSION) })] })
+                   "restrictions": [ json!({ "schema_id":AnoncredsUtils::xyz_schema_id() })] })
                }),
             }).to_string();
 
@@ -1393,7 +1398,7 @@ mod high_cases {
 mod medium_cases {
     use super::*;
 
-    mod issuer_create_schema {
+    /*mod issuer_create_schema {
         use super::*;
 
         #[test]
@@ -1413,7 +1418,7 @@ mod medium_cases {
                                                            GVT_SCHEMA_ATTRIBUTES);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
-    }
+    }*/
 
     mod issuer_create_and_store_credential_def {
         use super::*;
@@ -1449,12 +1454,17 @@ mod medium_cases {
         fn issuer_create_and_store_credential_def_works_for_empty_schema_attr_names() {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let mut schema = AnoncredsUtils::gvt_schema();
-            schema.attr_names = HashSet::new();
+            let attrs: Vec<&str> = Vec::new();
+            let schema = json!({
+                "id":AnoncredsUtils::gvt_schema_id(),
+                "name":GVT_SCHEMA_NAME,
+                "version":"1.1",
+                "attr_names": attrs
+            }).to_string();
 
             let res = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
                                                                           ISSUER_DID,
-                                                                          &serde_json::to_string(&schema).unwrap(),
+                                                                          &schema,
                                                                           TAG_1,
                                                                           None,
                                                                           &AnoncredsUtils::default_cred_def_config());
@@ -1673,7 +1683,7 @@ mod medium_cases {
         fn prover_get_credentials_works_for_invalid_json() {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
-            let res = AnoncredsUtils::prover_get_credentials(wallet_handle, r#"{"schema_issuer_did": 12345}"#);
+            let res = AnoncredsUtils::prover_get_credentials(wallet_handle, r#"{"issuer_did": 12345}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
     }
@@ -1879,11 +1889,8 @@ mod demos {
         //2. Create Prover wallet, gets wallet handle
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //3. Issuer creates schema
-        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                            GVT_SCHEMA_NAME,
-                                                                            SCHEMA_VERSION,
-                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
+        //3. Issuer gets schema
+        let (schema_id, schema_json) = AnoncredsUtils::gvt_schema();
 
         //4. Issuer creates credential definition
         let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -1993,11 +2000,8 @@ mod demos {
         WalletUtils::create_wallet(POOL, prover_wallet_name, Some(INMEM_TYPE), None, None).unwrap();
         let prover_wallet_handle = WalletUtils::open_wallet(prover_wallet_name, None, None).unwrap();
 
-        //4. Issuer creates Schema
-        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                            GVT_SCHEMA_NAME,
-                                                                            SCHEMA_VERSION,
-                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
+        //4. Issuer gets Schema
+        let (schema_id, schema_json) = AnoncredsUtils::gvt_schema();
 
         //5. Issuer creates Credential Definition
         let (cred_def_id, cred_def_json) =
@@ -2093,11 +2097,8 @@ mod demos {
         //3. Prover creates wallet, gets wallet handles
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //4. Issuer1 creates GVT Schema
-        let (gvt_schema_id, gvt_schema) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                               GVT_SCHEMA_NAME,
-                                                                               SCHEMA_VERSION,
-                                                                               GVT_SCHEMA_ATTRIBUTES).unwrap();
+        //4. Issuer1 gets GVT Schema
+        let (gvt_schema_id, gvt_schema) = AnoncredsUtils::gvt_schema();
 
         //5. Issuer1 creates GVT CredentialDefinition
         let (gvt_cred_def_id, gvt_cred_def_json) =
@@ -2108,11 +2109,8 @@ mod demos {
                                                                 None,
                                                                 &AnoncredsUtils::default_cred_def_config()).unwrap();
 
-        //6. Issuer2 creates XYZ Schema
-        let (xyz_schema_id, xyz_schema) = AnoncredsUtils::issuer_create_schema(DID_MY2,
-                                                                               XYZ_SCHEMA_NAME,
-                                                                               SCHEMA_VERSION,
-                                                                               XYZ_SCHEMA_ATTRIBUTES).unwrap();
+        //6. Issuer2 gets XYZ Schema
+        let (xyz_schema_id, xyz_schema) = AnoncredsUtils::xyz_schema();
 
         //7. Issuer2 creates XYZ CredentialDefinition
         let (xyz_cred_def_id, xyz_cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_xyz_wallet_handle,
@@ -2236,11 +2234,8 @@ mod demos {
         //2. Prover creates wallet, gets wallet handles
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //3. Issuer creates GVT Schema
-        let (gvt_schema_id, gvt_schema) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                               GVT_SCHEMA_NAME,
-                                                                               SCHEMA_VERSION,
-                                                                               GVT_SCHEMA_ATTRIBUTES).unwrap();
+        //3. Issuer gets GVT Schema
+        let (gvt_schema_id, gvt_schema) = AnoncredsUtils::gvt_schema();
 
         //4. Issuer creates GVT CredentialDefinition
         let (gvt_cred_def_id, gvt_cred_def_json) =
@@ -2251,11 +2246,8 @@ mod demos {
                                                                 None,
                                                                 &AnoncredsUtils::default_cred_def_config()).unwrap();
 
-        //5. Issuer creates XYZ Schema
-        let (xyz_schema_id, xyz_schema) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                               XYZ_SCHEMA_NAME,
-                                                                               SCHEMA_VERSION,
-                                                                               XYZ_SCHEMA_ATTRIBUTES).unwrap();
+        //5. Issuer gets XYZ Schema
+        let (xyz_schema_id, xyz_schema) = AnoncredsUtils::xyz_schema();
 
         //6. Issuer creates XYZ CredentialDefinition
         let (xyz_cred_def_id, xyz_cred_def_json) =
@@ -2381,11 +2373,8 @@ mod demos {
         //2. Prover creates wallet, gets wallet handle
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //3. Issuer creates schema
-        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                            GVT_SCHEMA_NAME,
-                                                                            SCHEMA_VERSION,
-                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
+        //3. Issuer gets schema
+        let (schema_id, schema_json) = AnoncredsUtils::gvt_schema();
 
         //4. Issuer creates credential definition
         let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -2528,11 +2517,8 @@ mod demos {
         //2. Prover creates wallet, gets wallet handle
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //3. Issuer creates schema
-        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                            GVT_SCHEMA_NAME,
-                                                                            SCHEMA_VERSION,
-                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
+        //3. Issuer gets schema
+        let (schema_id, schema_json) = AnoncredsUtils::gvt_schema();
 
         //4. Issuer creates credential definition
         let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -2671,11 +2657,8 @@ mod demos {
         // 1. Creates wallet, gets wallet handle
         let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        // 2. Issuer creates schema
-        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                            GVT_SCHEMA_NAME,
-                                                                            SCHEMA_VERSION,
-                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
+        // 2. Issuer gets schema
+        let (schema_id, schema_json) = AnoncredsUtils::gvt_schema();
 
         // 3. Issuer creates credential definition
         let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
@@ -2755,19 +2738,16 @@ mod demos {
         //2. Create Prover wallet, gets wallet handle
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //3. Issuer creates schema
-        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                            GVT_SCHEMA_NAME,
-                                                                            SCHEMA_VERSION,
-                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
+        //3. Issuer gets schema
+        let (schema_id, schema_json) = AnoncredsUtils::gvt_schema();
 
         //4. Issuer creates credential definition
         let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
-                                                                                                     ISSUER_DID,
-                                                                                                     &schema_json,
-                                                                                                     TAG_1,
-                                                                                                     None,
-                                                                                                     &AnoncredsUtils::default_cred_def_config()).unwrap();
+                                                                                               ISSUER_DID,
+                                                                                               &schema_json,
+                                                                                               TAG_1,
+                                                                                               None,
+                                                                                               &AnoncredsUtils::default_cred_def_config()).unwrap();
 
         //5. Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
@@ -2867,11 +2847,8 @@ mod demos {
         // Prover3 creates wallet, gets wallet handle
         let prover3_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        // Issuer creates schema
-        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                            GVT_SCHEMA_NAME,
-                                                                            SCHEMA_VERSION,
-                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
+        // Issuer gets schema
+        let (schema_id, schema_json) = AnoncredsUtils::gvt_schema();
 
         // Issuer creates credential definition
         let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -3206,11 +3183,8 @@ mod demos {
         //3. Prover creates wallet, gets wallet handles
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //4. Issuer1 creates GVT Schema
-        let (gvt_schema_id, gvt_schema) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                               GVT_SCHEMA_NAME,
-                                                                               SCHEMA_VERSION,
-                                                                               GVT_SCHEMA_ATTRIBUTES).unwrap();
+        //4. Issuer1 gets GVT Schema
+        let (gvt_schema_id, gvt_schema) = AnoncredsUtils::gvt_schema();
 
         //5. Issuer1 creates GVT CredentialDefinition
         let (gvt_cred_def_id, gvt_cred_def_json) =
@@ -3221,19 +3195,16 @@ mod demos {
                                                                 None,
                                                                 &AnoncredsUtils::default_cred_def_config()).unwrap();
 
-        //6. Issuer2 creates ABC Schema
-        let (abc_schema_id, abc_schema) = AnoncredsUtils::issuer_create_schema(DID_MY2,
-                                                                               "abc",
-                                                                               "1.1",
-                                                                               r#"["name", "second_name", "experience"]"#).unwrap();
+        //6. Issuer2 gets ABC Schema
+        let (abc_schema_id, abc_schema) = AnoncredsUtils::abc_schema();
 
         //7. Issuer2 creates ABC CredentialDefinition
         let (abc_cred_def_id, abc_cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_abc_wallet_handle,
-                                                                                                             DID_MY2,
-                                                                                                             &abc_schema,
-                                                                                                             TAG_1,
-                                                                                                             None,
-                                                                                                             &AnoncredsUtils::default_cred_def_config()).unwrap();
+                                                                                                       DID_MY2,
+                                                                                                       &abc_schema,
+                                                                                                       TAG_1,
+                                                                                                       None,
+                                                                                                       &AnoncredsUtils::default_cred_def_config()).unwrap();
 
         //8. Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
@@ -3364,11 +3335,8 @@ mod demos {
         //2. Prover creates wallet, gets wallet handle
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //3. Issuer creates schema
-        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                            GVT_SCHEMA_NAME,
-                                                                            SCHEMA_VERSION,
-                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
+        //3. Issuer gets schema
+        let (schema_id, schema_json) = AnoncredsUtils::gvt_schema();
 
         //4. Issuer creates credential definition
         let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -3533,11 +3501,8 @@ mod demos {
         //2. Prover creates wallet, gets wallet handle
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //3. Issuer creates schema
-        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                            GVT_SCHEMA_NAME,
-                                                                            SCHEMA_VERSION,
-                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
+        //3. Issuer gets schema
+        let (schema_id, schema_json) = AnoncredsUtils::gvt_schema();
 
         //4. Issuer creates credential definition
         let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -3707,11 +3672,8 @@ mod demos {
         //4. Prover creates wallet, gets wallet handle
         let prover_3_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //5. Issuer creates schema
-        let (_, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                    GVT_SCHEMA_NAME,
-                                                                    SCHEMA_VERSION,
-                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
+        //5. Issuer gets schema
+        let (_, schema_json) = AnoncredsUtils::gvt_schema();
 
         //6. Issuer creates credential definition
         let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -3815,11 +3777,8 @@ mod demos {
         //4. Prover creates wallet, gets wallet handle
         let prover_3_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //5. Issuer creates schema
-        let (_, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                    GVT_SCHEMA_NAME,
-                                                                    SCHEMA_VERSION,
-                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
+        //5. Issuer gets schema
+        let (_, schema_json) = AnoncredsUtils::gvt_schema();
 
         //6. Issuer creates credential definition
         let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -3912,11 +3871,8 @@ mod demos {
         //1. Issuer creates wallet, gets wallet handle
         let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //2. Issuer creates schema
-        let (_, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                    GVT_SCHEMA_NAME,
-                                                                    SCHEMA_VERSION,
-                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
+        //2. Issuer gets schema
+        let (_, schema_json) = AnoncredsUtils::gvt_schema();
 
         //3. Issuer creates credential definition
         let (cred_def_id, _) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -3959,11 +3915,8 @@ mod demos {
         //1. Issuer creates wallet, gets wallet handle
         let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //2. Issuer creates schema
-        let (_, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                    GVT_SCHEMA_NAME,
-                                                                    SCHEMA_VERSION,
-                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
+        //2. Issuer gets schema
+        let (_, schema_json) = AnoncredsUtils::gvt_schema();
 
         //3. Issuer creates credential definition
         let (cred_def_id, _) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,

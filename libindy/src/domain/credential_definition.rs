@@ -62,8 +62,8 @@ pub enum CredentialDefinition {
 }
 
 impl CredentialDefinition {
-    pub fn cred_def_id(did: &str, schema_id: &str, signature_type: &SignatureType) -> String { //TODO: FIXME
-        format!("{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type.to_str(), DELIMITER, schema_id)
+    pub fn cred_def_id(did: &str, schema_id: &str, signature_type: &str) -> String { //TODO: FIXME
+        format!("{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id)
     }
 }
 

@@ -418,12 +418,7 @@ pub extern fn indy_build_schema_request(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: DID of the read request sender.
-/// dest: Schema Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
-/// It differs from submitter_did field.
-/// data: {
-///     name (string): Schema's name string
-///     version (string): Schema's version string
-/// }
+/// id: Schema ID in ledger
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -434,20 +429,17 @@ pub extern fn indy_build_schema_request(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_build_get_schema_request(command_handle: i32,
                                             submitter_did: *const c_char,
-                                            dest: *const c_char,
-                                            data: *const c_char,
+                                            id: *const c_char,
                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                  request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(dest, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(data, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetSchemaRequest(
             submitter_did,
-            dest,
-            data,
+            id,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
@@ -567,22 +559,17 @@ pub extern fn indy_build_claim_def_txn(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_build_get_claim_def_txn(command_handle: i32,
                                            submitter_did: *const c_char,
-                                           xref: i32,
-                                           signature_type: *const c_char,
-                                           origin: *const c_char,
+                                           id: *const c_char,
                                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                 request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(signature_type, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(origin, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetClaimDefRequest(
             submitter_did,
-            xref,
-            signature_type,
-            origin,
+            id,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);

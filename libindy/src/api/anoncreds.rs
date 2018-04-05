@@ -12,7 +12,8 @@ use utils::cstring::CStringUtils;
 use self::libc::c_char;
 use std::ptr;
 
-/// Create credential schema entity that describes credential attributes list and allows credentials
+//TODO: Uncomment IS-625
+/*/// Create credential schema entity that describes credential attributes list and allows credentials
 /// interoperability.
 ///
 /// Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
@@ -64,7 +65,7 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
                 ))));
 
     result_to_err_code!(result)
-}
+}*/
 
 /// Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
 /// and secrets used for credentials revocation.

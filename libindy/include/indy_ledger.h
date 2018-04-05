@@ -271,12 +271,7 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: DID of the read request sender.
-    /// dest: Schema Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
-    /// It differs from submitter_did field.
-    /// data: {
-    ///     name (string): Schema's name string
-    ///     version (string): Schema's version string
-    /// }
+    /// id: Schema ID in ledger
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -287,8 +282,7 @@ extern "C" {
     
     extern indy_error_t indy_build_get_schema_request(indy_handle_t command_handle,
                                                       const char *  submitter_did,
-                                                      const char *  dest,
-                                                      const char *  data,
+                                                      const char *  id,
 
                                                       void           (*cb)(indy_handle_t xcommand_handle,
                                                                            indy_error_t  err,
@@ -363,9 +357,7 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: DID of the read request sender.
-    /// xref: Sequence number of a Schema transaction the claim definition is created for.
-    /// signature_type: Type of the claim definition. CL is the only supported type now.
-    /// origin: Claim Definition Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
+    /// id: Credential definition ID in Ledger
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -376,9 +368,8 @@ extern "C" {
 
      extern indy_error_t indy_build_get_claim_def_txn(indy_handle_t command_handle,
                                                       const char *  submitter_did,
-                                                      indy_i32_t  xref,
-                                                      const char *  signature_type,
-                                                      const char *  origin,
+                                                      const char *  id,
+
                                                       void           (*cb)(indy_handle_t xcommand_handle,
                                                                            indy_error_t  err,
                                                                            const char*   request_json)

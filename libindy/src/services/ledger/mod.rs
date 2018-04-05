@@ -11,6 +11,7 @@ use errors::common::CommonError;
 use errors::ledger::LedgerError;
 use serde_json::Value;
 use services::ledger::constants::NYM;
+use domain::DELIMITER;
 use domain::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
 use domain::revocation_registry::RevocationRegistry;
 use domain::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
@@ -106,22 +107,21 @@ impl LedgerService {
     }
 
     pub fn build_schema_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
-        let schema: SchemaV1 = serde_json::from_str(data)
+        let schema_data: SchemaOperationData = serde_json::from_str(data)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Schema: {:?}", err)))?;
-
-        let schema_data = SchemaOperationData::new(schema.name, schema.version, schema.attr_names);
 
         let operation = SchemaOperation::new(schema_data);
         Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("SCHEMA request json is invalid {:?}.", err)))
     }
 
-    pub fn build_get_schema_request(&self, identifier: &str, dest: &str, data: &str) -> Result<String, CommonError> {
-        let data = GetSchemaOperationData::from_json(data)
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {:?}", err)))?;
-        let operation = GetSchemaOperation::new(dest.to_string(), data);
+    pub fn build_get_schema_request(&self, identifier: &str, id: &str) -> Result<String, CommonError> {
+        let seq_no = id.parse::<i32>()
+            .map_err(|_| CommonError::InvalidStructure(format!("Schema ID is invalid")))?;
+
+        let operation = GetTxnOperation::new(seq_no);
         Request::build_request(identifier, operation)
-            .map_err(|err| CommonError::InvalidState(format!("GET_SCHEMA request json is invalid {:?}.", err)))
+            .map_err(|err| CommonError::InvalidState(format!("GET_TXN request json is invalid {:?}.", err)))
     }
 
     pub fn build_claim_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
@@ -133,10 +133,20 @@ impl LedgerService {
             .map_err(|err| CommonError::InvalidState(format!("CLAIM_DEF request json is invalid {:?}.", err)))
     }
 
-    pub fn build_get_claim_def_request(&self, identifier: &str, _ref: i32, signature_type: &str, origin: &str) -> Result<String, CommonError> {
-        let operation = GetClaimDefOperation::new(_ref,
-                                                  signature_type.to_string(),
-                                                  origin.to_string());
+    pub fn build_get_claim_def_request(&self, identifier: &str, id: &str) -> Result<String, CommonError> {
+        let parts: Vec<&str> = id.split_terminator(DELIMITER).collect::<Vec<&str>>();
+        let origin = parts.get(0)
+            .ok_or(CommonError::InvalidStructure(format!("Origin not found in: {}", id)))?.to_string();
+
+        let ref_ = parts.get(3)
+            .ok_or(CommonError::InvalidStructure(format!("Schema ID not found in: {}", id)))?
+            .parse::<i32>()
+            .map_err(|_| CommonError::InvalidStructure(format!("Schema ID not found in: {}", id)))?;
+
+        let signature_type = parts.get(2)
+            .ok_or(CommonError::InvalidStructure(format!("Signature type not found in: {}", id)))?.to_string();
+
+        let operation = GetClaimDefOperation::new(ref_, signature_type, origin);
         Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("GET_CLAIM_DEF request json is invalid {:?}.", err)))
     }
@@ -247,13 +257,13 @@ impl LedgerService {
     pub fn parse_get_schema_response(&self, get_schema_response: &str) -> Result<(String, String), LedgerError> {
         let reply: Reply<GetSchemaReplyResult> = LedgerService::parse_response(get_schema_response)?;
 
-        Ok((reply.result.seq_no.to_string(),
+        Ok((reply.result.data.seq_no.to_string(),
             Schema::SchemaV1(
                 SchemaV1 {
-                    name: reply.result.data.name.clone(),
-                    version: reply.result.data.version.clone(),
-                    attr_names: reply.result.data.attr_names,
-                    id: reply.result.seq_no.to_string()
+                    name: reply.result.data.data.name.clone(),
+                    version: reply.result.data.data.version.clone(),
+                    attr_names: reply.result.data.data.attr_names,
+                    id: reply.result.data.seq_no.to_string() // TODO: FIXME
                 })
                 .to_json()
                 .map_err(|err|
@@ -263,7 +273,7 @@ impl LedgerService {
     pub fn parse_get_claim_def_response(&self, get_claim_def_response: &str) -> Result<(String, String), LedgerError> {
         let reply: Reply<GetClaimDefReplyResult> = LedgerService::parse_response(get_claim_def_response)?;
 
-        let cred_def_id = CredentialDefinition::cred_def_id(&reply.result.origin, &reply.result.ref_.to_string(), &reply.result.signature_type);
+        let cred_def_id = CredentialDefinition::cred_def_id(&reply.result.origin, &reply.result.ref_.to_string(), &reply.result.signature_type.to_str());
 
         Ok((cred_def_id.clone(),
             CredentialDefinition::CredentialDefinitionV1(
@@ -475,7 +485,7 @@ mod tests {
     fn build_schema_request_works_for_correct_data() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
-        let data = r#"{"name":"name", "version":"1.0", "attrNames":["male"], "id":"id"}"#;
+        let data = r#"{"name":"name", "version":"1.0", "attr_names":["male"], "id":"id"}"#;
 
         let expected_result = r#""operation":{"type":"101","data":{"name":"name","version":"1.0","attr_names":["male"]}},"protocolVersion":1"#;
 
@@ -487,9 +497,9 @@ mod tests {
     fn build_get_schema_request_works_for_wrong_data() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
-        let data = r#"{"name":"name","attr_names":["name","male"]}"#;
+        let id = "wrong_schema_id";
 
-        let get_schema_request = ledger_service.build_get_schema_request(identifier, identifier, data);
+        let get_schema_request = ledger_service.build_get_schema_request(identifier, id);
         assert!(get_schema_request.is_err());
     }
 
@@ -497,11 +507,11 @@ mod tests {
     fn build_get_schema_request_works_for_correct_data() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
-        let data = r#"{"name":"name","version":"1.0"}"#;
+        let id = "1";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"107","dest":"identifier","data":{"name":"name","version":"1.0"}},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1},"protocolVersion":1"#;
 
-        let get_schema_request = ledger_service.build_get_schema_request(identifier, identifier, data).unwrap();
+        let get_schema_request = ledger_service.build_get_schema_request(identifier, id).unwrap();
         assert!(get_schema_request.contains(expected_result));
     }
 
@@ -509,13 +519,11 @@ mod tests {
     fn build_get_claim_def_request_works() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
-        let _ref = 1;
-        let signature_type = "signature_type";
-        let origin = "origin";
+        let id = CredentialDefinition::cred_def_id("origin", "1", "signature_type");
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"origin"},"protocolVersion":1"#;
 
-        let get_claim_def_request = ledger_service.build_get_claim_def_request(identifier, _ref, signature_type, origin).unwrap();
+        let get_claim_def_request = ledger_service.build_get_claim_def_request(identifier, &id).unwrap();
         assert!(get_claim_def_request.contains(expected_result));
     }
 
