@@ -759,7 +759,10 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     let (rev_reg_id, revoc_reg_def_json) = LedgerUtils::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap();
 
     /*ISSUANCE CREDENTIAL FOR PROVER1*/
+    // Prover1 creates Master Secret
     let prover1_master_secret_id = "prover1_master_secret";
+    AnoncredsUtils::prover_create_master_secret(prover1_wallet_handle, prover1_master_secret_id).unwrap();
+
     let (prover1_cred_rev_id, revoc_reg_delta1_json) = AnoncredsUtils::multi_steps_create_revocation_credential(
         prover1_master_secret_id,
         prover1_wallet_handle,
@@ -781,7 +784,10 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 
 
     /*ISSUANCE CREDENTIAL FOR PROVER2*/
+    // Prover2 creates Master Secret
     let prover2_master_secret_id = "prover2_master_secret";
+    AnoncredsUtils::prover_create_master_secret(prover2_wallet_handle, prover2_master_secret_id).unwrap();
+
     let (_, revoc_reg_delta2_json) = AnoncredsUtils::multi_steps_create_revocation_credential(
         prover2_master_secret_id,
         prover2_wallet_handle,
@@ -802,7 +808,10 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &rev_reg_entry_request).unwrap();
 
     /*ISSUANCE CREDENTIAL FOR PROVER3*/
+    // Prover3 creates Master Secret
     let prover3_master_secret_id = "prover3_master_secret";
+    AnoncredsUtils::prover_create_master_secret(prover3_wallet_handle, prover3_master_secret_id).unwrap();
+
     let (_, revoc_reg_delta3_json) = AnoncredsUtils::multi_steps_create_revocation_credential(
         prover3_master_secret_id,
         prover3_wallet_handle,
@@ -1032,7 +1041,10 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     let (rev_reg_id, revoc_reg_def_json) = LedgerUtils::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap();
 
     /*ISSUANCE CREDENTIAL FOR PROVER1*/
+    // Prover1 creates Master Secret
     let prover1_master_secret_id = "prover1_master_secret";
+    AnoncredsUtils::prover_create_master_secret(prover1_wallet_handle, prover1_master_secret_id).unwrap();
+
     let (prover1_cred_rev_id, revoc_reg_delta1_json) = AnoncredsUtils::multi_steps_create_revocation_credential(
         prover1_master_secret_id,
         prover1_wallet_handle,
@@ -1048,7 +1060,10 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     let revoc_reg_delta1_json = revoc_reg_delta1_json.unwrap();
 
     /*ISSUANCE CREDENTIAL FOR PROVER2*/
+    // Prover2 creates Master Secret
     let prover2_master_secret_id = "prover2_master_secret";
+    AnoncredsUtils::prover_create_master_secret(prover2_wallet_handle, prover2_master_secret_id).unwrap();
+
     let (prover2_cred_rev_id, revoc_reg_delta2_json) = AnoncredsUtils::multi_steps_create_revocation_credential(
         prover2_master_secret_id,
         prover2_wallet_handle,
@@ -1067,7 +1082,10 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     let revoc_reg_delta_json = AnoncredsUtils::issuer_merge_revocation_registry_deltas(&revoc_reg_delta1_json, &revoc_reg_delta2_json).unwrap();
 
     /*ISSUANCE CREDENTIAL FOR PROVER3*/
+    // Prover3 creates Master Secret
     let prover3_master_secret_id = "prover3_master_secret";
+    AnoncredsUtils::prover_create_master_secret(prover3_wallet_handle, prover3_master_secret_id).unwrap();
+
     let (prover3_cred_rev_id, revoc_reg_delta3_json) = AnoncredsUtils::multi_steps_create_revocation_credential(
         prover3_master_secret_id,
         prover3_wallet_handle,
