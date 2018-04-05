@@ -44,7 +44,185 @@ It is our existing endpoints for secrets creation and access like ```indy_create
 This API is intended to store and read application specific identity data in the wallet.
 This API shouldn't have an access to secrets stored by Secret Entities API.
 
-TODO: FIXME: Define it!!! It will look very to Storage Interface.
+```Rust
+/// Create a new non-secret record in the wallet
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context
+/// wallet_handle: wallet handle (created by open_wallet)
+/// type_: allows to separate different record types collections
+/// id: the id of record
+/// value: the value of record
+/// tags_json: the record tags used for search and storing meta information as json:
+///   {
+///     "tagName1": "tag value 1", // string value
+///     "tagName2": 123, // numeric value
+///   }
+///   Note that null means no tags
+extern pub fn indy_add_wallet_record(command_handle: i32,
+                                     wallet_handle: i32,
+                                     type_: *const c_char,
+                                     id: *const c_char,
+                                     value: *const c_char,
+                                     tags_json: *const c_char,
+                                     cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {}
+
+/// Update a non-secret wallet record value
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context
+/// wallet_handle: wallet handle (created by open_wallet)
+/// type_: allows to separate different record types collections
+/// id: the id of record
+/// value: the new value of record
+extern pub fn indy_update_wallet_record_value(command_handle: i32,
+                                              wallet_handle: i32,
+                                              type_: *const c_char,
+                                              id: *const c_char,
+                                              value: *const c_char,
+                                              cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {}
+
+/// Update a non-secret wallet record tags
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context
+/// wallet_handle: wallet handle (created by open_wallet)
+/// type_: allows to separate different record types collections
+/// id: the id of record
+/// tags_json: the new record tags used for search and storing meta information as json:
+///   {
+///     "tagName1": "tag value 1", // string value
+///     "tagName2": 123, // numeric value
+///   }
+///   Note that null means no tags
+extern pub fn indy_update_wallet_record_tags(command_handle: i32,
+                                             wallet_handle: i32,
+                                             type_: *const c_char,
+                                             id: *const c_char,
+                                             tags_json: *const c_char,
+                                             cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {}
+
+/// Add new tags to the wallet record
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context
+/// wallet_handle: wallet handle (created by open_wallet)
+/// type_: allows to separate different record types collections
+/// id: the id of record
+/// tags_json: the additional record tags as json:
+///   {
+///     "tagName1": "tag value 1", // string value
+///     "tagName2": 123, // numeric value,
+///     ...
+///   }
+///   Note that null means no tags
+///   Note if some from provided tags already assigned to the record than
+///     corresponding tags values will be replaced
+extern pub fn indy_add_wallet_record_tags(command_handle: i32,
+                                          wallet_handle: i32,
+                                          type_: *const c_char,
+                                          id: *const c_char,
+                                          tags_json: *const c_char,
+                                          cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {}
+
+/// Delete tags from the wallet record
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context
+/// wallet_handle: wallet handle (created by open_wallet)
+/// type_: allows to separate different record types collections
+/// id: the id of record
+/// tag_names_json: the list of tag names to remove from the record as json array:
+///   ["tagName1", "tagName2", ...]
+///   Note that null means no tag names
+extern pub fn indy_delete_wallet_record_tags(command_handle: i32,
+                                             wallet_handle: i32,
+                                             type_: *const c_char,
+                                             id: *const c_char,
+                                             tag_names_json: *const c_char,
+                                             cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {}
+
+/// Delete an existing wallet record in the wallet
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context
+/// wallet_handle: wallet handle (created by open_wallet)
+/// type_: record type
+/// id: the id of record
+extern pub fn indy_delete_wallet_record(command_handle: i32,
+                                        wallet_handle: i32,
+                                        type_: *const c_char,
+                                        id: *const c_char,
+                                        cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode> {}
+
+/// Get an wallet record by id
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context
+/// wallet_handle: wallet handle (created by open_wallet)
+/// type_: allows to separate different record types collections
+/// id: the id of record
+/// options_json: //TODO: FIXME: Think about replacing by bitmaks
+///  {
+///    retrieveValue: (optional, true by default) Retrieve record value,
+///    retrieveTags: (optional, true by default) Retrieve record tags
+///  }
+/// #Returns
+/// wallet record json:
+/// {
+///   id: "Some id",
+///   value: "Some value", // present only if retrieveValue set to true
+///   tags: <tags json>, // present only if retrieveTags set to true
+/// }
+extern pub fn indy_get_wallet_record(command_handle: u32,
+                                     wallet_handle: i32,
+                                     type_: *const c_char,
+                                     id: *const c_char,
+                                     options_json: *const c_char,
+                                     cb: Option<extern fn(command_handle_: i32, err: ErrorCode,
+                                                          record_json: *const c_char)>) -> ErrorCode {}
+
+/// Search for wallet records
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// type_: allows to separate different record types collections
+/// query_json: MongoDB style query to wallet record tags:
+///  {
+///    "tagName": "tagValue",
+///    $or: {
+///      "tagName2": { $regex: 'pattern' },
+///      "tagName3": { $gte: 123 },
+///    },
+///  }
+/// options_json: //TODO: FIXME: Think about replacing by bitmaks
+///  {
+///    skip: (optional, 0 by default) Skip first "skip" wallet records,
+///    limit: (optional, 100 by default) limit amount of records to retrieve,
+///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
+///    retrieveTotalCount: (optional, false by default) Calculate total count (without skip/limit apply),
+///    retrieveValue: (optional, true by default) Retrieve record value,
+///    retrieveTags: (optional, true by default) Retrieve record tags,
+///  }
+/// #Returns
+/// wallet records json:
+/// {
+///   totalCount: <int>, // present only if retrieveTotalCount set to true
+///   records: [{ // present only if retrieveRecords set to true
+///       id: "Some id",
+///       value: "Some value", // present only if retrieveValue set to true
+///       tags: <tags json>, // present only if retrieveTags set to true
+///   }],
+/// }
+extern pub fn indy_search_wallet_records(command_handle: u32,
+                                         wallet_handle: i32,
+                                         type_: *const c_char,
+                                         query_json: *const c_char,
+                                         options_json: *const c_char,
+                                         cb: Option<extern fn(command_handle_: i32, err: ErrorCode,
+                                                              records_json: *const c_char)>) -> ErrorCode {}
+
+```
 
 ## Wallet API and Storage Interface
 
@@ -52,7 +230,7 @@ Wallet API already exists and allows wallet management. It requires to be update
 of wallet records in SQL database. To achieve this we will replace existing ```indy_register_wallet_type``` call with ```indy_register_wallet_storage``` call:
 
 ```Rust
-/// Registers custom wallet storage implementation.
+/// Register custom wallet storage implementation.
 ///
 /// It allows library user to provide custom wallet storage implementation as set of handlers.
 ///
