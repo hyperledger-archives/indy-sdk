@@ -52,6 +52,8 @@ public class IndyIntegrationTest {
 	protected String SCHEMA_VERSION = "1.0";
 	protected String GVT_SCHEMA_ATTRIBUTES = "[\"name\", \"age\", \"sex\", \"height\"]";
 	protected String XYZ_SCHEMA_ATTRIBUTES = "[\"status\", \"period\"]";
+	protected String REVOC_REG_TYPE = "CL_ACCUM";
+	protected String SIGNATURE_TYPE = "CL";
 
 	protected static final String TRUSTEE_IDENTITY_JSON =
 			new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null).toJson();
