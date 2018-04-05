@@ -471,6 +471,19 @@ impl AnoncredsUtils {
         serde_json::to_string(&AnoncredsUtils::gvt2_credential_values()).unwrap()
     }
 
+    pub fn gvt3_credential_values() -> HashMap<String, AttributeValues> {
+        map! {
+            "sex".to_string() => AttributeValues {raw: "male".to_string(), encoded: "1234567890442222223345678958394838228692050081607692519917028371144233115103".to_string()},
+            "name".to_string() => AttributeValues {raw: "Artem".to_string(), encoded: "12356325715837025980172217217278169335".to_string()},
+            "height".to_string() => AttributeValues {raw: "180".to_string(), encoded: "180".to_string()},
+            "age".to_string() => AttributeValues {raw: "25".to_string(), encoded: "25".to_string()}
+          }
+    }
+
+    pub fn gvt3_credential_values_json() -> String {
+        serde_json::to_string(&AnoncredsUtils::gvt3_credential_values()).unwrap()
+    }
+
     pub fn issuer_1_gvt_credential() -> CredentialInfo {
         CredentialInfo {
             cred_def_id: AnoncredsUtils::issuer_1_gvt_cred_def_id(),

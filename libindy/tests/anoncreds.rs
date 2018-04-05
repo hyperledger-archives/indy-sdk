@@ -3108,19 +3108,13 @@ mod demos {
 
         /*ISSUANCE CREDENTIAL FOR PROVER3*/
         let prover3_master_secret_id = "prover3_master_secret";
-        let prover3_cred_values = r#"{
-            "sex": { "raw":"male", "encoded":"1234567890442222223345678958394838228692050081607692519917028371144233115103" },
-            "name": { "raw":"Artem", "encoded":"12356325715837025980172217217278169335" },
-            "height": { "raw":"180", "encoded":"180" },
-            "age": { "raw":"25", "encoded":"25" }
-        }"#;
 
         let (prover3_cred_rev_id, revoc_reg_delta3_json) = AnoncredsUtils::multi_steps_create_revocation_credential(
             prover3_master_secret_id,
             prover3_wallet_handle,
             issuer_wallet_handle,
             CREDENTIAL3_ID,
-            prover3_cred_values,
+            &AnoncredsUtils::gvt3_credential_values_json(),
             &cred_def_id,
             &cred_def_json,
             &rev_reg_id,
