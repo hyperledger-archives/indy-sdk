@@ -484,8 +484,8 @@ impl IssuerCommandExecutor {
                 (None, HashSet::new())
             };
 
-
         let credential = Credential {
+            schema_id: cred_def.schema_id,
             cred_def_id: cred_request.cred_def_id.clone(),
             rev_reg_id: rev_reg_id.map(String::from),
             values: cred_values,

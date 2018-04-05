@@ -486,6 +486,7 @@ impl AnoncredsUtils {
 
     pub fn issuer_1_gvt_credential() -> CredentialInfo {
         CredentialInfo {
+            schema_id: AnoncredsUtils::gvt_schema_id(),
             cred_def_id: AnoncredsUtils::issuer_1_gvt_cred_def_id(),
             referent: CREDENTIAL1_ID.to_string(),
             rev_reg_id: None,
@@ -501,6 +502,7 @@ impl AnoncredsUtils {
 
     pub fn issuer_1_xyz_credential() -> CredentialInfo {
         CredentialInfo {
+            schema_id: AnoncredsUtils::xyz_schema_id(),
             cred_def_id: AnoncredsUtils::issuer_1_xyz_cred_def_id(),
             referent: CREDENTIAL2_ID.to_string(),
             rev_reg_id: None,
@@ -514,6 +516,7 @@ impl AnoncredsUtils {
 
     pub fn issuer_2_gvt_credential() -> CredentialInfo {
         CredentialInfo {
+            schema_id: AnoncredsUtils::gvt_schema_id(),
             cred_def_id: AnoncredsUtils::issuer_2_gvt_cred_def_id(),
             referent: CREDENTIAL3_ID.to_string(),
             rev_reg_id: None,
