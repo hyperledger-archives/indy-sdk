@@ -300,6 +300,7 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                           ///    skip: (optional, 0 by default) Skip first "skip" wallet records,
                                           ///    limit: (optional, 100 by default) limit amount of records to retrieve,
                                           ///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
+                                          ///    retrieveTotalCount: (optional, false by default) Calculate total count (without skip/limit apply),
                                           ///    retrieveValue: (optional, true by default) Retrieve record value,
                                           ///    retrieveTags: (optional, true by default) Retrieve record tags,
                                           ///  }
@@ -317,6 +318,7 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                           /// search_handle: wallet search handle (See search_records handler)
                                           ///
                                           /// returns: total count of records that corresponds to wallet storage search query
+                                          ///          Note -1 will be returned if retrieveTotalCount set to false for search_records
                                           get_search_total_count: Option<extern fn(storage_handle: u32,
                                                                                    search_handle: u32) -> u32>,
 
@@ -353,9 +355,160 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                                                err: ErrorCode)>) -> ErrorCode
 ```
 
-Interface entities are:
+Storage Interface entities are:
 
-![Storage Interface](./storage-interface.svg)
+![Storage Interface entities](./storage-interface.svg)
+
+## Wallet Service Interface
+
+```Rust
+
+impl WalletService {
+
+  pub fn new() -> WalletService {}
+
+  pub fn register_wallet_storage(&self,
+                                 type_: *const c_char,
+                                 create: extern fn(name: *const c_char,
+                                                   config: *const c_char)  -> ErrorCode,
+                                 delete: extern fn(name: *const c_char,
+                                                   config: *const c_char,
+                                                   credentials: *const c_char) -> ErrorCode,
+                                 open: extern fn(name: *const c_char,
+                                                 config: *const c_char,
+                                                 runtime_config: *const c_char,
+                                                 credentials: *const c_char,
+                                                 storage_handle_p: *mut i32) -> ErrorCode,
+                                 close: extern fn(handle: i32) -> ErrorCode,
+                                 add_record: extern fn(storage_handle: i32,
+                                                       type_: *const c_char,
+                                                       id: *const c_char,
+                                                       value: *const c_char,
+                                                       tags_json: *const c_char) -> ErrorCode,
+                                 update_record_value: extern fn(storage_handle: i32,
+                                                                type_: *const c_char,
+                                                                id: *const c_char,
+                                                                value: *const c_char) -> ErrorCode,
+                                 update_record_tags: extern fn(storage_handle: i32,
+                                                               type_: *const c_char,
+                                                               id: *const c_char,
+                                                               tags_json: *const c_char) -> ErrorCode,
+                                 add_record_tags: extern fn(storage_handle: i32,
+                                                            type_: *const c_char,
+                                                            id: *const c_char,
+                                                            tags_json: *const c_char) -> ErrorCode,
+                                 delete_record_tags: extern fn(storage_handle: i32,
+                                                               type_: *const c_char,
+                                                               id: *const c_char,
+                                                               tag_names_json: *const c_char) -> ErrorCode,
+                                 delete_record: extern fn(storage_handle: i32,
+                                                          type_: *const c_char,
+                                                          id: *const c_char) -> ErrorCode,
+                                 get_record: extern fn(storage_handle: u32,
+                                                       type_: *const c_char,
+                                                       id: *const c_char,
+                                                       options_json: *const c_char,
+                                                       record_handle_p: *mut u32) -> ErrorCode,
+                                 get_record_id: extern fn(storage_handle: u32,
+                                                          record_handle: u32) -> *const c_char,
+                                 get_record_value: extern fn(storage_handle: u32,
+                                                             record_handle: u32) -> *const c_char,
+                                 get_record_tags: extern fn(storage_handle: u32,
+                                                            record_handle: u32) -> *const c_char,
+                                 free_record: extern fn(storage_handle: u32,
+                                                        record_handle: u32) -> ErrorCode,
+                                 search_records: extern fn(storage_handle: u32,
+                                                           type_: *const c_char,
+                                                           query_json: *const c_char,
+                                                           options_json: *const c_char,
+                                                           search_handle_p: *mut u32) -> ErrorCode,
+                                 get_search_total_count: extern fn(storage_handle: u32,
+                                                                   search_handle: u32) -> u32,
+                                 get_search_count: extern fn(storage_handle: u32,
+                                 get_search_next_record: Option<extern fn(storage_handle: u32,
+                                                                          search_handle: u32) -> u32,
+                                 free_search: extern fn(storage_handle: u32,
+                                                        search_handle: u32) -> ErrorCode>) -> Result<(), WalletError> {}
+
+   pub fn create_wallet(&self,
+                        pool_name: &str,
+                        name: &str,
+                        storage_type: Option<&str>,
+                        storage_config: Option<&str>,
+                        credentials: &str) -> Result<(), WalletError> {}
+
+   pub fn delete_wallet(&self,
+                        name: &str,
+                        credentials: &str) -> Result<(), WalletError> {}
+
+   pub fn open_wallet(&self,
+                      name: &str,
+                      credentials: &str) -> Result<i32, WalletError> {}
+
+   pub fn close_wallet(&self,
+                       wallet_handle: i32) -> Result<(), WalletError> {}
+
+   pub fn list_wallets(&self) -> Result<Vec<WalletMetadata>, WalletError> {}
+
+   pub fn add_record(wallet_handle: i32,
+                     type_: &str,
+                     id: &str,
+                     tags_json: &str) -> Result<(), WalletError> {}
+
+   pub fn update_record_value(wallet_handle: i32,
+                              type_: &str,
+                              id: &str,
+                              value: &str) -> Result<(), WalletError> {}
+
+   pub fn update_record_tags(wallet_handle: i32,
+                             type_: &str,
+                             id: &str,
+                             tags_json: &str) -> Result<(), WalletError> {}
+
+   pub fn add_record_tags(wallet_handle: i32,
+                          type_: &str,
+                          id: &str,
+                          tags_json: &str) -> Result<(), WalletError> {}
+
+   pub fn delete_record_tags(storage_handle: i32,
+                             type_: &str,
+                             id: &str,
+                             tag_names_json: &str) -> Result<(), WalletError> {}
+
+   pub fn delete_record(storage_handle: i32,
+                        type_: &str,
+                        id: &str) -> Result<(), WalletError> {}
+
+   pub fn get_record(storage_handle: u32,
+                     type_: &str,
+                     id: &str,
+                     options_json: &str) -> Result<WalletRecord, WalletError> {}
+
+  pub fn search_records(storage_handle: u32,
+                        type_: &str,
+                        query_json: &str,
+                        options_json: &str) -> Result<WalletSearch, WalletError> {}
+}
+
+impl WalletRecord {
+
+  pub fn get_id() -> &str {}
+
+  pub fn get_value() -> Option<&str> {}
+
+  pub fn get_tags() -> Option<&str> {}
+}
+
+impl WalletSearch {
+
+  pub fn get_count() -> i32 {}
+
+  pub fn get_total_count() -> Option<i32> {}
+
+  pub fn get_next_record() -> Option<WalletRecord> {}
+}
+
+```
 
 ## Wallet Query Language
 
