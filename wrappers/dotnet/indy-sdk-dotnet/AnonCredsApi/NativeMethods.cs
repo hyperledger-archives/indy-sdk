@@ -51,6 +51,27 @@ namespace Hyperledger.Indy.AnonCredsApi
         internal delegate void IssuerCreateAndStoreClaimRevocRegCompletedDelegate(int xcommand_handle, int err, string revoc_reg_json);
 
         /// <summary>
+        /// Create claim offer in Wallet
+        /// </summary>
+        /// <returns>The issuer create claim offer.</returns>
+        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
+        /// <param name="wallet_handle">wallet handler (created by open_wallet).</param>
+        /// <param name="schema_json">Schema as json.</param>
+        /// <param name="issuer_did">a DID of the issuer created Claim definition.</param>
+        /// <param name="prover_did">a DID of the target user.</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_issuer_create_claim_offer(int command_handle, IntPtr wallet_handle, string schema_json, string issuer_did, string prover_did, IssuerCreateClaimOfferCompletedDelegate cb);
+
+        /// <summary>
+        ///  Delegate for the function called back to by the indy_issuer_create_claim_offer function.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="claim_offer_json">Claimn offer json</param>
+        internal delegate void IssuerCreateClaimOfferCompletedDelegate(int xcommand_handle, int err, string claim_offer_json);
+
+        /// <summary>
         /// Signs a given claim for the given user by a given key (claim def).
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
@@ -69,9 +90,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="revoc_reg_update_json">Revocation registry update json with a newly issued claim</param>
-        /// <param name="xclaim_json">Claim json containing issued claim, issuer_did, schema_seq_no, and revoc_reg_seq_no
+        /// <param name="claim_json">Claim json containing issued claim, issuer_did, schema_seq_no, and revoc_reg_seq_no
         /// used for issuance</param>
-        internal delegate void IssuerCreateClaimCompletedDelegate(int xcommand_handle, int err, string revoc_reg_update_json, string xclaim_json);
+        internal delegate void IssuerCreateClaimCompletedDelegate(int xcommand_handle, int err, string revoc_reg_update_json, string claim_json);
 
         /// <summary>
         /// Revokes a user identified by a revoc_id in a given revoc-registry.
@@ -79,12 +100,12 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="issuer_did">The DID of the issuer.</param>
-        /// <param name="schema_seq_no">The schema sequence number.</param>
+        /// <param name="schema_json">The schema as a json</param>
         /// <param name="user_revoc_index">index of the user in the revocation registry</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_issuer_revoke_claim(int command_handle, IntPtr wallet_handle, string issuer_did, int schema_seq_no, int user_revoc_index, IssuerRevokeClaimCompletedDelegate cb);
+        internal static extern int indy_issuer_revoke_claim(int command_handle, IntPtr wallet_handle, string issuer_did, int schema_json, int user_revoc_index, IssuerRevokeClaimCompletedDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the indy_issuer_revoke_claim function.
@@ -163,10 +184,11 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="claims_json">claim json</param>
+        /// <param name="rev_reg_json">revocation registry json</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_prover_store_claim(int command_handle, IntPtr wallet_handle, string claims_json, IndyMethodCompletedDelegate cb);
+        internal static extern int indy_prover_store_claim(int command_handle, IntPtr wallet_handle, string claims_json, string rev_reg_json, IndyMethodCompletedDelegate cb);
 
         /// <summary>
         /// Gets human readable claims according to the filter.

@@ -156,5 +156,18 @@ namespace Hyperledger.Indy.WalletApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_delete_wallet(int command_handle, string name, string credentials, IndyMethodCompletedDelegate cb);
 
+        /// <summary>
+        /// Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool
+        /// </summary>
+        /// <returns>The list wallets.</returns>
+        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
+        internal static extern int indy_list_wallets(int command_handle, ListWalletsCompletedDelegate cb);
+
+        /// <summary>
+        /// Delegate to be used on completion of calls to indy_list_wallets.
+        /// </summary>
+        internal delegate void ListWalletsCompletedDelegate(int xcommand_handle, int err, string wallets);
     }
 }

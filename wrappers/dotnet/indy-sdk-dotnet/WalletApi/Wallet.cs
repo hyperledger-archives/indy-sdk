@@ -30,6 +30,16 @@ namespace Hyperledger.Indy.WalletApi
             taskCompletionSource.SetResult(new Wallet(wallet_handle));
         };
 
+        private static ListWalletsCompletedDelegate _listWalletsCallback = (xcommand_handle, err, wallets) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(wallets);
+        };
+
         /// <summary>
         /// Registers a custom wallet type implementation.
         /// </summary>
@@ -177,6 +187,25 @@ namespace Hyperledger.Indy.WalletApi
                 runtimeConfig,
                 credentials,
                 _openWalletCallback
+                );
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool
+        /// </summary>
+        /// <returns>The wallets async.</returns>
+        public static Task<string> ListWalletsAsync()
+        {
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_list_wallets(
+                commandHandle,
+                _listWalletsCallback
                 );
 
             CallbackHelper.CheckResult(result);

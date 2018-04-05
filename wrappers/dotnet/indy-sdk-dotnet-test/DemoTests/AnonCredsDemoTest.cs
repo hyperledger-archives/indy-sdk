@@ -104,7 +104,7 @@ namespace Hyperledger.Indy.Test.DemoTests
             var claimJson = createClaimResult.ClaimJson;
 
             //10. Prover store Claim
-            await AnonCreds.ProverStoreClaimAsync(_proverWallet, claimJson);
+            await AnonCreds.ProverStoreClaimAsync(_proverWallet, claimJson, createClaimResult.RevocRegUpdateJson);
 
             //11. Prover gets Claims for Proof Request
             var proofRequestJson = "{\n" +
@@ -240,7 +240,7 @@ namespace Hyperledger.Indy.Test.DemoTests
             var gvtClaimJson = gvtCreateClaimResult.ClaimJson;
 
             //10. Prover store Claim
-            await AnonCreds.ProverStoreClaimAsync(_proverWallet, gvtClaimJson);
+            await AnonCreds.ProverStoreClaimAsync(_proverWallet, gvtClaimJson, gvtCreateClaimResult.RevocRegUpdateJson);
 
             //11. Prover create ClaimReq for GVT Claim Offer
             var xyzClaimReq = await AnonCreds.ProverCreateAndStoreClaimReqAsync(_proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, masterSecret);
@@ -255,7 +255,7 @@ namespace Hyperledger.Indy.Test.DemoTests
             var xyzClaimJson = xyzCreateClaimResult.ClaimJson;
 
             //13. Prover store Claim
-            await AnonCreds.ProverStoreClaimAsync(_proverWallet, xyzClaimJson);
+            await AnonCreds.ProverStoreClaimAsync(_proverWallet, xyzClaimJson, xyzCreateClaimResult.RevocRegUpdateJson);
 
             //14. Prover gets Claims for Proof Request
             var proofRequestJson = "{\n" +
@@ -393,7 +393,7 @@ namespace Hyperledger.Indy.Test.DemoTests
             var gvtClaimJson = gvtCreateClaimResult.ClaimJson;
 
             //9. Prover store Claim
-            await AnonCreds.ProverStoreClaimAsync(_proverWallet, gvtClaimJson);
+            await AnonCreds.ProverStoreClaimAsync(_proverWallet, gvtClaimJson, gvtCreateClaimResult.RevocRegUpdateJson);
 
             //10. Prover create ClaimReq for GVT Claim Offer
             var xyzClaimReq = await AnonCreds.ProverCreateAndStoreClaimReqAsync(_proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, masterSecret);
@@ -408,7 +408,7 @@ namespace Hyperledger.Indy.Test.DemoTests
             var xyzClaimJson = xyzCreateClaimResult.ClaimJson;
 
             //12. Prover store Claim
-            await AnonCreds.ProverStoreClaimAsync(_proverWallet, xyzClaimJson);
+            await AnonCreds.ProverStoreClaimAsync(_proverWallet, xyzClaimJson, xyzCreateClaimResult.RevocRegUpdateJson);
 
             //13. Prover gets Claims for Proof Request
             var proofRequestJson = "{\n" +
@@ -521,7 +521,7 @@ namespace Hyperledger.Indy.Test.DemoTests
             var claimJson = createClaimResult.ClaimJson;
 
             //7. Prover store Claim
-            await AnonCreds.ProverStoreClaimAsync(_proverWallet, claimJson);
+            await AnonCreds.ProverStoreClaimAsync(_proverWallet, claimJson, createClaimResult.RevocRegUpdateJson);
 
             //8. Prover gets Claims for Proof Request
             var proofRequestJson = "{\n" +

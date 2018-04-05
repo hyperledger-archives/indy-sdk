@@ -1,0 +1,36 @@
+@startuml
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam state {
+	ArrowColor grey
+	BorderColor grey
+	FontSize 17
+}
+
+state "Identity" as id
+state "Link Secret" as cls: Used in all claims
+state "Payment Keys" as payks
+state "Policy Keys" as polks
+state "DID Keys" as didks
+state "Claims" as clm {
+  state "Claim 1"
+  state "Claim 2"
+}
+state "Ledger" as le {
+  state "Identity\nPolicy\nAddress" as ipa
+  state "Prover\nRegistry\nAccumulator" as ga
+  state "Token\nAccumulator" as ta
+  le --> ga: Push\nUpdates
+}
+
+id --> cls
+id --> didks
+id --> polks
+id --> payks
+
+id --> clm
+cls --> clm
+polks --> ipa: CRUD for ACL
+payks --> ta: Spend
+
+@enduml
