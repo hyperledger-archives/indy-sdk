@@ -234,7 +234,7 @@ impl IssuerCommandExecutor {
         let cred_def_id = CredentialDefinition::cred_def_id(issuer_did, &schema.id, &signature_type.to_str()); // TODO: FIXME
 
         if self.wallet_service.get(wallet_handle, &format!("credential_definition::{}", cred_def_id)).is_ok() {
-            return Err(IndyError::AnoncredsError(AnoncredsError::ClaimDefAlreadyExists(format!("CredentialDefinition for cred_def_id: {:?} already exists", cred_def_id))));
+            return Err(IndyError::AnoncredsError(AnoncredsError::CredDefAlreadyExists(format!("CredentialDefinition for cred_def_id: {:?} already exists", cred_def_id))));
         };
 
         let (credential_definition_value, credential_priv_key, credential_key_correctness_proof) =

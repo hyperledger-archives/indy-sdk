@@ -87,16 +87,16 @@ pub enum LedgerCommand {
     ParseGetSchemaResponse(
         String, // get schema response json
         Box<Fn(Result<(String, String), IndyError>) + Send>),
-    BuildClaimDefRequest(
+    BuildCredDefRequest(
         String, // submitter did
         String, // data
         Box<Fn(Result<String, IndyError>) + Send>),
-    BuildGetClaimDefRequest(
+    BuildGetCredDefRequest(
         String, // submitter did
         String, // id
         Box<Fn(Result<String, IndyError>) + Send>),
-    ParseGetClaimDefResponse(
-        String, // get claim definition response
+    ParseGetCredDefResponse(
+        String, // get cred definition response
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     BuildNodeRequest(
         String, // submitter did
@@ -244,17 +244,17 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "ParseGetSchemaResponse command received");
                 cb(self.parse_get_schema_response(&get_schema_response));
             }
-            LedgerCommand::BuildClaimDefRequest(submitter_did, data, cb) => {
-                info!(target: "ledger_command_executor", "BuildClaimDefRequest command received");
-                cb(self.build_claim_def_request(&submitter_did, &data));
+            LedgerCommand::BuildCredDefRequest(submitter_did, data, cb) => {
+                info!(target: "ledger_command_executor", "BuildCredDefRequest command received");
+                cb(self.build_cred_def_request(&submitter_did, &data));
             }
-            LedgerCommand::BuildGetClaimDefRequest(submitter_did, id, cb) => {
-                info!(target: "ledger_command_executor", "BuildGetClaimDefRequest command received");
-                cb(self.build_get_claim_def_request(&submitter_did, &id));
+            LedgerCommand::BuildGetCredDefRequest(submitter_did, id, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetCredDefRequest command received");
+                cb(self.build_get_cred_def_request(&submitter_did, &id));
             }
-            LedgerCommand::ParseGetClaimDefResponse(get_claim_def_response, cb) => {
-                info!(target: "ledger_command_executor", "ParseGetClaimDefResponse command received");
-                cb(self.parse_get_claim_def_response(&get_claim_def_response));
+            LedgerCommand::ParseGetCredDefResponse(get_cred_def_response, cb) => {
+                info!(target: "ledger_command_executor", "ParseGetCredDefResponse command received");
+                cb(self.parse_get_cred_def_response(&get_cred_def_response));
             }
             LedgerCommand::BuildNodeRequest(submitter_did, target_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildNodeRequest command received");
@@ -512,42 +512,42 @@ impl LedgerCommandExecutor {
         Ok(res)
     }
 
-    fn build_claim_def_request(&self,
-                               submitter_did: &str,
-                               data: &str) -> Result<String, IndyError> {
-        info!("build_claim_def_request >>> submitter_did: {:?}, data: {:?}",
+    fn build_cred_def_request(&self,
+                              submitter_did: &str,
+                              data: &str) -> Result<String, IndyError> {
+        info!("build_cred_def_request >>> submitter_did: {:?}, data: {:?}",
               submitter_did, data);
 
         self.crypto_service.validate_did(submitter_did)?;
 
-        let res = self.ledger_service.build_claim_def_request(submitter_did, data)?;
+        let res = self.ledger_service.build_cred_def_request(submitter_did, data)?;
 
-        info!("build_claim_def_request <<< res: {:?}", res);
+        info!("build_cred_def_request <<< res: {:?}", res);
 
         Ok(res)
     }
 
-    fn build_get_claim_def_request(&self,
-                                   submitter_did: &str,
-                                   id: &str) -> Result<String, IndyError> {
-        info!("build_get_claim_def_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
+    fn build_get_cred_def_request(&self,
+                                  submitter_did: &str,
+                                  id: &str) -> Result<String, IndyError> {
+        info!("build_get_cred_def_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
         self.crypto_service.validate_did(submitter_did)?;
 
-        let res = self.ledger_service.build_get_claim_def_request(submitter_did, id)?;
+        let res = self.ledger_service.build_get_cred_def_request(submitter_did, id)?;
 
-        info!("build_get_claim_def_request <<< res: {:?}", res);
+        info!("build_get_cred_def_request <<< res: {:?}", res);
 
         Ok(res)
     }
 
-    fn parse_get_claim_def_response(&self,
-                                    get_claim_def_response: &str) -> Result<(String, String), IndyError> {
-        info!("parse_get_claim_def_response >>> get_claim_def_response: {:?}", get_claim_def_response);
+    fn parse_get_cred_def_response(&self,
+                                   get_cred_def_response: &str) -> Result<(String, String), IndyError> {
+        info!("parse_get_cred_def_response >>> get_cred_def_response: {:?}", get_cred_def_response);
 
-        let res = self.ledger_service.parse_get_claim_def_response(get_claim_def_response)?;
+        let res = self.ledger_service.parse_get_cred_def_response(get_cred_def_response)?;
 
-        info!("parse_get_claim_def_response <<< res: {:?}", res);
+        info!("parse_get_cred_def_response <<< res: {:?}", res);
 
         Ok(res)
     }

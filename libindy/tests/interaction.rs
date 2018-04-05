@@ -78,7 +78,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
                                                                                            &AnoncredsUtils::revocation_cred_def_config()).unwrap();
 
     // Issuer post CredentialDefinition to Ledger
-    let cred_def_request = LedgerUtils::build_claim_def_txn(&issuer_did, &cred_def_json).unwrap();
+    let cred_def_request = LedgerUtils::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
     LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &cred_def_request).unwrap();
 
     // Issuer creates RevocationRegistry
@@ -113,9 +113,9 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     let cred_offer_json = AnoncredsUtils::issuer_create_credential_offer(issuer_wallet_handle, &cred_def_id).unwrap();
 
     // Prover gets CredentialDefinition from Ledger
-    let get_cred_def_request = LedgerUtils::build_get_claim_def_txn(&prover_did, &cred_def_id).unwrap();
+    let get_cred_def_request = LedgerUtils::build_get_cred_def_txn(&prover_did, &cred_def_id).unwrap();
     let get_cred_def_response = LedgerUtils::submit_request(pool_handle, &get_cred_def_request).unwrap();
-    let (cred_def_id, cred_def_json) = LedgerUtils::parse_get_claim_def_response(&get_cred_def_response).unwrap();
+    let (cred_def_id, cred_def_json) = LedgerUtils::parse_get_cred_def_response(&get_cred_def_response).unwrap();
 
     // Prover creates Credential Request
     let (cred_req_json, cred_req_metadata_json) = AnoncredsUtils::prover_create_credential_req(prover_wallet_handle,
@@ -177,7 +177,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
            "non_revoked": json!({ "to": to.clone() })
         }).to_string();
 
-    // Prover gets Claims for Proof Request
+    // Prover gets Credentials for Proof Request
     let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_request).unwrap();
     let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
@@ -382,7 +382,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
                                                                                            &AnoncredsUtils::revocation_cred_def_config()).unwrap();
 
     // Issuer post CredentialDefinition to Ledger
-    let cred_def_request = LedgerUtils::build_claim_def_txn(&issuer_did, &cred_def_json).unwrap();
+    let cred_def_request = LedgerUtils::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
     LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &cred_def_request).unwrap();
 
     // Issuer creates RevocationRegistry
@@ -417,9 +417,9 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
     let cred_offer_json = AnoncredsUtils::issuer_create_credential_offer(issuer_wallet_handle, &cred_def_id).unwrap();
 
     // Prover gets CredentialDefinition from Ledger
-    let get_cred_def_request = LedgerUtils::build_get_claim_def_txn(&prover_did, &cred_def_id).unwrap();
+    let get_cred_def_request = LedgerUtils::build_get_cred_def_txn(&prover_did, &cred_def_id).unwrap();
     let get_cred_def_response = LedgerUtils::submit_request(pool_handle, &get_cred_def_request).unwrap();
-    let (cred_def_id, cred_def_json) = LedgerUtils::parse_get_claim_def_response(&get_cred_def_response).unwrap();
+    let (cred_def_id, cred_def_json) = LedgerUtils::parse_get_cred_def_response(&get_cred_def_response).unwrap();
 
     // Prover creates Credential Request
     let (cred_req_json, cred_req_metadata_json) = AnoncredsUtils::prover_create_credential_req(prover_wallet_handle,
@@ -476,7 +476,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
            "non_revoked": json!({ "to": to.clone() })
         }).to_string();
 
-    // Prover gets Claims for Proof Request
+    // Prover gets Credentials for Proof Request
     let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_request).unwrap();
     let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
@@ -683,7 +683,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
                                                                                            &AnoncredsUtils::revocation_cred_def_config()).unwrap();
 
     // Issuer post CredentialDefinition to Ledger
-    let cred_def_request = LedgerUtils::build_claim_def_txn(&issuer_did, &cred_def_json).unwrap();
+    let cred_def_request = LedgerUtils::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
     LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &cred_def_request).unwrap();
 
     // Issuer creates RevocationRegistry
@@ -712,9 +712,9 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     let blob_storage_reader_handle = BlobStorageUtils::open_reader(TYPE, &tails_writer_config).unwrap();
 
     // Gets CredentialDefinition from Ledger
-    let get_cred_def_request = LedgerUtils::build_get_claim_def_txn(&prover1_did, &cred_def_id).unwrap();
+    let get_cred_def_request = LedgerUtils::build_get_cred_def_txn(&prover1_did, &cred_def_id).unwrap();
     let get_cred_def_response = LedgerUtils::submit_request(pool_handle, &get_cred_def_request).unwrap();
-    let (cred_def_id, cred_def_json) = LedgerUtils::parse_get_claim_def_response(&get_cred_def_response).unwrap();
+    let (cred_def_id, cred_def_json) = LedgerUtils::parse_get_cred_def_response(&get_cred_def_response).unwrap();
 
     // Gets RevocationRegistryDefinition
     let get_rev_reg_def_request = LedgerUtils::build_get_revoc_reg_def_request(&prover1_did, &rev_reg_id).unwrap();
@@ -812,7 +812,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
            "non_revoked": json!({ "to": to.clone() })
         }).to_string();
 
-    // Prover1 gets Claims for Proof Request
+    // Prover1 gets Credentials for Proof Request
     let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover1_wallet_handle, &proof_request).unwrap();
     let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
@@ -953,7 +953,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
                                                                                            &AnoncredsUtils::revocation_cred_def_config()).unwrap();
 
     // Issuer post CredentialDefinition to Ledger
-    let cred_def_request = LedgerUtils::build_claim_def_txn(&issuer_did, &cred_def_json).unwrap();
+    let cred_def_request = LedgerUtils::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
     LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &cred_def_request).unwrap();
 
     // Issuer creates RevocationRegistry
@@ -982,9 +982,9 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     let blob_storage_reader_handle = BlobStorageUtils::open_reader(TYPE, &tails_writer_config).unwrap();
 
     // Gets CredentialDefinition from Ledger
-    let get_cred_def_request = LedgerUtils::build_get_claim_def_txn(&prover1_did, &cred_def_id).unwrap();
+    let get_cred_def_request = LedgerUtils::build_get_cred_def_txn(&prover1_did, &cred_def_id).unwrap();
     let get_cred_def_response = LedgerUtils::submit_request(pool_handle, &get_cred_def_request).unwrap();
-    let (cred_def_id, cred_def_json) = LedgerUtils::parse_get_claim_def_response(&get_cred_def_response).unwrap();
+    let (cred_def_id, cred_def_json) = LedgerUtils::parse_get_cred_def_response(&get_cred_def_response).unwrap();
 
     // Gets RevocationRegistryDefinition
     let get_rev_reg_def_request = LedgerUtils::build_get_revoc_reg_def_request(&prover1_did, &rev_reg_id).unwrap();
@@ -1077,7 +1077,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
            "non_revoked": json!({ "to": to.clone() })
         }).to_string();
 
-    // Prover1 gets Claims for Proof Request
+    // Prover1 gets Credentials for Proof Request
     let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover1_wallet_handle, &proof_request).unwrap();
     let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
@@ -1158,7 +1158,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     assert!(valid);
 
     // Verifying Prover2 Credential
-    // Prover2 gets Claims for Proof Request
+    // Prover2 gets Credentials for Proof Request
     let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover2_wallet_handle, &proof_request).unwrap();
     let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
@@ -1211,7 +1211,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 
 
     // Verifying Prover3 Credential
-    // Prover3 gets Claims for Proof Request
+    // Prover3 gets Credentials for Proof Request
     let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover3_wallet_handle, &proof_request).unwrap();
     let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 

@@ -200,7 +200,7 @@ async def test_send_node_request_works_without_signature(pool_handle, identity_m
 
 
 @pytest.mark.asyncio
-async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_my, schema_data):
+async def test_cred_def_requests_works(pool_handle, wallet_handle, identity_my, schema_data):
     (my_did, my_ver_key) = identity_my
 
     schema_request = await ledger.build_schema_request(my_did, schema_data)
@@ -217,14 +217,14 @@ async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_my,
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, my_did, schema_json, "TAG", "CL",
                                                                json.dumps({"support_revocation": False}))
 
-    claim_def_request = await ledger.build_claim_def_txn(my_did, cred_def_json)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, claim_def_request)
+    cred_def_request = await ledger.build_cred_def_txn(my_did, cred_def_json)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, cred_def_request)
 
-    get_claim_def_request = await ledger.build_get_claim_def_txn(my_did, cred_def_id)
-    get_claim_def_response = \
-        await ensure_previous_request_applied(pool_handle, get_claim_def_request,
+    get_cred_def_request = await ledger.build_get_cred_def_txn(my_did, cred_def_id)
+    get_cred_def_response = \
+        await ensure_previous_request_applied(pool_handle, get_cred_def_request,
                                               lambda response: response['result']['seqNo'] is not None)
-    await ledger.parse_get_claim_def_response(get_claim_def_response)
+    await ledger.parse_get_cred_def_response(get_cred_def_response)
 
 
 @pytest.mark.asyncio
@@ -245,8 +245,8 @@ async def test_revoc_reg_def_requests_works(pool_handle, wallet_handle, identity
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, my_did, schema_json, "TAG", "CL",
                                                                json.dumps({"support_revocation": True}))
 
-    claim_def_request = await ledger.build_claim_def_txn(my_did, cred_def_json)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, claim_def_request)
+    cred_def_request = await ledger.build_cred_def_txn(my_did, cred_def_json)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, cred_def_request)
 
     tails_writer_config = json.dumps({'base_dir': str(path_home.joinpath("tails")), 'uri_pattern': ''})
     tails_writer = await blob_storage.open_writer('default', tails_writer_config)
@@ -283,8 +283,8 @@ async def test_revoc_reg_requests_works(pool_handle, wallet_handle, identity_my,
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, my_did, schema_json, "TAG", "CL",
                                                                json.dumps({"support_revocation": True}))
 
-    claim_def_request = await ledger.build_claim_def_txn(my_did, cred_def_json)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, claim_def_request)
+    cred_def_request = await ledger.build_cred_def_txn(my_did, cred_def_json)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, cred_def_request)
 
     tails_writer_config = json.dumps({'base_dir': str(path_home.joinpath("tails")), 'uri_pattern': ''})
     tails_writer = await blob_storage.open_writer('default', tails_writer_config)
@@ -326,8 +326,8 @@ async def test_revoc_reg_delta_requests_works(pool_handle, wallet_handle, identi
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, my_did, schema_json, "TAG", "CL",
                                                                json.dumps({"support_revocation": True}))
 
-    claim_def_request = await ledger.build_claim_def_txn(my_did, cred_def_json)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, claim_def_request)
+    cred_def_request = await ledger.build_cred_def_txn(my_did, cred_def_json)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, cred_def_request)
 
     tails_writer_config = json.dumps({'base_dir': str(path_home.joinpath("tails")), 'uri_pattern': ''})
     tails_writer = await blob_storage.open_writer('default', tails_writer_config)

@@ -370,7 +370,7 @@ pub extern fn indy_build_get_nym_request(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Builds a SCHEMA request. Request to add Claim's schema.
+/// Builds a SCHEMA request. Request to add Credential's schema.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -413,7 +413,7 @@ pub extern fn indy_build_schema_request(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Builds a GET_SCHEMA request. Request to get Claim's Schema.
+/// Builds a GET_SCHEMA request. Request to get Credential's Schema.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -492,8 +492,8 @@ pub extern fn indy_parse_get_schema_response(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Builds an CLAIM_DEF request. Request to add a claim definition (in particular, public key),
-/// that Issuer creates for a particular Claim Schema.
+/// Builds an CRED_DEF request. Request to add a Credential Definition (in particular, public key),
+/// that Issuer creates for a particular Credential Schema.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -502,11 +502,11 @@ pub extern fn indy_parse_get_schema_response(command_handle: i32,
 /// {
 ///     id: string - identifier of credential definition
 ///     schemaId: string - identifier of stored in ledger schema
-///     type: string - type of the claim definition. CL is the only supported type now.
+///     type: string - type of the credential definition. CL is the only supported type now.
 ///     tag: string - allows to distinct between credential definitions for the same issuer and schema
-///     value: Dictionary with Claim Definition's data: {
-///         primary: primary claim public key,
-///         Optional<revocation>: revocation claim public key
+///     value: Dictionary with Credential Definition's data: {
+///         primary: primary credential public key,
+///         Optional<revocation>: revocation credential public key
 ///     }
 /// }
 /// cb: Callback that takes command result as parameter.
@@ -517,17 +517,17 @@ pub extern fn indy_parse_get_schema_response(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_claim_def_txn(command_handle: i32,
-                                       submitter_did: *const c_char,
-                                       data: *const c_char,
-                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+pub extern fn indy_build_cred_def_txn(command_handle: i32,
+                                      submitter_did: *const c_char,
+                                      data: *const c_char,
+                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             request_result_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(data, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildClaimDefRequest(
+        .send(Command::Ledger(LedgerCommand::BuildCredDefRequest(
             submitter_did,
             data,
             Box::new(move |result| {
@@ -540,15 +540,15 @@ pub extern fn indy_build_claim_def_txn(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Builds a GET_CLAIM_DEF request. Request to get a claim definition (in particular, public key),
-/// that Issuer creates for a particular Claim Schema.
+/// Builds a GET_CRED_DEF request. Request to get a Credential Definition (in particular, public key),
+/// that Issuer creates for a particular Credential Schema.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: DID of the read request sender.
-/// xref: Sequence number of a Schema transaction the claim definition is created for.
-/// signature_type: Type of the claim definition. CL is the only supported type now.
-/// origin: Claim Definition Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
+/// xref: Sequence number of a Schema transaction the credential definition is created for.
+/// signature_type: Type of the credential definition. CL is the only supported type now.
+/// origin: Credential Definition Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -557,17 +557,17 @@ pub extern fn indy_build_claim_def_txn(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_claim_def_txn(command_handle: i32,
-                                           submitter_did: *const c_char,
-                                           id: *const c_char,
-                                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+pub extern fn indy_build_get_cred_def_txn(command_handle: i32,
+                                          submitter_did: *const c_char,
+                                          id: *const c_char,
+                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                 request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::BuildGetClaimDefRequest(
+        .send(Command::Ledger(LedgerCommand::BuildGetCredDefRequest(
             submitter_did,
             id,
             Box::new(move |result| {
@@ -580,11 +580,11 @@ pub extern fn indy_build_get_claim_def_txn(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Parse a GET_CLAIM_DEF response.
+/// Parse a GET_CRED_DEF response.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// get_claim_def_response: response json
+/// get_cred_def_response: response json
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -592,11 +592,11 @@ pub extern fn indy_build_get_claim_def_txn(command_handle: i32,
 /// {
 ///     id: string - identifier of credential definition
 ///     schemaId: string - identifier of stored in ledger schema
-///     type: string - type of the claim definition. CL is the only supported type now.
+///     type: string - type of the credential definition. CL is the only supported type now.
 ///     tag: string - allows to distinct between credential definitions for the same issuer and schema
-///     value: Dictionary with Claim Definition's data: {
-///         primary: primary claim public key,
-///         Optional<revocation>: revocation claim public key
+///     value: Dictionary with Credential Definition's data: {
+///         primary: primary credential public key,
+///         Optional<revocation>: revocation credential public key
 ///     } -
 ///     ver: Version of the Credential Definition json
 /// }
@@ -604,22 +604,22 @@ pub extern fn indy_build_get_claim_def_txn(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_parse_get_claim_def_response(command_handle: i32,
-                                                get_claim_def_response: *const c_char,
-                                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                     claim_def_id: *const c_char,
-                                                                     claim_def_json: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(get_claim_def_response, ErrorCode::CommonInvalidParam2);
+pub extern fn indy_parse_get_cred_def_response(command_handle: i32,
+                                               get_cred_def_response: *const c_char,
+                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                     cred_def_id: *const c_char,
+                                                                     cred_def_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(get_cred_def_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     let result = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::ParseGetClaimDefResponse(
-            get_claim_def_response,
+        .send(Command::Ledger(LedgerCommand::ParseGetCredDefResponse(
+            get_cred_def_response,
             Box::new(move |result| {
-                let (err, claim_def_id, claim_def_json) = result_to_err_code_2!(result, String::new(), String::new());
-                let claim_def_id = CStringUtils::string_to_cstring(claim_def_id);
-                let claim_def_json = CStringUtils::string_to_cstring(claim_def_json);
-                cb(command_handle, err, claim_def_id.as_ptr(), claim_def_json.as_ptr())
+                let (err, cred_def_id, cred_def_json) = result_to_err_code_2!(result, String::new(), String::new());
+                let cred_def_id = CStringUtils::string_to_cstring(cred_def_id);
+                let cred_def_json = CStringUtils::string_to_cstring(cred_def_json);
+                cb(command_handle, err, cred_def_id.as_ptr(), cred_def_json.as_ptr())
             })
         )));
 
@@ -825,7 +825,7 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: i32,
 }
 
 /// Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry
-/// to an exists claim definition.
+/// to an exists credential definition.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
@@ -835,7 +835,7 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: i32,
 ///         "id": string - ID of the Revocation Registry,
 ///         "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
 ///         "tag": string - Unique descriptive ID of the Registry,
-///         "credDefId": string - ID of the corresponding ClaimDef,
+///         "credDefId": string - ID of the corresponding CredentialDefinition,
 ///         "value": Registry-specific data {
 ///             "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
 ///             "maxCredNum": number - Maximum number of credentials the Registry can serve.
@@ -926,7 +926,7 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: i32,
 ///     "id": string - ID of the Revocation Registry,
 ///     "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
 ///     "tag": string - Unique descriptive ID of the Registry,
-///     "credDefId": string - ID of the corresponding ClaimDef,
+///     "credDefId": string - ID of the corresponding CredentialDefinition,
 ///     "value": Registry-specific data {
 ///         "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
 ///         "maxCredNum": number - Maximum number of credentials the Registry can serve.
@@ -965,7 +965,7 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: i32,
 /// Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
 /// the new accumulator value and issued/revoked indices.
 /// This is just a delta of indices, not the whole list.
-/// So, it can be sent each time a new claim is issued/revoked.
+/// So, it can be sent each time a new credential is issued/revoked.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.

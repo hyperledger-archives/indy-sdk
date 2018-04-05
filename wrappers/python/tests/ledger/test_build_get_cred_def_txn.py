@@ -5,7 +5,7 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_build_get_claim_def_request_works(did_trustee):
+async def test_build_get_cred_def_request_works(did_trustee):
     id_ = did_trustee + ":\u0003:CL:1"
 
     expected_response = {
@@ -18,5 +18,5 @@ async def test_build_get_claim_def_request_works(did_trustee):
         }
     }
 
-    response = json.loads((await ledger.build_get_claim_def_txn(did_trustee, id_)))
+    response = json.loads((await ledger.build_get_cred_def_txn(did_trustee, id_)))
     assert expected_response.items() <= response.items()

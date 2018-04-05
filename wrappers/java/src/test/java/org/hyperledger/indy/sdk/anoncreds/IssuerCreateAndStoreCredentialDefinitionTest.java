@@ -16,7 +16,7 @@ import java.util.concurrent.ExecutionException;
 public class IssuerCreateAndStoreCredentialDefinitionTest extends AnoncredsIntegrationTest {
 
 	private Wallet wallet;
-	private String walletName = "createAndStoreClaimDefWallet";
+	private String walletName = "createAndStoreCredDefWallet";
 
 	@Before
 	public void createWallet() throws Exception {
@@ -89,7 +89,7 @@ public class IssuerCreateAndStoreCredentialDefinitionTest extends AnoncredsInteg
 		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, "Duplicate", null, defaultCredentialDefitionConfig).get();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(ClaimDefAlreadyExistsException.class));
+		thrown.expectCause(isA(CredDefAlreadyExistsException.class));
 
 		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, "Duplicate", null, defaultCredentialDefitionConfig).get();
 	}

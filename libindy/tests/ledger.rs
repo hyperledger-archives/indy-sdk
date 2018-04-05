@@ -777,11 +777,11 @@ mod high_cases {
         }
     }
 
-    mod claim_def_requests {
+    mod cred_def_requests {
         use super::*;
 
         #[test]
-        fn indy_build_claim_def_request_works_for_correct_data_json() {
+        fn indy_build_cred_def_request_works_for_correct_data_json() {
             let cred_def_json = r#"{
                "ver":"1.0",
                "id":"cred_def_id",
@@ -802,23 +802,23 @@ mod high_cases {
 
             let expected_result = r#""operation":{"ref":1,"data":{"primary":{"n":"1","s":"2","rms":"3","r":{"name":"1"},"rctxt":"1","z":"1"}},"type":"102","signature_type":"CL"}"#;
 
-            let claim_def_request = LedgerUtils::build_claim_def_txn(IDENTIFIER, cred_def_json).unwrap();
-            assert!(claim_def_request.contains(&expected_result));
+            let cred_def_request = LedgerUtils::build_cred_def_txn(IDENTIFIER, cred_def_json).unwrap();
+            assert!(cred_def_request.contains(&expected_result));
         }
 
         #[test]
-        fn indy_build_get_claim_def_request_works() {
+        fn indy_build_get_cred_def_request_works() {
             let id = CredentialDefinition::cred_def_id(IDENTIFIER, &SEQ_NO.to_string(), SIGNATURE_TYPE);
             let expected_result = format!(r#""identifier":"{}","operation":{{"type":"108","ref":{},"signature_type":"{}","origin":"{}"}},"protocolVersion":1"#,
                                           IDENTIFIER, SEQ_NO, SIGNATURE_TYPE, IDENTIFIER);
 
-            let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(IDENTIFIER, &id).unwrap();
-            assert!(get_claim_def_request.contains(&expected_result));
+            let get_cred_def_request = LedgerUtils::build_get_cred_def_txn(IDENTIFIER, &id).unwrap();
+            assert!(get_cred_def_request.contains(&expected_result));
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_claim_def_request_works_without_signature() {
+        fn indy_cred_def_request_works_without_signature() {
             TestUtils::cleanup_storage();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
@@ -828,9 +828,9 @@ mod high_cases {
 
             LedgerUtils::post_schema_to_ledger(pool_handle, wallet_handle, &did);
 
-            let claim_def_request = LedgerUtils::build_claim_def_txn(&did, &AnoncredsUtils::credential_def_json()).unwrap();
+            let cred_def_request = LedgerUtils::build_cred_def_txn(&did, &AnoncredsUtils::credential_def_json()).unwrap();
 
-            let response = LedgerUtils::submit_request(pool_handle, &claim_def_request).unwrap();
+            let response = LedgerUtils::submit_request(pool_handle, &cred_def_request).unwrap();
             PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -841,7 +841,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_claim_def_requests_works() {
+        fn indy_cred_def_requests_works() {
             TestUtils::cleanup_storage();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
@@ -853,16 +853,16 @@ mod high_cases {
 
             let (cred_def_id, cred_def_data) = LedgerUtils::prepare_cred_def(wallet_handle, &did, &schema_json);
 
-            let claim_def_request = LedgerUtils::build_claim_def_txn(&did, &cred_def_data).unwrap();
+            let cred_def_request = LedgerUtils::build_cred_def_txn(&did, &cred_def_data).unwrap();
 
-            let claim_def_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &claim_def_request).unwrap();
+            let cred_def_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &cred_def_request).unwrap();
 
-            let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(&did, &cred_def_id).unwrap();
+            let get_cred_def_request = LedgerUtils::build_get_cred_def_txn(&did, &cred_def_id).unwrap();
 
-            let get_claim_def_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_claim_def_request, &claim_def_req_resp).unwrap();
-            let (_, claim_def_json) = LedgerUtils::parse_get_claim_def_response(&get_claim_def_response).unwrap();
+            let get_cred_def_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_cred_def_request, &cred_def_req_resp).unwrap();
+            let (_, cred_def_json) = LedgerUtils::parse_get_cred_def_response(&get_cred_def_response).unwrap();
 
-            let _claim_def: CredentialDefinitionV1 = serde_json::from_str(&claim_def_json).unwrap();
+            let _cred_def: CredentialDefinitionV1 = serde_json::from_str(&cred_def_json).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1860,32 +1860,32 @@ mod medium_cases {
         }
     }
 
-    mod claim_def_requests {
+    mod cred_def_requests {
         use super::*;
 
         #[test]
-        fn indy_build_claim_def_request_works_for_invalid_data_json() {
+        fn indy_build_cred_def_request_works_for_invalid_data_json() {
             TestUtils::cleanup_storage();
 
             let data = r#"{"primary":{"n":"1","s":"2","rms":"3","r":{"name":"1"}}}"#;
 
-            let res = LedgerUtils::build_claim_def_txn(IDENTIFIER, data);
+            let res = LedgerUtils::build_cred_def_txn(IDENTIFIER, data);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
-        fn indy_build_claim_def_request_works_for_invalid_submitter_did() {
+        fn indy_build_cred_def_request_works_for_invalid_submitter_did() {
             TestUtils::cleanup_storage();
 
-            let res = LedgerUtils::build_claim_def_txn(INVALID_IDENTIFIER, &AnoncredsUtils::credential_def_json());
+            let res = LedgerUtils::build_cred_def_txn(INVALID_IDENTIFIER, &AnoncredsUtils::credential_def_json());
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
-        fn indy_build_get_claim_def_request_works_for_invalid_submitter_did() {
+        fn indy_build_get_cred_def_request_works_for_invalid_submitter_did() {
             TestUtils::cleanup_storage();
 
-            let res = LedgerUtils::build_get_claim_def_txn(INVALID_IDENTIFIER, &AnoncredsUtils::issuer_1_gvt_cred_def_id());
+            let res = LedgerUtils::build_get_cred_def_txn(INVALID_IDENTIFIER, &AnoncredsUtils::issuer_1_gvt_cred_def_id());
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
     }

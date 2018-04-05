@@ -365,7 +365,7 @@ public class Anoncreds extends IndyJava.API {
 	 * @param issuerDid  DID of the issuer signing cred_def transaction to the Ledger
 	 * @param schemaJson Сredential schema as a json
 	 * @param tag        Allows to distinct between credential definitions for the same issuer and schema
-	 * @param type       Credential definition type (optional, 'CL' by default) that defines claims signature and revocation math.
+	 * @param type       Credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
 	 *                   Supported types are:
 	 *                   - 'CL': Camenisch-Lysyanskaya credential signature type
 	 * @param configJson Type-specific configuration of credential definition as json:
@@ -424,14 +424,14 @@ public class Anoncreds extends IndyJava.API {
 	 * Revocation registry state is stored on the wallet and also intended to be shared as the ordered list of REVOC_REG_ENTRY transactions.
 	 * This call initializes the state in the wallet and returns the initial entry.
 	 *
-	 * Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked claims in public
+	 * Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked credentials in public
 	 * revocation registry and intended to be distributed out of leger (REVOC_REG_DEF transaction will still contain uri and hash of tails).
 	 * This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
 	 *
 	 * @param wallet            The wallet.
 	 * @param issuerDid         The DID of the issuer.
-	 * @param type              Revocation registry type (optional, default value depends on claim definition type). Supported types are:
-	 *                             - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' claim definition type
+	 * @param type              Revocation registry type (optional, default value depends on credential definition type). Supported types are:
+	 *                             - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
 	 * @param tag               Allows to distinct between revocation registries for the same issuer and credential definition
 	 * @param credDefId         Id of stored in ledger credential definition
 	 * @param configJson        type-specific configuration of revocation registry as json:
@@ -440,10 +440,9 @@ public class Anoncreds extends IndyJava.API {
 	 *         1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
 	 *            Revocation Registry is updated only during revocation.
 	 *         2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
-	 *     "max_cred_num": maximum number of claims the new registry can process (optional, default 100000)
+	 *     "max_cred_num": maximum number of credential the new registry can process (optional, default 100000)
 	 * }
-	 * @param tailsWriterType
-	 * @param tailsWriterConfig
+	 * @param tailsWriter       Handle of blob storage to store tails
 	 * @return A future resolving to:
 	 *  revocRegId: identifier of created revocation registry definition
 	 *  revocRegDefJson: public part of revocation registry definition
@@ -488,7 +487,7 @@ public class Anoncreds extends IndyJava.API {
 
 	/**
 	 * Create credential offer that will be used by Prover for
-	 * claim request creation. Offer includes nonce and key correctness proof
+	 * credential request creation. Offer includes nonce and key correctness proof
 	 * for authentication between protocol steps and integrity checking.
 	 *
 	 * @param wallet    The wallet.
@@ -1023,20 +1022,20 @@ public class Anoncreds extends IndyJava.API {
 	 *         "requested_predicates": {
 	 *             "requested_predicates_referent_1": {"cred_id": string, "timestamp": Optional<number> }},
 	 *         }
-	 *     }                            
-	 * @param masterSecret         the name of the master secret stored in the wallet 	
+	 *     }
+	 * @param masterSecret         the name of the master secret stored in the wallet
 	 * @param schemas              all schema jsons participating in the proof request
 	 *     {
 	 *         <schema1_id>: <schema1_json>,
 	 *         <schema2_id>: <schema2_json>,
 	 *         <schema3_id>: <schema3_json>,
-	 *     }                               
+	 *     }
 	 * @param credentialDefs       all credential definition jsons participating in the proof request
 	 *     {
 	 *         "credential_def1_id": <credential_def1_json>,
 	 *         "credential_def2_id": <credential_def2_json>,
 	 *         "credential_def3_id": <credential_def3_json>,
-	 *     }                              
+	 *     }
 	 * @param revStates            all revocation registry jsons participating in the proof request
 	 *     {
 	 *         "rev_reg1_id": {
@@ -1049,7 +1048,7 @@ public class Anoncreds extends IndyJava.API {
 	 *         "credential3_referent_in_wallet": {
 	 *             "freshness4": <rev_state4>
 	 *         },
-	 *     }                               
+	 *     }
 	 * @return A future resolving to a Proof json
 	 *     {
 	 *         "requested": {
@@ -1134,7 +1133,7 @@ public class Anoncreds extends IndyJava.API {
 	 *                        // If specified prover must proof non-revocation
 	 *                        // for date in this interval for each attribute
 	 *                        // (can be overridden on attribute level)
-	 *     }                        
+	 *     }
 	 * @param proof     proof json
 	 *     {
 	 *         "requested": {
@@ -1158,25 +1157,25 @@ public class Anoncreds extends IndyJava.API {
 	 *             "aggregated_proof": <aggregated_proof>
 	 *         }
 	 *         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
-	 *     }                         
+	 *     }
 	 * @param schemas   all schema jsons participating in the proof
 	 *     {
 	 *         <schema1_id>: <schema1_json>,
 	 *         <schema2_id>: <schema2_json>,
 	 *         <schema3_id>: <schema3_json>,
-	 *     }                               
+	 *     }
 	 * @param credentialDefs    all credential definition jsons participating in the proof
 	 *     {
 	 *         "credential_def1_id": <credential_def1_json>,
 	 *         "credential_def2_id": <credential_def2_json>,
 	 *         "credential_def3_id": <credential_def3_json>,
-	 *     } 
+	 *     }
 	 * @param revocRegDefs   all revocation registry definition jsons participating in the proof
 	 *     {
 	 *         "rev_reg_def1_id": <rev_reg_def1_json>,
 	 *         "rev_reg_def2_id": <rev_reg_def2_json>,
 	 *         "rev_reg_def3_id": <rev_reg_def3_json>,
-	 *     }                      
+	 *     }
 	 * @param revocRegs      all revocation registry jsons participating in the proof
 	 *     {
 	 *         "rev_reg1_id": {

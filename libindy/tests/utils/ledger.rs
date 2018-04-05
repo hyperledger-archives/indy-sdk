@@ -212,32 +212,32 @@ impl LedgerUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_claim_def_txn(submitter_did: &str, cred_def_json: &str) -> Result<String, ErrorCode> {
+    pub fn build_cred_def_txn(submitter_did: &str, cred_def_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let cred_def_json = CString::new(cred_def_json).unwrap();
 
         let err =
-            indy_build_claim_def_txn(command_handle,
-                                     submitter_did.as_ptr(),
-                                     cred_def_json.as_ptr(),
-                                     cb);
+            indy_build_cred_def_txn(command_handle,
+                                    submitter_did.as_ptr(),
+                                    cred_def_json.as_ptr(),
+                                    cb);
 
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_claim_def_txn(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_cred_def_txn(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let id = CString::new(id).unwrap();
 
         let err =
-            indy_build_get_claim_def_txn(command_handle,
-                                         submitter_did.as_ptr(),
-                                         id.as_ptr(),
-                                         cb);
+            indy_build_get_cred_def_txn(command_handle,
+                                        submitter_did.as_ptr(),
+                                        id.as_ptr(),
+                                        cb);
 
         super::results::result_to_string(err, receiver)
     }
@@ -407,15 +407,15 @@ impl LedgerUtils {
         super::results::result_to_string_string(err, receiver)
     }
 
-    pub fn parse_get_claim_def_response(get_claim_def_response: &str) -> Result<(String, String), ErrorCode> {
+    pub fn parse_get_cred_def_response(get_cred_def_response: &str) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
 
-        let get_claim_def_response = CString::new(get_claim_def_response).unwrap();
+        let get_cred_def_response = CString::new(get_cred_def_response).unwrap();
 
         let err =
-            indy_parse_get_claim_def_response(command_handle,
-                                              get_claim_def_response.as_ptr(),
-                                              cb);
+            indy_parse_get_cred_def_response(command_handle,
+                                             get_cred_def_response.as_ptr(),
+                                             cb);
 
         super::results::result_to_string_string(err, receiver)
     }
@@ -486,8 +486,8 @@ impl LedgerUtils {
     pub fn post_cred_def_to_ledger(pool_handle: i32, wallet_handle: i32, did: &str, schema_json: &str) -> String {
         let (cred_def_id, cred_def_json) = LedgerUtils::prepare_cred_def(wallet_handle, did, schema_json);
 
-        let claim_def_request = LedgerUtils::build_claim_def_txn(&did, &cred_def_json).unwrap();
-        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &claim_def_request).unwrap();
+        let cred_def_request = LedgerUtils::build_cred_def_txn(&did, &cred_def_json).unwrap();
+        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &cred_def_request).unwrap();
 
         cred_def_id
     }

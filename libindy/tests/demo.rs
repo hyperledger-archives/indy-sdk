@@ -271,7 +271,7 @@ fn anoncreds_demo_works() {
                                    }"#;
 
     // 10 Prover prepare Credential to prove
-    // 10.1 Prover gets Claims for Proof Request
+    // 10.1 Prover gets Credentials for Proof Request
     let err =
         indy_prover_get_credentials_for_proof_req(prover_get_credentials_for_proof_req_command_handle,
                                                   wallet_handle,

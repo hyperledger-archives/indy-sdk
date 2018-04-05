@@ -80,7 +80,7 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
 /// issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
 /// schema_json: credential schema as a json
 /// tag: allows to distinct between credential definitions for the same issuer and schema
-/// type_: credential definition type (optional, 'CL' by default) that defines claims signature and revocation math. Supported types are:
+/// type_: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math. Supported types are:
 /// - 'CL': Camenisch-Lysyanskaya credential signature type
 /// config_json: type-specific configuration of credential definition as json:
 /// - 'CL':
@@ -147,7 +147,7 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
 /// Revocation registry state is stored on the wallet and also intended to be shared as the ordered list of REVOC_REG_ENTRY transactions.
 /// This call initializes the state in the wallet and returns the initial entry.
 ///
-/// Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked claims in public
+/// Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked credentials in public
 /// revocation registry and intended to be distributed out of leger (REVOC_REG_DEF transaction will still contain uri and hash of tails).
 /// This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
 ///
@@ -155,8 +155,8 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing transaction to the Ledger
-/// type_: revocation registry type (optional, default value depends on claim definition type). Supported types are:
-/// - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' claim definition type
+/// type_: revocation registry type (optional, default value depends on credential definition type). Supported types are:
+/// - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
 /// tag: allows to distinct between revocation registries for the same issuer and credential definition
 /// cred_def_id: id of stored in ledger credential definition
 /// config_json: type-specific configuration of revocation registry as json:
@@ -165,7 +165,7 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
 ///         1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
 ///            Revocation Registry is updated only during revocation.
 ///         2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
-///     "max_cred_num": maximum number of claims the new registry can process (optional, default 100000)
+///     "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
 /// }
 /// tails_writer_handle: handle of blob storage to store tails
 /// cb: Callback that takes command result as parameter.
@@ -223,7 +223,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 }
 
 /// Create credential offer that will be used by Prover for
-/// claim request creation. Offer includes nonce and key correctness proof
+/// credential request creation. Offer includes nonce and key correctness proof
 /// for authentication between protocol steps and integrity checking.
 ///
 /// #Params

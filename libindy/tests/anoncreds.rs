@@ -1527,7 +1527,7 @@ mod medium_cases {
                                                                           Some(SIGNATURE_TYPE),
                                                                           &AnoncredsUtils::default_cred_def_config());
 
-            assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsClaimDefAlreadyExistsError);
+            assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsCredDefAlreadyExistsError);
         }
     }
 
@@ -1930,7 +1930,7 @@ mod demos {
                                        }
                                     }"#;
 
-        //8. Prover gets Claims for Proof Request
+        //8. Prover gets Credentials for Proof Request
         let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
         let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
@@ -2161,7 +2161,7 @@ mod demos {
            }),
         }).to_string();
 
-        //12. Prover gets Claims for Proof Request
+        //12. Prover gets Credentials for Proof Request
         let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
 
         let credential_for_attr_1 = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
@@ -2300,7 +2300,7 @@ mod demos {
             }),
         }).to_string();
 
-        //11. Prover gets Claims for Proof Request
+        //11. Prover gets Credentials for Proof Request
         let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
 
         let credential_for_attr_1 = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
@@ -2433,7 +2433,7 @@ mod demos {
            "non_revoked": json!({ "from":80, "to":100 })
         }).to_string();
 
-        //9. Prover gets Claims for Proof Request
+        //9. Prover gets Credentials for Proof Request
         let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_request).unwrap();
         let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
@@ -2576,7 +2576,7 @@ mod demos {
            "non_revoked": json!({ "from":80, "to":100 })
         }).to_string();
 
-        //9. Prover gets Claims for Proof Request
+        //9. Prover gets Credentials for Proof Request
         let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_request).unwrap();
         let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
@@ -2680,7 +2680,7 @@ mod demos {
                                                       &cred_def_id,
                                                       &cred_def_json);
 
-        // 6. Prover gets Claims for Proof Request
+        // 6. Prover gets Credentials for Proof Request
         let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &AnoncredsUtils::proof_request_attr()).unwrap();
         let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
@@ -2761,7 +2761,7 @@ mod demos {
                                                       &cred_def_id,
                                                       &cred_def_json);
 
-        //7. Prover gets Claims for Proof Request
+        //7. Prover gets Credentials for Proof Request
         let proof_req_json = json!({
            "nonce":"123432421212",
            "name":"proof_req_1",
@@ -2955,7 +2955,7 @@ mod demos {
            "non_revoked": json!({ "from":80, "to":100 })
         }).to_string();
 
-        // Prover1 gets Claims for Proof Request
+        // Prover1 gets Credentials for Proof Request
         let prover1_credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover1_wallet_handle, &proof_request).unwrap();
         let prover1_credential = AnoncredsUtils::get_credential_for_attr_referent(&prover1_credentials_json, "attr1_referent");
 
@@ -3025,7 +3025,7 @@ mod demos {
 
         /* PROVER2 PROVING REQUEST*/
 
-        // Prover2 gets Claims for Proof Request
+        // Prover2 gets Credentials for Proof Request
         let prover2_credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover2_wallet_handle, &proof_request).unwrap();
         let prover2_credential = AnoncredsUtils::get_credential_for_attr_referent(&prover2_credentials_json, "attr1_referent");
 
@@ -3095,7 +3095,7 @@ mod demos {
 
         /* PROVER3 PROVING REQUEST*/
 
-        // Prover3 gets Claims for Proof Request
+        // Prover3 gets Credentials for Proof Request
         let prover3_credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover3_wallet_handle, &proof_request).unwrap();
         let prover3_credential = AnoncredsUtils::get_credential_for_attr_referent(&prover3_credentials_json, "attr1_referent");
 
@@ -3380,7 +3380,7 @@ mod demos {
         );
         let revoc_reg_delta_json = revoc_reg_delta_json.unwrap();
 
-        //8. Prover gets Claims for Proof Request
+        //8. Prover gets Credentials for Proof Request
         let proof_request = json!({
            "nonce":"123432421212",
            "name":"proof_req_1",
@@ -3545,7 +3545,7 @@ mod demos {
             blob_storage_reader_handle,
         );
 
-        //8. Prover gets Claims for Proof Request
+        //8. Prover gets Credentials for Proof Request
         let proof_request = json!({
            "nonce":"123432421212",
            "name":"proof_req_1",

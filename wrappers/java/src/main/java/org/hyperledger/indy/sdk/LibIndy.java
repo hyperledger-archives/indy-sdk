@@ -49,9 +49,9 @@ public abstract class LibIndy {
 		public int indy_build_schema_request(int command_handle, String submitter_did, String data, Callback cb);
 		public int indy_build_get_schema_request(int command_handle, String submitter_did, String id, Callback cb);
 		public int indy_parse_get_schema_response(int command_handle, String get_schema_response, Callback cb);
-		public int indy_build_claim_def_txn(int command_handle, String submitter_did, String data, Callback cb);
-		public int indy_build_get_claim_def_txn(int command_handle, String submitter_did, String id, Callback cb);
-		public int indy_parse_get_claim_def_response(int command_handle, String get_claim_def_response, Callback cb);
+		public int indy_build_cred_def_txn(int command_handle, String submitter_did, String data, Callback cb);
+		public int indy_build_get_cred_def_txn(int command_handle, String submitter_did, String id, Callback cb);
+		public int indy_parse_get_cred_def_response(int command_handle, String get_cred_def_response, Callback cb);
 		public int indy_build_node_request(int command_handle, String submitter_did, String target_did, String data, Callback cb);
 		public int indy_build_get_txn_request(int command_handle, String submitter_did, int data, Callback cb);
 		public int indy_build_pool_config_request(int command_handle, String submitter_did, boolean writes, boolean force, Callback cb);
@@ -107,7 +107,7 @@ public abstract class LibIndy {
 		public int indy_prover_get_credentials(int command_handle, int wallet_handle, String filter_json, Callback cb);
 		public int indy_prover_get_credentials_for_proof_req(int command_handle, int wallet_handle, String proof_request_json, Callback cb);
 		public int indy_prover_create_proof(int command_handle, int wallet_handle, String proof_req_json, String requested_credentials_json, String master_secret_name, String schemas_json, String credential_defs_json, String rev_infos_json, Callback cb);
-		public int indy_verifier_verify_proof(int command_handle, String proof_request_json, String proof_json, String schemas_json, String claim_defs_jsons, String rev_reg_defs_json, String revoc_regs_json, Callback cb);
+		public int indy_verifier_verify_proof(int command_handle, String proof_request_json, String proof_json, String schemas_json, String cred_defs_jsons, String rev_reg_defs_json, String revoc_regs_json, Callback cb);
 		public int indy_create_revocation_state(int command_handle, int blob_storage_reader_handle, String rev_reg_def_json, String rev_reg_delta_json, int timestamp, String cred_rev_id, Callback cb);
 		public int indy_update_revocation_info(int command_handle, int blob_storage_reader_handle, String rev_state_json, String rev_reg_def_json, String rev_reg_delta_json, int timestamp, String cred_rev_id, Callback cb);
 

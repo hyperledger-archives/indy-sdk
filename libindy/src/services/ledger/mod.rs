@@ -124,16 +124,16 @@ impl LedgerService {
             .map_err(|err| CommonError::InvalidState(format!("GET_TXN request json is invalid {:?}.", err)))
     }
 
-    pub fn build_claim_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
+    pub fn build_cred_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
         let cred_def = CredentialDefinitionV1::from_json(&data)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinition: {:?}", err)))?;
 
-        let operation = ClaimDefOperation::new(cred_def);
+        let operation = CredDefOperation::new(cred_def);
         Request::build_request(identifier, operation)
-            .map_err(|err| CommonError::InvalidState(format!("CLAIM_DEF request json is invalid {:?}.", err)))
+            .map_err(|err| CommonError::InvalidState(format!("CRED_DEF request json is invalid {:?}.", err)))
     }
 
-    pub fn build_get_claim_def_request(&self, identifier: &str, id: &str) -> Result<String, CommonError> {
+    pub fn build_get_cred_def_request(&self, identifier: &str, id: &str) -> Result<String, CommonError> {
         let parts: Vec<&str> = id.split_terminator(DELIMITER).collect::<Vec<&str>>();
         let origin = parts.get(0)
             .ok_or(CommonError::InvalidStructure(format!("Origin not found in: {}", id)))?.to_string();
@@ -146,9 +146,9 @@ impl LedgerService {
         let signature_type = parts.get(2)
             .ok_or(CommonError::InvalidStructure(format!("Signature type not found in: {}", id)))?.to_string();
 
-        let operation = GetClaimDefOperation::new(ref_, signature_type, origin);
+        let operation = GetCredDefOperation::new(ref_, signature_type, origin);
         Request::build_request(identifier, operation)
-            .map_err(|err| CommonError::InvalidState(format!("GET_CLAIM_DEF request json is invalid {:?}.", err)))
+            .map_err(|err| CommonError::InvalidState(format!("GET_CRED_DEF request json is invalid {:?}.", err)))
     }
 
     pub fn build_node_request(&self, identifier: &str, dest: &str, data: &str) -> Result<String, CommonError> {
@@ -270,8 +270,8 @@ impl LedgerService {
                     LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize Schema {:?}.", err))))?))
     }
 
-    pub fn parse_get_claim_def_response(&self, get_claim_def_response: &str) -> Result<(String, String), LedgerError> {
-        let reply: Reply<GetClaimDefReplyResult> = LedgerService::parse_response(get_claim_def_response)?;
+    pub fn parse_get_cred_def_response(&self, get_cred_def_response: &str) -> Result<(String, String), LedgerError> {
+        let reply: Reply<GetCredDefReplyResult> = LedgerService::parse_response(get_cred_def_response)?;
 
         let cred_def_id = CredentialDefinition::cred_def_id(&reply.result.origin, &reply.result.ref_.to_string(), &reply.result.signature_type.to_str());
 
@@ -516,15 +516,15 @@ mod tests {
     }
 
     #[test]
-    fn build_get_claim_def_request_works() {
+    fn build_get_cred_def_request_works() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
         let id = CredentialDefinition::cred_def_id("origin", "1", "signature_type");
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"origin"},"protocolVersion":1"#;
 
-        let get_claim_def_request = ledger_service.build_get_claim_def_request(identifier, &id).unwrap();
-        assert!(get_claim_def_request.contains(expected_result));
+        let get_cred_def_request = ledger_service.build_get_cred_def_request(identifier, &id).unwrap();
+        assert!(get_cred_def_request.contains(expected_result));
     }
 
     #[test]

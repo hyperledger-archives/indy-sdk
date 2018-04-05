@@ -56,7 +56,7 @@ pub enum ErrorCode
     // Invalid library state was detected in runtime. It signals library bug
     CommonInvalidState = 112,
 
-    // Object (json, config, key, claim and etc...) passed by library caller has invalid structure
+    // Object (json, config, key, credential and etc...) passed by library caller has invalid structure
     CommonInvalidStructure = 113,
 
     // IO Error
@@ -126,10 +126,10 @@ pub enum ErrorCode
 
     AnoncredsProofRejected = 405,
 
-    AnoncredsClaimRevoked = 406,
+    AnoncredsCredentialRevoked = 406,
 
-    // Attempt to create claim definition with duplicated did schema pair
-    AnoncredsClaimDefAlreadyExistsError = 407,
+    // Attempt to create credential definition with duplicated id
+    AnoncredsCredDefAlreadyExistsError = 407,
 
     // Crypto errors
     // Unknown format of DID entity keys

@@ -72,7 +72,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
     :param issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
     :param schema_json: credential schema as a json
     :param tag: allows to distinct between credential definitions for the same issuer and schema
-    :param type_: credential definition type (optional, 'CL' by default) that defines claims signature and revocation math.
+    :param type_: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
     Supported types are:
         - 'CL': Camenisch-Lysyanskaya credential signature type
     :param  config_json: type-specific configuration of credential definition as json:
@@ -139,14 +139,14 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     Revocation registry state is stored on the wallet and also intended to be shared as the ordered list of REVOC_REG_ENTRY transactions.
     This call initializes the state in the wallet and returns the initial entry.
 
-    Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked claims in public
+    Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked credentials in public
     revocation registry and intended to be distributed out of leger (REVOC_REG_DEF transaction will still contain uri and hash of tails).
     This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param issuer_did: a DID of the issuer signing transaction to the Ledger
-    :param type_: type_: revocation registry type (optional, default value depends on claim definition type). Supported types are:
-        - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' claim definition type
+    :param type_: type_: revocation registry type (optional, default value depends on credential definition type). Supported types are:
+        - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
     :param tag: allows to distinct between revocation registries for the same issuer and credential definition
     :param cred_def_id: id of stored in ledger credential definition
     :param config_json: type-specific configuration of revocation registry as json:
@@ -155,7 +155,7 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                 1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
                    Revocation Registry is updated only during revocation.
                 2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
-            "max_cred_num": maximum number of claims the new registry can process (optional, default 100000)
+            "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
         }
     :param tails_writer_handle:
     :return: 
@@ -206,7 +206,7 @@ async def issuer_create_credential_offer(wallet_handle: int,
                                          cred_def_id: str) -> str:
     """
     Create credential offer that will be used by Prover for
-    claim request creation. Offer includes nonce and key correctness proof
+    credential request creation. Offer includes nonce and key correctness proof
     for authentication between protocol steps and integrity checking.
 
     :param wallet_handle: wallet handler (created by open_wallet).

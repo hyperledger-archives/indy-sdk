@@ -397,7 +397,7 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
-	 * Builds a SCHEMA request. Request to add Claim's schema.
+	 * Builds a SCHEMA request. Request to add Credential's schema.
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
 	 * @param data         Schema data.
@@ -432,7 +432,7 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
-	 * Builds a GET_SCHEMA request. Request to get Claim's Schema.
+	 * Builds a GET_SCHEMA request. Request to get Credential's Schema.
 	 *
 	 * @param submitterDid DID of read request sender.
 	 * @param id           Schema ID in ledger
@@ -494,25 +494,25 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
-	 * Builds an CLAIM_DEF request. Request to add a claim definition (in particular, public key),
-	 * that Issuer creates for a particular Claim Schema.
+	 * Builds an CRED_DEF request. Request to add a credential definition (in particular, public key),
+	 * that Issuer creates for a particular Credential Schema.
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
 	 * @param data         Credential Definition json
 	 *                     {
 	 *                     id: string - identifier of credential definition
 	 *                     schemaId: string - identifier of stored in ledger schema
-	 *                     type: string - type of the claim definition. CL is the only supported type now.
+	 *                     type: string - type of the credential definition. CL is the only supported type now.
 	 *                     tag: string - allows to distinct between credential definitions for the same issuer and schema
-	 *                     value: Dictionary with Claim Definition's data: {
-	 *                     primary: primary claim public key,
-	 *                     Optional<revocation>: revocation claim public key
+	 *                     value: Dictionary with Credential Definition's data: {
+	 *                     primary: primary credential public key,
+	 *                     Optional<revocation>: revocation credential public key
 	 *                     }
 	 *                     }
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> buildClaimDefTxn(
+	public static CompletableFuture<String> buildCredDefTxn(
 			String submitterDid,
 			String data) throws IndyException {
 
@@ -522,7 +522,7 @@ public class Ledger extends IndyJava.API {
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_build_claim_def_txn(
+		int result = LibIndy.api.indy_build_cred_def_txn(
 				commandHandle,
 				submitterDid,
 				data,
@@ -534,15 +534,15 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
-	 * Builds a GET_CLAIM_DEF request. Request to get a claim definition (in particular, public key),
-	 * that Issuer creates for a particular Claim Schema.
+	 * Builds a GET_CRED_DEF request. Request to get a credential definition (in particular, public key),
+	 * that Issuer creates for a particular Credential Schema.
 	 *
 	 * @param submitterDid  DID of read request sender.
-	 * @param id            Claim Definition ID in ledger.
+	 * @param id            Credential Definition ID in ledger.
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> buildGetClaimDefTxn(
+	public static CompletableFuture<String> buildGetCredDefTxn(
 			String submitterDid,
 			String id) throws IndyException {
 
@@ -552,7 +552,7 @@ public class Ledger extends IndyJava.API {
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_build_get_claim_def_txn(
+		int result = LibIndy.api.indy_build_get_cred_def_txn(
 				commandHandle,
 				submitterDid,
 				id,
@@ -564,34 +564,34 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
-	 * Parse a GET_CLAIM_DEF response.
+	 * Parse a GET_CRED_DEF response.
 	 *
-	 * @param getClaimDefResponse response json
+	 * @param getCredDefResponse response json
 	 * @return A future resolving to a Credential Definition Id and Credential Definition json.
 	 * {
 	 * id: string - identifier of credential definition
 	 * schemaId: string - identifier of stored in ledger schema
-	 * type: string - type of the claim definition. CL is the only supported type now.
+	 * type: string - type of the credential definition. CL is the only supported type now.
 	 * tag: string - allows to distinct between credential definitions for the same issuer and schema
-	 * value: Dictionary with Claim Definition's data: {
-	 * primary: primary claim public key,
-	 * Optional<revocation>: revocation claim public key
+	 * value: Dictionary with Credential Definition's data: {
+	 * primary: primary credential public key,
+	 * Optional<revocation>: revocation credential public key
 	 * } -
 	 * ver: Version of the Credential Definition json
 	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<ParseResponseResult> parseGetClaimDefResponse(
-			String getClaimDefResponse) throws IndyException {
+	public static CompletableFuture<ParseResponseResult> parseGetCredDefResponse(
+			String getCredDefResponse) throws IndyException {
 
-		ParamGuard.notNullOrWhiteSpace(getClaimDefResponse, "data");
+		ParamGuard.notNullOrWhiteSpace(getCredDefResponse, "getCredDefResponse");
 
 		CompletableFuture<ParseResponseResult> future = new CompletableFuture<ParseResponseResult>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_parse_get_claim_def_response(
+		int result = LibIndy.api.indy_parse_get_cred_def_response(
 				commandHandle,
-				getClaimDefResponse,
+				getCredDefResponse,
 				parseRequestCb);
 
 		checkResult(result);
@@ -757,7 +757,7 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry
-	 * to an exists claim definition.
+	 * to an exists credential definition.
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
 	 * @param data         Revocation Registry data:
@@ -765,7 +765,7 @@ public class Ledger extends IndyJava.API {
 	 *                     "id": string - ID of the Revocation Registry,
 	 *                     "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
 	 *                     "tag": string - Unique descriptive ID of the Registry,
-	 *                     "credDefId": string - ID of the corresponding ClaimDef,
+	 *                     "credDefId": string - ID of the corresponding Credential Definition,
 	 *                     "value": Registry-specific data {
 	 *                     "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
 	 *                     "maxCredNum": number - Maximum number of credentials the Registry can serve.
@@ -836,7 +836,7 @@ public class Ledger extends IndyJava.API {
 	 * "id": string - ID of the Revocation Registry,
 	 * "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
 	 * "tag": string - Unique descriptive ID of the Registry,
-	 * "credDefId": string - ID of the corresponding ClaimDef,
+	 * "credDefId": string - ID of the corresponding Credential Definition,
 	 * "value": Registry-specific data {
 	 * "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
 	 * "maxCredNum": number - Maximum number of credentials the Registry can serve.
@@ -870,7 +870,7 @@ public class Ledger extends IndyJava.API {
 	 * Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
 	 * the new accumulator value and issued/revoked indices.
 	 * This is just a delta of indices, not the whole list.
-	 * So, it can be sent each time a new claim is issued/revoked.
+	 * So, it can be sent each time a new credential is issued/revoked.
 	 *
 	 * @param submitterDid  DID of the submitter stored in secured Wallet.
 	 * @param revocRegDefId ID of the corresponding RevocRegDef.
