@@ -679,11 +679,9 @@ impl WalletRecord {
 
 impl WalletSearch {
 
-  pub fn get_count() -> i32 {}
-
   pub fn get_total_count() -> Option<i32> {}
 
-  pub fn get_next_record() -> Option<WalletRecord> {}
+  pub fn get_records() -> &[WalletRecord] {}
 }
 
 ```
