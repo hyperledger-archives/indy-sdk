@@ -88,6 +88,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::get_claim_def_command::new())
         .add_command(ledger::node_command::new())
         .add_command(ledger::pool_config_command::new())
+        .add_command(ledger::pool_restart_command::new())
         .add_command(ledger::pool_upgrade_command::new())
         .add_command(ledger::custom_command::new())
         .finalize_group()
