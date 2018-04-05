@@ -25,6 +25,7 @@ use utils::domain::credential_definition::CredentialDefinition;
 use utils::domain::credential_for_proof_request::CredentialsForProofRequest;
 use utils::domain::proof::Proof;
 use utils::domain::revocation_registry_definition::RevocationRegistryDefinition;
+use utils::domain::revocation_registry::RevocationRegistry;
 use utils::domain::revocation_state::RevocationState;
 use utils::domain::schema::Schema;
 
@@ -40,7 +41,6 @@ use indy::api::ledger::*;
 use indy::api::pool::*;
 use indy::api::wallet::*;
 use indy::api::did::*;
-use indy_crypto::cl::RevocationRegistry;
 
 use std::ptr::null;
 use std::ffi::CString;
@@ -52,7 +52,6 @@ use std::thread;
 fn anoncreds_demo_works() {
     TestUtils::cleanup_storage();
 
-    let (issuer_create_schema_receiver, issuer_create_schema_command_handle, issuer_create_schema_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
     let (issuer_create_credential_definition_receiver, issuer_create_credential_definition_command_handle, issuer_create_credential_definition_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
     let (issuer_create_credential_offer_receiver, issuer_create_credential_offer_command_handle, issuer_create_credential_offer_callback) = CallbackUtils::_closure_to_cb_ec_string();
     let (create_wallet_receiver, create_wallet_command_handle, create_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
@@ -103,22 +102,16 @@ fn anoncreds_demo_works() {
 
     let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
     let prover_did = "VsKV7grR1BUE29mG2Fm2kX";
-    let schema_name = "gvt";
-    let version = "1.0";
-    let attrs = r#"["name", "age", "sex", "height"]"#;
 
     // 3. Issuer create Schema
-    let err =
-        indy_issuer_create_schema(issuer_create_schema_command_handle,
-                                  CString::new(issuer_did.clone()).unwrap().as_ptr(),
-                                  CString::new(schema_name.clone()).unwrap().as_ptr(),
-                                  CString::new(version.clone()).unwrap().as_ptr(),
-                                  CString::new(attrs.clone()).unwrap().as_ptr(),
-                                  issuer_create_schema_callback);
-
-    assert_eq!(ErrorCode::Success, err);
-    let (err, schema_id, schema_json) = issuer_create_schema_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
+    let schema_id = "1";
+    let schema_json = r#"{
+        "id":"1",
+        "name":"gvt",
+        "version":"1.0",
+        "attrNames":["name", "age", "sex", "height"],
+        "ver":"1.0"
+    }"#;
 
     // 4. Issuer create Credential Definition for Schema
     let tag = r#"TAG1"#;
@@ -372,6 +365,7 @@ fn anoncreds_demo_works() {
     let rev_reg_defs_json = json!({
         rev_reg_id.as_str(): serde_json::from_str::<RevocationRegistryDefinition>(&revoc_reg_def_json).unwrap()
     }).to_string();
+
     let rev_regs_json = json!({
         rev_reg_id: {
             issue_ts.to_string(): serde_json::from_str::<RevocationRegistry>(&rreg_issue_delta_json).unwrap()

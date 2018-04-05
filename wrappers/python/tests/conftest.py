@@ -85,6 +85,11 @@ def metadata():
 
 
 @pytest.fixture
+def schema_data():
+    return json.dumps({"name": "gvt", "version": "1.0", "attr_names": ["name"]})
+
+
+@pytest.fixture
 def path_temp():
     logger = logging.getLogger(__name__)
     logger.debug("path_temp: >>>")

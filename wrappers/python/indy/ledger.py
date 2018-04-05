@@ -372,39 +372,30 @@ async def build_schema_request(submitter_did: str,
 
 
 async def build_get_schema_request(submitter_did: str,
-                                   dest: str,
-                                   data: str) -> str:
+                                   id_: str) -> str:
     """
     Builds a GET_SCHEMA request. Request to get Claim's Schema.
 
     :param submitter_did: DID of the read request sender.
-    :param dest: Schema Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
-                 It differs from submitter_did field.
-    :param data: {
-        name (string): Schema's name string
-        version (string): Schema's version string
-    }
+    :param id_: Schema Id in ledger
     :return: Request result as json.
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_schema_request: >>> submitter_did: %r, dest: %r, data: %r",
+    logger.debug("build_get_schema_request: >>> submitter_did: %r, id: %r",
                  submitter_did,
-                 dest,
-                 data)
+                 id_)
 
     if not hasattr(build_get_schema_request, "cb"):
         logger.debug("build_get_schema_request: Creating callback")
         build_get_schema_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
-    c_dest = c_char_p(dest.encode('utf-8'))
-    c_data = c_char_p(data.encode('utf-8'))
+    c_id = c_char_p(id_.encode('utf-8'))
 
     request_json = await do_call('indy_build_get_schema_request',
                                  c_submitter_did,
-                                 c_dest,
-                                 c_data,
+                                 c_id,
                                  build_get_schema_request.cb)
 
     res = request_json.decode()
@@ -488,41 +479,31 @@ async def build_claim_def_txn(submitter_did: str,
 
 
 async def build_get_claim_def_txn(submitter_did: str,
-                                  xref: int,
-                                  signature_type: str,
-                                  origin: str) -> str:
+                                  id_: str) -> str:
     """
    Builds a GET_CLAIM_DEF request. Request to get a claim definition (in particular, public key),
    that Issuer creates for a particular Claim Schema.
 
     :param submitter_did: DID of read request sender.
-    :param xref: Sequence number of a Schema transaction the claim definition is created for.
-    :param signature_type: Type of the claim definition. CL is the only supported type now.
-    :param origin: Claim Definition Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
+    :param id_: Claim Definition Id in ledger.
     :return: Request result as json.
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_claim_def_txn: >>> submitter_did: %r, xref: %r, signature_type: %r, origin: %r",
+    logger.debug("build_get_claim_def_txn: >>> submitter_did: %r, id: %r",
                  submitter_did,
-                 xref,
-                 signature_type,
-                 origin)
+                 id_)
 
     if not hasattr(build_get_claim_def_txn, "cb"):
         logger.debug("build_get_claim_def_txn: Creating callback")
         build_get_claim_def_txn.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
-    c_xref = c_int32(xref)
-    c_signature_type = c_char_p(signature_type.encode('utf-8'))
-    c_origin = c_char_p(origin.encode('utf-8'))
+    c_id = c_char_p(id_.encode('utf-8'))
 
     request_json = await do_call('indy_build_get_claim_def_txn',
                                  c_submitter_did,
-                                 c_xref,
-                                 c_signature_type,
-                                 c_origin,
+                                 c_id,
                                  build_get_claim_def_txn.cb)
 
     res = request_json.decode()

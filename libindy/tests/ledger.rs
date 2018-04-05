@@ -37,7 +37,7 @@ use utils::constants::*;
 use self::openssl::hash::{MessageDigest, Hasher};
 use self::sodiumoxide::crypto::secretbox;
 
-use utils::domain::schema::{Schema, SchemaV1};
+use utils::domain::schema::SchemaV1;
 use utils::domain::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
 use utils::domain::revocation_registry_definition::RevocationRegistryDefinitionV1;
 use utils::domain::revocation_registry::RevocationRegistryV1;
@@ -707,7 +707,7 @@ mod high_cases {
 
             assert_eq!(GVT_SCHEMA_NAME, schema.name.as_str());
             assert_eq!(SCHEMA_VERSION, schema.version.as_str());
-            assert_eq!(serde_json::from_str::<HashSet<String>>(r#"["name"]"#).unwrap(), schema.attr_names);
+            assert_eq!(serde_json::from_str::<HashSet<String>>(r#"["age", "height", "sex", "name"]"#).unwrap(), schema.attr_names);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -849,7 +849,7 @@ mod high_cases {
 
             let (did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
-            let (schema_id, schema_json) = LedgerUtils::post_schema_to_ledger(pool_handle, wallet_handle, &did);
+            let (_schema_id, schema_json) = LedgerUtils::post_schema_to_ledger(pool_handle, wallet_handle, &did);
 
             let (cred_def_id, cred_def_data) = LedgerUtils::prepare_cred_def(wallet_handle, &did, &schema_json);
 
@@ -1325,7 +1325,7 @@ mod high_cases {
             let get_rev_reg_delta_req = LedgerUtils::build_get_revoc_reg_delta_request(&did, &rev_reg_id, None, to).unwrap();
             let get_rev_reg_delta_resp = LedgerUtils::submit_request_with_retries(pool_handle, &get_rev_reg_delta_req, &rev_reg_entry_req_resp).unwrap();
 
-            let (rev_reg_id, revoc_reg_delta_json) = LedgerUtils::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_resp).unwrap();
+            let (_, revoc_reg_delta_json) = LedgerUtils::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_resp).unwrap();
 
             let _revoc_reg_delta: RevocationRegistryDeltaV1 = serde_json::from_str(&revoc_reg_delta_json).unwrap();
 

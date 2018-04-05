@@ -104,6 +104,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_name(wallet_handle,
                                                                                             prepopulated_wallet):
     proof_req = {

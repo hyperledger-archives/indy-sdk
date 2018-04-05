@@ -6,52 +6,52 @@ from ctypes import *
 import logging
 
 
-async def issuer_create_schema(issuer_did: str,
-                               name: str,
-                               version: str,
-                               attrs: str) -> (str, str):
-    """
-    Create credential schema entity that describes credential attributes list and allows credentials
-    interoperability.
-
-    Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
-    to Indy distributed ledger.
-
-    :param issuer_did: DID of schema issuer
-    :param name: a name the schema
-    :param version: a version of the schema
-    :param attrs: a list of schema attributes descriptions
-    :return:
-        schema_id: identifier of created schema
-        schema_json: schema as json
-    """
-
-    logger = logging.getLogger(__name__)
-    logger.debug("issuer_create_schema: >>> issuer_did: %r, name: %r, version: %r, attrs: %r",
-                 issuer_did,
-                 name,
-                 version,
-                 attrs)
-
-    if not hasattr(issuer_create_schema, "cb"):
-        logger.debug("issuer_create_schema: Creating callback")
-        issuer_create_schema.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
-
-    c_issuer_did = c_char_p(issuer_did.encode('utf-8'))
-    c_name = c_char_p(name.encode('utf-8'))
-    c_version = c_char_p(version.encode('utf-8'))
-    c_attrs = c_char_p(attrs.encode('utf-8'))
-
-    (schema_id, schema_json) = await do_call('indy_issuer_create_schema',
-                                             c_issuer_did,
-                                             c_name,
-                                             c_version,
-                                             c_attrs,
-                                             issuer_create_schema.cb)
-
-    res = (schema_id.decode(), schema_json.decode())
-    logger.debug("issuer_create_schema: <<< res: %r", res)
-    return res
+# async def issuer_create_schema(issuer_did: str,
+#                                name: str,
+#                                version: str,
+#                                attrs: str) -> (str, str):
+#     """
+#     Create credential schema entity that describes credential attributes list and allows credentials
+#     interoperability.
+#
+#     Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
+#     to Indy distributed ledger.
+#
+#     :param issuer_did: DID of schema issuer
+#     :param name: a name the schema
+#     :param version: a version of the schema
+#     :param attrs: a list of schema attributes descriptions
+#     :return:
+#         schema_id: identifier of created schema
+#         schema_json: schema as json
+#     """
+#
+#     logger = logging.getLogger(__name__)
+#     logger.debug("issuer_create_schema: >>> issuer_did: %r, name: %r, version: %r, attrs: %r",
+#                  issuer_did,
+#                  name,
+#                  version,
+#                  attrs)
+#
+#     if not hasattr(issuer_create_schema, "cb"):
+#         logger.debug("issuer_create_schema: Creating callback")
+#         issuer_create_schema.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+#
+#     c_issuer_did = c_char_p(issuer_did.encode('utf-8'))
+#     c_name = c_char_p(name.encode('utf-8'))
+#     c_version = c_char_p(version.encode('utf-8'))
+#     c_attrs = c_char_p(attrs.encode('utf-8'))
+#
+#     (schema_id, schema_json) = await do_call('indy_issuer_create_schema',
+#                                              c_issuer_did,
+#                                              c_name,
+#                                              c_version,
+#                                              c_attrs,
+#                                              issuer_create_schema.cb)
+#
+#     res = (schema_id.decode(), schema_json.decode())
+#     logger.debug("issuer_create_schema: <<< res: %r", res)
+#     return res
 
 
 async def issuer_create_and_store_credential_def(wallet_handle: int,
