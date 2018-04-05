@@ -1,4 +1,5 @@
 # Rotate a Key
+
 Indy-SDK Developer Walkthrough #2, Java Edition
 
 [ [Python](../python/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
@@ -6,13 +7,13 @@ Indy-SDK Developer Walkthrough #2, Java Edition
 
 ## Prerequisites
 
-Setup your workstation and indy development virtual machine. See [prerequisites](../prerequisites.md).
+Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../prerequisites.md).
 
 ## Steps
 
 ### Step 1
 
-In your normal workstation OS (not the VM), open a java editor of your
+In your normal workstation operating system (not the VM), open a java editor of your
 choice and paste the code from [template.java](template.java)
 into a new doc. We will be modifying this code in later steps.
 
@@ -37,6 +38,8 @@ Once we have an identity on the ledger, we can rotate its key pair.
 Copy the contents of [step3.java](step3.java) into
 `RotateKey.java` on top of the `Step 3 code goes here` placeholder comment.
 
+Save the updated version of `RotateKey.java`.
+
 Most of the logic here should be self-explanatory. However, it's worth
 explaining the paired functions `replaceKeysStart()` and `replaceKeysApply()`.
 When we submit the update transaction to the ledger, we have to sign it
@@ -56,8 +59,10 @@ identity.
 Copy the contents of [step4.java](step4.java) into
 `RotateKey.java` on top of the `Step 4 code goes here` placeholder comment.
 
+Save the updated version of `RotateKey.java`.
+
 Only a handful of lines of code matter to our goal here; the rest of this
-block is comments and boilerplate cleanup (which you should not omit!).
+block is comments and boilerplate cleanup **(which you should not omit!)**.
 
 ### Step 5
 

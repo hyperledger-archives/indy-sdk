@@ -25,6 +25,19 @@ namespace Hyperledger.Indy.PoolApi
         };
 
         /// <summary>
+        /// Callback to use when list pools command has completed.
+        /// </summary>
+        private static ListPoolsCompletedDelegate _listPoolsCallback = (command_handle, err, pools) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(command_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(pools);
+        };
+
+        /// <summary>
         /// Creates a new local pool configuration with the specified name that can be used later to open a connection to 
         /// pool nodes.
         /// </summary>
@@ -132,6 +145,25 @@ namespace Hyperledger.Indy.PoolApi
                 configName,
                 config,
                 _openPoolLedgerCallback
+                );
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Lists names of created pool ledgers
+        /// </summary>
+        /// <returns>The pools json.</returns>
+        public static Task<string> ListPoolsAsync()
+        {
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_list_pools(
+                commandHandle,
+                _listPoolsCallback
                 );
 
             CallbackHelper.CheckResult(result);

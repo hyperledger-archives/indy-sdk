@@ -1,0 +1,1244 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Class AnonCreds
+   | Hyperledger Indy .NET Wrapper </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Class AnonCreds
+   | Hyperledger Indy .NET Wrapper ">
+    <meta name="generator" content="docfx 2.25.1.0">
+    
+    <link rel="shortcut icon" href="../images/favicon.png">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="../">
+    <meta property="docfx:newtab" content="true">
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../images/hyperledger_logo.png" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+        
+        <div id="search-results">
+          <div class="search-list"></div>
+          <div class="sr-items"></div>
+          <ul id="pagination"></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds">
+  
+  
+  <h1 id="Hyperledger_Indy_AnonCredsApi_AnonCreds" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds" class="text-break">Class AnonCreds
+  </h1>
+  <div class="markdown level0 summary"><p>Provides methods for managing anonymous credentials.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.object(v=vs.110).aspx">Object</a></div>
+    <div class="level1"><span class="xref">AnonCreds</span></div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.AnonCredsApi.html">Hyperledger.Indy.AnonCredsApi</a></h6>
+  <h6><strong>Assembly</strong>: Hyperledger.Indy.Sdk.dll</h6>
+  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static class AnonCreds : Object</code></pre>
+  </div>
+  <h3 id="methods">Methods
+  </h3>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateAndStoreClaimDefAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateAndStoreClaimDefAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateAndStoreClaimDefAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_Boolean_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateAndStoreClaimDefAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.Boolean)">IssuerCreateAndStoreClaimDefAsync(Wallet, String, String, String, Boolean)</h4>
+  <div class="markdown level1 summary"><p>Creates keys for the given schema and signature type.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; IssuerCreateAndStoreClaimDefAsync(Wallet wallet, string issuerDid, string schemaJson, string signatureType, bool createNonRevoc)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet into which the claim definition will be stored.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">issuerDid</span></td>
+        <td><p>The DID of the issuer of the claim definition.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">schemaJson</span></td>
+        <td><p>The JSON schema of the claim definition.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">signatureType</span></td>
+        <td><p>The type of signature to use.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.boolean(v=vs.110).aspx">Boolean</a></td>
+        <td><span class="parametername">createNonRevoc</span></td>
+        <td><p>Whether to request non-revocation claim.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that, when the operation completes, resolves to a 
+JSON string containing the claim definition.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateAndStoreClaimDefAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_Boolean__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p><p>This method creates both primary and revocation keys for the given
+signature type and schema and stores them in the provided <code data-dev-comment-type="paramref" class="paramref">wallet</code>.
+The generated claim definition is returned as a JSON string containing information about the 
+signature type, schema, the issuer&apos;s public key and the unique identifier of the public key 
+in the wallet.
+</p>
+<div class="NOTE"><h5>note</h5><p>Currently the only signature type that is supported is &apos;CL&apos;.</p></div></p>
+</div>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateAndStoreRevocRegAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateAndStoreRevocRegAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateAndStoreRevocRegAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_Int32_System_Int32_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateAndStoreRevocRegAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.Int32,System.Int32)">IssuerCreateAndStoreRevocRegAsync(Wallet, String, Int32, Int32)</h4>
+  <div class="markdown level1 summary"><p>Creates a new revocation registry for the provided claim definition.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; IssuerCreateAndStoreRevocRegAsync(Wallet wallet, string issuerDid, int schemaSeqNo, int maxClaimNum)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet to store the revocation registry in.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">issuerDid</span></td>
+        <td><p>The DID of the issuer that signed the revoc_reg transaction to the ledger.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.int32(v=vs.110).aspx">Int32</a></td>
+        <td><span class="parametername">schemaSeqNo</span></td>
+        <td><p>The sequence number of a schema transaction in the ledger.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.int32(v=vs.110).aspx">Int32</a></td>
+        <td><span class="parametername">maxClaimNum</span></td>
+        <td><p>The maximum number of claims the new registry can process.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that, when the operation completes, resolves 
+to a JSON string containing the revocation registry.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateAndStoreRevocRegAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_Int32_System_Int32__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The revocation registry is stored in the provided <code data-dev-comment-type="paramref" class="paramref">wallet</code> and is identified by
+a unique key which is returned in the revocation registry JSON string returned by the method.</p>
+</div>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateClaimAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateClaimAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateClaimAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_Int32_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateClaimAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.Int32)">IssuerCreateClaimAsync(Wallet, String, String, Int32)</h4>
+  <div class="markdown level1 summary"><p>Signs the provided claim for using the key provided in the specified claim request.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;IssuerCreateClaimResult&gt; IssuerCreateClaimAsync(Wallet wallet, string claimReqJson, string claimJson, int userRevocIndex)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet containing the keys to use for signing the claim.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">claimReqJson</span></td>
+        <td><p>A claim request with a blinded secret.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">claimJson</span></td>
+        <td><p>A claim containing attribute values for each of requested attribute names.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.int32(v=vs.110).aspx">Int32</a></td>
+        <td><span class="parametername">userRevocIndex</span></td>
+        <td><p>The index of a new user in the revocation registry or -1 if absentee.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.AnonCredsApi.IssuerCreateClaimResult.html">IssuerCreateClaimResult</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that, when the operation completes, resolves to 
+an <a class="xref" href="Hyperledger.Indy.AnonCredsApi.IssuerCreateClaimResult.html">IssuerCreateClaimResult</a>.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateClaimAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_Int32__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+The <code data-dev-comment-type="paramref" class="paramref">claimReqJson</code> parameter must be passed a claim request that was previously
+created using the <a class="xref" href="Hyperledger.Indy.AnonCredsApi.AnonCreds.html#Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateAndStoreClaimReqAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_">ProverCreateAndStoreClaimReqAsync(Wallet, String, String, String, String)</a>
+method.  Usually the claim request will be received from another party that has performed this 
+action.
+</p>
+<p>
+The claim to be signed is provided in the <code data-dev-comment-type="paramref" class="paramref">claimJson</code> parameter 
+and the structure of the claim must conform to the schema from claim request provided in 
+the <code data-dev-comment-type="paramref" class="paramref">claimReqJson</code> parameter.  Claims must be structured as a series of
+attributes, each of which has two values; a human readable value and a hex encoded value.<br><pre><code>{
+     &quot;attr1&quot; : [&quot;value1&quot;, &quot;value1_as_int&quot;],
+     &quot;attr2&quot; : [&quot;value2&quot;, &quot;value2_as_int&quot;]
+}</code></pre>
+For example:
+<pre><code>{
+    &apos;name&apos;: [&apos;Alex&apos;, &apos;1139481716457488690172217916278103335&apos;],
+    &apos;height&apos;: [&apos;175&apos;, &apos;175&apos;]
+}</code></pre>
+</p>
+<p>
+This method results a revocation registry update JSON and a newly issued claim JSON.  The
+claim JSON contains the issued claim, the DID of the issuer (<code>issuer_did</code>), 
+schema sequence number (<code>schema_seq_no</code>) and revocation registry sequence number (<code>revoc_reg_seq_no</code>) used for issuance:
+<pre><code>{
+    &quot;claim&quot;: &lt;see claim_json above>,
+    &quot;signature&quot;: &lt;signature>,
+    &quot;revoc_reg_seq_no&quot;, string,
+    &quot;issuer_did&quot;, string,
+    &quot;schema_seq_no&quot;, string,
+}</code></pre>
+</p>
+</div>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerRevokeClaimAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerRevokeClaimAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerRevokeClaimAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_Int32_System_Int32_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerRevokeClaimAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.Int32,System.Int32)">IssuerRevokeClaimAsync(Wallet, String, Int32, Int32)</h4>
+  <div class="markdown level1 summary"><p>Revokes a user identified by a revoc_id in a given revoc-registry.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; IssuerRevokeClaimAsync(Wallet wallet, string issuerDid, int schemaSequenceNumber, int userRevocIndex)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The target wallet.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">issuerDid</span></td>
+        <td><p>The DID of the issuer.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.int32(v=vs.110).aspx">Int32</a></td>
+        <td><span class="parametername">schemaSequenceNumber</span></td>
+        <td><p>The sequence number of the schema.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.int32(v=vs.110).aspx">Int32</a></td>
+        <td><span class="parametername">userRevocIndex</span></td>
+        <td><p>index of the user in the revocation registry</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that, when the operation completes, resolves 
+to a revocation registry update JSON with a revoked claim.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerRevokeClaimAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_Int32_System_Int32__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+The corresponding claim definition and revocation registry must be already
+have been created and stored in the wallet.
+</p>
+</div>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateAndStoreClaimReqAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateAndStoreClaimReqAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateAndStoreClaimReqAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateAndStoreClaimReqAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String)">ProverCreateAndStoreClaimReqAsync(Wallet, String, String, String, String)</h4>
+  <div class="markdown level1 summary"><p>Creates a claim request for the specified claim offer and stores it in the provided wallet.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ProverCreateAndStoreClaimReqAsync(Wallet wallet, string proverDid, string claimOfferJson, string claimDefJson, string masterSecretName)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The target wallet.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">proverDid</span></td>
+        <td><p>The DID of the prover.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">claimOfferJson</span></td>
+        <td><p>The claim offer JSON to generate a claim request for.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">claimDefJson</span></td>
+        <td><p>The claim definition JSON.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">masterSecretName</span></td>
+        <td><p>The name of the master secret in the wallet to use for generating the blinded secret.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that, when the operation completes, resolves 
+to a JSON string containing the claim request.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateAndStoreClaimReqAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+The JSON of a claim definition that is associated with the issuer_did and schema_seq_no in the 
+claim_offer must be provided in the <code data-dev-comment-type="paramref" class="paramref">claimDefJson</code> parameter.  Claim 
+definitions can be retrieved from the ledger using the 
+<a class="xref" href="Hyperledger.Indy.LedgerApi.Ledger.html#Hyperledger_Indy_LedgerApi_Ledger_BuildGetClaimDefTxnAsync_System_String_System_Int32_System_String_System_String_">BuildGetClaimDefTxnAsync(String, Int32, String, String)</a>method.
+</p>
+<p>
+The JSON in the <code data-dev-comment-type="paramref" class="paramref">claimOfferJson</code> parameter contains information about the 
+issuer of the claim offer:
+<pre><code>{
+    &quot;issuer_did&quot;: string,
+    &quot;schema_seq_no&quot;: string
+}</code></pre>
+This method gets the public key and schema the <code>issuer_did</code> from the ledger for and 
+stores them in the provided wallet. Once this is complete a blinded master secret is for the 
+master secret specified by the <code data-dev-comment-type="paramref" class="paramref">masterSecretName</code> parameter.<br><div class="NOTE"><h5>note</h5><p>
+The master secret identified by the name must be already stored in the secure wallet using the
+<a class="xref" href="Hyperledger.Indy.AnonCredsApi.AnonCreds.html#Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateMasterSecretAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">ProverCreateMasterSecretAsync(Wallet, String)</a> method.
+</p></div>
+The blinded master secret becomes a part of the claim request.
+</p>
+</div>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateMasterSecretAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateMasterSecretAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateMasterSecretAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateMasterSecretAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">ProverCreateMasterSecretAsync(Wallet, String)</h4>
+  <div class="markdown level1 summary"><p>Creates a master secret with the specified name and stores it in the provided wallet.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task ProverCreateMasterSecretAsync(Wallet wallet, string masterSecretName)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The target wallet.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">masterSecretName</span></td>
+        <td><p>The name of the master secret.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a></td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a> that completes when the operation has completed.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateMasterSecretAsync_Hyperledger_Indy_WalletApi_Wallet_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The name of the master secret must be unique within the wallet.</p>
+</div>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateProofAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateProofAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateProofAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateProofAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String,System.String,System.String)">ProverCreateProofAsync(Wallet, String, String, String, String, String, String)</h4>
+  <div class="markdown level1 summary"><p>Creates a proof for the provided proof request.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ProverCreateProofAsync(Wallet wallet, string proofReqJson, string requestedClaimsJson, string schemasJson, string masterSecretName, string claimDefsJson, string revocRegsJson)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The target wallet.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">proofReqJson</span></td>
+        <td><p>The proof request JSON.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">requestedClaimsJson</span></td>
+        <td><p>The requested claims JSON.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">schemasJson</span></td>
+        <td><p>The schema JSON.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">masterSecretName</span></td>
+        <td><p>The master secret name.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">claimDefsJson</span></td>
+        <td><p>The claim definitions JSON.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">revocRegsJson</span></td>
+        <td><p>The revocation registries JSON.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that, when the operation completes, resolves 
+to a JSON string containing the proof.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateProofAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_System_String_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p><p>
+Either a corresponding claim with optionally revealed attributes or self-attested attribute 
+must be provided for each requested attribute - see the 
+<a class="xref" href="Hyperledger.Indy.AnonCredsApi.AnonCreds.html#Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetClaimsForProofReqAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">ProverGetClaimsForProofReqAsync(Wallet, String)</a> method.
+A proof request may request multiple claims from different schema and different issuers.
+All required schema, public keys and revocation registries must be provided.
+The proof request also contains a nonce.
+The proof contains either proof or self-attested attribute value for each requested attribute.
+</p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">proofReqJson</code> parameter expects a JSON string containing a proof request
+from the party that will verify the proof.  E.g.:</p>
+<pre><code> {
+    &quot;nonce&quot;: string,
+    &quot;requested_attr1_uuid&quot;: &lt;attr_info>,
+    &quot;requested_attr2_uuid&quot;: &lt;attr_info>,
+    &quot;requested_attr3_uuid&quot;: &lt;attr_info>,
+    &quot;requested_predicate_1_uuid&quot;: &lt;predicate_info>,
+    &quot;requested_predicate_2_uuid&quot;: &lt;predicate_info>,
+}</code></pre>
+<p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">requestedClaimsJson</code> parameter should contain either a claim or a 
+self-attested attribute for each attribute requested in the proof request.  E.g.:</p>
+<pre><code>{
+    &quot;requested_attr1_uuid&quot;: [claim1_uuid_in_wallet, true &lt;reveal_attr>],
+    &quot;requested_attr2_uuid&quot;: [self_attested_attribute],
+    &quot;requested_attr3_uuid&quot;: [claim2_seq_no_in_wallet, false]
+    &quot;requested_attr4_uuid&quot;: [claim2_seq_no_in_wallet, true]
+    &quot;requested_predicate_1_uuid&quot;: [claim2_seq_no_in_wallet],
+    &quot;requested_predicate_2_uuid&quot;: [claim3_seq_no_in_wallet],
+}</code></pre>
+<p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">schemasJson</code> parameter expects the JSON for each schema that participates
+in the proof request.  E.g.:</p>
+<pre><code>{
+    &quot;claim1_uuid_in_wallet&quot;: &lt;schema1>,
+    &quot;claim2_uuid_in_wallet&quot;: &lt;schema2>,
+    &quot;claim3_uuid_in_wallet&quot;: &lt;schema3>,
+}</code></pre>
+<p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">masterSecretName</code> specifies the name of the master secret stored in 
+the wallet.
+</p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">claimDefsJson</code> parameter expects the JSON for each claim definition 
+participating in the proof request. E.g.:</p>
+<pre><code>{
+    &quot;claim1_uuid_in_wallet&quot;: &lt;claim_def1>,
+    &quot;claim2_uuid_in_wallet&quot;: &lt;claim_def2>,
+    &quot;claim3_uuid_in_wallet&quot;: &lt;claim_def3>,
+}</code></pre>
+<p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">revocRegsJson</code> parameter expects the JSON for each revocation registry
+participating in the proof request.  E.g.:</p>
+<pre><code>{
+    &quot;claim1_uuid_in_wallet&quot;: &lt;revoc_reg1>,
+    &quot;claim2_uuid_in_wallet&quot;: &lt;revoc_reg2>,
+    &quot;claim3_uuid_in_wallet&quot;: &lt;revoc_reg3>,
+}</code></pre>
+<p>
+Upon successful completion the operation will return a JSON string.
+For each requested attribute either a proof (with optionally revealed attribute value) or
+self-attested attribute value is provided.
+Each proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.
+There is also aggregated proof part common for all claim proofs.</p>
+<pre><code>{
+    &quot;requested&quot;: {
+        &quot;requested_attr1_id&quot;: [claim_proof1_uuid, revealed_attr1, revealed_attr1_as_int],
+        &quot;requested_attr2_id&quot;: [self_attested_attribute],
+        &quot;requested_attr3_id&quot;: [claim_proof2_uuid]
+        &quot;requested_attr4_id&quot;: [claim_proof2_uuid, revealed_attr4, revealed_attr4_as_int],
+        &quot;requested_predicate_1_uuid&quot;: [claim_proof2_uuid],
+        &quot;requested_predicate_2_uuid&quot;: [claim_proof3_uuid],
+        }
+    &quot;claim_proofs&quot;: {
+        &quot;claim_proof1_uuid&quot;: [&lt;claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+        &quot;claim_proof2_uuid&quot;: [&lt;claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+        &quot;claim_proof3_uuid&quot;: [&lt;claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
+    },
+    &quot;aggregated_proof&quot;: &lt;aggregated_proof>
+}</code></pre>
+</div>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetClaimOffersAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetClaimOffersAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetClaimOffersAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetClaimOffersAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">ProverGetClaimOffersAsync(Wallet, String)</h4>
+  <div class="markdown level1 summary"><p>Gets all claim offers in the provided wallet matching the specified filter.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ProverGetClaimOffersAsync(Wallet wallet, string filterJson)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The wallet containing the claims to get.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">filterJson</span></td>
+        <td><p>The filter JSON.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that, when the operation completes, resolves 
+to a JSON string with a list of claim offers matching the filter.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetClaimOffersAsync_Hyperledger_Indy_WalletApi_Wallet_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+Claim offers stored with the <a class="xref" href="Hyperledger.Indy.AnonCredsApi.AnonCreds.html#Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverStoreClaimOfferAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">ProverStoreClaimOfferAsync(Wallet, String)</a> can be
+retrieved from the <code data-dev-comment-type="paramref" class="paramref">wallet</code> by searching on the DID of the issuer and/or the schema 
+sequence number.  To filter the claim offers a <code data-dev-comment-type="paramref" class="paramref">filterJson</code> parameter must be provided with 
+a JSON string which can include the following members:
+<pre><code>{
+    &quot;issuer_did&quot;: string,
+    &quot;schema_seq_no&quot;: string
+}</code></pre>
+</p>
+<p>
+The return value from this method is a JSON string that contains the list of matching claim 
+offers in the following format:
+<pre><code>{
+    [
+        {
+            &quot;issuer_did&quot;: string,
+            &quot;schema_seq_no&quot;: string
+        },
+        ...
+    ]
+}</code></pre>
+</p>
+</div>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetClaimsAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetClaimsAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetClaimsAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetClaimsAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">ProverGetClaimsAsync(Wallet, String)</h4>
+  <div class="markdown level1 summary"><p>Gets claims matching the provided filter from the specified wallet.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ProverGetClaimsAsync(Wallet wallet, string filterJson)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The target wallet.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">filterJson</span></td>
+        <td><p>The filter JSON.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that, when the operation completes, resolves 
+to a JSON string containing the claim request.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetClaimsAsync_Hyperledger_Indy_WalletApi_Wallet_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+Claims can be filtered by Issuer, claim_def and/or Schema. To filter the results set the
+<code data-dev-comment-type="paramref" class="paramref">filterJson</code> parameter with a JSON string that conforms to the following 
+format:
+<pre><code>{
+    &quot;issuer_did&quot;: string,
+    &quot;schema_seq_no&quot;: string
+}</code></pre>
+If <code data-dev-comment-type="paramref" class="paramref">filterJson</code> is null then all claims will be returned.
+</p>
+<p>
+Upon successful completion this method will return a JSON string containing an array of
+claims:
+<pre><code>[
+    {
+        &quot;claim_uuid&quot;: string,
+        &quot;attrs&quot;: [{&quot;attr_name&quot; : &quot;attr_value&quot;}, ...],
+        &quot;schema_seq_no&quot;: string,
+        &quot;issuer_did&quot;: string,
+        &quot;revoc_reg_seq_no&quot;: string,
+    },
+    ...
+]</code></pre>
+</p>
+</div>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetClaimsForProofReqAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetClaimsForProofReqAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetClaimsForProofReqAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetClaimsForProofReqAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">ProverGetClaimsForProofReqAsync(Wallet, String)</h4>
+  <div class="markdown level1 summary"><p>Gets claims matching the provided proof request from the specified wallet.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ProverGetClaimsForProofReqAsync(Wallet wallet, string proofRequestJson)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The target wallet.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">proofRequestJson</span></td>
+        <td><p>The proof request JSON.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that, when the operation completes, resolves 
+to a JSON string containing the claims for the proof request.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetClaimsForProofReqAsync_Hyperledger_Indy_WalletApi_Wallet_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The proof request provided in the <code data-dev-comment-type="paramref" class="paramref">proofRequestJson</code> parameter must conform 
+to the format:</p>
+<pre><code>{
+    &quot;name&quot;: string,
+    &quot;version&quot;: string,
+    &quot;nonce&quot;: string,
+    &quot;requested_attr1_uuid&quot;: &lt;attr_info>,
+    &quot;requested_attr2_uuid&quot;: &lt;attr_info>,
+    &quot;requested_attr3_uuid&quot;: &lt;attr_info>,
+    &quot;requested_predicate_1_uuid&quot;: &lt;predicate_info>,
+    &quot;requested_predicate_2_uuid&quot;: &lt;predicate_info>,
+}</code></pre>
+<p>The method will return a JSON string with claims matching the given proof request in the following format:</p>
+<pre><code>{
+    &quot;requested_attr1_uuid&quot;: [claim1, claim2],
+    &quot;requested_attr2_uuid&quot;: [],
+    &quot;requested_attr3_uuid&quot;: [claim3],
+    &quot;requested_predicate_1_uuid&quot;: [claim1, claim3],
+    &quot;requested_predicate_2_uuid&quot;: [claim2],
+}</code></pre>
+<p>Each claim in the result consists of a uuid (<code>claim_uuid</code>), human-readable attributes as 
+a key-value map (<code>attrs</code>), a schema sequence number (<code>schema_seq_no</code>) an issuer DID
+(<code>issuer_did</code>) and a revocation registry sequence number (<code>revoc_reg_seq_no</code>):</p>
+<pre><code>{
+    &quot;claim_uuid&quot;: string,
+    &quot;attrs&quot;: [{&quot;attr_name&quot; : &quot;attr_value&quot;}],
+    &quot;schema_seq_no&quot;: string,
+    &quot;issuer_did&quot;: string,
+    &quot;revoc_reg_seq_no&quot;: string,
+}</code></pre>
+</div>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverStoreClaimAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverStoreClaimAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverStoreClaimAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverStoreClaimAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">ProverStoreClaimAsync(Wallet, String)</h4>
+  <div class="markdown level1 summary"><p>Updates and stores the provided claim in the specified wallet.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task ProverStoreClaimAsync(Wallet wallet, string claimsJson)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The target wallet.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">claimsJson</span></td>
+        <td><p>The claims JSON.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a></td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a> that completes when the operation has completed.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverStoreClaimAsync_Hyperledger_Indy_WalletApi_Wallet_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p><p>
+This method updates the claim provided in the <code data-dev-comment-type="paramref" class="paramref">claimsJson</code> parameter
+with a blinded master secret and stores it in the wallet specified in the 
+<code data-dev-comment-type="paramref" class="paramref">wallet</code> parameter. 
+</p>
+<p>
+The claim JSON is typically structured as follows:</p>
+<pre><code>{
+    &quot;claim&quot;: {attr1:[value, value_as_int]}
+    &quot;signature&quot;: &lt;signature>,
+    &quot;schema_seq_no&quot;: string,
+    &quot;revoc_reg_seq_no&quot;, string
+    &quot;issuer_did&quot;, string
+}</code></pre>
+<p>It contains the information about the <code>schema_seq_no</code>, <code>issuer_did</code> 
+and <code>revoc_reg_seq_no</code> - see the <a class="xref" href="Hyperledger.Indy.AnonCredsApi.AnonCreds.html#Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateClaimAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_Int32_">IssuerCreateClaimAsync(Wallet, String, String, Int32)</a>
+method for details.
+</p>
+Seq_no is a sequence number of the corresponding transaction in the ledger.</p>
+</div>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverStoreClaimOfferAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverStoreClaimOfferAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverStoreClaimOfferAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverStoreClaimOfferAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">ProverStoreClaimOfferAsync(Wallet, String)</h4>
+  <div class="markdown level1 summary"><p>Stores a claim offer.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task ProverStoreClaimOfferAsync(Wallet wallet, string claimOfferJson)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
+        <td><span class="parametername">wallet</span></td>
+        <td><p>The target wallet.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">claimOfferJson</span></td>
+        <td><p>The claim offer JSON</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a></td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a> that completes when the operation has completed.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverStoreClaimOfferAsync_Hyperledger_Indy_WalletApi_Wallet_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Stores a claim offer from the issuer specified in the <code data-dev-comment-type="paramref" class="paramref">claimOfferJson</code>
+into the provided <code data-dev-comment-type="paramref" class="paramref">wallet</code>.  The expected structure of the claim offer
+is as follows:</p>
+<pre><code>{
+    &quot;issuer_did&quot;: string,
+    &quot;schema_seq_no&quot;: string
+}</code></pre>
+</div>
+  <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_VerifierVerifyProofAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.VerifierVerifyProofAsync*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_VerifierVerifyProofAsync_System_String_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.VerifierVerifyProofAsync(System.String,System.String,System.String,System.String,System.String)">VerifierVerifyProofAsync(String, String, String, String, String)</h4>
+  <div class="markdown level1 summary"><p>Verifies whether or not a proof is valid.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;bool&gt; VerifierVerifyProofAsync(string proofRequestJson, string proofJson, string schemasJson, string claimDefsJson, string revocRegsJson)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">proofRequestJson</span></td>
+        <td><p>The proof request JSON.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">proofJson</span></td>
+        <td><p>The proof JSON.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">schemasJson</span></td>
+        <td><p>The schemas JSON.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">claimDefsJson</span></td>
+        <td><p>The claim definitions JSON.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">revocRegsJson</span></td>
+        <td><p>The revocation registries JSON.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.boolean(v=vs.110).aspx">Boolean</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that, when the operation completes, resolves 
+to true if the proof is valid, otherwise false.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_VerifierVerifyProofAsync_System_String_System_String_System_String_System_String_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+This method verifies a proof that can be made up of multiple claims.
+All required schema, public keys and revocation registries must be provided.
+</p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">proofRequestJson</code> parameter expects the initial proof request sent
+by the verifier.
+<pre><code>{
+    &quot;nonce&quot;: string,
+    &quot;requested_attr1_uuid&quot;: &lt;attr_info>,
+    &quot;requested_attr2_uuid&quot;: &lt;attr_info>,
+    &quot;requested_attr3_uuid&quot;: &lt;attr_info>,
+    &quot;requested_predicate_1_uuid&quot;: &lt;predicate_info>,
+    &quot;requested_predicate_2_uuid&quot;: &lt;predicate_info>,
+}</code></pre>
+</p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">proofJson</code> parameter expects a JSON string containing,<br>for each requested attribute,  either a proof (with optionally revealed attribute value) or
+self-attested attribute value.  Each proof is associated with a claim and corresponding 
+schema_seq_no, issuer_did and revoc_reg_seq_no. There is also aggregated proof part 
+common for all claim proofs.
+<pre><code>{
+    &quot;requested&quot;: {
+        &quot;requested_attr1_id&quot;: [claim_proof1_uuid, revealed_attr1, revealed_attr1_as_int],
+        &quot;requested_attr2_id&quot;: [self_attested_attribute],
+        &quot;requested_attr3_id&quot;: [claim_proof2_uuid]
+        &quot;requested_attr4_id&quot;: [claim_proof2_uuid, revealed_attr4, revealed_attr4_as_int],
+        &quot;requested_predicate_1_uuid&quot;: [claim_proof2_uuid],
+        &quot;requested_predicate_2_uuid&quot;: [claim_proof3_uuid],
+    },
+    &quot;claim_proofs&quot;: {
+        &quot;claim_proof1_uuid&quot;: [&lt;claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+        &quot;claim_proof2_uuid&quot;: [&lt;claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+        &quot;claim_proof3_uuid&quot;: [&lt;claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
+    },
+    &quot;aggregated_proof&quot;: &lt;aggregated_proof>
+}</code></pre>
+</p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">schemasJson</code> parameter expects a JSON string containing all schema
+participating in the proof.
+<pre><code>{
+    &quot;claim_proof1_uuid&quot;: &lt;schema>,
+    &quot;claim_proof2_uuid&quot;: &lt;schema>,
+    &quot;claim_proof3_uuid&quot;: &lt;schema>
+}</code></pre>
+</p> 
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">claimDefsJson</code> parameter expects a JSON string containing all claim
+definitions participating in the proof.
+<pre><code>{
+    &quot;claim_proof1_uuid&quot;: &lt;claim_def>,
+    &quot;claim_proof2_uuid&quot;: &lt;claim_def>,
+    &quot;claim_proof3_uuid&quot;: &lt;claim_def>
+}</code></pre>
+</p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">revocRegsJson</code> parameter expects a JSON string containing all revocation
+registries participating in the proof.
+<pre><code>{
+    &quot;claim_proof1_uuid&quot;: &lt;revoc_reg>,
+    &quot;claim_proof2_uuid&quot;: &lt;revoc_reg>,
+    &quot;claim_proof3_uuid&quot;: &lt;revoc_reg>
+}</code></pre>
+</p>
+</div>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            Copyright &copy; 2017 The Linux Foundation&reg;
+            
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>
