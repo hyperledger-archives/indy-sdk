@@ -35,7 +35,7 @@ public class IndyIntegrationTest {
 	protected static final String INVALID_DID = "invalid_base58string";
 	protected static final String IDENTITY_JSON_TEMPLATE = "{\"did\":\"%s\",\"verkey\":\"%s\"}";
 	protected static final byte[] MESSAGE = "{\"reqId\":1496822211362017764}".getBytes();
-	protected static final String SCHEMA_DATA = "{\"id\":\"id\",\"name\":\"gvt2\",\"version\":\"3.0\",\"attrNames\": [\"name\", \"male\"]}";
+	protected static final String SCHEMA_DATA = "{\"name\":\"gvt\",\"version\":\"1.0\",\"attr_names\": [\"name\"]}";
 	protected static final String POOL = "Pool1";
 	protected static final String WALLET = "Wallet1";
 	protected static final String TYPE = "default";
@@ -52,6 +52,22 @@ public class IndyIntegrationTest {
 	protected String SCHEMA_VERSION = "1.0";
 	protected String GVT_SCHEMA_ATTRIBUTES = "[\"name\", \"age\", \"sex\", \"height\"]";
 	protected String XYZ_SCHEMA_ATTRIBUTES = "[\"status\", \"period\"]";
+	protected static String GVT_SCHEMA_ID = "1";
+	protected static String GVT_SCHEMA = "{\n" +
+			"        \"id\": \"1\",\n" +
+			"        \"name\": \"gvt\",\n" +
+			"        \"version\": \"1.0\",\n" +
+			"        \"attrNames\": [\"name\", \"age\", \"sex\", \"height\"],\n" +
+			"        \"ver\": \"1.0\"\n" +
+			"    }";
+	protected static String XYZ_SCHEMA_ID = "2";
+	protected static String XYZ_SCHEMA = "{\n" +
+			"        \"id\": \"2\",\n" +
+			"        \"name\": \"xyz\",\n" +
+			"        \"version\": \"1.0\",\n" +
+			"        \"attrNames\": [\"status\", \"period\"],\n" +
+			"        \"ver\": \"1.0\"\n" +
+			"    }";
 
 	protected static final String TRUSTEE_IDENTITY_JSON =
 			new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null).toJson();

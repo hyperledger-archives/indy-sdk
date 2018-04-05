@@ -435,24 +435,17 @@ public class Ledger extends IndyJava.API {
 	 * Builds a GET_SCHEMA request. Request to get Claim's Schema.
 	 *
 	 * @param submitterDid DID of read request sender.
-	 * @param dest         Schema Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
-	 *                     It differs from submitter_did field.
-	 * @param data         Schema data.
-	 *                     {
-	 *                     name: Schema's name string
-	 *                     version: Schema's version string
-	 *                     }
+	 * @param id           Schema ID in ledger
+	 *
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildGetSchemaRequest(
 			String submitterDid,
-			String dest,
-			String data) throws IndyException {
+			String id) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
-		ParamGuard.notNullOrWhiteSpace(dest, "dest");
-		ParamGuard.notNullOrWhiteSpace(data, "data");
+		ParamGuard.notNullOrWhiteSpace(id, "id");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -460,8 +453,7 @@ public class Ledger extends IndyJava.API {
 		int result = LibIndy.api.indy_build_get_schema_request(
 				commandHandle,
 				submitterDid,
-				dest,
-				data,
+				id,
 				buildRequestCb);
 
 		checkResult(result);
@@ -546,21 +538,16 @@ public class Ledger extends IndyJava.API {
 	 * that Issuer creates for a particular Claim Schema.
 	 *
 	 * @param submitterDid  DID of read request sender.
-	 * @param xref          Sequence number of a Schema transaction the claim definition is created for.
-	 * @param signatureType Type of the claim definition. CL is the only supported type now.
-	 * @param origin        Claim Definition Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
+	 * @param id            Claim Definition ID in ledger.
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildGetClaimDefTxn(
 			String submitterDid,
-			int xref,
-			String signatureType,
-			String origin) throws IndyException {
+			String id) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
-		ParamGuard.notNullOrWhiteSpace(signatureType, "signatureType");
-		ParamGuard.notNullOrWhiteSpace(origin, "origin");
+		ParamGuard.notNullOrWhiteSpace(id, "id");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -568,9 +555,7 @@ public class Ledger extends IndyJava.API {
 		int result = LibIndy.api.indy_build_get_claim_def_txn(
 				commandHandle,
 				submitterDid,
-				xref,
-				signatureType,
-				origin,
+				id,
 				buildRequestCb);
 
 		checkResult(result);

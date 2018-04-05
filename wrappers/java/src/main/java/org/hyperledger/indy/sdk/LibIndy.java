@@ -47,10 +47,10 @@ public abstract class LibIndy {
 		public int indy_build_get_attrib_request(int command_handle, String submitter_did, String target_did, String raw, String hash, String enc, Callback cb);
 		public int indy_build_get_nym_request(int command_handle, String submitter_did, String target_did, Callback cb);
 		public int indy_build_schema_request(int command_handle, String submitter_did, String data, Callback cb);
-		public int indy_build_get_schema_request(int command_handle, String submitter_did, String dest, String data, Callback cb);
+		public int indy_build_get_schema_request(int command_handle, String submitter_did, String id, Callback cb);
 		public int indy_parse_get_schema_response(int command_handle, String get_schema_response, Callback cb);
 		public int indy_build_claim_def_txn(int command_handle, String submitter_did, String data, Callback cb);
-		public int indy_build_get_claim_def_txn(int command_handle, String submitter_did, int xref, String signature_type, String origin, Callback cb);
+		public int indy_build_get_claim_def_txn(int command_handle, String submitter_did, String id, Callback cb);
 		public int indy_parse_get_claim_def_response(int command_handle, String get_claim_def_response, Callback cb);
 		public int indy_build_node_request(int command_handle, String submitter_did, String target_did, String data, Callback cb);
 		public int indy_build_get_txn_request(int command_handle, String submitter_did, int data, Callback cb);
@@ -93,7 +93,7 @@ public abstract class LibIndy {
 
 		// anoncreds.rs
 
-		public int indy_issuer_create_schema(int command_handle, String issuer_did, String name, String version, String attr_names, Callback cb);
+//		public int indy_issuer_create_schema(int command_handle, String issuer_did, String name, String version, String attr_names, Callback cb);
 		public int indy_issuer_create_and_store_credential_def(int command_handle, int wallet_handle, String issuer_did, String schema_json, String tag, String type_, String config_json, Callback cb);
 		public int indy_issuer_create_and_store_revoc_reg(int command_handle, int wallet_handle, String issuer_did, String type_, String tag, String cred_def_id, String config_json, int blob_storage_writer_handle, Callback cb);
 		public int indy_issuer_create_credential_offer(int command_handle, int wallet_handle, String cred_def_id, Callback cb);

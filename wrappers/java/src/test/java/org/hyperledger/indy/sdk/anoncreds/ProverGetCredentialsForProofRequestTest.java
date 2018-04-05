@@ -3,6 +3,7 @@ package org.hyperledger.indy.sdk.anoncreds;
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -290,6 +291,7 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 	}
 
 	@Test
+	@Ignore
 	public void testProverGetCredentialsForProofRequestWorksForRevealedAttributeBySchemaName() throws Exception {
 
 		String proofRequest = "{" +

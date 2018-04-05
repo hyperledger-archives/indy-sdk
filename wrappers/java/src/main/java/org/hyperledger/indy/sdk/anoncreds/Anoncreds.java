@@ -33,9 +33,9 @@ public class Anoncreds extends IndyJava.API {
 	 * STATIC CALLBACKS
 	 */
 
-	/**
+/*	*//**
 	 * Callback used when issuerCreateSchema completes.
-	 */
+	 *//*
 	private static Callback issuerCreateSchemaCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
@@ -47,7 +47,7 @@ public class Anoncreds extends IndyJava.API {
 			IssuerCreateSchemaResult result = new IssuerCreateSchemaResult(schema_id, schema_json);
 			future.complete(result);
 		}
-	};
+	};*/
 
 	/**
 	 * Callback used when issuerCreateAndStoreCredentialDef completes.
@@ -310,7 +310,7 @@ public class Anoncreds extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	/**
+/*	*//**
 	 * Create credential schema entity that describes credential attributes list and allows credentials
 	 * interoperability.
 	 *
@@ -325,7 +325,7 @@ public class Anoncreds extends IndyJava.API {
 	 * schemaId: identifier of created schema
 	 * schemaJson: schema as json
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
-	 */
+	 *//*
 	public static CompletableFuture<IssuerCreateSchemaResult> issuerCreateSchema(
 			String issuerDid,
 			String name,
@@ -351,7 +351,7 @@ public class Anoncreds extends IndyJava.API {
 		checkResult(result);
 
 		return future;
-	}
+	}*/
 
 	/**
 	 * Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials

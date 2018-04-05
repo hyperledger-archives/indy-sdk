@@ -60,6 +60,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 	@Test
 	public void testBuildGetClaimDefRequestWorks() throws Exception {
 		int seqNo = 1;
+		String id = DID + ":\\u0003:" + signatureType + ":" + seqNo;
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{" +
 				"\"type\":\"108\"," +
@@ -68,7 +69,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 				"\"origin\":\"%s\"" +
 				"}", DID, seqNo, signatureType, DID);
 
-		String getClaimDefRequest = Ledger.buildGetClaimDefTxn(DID, seqNo, signatureType, DID).get();
+		String getClaimDefRequest = Ledger.buildGetClaimDefTxn(DID, id).get();
 
 		assertTrue(getClaimDefRequest.replace("\\", "").contains(expectedResult));
 	}
@@ -87,14 +88,12 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 	public void testClaimDefRequestsWorks() throws Exception {
 		String myDid = createStoreAndPublishDidFromTrustee();
 
-		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(myDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
-		String schema = createSchemaResult.getSchemaJson();
+		String schemaRequest = Ledger.buildSchemaRequest(myDid, SCHEMA_DATA).get();
+		String schemaResponse = Ledger.signAndSubmitRequest(pool, wallet, myDid, schemaRequest).get();
+		JSONObject schema = new JSONObject(schemaResponse);
+		int schemaId = schema.getJSONObject("result").getInt("seqNo");
 
-		String schemaRequest = Ledger.buildSchemaRequest(myDid, schema).get();
-		Ledger.signAndSubmitRequest(pool, wallet, myDid, schemaRequest).get();
-
-		String getSchemaData = String.format("{\"name\":\"%s\",\"version\":\"%s\"}", GVT_SCHEMA_NAME, SCHEMA_VERSION);
-		String getSchemaRequest = Ledger.buildGetSchemaRequest(myDid, myDid, getSchemaData).get();
+		String getSchemaRequest = Ledger.buildGetSchemaRequest(myDid, String.valueOf(schemaId)).get();
 		String getSchemaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaRequest, response -> {
 			JSONObject getSchemaResponseObject = new JSONObject(response);
 			return !getSchemaResponseObject.getJSONObject("result").isNull("seqNo");
@@ -105,11 +104,12 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredDefResult =
 				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, myDid, parseSchemaResult.getObjectJson(), TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
 		String credDefJson = createCredDefResult.getCredDefJson();
+		String credDefId = createCredDefResult.getCredDefId();
 
 		String claimDefRequest = Ledger.buildClaimDefTxn(myDid, credDefJson).get();
 		Ledger.signAndSubmitRequest(pool, wallet, myDid, claimDefRequest).get();
 
-		String getClaimDefRequest = Ledger.buildGetClaimDefTxn(myDid, Integer.parseInt(parseSchemaResult.getId()), signatureType, myDid).get();
+		String getClaimDefRequest = Ledger.buildGetClaimDefTxn(myDid, credDefId).get();
 		String getClaimDefResponse = PoolUtils.ensurePreviousRequestApplied(pool, getClaimDefRequest, response -> {
 			JSONObject responseObject = new JSONObject(response);
 			return !responseObject.getJSONObject("result").isNull("seqNo");
