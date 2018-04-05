@@ -3,17 +3,17 @@
 [Application] as application
 
 package "Indy SDK" {
-    () "Generic Wallet API" as i_wallet_api
-    application ..> i_wallet_api
+    () "Non-secrets API" as i_non_secrets_api
+    application ..> i_non_secrets_api
 
-    note right of i_wallet_api
+    note right of i_non_secrets_api
     An API that allows
     to store application
     specific data
     in a secure way
     end note
-   
-    () "Secret Entities API" as i_secrets_api
+
+    () "Secrets API" as i_secrets_api
     application  ..> i_secrets_api
 
     note left of i_secrets_api
@@ -24,10 +24,21 @@ package "Indy SDK" {
     of DIDs, CredDefs,
     MasterSecrets and etc...
     end note
+
+    () "Wallet API" as i_wallet_api
+    application  ..> i_wallet_api
+
+    note left of i_wallet_api
+    An API for wallets management
+    Will be extended to register
+    custom wallet storage
+    implementation
+    end note
    
     [API Layer] as indy_api
-    i_wallet_api -- indy_api
     i_secrets_api -- indy_api
+    i_wallet_api -- indy_api
+    i_non_secrets_api -- indy_api    
 
     () "Wallet Service Interface" as i_wallet_service
     indy_api ..> i_wallet_service
@@ -51,7 +62,7 @@ package "Indy SDK" {
     wallet_service ..> i_storage_api
 
     [Default Storage] as default_storage
-    default_storage - i_storage_api
+    default_storage - wallet_service
 }
 
 [Enterprise Storage] as enterprise_storage
