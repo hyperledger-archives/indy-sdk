@@ -1,0 +1,70 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor Alice as al
+participant "Edge\nAgent" as ea
+box "Agency"
+participant "Agency\nAgent" as ai
+participant "Provisioning\nExtension" as ape
+participant "Routing\nExtension" as are
+end box
+
+note over al, are #f0f0e0
+Precondition: Alice's agency is chosen by the edge agent software.
+Alice can change the default agency later.
+Alice has setup her initial edge agent (see <b>First Edge Agent</b>).
+end note
+
+== create cloud agent Part 1 ==
+
+ea -[#blue]> ai: register for cloud agent
+note right
+The Agency Agent initiates new cloud agents.
+end note
+
+ai -[#blue]> ea: request for consent
+ea -> al: request for consent
+note right
+Consent required may vary by legal jurisdiction and agency
+end note
+al -> ea: consent
+ea -> al: request for authorizations be granted to cloud agent
+note right
+As a general rule, cloud agents will have a subset of
+the authorizations granted to edge agents.
+end note
+al -> ea: selected authorizations
+ea -[#blue]> ai: consent, authorizations\nA<sub>A</sub><sup>1-ID</sup>, A<sub>A</sub><sup>1-vk</sup>
+
+newpage
+
+== create cloud agent Part 2 ==
+
+ai -> ape: provision cloud agent for Alice
+note over al, are #77ccff
+include <b>Provision New Agent</b> diagram
+end note
+
+ai -> are: create agent endpoint for Alice
+
+ai -[#blue]> ea: A<sub>A</sub><sup>2-ID</sup>, A<sub>A</sub><sup>2-vk</sup>\nA<sub>p</sub><sup>2-pk</sup>, endpoint
+ea -> ea: Store A<sub>A</sub><sup>2-ID</sup>, A<sub>A</sub><sup>2-vk</sup>, endpoint in wallet
+note over al, are #77ccff
+include <b>Update Agent Policy Registry</b> diagram
+end note
+
+@enduml

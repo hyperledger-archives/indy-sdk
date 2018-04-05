@@ -1,0 +1,56 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor Alice as al
+participant "Alice's\nEdge Agent" as aea
+participant "Alice's Old\nCloud Agent" as aoca
+participant "Alice's New\nCloud Agent" as anca
+
+
+== ==
+
+al -> aea: change agency
+note right
+Alice enters the new agency information
+and completes <b>Add Cloud Agent</b>
+with the new agency
+end note
+
+note over al, bob #77ccff
+include <b>Add Cloud Agent</b> diagram
+end note
+
+note over al, bob
+When rotating DID keys, the deltas will include
+the new agency service endpoint
+end note
+
+note over al, bob #77ccff
+include <b>Rotate DID Key</b> diagram
+end note
+
+note over al, bob
+Recovery update will need to be updated
+to point to the new agency
+end note
+
+note over al, bob #77ccff
+include <b>Recovery Update</b> diagram
+end note
+
+
+@enduml
