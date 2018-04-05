@@ -1,0 +1,48 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor Alice as al
+participant "Alice\nEdge Agent" as aea
+participant "Alice\nCloud Agent" as aca
+participant "Ledger" as led
+
+note over aca #f0f0e0
+Assumptions: Cloud agent automatically stores encrypted backup of Alice's edge wallets
+end note
+
+note over al, led #77ccff
+include <b>Provision New Agent</b> diagram
+end note
+== offline recovery process ==
+
+aea -> al: please scan paper wallet
+al -> aea: scan paper wallet
+aea -> aea: extract recovery endpoint
+aea -[#blue]> aca: request encrypted backup
+
+aca -[#blue]> aea: encrypted backup
+aea -> aea: decrypt and restore backup data
+aea -> aea: replace old agent keys with new agent keys
+
+note over al, led #77ccff
+include <b>Update Agent Policy Registry</b> diagram
+end note
+note over al, led #77ccff
+include <b>Rotate DID Key</b> diagram
+end note
+
+@enduml

@@ -1,0 +1,65 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor Alice as al
+participant "Edge\nAgent 2" as a2
+participant "Edge\nAgent 1" as a1
+
+note over al, a1 #f0f0e0
+Assumptions: Alice has chosen **existing | add new device** from options in <b>Edge Agent Start</b>.
+Edge Agent 2 has been provisioned as described in the <b>Provision New Agent</b> diagram.
+end note
+
+== add new edge agent ==
+
+al -> a2: add
+a2 -> al: instructions for adding Agent 2 and selecting authorizations
+note right
+Multiple methods can be used for
+adding and authorizing a new agent
+end note
+
+al -> a1: add agent\n\
+with selected authorizations
+note right
+This may work in either direction
+between the two agents
+end note
+a1 -> a1: display provisioning code for adding agent 2
+note left
+QR code, barcode, or passcode  entered into agent 2
+end note
+a1 -> al: show code
+al -> a2: scan code from agent 1
+
+a2 -[#blue]> a1: add request, sends A<sub>p</sub><sup>2-pk</sup>, A<sub>A</sub><sup>2-vk</sup>
+a1 -> a1: store A<sub>A</sub><sup>2-vk</sup> in wallet
+a1 -> al: confirm agent 2
+al -> a1: yes
+note over a1, a2
+Agent 1 adds keys and authorizations for agent 2 to policy registry
+end note
+note over al, a1 #77ccff
+include <b>Update Agent Policy Registry</b> diagram
+end note
+a1 -[#blue]> a2: A<sub>LS</sub>, token data, claims
+note right
+sync data to agent 2
+end note
+a2 -> a2: store data in wallet
+
+@enduml
