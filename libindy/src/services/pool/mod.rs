@@ -12,7 +12,7 @@ extern crate rand;
 extern crate rust_base58;
 extern crate sha2;
 extern crate time;
-extern crate zmq_pw as zmq;
+extern crate zmq;
 extern crate rmp_serde;
 extern crate indy_crypto;
 
@@ -509,10 +509,13 @@ impl RemoteNode {
 
     fn connect(&mut self, ctx: &zmq::Context, key_pair: &zmq::CurveKeyPair) -> Result<(), PoolError> {
         let s = ctx.socket(zmq::SocketType::DEALER)?;
-        s.set_identity(zmq::z85_encode(&key_pair.public_key).unwrap().as_bytes())?;
+        s.set_identity(key_pair.public_key.as_bytes())?;
         s.set_curve_secretkey(&key_pair.secret_key)?;
         s.set_curve_publickey(&key_pair.public_key)?;
-        s.set_curve_serverkey(self.public_key.as_slice())?;
+        s.set_curve_serverkey(
+            zmq::z85_encode(self.public_key.as_slice())
+                .map_err(|err| { CommonError::InvalidStructure("Can't encode server key as z85".to_string()) })?
+                .as_str())?;
         s.set_linger(0)?; //TODO set correct timeout
         s.connect(&self.zaddr)?;
         self.zsock = Some(s);
@@ -544,7 +547,7 @@ impl RemoteNode {
         info!("RemoteNode::send_str {} {}", self.name, str);
         self.zsock.as_ref()
             .ok_or(CommonError::InvalidState("Try to send str for unconnected RemoteNode".to_string()))?
-            .send(str, 0)
+            .send(str.as_bytes(), 0)
             .map_err(map_err_trace!())?;
         Ok(())
     }
@@ -951,7 +954,7 @@ mod tests {
         let handle: thread::JoinHandle<Vec<ZMQLoopAction>> = thread::spawn(move || {
             pw.poll_zmq().unwrap()
         });
-        send_cmd_sock.send("exit", zmq::DONTWAIT).expect("send");
+        send_cmd_sock.send("exit".as_bytes(), zmq::DONTWAIT).expect("send");
         let actions: Vec<ZMQLoopAction> = handle.join().unwrap();
 
         assert_eq!(actions.len(), 1);
@@ -1051,8 +1054,8 @@ mod tests {
                 dest: (&vk.0 as &[u8]).to_base58(),
             };
             let addr = format!("tcp://{}:{}", gt.data.client_ip.clone().unwrap(), gt.data.client_port.clone().unwrap());
-            s.set_curve_publickey(pkc.as_slice()).expect("set public key");
-            s.set_curve_secretkey(skc.as_slice()).expect("set secret key");
+            s.set_curve_publickey(&zmq::z85_encode(pkc.as_slice()).unwrap()).expect("set public key");
+            s.set_curve_secretkey(&zmq::z85_encode(skc.as_slice()).unwrap()).expect("set secret key");
             s.set_curve_server(true).expect("set curve server");
             s.bind(addr.as_str()).expect("bind");
             let handle = thread::spawn(move || {

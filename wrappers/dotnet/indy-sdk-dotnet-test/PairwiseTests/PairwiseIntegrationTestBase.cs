@@ -1,4 +1,4 @@
-﻿using Hyperledger.Indy.SignusApi;
+﻿using Hyperledger.Indy.DidApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
@@ -14,13 +14,13 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         [TestInitialize]
         public async Task CreateDids()
         {
-            var result = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
+            var result = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
             myDid = result.Did;
 
-            result = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
+            result = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
             theirDid = result.Did;
 
-            await Signus.StoreTheirDidAsync(wallet, string.Format("{{\"did\":\"{0}\"}}", theirDid));
+            await Did.StoreTheirDidAsync(wallet, string.Format("{{\"did\":\"{0}\"}}", theirDid));
         }
     }
 }

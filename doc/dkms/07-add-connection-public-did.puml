@@ -1,0 +1,66 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+	ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+	Actorbackgroundcolor white
+}
+actor Alice as al
+participant "Alice's\nEdge Agent" as aea
+participant "Alice's\nCloud Agent" as aca
+participant "Org's\nCloud Agent" as oca
+participant "Org's\nEdge Agent" as org
+
+note over al, org #f0f0e0
+Private entity Alice creates a relationship with public entity Org.
+Preconditions: Org has a well known DID O<sub>0</sub> registered on a public ledger
+and Alice's Edge Agent has this DID.
+end note
+
+== Connect with Public Organization Part 1 ==
+
+al -> aea: add connection to Org
+aea -> aea: create DID, keys, and microledger (A<sub>O</sub><sup>DID</sup>, A<sub>O</sub><sup>1-vk</sup>, A<sub>O</sub><sup>1-sk</sup>)
+aea -[#blue]> aca: request cloud agent DID verification key for A<sub>O</sub><sup>DID</sup>
+aca->aca: create keys (A<sub>O</sub><sup>2-vk</sup>,A<sub>O</sub><sup>2-sk</sup>)
+aca-[#blue]>aea: A<sub>O</sub><sup>2-vk</sup>
+aea->aea: add cloud agent DID verification key A<sub>O</sub><sup>2-vk</sup> to microledger
+
+newpage
+
+== Connect with Public Organization Part 2 ==
+
+par2
+aea -[#blue]> aca: connection invitation\n\
+A<sub>O</sub><sup>DID</sup>, A<sub>O</sub><sup>1-vk</sup>
+else
+aca-[#blue]>oca: \n\n\n
+else
+oca-[#blue]>org: \n\n\n
+
+org->org: create DID, keys, and microledger (O<sub>A</sub><sup>DID</sup>, O<sub>A</sub><sup>1</sup>, O<sub>A</sub><sup>ml</sup>)
+org-[#blue]>oca: request agent DID verification key for O<sub>A</sub><sup>DID</sup>
+
+oca->oca: create DID keypair (O<sub>A</sub><sup>2</sup>)
+oca-[#blue]>org: O<sub>A</sub><sup>2-vk</sup>
+org->org: add cloud agent DID verification key O<sub>A</sub><sup>2-vk</sup> to microledger
+
+par2
+org-[#blue]>oca: success with microledger deltas
+else
+oca-[#blue]>aca: \n\n success
+else
+aca-[#blue]>aea: \n\n
+else
+aea->al: \n\n
+
+@enduml

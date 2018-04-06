@@ -1,0 +1,56 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 200
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor Alice as al
+participant "Edge\nAgent" as ag
+al -> ag: installs software and starts it
+
+ag -> al: <i>New or existing identity wallet?
+alt new
+al -> ag: <i>new
+note over al, ag #77ccff
+include <b>First Edge Agent</b> diagram
+end note
+else existing
+al -> ag: <i>existing
+ag -> al: <i>Add a new device or recover a lost wallet?
+alt add
+al -> ag: <i>add
+note over al, ag  #77ccff
+include <b>Add New Edge Agent</b> diagram
+end note
+else recover
+al -> ag: <i>recover
+
+ag -> al: <i>How would you like to recover?
+
+alt
+al -> ag: <i>offline
+note over al, ag #77ccff
+include <b>Offline Recovery</b> diagram
+end note
+else
+al -> ag: <i>social
+note over al, ag #77ccff
+include <b>Social Recovery</b> diagram
+end note
+end
+end
+end
+
+
+@enduml
