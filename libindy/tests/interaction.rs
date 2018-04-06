@@ -27,7 +27,7 @@ use utils::constants::*;
 use utils::domain::schema::Schema;
 use utils::domain::credential_definition::CredentialDefinition;
 use utils::domain::credential_offer::CredentialOffer;
-use utils::domain::credential::{Credential, CredentialInfo};
+use utils::domain::credential::Credential;
 use utils::domain::revocation_registry_definition::RevocationRegistryDefinition;
 use utils::domain::proof::Proof;
 use utils::domain::revocation_state::RevocationState;
@@ -70,7 +70,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     // Issuer gets Schema from Ledger
     let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &schema_id).unwrap();
     let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
-    let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
+    let (_, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
 
     // ISSUER post to Ledger CredentialDefinition, RevocationRegistry
 
@@ -152,7 +152,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     let credential = Credential::from_json(&cred_json).unwrap();
     let get_rev_reg_def_request = LedgerUtils::build_get_revoc_reg_def_request(&prover_did, &credential.rev_reg_id.unwrap()).unwrap();
     let get_rev_reg_def_response = LedgerUtils::submit_request(pool_handle, &get_rev_reg_def_request).unwrap();
-    let (rev_reg_id, revoc_reg_def_json) = LedgerUtils::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap();
+    let (_, revoc_reg_def_json) = LedgerUtils::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap();
 
     // Prover store received Credential
     AnoncredsUtils::prover_store_credential(prover_wallet_handle,
@@ -188,7 +188,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     let cred_info = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
     // Prover gets RevocationRegistryDelta from Ledger
-    let get_rev_reg_delta_request = LedgerUtils::build_get_revoc_reg_delta_request(&prover_did, &cred_info.rev_reg_id.unwrap(), None, to).unwrap();
+    let get_rev_reg_delta_request = LedgerUtils::build_get_revoc_reg_delta_request(&prover_did, &cred_info.rev_reg_id.clone().unwrap(), None, to).unwrap();
     let get_rev_reg_delta_response = LedgerUtils::submit_request(pool_handle, &get_rev_reg_delta_request).unwrap();
     let (rev_reg_id, revoc_reg_delta_json) = LedgerUtils::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_response).unwrap();
 
@@ -198,7 +198,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
                                                                  &revoc_reg_def_json,
                                                                  &revoc_reg_delta_json,
                                                                  timestamp as u64,
-                                                                 &cred_rev_id).unwrap();
+                                                                 &cred_info.cred_rev_id.clone().unwrap()).unwrap();
 
     // Prover gets Schema from Ledger
     let get_schema_request = LedgerUtils::build_get_schema_request(&prover_did, &cred_info.schema_id).unwrap();
@@ -254,12 +254,12 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     let (cred_def_id, cred_def_json) = LedgerUtils::parse_get_cred_def_response(&get_cred_def_response).unwrap();
 
     // Verifier gets RevocationRegistryDefinition from Ledger
-    let get_rev_reg_def_request = LedgerUtils::build_get_revoc_reg_def_request(&DID_MY1, &identifier.rev_reg_id.unwrap()).unwrap();
+    let get_rev_reg_def_request = LedgerUtils::build_get_revoc_reg_def_request(&DID_MY1, &identifier.rev_reg_id.clone().unwrap()).unwrap();
     let get_rev_reg_def_response = LedgerUtils::submit_request(pool_handle, &get_rev_reg_def_request).unwrap();
-    let (rev_reg_id, revoc_reg_def_json) = LedgerUtils::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap();
+    let (_, revoc_reg_def_json) = LedgerUtils::parse_get_revoc_reg_def_response(&get_rev_reg_def_response).unwrap();
 
     // Verifier gets RevocationRegistry from Ledger
-    let get_rev_reg_req = LedgerUtils::build_get_revoc_reg_request(DID_MY1, &identifier.rev_reg_id.unwrap(), timestamp).unwrap();
+    let get_rev_reg_req = LedgerUtils::build_get_revoc_reg_request(DID_MY1, &identifier.rev_reg_id.clone().unwrap(), timestamp).unwrap();
     let get_rev_reg_resp = LedgerUtils::submit_request(pool_handle, &get_rev_reg_req).unwrap();
     let (rev_reg_id, rev_reg_json) = LedgerUtils::parse_get_revoc_reg_response(&get_rev_reg_resp).unwrap();
 
@@ -307,7 +307,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     let to = time::get_time().sec;
 
     // Prover gets RevocationRegistryDelta from Ledger
-    let get_rev_reg_delta_request = LedgerUtils::build_get_revoc_reg_delta_request(&prover_did, &rev_reg_id, Some(from), to).unwrap();
+    let get_rev_reg_delta_request = LedgerUtils::build_get_revoc_reg_delta_request(&prover_did, &cred_info.rev_reg_id.clone().unwrap(), Some(from), to).unwrap();
     let get_rev_reg_delta_response = LedgerUtils::submit_request(pool_handle, &get_rev_reg_delta_request).unwrap();
     let (rev_reg_id, revoc_reg_delta_json) = LedgerUtils::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_response).unwrap();
 
@@ -317,7 +317,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
                                                                  &revoc_reg_def_json,
                                                                  &revoc_reg_delta_json,
                                                                  timestamp as u64,
-                                                                 &cred_rev_id).unwrap();
+                                                                 &cred_info.cred_rev_id.clone().unwrap()).unwrap();
 
     let requested_credentials_json = json!({
              "self_attested_attributes": json!({}),

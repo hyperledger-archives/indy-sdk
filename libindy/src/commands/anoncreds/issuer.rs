@@ -52,12 +52,12 @@ use domain::credential_offer::CredentialOffer;
 use domain::credential_request::CredentialRequest;
 
 pub enum IssuerCommand {
-    CreateSchema(
-        String, // issuer did
-        String, // name
-        String, // version
-        String, // attribute names
-        Box<Fn(Result<(String, String), IndyError>) + Send>),
+    /*    CreateSchema(
+            String, // issuer did
+            String, // name
+            String, // version
+            String, // attribute names
+            Box<Fn(Result<(String, String), IndyError>) + Send>),*/
     CreateAndStoreCredentialDefinition(
         i32, // wallet handle
         String, // issuer did
@@ -130,10 +130,10 @@ impl IssuerCommandExecutor {
 
     pub fn execute(&self, command: IssuerCommand) {
         match command {
-            IssuerCommand::CreateSchema(issuer_did, name, version, attrs, cb) => {
-                trace!(target: "issuer_command_executor", "CreateSchema command received");
-                cb(self.create_schema(&issuer_did, &name, &version, &attrs));
-            }
+            /*            IssuerCommand::CreateSchema(issuer_did, name, version, attrs, cb) => {
+                            trace!(target: "issuer_command_executor", "CreateSchema command received");
+                            cb(self.create_schema(&issuer_did, &name, &version, &attrs));
+                        }*/
             IssuerCommand::CreateAndStoreCredentialDefinition(wallet_handle, issuer_did, schema_json, tag, type_, config_json, cb) => {
                 trace!(target: "issuer_command_executor", "CreateAndStoreCredentialDefinition command received");
                 cb(self.create_and_store_credential_definition(wallet_handle, &issuer_did, &schema_json, &tag,
@@ -173,11 +173,11 @@ impl IssuerCommandExecutor {
         };
     }
 
-    fn create_schema(&self,
-                     issuer_did: &str,
-                     name: &str,
-                     version: &str,
-                     attrs: &str) -> Result<(String, String), IndyError> {
+    fn _create_schema(&self,
+                      issuer_did: &str,
+                      name: &str,
+                      version: &str,
+                      attrs: &str) -> Result<(String, String), IndyError> {
         trace!("create_schema >>> issuer_did: {:?}, name: {:?}, version: {:?}, attrs: {:?}", issuer_did, name, version, attrs);
 
         self.crypto_service.validate_did(issuer_did)?;
@@ -655,7 +655,6 @@ impl IssuerCommandExecutor {
 
                 serde_json::to_string(&revoked)
                     .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of indexes: {:?}", err)))?
-
             }
         };
 

@@ -2,12 +2,14 @@ extern crate indy_crypto;
 extern crate serde;
 extern crate serde_json;
 
+
 use super::DELIMITER;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use std::collections::{HashMap, HashSet};
 
+#[allow(unused_variables)] /* FIXME */
 pub const SCHEMA_MARKER: &'static str = "\x02";
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -27,6 +29,7 @@ pub enum Schema {
 }
 
 impl Schema {
+    #[allow(dead_code)] /* FIXME */
     pub fn schema_id(did: &str, name: &str, version: &str) -> String {
         format!("{}{}{}{}{}{}{}", did, DELIMITER, SCHEMA_MARKER, DELIMITER, name, DELIMITER, version)
     }
