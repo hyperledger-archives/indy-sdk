@@ -1,0 +1,52 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 200
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor "Alice" as a
+participant "Edge\nAgent" as ea
+participant Wallet as w
+
+note over a, w #f0f0e0
+Referenced from <b>Edge Agent Start</b> diagram.
+
+Wallet encrypted with key from secure element.
+end note
+
+== initial setup ==
+note over a, w #77ccff
+include <b>Provision New Agent</b> diagram
+end note
+
+== create link secret and policy registry ==
+
+ea -> ea: create link secret (A<sub>LS</sub>)
+ea -> w: store A<sub>LS</sub>
+
+ea -> ea: generate policy registry address **//P//**
+ea -> w: store **//P//**
+
+note over a, w #77ccff
+include <b>Update Agent Policy Registry</b> diagram
+(with all authorizations)
+end note
+
+== create cloud agent ==
+
+note over a, w #77ccff
+include <b>Add Cloud Agent</b> diagram
+end note
+
+@enduml

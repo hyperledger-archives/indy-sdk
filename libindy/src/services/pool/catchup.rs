@@ -177,6 +177,10 @@ impl CatchupHandler {
         });
         self.timeout = time::now_utc().add(Duration::seconds(CATCHUP_ROUND_TIMEOUT));
 
+        if active_node_cnt == 0 { // TODO FIXME
+            return Err(PoolError::Terminate);
+        }
+
         let portion = (cnt_to_catchup + active_node_cnt - 1) / active_node_cnt; //TODO check standard round up div
         let mut catchup_req = CatchupReq {
             ledgerId: 0,
