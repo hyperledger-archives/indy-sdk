@@ -10,6 +10,7 @@ import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import org.hyperledger.indy.sdk.ledger.LedgerResults.ParseResponseResult;
+import org.hyperledger.indy.sdk.ledger.LedgerResults.ParseRegistryResponseResult;
 
 import com.sun.jna.Callback;
 
@@ -97,7 +98,7 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Callback used when parseRequest completes.
 	 */
-	private static Callback parseRequestCb = new Callback() {
+	private static Callback parseResponseCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String id, String object_json) {
@@ -106,6 +107,22 @@ public class Ledger extends IndyJava.API {
 			if (! checkCallback(future, err)) return;
 
 			ParseResponseResult result = new ParseResponseResult(id, object_json);
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Callback used when parseRegistryRequest completes.
+	 */
+	private static Callback parseRegistryResponseCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String id, String object_json, int timestamp) {
+
+			CompletableFuture<ParseRegistryResponseResult> future = (CompletableFuture<ParseRegistryResponseResult>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			ParseRegistryResponseResult result = new ParseRegistryResponseResult(id, object_json, timestamp);
 			future.complete(result);
 		}
 	};
@@ -486,7 +503,7 @@ public class Ledger extends IndyJava.API {
 		int result = LibIndy.api.indy_parse_get_schema_response(
 				commandHandle,
 				getSchemaResponse,
-				parseRequestCb);
+				parseResponseCb);
 
 		checkResult(result);
 
@@ -592,7 +609,7 @@ public class Ledger extends IndyJava.API {
 		int result = LibIndy.api.indy_parse_get_cred_def_response(
 				commandHandle,
 				getCredDefResponse,
-				parseRequestCb);
+				parseResponseCb);
 
 		checkResult(result);
 
@@ -859,7 +876,7 @@ public class Ledger extends IndyJava.API {
 		int result = LibIndy.api.indy_parse_get_revoc_reg_def_response(
 				commandHandle,
 				getRevocRegDefResponse,
-				parseRequestCb);
+				parseResponseCb);
 
 		checkResult(result);
 
@@ -947,7 +964,7 @@ public class Ledger extends IndyJava.API {
 	 * Parse a GET_REVOC_REG response.
 	 *
 	 * @param getRevocRegResponse response json
-	 * @return A future resolving to a Revocation Registry Definition Id and Revocation Registry json.
+	 * @return A future resolving to a Revocation Registry Definition Id, Revocation Registry json and Timestamp.
 	 * {
 	 * "value": Registry-specific data {
 	 * "accum": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
@@ -956,18 +973,18 @@ public class Ledger extends IndyJava.API {
 	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<ParseResponseResult> parseGetRevocRegResponse(
+	public static CompletableFuture<ParseRegistryResponseResult> parseGetRevocRegResponse(
 			String getRevocRegResponse) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(getRevocRegResponse, "data");
 
-		CompletableFuture<ParseResponseResult> future = new CompletableFuture<ParseResponseResult>();
+		CompletableFuture<ParseRegistryResponseResult> future = new CompletableFuture<ParseRegistryResponseResult>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_parse_get_revoc_reg_response(
 				commandHandle,
 				getRevocRegResponse,
-				parseRequestCb);
+				parseRegistryResponseCb);
 
 		checkResult(result);
 
@@ -1015,7 +1032,7 @@ public class Ledger extends IndyJava.API {
 	 * Parse a GET_REVOC_REG_DELTA response.
 	 *
 	 * @param getRevocRegDeltaResponse response json
-	 * @return A future resolving to a Revocation Registry Definition Id and Revocation Registry Delta json.
+	 * @return A future resolving to a Revocation Registry Definition Id, Revocation Registry Delta json and Timestamp.
 	 * {
 	 * "value": Registry-specific data {
 	 * prevAccum: string - previous accumulator value.
@@ -1027,18 +1044,18 @@ public class Ledger extends IndyJava.API {
 	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<ParseResponseResult> parseGetRevocRegDeltaResponse(
+	public static CompletableFuture<ParseRegistryResponseResult> parseGetRevocRegDeltaResponse(
 			String getRevocRegDeltaResponse) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(getRevocRegDeltaResponse, "data");
 
-		CompletableFuture<ParseResponseResult> future = new CompletableFuture<ParseResponseResult>();
+		CompletableFuture<ParseRegistryResponseResult> future = new CompletableFuture<ParseRegistryResponseResult>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_parse_get_revoc_reg_delta_response(
 				commandHandle,
 				getRevocRegDeltaResponse,
-				parseRequestCb);
+				parseRegistryResponseCb);
 
 		checkResult(result);
 

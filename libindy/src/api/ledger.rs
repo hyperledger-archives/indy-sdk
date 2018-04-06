@@ -521,7 +521,7 @@ pub extern fn indy_build_cred_def_request(command_handle: i32,
                                           submitter_did: *const c_char,
                                           data: *const c_char,
                                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                            request_result_json: *const c_char)>) -> ErrorCode {
+                                                               request_result_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(data, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
@@ -561,7 +561,7 @@ pub extern fn indy_build_get_cred_def_request(command_handle: i32,
                                               submitter_did: *const c_char,
                                               id: *const c_char,
                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                request_json: *const c_char)>) -> ErrorCode {
+                                                                   request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
@@ -607,8 +607,8 @@ pub extern fn indy_build_get_cred_def_request(command_handle: i32,
 pub extern fn indy_parse_get_cred_def_response(command_handle: i32,
                                                get_cred_def_response: *const c_char,
                                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                     cred_def_id: *const c_char,
-                                                                     cred_def_json: *const c_char)>) -> ErrorCode {
+                                                                    cred_def_id: *const c_char,
+                                                                    cred_def_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(get_cred_def_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
@@ -1066,7 +1066,7 @@ pub extern fn indy_build_get_revoc_reg_request(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Revocation Registry Definition Id and Revocation Registry json.
+/// Revocation Registry Definition Id, Revocation Registry json and Timestamp.
 /// {
 ///     "value": Registry-specific data {
 ///         "accum": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
@@ -1081,7 +1081,8 @@ pub extern fn indy_parse_get_revoc_reg_response(command_handle: i32,
                                                 get_revoc_reg_response: *const c_char,
                                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                      revoc_reg_def_id: *const c_char,
-                                                                     revoc_reg_json: *const c_char)>) -> ErrorCode {
+                                                                     revoc_reg_json: *const c_char,
+                                                                     timestamp: u64)>) -> ErrorCode {
     check_useful_c_str!(get_revoc_reg_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
@@ -1089,10 +1090,10 @@ pub extern fn indy_parse_get_revoc_reg_response(command_handle: i32,
         .send(Command::Ledger(LedgerCommand::ParseGetRevocRegResponse(
             get_revoc_reg_response,
             Box::new(move |result| {
-                let (err, revoc_reg_def_id, revoc_reg_json) = result_to_err_code_2!(result, String::new(), String::new());
+                let (err, revoc_reg_def_id, revoc_reg_json, timestamp) = result_to_err_code_3!(result, String::new(), String::new(), 0);
                 let revoc_reg_def_id = CStringUtils::string_to_cstring(revoc_reg_def_id);
                 let revoc_reg_json = CStringUtils::string_to_cstring(revoc_reg_json);
-                cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_json.as_ptr())
+                cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_json.as_ptr(), timestamp)
             })
         )));
 
@@ -1154,7 +1155,7 @@ pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Revocation Registry Definition Id and Revocation Registry Delta json.
+/// Revocation Registry Definition Id, Revocation Registry Delta json and Timestamp.
 /// {
 ///     "value": Registry-specific data {
 ///         prevAccum: string - previous accumulator value.
@@ -1172,7 +1173,8 @@ pub extern fn indy_parse_get_revoc_reg_delta_response(command_handle: i32,
                                                       get_revoc_reg_delta_response: *const c_char,
                                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                            revoc_reg_def_id: *const c_char,
-                                                                           revoc_reg_delta_json: *const c_char)>) -> ErrorCode {
+                                                                           revoc_reg_delta_json: *const c_char,
+                                                                           timestamp: u64)>) -> ErrorCode {
     check_useful_c_str!(get_revoc_reg_delta_response, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
@@ -1180,10 +1182,10 @@ pub extern fn indy_parse_get_revoc_reg_delta_response(command_handle: i32,
         .send(Command::Ledger(LedgerCommand::ParseGetRevocRegDeltaResponse(
             get_revoc_reg_delta_response,
             Box::new(move |result| {
-                let (err, revoc_reg_def_id, revoc_reg_delta_json) = result_to_err_code_2!(result, String::new(), String::new());
+                let (err, revoc_reg_def_id, revoc_reg_delta_json, timestamp) = result_to_err_code_3!(result, String::new(), String::new(), 0);
                 let revoc_reg_def_id = CStringUtils::string_to_cstring(revoc_reg_def_id);
                 let revoc_reg_delta_json = CStringUtils::string_to_cstring(revoc_reg_delta_json);
-                cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_delta_json.as_ptr())
+                cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_delta_json.as_ptr(), timestamp)
             })
         )));
 

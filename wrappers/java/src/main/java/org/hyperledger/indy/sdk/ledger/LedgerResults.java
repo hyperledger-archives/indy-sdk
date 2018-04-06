@@ -41,4 +41,46 @@ public final class LedgerResults {
 			return this.objectJson;
 		}
 	}
+
+	/**
+	 * Result from calling parseRegistryResponse functions.
+	 */
+	public static class ParseRegistryResponseResult extends IndyJava.Result {
+
+		private String id, objectJson;
+		int timestamp;
+
+		ParseRegistryResponseResult(String id, String objectJson, int timestamp) {
+			this.id = id;
+			this.objectJson = objectJson;
+			this.timestamp = timestamp;
+		}
+
+		/**
+		 * Gets the Id.
+		 *
+		 * @return Id.
+		 */
+		public String getId() {
+			return this.id;
+		}
+
+		/**
+		 * Gets the object JSON.
+		 *
+		 * @return The object JSON.
+		 */
+		public String getObjectJson() {
+			return this.objectJson;
+		}
+
+		/**
+		 * Gets the timestamp.
+		 *
+		 * @return The timestamp.
+		 */
+		public int getTimestamp() {
+			return this.timestamp;
+		}
+	}
 }

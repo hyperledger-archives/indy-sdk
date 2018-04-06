@@ -147,12 +147,12 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
     get_revoc_reg_delta_response = \
         await ensure_previous_request_applied(pool_handle, get_revoc_reg_delta_request,
                                               lambda response: response['result']['seqNo'] is not None)
-    (rev_reg_id, revoc_reg_delta_json) = await ledger.parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response)
+    (rev_reg_id, revoc_reg_delta_json, timestamp) = \
+        await ledger.parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response)
 
     # Prover Creates Revocation State
-    timestamp = to
     rev_state_json = await anoncreds.create_revocation_state(blob_storage_reader_cfg_handle, revoc_reg_def_json,
-                                                             revoc_reg_delta_json, timestamp, cred_rev_id)
+                                                             revoc_reg_delta_json, timestamp, cred_info['cred_rev_id'])
 
     # Prover Gets Schema from Ledger
     get_schema_request = await ledger.build_get_schema_request(prover_did, str(cred_info["schema_id"]))
@@ -204,11 +204,12 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
     (rev_reg_id, revoc_reg_def_json) = await ledger.parse_get_revoc_reg_def_response(get_revoc_reg_def_response)
 
     # Verifier Gets Revocation Registry from Ledger
-    get_revoc_reg_request = await ledger.build_get_revoc_reg_request(verifier_did, identifier['rev_reg_id'], timestamp)
+    get_revoc_reg_request = \
+        await ledger.build_get_revoc_reg_request(verifier_did, identifier['rev_reg_id'], identifier['timestamp'])
     get_revoc_reg_response = \
         await ensure_previous_request_applied(pool_handle, get_revoc_reg_request,
                                               lambda response: response['result']['seqNo'] is not None)
-    (rev_reg_id, rev_reg_json) = await ledger.parse_get_revoc_reg_response(get_revoc_reg_response)
+    (rev_reg_id, rev_reg_json, identifier) = await ledger.parse_get_revoc_reg_response(get_revoc_reg_response)
 
     # Verifier verify proof
     assert 'Alex' == proof['requested_proof']['revealed_attrs']['attr1_referent']['raw']
@@ -240,10 +241,10 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
     get_revoc_reg_delta_response = \
         await ensure_previous_request_applied(pool_handle, get_revoc_reg_delta_request,
                                               lambda response: response['result']['seqNo'] is not None)
-    (rev_reg_id, revoc_reg_delta_json) = await ledger.parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response)
+    (rev_reg_id, revoc_reg_delta_json, identifier) = \
+        await ledger.parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response)
 
     # Prover Creates Revocation State
-    timestamp = to
     rev_state_json = await anoncreds.create_revocation_state(blob_storage_reader_cfg_handle, revoc_reg_def_json,
                                                              revoc_reg_delta_json, timestamp, cred_rev_id)
 
@@ -259,13 +260,16 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
     proof_json = await anoncreds.prover_create_proof(prover_wallet_handle, proof_req_json, requested_credentials_json,
                                                      master_secret_id, schemas_json, credential_defs_json,
                                                      revoc_states_json)
+    proof = json.loads(proof_json)
+    identifier = proof['identifiers'][0]
 
     # Verifier Gets RevocationRegistry from Ledger
-    get_revoc_reg_request = await ledger.build_get_revoc_reg_request(verifier_did, identifier['rev_reg_id'], timestamp)
+    get_revoc_reg_request = \
+        await ledger.build_get_revoc_reg_request(verifier_did, identifier['rev_reg_id'], identifier['timestamp'])
     get_revoc_reg_response = \
         await ensure_previous_request_applied(pool_handle, get_revoc_reg_request,
                                               lambda response: response['result']['seqNo'] is not None)
-    (rev_reg_id, rev_reg_json) = await ledger.parse_get_revoc_reg_response(get_revoc_reg_response)
+    (rev_reg_id, rev_reg_json, timestamp) = await ledger.parse_get_revoc_reg_response(get_revoc_reg_response)
 
     revoc_regs_json = json.dumps({rev_reg_id: {timestamp: json.loads(rev_reg_json)}})
 

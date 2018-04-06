@@ -359,7 +359,7 @@ impl LedgerUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_revoc_reg_request(submitter_did: &str, rev_reg_def_id: &str, timestamp: i64) -> Result<String, ErrorCode> {
+    pub fn build_get_revoc_reg_request(submitter_did: &str, rev_reg_def_id: &str, timestamp: u64) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
@@ -369,26 +369,26 @@ impl LedgerUtils {
             indy_build_get_revoc_reg_request(command_handle,
                                              submitter_did.as_ptr(),
                                              rev_reg_def_id.as_ptr(),
-                                             timestamp,
+                                             timestamp as i64,
                                              cb);
 
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_revoc_reg_delta_request(submitter_did: &str, rev_reg_def_id: &str, from: Option<i64>, to: i64) -> Result<String, ErrorCode> {
+    pub fn build_get_revoc_reg_delta_request(submitter_did: &str, rev_reg_def_id: &str, from: Option<u64>, to: u64) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let rev_reg_def_id = CString::new(rev_reg_def_id).unwrap();
 
-        let from = if from.is_some() { from.unwrap() } else { -1 };
+        let from = if from.is_some() { from.unwrap() as i64 } else { -1 };
 
         let err =
             indy_build_get_revoc_reg_delta_request(command_handle,
                                                    submitter_did.as_ptr(),
                                                    rev_reg_def_id.as_ptr(),
                                                    from,
-                                                   to,
+                                                   to as i64,
                                                    cb);
 
         super::results::result_to_string(err, receiver)
@@ -433,8 +433,8 @@ impl LedgerUtils {
         super::results::result_to_string_string(err, receiver)
     }
 
-    pub fn parse_get_revoc_reg_response(get_revoc_reg_response: &str) -> Result<(String, String), ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
+    pub fn parse_get_revoc_reg_response(get_revoc_reg_response: &str) -> Result<(String, String, u64), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string_u64();
 
         let get_revoc_reg_response = CString::new(get_revoc_reg_response).unwrap();
 
@@ -443,11 +443,11 @@ impl LedgerUtils {
                                               get_revoc_reg_response.as_ptr(),
                                               cb);
 
-        super::results::result_to_string_string(err, receiver)
+        super::results::result_to_string_string_u64(err, receiver)
     }
 
-    pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) -> Result<(String, String), ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
+    pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) -> Result<(String, String, u64), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string_u64();
 
         let get_revoc_reg_delta_response = CString::new(get_revoc_reg_delta_response).unwrap();
 
@@ -456,7 +456,7 @@ impl LedgerUtils {
                                                     get_revoc_reg_delta_response.as_ptr(),
                                                     cb);
 
-        super::results::result_to_string_string(err, receiver)
+        super::results::result_to_string_string_u64(err, receiver)
     }
 
     pub fn post_schema_to_ledger(pool_handle: i32, wallet_handle: i32, did: &str) -> (String, String) {

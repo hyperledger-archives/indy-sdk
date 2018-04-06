@@ -314,17 +314,18 @@ impl LedgerService {
                     LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDefinition {:?}.", err))))?))
     }
 
-    pub fn parse_get_revoc_reg_response(&self, get_revoc_reg_response: &str) -> Result<(String, String), LedgerError> {
+    pub fn parse_get_revoc_reg_response(&self, get_revoc_reg_response: &str) -> Result<(String, String, u64), LedgerError> {
         let reply: Reply<GetRevocRegReplyResult> = LedgerService::parse_response(get_revoc_reg_response)?;
 
         Ok((reply.result.revoc_reg_def_id,
             RevocationRegistry::RevocationRegistryV1(reply.result.data)
                 .to_json()
                 .map_err(|err|
-                    LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistry {:?}.", err))))?))
+                    LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistry {:?}.", err))))?,
+        reply.result.txn_time))
     }
 
-    pub fn parse_get_revoc_reg_delta_response(&self, get_revoc_reg_delta_response: &str) -> Result<(String, String), LedgerError> {
+    pub fn parse_get_revoc_reg_delta_response(&self, get_revoc_reg_delta_response: &str) -> Result<(String, String, u64), LedgerError> {
         let reply: Reply<GetRevocRegDeltaReplyResult> = LedgerService::parse_response(get_revoc_reg_delta_response)?;
 
         Ok((reply.result.revoc_reg_def_id.clone(),
@@ -337,7 +338,8 @@ impl LedgerService {
                 })
                 .to_json()
                 .map_err(|err|
-                    LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta {:?}.", err))))?))
+                    LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta {:?}.", err))))?,
+           reply.result.data.value.accum_to.txn_time))
     }
 
     fn get_req_id() -> u64 {

@@ -148,7 +148,7 @@ pub enum LedgerCommand {
         Box<Fn(Result<String, IndyError>) + Send>),
     ParseGetRevocRegResponse(
         String, // get revocation registry response
-        Box<Fn(Result<(String, String), IndyError>) + Send>),
+        Box<Fn(Result<(String, String, u64), IndyError>) + Send>),
     BuildGetRevocRegDeltaRequest(
         String, // submitter did
         String, // revocation registry definition id
@@ -157,7 +157,7 @@ pub enum LedgerCommand {
         Box<Fn(Result<String, IndyError>) + Send>),
     ParseGetRevocRegDeltaResponse(
         String, // get revocation registry delta response
-        Box<Fn(Result<(String, String), IndyError>) + Send>)
+        Box<Fn(Result<(String, String, u64), IndyError>) + Send>)
 }
 
 pub struct LedgerCommandExecutor {
@@ -699,7 +699,7 @@ impl LedgerCommandExecutor {
     }
 
     fn parse_revoc_reg_response(&self,
-                                get_revoc_reg_response: &str) -> Result<(String, String), IndyError> {
+                                get_revoc_reg_response: &str) -> Result<(String, String, u64), IndyError> {
         info!("parse_revoc_reg_response >>> get_revoc_reg_response: {:?}", get_revoc_reg_response);
 
         let res = self.ledger_service.parse_get_revoc_reg_response(get_revoc_reg_response)?;
@@ -726,7 +726,7 @@ impl LedgerCommandExecutor {
     }
 
     fn parse_revoc_reg_delta_response(&self,
-                                      get_revoc_reg_delta_response: &str) -> Result<(String, String), IndyError> {
+                                      get_revoc_reg_delta_response: &str) -> Result<(String, String, u64), IndyError> {
         info!("parse_revoc_reg_delta_response >>> get_revoc_reg_delta_response: {:?}", get_revoc_reg_delta_response);
 
         let res = self.ledger_service.parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response)?;

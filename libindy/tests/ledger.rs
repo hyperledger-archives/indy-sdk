@@ -1276,7 +1276,7 @@ mod high_cases {
             let get_rev_reg_req = LedgerUtils::build_get_revoc_reg_request(&did, &rev_reg_id, timestamp).unwrap();
             let get_rev_reg_resp = LedgerUtils::submit_request_with_retries(pool_handle, &get_rev_reg_req, &rev_reg_entry_req_resp).unwrap();
 
-            let (_, revoc_reg_json) = LedgerUtils::parse_get_revoc_reg_response(&get_rev_reg_resp).unwrap();
+            let (_, revoc_reg_json, _) = LedgerUtils::parse_get_revoc_reg_response(&get_rev_reg_resp).unwrap();
             let _revoc_reg: RevocationRegistryV1 = serde_json::from_str(&revoc_reg_json).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();

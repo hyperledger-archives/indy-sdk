@@ -671,7 +671,7 @@ extern "C" {
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// Revocation Registry json.
+    /// Revocation Registry Id, Revocation Registry json and Timestamp.
     /// {
     ///     "value": Registry-specific data {
     ///         "accum": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
@@ -688,7 +688,8 @@ extern "C" {
                                                           void           (*cb)(indy_handle_t xcommand_handle,
                                                                                indy_error_t  err,
                                                                                const char*   revoc_reg_def_id,
-                                                                               const char*   revoc_reg_json)
+                                                                               const char*   revoc_reg_json,
+                                                                               uint64_t      timestamp)
                                                          );
 
     /// Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
@@ -728,7 +729,7 @@ extern "C" {
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// Revocation Registry Delta json.
+    /// Revocation Registry Id, Revocation Registry Delta json and Timestamp.
     /// {
     ///     "value": Registry-specific data {
     ///         prevAccum: string - previous accumulator value.
@@ -748,7 +749,8 @@ extern "C" {
                                                                 void           (*cb)(indy_handle_t xcommand_handle,
                                                                                      indy_error_t  err,
                                                                                      const char*   revoc_reg_def_id,
-                                                                                     const char*   revoc_reg_delta_json)
+                                                                                     const char*   revoc_reg_delta_json,
+                                                                                     uint64_t      timestamp)
                                                                );
 
 #ifdef __cplusplus

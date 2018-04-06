@@ -676,7 +676,8 @@ pub struct GetRevocRegReplyResult {
     #[serde(rename = "type")]
     pub  _type: String,
     pub revoc_reg_def_id: String,
-    pub  data: RevocationRegistryV1
+    pub  data: RevocationRegistryV1,
+    pub txn_time: u64
 }
 
 impl<'a> JsonDecodable<'a> for GetRevocRegReplyResult {}
@@ -696,8 +697,10 @@ pub struct RevocationRegistryDeltaValue {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AccumulatorState {
-    pub value: RevocationRegistry
+    pub value: RevocationRegistry,
+    pub txn_time: u64
 }
 
 #[derive(Deserialize, Serialize, Debug)]

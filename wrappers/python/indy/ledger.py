@@ -931,12 +931,12 @@ async def build_get_revoc_reg_request(submitter_did: str,
     return res
 
 
-async def parse_get_revoc_reg_response(get_revoc_reg_response: str) -> (str, str):
+async def parse_get_revoc_reg_response(get_revoc_reg_response: str) -> (str, str, int):
     """
     Parse a GET_REVOC_REG response.
 
     :param get_revoc_reg_response: response json
-    :return: Revocation Registry Definition Id and Revocation Registry json.
+    :return: Revocation Registry Definition Id, Revocation Registry json and Timestamp.
      {
          "value": Registry-specific data {
              "accum": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
@@ -950,15 +950,15 @@ async def parse_get_revoc_reg_response(get_revoc_reg_response: str) -> (str, str
 
     if not hasattr(parse_get_revoc_reg_response, "cb"):
         logger.debug("parse_get_revoc_reg_response: Creating callback")
-        parse_get_revoc_reg_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+        parse_get_revoc_reg_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p, c_uint64))
 
     c_get_revoc_reg_response = c_char_p(get_revoc_reg_response.encode('utf-8'))
 
-    (revoc_reg_def_id, revoc_reg_json) = await do_call('indy_parse_get_revoc_reg_response',
-                                                       c_get_revoc_reg_response,
-                                                       parse_get_revoc_reg_response.cb)
+    (revoc_reg_def_id, revoc_reg_json, timestamp) = await do_call('indy_parse_get_revoc_reg_response',
+                                                                  c_get_revoc_reg_response,
+                                                                  parse_get_revoc_reg_response.cb)
 
-    res = (revoc_reg_def_id.decode(), revoc_reg_json.decode())
+    res = (revoc_reg_def_id.decode(), revoc_reg_json.decode(), timestamp)
     logger.debug("parse_get_revoc_reg_response: <<< res: %r", res)
     return res
 
@@ -1004,12 +1004,12 @@ async def build_get_revoc_reg_delta_request(submitter_did: str,
     return res
 
 
-async def parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: str) -> (str, str):
+async def parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: str) -> (str, str, int):
     """
     Parse a GET_REVOC_REG_DELTA response.
 
     :param get_revoc_reg_delta_response: response json
-    :return: Revocation Registry Definition Id and Revocation Registry Delta json.
+    :return: Revocation Registry Definition Id, Revocation Registry Delta json and Timestamp.
      {
          "value": Registry-specific data {
              prevAccum: string - previous accumulator value.
@@ -1027,14 +1027,15 @@ async def parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: str) 
 
     if not hasattr(parse_get_revoc_reg_delta_response, "cb"):
         logger.debug("parse_get_revoc_reg_delta_response: Creating callback")
-        parse_get_revoc_reg_delta_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+        parse_get_revoc_reg_delta_response.cb = create_cb(
+            CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p, c_uint64))
 
     c_get_revoc_reg_delta_response = c_char_p(get_revoc_reg_delta_response.encode('utf-8'))
 
-    (revoc_reg_def_id, revoc_reg_delta_json) = await do_call('indy_parse_get_revoc_reg_delta_response',
-                                                             c_get_revoc_reg_delta_response,
-                                                             parse_get_revoc_reg_delta_response.cb)
+    (revoc_reg_def_id, revoc_reg_delta_json, timestamp) = await do_call('indy_parse_get_revoc_reg_delta_response',
+                                                                        c_get_revoc_reg_delta_response,
+                                                                        parse_get_revoc_reg_delta_response.cb)
 
-    res = (revoc_reg_def_id.decode(), revoc_reg_delta_json.decode())
+    res = (revoc_reg_def_id.decode(), revoc_reg_delta_json.decode(), timestamp)
     logger.debug("parse_get_revoc_reg_delta_response: <<< res: %r", res)
     return res
