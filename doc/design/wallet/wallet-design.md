@@ -705,3 +705,20 @@ subquery = "tagName": {$lte: tagValue} - WHERE tagName <= tagValue
 subquery = "tagName": {$like: tagValue} - WHERE tagName LIKE tagValue
 subquery = "tagName": {$in: [tagValue, ..., tagValue]} - WHERE tagName IN (tagValue, ..., tagValue)
 ```
+
+## Separation of libindy secrets from non-secrets
+
+The idea is the following:
+
+* libindy will use specific prefix for all internal record types like "~did"
+* For non-secret interface it will be impossible to use this prefix
+* If user passes value with this prefix as entity type libindy will return validation error
+
+## Separation of libindy defined tags from user defined tags
+
+The idea is the following:
+
+* libindy will use specific prefix for all internal record tags like "~lbindyTag"
+* For all user interfaces it will be impossible to modify tags with this prefix
+* If user passes tag with this prefix to any function that modifies tags libindy will return validation error
+* Note that it will be possible for user application to read libindy defined tags and use these tags for searching
