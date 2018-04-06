@@ -5,12 +5,16 @@ export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2l
 export POD_FILE_NAME=libindy.tar.gz
 
 echo "Build IOS POD started..."
+
+TYPE="debug"
+
 if [[ $# -eq 1 ]]; then
   echo "... for target $1 ..."
   cargo lipo --targets $1
 else
   echo "... for all default targets ..."
-  cargo lipo --release
+  TYPE="release"
+  cargo lipo --$TYPE
 fi
 echo 'Build completed successfully.'
 
@@ -26,7 +30,7 @@ fi
 echo "Packing..."
 
 cp include/*.h $WORK_DIR
-cp target/universal/debug/libindy.a $WORK_DIR
+cp target/universal/$TYPE/libindy.a $WORK_DIR
 cd $WORK_DIR
 tar -cvzf $POD_FILE_NAME *
 cd -

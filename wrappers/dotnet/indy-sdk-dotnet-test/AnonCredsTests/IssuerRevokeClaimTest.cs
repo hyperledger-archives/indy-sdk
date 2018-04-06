@@ -71,7 +71,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             _claimResult = await AnonCreds.IssuerCreateClaimAsync(_issuerWallet, claimReq, claimJson, _userRevocIndex);
 
             //8. Prover store received Claim
-            await AnonCreds.ProverStoreClaimAsync(_issuerWallet, _claimResult.ClaimJson);
+            await AnonCreds.ProverStoreClaimAsync(_issuerWallet, _claimResult.ClaimJson, _claimResult.RevocRegUpdateJson);
         }
 
         [TestCleanup]

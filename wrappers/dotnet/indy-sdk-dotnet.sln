@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27004.2002
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "indy-sdk-dotnet", "indy-sdk-dotnet\indy-sdk-dotnet.csproj", "{5C97C715-D7E2-42B7-A363-4A54C11DC8B3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "indy-sdk-dotnet", "indy-sdk-dotnet\indy-sdk-dotnet.csproj", "{5C97C715-D7E2-42B7-A363-4A54C11DC8B3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "indy-sdk-dotnet-test", "indy-sdk-dotnet-test\indy-sdk-dotnet-test.csproj", "{D5DF480F-45B3-47D8-8C30-65A4DF0007D7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "indy-sdk-dotnet-test", "indy-sdk-dotnet-test\indy-sdk-dotnet-test.csproj", "{D5DF480F-45B3-47D8-8C30-65A4DF0007D7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "indy-sdk-dotnet-doc", "indy-sdk-dotnet-doc\indy-sdk-dotnet-doc.csproj", "{9FAB78CF-D983-49A2-9ED3-EA53A6E0A40F}"
 EndProject

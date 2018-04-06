@@ -75,7 +75,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(commonWallet, claimRequest, claim, -1);
             var claimJson = createClaimResult.ClaimJson;
 
-            await AnonCreds.ProverStoreClaimAsync(commonWallet, claimJson);
+            await AnonCreds.ProverStoreClaimAsync(commonWallet, claimJson, createClaimResult.RevocRegUpdateJson);
 
             _walletOpened = true;
         }

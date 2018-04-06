@@ -1,6 +1,6 @@
 ﻿using Hyperledger.Indy.LedgerApi;
 using Hyperledger.Indy.PoolApi;
-using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
@@ -27,13 +27,13 @@ namespace Hyperledger.Indy.Test.DemoTests
             var trusteeWallet = await Wallet.OpenWalletAsync("theirWallet", null, null);
 
             // 4. Create My Did
-            var createMyDidResult = await Signus.CreateAndStoreMyDidAsync(myWallet, "{}");
+            var createMyDidResult = await Did.CreateAndStoreMyDidAsync(myWallet, "{}");
             Assert.IsNotNull(createMyDidResult);
             var myDid = createMyDidResult.Did;
             var myVerkey = createMyDidResult.VerKey;
 
             // 5. Create Did from Trustee1 seed
-            var createTheirDidResult = await Signus.CreateAndStoreMyDidAsync(trusteeWallet, TRUSTEE_IDENTITY_JSON);
+            var createTheirDidResult = await Did.CreateAndStoreMyDidAsync(trusteeWallet, TRUSTEE_IDENTITY_JSON);
             Assert.IsNotNull(createTheirDidResult);
             var trusteeDid = createTheirDidResult.Did;
 
