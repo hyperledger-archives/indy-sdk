@@ -3,12 +3,15 @@
 /* eslint-disable camelcase */
 var capi = require('bindings')('indynodejs')
 var wrapIndyCallback = require('./wrapIndyCallback')
-var safeJson = require('safe-json-stringify')
 
 function jsonify (val) {
-  return val === null || val === void 0
-    ? null
-    : safeJson(val)
+  if (val === null || val === void 0) {
+    return null
+  }
+  if (typeof val === 'string') {
+    return val
+  }
+  return JSON.stringify(val)
 }
 
 var indy = {}
