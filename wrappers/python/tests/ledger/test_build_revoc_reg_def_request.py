@@ -9,6 +9,7 @@ async def test_build_revoc_reg_def_request_work():
     identifier = "Th7MpTaRZVRYnPiabds81Y"
 
     data = {
+        "ver": "1.0",
         "id": "RevocRegID",
         "revocDefType": "CL_ACCUM",
         "tag": "TAG1",

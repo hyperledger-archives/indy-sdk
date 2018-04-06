@@ -1121,6 +1121,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let data = json!({
+                "ver": "1.0",
                 "id": "RevocRegID",
                 "revocDefType": REVOC_REG_TYPE,
                 "tag": TAG_1,
@@ -1202,7 +1203,7 @@ mod high_cases {
 
             let expected_result = r#""operation":{"type":"114","revocRegDefId":"RevocRegID","revocDefType":"CL_ACCUM","value":{"accum":"false 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"}}"#;
 
-            let rev_reg_entry_value = r#"{"value":{"accum":"false 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"}}"#;
+            let rev_reg_entry_value = r#"{"value":{"accum":"false 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"}, "ver":"1.0"}"#;
 
             let request = LedgerUtils::build_revoc_reg_entry_request(DID, "RevocRegID", REVOC_REG_TYPE, rev_reg_entry_value).unwrap();
             assert!(request.contains(expected_result));

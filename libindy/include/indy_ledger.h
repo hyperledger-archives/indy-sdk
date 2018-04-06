@@ -342,14 +342,14 @@ extern "C" {
     /// #Errors
     /// Common*
     
-    extern indy_error_t indy_build_cred_def_txn(indy_handle_t command_handle,
-                                                const char *  submitter_did,
-                                                const char *  data,
+    extern indy_error_t indy_build_cred_def_request(indy_handle_t command_handle,
+                                                    const char *  submitter_did,
+                                                    const char *  data,
 
-                                                void           (*cb)(indy_handle_t xcommand_handle,
-                                                                     indy_error_t  err,
-                                                                     const char*   request_json)
-                                                );
+                                                    void           (*cb)(indy_handle_t xcommand_handle,
+                                                                         indy_error_t  err,
+                                                                         const char*   request_json)
+                                                    );
     
     /// Builds a GET_CRED_DEF request. Request to get a credential definition (in particular, public key),
     /// that Issuer creates for a particular Credential Schema.
@@ -366,14 +366,14 @@ extern "C" {
     /// #Errors
     /// Common*
 
-     extern indy_error_t indy_build_get_cred_def_txn(indy_handle_t command_handle,
-                                                     const char *  submitter_did,
-                                                     const char *  id,
+     extern indy_error_t indy_build_get_cred_def_request(indy_handle_t command_handle,
+                                                         const char *  submitter_did,
+                                                         const char *  id,
 
-                                                     void           (*cb)(indy_handle_t xcommand_handle,
-                                                                          indy_error_t  err,
-                                                                          const char*   request_json)
-                                                     );
+                                                         void           (*cb)(indy_handle_t xcommand_handle,
+                                                                              indy_error_t  err,
+                                                                              const char*   request_json)
+                                                         );
 
     /// Parse a GET_CRED_DEF response.
     ///

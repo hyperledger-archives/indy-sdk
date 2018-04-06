@@ -9,6 +9,7 @@ async def test_build_revoc_reg_entry_request_work():
     identifier = "Th7MpTaRZVRYnPiabds81Y"
 
     rev_reg_entry_value = {
+        "ver": "1.0",
         "value": {
             "accum": "false 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
         }

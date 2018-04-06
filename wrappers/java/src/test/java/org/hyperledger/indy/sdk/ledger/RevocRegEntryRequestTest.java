@@ -16,7 +16,8 @@ public class RevocRegEntryRequestTest extends IndyIntegrationTestWithPoolAndSing
 						"            \"value\": {\"accum\": \"false 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\"}\n" +
 						"        }";
 
-		String value = "{\"value\": {\n" +
+		String value = "{\"ver\":\"1.0\"," +
+				"        \"value\": {\n" +
 				"            \"accum\": \"false 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\"\n" +
 				"        }}";
 

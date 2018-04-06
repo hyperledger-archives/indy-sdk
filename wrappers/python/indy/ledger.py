@@ -436,8 +436,8 @@ async def parse_get_schema_response(get_schema_response: str) -> (str, str):
     return res
 
 
-async def build_cred_def_txn(submitter_did: str,
-                             data: str) -> str:
+async def build_cred_def_request(submitter_did: str,
+                                 data: str) -> str:
     """
     Builds an CRED_DEF request. Request to add a credential definition (in particular, public key),
     that Issuer creates for a particular Credential Schema.
@@ -457,29 +457,29 @@ async def build_cred_def_txn(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_cred_def_txn: >>> submitter_did: %r, data: %r",
+    logger.debug("build_cred_def_request: >>> submitter_did: %r, data: %r",
                  submitter_did,
                  data)
 
-    if not hasattr(build_cred_def_txn, "cb"):
-        logger.debug("build_cred_def_txn: Creating callback")
-        build_cred_def_txn.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    if not hasattr(build_cred_def_request, "cb"):
+        logger.debug("build_cred_def_request: Creating callback")
+        build_cred_def_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_data = c_char_p(data.encode('utf-8'))
 
-    request_result = await do_call('indy_build_cred_def_txn',
+    request_result = await do_call('indy_build_cred_def_request',
                                    c_submitter_did,
                                    c_data,
-                                   build_cred_def_txn.cb)
+                                   build_cred_def_request.cb)
 
     res = request_result.decode()
-    logger.debug("build_cred_def_txn: <<< res: %r", res)
+    logger.debug("build_cred_def_request: <<< res: %r", res)
     return res
 
 
-async def build_get_cred_def_txn(submitter_did: str,
-                                 id_: str) -> str:
+async def build_get_cred_def_request(submitter_did: str,
+                                     id_: str) -> str:
     """
    Builds a GET_CRED_DEF request. Request to get a credential definition (in particular, public key),
    that Issuer creates for a particular Credential Schema.
@@ -490,24 +490,24 @@ async def build_get_cred_def_txn(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_cred_def_txn: >>> submitter_did: %r, id: %r",
+    logger.debug("build_get_cred_def_request: >>> submitter_did: %r, id: %r",
                  submitter_did,
                  id_)
 
-    if not hasattr(build_get_cred_def_txn, "cb"):
-        logger.debug("build_get_cred_def_txn: Creating callback")
-        build_get_cred_def_txn.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    if not hasattr(build_get_cred_def_request, "cb"):
+        logger.debug("build_get_cred_def_request: Creating callback")
+        build_get_cred_def_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_id = c_char_p(id_.encode('utf-8'))
 
-    request_json = await do_call('indy_build_get_cred_def_txn',
+    request_json = await do_call('indy_build_get_cred_def_request',
                                  c_submitter_did,
                                  c_id,
-                                 build_get_cred_def_txn.cb)
+                                 build_get_cred_def_request.cb)
 
     res = request_json.decode()
-    logger.debug("build_get_cred_def_txn: <<< res: %r", res)
+    logger.debug("build_get_cred_def_request: <<< res: %r", res)
     return res
 
 

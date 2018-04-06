@@ -125,8 +125,9 @@ impl LedgerService {
     }
 
     pub fn build_cred_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
-        let cred_def = CredentialDefinitionV1::from_json(&data)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinition: {:?}", err)))?;
+        let cred_def = CredentialDefinitionV1::from(
+            CredentialDefinition::from_json(&data)
+                .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinition: {:?}", err)))?);
 
         let operation = CredDefOperation::new(cred_def);
         Request::build_request(identifier, operation)
@@ -204,8 +205,9 @@ impl LedgerService {
     }
 
     pub fn build_revoc_reg_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
-        let rev_reg_def: RevocationRegistryDefinitionV1 = serde_json::from_str(data)
-            .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistryDefinition: {:?}", err)))?;
+        let rev_reg_def = RevocationRegistryDefinitionV1::from(
+            RevocationRegistryDefinition::from_json(&data)
+                .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistryDefinition: {:?}", err)))?);
 
         let rev_reg_def_operation = RevocationRegistryDefOperation::new(rev_reg_def);
 
@@ -220,8 +222,9 @@ impl LedgerService {
     }
 
     pub fn build_revoc_reg_entry_request(&self, identifier: &str, revoc_reg_def_id: &str, revoc_def_type: &str, value: &str) -> Result<String, CommonError> {
-        let rev_reg_entry: RevocationRegistryDeltaV1 = serde_json::from_str(value)
-            .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistry: {:?}", err)))?;
+        let rev_reg_entry = RevocationRegistryDeltaV1::from(
+            RevocationRegistryDelta::from_json(&value)
+                .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistry: {:?}", err)))?);
 
         let operation = RevocationRegistryEntryOperation::new(revoc_def_type, revoc_reg_def_id, rev_reg_entry);
 

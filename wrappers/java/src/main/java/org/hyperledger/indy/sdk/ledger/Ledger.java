@@ -512,7 +512,7 @@ public class Ledger extends IndyJava.API {
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> buildCredDefTxn(
+	public static CompletableFuture<String> buildCredDefRequest(
 			String submitterDid,
 			String data) throws IndyException {
 
@@ -522,7 +522,7 @@ public class Ledger extends IndyJava.API {
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_build_cred_def_txn(
+		int result = LibIndy.api.indy_build_cred_def_request(
 				commandHandle,
 				submitterDid,
 				data,
@@ -542,7 +542,7 @@ public class Ledger extends IndyJava.API {
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> buildGetCredDefTxn(
+	public static CompletableFuture<String> buildGetCredDefRequest(
 			String submitterDid,
 			String id) throws IndyException {
 
@@ -552,7 +552,7 @@ public class Ledger extends IndyJava.API {
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_build_get_cred_def_txn(
+		int result = LibIndy.api.indy_build_get_cred_def_request(
 				commandHandle,
 				submitterDid,
 				id,

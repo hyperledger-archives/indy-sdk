@@ -26,6 +26,7 @@ public class RevocRegDefRequestTest extends IndyIntegrationTestWithPoolAndSingle
 						"   }";
 
 		String data = "{\n" +
+				"        \"ver\": \"1.0\",\n" +
 				"        \"id\": \"RevocRegID\",\n" +
 				"        \"revocDefType\": \"CL_ACCUM\",\n" +
 				"        \"tag\": \"TAG1\",\n" +

@@ -517,10 +517,10 @@ pub extern fn indy_parse_get_schema_response(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_cred_def_txn(command_handle: i32,
-                                      submitter_did: *const c_char,
-                                      data: *const c_char,
-                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+pub extern fn indy_build_cred_def_request(command_handle: i32,
+                                          submitter_did: *const c_char,
+                                          data: *const c_char,
+                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             request_result_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(data, ErrorCode::CommonInvalidParam3);
@@ -557,10 +557,10 @@ pub extern fn indy_build_cred_def_txn(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_cred_def_txn(command_handle: i32,
-                                          submitter_did: *const c_char,
-                                          id: *const c_char,
-                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+pub extern fn indy_build_get_cred_def_request(command_handle: i32,
+                                              submitter_did: *const c_char,
+                                              id: *const c_char,
+                                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                 request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);

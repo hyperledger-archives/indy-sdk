@@ -18,5 +18,5 @@ async def test_build_get_cred_def_request_works(did_trustee):
         }
     }
 
-    response = json.loads((await ledger.build_get_cred_def_txn(did_trustee, id_)))
+    response = json.loads((await ledger.build_get_cred_def_request(did_trustee, id_)))
     assert expected_response.items() <= response.items()

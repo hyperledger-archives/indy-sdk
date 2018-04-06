@@ -219,10 +219,10 @@ impl LedgerUtils {
         let cred_def_json = CString::new(cred_def_json).unwrap();
 
         let err =
-            indy_build_cred_def_txn(command_handle,
-                                    submitter_did.as_ptr(),
-                                    cred_def_json.as_ptr(),
-                                    cb);
+            indy_build_cred_def_request(command_handle,
+                                        submitter_did.as_ptr(),
+                                        cred_def_json.as_ptr(),
+                                        cb);
 
         super::results::result_to_string(err, receiver)
     }
@@ -234,10 +234,10 @@ impl LedgerUtils {
         let id = CString::new(id).unwrap();
 
         let err =
-            indy_build_get_cred_def_txn(command_handle,
-                                        submitter_did.as_ptr(),
-                                        id.as_ptr(),
-                                        cb);
+            indy_build_get_cred_def_request(command_handle,
+                                            submitter_did.as_ptr(),
+                                            id.as_ptr(),
+                                            cb);
 
         super::results::result_to_string(err, receiver)
     }

@@ -49,8 +49,8 @@ public abstract class LibIndy {
 		public int indy_build_schema_request(int command_handle, String submitter_did, String data, Callback cb);
 		public int indy_build_get_schema_request(int command_handle, String submitter_did, String id, Callback cb);
 		public int indy_parse_get_schema_response(int command_handle, String get_schema_response, Callback cb);
-		public int indy_build_cred_def_txn(int command_handle, String submitter_did, String data, Callback cb);
-		public int indy_build_get_cred_def_txn(int command_handle, String submitter_did, String id, Callback cb);
+		public int indy_build_cred_def_request(int command_handle, String submitter_did, String data, Callback cb);
+		public int indy_build_get_cred_def_request(int command_handle, String submitter_did, String id, Callback cb);
 		public int indy_parse_get_cred_def_response(int command_handle, String get_cred_def_response, Callback cb);
 		public int indy_build_node_request(int command_handle, String submitter_did, String target_did, String data, Callback cb);
 		public int indy_build_get_txn_request(int command_handle, String submitter_did, int data, Callback cb);

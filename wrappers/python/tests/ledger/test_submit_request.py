@@ -217,10 +217,10 @@ async def test_cred_def_requests_works(pool_handle, wallet_handle, identity_my, 
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, my_did, schema_json, "TAG", "CL",
                                                                json.dumps({"support_revocation": False}))
 
-    cred_def_request = await ledger.build_cred_def_txn(my_did, cred_def_json)
+    cred_def_request = await ledger.build_cred_def_request(my_did, cred_def_json)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, cred_def_request)
 
-    get_cred_def_request = await ledger.build_get_cred_def_txn(my_did, cred_def_id)
+    get_cred_def_request = await ledger.build_get_cred_def_request(my_did, cred_def_id)
     get_cred_def_response = \
         await ensure_previous_request_applied(pool_handle, get_cred_def_request,
                                               lambda response: response['result']['seqNo'] is not None)
@@ -245,7 +245,7 @@ async def test_revoc_reg_def_requests_works(pool_handle, wallet_handle, identity
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, my_did, schema_json, "TAG", "CL",
                                                                json.dumps({"support_revocation": True}))
 
-    cred_def_request = await ledger.build_cred_def_txn(my_did, cred_def_json)
+    cred_def_request = await ledger.build_cred_def_request(my_did, cred_def_json)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, cred_def_request)
 
     tails_writer_config = json.dumps({'base_dir': str(path_home.joinpath("tails")), 'uri_pattern': ''})
@@ -283,7 +283,7 @@ async def test_revoc_reg_requests_works(pool_handle, wallet_handle, identity_my,
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, my_did, schema_json, "TAG", "CL",
                                                                json.dumps({"support_revocation": True}))
 
-    cred_def_request = await ledger.build_cred_def_txn(my_did, cred_def_json)
+    cred_def_request = await ledger.build_cred_def_request(my_did, cred_def_json)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, cred_def_request)
 
     tails_writer_config = json.dumps({'base_dir': str(path_home.joinpath("tails")), 'uri_pattern': ''})
@@ -326,7 +326,7 @@ async def test_revoc_reg_delta_requests_works(pool_handle, wallet_handle, identi
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, my_did, schema_json, "TAG", "CL",
                                                                json.dumps({"support_revocation": True}))
 
-    cred_def_request = await ledger.build_cred_def_txn(my_did, cred_def_json)
+    cred_def_request = await ledger.build_cred_def_request(my_did, cred_def_json)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, cred_def_request)
 
     tails_writer_config = json.dumps({'base_dir': str(path_home.joinpath("tails")), 'uri_pattern': ''})

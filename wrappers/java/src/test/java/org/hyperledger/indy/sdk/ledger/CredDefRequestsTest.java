@@ -50,7 +50,7 @@ public class CredDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWal
 				"            \"signature_type\": \"CL\"\n" +
 				"        }";
 
-		String credDefRequest = Ledger.buildCredDefTxn(DID, data).get();
+		String credDefRequest = Ledger.buildCredDefRequest(DID, data).get();
 
 		assertTrue(credDefRequest.replaceAll("\\s+", "").contains(expectedResult.replaceAll("\\s+", "")));
 	}
@@ -68,7 +68,7 @@ public class CredDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWal
 				"\"origin\":\"%s\"" +
 				"}", DID, seqNo, signatureType, DID);
 
-		String getCredDefRequest = Ledger.buildGetCredDefTxn(DID, id).get();
+		String getCredDefRequest = Ledger.buildGetCredDefRequest(DID, id).get();
 
 		assertTrue(getCredDefRequest.replace("\\", "").contains(expectedResult));
 	}
@@ -80,7 +80,7 @@ public class CredDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWal
 
 		String data = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"}}}";
 
-		Ledger.buildCredDefTxn(DID, data).get();
+		Ledger.buildCredDefRequest(DID, data).get();
 	}
 
 	@Test(timeout = 200_000)
@@ -105,10 +105,10 @@ public class CredDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWal
 		String credDefJson = createCredDefResult.getCredDefJson();
 		String credDefId = createCredDefResult.getCredDefId();
 
-		String credDefRequest = Ledger.buildCredDefTxn(myDid, credDefJson).get();
+		String credDefRequest = Ledger.buildCredDefRequest(myDid, credDefJson).get();
 		Ledger.signAndSubmitRequest(pool, wallet, myDid, credDefRequest).get();
 
-		String getCredDefRequest = Ledger.buildGetCredDefTxn(myDid, credDefId).get();
+		String getCredDefRequest = Ledger.buildGetCredDefRequest(myDid, credDefId).get();
 		String getCredDefResponse = PoolUtils.ensurePreviousRequestApplied(pool, getCredDefRequest, response -> {
 			JSONObject responseObject = new JSONObject(response);
 			return !responseObject.getJSONObject("result").isNull("seqNo");
