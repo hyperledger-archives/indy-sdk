@@ -163,6 +163,11 @@ impl CatchupHandler {
         }
 
         let active_node_cnt = self.nodes.iter().filter(|node| !node.is_blacklisted).count();
+        if active_node_cnt == 0 { // TODO FIXME
+            return Err(PoolError::Terminate);
+        }
+
+
         let txns_cnt_in_cur_mt = self.merkle_tree.count();
         let cnt_to_catchup = self.target_mt_size - txns_cnt_in_cur_mt;
         if cnt_to_catchup <= 0 {
@@ -176,10 +181,6 @@ impl CatchupHandler {
             resp_not_received_node_idx: (0..self.nodes.len()).collect(),
         });
         self.timeout = time::now_utc().add(Duration::seconds(CATCHUP_ROUND_TIMEOUT));
-
-        if active_node_cnt == 0 { // TODO FIXME
-            return Err(PoolError::Terminate);
-        }
 
         let portion = (cnt_to_catchup + active_node_cnt - 1) / active_node_cnt; //TODO check standard round up div
         let mut catchup_req = CatchupReq {
@@ -197,6 +198,11 @@ impl CatchupHandler {
             catchup_req.seqNoStart += portion;
             catchup_req.seqNoEnd = cmp::min(catchup_req.seqNoStart + portion - 1,
                                             catchup_req.catchupTill);
+
+            if catchup_req.seqNoStart > catchup_req.seqNoEnd {
+                // We don't have more portions to ask
+                break;
+            }
         }
         Ok(())
     }
