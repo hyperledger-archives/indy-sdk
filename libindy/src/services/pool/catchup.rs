@@ -197,6 +197,11 @@ impl CatchupHandler {
             catchup_req.seqNoStart += portion;
             catchup_req.seqNoEnd = cmp::min(catchup_req.seqNoStart + portion - 1,
                                             catchup_req.catchupTill);
+
+            if catchup_req.seqNoStart > catchup_req.seqNoEnd {
+                // We don't have more portions to ask
+                break;
+            }
         }
         Ok(())
     }
