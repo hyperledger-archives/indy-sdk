@@ -93,7 +93,7 @@ public abstract class LibIndy {
 
 		// anoncreds.rs
 
-//		public int indy_issuer_create_schema(int command_handle, String issuer_did, String name, String version, String attr_names, Callback cb);
+		public int indy_issuer_create_schema(int command_handle, String issuer_did, String name, String version, String attr_names, Callback cb);
 		public int indy_issuer_create_and_store_credential_def(int command_handle, int wallet_handle, String issuer_did, String schema_json, String tag, String type_, String config_json, Callback cb);
 		public int indy_issuer_create_and_store_revoc_reg(int command_handle, int wallet_handle, String issuer_did, String type_, String tag, String cred_def_id, String config_json, int blob_storage_writer_handle, Callback cb);
 		public int indy_issuer_create_credential_offer(int command_handle, int wallet_handle, String cred_def_id, Callback cb);

@@ -41,6 +41,38 @@ Anoncreds protocol links:
 ### Issuer
 
 ```Rust
+/// Create credential schema entity that describes credential attributes list and allows credentials
+/// interoperability.
+///
+/// Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
+/// to Indy distributed ledger.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context
+/// issuer_did: DID of schema issuer
+/// name: a name the schema
+/// version: a version of the schema
+/// attrs: a list of schema attributes descriptions
+/// cb: Callback that takes command result as parameter
+///
+/// #Returns
+/// schema_id: identifier of created schema
+/// schema_json: schema as json
+///
+/// #Errors
+/// Common*
+/// Anoncreds*
+#[no_mangle]
+pub extern fn indy_issuer_create_schema(command_handle: i32,
+                                        issuer_did: *const c_char,
+                                        name: *const c_char,
+                                        version: *const c_char,
+                                        attrs: *const c_char,
+                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                             id: *const c_char, schema_json: *const c_char)>) -> ErrorCode
+```
+
+```Rust
 /// Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
 /// and secrets used for credentials revocation.
 ///

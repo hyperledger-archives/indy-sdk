@@ -3,15 +3,6 @@ from indy import anoncreds, wallet, blob_storage
 import pytest
 import json
 
-schema_id = "1"
-schema_json = json.dumps({
-    "id": schema_id,
-    "name": "abc",
-    "version": "1.0",
-    "attrNames": ["name", "age", "sex", "height"],
-    "ver": "1.0"
-})
-
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
@@ -23,6 +14,9 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home):
     # 2. Issuer create credential Definition for Schema
     issuer_did = 'NcYxiDXkpYi6ov5FcYDi1e'
     prover_did = 'VsKV7grR1BUE29mG2Fm2kX'
+
+    (schema_id, schema_json) = await anoncreds.issuer_create_schema(issuer_did, "gvt", '1.0',
+                                                                    '["age", "sex", "height", "name"]')
 
     (cred_def_id, cred_def_json) = \
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, issuer_did, schema_json, 'tag1', 'CL',
@@ -116,6 +110,9 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name,
     prover_did = 'VsKV7grR1BUE29mG2Fm2kX'
 
     # 2. Issuer create credential Definition for Schema
+    (schema_id, schema_json) = await anoncreds.issuer_create_schema(issuer_did, "gvt", '1.0',
+                                                                    '["age", "sex", "height", "name"]')
+
     (cred_def_id, cred_def_json) = \
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, issuer_did, schema_json, 'tag1', 'CL',
                                                                '{"support_revocation": true}')

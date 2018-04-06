@@ -86,8 +86,12 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 	@Test
 	public void testAnoncredsDemo() throws Exception {
 
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String gvtSchemaId = createSchemaResult.getSchemaId();
+		String gvtSchema = createSchemaResult.getSchemaJson();
+
 		// Issuer create CredentialDef
-		IssuerCreateAndStoreCredentialDefResult createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, GVT_SCHEMA, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		IssuerCreateAndStoreCredentialDefResult createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, gvtSchema, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
 		String credDefId = createCredDefResult.getCredDefId();
 		String credDef = createCredDefResult.getCredDefJson();
 
@@ -147,7 +151,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                                          \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\"}}\n" +
 				"                                        }", selfAttestedValue, credentialUuid, credentialUuid, credentialUuid)).toString();
 
-		String schemas = new JSONObject(String.format("{\"%s\":%s}", GVT_SCHEMA_ID, GVT_SCHEMA)).toString();
+		String schemas = new JSONObject(String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema)).toString();
 		String credentialDefs = new JSONObject(String.format("{\"%s\":%s}", credDefId, credDef)).toString();
 		String revocStates = new JSONObject("{}").toString();
 
@@ -179,16 +183,26 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Wallet.createWallet(poolName, "issuer2Wallet", "default", null, null).get();
 		Wallet issuerXyzWallet = Wallet.openWallet("issuer2Wallet", null, null).get();
 
-		// Issuer create CredentialDef
-		IssuerCreateAndStoreCredentialDefResult createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerGvtWallet, issuerDid, GVT_SCHEMA, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		// Issuer1 create GVT Schema
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String gvtSchemaId = createSchemaResult.getSchemaId();
+		String gvtSchema = createSchemaResult.getSchemaJson();
+
+		// Issuer1 create CredentialDef
+		IssuerCreateAndStoreCredentialDefResult createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerGvtWallet, issuerDid, gvtSchema, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
 		String gvtCredDefId = createCredDefResult.getCredDefId();
 		String gvtCredDef = createCredDefResult.getCredDefJson();
 
 		// Issuer2 create XYZ Schema
 		String issuerDid2 = "VsKV7grR1BUE29mG2Fm2kX";
 
-		// Issuer create CredentialDef
-		createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerXyzWallet, issuerDid2, XYZ_SCHEMA, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		// Issuer2 create XYZ Schema
+		createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid2, XYZ_SCHEMA_NAME, SCHEMA_VERSION, XYZ_SCHEMA_ATTRIBUTES).get();
+		String xyzSchemaId = createSchemaResult.getSchemaId();
+		String xyzSchema = createSchemaResult.getSchemaJson();
+
+		//5. Issuer create CredentialDef
+		createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerXyzWallet, issuerDid2, xyzSchema, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
 		String xyzCredDefId = createCredDefResult.getCredDefId();
 		String xyzCredDef = createCredDefResult.getCredDefJson();
 
@@ -269,7 +283,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                                                                    \"predicate2_referent\":{\"cred_id\":\"%s\"}}\n" +
 				"                                        }", credentialUuidForAttr1, credentialUuidForAttr2, credentialUuidForPredicate1, credentialUuidForPredicate2)).toString();
 
-		String schemas = new JSONObject(String.format("{\"%s\":%s, \"%s\":%s}", GVT_SCHEMA_ID, GVT_SCHEMA, XYZ_SCHEMA_ID, XYZ_SCHEMA)).toString();
+		String schemas = new JSONObject(String.format("{\"%s\":%s, \"%s\":%s}", gvtSchemaId, gvtSchema, xyzSchemaId, xyzSchema)).toString();
 		String credentialDefs = new JSONObject(String.format("{\"%s\":%s, \"%s\":%s}", gvtCredDefId, gvtCredDef, xyzCredDefId, xyzCredDef)).toString();
 		String revocStates = new JSONObject("{}").toString();
 
@@ -297,14 +311,23 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 	@Test
 	public void testAnoncredsWorksForSingleIssuerSingleProverMultipleCredentials() throws Exception {
+		// Issuer create GVT Schema
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String gvtSchemaId = createSchemaResult.getSchemaId();
+		String gvtSchema = createSchemaResult.getSchemaJson();
 
 		// Issuer create CredentialDef
-		IssuerCreateAndStoreCredentialDefResult createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, GVT_SCHEMA, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		IssuerCreateAndStoreCredentialDefResult createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, gvtSchema, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
 		String gvtCredDefId = createCredDefResult.getCredDefId();
 		String gvtCredDef = createCredDefResult.getCredDefJson();
 
+		// Issuer create XYZ Schema
+		createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, XYZ_SCHEMA_NAME, SCHEMA_VERSION, XYZ_SCHEMA_ATTRIBUTES).get();
+		String xyzSchemaId = createSchemaResult.getSchemaId();
+		String xyzSchema = createSchemaResult.getSchemaJson();
+
 		// Issuer create CredentialDef
-		createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, XYZ_SCHEMA, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, xyzSchema, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
 		String xyzCredDefId = createCredDefResult.getCredDefId();
 		String xyzCredDef = createCredDefResult.getCredDefJson();
 
@@ -387,7 +410,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                                                                    \"predicate2_referent\":{\"cred_id\":\"%s\"}}\n" +
 				"                                        }", credentialUuidForAttr1, credentialUuidForAttr2, credentialUuidForPredicate1, credentialUuidForPredicate2);
 
-		String schemas = new JSONObject(String.format("{\"%s\":%s, \"%s\":%s}", GVT_SCHEMA_ID, GVT_SCHEMA, XYZ_SCHEMA_ID, XYZ_SCHEMA)).toString();
+		String schemas = new JSONObject(String.format("{\"%s\":%s, \"%s\":%s}", gvtSchemaId, gvtSchema, xyzSchemaId, xyzSchema)).toString();
 		String credentialDefs = new JSONObject(String.format("{\"%s\":%s, \"%s\":%s}", gvtCredDefId, gvtCredDef, xyzCredDefId, xyzCredDef)).toString();
 		String revocStates = new JSONObject("{}").toString();
 
@@ -412,9 +435,14 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 	@Test
 	public void testAnoncredsWorksForRevocationProof() throws Exception {
 
+		// Issuer create Schema
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String gvtSchemaId = createSchemaResult.getSchemaId();
+		String schemaJson = createSchemaResult.getSchemaJson();
+
 		// Issuer create credential definition
 		String revocationCredentialDefConfig = "{\"support_revocation\":true}";
-		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredentialDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, GVT_SCHEMA, TAG, null, revocationCredentialDefConfig).get();
+		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredentialDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, schemaJson, TAG, null, revocationCredentialDefConfig).get();
 		String credDefId = createCredentialDefResult.getCredDefId();
 		String credDef = createCredentialDefResult.getCredDefJson();
 
@@ -484,7 +512,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"\"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\", \"timestamp\":%d}}" +
 				"}", credentialUuid, timestamp, credentialUuid, timestamp)).toString();
 
-		String schemas = new JSONObject(String.format("{\"%s\":%s}", GVT_SCHEMA_ID, GVT_SCHEMA)).toString();
+		String schemas = new JSONObject(String.format("{\"%s\":%s}", gvtSchemaId, schemaJson)).toString();
 		String credentialDefs = new JSONObject(String.format("{\"%s\":%s}", credDefId, credDef)).toString();
 		String revStates = new JSONObject(String.format("{\"%s\": { \"%s\":%s }}", revRegId, timestamp, revStateJson)).toString();
 
@@ -509,8 +537,13 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
+		// Issuer create Schema
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String gvtSchemaId = createSchemaResult.getSchemaId();
+		String gvtSchema = createSchemaResult.getSchemaJson();
+
 		// Issuer create CredentialDef
-		IssuerCreateAndStoreCredentialDefResult createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, GVT_SCHEMA, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		IssuerCreateAndStoreCredentialDefResult createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, gvtSchema, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
 		String credDefId = createCredDefResult.getCredDefId();
 		String credDef = createCredDefResult.getCredDefJson();
 
@@ -544,7 +577,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                          \"attr2_referent\":{ \"name\":\"phone\"}" +
 				"                     }," +
 				"                    \"requested_predicates\":{}" +
-				"                  }", GVT_SCHEMA_ID)).toString();
+				"                  }", gvtSchemaId)).toString();
 
 		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson).get();
 		assertNotNull(credentialsForProofJson);
@@ -564,7 +597,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                                          \"requested_predicates\":{}\n" +
 				"                                        }", selfAttestedValue, credentialUuid)).toString();
 
-		String schemas = new JSONObject(String.format("{\"%s\":%s}", GVT_SCHEMA_ID, GVT_SCHEMA)).toString();
+		String schemas = new JSONObject(String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema)).toString();
 		String credentialDefs = new JSONObject(String.format("{\"%s\":%s}", credDefId, credDef)).toString();
 		String revocInfos = new JSONObject("{}").toString();
 
@@ -591,7 +624,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"requested_predicates\":{" +
 				"                          \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
 				"                    }" +
-				"                  }", GVT_SCHEMA_ID)).toString();
+				"                  }", gvtSchemaId)).toString();
 
 
 		Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemas, credentialDefs, revocRegDefs, revocRegs).get();

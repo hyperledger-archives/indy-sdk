@@ -24,9 +24,14 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 		Wallet.createWallet("default", walletName, "default", null, null).get();
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 
+		// Issuer create Schema
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, gvtSchemaName, schemaVersion, gvtSchemaAttributes).get();
+		String schemaId = createSchemaResult.getSchemaId();
+		String schemaJson = createSchemaResult.getSchemaJson();
+
 		// Issuer create issuer1GvtCredential definition
 		String revocationCredentialDefConfig = "{\"support_revocation\":true}";
-		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredentialDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, tag, null, revocationCredentialDefConfig).get();
+		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredentialDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, schemaJson, tag, null, revocationCredentialDefConfig).get();
 		String credDefId = createCredentialDefResult.getCredDefId();
 		String credDefJson = createCredentialDefResult.getCredDefJson();
 
@@ -81,7 +86,7 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 				"\"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\", \"timestamp\":%d}}" +
 				"}", credentialUuid, timestamp, credentialUuid, timestamp);
 
-		String schemasJson = new JSONObject(String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema)).toString();
+		String schemasJson = new JSONObject(String.format("{\"%s\":%s}", schemaId, schemaJson)).toString();
 		String credentialDefsJson = new JSONObject(String.format("{\"%s\":%s}", credDefId, credDefJson)).toString();
 		String revStatesJson = new JSONObject(String.format("{\"%s\": { \"%s\":%s }}", revRegId, timestamp, revStateJson)).toString();
 

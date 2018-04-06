@@ -86,16 +86,6 @@ def metadata():
 
 
 @pytest.fixture
-def schema_data():
-    return json.dumps({"name": "gvt", "version": "1.0", "attr_names": ["name"]})
-
-
-@pytest.fixture
-def gvt_schema_data():
-    return json.dumps({"name": "gvt", "version": "1.0", "attr_names": ["name", "sex", "height", "age"]})
-
-
-@pytest.fixture
 def path_temp():
     logger = logging.getLogger(__name__)
     logger.debug("path_temp: >>>")
@@ -479,11 +469,3 @@ async def identity_my2(wallet_handle, identity_trustee1, seed_my2, ):
 async def key_my1(wallet_handle, seed_my1, ):
     key = await did.create_key(wallet_handle, json.dumps({"seed": seed_my1}))
     return key
-
-
-@pytest.fixture
-async def schema_id(pool_handle, wallet_handle, identity_my, gvt_schema_data):
-    my_did, _ = identity_my
-    schema_request = await ledger.build_schema_request(my_did, gvt_schema_data)
-    schema_response = await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
-    return json.loads(schema_response)["result"]["seqNo"]

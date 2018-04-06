@@ -64,15 +64,26 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     let nym_request = LedgerUtils::build_nym_request(&issuer_did, &prover_did, Some(&prover_verkey), None, None).unwrap();
     LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &nym_request).unwrap();
 
-    // Assume that somebody posted Schema in Ledger and Issuer got it
-    let schema_id = LedgerUtils::publish_schema_in_ledger(pool_handle);
+    // ISSUER post to Ledger Schema, CredentialDefinition, RevocationRegistry
+
+    // Issuer creates Schema
+    let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(&issuer_did,
+                                                                        GVT_SCHEMA_NAME,
+                                                                        SCHEMA_VERSION,
+                                                                        GVT_SCHEMA_ATTRIBUTES).unwrap();
+
+    // !!IMPORTANT!!
+    // It is important Post and Get Schema from Ledger and parse it to get the correct Schema JSON and correspondent it seq_no in Ledger
+    // After that we can create CredentialDefinition for received Schema(not for result of indy_issuer_create_schema)
+
+    // Issuer posts Schema to Ledger
+    let schema_request = LedgerUtils::build_schema_request(&issuer_did, &schema_json).unwrap();
+    LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
 
     // Issuer gets Schema from Ledger
     let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &schema_id).unwrap();
     let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
     let (_, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
-
-    // ISSUER post to Ledger CredentialDefinition, RevocationRegistry
 
     // Issuer creates CredentialDefinition
     let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -396,15 +407,26 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
     let nym_request = LedgerUtils::build_nym_request(&issuer_did, &prover_did, Some(&prover_verkey), None, None).unwrap();
     LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &nym_request).unwrap();
 
-    // Assume that somebody posted Schema in Ledger and Issuer got it
-    let schema_id = LedgerUtils::publish_schema_in_ledger(pool_handle);
+    // ISSUER post to Ledger Schema, CredentialDefinition, RevocationRegistry
+
+    // Issuer creates Schema
+    let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(&issuer_did,
+                                                                        GVT_SCHEMA_NAME,
+                                                                        SCHEMA_VERSION,
+                                                                        GVT_SCHEMA_ATTRIBUTES).unwrap();
+
+    // !!IMPORTANT!!
+    // It is important Post and Get Schema from Ledger and parse it to get the correct Schema JSON and correspondent it seq_no in Ledger
+    // After that we can create CredentialDefinition for received Schema(not for result of indy_issuer_create_schema)
+
+    // Issuer posts Schema to Ledger
+    let schema_request = LedgerUtils::build_schema_request(&issuer_did, &schema_json).unwrap();
+    LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
 
     // Issuer gets Schema from Ledger
     let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &schema_id).unwrap();
     let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
-    let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
-
-    // ISSUER post to Ledger CredentialDefinition, RevocationRegistry
+    let (_, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
 
     // Issuer creates CredentialDefinition
     let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -697,15 +719,26 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     // Prover1 create DID
     let (prover1_did, _) = DidUtils::create_my_did(prover1_wallet_handle, "{}").unwrap();
 
-    // Assume that somebody posted Schema in Ledger and Issuer got it
-    let schema_id = LedgerUtils::publish_schema_in_ledger(pool_handle);
+    // ISSUER post to Ledger Schema, CredentialDefinition, RevocationRegistry
+
+    // Issuer creates Schema
+    let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(&issuer_did,
+                                                                        GVT_SCHEMA_NAME,
+                                                                        SCHEMA_VERSION,
+                                                                        GVT_SCHEMA_ATTRIBUTES).unwrap();
+
+    // !!IMPORTANT!!
+    // It is important Post and Get Schema from Ledger and parse it to get the correct Schema JSON and correspondent it seq_no in Ledger
+    // After that we can create CredentialDefinition for received Schema(not for result of indy_issuer_create_schema)
+
+    // Issuer posts Schema to Ledger
+    let schema_request = LedgerUtils::build_schema_request(&issuer_did, &schema_json).unwrap();
+    LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
 
     // Issuer gets Schema from Ledger
     let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &schema_id).unwrap();
     let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
-    let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
-
-    // ISSUER post to Ledger CredentialDefinition, RevocationRegistry
+    let (_, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
 
     // Issuer creates CredentialDefinition
     let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -969,13 +1002,26 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 
     // ISSUER post to Ledger Schema, CredentialDefinition, RevocationRegistry
 
-    // Assume that somebody posted Schema in Ledger and Issuer got it
-    let schema_id = LedgerUtils::publish_schema_in_ledger(pool_handle);
+    // ISSUER post to Ledger Schema, CredentialDefinition, RevocationRegistry
+
+    // Issuer creates Schema
+    let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(&issuer_did,
+                                                                        GVT_SCHEMA_NAME,
+                                                                        SCHEMA_VERSION,
+                                                                        GVT_SCHEMA_ATTRIBUTES).unwrap();
+
+    // !!IMPORTANT!!
+    // It is important Post and Get Schema from Ledger and parse it to get the correct Schema JSON and correspondent it seq_no in Ledger
+    // After that we can create CredentialDefinition for received Schema(not for result of indy_issuer_create_schema)
+
+    // Issuer posts Schema to Ledger
+    let schema_request = LedgerUtils::build_schema_request(&issuer_did, &schema_json).unwrap();
+    LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
 
     // Issuer gets Schema from Ledger
     let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &schema_id).unwrap();
     let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
-    let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
+    let (_, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
 
     // Issuer creates CredentialDefinition
     let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,

@@ -623,19 +623,14 @@ impl JsonEncodable for GetRevRegDeltaOperation {}
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct GetSchemaReplyResultData {
+pub struct GetSchemaReplyResult {
     pub identifier: String,
     pub req_id: u64,
-    pub seq_no: i32,
+    pub seq_no: u32,
     #[serde(rename = "type")]
     pub  _type: String,
-    pub  data: SchemaOperationData
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct GetSchemaReplyResult {
-    pub  data: GetSchemaReplyResultData
+    pub  data: SchemaOperationData,
+    pub  dest: String
 }
 
 impl<'a> JsonDecodable<'a> for GetSchemaReplyResult {}

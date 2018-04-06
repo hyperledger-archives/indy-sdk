@@ -17,7 +17,7 @@ impl JsonEncodable for CredentialsForProofRequest {}
 
 impl<'a> JsonDecodable<'a> for CredentialsForProofRequest {}
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RequestedCredential {
     pub cred_info: CredentialInfo,
     pub interval: Option<NonRevocedInterval>

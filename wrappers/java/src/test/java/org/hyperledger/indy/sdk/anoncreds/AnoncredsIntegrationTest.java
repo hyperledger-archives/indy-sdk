@@ -23,22 +23,10 @@ public class AnoncredsIntegrationTest {
 	private static Boolean walletOpened = false;
 
 	static Wallet wallet;
-	static String gvtSchemaId = "1";
-	static String gvtSchema = "{\n" +
-			"        \"id\": \"1\",\n" +
-			"        \"name\": \"gvt\",\n" +
-			"        \"version\": \"1.0\",\n" +
-			"        \"attrNames\": [\"name\", \"age\", \"sex\", \"height\"],\n" +
-			"        \"ver\": \"1.0\"\n" +
-			"    }";
-	static String xyzSchemaId = "2";
-	static String xyzSchema = "{\n" +
-			"        \"id\": \"2\",\n" +
-			"        \"name\": \"xyz\",\n" +
-			"        \"version\": \"1.0\",\n" +
-			"        \"attrNames\": [\"status\", \"period\"],\n" +
-			"        \"ver\": \"1.0\"\n" +
-			"    }";
+	static String gvtSchemaId;
+	static String gvtSchema;
+	static String xyzSchemaId;
+	static String xyzSchema;
 	static String issuer1gvtCredDefId;
 	static String issuer1gvtCredDef;
 	static String issuer1xyzCredDefId;
@@ -98,6 +86,17 @@ public class AnoncredsIntegrationTest {
 
 		Wallet.createWallet("default", walletName, "default", null, null).get();
 		wallet = Wallet.openWallet(walletName, null, null).get();
+
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult =
+				Anoncreds.issuerCreateSchema(issuerDid, gvtSchemaName, schemaVersion, gvtSchemaAttributes).get();
+		gvtSchemaId = createSchemaResult.getSchemaId();
+		gvtSchema = createSchemaResult.getSchemaJson();
+
+		String xyzSchemaAttributes = "[\"status\", \"period\"]";
+		String xyzSchemaName = "xyz";
+		createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, xyzSchemaName, schemaVersion, xyzSchemaAttributes).get();
+		xyzSchemaId = createSchemaResult.getSchemaId();
+		xyzSchema = createSchemaResult.getSchemaJson();
 
 		//Issue GVT issuer1GvtCredential by Issuer1
 		IssuerCreateAndStoreCredentialDefResult issuer1CreateGvtCredDefResult =

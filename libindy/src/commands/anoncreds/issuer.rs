@@ -52,12 +52,12 @@ use domain::credential_offer::CredentialOffer;
 use domain::credential_request::CredentialRequest;
 
 pub enum IssuerCommand {
-    /*    CreateSchema(
-            String, // issuer did
-            String, // name
-            String, // version
-            String, // attribute names
-            Box<Fn(Result<(String, String), IndyError>) + Send>),*/
+    CreateSchema(
+        String, // issuer did
+        String, // name
+        String, // version
+        String, // attribute names
+        Box<Fn(Result<(String, String), IndyError>) + Send>),
     CreateAndStoreCredentialDefinition(
         i32, // wallet handle
         String, // issuer did
@@ -130,10 +130,10 @@ impl IssuerCommandExecutor {
 
     pub fn execute(&self, command: IssuerCommand) {
         match command {
-            /*            IssuerCommand::CreateSchema(issuer_did, name, version, attrs, cb) => {
-                            trace!(target: "issuer_command_executor", "CreateSchema command received");
-                            cb(self.create_schema(&issuer_did, &name, &version, &attrs));
-                        }*/
+            IssuerCommand::CreateSchema(issuer_did, name, version, attrs, cb) => {
+                trace!(target: "issuer_command_executor", "CreateSchema command received");
+                cb(self.create_schema(&issuer_did, &name, &version, &attrs));
+            }
             IssuerCommand::CreateAndStoreCredentialDefinition(wallet_handle, issuer_did, schema_json, tag, type_, config_json, cb) => {
                 trace!(target: "issuer_command_executor", "CreateAndStoreCredentialDefinition command received");
                 cb(self.create_and_store_credential_definition(wallet_handle, &issuer_did, &schema_json, &tag,
@@ -173,11 +173,11 @@ impl IssuerCommandExecutor {
         };
     }
 
-    fn _create_schema(&self,
-                      issuer_did: &str,
-                      name: &str,
-                      version: &str,
-                      attrs: &str) -> Result<(String, String), IndyError> {
+    fn create_schema(&self,
+                     issuer_did: &str,
+                     name: &str,
+                     version: &str,
+                     attrs: &str) -> Result<(String, String), IndyError> {
         trace!("create_schema >>> issuer_did: {:?}, name: {:?}, version: {:?}, attrs: {:?}", issuer_did, name, version, attrs);
 
         self.crypto_service.validate_did(issuer_did)?;
@@ -196,6 +196,7 @@ impl IssuerCommandExecutor {
             name: name.to_string(),
             version: version.to_string(),
             attr_names: attrs,
+            seq_no: None
         });
 
         let schema_json = schema.to_json()
@@ -231,7 +232,9 @@ impl IssuerCommandExecutor {
             None => SignatureType::CL,
         };
 
-        let cred_def_id = CredentialDefinition::cred_def_id(issuer_did, &schema.id, &signature_type.to_str()); // TODO: FIXME
+        let schema_id = schema.seq_no.map(|n| n.to_string()).unwrap_or(schema.id.clone());
+
+        let cred_def_id = CredentialDefinition::cred_def_id(issuer_did, &schema_id, &signature_type.to_str()); // TODO: FIXME
 
         if self.wallet_service.get(wallet_handle, &format!("credential_definition::{}", cred_def_id)).is_ok() {
             return Err(IndyError::AnoncredsError(AnoncredsError::CredDefAlreadyExists(format!("CredentialDefinition for cred_def_id: {:?} already exists", cred_def_id))));
@@ -244,7 +247,7 @@ impl IssuerCommandExecutor {
             CredentialDefinition::CredentialDefinitionV1(
                 CredentialDefinitionV1 {
                     id: cred_def_id.clone(),
-                    schema_id: schema.id,
+                    schema_id,
                     signature_type,
                     tag: tag.to_string(),
                     value: credential_definition_value
@@ -262,6 +265,8 @@ impl IssuerCommandExecutor {
                                        &format!("credential_key_correctness_proof::{}", cred_def_id),
                                        &credential_key_correctness_proof,
                                        "CredentialKeyCorrectnessProof")?;
+
+        self.wallet_service.set(wallet_handle, &format!("full_schema_id::{}", cred_def_id),& schema.id)?; // TODO: FIXME
 
         trace!("create_and_store_credential_definition <<< cred_def_id: {:?}, credential_definition_json: {:?}", cred_def_id, credential_definition_json);
         Ok((cred_def_id, credential_definition_json))
@@ -412,6 +417,8 @@ impl IssuerCommandExecutor {
         let cred_priv_key: CredentialPrivateKey =
             self.wallet_service.get_object(wallet_handle, &format!("credential_private_key::{}", cred_request.cred_def_id), "CredentialPrivateKey", &mut String::new())?;
 
+        let schema_id = self.wallet_service.get(wallet_handle, &format!("full_schema_id::{}", &cred_offer.cred_def_id))?; // TODO: FIXME
+
         let (rev_reg_def, mut rev_reg,
             rev_key_priv, sdk_tails_accessor, cred_rev_id) = match rev_reg_id {
             Some(ref r_reg_id) => {
@@ -485,7 +492,7 @@ impl IssuerCommandExecutor {
             };
 
         let credential = Credential {
-            schema_id: cred_def.schema_id,
+            schema_id,
             cred_def_id: cred_request.cred_def_id.clone(),
             rev_reg_id: rev_reg_id.map(String::from),
             values: cred_values,

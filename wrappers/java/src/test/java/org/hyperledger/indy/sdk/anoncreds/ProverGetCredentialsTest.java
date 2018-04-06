@@ -4,7 +4,6 @@ package org.hyperledger.indy.sdk.anoncreds;
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -54,7 +53,6 @@ public class ProverGetCredentialsTest extends AnoncredsIntegrationTest {
 	}
 
 	@Test
-	@Ignore
 	public void testProverGetCredentialsWorksForFilterBySchemaName() throws Exception {
 
 		JSONObject json = new JSONObject();
@@ -68,7 +66,6 @@ public class ProverGetCredentialsTest extends AnoncredsIntegrationTest {
 	}
 
 	@Test
-	@Ignore
 	public void testProverGetCredentialsWorksForFilterByCredDefId() throws Exception {
 		JSONObject json = new JSONObject();
 		String filter = json.put("cred_def_id", issuer1gvtCredDefId).toString();

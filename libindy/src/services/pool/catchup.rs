@@ -163,6 +163,7 @@ impl CatchupHandler {
         }
 
         let active_node_cnt = self.nodes.iter().filter(|node| !node.is_blacklisted).count();
+        
         let txns_cnt_in_cur_mt = self.merkle_tree.count();
         let cnt_to_catchup = self.target_mt_size - txns_cnt_in_cur_mt;
         if cnt_to_catchup <= 0 {
@@ -193,6 +194,11 @@ impl CatchupHandler {
             catchup_req.seqNoStart += portion;
             catchup_req.seqNoEnd = cmp::min(catchup_req.seqNoStart + portion - 1,
                                             catchup_req.catchupTill);
+
+            if catchup_req.seqNoStart > catchup_req.seqNoEnd {
+                // We don't have more portions to ask
+                break;
+            }
         }
         Ok(())
     }

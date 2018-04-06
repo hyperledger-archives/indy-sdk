@@ -107,8 +107,11 @@ impl LedgerService {
     }
 
     pub fn build_schema_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
-        let schema_data: SchemaOperationData = serde_json::from_str(data)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Schema: {:?}", err)))?;
+        let schema = SchemaV1::from(
+            Schema::from_json(&data)
+                .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Schema: {:?}", err)))?);
+
+        let schema_data = SchemaOperationData::new(schema.name, schema.version, schema.attr_names);
 
         let operation = SchemaOperation::new(schema_data);
         Request::build_request(identifier, operation)
@@ -116,12 +119,18 @@ impl LedgerService {
     }
 
     pub fn build_get_schema_request(&self, identifier: &str, id: &str) -> Result<String, CommonError> {
-        let seq_no = id.parse::<i32>()
-            .map_err(|_| CommonError::InvalidStructure(format!("Schema ID is invalid")))?;
+        let parts: Vec<&str> = id.split_terminator(DELIMITER).collect::<Vec<&str>>();
+        let dest = parts.get(0)
+            .ok_or(CommonError::InvalidStructure(format!("Schema issuer DID not found in: {}", id)))?.to_string();
+        let name = parts.get(2)
+            .ok_or(CommonError::InvalidStructure(format!("Schema name not found in: {}", id)))?.to_string();
+        let version = parts.get(3)
+            .ok_or(CommonError::InvalidStructure(format!("Schema version not found in: {}", id)))?.to_string();
 
-        let operation = GetTxnOperation::new(seq_no);
+        let data = GetSchemaOperationData::new(name, version);
+        let operation = GetSchemaOperation::new(dest, data);
         Request::build_request(identifier, operation)
-            .map_err(|err| CommonError::InvalidState(format!("GET_TXN request json is invalid {:?}.", err)))
+            .map_err(|err| CommonError::InvalidState(format!("GET_SCHEMA request json is invalid {:?}.", err)))
     }
 
     pub fn build_cred_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
@@ -247,7 +256,7 @@ impl LedgerService {
     pub fn parse_response<'a, T>(response: &'a str) -> Result<Reply<T>, LedgerError> where T: JsonDecodable<'a> {
         let message: Message<T> = serde_json::from_str(&response)
             .map_err(|err|
-                LedgerError::CommonError(CommonError::InvalidStructure(format!("Cannot deserialize transaction Response: {:?}", err))))?;
+                LedgerError::InvalidTransaction(format!("Cannot deserialize transaction Response: {:?}", err)))?;
 
         match message {
             Message::Reject(response) | Message::ReqNACK(response) =>
@@ -260,13 +269,16 @@ impl LedgerService {
     pub fn parse_get_schema_response(&self, get_schema_response: &str) -> Result<(String, String), LedgerError> {
         let reply: Reply<GetSchemaReplyResult> = LedgerService::parse_response(get_schema_response)?;
 
-        Ok((reply.result.data.seq_no.to_string(),
+        let id = Schema::schema_id(&reply.result.dest, &reply.result.data.name, &reply.result.data.version.clone());
+
+        Ok((id.clone(),
             Schema::SchemaV1(
                 SchemaV1 {
-                    name: reply.result.data.data.name.clone(),
-                    version: reply.result.data.data.version.clone(),
-                    attr_names: reply.result.data.data.attr_names,
-                    id: reply.result.data.seq_no.to_string() // TODO: FIXME
+                    name: reply.result.data.name.clone(),
+                    version: reply.result.data.version.clone(),
+                    attr_names: reply.result.data.attr_names,
+                    id,
+                    seq_no: Some(reply.result.seq_no)
                 })
                 .to_json()
                 .map_err(|err|
@@ -488,7 +500,7 @@ mod tests {
     fn build_schema_request_works_for_correct_data() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
-        let data = r#"{"name":"name", "version":"1.0", "attr_names":["male"], "id":"id"}"#;
+        let data = r#"{"name":"name", "version":"1.0", "attrNames":["male"], "id":"id", "ver":"1.0"}"#;
 
         let expected_result = r#""operation":{"type":"101","data":{"name":"name","version":"1.0","attr_names":["male"]}},"protocolVersion":1"#;
 
@@ -510,11 +522,11 @@ mod tests {
     fn build_get_schema_request_works_for_correct_data() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
-        let id = "1";
+        let id = Schema::schema_id("identifier", "name", "1.0");
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"107","dest":"identifier","data":{"name":"name","version":"1.0"}},"protocolVersion":1"#;
 
-        let get_schema_request = ledger_service.build_get_schema_request(identifier, id).unwrap();
+        let get_schema_request = ledger_service.build_get_schema_request(identifier, &id).unwrap();
         assert!(get_schema_request.contains(expected_result));
     }
 

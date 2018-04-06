@@ -87,12 +87,14 @@ public class CredDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWal
 	public void testCredDefRequestsWorks() throws Exception {
 		String myDid = createStoreAndPublishDidFromTrustee();
 
-		String schemaRequest = Ledger.buildSchemaRequest(myDid, SCHEMA_DATA).get();
-		String schemaResponse = Ledger.signAndSubmitRequest(pool, wallet, myDid, schemaRequest).get();
-		JSONObject schema = new JSONObject(schemaResponse);
-		int schemaId = schema.getJSONObject("result").getInt("seqNo");
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(myDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String schema = createSchemaResult.getSchemaJson();
+		String schemaId = createSchemaResult.getSchemaId();
 
-		String getSchemaRequest = Ledger.buildGetSchemaRequest(myDid, String.valueOf(schemaId)).get();
+		String schemaRequest = Ledger.buildSchemaRequest(myDid, schema).get();
+		Ledger.signAndSubmitRequest(pool, wallet, myDid, schemaRequest).get();
+
+		String getSchemaRequest = Ledger.buildGetSchemaRequest(myDid, schemaId).get();
 		String getSchemaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaRequest, response -> {
 			JSONObject getSchemaResponseObject = new JSONObject(response);
 			return !getSchemaResponseObject.getJSONObject("result").isNull("seqNo");

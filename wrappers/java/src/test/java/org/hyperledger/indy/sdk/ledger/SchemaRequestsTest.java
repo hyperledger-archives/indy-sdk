@@ -2,6 +2,8 @@ package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
+import org.hyperledger.indy.sdk.anoncreds.Anoncreds;
+import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.*;
@@ -27,14 +29,11 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 
 	@Test
 	public void testBuildGetSchemaRequestWorks() throws Exception {
+		String id = String.format("%s:1:%s:%s", DID, GVT_SCHEMA_NAME, SCHEMA_VERSION);
 
-		String expectedResult = String.format("\"identifier\":\"%s\"," +
-				"\"operation\":{" +
-				"\"type\":\"3\"," +
-				"\"data\":%s" +
-				"}", DID, 1);
+		String expectedResult = "\"operation\":{\"type\":\"107\",\"dest\":\"8wZcEriaNLNKtteJvx7f8i\",\"data\":{\"name\":\"gvt\",\"version\":\"1.0\"}}";
 
-		String getSchemaRequest = Ledger.buildGetSchemaRequest(DID, "1").get();
+		String getSchemaRequest = Ledger.buildGetSchemaRequest(DID, id).get();
 
 		assertTrue(getSchemaRequest.contains(expectedResult));
 	}
@@ -52,15 +51,17 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 	public void testSchemaRequestsWorks() throws Exception {
 		String did = createStoreAndPublishDidFromTrustee();
 
-		String schemaRequest = Ledger.buildSchemaRequest(did, SCHEMA_DATA).get();
-		String schemaResponse = Ledger.signAndSubmitRequest(pool, wallet, did, schemaRequest).get();
-		JSONObject schema = new JSONObject(schemaResponse);
-		int schemaId = schema.getJSONObject("result").getInt("seqNo");
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(did, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String schema = createSchemaResult.getSchemaJson();
+		String schemaId = createSchemaResult.getSchemaId();
+
+		String schemaRequest = Ledger.buildSchemaRequest(did, schema).get();
+		Ledger.signAndSubmitRequest(pool, wallet, did, schemaRequest).get();
 
 		String getSchemaRequest = Ledger.buildGetSchemaRequest(did, String.valueOf(schemaId)).get();
 		String getSchemaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaRequest, response -> {
 			JSONObject getSchemaResponseObject = new JSONObject(response);
-			return !getSchemaResponseObject.getJSONObject("result").isNull("seqNo");
+			return ! getSchemaResponseObject.getJSONObject("result").isNull("seqNo");
 		});
 
 		Ledger.parseGetSchemaResponse(getSchemaResponse).get();

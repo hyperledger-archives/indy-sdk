@@ -32,7 +32,15 @@ note over IW, L #white
 endnote
 
 
+=== Create Credential Schema ==
+I -> IW: <b>1. indy_issuer_create_schema
+IW -> I: <schema_id>, <schema_json>
+
+I-[#blue]>L: send SCHEMA txn
+
 === Create Credential Definition ==
+P -[#blue]-> L: send GET_SCHEMA req
+L -[#blue]-> P: <schema>
 I -> IW: <b>1. indy_issuer_create_and_store_credential_def
 IW -[#green]> IW: store public/private keys and correctness proof
 IW -> I: <cred_def_id>, <cred_def_json>

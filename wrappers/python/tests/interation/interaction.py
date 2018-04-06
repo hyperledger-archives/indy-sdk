@@ -11,8 +11,7 @@ from tests.ledger.test_submit_request import ensure_previous_request_applied
 
 @pytest.mark.asyncio
 async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_name, pool_handle, wallet_handle,
-                                                                        identity_my, identity_my1, schema_id,
-                                                                        path_home, did_my2):
+                                                                        identity_my, identity_my1, path_home, did_my2):
     issuer_did, _ = identity_my
     issuer_wallet_handle = wallet_handle
 
@@ -22,6 +21,14 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
     prover_wallet_name = 'prover_wallet'
     await wallet.create_wallet(pool_name, prover_wallet_name, None, None, None)
     prover_wallet_handle = await wallet.open_wallet(prover_wallet_name, None, None)
+
+    # Issuer Creates Schema
+    (schema_id, schema_json) = \
+        await anoncreds.issuer_create_schema(issuer_did, "gvt", "1.0", json.dumps(["name", "age", "sex", "height"]))
+
+    # Issuer Posts Schema
+    schema_request = await ledger.build_schema_request(issuer_did, schema_json)
+    await ledger.sign_and_submit_request(pool_handle, issuer_wallet_handle, issuer_did, schema_request)
 
     # Issuer Gets Schema from Ledger
     get_schema_request = await ledger.build_get_schema_request(issuer_did, str(schema_id))

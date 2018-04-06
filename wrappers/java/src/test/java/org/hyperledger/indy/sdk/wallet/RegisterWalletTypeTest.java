@@ -48,8 +48,12 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		Wallet.createWallet(POOL, walletName, type, null, null).get();
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 
+		//  Issuer creates Schema
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(DID, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String gvtSchemaJson = createSchemaResult.getSchemaJson();
+
 		//  Issuer creates Credential Definition
-		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredentialDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(wallet, DID, GVT_SCHEMA, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredentialDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(wallet, DID, gvtSchemaJson, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
 		String credentialDefId = createCredentialDefResult.getCredDefId();
 		String credentialDef = createCredentialDefResult.getCredDefJson();
 

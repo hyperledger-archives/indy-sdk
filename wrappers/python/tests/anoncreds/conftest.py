@@ -109,55 +109,49 @@ def build_id(identifier: str, marker: str, word1: str, word2: str):
 
 
 @pytest.fixture(scope="module")
-async def gvt_schema_tuple(gvt_schema_id, gvt_schema_json):
-    return gvt_schema_id, gvt_schema_json
+async def gvt_schema_tuple(issuer_did):
+    return await anoncreds.issuer_create_schema(issuer_did, "gvt", "1.0", json.dumps(["name", "age", "sex", "height"]))
 
 
 @pytest.fixture(scope="module")
-def gvt_schema_id():
-    return "1"
+def gvt_schema_id(gvt_schema_tuple):
+    (schema_id, _) = gvt_schema_tuple
+    return schema_id
 
 
 @pytest.fixture(scope="module")
-def gvt_schema(gvt_schema_id):
-    return {
-        "id": gvt_schema_id,
-        "name": "gvt",
-        "version": "1.0",
-        "attrNames": ["name", "age", "sex", "height"],
-        "ver": "1.0"
-    }
+def gvt_schema(gvt_schema_tuple):
+    (_, schema_json) = gvt_schema_tuple
+    return json.loads(schema_json)
 
 
 @pytest.fixture(scope="module")
-async def gvt_schema_json(gvt_schema):
-    return json.dumps(gvt_schema)
+async def gvt_schema_json(gvt_schema_tuple):
+    (_, schema_json) = gvt_schema_tuple
+    return schema_json
 
 
 @pytest.fixture(scope="module")
-async def xyz_schema_tuple(xyz_schema_id, xyz_schema_json):
-    return xyz_schema_id, xyz_schema_json
+async def xyz_schema_tuple(issuer_did):
+    return await anoncreds.issuer_create_schema(issuer_did, "xyz", "1.0", json.dumps(["status", "period"]))
 
 
 @pytest.fixture(scope="module")
-def xyz_schema_id():
-    return "2"
+def xyz_schema_id(xyz_schema_tuple):
+    (schema_id, _) = xyz_schema_tuple
+    return schema_id
 
 
 @pytest.fixture(scope="module")
-def xyz_schema(xyz_schema_id):
-    return {
-        "id": xyz_schema_id,
-        "name": "xyz",
-        "version": "1.0",
-        "attrNames": ["status", "period"],
-        "ver": "1.0"
-    }
+def xyz_schema(xyz_schema_tuple):
+    (_, schema_json) = xyz_schema_tuple
+    return json.loads(schema_json)
 
 
 @pytest.fixture(scope="module")
-async def xyz_schema_json(xyz_schema):
-    return json.dumps(xyz_schema)
+async def xyz_schema_json(xyz_schema_tuple):
+    (_, schema_json) = xyz_schema_tuple
+    return schema_json
 
 
 @pytest.fixture(scope="module")

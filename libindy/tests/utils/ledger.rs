@@ -459,18 +459,19 @@ impl LedgerUtils {
         super::results::result_to_string_string(err, receiver)
     }
 
-    pub fn post_schema_to_ledger(pool_handle: i32, wallet_handle: i32, did: &str) -> (i32, String) {
-        let schema_request = LedgerUtils::build_schema_request(did, SCHEMA_DATA).unwrap();
-        let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
-        let schema: serde_json::Value = serde_json::from_str(&schema_response).unwrap();
-        let schema_seq_no = schema["result"]["seqNo"].as_i64().unwrap().to_string();
+    pub fn post_schema_to_ledger(pool_handle: i32, wallet_handle: i32, did: &str) -> (String, String) {
+        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(did,
+                                                                    GVT_SCHEMA_NAME,
+                                                                    SCHEMA_VERSION,
+                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
 
-        let get_schema_request = LedgerUtils::build_get_schema_request(&did, &schema_seq_no).unwrap();
+        let schema_request = LedgerUtils::build_schema_request(did, &schema_json).unwrap();
+        let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
+
+        let get_schema_request = LedgerUtils::build_get_schema_request(&did, &schema_id).unwrap();
         let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
 
-        let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
-
-        (schema_id.parse::<i32>().unwrap(), schema_json)
+        LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap()
     }
 
     pub fn prepare_cred_def(wallet_handle: i32, did: &str, schema_json: &str) -> (String, String) {
@@ -522,7 +523,7 @@ impl LedgerUtils {
         LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &rev_reg_entry_request).unwrap()
     }
 
-    pub fn publish_schema_in_ledger(pool_handle: i32) ->&'static str {
+    pub fn publish_schema_in_ledger(pool_handle: i32) -> &'static str {
         lazy_static! {
                     static ref COMMON_SCHEMA_INIT: Once = ONCE_INIT;
 

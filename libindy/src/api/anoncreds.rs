@@ -12,12 +12,14 @@ use utils::cstring::CStringUtils;
 use self::libc::c_char;
 use std::ptr;
 
-//TODO: Uncomment IS-625
-/*/// Create credential schema entity that describes credential attributes list and allows credentials
+/// Create credential schema entity that describes credential attributes list and allows credentials
 /// interoperability.
 ///
 /// Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
 /// to Indy distributed ledger.
+///
+/// It is IMPORTANT now POST Schema in Ledger and GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
+/// After that can call indy_issuer_create_and_store_credential_def to build corresponding Credential Definition.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context
@@ -41,7 +43,7 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
                                         version: *const c_char,
                                         attrs: *const c_char,
                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                             id: *const c_char, schema_json: *const c_char)>) -> ErrorCode {
+                                                             schema_id: *const c_char, schema_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
@@ -65,7 +67,7 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
                 ))));
 
     result_to_err_code!(result)
-}*/
+}
 
 /// Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
 /// and secrets used for credentials revocation.
@@ -1148,7 +1150,7 @@ pub extern fn indy_verifier_verify_proof(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Create user revocation state for revocation registry at the particular time moment.
+/// Create revocation state for revocation registry at the particular time moment.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context
@@ -1204,7 +1206,7 @@ pub extern fn indy_create_revocation_state(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Create new user revocation state for revocation registry at the
+/// Create new revocation state for revocation registry at the
 /// particular time moment based on already existed (to reduce calculation time).
 ///
 /// #Params

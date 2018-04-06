@@ -34,7 +34,6 @@ async def test_prover_get_credentials_works_for_filter_by_schema_id(wallet_handl
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-@pytest.mark.skip
 async def test_prover_get_credentials_works_for_filter_by_schema_name(wallet_handle, prepopulated_wallet):
     credentials = json.loads(
         await prover_get_credentials(wallet_handle, json.dumps({"schema_name": "gvt"})))

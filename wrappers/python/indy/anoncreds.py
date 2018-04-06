@@ -6,52 +6,55 @@ from ctypes import *
 import logging
 
 
-# async def issuer_create_schema(issuer_did: str,
-#                                name: str,
-#                                version: str,
-#                                attrs: str) -> (str, str):
-#     """
-#     Create credential schema entity that describes credential attributes list and allows credentials
-#     interoperability.
-#
-#     Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
-#     to Indy distributed ledger.
-#
-#     :param issuer_did: DID of schema issuer
-#     :param name: a name the schema
-#     :param version: a version of the schema
-#     :param attrs: a list of schema attributes descriptions
-#     :return:
-#         schema_id: identifier of created schema
-#         schema_json: schema as json
-#     """
-#
-#     logger = logging.getLogger(__name__)
-#     logger.debug("issuer_create_schema: >>> issuer_did: %r, name: %r, version: %r, attrs: %r",
-#                  issuer_did,
-#                  name,
-#                  version,
-#                  attrs)
-#
-#     if not hasattr(issuer_create_schema, "cb"):
-#         logger.debug("issuer_create_schema: Creating callback")
-#         issuer_create_schema.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
-#
-#     c_issuer_did = c_char_p(issuer_did.encode('utf-8'))
-#     c_name = c_char_p(name.encode('utf-8'))
-#     c_version = c_char_p(version.encode('utf-8'))
-#     c_attrs = c_char_p(attrs.encode('utf-8'))
-#
-#     (schema_id, schema_json) = await do_call('indy_issuer_create_schema',
-#                                              c_issuer_did,
-#                                              c_name,
-#                                              c_version,
-#                                              c_attrs,
-#                                              issuer_create_schema.cb)
-#
-#     res = (schema_id.decode(), schema_json.decode())
-#     logger.debug("issuer_create_schema: <<< res: %r", res)
-#     return res
+async def issuer_create_schema(issuer_did: str,
+                               name: str,
+                               version: str,
+                               attrs: str) -> (str, str):
+    """
+    Create credential schema entity that describes credential attributes list and allows credentials
+    interoperability.
+
+    Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
+    to Indy distributed ledger.
+
+    It is IMPORTANT now POST Schema in Ledger and GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
+	After that can call indy_issuer_create_and_store_credential_def to build corresponding Credential Definition.
+
+    :param issuer_did: DID of schema issuer
+    :param name: a name the schema
+    :param version: a version of the schema
+    :param attrs: a list of schema attributes descriptions
+    :return:
+        schema_id: identifier of created schema
+        schema_json: schema as json
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("issuer_create_schema: >>> issuer_did: %r, name: %r, version: %r, attrs: %r",
+                 issuer_did,
+                 name,
+                 version,
+                 attrs)
+
+    if not hasattr(issuer_create_schema, "cb"):
+        logger.debug("issuer_create_schema: Creating callback")
+        issuer_create_schema.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+
+    c_issuer_did = c_char_p(issuer_did.encode('utf-8'))
+    c_name = c_char_p(name.encode('utf-8'))
+    c_version = c_char_p(version.encode('utf-8'))
+    c_attrs = c_char_p(attrs.encode('utf-8'))
+
+    (schema_id, schema_json) = await do_call('indy_issuer_create_schema',
+                                             c_issuer_did,
+                                             c_name,
+                                             c_version,
+                                             c_attrs,
+                                             issuer_create_schema.cb)
+
+    res = (schema_id.decode(), schema_json.decode())
+    logger.debug("issuer_create_schema: <<< res: %r", res)
+    return res
 
 
 async def issuer_create_and_store_credential_def(wallet_handle: int,
@@ -427,6 +430,15 @@ async def issuer_recover_credential(wallet_handle: int,
 
 async def issuer_merge_revocation_registry_deltas(rev_reg_delta_json: str,
                                                   other_rev_reg_delta_json: str) -> str:
+    """
+    Merge two revocation registry deltas to accumulate common delta.
+    Send common delta to ledger to reduce the load.
+
+    :param rev_reg_delta_json: revocation registry delta json
+    :param other_rev_reg_delta_json: revocation registry delta json. PrevAccum value must be equal current accum value of rev_reg_delta_json.
+    :return: Merged revocation registry delta
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug(
         "issuer_merge_revocation_registry_deltas: >>> rev_reg_delta_json: %r, other_rev_reg_delta_json: %r",
@@ -1050,6 +1062,21 @@ async def create_revocation_state(blob_storage_reader_handle: int,
                                   rev_reg_delta_json: str,
                                   timestamp: int,
                                   cred_rev_id: str) -> str:
+    """
+    Create revocation state for revocation registry at the particular time moment.
+
+    :param blob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails
+    :param rev_reg_def_json: revocation registry definition json
+    :param rev_reg_delta_json: revocation registry definition delta json
+    :param timestamp: time represented as a total number of seconds from Unix Epoch
+    :param cred_rev_id: user credential revocation id in revocation registry
+    :return: revocation state json {
+         "rev_reg": <revocation registry>,
+         "witness": <witness>,
+         "timestamp" : integer
+    }
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug("create_revocation_info: >>> blob_storage_reader_handle: %r, rev_reg_def_json: %r,"
                  " rev_reg_delta_json: %r, timestamp: %r, cred_rev_id: %r",
@@ -1088,6 +1115,23 @@ async def update_revocation_state(blob_storage_reader_handle: int,
                                   rev_reg_delta_json: str,
                                   timestamp: int,
                                   cred_rev_id: str) -> str:
+    """
+    Create new revocation state for revocation registry at the
+    particular time moment based on already existed (to reduce calculation time).
+
+    :param blob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails
+    :param rev_state_json: revocation registry state json
+    :param rev_reg_def_json: revocation registry definition json
+    :param rev_reg_delta_json: revocation registry definition delta json
+    :param timestamp: time represented as a total number of seconds from Unix Epoch
+    :param cred_rev_id: user credential revocation id in revocation registry
+    :return: revocation state json {
+         "rev_reg": <revocation registry>,
+         "witness": <witness>,
+         "timestamp" : integer
+    }
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug("update_revocation_state: >>> blob_storage_reader_handle: %r, rev_state_json: %r, "
                  "rev_reg_def_json: %r, rev_reg_delta_json: %r, timestamp: %r, cred_rev_id: %r",

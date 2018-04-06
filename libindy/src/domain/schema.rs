@@ -9,16 +9,17 @@ use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use std::collections::{HashMap, HashSet};
 
-#[allow(unused_variables)] /* FIXME */
 pub const SCHEMA_MARKER: &'static str = "\x02";
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SchemaV1 {
     pub id: String,
     pub name: String,
     pub version: String,
     #[serde(rename = "attrNames")]
-    pub attr_names: HashSet<String>
+    pub attr_names: HashSet<String>,
+    pub seq_no: Option<u32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -29,7 +30,6 @@ pub enum Schema {
 }
 
 impl Schema {
-    #[allow(dead_code)] /* FIXME */
     pub fn schema_id(did: &str, name: &str, version: &str) -> String {
         format!("{}{}{}{}{}{}{}", did, DELIMITER, SCHEMA_MARKER, DELIMITER, name, DELIMITER, version)
     }
