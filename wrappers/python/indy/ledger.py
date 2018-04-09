@@ -752,7 +752,7 @@ async def build_revoc_reg_def_request(submitter_did: str,
                  "publicKeys": <public_keys> - Registry's public key.
              }
          }
-     
+
     :return: Request result as json.
     """
 

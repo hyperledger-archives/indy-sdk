@@ -377,7 +377,10 @@ impl IssuerCommandExecutor {
         let nonce = new_nonce()
             .map_err(|err| IndyError::AnoncredsError(AnoncredsError::from(err)))?;
 
+        let schema_id = self.wallet_service.get(wallet_handle, &format!("full_schema_id::{}", &cred_def_id))?; // TODO: FIXME
+
         let credential_offer = CredentialOffer {
+            schema_id: schema_id.to_string(),
             cred_def_id: cred_def_id.to_string(),
             key_correctness_proof,
             nonce

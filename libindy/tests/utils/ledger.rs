@@ -496,7 +496,7 @@ impl LedgerUtils {
                                                                                                        None,
                                                                                                        &AnoncredsUtils::revocation_cred_def_config()).unwrap();
                 let cred_def_request = LedgerUtils::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
-                let cred_def_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
+                LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
 
                 let tails_writer_config = AnoncredsUtils::tails_writer_config();
                 let tails_writer_handle = BlobStorageUtils::open_writer("default", &tails_writer_config).unwrap();
@@ -511,10 +511,10 @@ impl LedgerUtils {
                                                                            tails_writer_handle).unwrap();
 
                 let rev_reg_def_request = LedgerUtils::build_revoc_reg_def_request(&issuer_did, &revoc_reg_def_json).unwrap();
-                let rev_reg_def_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &rev_reg_def_request).unwrap();
+                LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &rev_reg_def_request).unwrap();
 
                 let rev_reg_entry_request = LedgerUtils::build_revoc_reg_entry_request(&issuer_did, &rev_reg_id, REVOC_REG_TYPE, &rev_reg_entry_json).unwrap();
-                let rev_reg_entry_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &rev_reg_entry_request).unwrap();
+                LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &rev_reg_entry_request).unwrap();
 
                 let res = mem::transmute(&schema_id as &str);
                 mem::forget(schema_id);

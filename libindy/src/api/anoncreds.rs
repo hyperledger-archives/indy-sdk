@@ -237,6 +237,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// #Returns
 /// credential offer json:
 ///     {
+///         "schema_id": string,
 ///         "cred_def_id": string,
 ///         // Fields below can depend on Cred Def type
 ///         "nonce": string,
@@ -705,6 +706,7 @@ pub extern fn indy_prover_store_credential(command_handle: i32,
 ///     [{
 ///         "referent": string, // cred_id in the wallet
 ///         "values": <see credential_values_json above>,
+///         "schema_id": string,
 ///         "cred_def_id": string,
 ///         "rev_reg_id": Optional<string>,
 ///         "cred_rev_id": Optional<string>
@@ -818,6 +820,7 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 ///     {
 ///         "referent": <string>,
 ///         "attrs": [{"attr_name" : "attr_raw_value"}],
+///         "schema_id": string,
 ///         "cred_def_id": string,
 ///         "rev_reg_id": Optional<int>,
 ///         "cred_rev_id": Optional<int>,

@@ -217,6 +217,7 @@ async def issuer_create_credential_offer(wallet_handle: int,
     :return:
     credential offer json:
          {
+             "schema_id": string,
              "cred_def_id": string,
              # Fields below can depend on Cred Def type
              "nonce": string,
@@ -462,7 +463,7 @@ async def issuer_merge_revocation_registry_deltas(rev_reg_delta_json: str,
 
 
 async def prover_create_master_secret(wallet_handle: int,
-                                      master_secret_name: str) -> str:
+                                      master_secret_name: Optional[str]) -> str:
     """
     Creates a master secret with a given name and stores it in the wallet.
     The name must be unique.
@@ -482,7 +483,7 @@ async def prover_create_master_secret(wallet_handle: int,
         prover_create_master_secret.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_master_secret_name = c_char_p(master_secret_name.encode('utf-8'))
+    c_master_secret_name = c_char_p(master_secret_name.encode('utf-8'))if master_secret_name else None
 
     out_master_secret_id = await do_call('indy_prover_create_master_secret',
                                          c_wallet_handle,
@@ -561,7 +562,7 @@ async def prover_create_credential_req(wallet_handle: int,
 
 
 async def prover_store_credential(wallet_handle: int,
-                                  cred_id: str,
+                                  cred_id: Optional[str],
                                   cred_req_json: str,
                                   cred_req_metadata_json: str,
                                   cred_json: str,
@@ -597,7 +598,7 @@ async def prover_store_credential(wallet_handle: int,
         prover_store_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_cred_id = c_char_p(cred_id.encode('utf-8'))
+    c_cred_id = c_char_p(cred_id.encode('utf-8'))if cred_id else None
     c_cred_req_json = c_char_p(cred_req_json.encode('utf-8'))
     c_cred_req_metadata_json = c_char_p(cred_req_metadata_json.encode('utf-8'))
     c_cred_json = c_char_p(cred_json.encode('utf-8'))
@@ -641,6 +642,7 @@ async def prover_get_credentials(wallet_handle: int,
      [{
          "referent": string, // cred_id in the wallet
          "values": <see credential_values_json above>,
+         "schema_id": string,
          "cred_def_id": string,
          "rev_reg_id": Optional<string>,
          "cred_rev_id": Optional<string>
@@ -737,6 +739,7 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
      {
          "referent": <string>,
          "attrs": [{"attr_name" : "attr_raw_value"}],
+         "schema_id": string,
          "cred_def_id": string,
          "rev_reg_id": Optional<int>,
          "cred_rev_id": Optional<int>,
@@ -868,7 +871,7 @@ async def prover_create_proof(wallet_handle: int,
              "from": Optional<int>, // timestamp of interval beginning
              "to": Optional<int>, // timestamp of interval ending
          }
-         
+
     :return: Proof json
         For each requested attribute either a proof (with optionally revealed attribute value) or
         self-attested attribute value is provided.

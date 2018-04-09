@@ -498,6 +498,7 @@ public class Anoncreds extends IndyJava.API {
 	 * @return A future resolving to a JSON string containing the credential offer.
 	 * credential offer json:
 	 * {
+	 * "schema_id": string,
 	 * "cred_def_id": string,
 	 * // Fields below can depend on Cred Def type
 	 * "nonce": string,
@@ -873,6 +874,7 @@ public class Anoncreds extends IndyJava.API {
 	 * [{
 	 * "referent": string, // cred_id in the wallet
 	 * "values": <see credential_values_json above>,
+	 * "schema_id": string,
 	 * "cred_def_id": string,
 	 * "rev_reg_id": Optional<string>,
 	 * "cred_rev_id": Optional<string>
@@ -969,6 +971,7 @@ public class Anoncreds extends IndyJava.API {
 	 * {
 	 * "referent": <string>,
 	 * "attrs": [{"attr_name" : "attr_raw_value"}],
+	 * "schema_id": string,
 	 * "cred_def_id": string,
 	 * "rev_reg_id": Optional<int>,
 	 * "cred_rev_id": Optional<int>,
