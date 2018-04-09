@@ -378,7 +378,7 @@ async def issuer_revoke_credential(wallet_handle: int,
     return res
 
 
-#async def issuer_recover_credential(wallet_handle: int,
+# async def issuer_recover_credential(wallet_handle: int,
 #                                     blob_storage_reader_handle: int,
 #                                     rev_reg_id: str,
 #                                     cred_revoc_id: str) -> str:
