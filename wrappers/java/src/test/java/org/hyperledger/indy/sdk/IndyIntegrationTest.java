@@ -7,6 +7,7 @@ import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
 import org.hyperledger.indy.sdk.wallet.InMemWalletType;
 import org.hyperledger.indy.sdk.wallet.Wallet;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -17,6 +18,8 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+
+import static org.hyperledger.indy.sdk.utils.EnvironmentUtils.getIndyHomePath;
 
 public class IndyIntegrationTest {
 
@@ -52,6 +55,8 @@ public class IndyIntegrationTest {
 	protected String SCHEMA_VERSION = "1.0";
 	protected String GVT_SCHEMA_ATTRIBUTES = "[\"name\", \"age\", \"sex\", \"height\"]";
 	protected String XYZ_SCHEMA_ATTRIBUTES = "[\"status\", \"period\"]";
+	protected String TAILS_WRITER_CONFIG = new JSONObject(String.format("{\"base_dir\":\"%s\", \"uri_pattern\":\"\"}", getIndyHomePath("tails")).replace('\\', '/')).toString();
+	protected String REV_CRED_DEF_CONFIG = "{\"support_revocation\":true}";
 
 	protected static final String TRUSTEE_IDENTITY_JSON =
 			new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null).toJson();
