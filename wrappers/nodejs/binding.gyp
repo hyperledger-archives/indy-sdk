@@ -12,6 +12,7 @@
       "link_settings": {
         "libraries": [
           "-L<(module_root_dir)",
+          "<!(node -e \"console.log((process.env.LD_LIBRARY_PATH || '').split(':').map(a => '-L' + a.trim()).filter(a => a != '-L').join(' '))\")",
           "-lindy"
         ]
       }
