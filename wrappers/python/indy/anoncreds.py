@@ -378,54 +378,54 @@ async def issuer_revoke_credential(wallet_handle: int,
     return res
 
 
-async def issuer_recover_credential(wallet_handle: int,
-                                    blob_storage_reader_handle: int,
-                                    rev_reg_id: str,
-                                    cred_revoc_id: str) -> str:
-    """
-    Recover a credential identified by a cred_revoc_id (returned by indy_issuer_create_cred).
-
-    The corresponding credential definition and revocation registry must be already
-    created an stored into the wallet.
-
-    This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
-    Note that it is possible to accumulate deltas to reduce ledger load.
-
-    :param wallet_handle: wallet handler (created by open_wallet).
-    :param blob_storage_reader_handle: pre-configured blob storage reader instance handle that will allow
-    to read revocation tails
-    :param rev_reg_id: id of revocation registry stored in wallet
-    :param cred_revoc_id: local id for revocation info
-    :return: Revocation registry update json with a revoked credential
-    """
-
-    logger = logging.getLogger(__name__)
-    logger.debug(
-        "issuer_recover_credential: >>> wallet_handle: %r, blob_storage_reader_handle: %r, rev_reg_id: %r, "
-        "cred_revoc_id: %r",
-        wallet_handle,
-        blob_storage_reader_handle,
-        rev_reg_id,
-        cred_revoc_id)
-
-    if not hasattr(issuer_recover_credential, "cb"):
-        logger.debug("issuer_recover_credential: Creating callback")
-        issuer_recover_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
-
-    c_wallet_handle = c_int32(wallet_handle)
-    c_blob_storage_reader_handle = c_int32(blob_storage_reader_handle)
-    c_rev_reg_id = c_char_p(rev_reg_id.encode('utf-8'))
-    c_cred_revoc_id = c_char_p(cred_revoc_id.encode('utf-8'))
-
-    revoc_reg_delta_json = await do_call('indy_issuer_recover_credential',
-                                         c_wallet_handle,
-                                         c_blob_storage_reader_handle,
-                                         c_rev_reg_id,
-                                         c_cred_revoc_id,
-                                         issuer_recover_credential.cb)
-    res = revoc_reg_delta_json.decode()
-    logger.debug("issuer_recover_credential: <<< res: %r", res)
-    return res
+#async def issuer_recover_credential(wallet_handle: int,
+#                                     blob_storage_reader_handle: int,
+#                                     rev_reg_id: str,
+#                                     cred_revoc_id: str) -> str:
+#     """
+#     Recover a credential identified by a cred_revoc_id (returned by indy_issuer_create_cred).
+#
+#     The corresponding credential definition and revocation registry must be already
+#     created an stored into the wallet.
+#
+#     This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
+#     Note that it is possible to accumulate deltas to reduce ledger load.
+#
+#     :param wallet_handle: wallet handler (created by open_wallet).
+#     :param blob_storage_reader_handle: pre-configured blob storage reader instance handle that will allow
+#     to read revocation tails
+#     :param rev_reg_id: id of revocation registry stored in wallet
+#     :param cred_revoc_id: local id for revocation info
+#     :return: Revocation registry update json with a revoked credential
+#     """
+#
+#     logger = logging.getLogger(__name__)
+#     logger.debug(
+#         "issuer_recover_credential: >>> wallet_handle: %r, blob_storage_reader_handle: %r, rev_reg_id: %r, "
+#         "cred_revoc_id: %r",
+#         wallet_handle,
+#         blob_storage_reader_handle,
+#         rev_reg_id,
+#         cred_revoc_id)
+#
+#     if not hasattr(issuer_recover_credential, "cb"):
+#         logger.debug("issuer_recover_credential: Creating callback")
+#         issuer_recover_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+#
+#     c_wallet_handle = c_int32(wallet_handle)
+#     c_blob_storage_reader_handle = c_int32(blob_storage_reader_handle)
+#     c_rev_reg_id = c_char_p(rev_reg_id.encode('utf-8'))
+#     c_cred_revoc_id = c_char_p(cred_revoc_id.encode('utf-8'))
+#
+#     revoc_reg_delta_json = await do_call('indy_issuer_recover_credential',
+#                                          c_wallet_handle,
+#                                          c_blob_storage_reader_handle,
+#                                          c_rev_reg_id,
+#                                          c_cred_revoc_id,
+#                                          issuer_recover_credential.cb)
+#     res = revoc_reg_delta_json.decode()
+#     logger.debug("issuer_recover_credential: <<< res: %r", res)
+#     return res
 
 
 async def issuer_merge_revocation_registry_deltas(rev_reg_delta_json: str,

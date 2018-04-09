@@ -93,12 +93,12 @@ pub enum IssuerCommand {
         String, //revocation revoc id
         String, //credential revoc id
         Box<Fn(Result<String, IndyError>) + Send>),
-    RecoverCredential(
-        i32, // wallet handle
-        i32, // blob storage reader config handle
-        String, //revocation revoc id
-        String, //credential revoc id
-        Box<Fn(Result<String, IndyError>) + Send>),
+    /*    RecoverCredential(
+            i32, // wallet handle
+            i32, // blob storage reader config handle
+            String, //revocation revoc id
+            String, //credential revoc id
+            Box<Fn(Result<String, IndyError>) + Send>),*/
     MergeRevocationRegistryDeltas(
         String, //revocation registry delta json
         String, //other revocation registry delta json
@@ -162,10 +162,10 @@ impl IssuerCommandExecutor {
                 trace!(target: "issuer_command_executor", "RevokeCredential command received");
                 cb(self.revoke_credential(wallet_handle, blob_storage_reader_handle, &rev_reg_id, &cred_revoc_id));
             }
-            IssuerCommand::RecoverCredential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id, cb) => {
-                trace!(target: "issuer_command_executor", "RecoverCredential command received");
-                cb(self.recovery_credential(wallet_handle, blob_storage_reader_handle, &rev_reg_id, &cred_revoc_id));
-            }
+            /*            IssuerCommand::RecoverCredential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id, cb) => {
+                            trace!(target: "issuer_command_executor", "RecoverCredential command received");
+                            cb(self.recovery_credential(wallet_handle, blob_storage_reader_handle, &rev_reg_id, &cred_revoc_id));
+                        }*/
             IssuerCommand::MergeRevocationRegistryDeltas(rev_reg_delta_json, other_rev_reg_delta_json, cb) => {
                 trace!(target: "issuer_command_executor", "MergeRevocationRegistryDeltas command received");
                 cb(self.merge_revocation_registry_deltas(&rev_reg_delta_json, &other_rev_reg_delta_json));
@@ -266,7 +266,7 @@ impl IssuerCommandExecutor {
                                        &credential_key_correctness_proof,
                                        "CredentialKeyCorrectnessProof")?;
 
-        self.wallet_service.set(wallet_handle, &format!("full_schema_id::{}", cred_def_id),& schema.id)?; // TODO: FIXME
+        self.wallet_service.set(wallet_handle, &format!("full_schema_id::{}", cred_def_id), &schema.id)?; // TODO: FIXME
 
         trace!("create_and_store_credential_definition <<< cred_def_id: {:?}, credential_definition_json: {:?}", cred_def_id, credential_definition_json);
         Ok((cred_def_id, credential_definition_json))
@@ -616,11 +616,11 @@ impl IssuerCommandExecutor {
         Ok(revocation_registry_delta_json)
     }
 
-    fn recovery_credential(&self,
-                           wallet_handle: i32,
-                           blob_storage_reader_handle: i32,
-                           rev_reg_id: &str,
-                           cred_revoc_id: &str) -> Result<String, IndyError> {
+    fn _recovery_credential(&self,
+                            wallet_handle: i32,
+                            blob_storage_reader_handle: i32,
+                            rev_reg_id: &str,
+                            cred_revoc_id: &str) -> Result<String, IndyError> {
         trace!("recovery_credential >>> wallet_handle: {:?}, blob_storage_reader_handle: {:?}, rev_reg_id: {:?}, cred_revoc_id: {:?}",
                wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id);
 

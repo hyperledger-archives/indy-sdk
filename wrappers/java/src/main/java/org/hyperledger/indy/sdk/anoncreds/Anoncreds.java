@@ -643,49 +643,49 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
-	/**
-	 * Recover a credential identified by a cred_revoc_id (returned by indy_issuer_create_credential).
-	 * <p>
-	 * The corresponding credential definition and revocation registry must be already
-	 * created an stored into the wallet.
-	 * <p>
-	 * This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
-	 * Note that it is possible to accumulate deltas to reduce ledger load.
-	 *
-	 * @param wallet                  A wallet.
-	 * @param blobStorageReaderHandle Pre-configured blob storage reader instance handle that will allow to read revocation tails
-	 * @param revRegId                Id of revocation registry stored in wallet.
-	 * @param credRevocId             Local id for revocation info
-	 * @return A future resolving to a revocation registry update json with a recovered credential
-	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
-	 */
-	public static CompletableFuture<String> issuerRecoverCredential(
-			Wallet wallet,
-			int blobStorageReaderHandle,
-			String revRegId,
-			String credRevocId) throws IndyException {
-
-		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNull(revRegId, "revRegId");
-		ParamGuard.notNull(credRevocId, "credRevocId");
-
-		CompletableFuture<String> future = new CompletableFuture<String>();
-		int commandHandle = addFuture(future);
-
-		int walletHandle = wallet.getWalletHandle();
-
-		int result = LibIndy.api.indy_issuer_recover_credential(
-				commandHandle,
-				walletHandle,
-				blobStorageReaderHandle,
-				revRegId,
-				credRevocId,
-				issuerRecoverCredentialCb);
-
-		checkResult(result);
-
-		return future;
-	}
+//	/**
+//	 * Recover a credential identified by a cred_revoc_id (returned by indy_issuer_create_credential).
+//	 * <p>
+//	 * The corresponding credential definition and revocation registry must be already
+//	 * created an stored into the wallet.
+//	 * <p>
+//	 * This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
+//	 * Note that it is possible to accumulate deltas to reduce ledger load.
+//	 *
+//	 * @param wallet                  A wallet.
+//	 * @param blobStorageReaderHandle Pre-configured blob storage reader instance handle that will allow to read revocation tails
+//	 * @param revRegId                Id of revocation registry stored in wallet.
+//	 * @param credRevocId             Local id for revocation info
+//	 * @return A future resolving to a revocation registry update json with a recovered credential
+//	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+//	 */
+//	public static CompletableFuture<String> issuerRecoverCredential(
+//			Wallet wallet,
+//			int blobStorageReaderHandle,
+//			String revRegId,
+//			String credRevocId) throws IndyException {
+//
+//		ParamGuard.notNull(wallet, "wallet");
+//		ParamGuard.notNull(revRegId, "revRegId");
+//		ParamGuard.notNull(credRevocId, "credRevocId");
+//
+//		CompletableFuture<String> future = new CompletableFuture<String>();
+//		int commandHandle = addFuture(future);
+//
+//		int walletHandle = wallet.getWalletHandle();
+//
+//		int result = LibIndy.api.indy_issuer_recover_credential(
+//				commandHandle,
+//				walletHandle,
+//				blobStorageReaderHandle,
+//				revRegId,
+//				credRevocId,
+//				issuerRecoverCredentialCb);
+//
+//		checkResult(result);
+//
+//		return future;
+//	}
 
 	/**
 	 * Merge two revocation registry deltas to accumulate common delta.

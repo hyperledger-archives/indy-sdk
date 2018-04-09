@@ -299,39 +299,6 @@ pub extern fn indy_issuer_revoke_cred(command_handle: i32,
 ```
 
 ```Rust
-/// Recover a credential identified by a cred_revoc_id (returned by indy_issuer_create_cred).
-///
-/// The corresponding credential definition and revocation registry must be already
-/// created an stored into the wallet.
-/// 
-/// This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
-/// Note that it is possible to accumulate deltas to reduce ledger load.
-///
-/// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
-/// command_handle: command handle to map callback to user context.
-/// rev_reg_id: id of revocation registry stored in wallet
-/// tails_reader_handle:
-/// user_revoc_index: index of the user in the revocation registry
-/// cb: Callback that takes command result as parameter.
-///
-/// #Returns
-/// revoc_reg_delta_json: Revocation registry delta json with a revoked credential
-///
-/// #Errors
-/// Annoncreds*
-/// Common*
-/// Wallet*
-#[no_mangle]
-pub extern fn indy_issuer_recover_credential(command_handle: i32,
-                                             wallet_handle: i32,
-                                             blob_storage_reader_handle: i32,
-                                             cred_revoc_id: *const c_char,
-                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                  revoc_reg_delta_json: *const c_char)>) -> ErrorCode
-```
-
-```Rust
 /// Merge two revocation registry deltas to accumulate common delta.
 /// Send common delta to ledger to reduce the load.
 ///
