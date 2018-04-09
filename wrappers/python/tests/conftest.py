@@ -44,6 +44,7 @@ def seed_my2():
 def did_my1():
     return "VsKV7grR1BUE29mG2Fm2kX"
 
+
 @pytest.fixture
 def did_my2():
     return "2PRyVHmkXQnQzJQKxHxnXC"

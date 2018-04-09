@@ -4,8 +4,6 @@ import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.anoncreds.Anoncreds;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults;
-import org.hyperledger.indy.sdk.did.Did;
-import org.hyperledger.indy.sdk.did.DidResults;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.*;
@@ -13,37 +11,29 @@ import org.junit.*;
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
 	@Test
 	public void testBuildSchemaRequestWorks() throws Exception {
-		String data = "{\"id\":\"1\",\"name\":\"name\",\"version\":\"1.0\",\"attrNames\":[\"male\"]}";
-
 		String expectedResult = "\"operation\": {\n" +
 				"            \"type\": \"101\",\n" +
-				"            \"data\": {\"name\": \"name\", \"version\": \"1.0\", \"attr_names\": [\"male\"]}\n" +
+				"            \"data\": {\"name\": \"gvt\", \"version\": \"1.0\", \"attr_names\": [\"name\"]}\n" +
 				"        }";
 
-		String schemaRequest = Ledger.buildSchemaRequest(DID, data).get();
+		String schemaRequest = Ledger.buildSchemaRequest(DID, SCHEMA_DATA).get();
 
 		assertTrue(schemaRequest.replaceAll("\\s+", "").contains(expectedResult.replaceAll("\\s+", "")));
 	}
 
 	@Test
 	public void testBuildGetSchemaRequestWorks() throws Exception {
-		String data = "{\"name\":\"name\",\"version\":\"1.0\"}";
+		String id = String.format("%s:1:%s:%s", DID, GVT_SCHEMA_NAME, SCHEMA_VERSION);
 
-		String expectedResult = String.format("\"identifier\":\"%s\"," +
-				"\"operation\":{" +
-				"\"type\":\"107\"," +
-				"\"dest\":\"%s\"," +
-				"\"data\":%s" +
-				"}", DID, DID, data);
+		String expectedResult = "\"operation\":{\"type\":\"107\",\"dest\":\"8wZcEriaNLNKtteJvx7f8i\",\"data\":{\"name\":\"gvt\",\"version\":\"1.0\"}}";
 
-		String getSchemaRequest = Ledger.buildGetSchemaRequest(DID, DID, data).get();
+		String getSchemaRequest = Ledger.buildGetSchemaRequest(DID, id).get();
 
 		assertTrue(getSchemaRequest.contains(expectedResult));
 	}
@@ -63,36 +53,18 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 
 		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(did, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
 		String schema = createSchemaResult.getSchemaJson();
+		String schemaId = createSchemaResult.getSchemaId();
 
 		String schemaRequest = Ledger.buildSchemaRequest(did, schema).get();
 		Ledger.signAndSubmitRequest(pool, wallet, did, schemaRequest).get();
 
-		String getSchemaData = String.format("{\"name\":\"%s\",\"version\":\"%s\"}", GVT_SCHEMA_NAME, SCHEMA_VERSION);
-		String getSchemaRequest = Ledger.buildGetSchemaRequest(did, did, getSchemaData).get();
+		String getSchemaRequest = Ledger.buildGetSchemaRequest(did, String.valueOf(schemaId)).get();
 		String getSchemaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaRequest, response -> {
 			JSONObject getSchemaResponseObject = new JSONObject(response);
-			return !getSchemaResponseObject.getJSONObject("result").isNull("seqNo") &&
-					GVT_SCHEMA_NAME.equals(getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("name")) &&
-					SCHEMA_VERSION.equals(getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("version"));
+			return ! getSchemaResponseObject.getJSONObject("result").isNull("seqNo");
 		});
 
 		Ledger.parseGetSchemaResponse(getSchemaResponse).get();
-	}
-
-	@Test
-	public void testGetSchemaRequestsWorksForUnknownSchema() throws Exception {
-		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String did = didResult.getDid();
-
-		String getSchemaData = "{\"name\":\"schema_name\",\"version\":\"2.0\"}";
-		String getSchemaRequest = Ledger.buildGetSchemaRequest(did, did, getSchemaData).get();
-		String getSchemaResponse = Ledger.submitRequest(pool, getSchemaRequest).get();
-
-		JSONObject getSchemaResponseObject = new JSONObject(getSchemaResponse);
-
-		// TODO FIXME restore after INDY-699 will be fixed
-		// assertNull(getSchemaResponseObject.getJSONObject("result").optJSONObject("data"));
-		assertEquals(getSchemaResponseObject.getJSONObject("result").optJSONObject("data").toString(), getSchemaData);
 	}
 
 	@Test

@@ -2,6 +2,7 @@ extern crate indy_crypto;
 
 use self::indy_crypto::utils::json::JsonDecodable;
 
+
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
 pub struct Filter {
     pub schema_id: Option<String>,

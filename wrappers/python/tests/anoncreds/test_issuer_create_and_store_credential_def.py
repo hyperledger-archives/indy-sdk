@@ -49,4 +49,4 @@ async def test_issuer_create_and_store_credential_def_works_for_duplicate(wallet
         await issuer_create_and_store_credential_def(wallet_handle, issuer_did, json.dumps(gvt_schema), tag, "CL",
                                                      default_cred_def_config)
 
-    assert ErrorCode.AnoncredsClaimDefAlreadyExistsError == e.value.error_code
+    assert ErrorCode.AnoncredsCredDefAlreadyExistsError == e.value.error_code

@@ -11,6 +11,7 @@ use errors::common::CommonError;
 use errors::ledger::LedgerError;
 use serde_json::Value;
 use services::ledger::constants::NYM;
+use domain::DELIMITER;
 use domain::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
 use domain::revocation_registry::RevocationRegistry;
 use domain::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
@@ -106,8 +107,9 @@ impl LedgerService {
     }
 
     pub fn build_schema_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
-        let schema: SchemaV1 = serde_json::from_str(data)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Schema: {:?}", err)))?;
+        let schema = SchemaV1::from(
+            Schema::from_json(&data)
+                .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Schema: {:?}", err)))?);
 
         let schema_data = SchemaOperationData::new(schema.name, schema.version, schema.attr_names);
 
@@ -116,29 +118,47 @@ impl LedgerService {
             .map_err(|err| CommonError::InvalidState(format!("SCHEMA request json is invalid {:?}.", err)))
     }
 
-    pub fn build_get_schema_request(&self, identifier: &str, dest: &str, data: &str) -> Result<String, CommonError> {
-        let data = GetSchemaOperationData::from_json(data)
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {:?}", err)))?;
-        let operation = GetSchemaOperation::new(dest.to_string(), data);
+    pub fn build_get_schema_request(&self, identifier: &str, id: &str) -> Result<String, CommonError> {
+        let parts: Vec<&str> = id.split_terminator(DELIMITER).collect::<Vec<&str>>();
+        let dest = parts.get(0)
+            .ok_or(CommonError::InvalidStructure(format!("Schema issuer DID not found in: {}", id)))?.to_string();
+        let name = parts.get(2)
+            .ok_or(CommonError::InvalidStructure(format!("Schema name not found in: {}", id)))?.to_string();
+        let version = parts.get(3)
+            .ok_or(CommonError::InvalidStructure(format!("Schema version not found in: {}", id)))?.to_string();
+
+        let data = GetSchemaOperationData::new(name, version);
+        let operation = GetSchemaOperation::new(dest, data);
         Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("GET_SCHEMA request json is invalid {:?}.", err)))
     }
 
-    pub fn build_claim_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
-        let cred_def = CredentialDefinitionV1::from_json(&data)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinition: {:?}", err)))?;
+    pub fn build_cred_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
+        let cred_def = CredentialDefinitionV1::from(
+            CredentialDefinition::from_json(&data)
+                .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinition: {:?}", err)))?);
 
-        let operation = ClaimDefOperation::new(cred_def);
+        let operation = CredDefOperation::new(cred_def);
         Request::build_request(identifier, operation)
-            .map_err(|err| CommonError::InvalidState(format!("CLAIM_DEF request json is invalid {:?}.", err)))
+            .map_err(|err| CommonError::InvalidState(format!("CRED_DEF request json is invalid {:?}.", err)))
     }
 
-    pub fn build_get_claim_def_request(&self, identifier: &str, _ref: i32, signature_type: &str, origin: &str) -> Result<String, CommonError> {
-        let operation = GetClaimDefOperation::new(_ref,
-                                                  signature_type.to_string(),
-                                                  origin.to_string());
+    pub fn build_get_cred_def_request(&self, identifier: &str, id: &str) -> Result<String, CommonError> {
+        let parts: Vec<&str> = id.split_terminator(DELIMITER).collect::<Vec<&str>>();
+        let origin = parts.get(0)
+            .ok_or(CommonError::InvalidStructure(format!("Origin not found in: {}", id)))?.to_string();
+
+        let ref_ = parts.get(3)
+            .ok_or(CommonError::InvalidStructure(format!("Schema ID not found in: {}", id)))?
+            .parse::<i32>()
+            .map_err(|_| CommonError::InvalidStructure(format!("Schema ID not found in: {}", id)))?;
+
+        let signature_type = parts.get(2)
+            .ok_or(CommonError::InvalidStructure(format!("Signature type not found in: {}", id)))?.to_string();
+
+        let operation = GetCredDefOperation::new(ref_, signature_type, origin);
         Request::build_request(identifier, operation)
-            .map_err(|err| CommonError::InvalidState(format!("GET_CLAIM_DEF request json is invalid {:?}.", err)))
+            .map_err(|err| CommonError::InvalidState(format!("GET_CRED_DEF request json is invalid {:?}.", err)))
     }
 
     pub fn build_node_request(&self, identifier: &str, dest: &str, data: &str) -> Result<String, CommonError> {
@@ -194,8 +214,9 @@ impl LedgerService {
     }
 
     pub fn build_revoc_reg_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
-        let rev_reg_def: RevocationRegistryDefinitionV1 = serde_json::from_str(data)
-            .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistryDefinition: {:?}", err)))?;
+        let rev_reg_def = RevocationRegistryDefinitionV1::from(
+            RevocationRegistryDefinition::from_json(&data)
+                .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistryDefinition: {:?}", err)))?);
 
         let rev_reg_def_operation = RevocationRegistryDefOperation::new(rev_reg_def);
 
@@ -210,8 +231,9 @@ impl LedgerService {
     }
 
     pub fn build_revoc_reg_entry_request(&self, identifier: &str, revoc_reg_def_id: &str, revoc_def_type: &str, value: &str) -> Result<String, CommonError> {
-        let rev_reg_entry: RevocationRegistryDeltaV1 = serde_json::from_str(value)
-            .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistry: {:?}", err)))?;
+        let rev_reg_entry = RevocationRegistryDeltaV1::from(
+            RevocationRegistryDelta::from_json(&value)
+                .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistry: {:?}", err)))?);
 
         let operation = RevocationRegistryEntryOperation::new(revoc_def_type, revoc_reg_def_id, rev_reg_entry);
 
@@ -234,7 +256,7 @@ impl LedgerService {
     pub fn parse_response<'a, T>(response: &'a str) -> Result<Reply<T>, LedgerError> where T: JsonDecodable<'a> {
         let message: Message<T> = serde_json::from_str(&response)
             .map_err(|err|
-                LedgerError::CommonError(CommonError::InvalidStructure(format!("Cannot deserialize transaction Response: {:?}", err))))?;
+                LedgerError::InvalidTransaction(format!("Cannot deserialize transaction Response: {:?}", err)))?;
 
         match message {
             Message::Reject(response) | Message::ReqNACK(response) =>
@@ -247,23 +269,26 @@ impl LedgerService {
     pub fn parse_get_schema_response(&self, get_schema_response: &str) -> Result<(String, String), LedgerError> {
         let reply: Reply<GetSchemaReplyResult> = LedgerService::parse_response(get_schema_response)?;
 
-        Ok((reply.result.seq_no.to_string(),
+        let id = Schema::schema_id(&reply.result.dest, &reply.result.data.name, &reply.result.data.version.clone());
+
+        Ok((id.clone(),
             Schema::SchemaV1(
                 SchemaV1 {
                     name: reply.result.data.name.clone(),
                     version: reply.result.data.version.clone(),
                     attr_names: reply.result.data.attr_names,
-                    id: reply.result.seq_no.to_string()
+                    id,
+                    seq_no: Some(reply.result.seq_no)
                 })
                 .to_json()
                 .map_err(|err|
                     LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize Schema {:?}.", err))))?))
     }
 
-    pub fn parse_get_claim_def_response(&self, get_claim_def_response: &str) -> Result<(String, String), LedgerError> {
-        let reply: Reply<GetClaimDefReplyResult> = LedgerService::parse_response(get_claim_def_response)?;
+    pub fn parse_get_cred_def_response(&self, get_cred_def_response: &str) -> Result<(String, String), LedgerError> {
+        let reply: Reply<GetCredDefReplyResult> = LedgerService::parse_response(get_cred_def_response)?;
 
-        let cred_def_id = CredentialDefinition::cred_def_id(&reply.result.origin, &reply.result.ref_.to_string(), &reply.result.signature_type);
+        let cred_def_id = CredentialDefinition::cred_def_id(&reply.result.origin, &reply.result.ref_.to_string(), &reply.result.signature_type.to_str());
 
         Ok((cred_def_id.clone(),
             CredentialDefinition::CredentialDefinitionV1(
@@ -289,17 +314,18 @@ impl LedgerService {
                     LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDefinition {:?}.", err))))?))
     }
 
-    pub fn parse_get_revoc_reg_response(&self, get_revoc_reg_response: &str) -> Result<(String, String), LedgerError> {
+    pub fn parse_get_revoc_reg_response(&self, get_revoc_reg_response: &str) -> Result<(String, String, u64), LedgerError> {
         let reply: Reply<GetRevocRegReplyResult> = LedgerService::parse_response(get_revoc_reg_response)?;
 
         Ok((reply.result.revoc_reg_def_id,
             RevocationRegistry::RevocationRegistryV1(reply.result.data)
                 .to_json()
                 .map_err(|err|
-                    LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistry {:?}.", err))))?))
+                    LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistry {:?}.", err))))?,
+        reply.result.txn_time))
     }
 
-    pub fn parse_get_revoc_reg_delta_response(&self, get_revoc_reg_delta_response: &str) -> Result<(String, String), LedgerError> {
+    pub fn parse_get_revoc_reg_delta_response(&self, get_revoc_reg_delta_response: &str) -> Result<(String, String, u64), LedgerError> {
         let reply: Reply<GetRevocRegDeltaReplyResult> = LedgerService::parse_response(get_revoc_reg_delta_response)?;
 
         Ok((reply.result.revoc_reg_def_id.clone(),
@@ -312,7 +338,8 @@ impl LedgerService {
                 })
                 .to_json()
                 .map_err(|err|
-                    LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta {:?}.", err))))?))
+                    LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta {:?}.", err))))?,
+           reply.result.data.value.accum_to.txn_time))
     }
 
     fn get_req_id() -> u64 {
@@ -475,7 +502,7 @@ mod tests {
     fn build_schema_request_works_for_correct_data() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
-        let data = r#"{"name":"name", "version":"1.0", "attrNames":["male"], "id":"id"}"#;
+        let data = r#"{"name":"name", "version":"1.0", "attrNames":["male"], "id":"id", "ver":"1.0"}"#;
 
         let expected_result = r#""operation":{"type":"101","data":{"name":"name","version":"1.0","attr_names":["male"]}},"protocolVersion":1"#;
 
@@ -487,9 +514,9 @@ mod tests {
     fn build_get_schema_request_works_for_wrong_data() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
-        let data = r#"{"name":"name","attr_names":["name","male"]}"#;
+        let id = "wrong_schema_id";
 
-        let get_schema_request = ledger_service.build_get_schema_request(identifier, identifier, data);
+        let get_schema_request = ledger_service.build_get_schema_request(identifier, id);
         assert!(get_schema_request.is_err());
     }
 
@@ -497,26 +524,24 @@ mod tests {
     fn build_get_schema_request_works_for_correct_data() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
-        let data = r#"{"name":"name","version":"1.0"}"#;
+        let id = Schema::schema_id("identifier", "name", "1.0");
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"107","dest":"identifier","data":{"name":"name","version":"1.0"}},"protocolVersion":1"#;
 
-        let get_schema_request = ledger_service.build_get_schema_request(identifier, identifier, data).unwrap();
+        let get_schema_request = ledger_service.build_get_schema_request(identifier, &id).unwrap();
         assert!(get_schema_request.contains(expected_result));
     }
 
     #[test]
-    fn build_get_claim_def_request_works() {
+    fn build_get_cred_def_request_works() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
-        let _ref = 1;
-        let signature_type = "signature_type";
-        let origin = "origin";
+        let id = CredentialDefinition::cred_def_id("origin", "1", "signature_type");
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"origin"},"protocolVersion":1"#;
 
-        let get_claim_def_request = ledger_service.build_get_claim_def_request(identifier, _ref, signature_type, origin).unwrap();
-        assert!(get_claim_def_request.contains(expected_result));
+        let get_cred_def_request = ledger_service.build_get_cred_def_request(identifier, &id).unwrap();
+        assert!(get_cred_def_request.contains(expected_result));
     }
 
     #[test]

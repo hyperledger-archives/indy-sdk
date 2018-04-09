@@ -317,6 +317,7 @@ impl ProverCommandExecutor {
                 CredentialInfo {
                     referent: referent.replace("credential::", ""),
                     attrs: credential_values,
+                    schema_id: credential.schema_id.clone(),
                     cred_def_id: credential.cred_def_id.clone(),
                     rev_reg_id: credential.rev_reg_id.as_ref().map(|s| s.to_string()),
                     cred_rev_id: credential.signature.extract_index().map(|idx| idx.to_string())

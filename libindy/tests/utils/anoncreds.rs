@@ -7,6 +7,7 @@ use indy::api::anoncreds::*;
 use utils::callback::CallbackUtils;
 use utils::environment::EnvironmentUtils;
 use utils::wallet::WalletUtils;
+use utils::blob_storage::BlobStorageUtils;
 use utils::test::TestUtils;
 use utils::types::CredentialOfferInfo;
 
@@ -20,7 +21,7 @@ use std::collections::{HashSet, HashMap};
 
 use utils::domain::schema::{Schema, SchemaV1};
 use utils::domain::credential_definition::{CredentialDefinition, CredentialDefinitionConfig};
-use utils::domain::revocation_registry_definition::{RevocationRegistryConfig};
+use utils::domain::revocation_registry_definition::RevocationRegistryConfig;
 use utils::domain::credential::{AttributeValues, CredentialInfo};
 use utils::domain::credential_for_proof_request::CredentialsForProofRequest;
 
@@ -263,7 +264,7 @@ impl AnoncredsUtils {
     }
 
     pub fn prover_create_proof(wallet_handle: i32, proof_req_json: &str, requested_credentials_json: &str,
-                               master_secret_name: &str, schemas_json: &str, credential_defs_json: &str,
+                               master_secret_name: &str, schemas_json: &str, cred_defs_json: &str,
                                rev_states_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
@@ -271,7 +272,7 @@ impl AnoncredsUtils {
         let requested_credentials_json = CString::new(requested_credentials_json).unwrap();
         let schemas_json = CString::new(schemas_json).unwrap();
         let master_secret_name = CString::new(master_secret_name).unwrap();
-        let credential_defs_json = CString::new(credential_defs_json).unwrap();
+        let credential_defs_json = CString::new(cred_defs_json).unwrap();
         let rev_states_json = CString::new(rev_states_json).unwrap();
 
         let err = indy_prover_create_proof(command_handle,
@@ -288,13 +289,13 @@ impl AnoncredsUtils {
     }
 
     pub fn verifier_verify_proof(proof_request_json: &str, proof_json: &str, schemas_json: &str,
-                                 credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str) -> Result<bool, ErrorCode> {
+                                 cred_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str) -> Result<bool, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_bool();
 
         let proof_request_json = CString::new(proof_request_json).unwrap();
         let proof_json = CString::new(proof_json).unwrap();
         let schemas_json = CString::new(schemas_json).unwrap();
-        let credential_defs_json = CString::new(credential_defs_json).unwrap();
+        let credential_defs_json = CString::new(cred_defs_json).unwrap();
         let rev_reg_defs_json = CString::new(rev_reg_defs_json).unwrap();
         let rev_regs_json = CString::new(rev_regs_json).unwrap();
 
@@ -385,7 +386,8 @@ impl AnoncredsUtils {
             id: AnoncredsUtils::gvt_schema_id().to_string(),
             version: SCHEMA_VERSION.to_string(),
             name: GVT_SCHEMA_NAME.to_string(),
-            attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap()
+            attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap(),
+            seq_no: None
         }
     }
 
@@ -394,7 +396,7 @@ impl AnoncredsUtils {
     }
 
     pub fn xyz_schema_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID, "\x02",  XYZ_SCHEMA_NAME, SCHEMA_VERSION)
+        AnoncredsUtils::build_id(ISSUER_DID, "\x02", XYZ_SCHEMA_NAME, SCHEMA_VERSION)
     }
 
     pub fn xyz_schema() -> SchemaV1 {
@@ -402,7 +404,8 @@ impl AnoncredsUtils {
             id: AnoncredsUtils::xyz_schema_id().to_string(),
             version: SCHEMA_VERSION.to_string(),
             name: XYZ_SCHEMA_NAME.to_string(),
-            attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap()
+            attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap(),
+            seq_no: None
         }
     }
 
@@ -486,6 +489,7 @@ impl AnoncredsUtils {
 
     pub fn issuer_1_gvt_credential() -> CredentialInfo {
         CredentialInfo {
+            schema_id: AnoncredsUtils::gvt_schema_id(),
             cred_def_id: AnoncredsUtils::issuer_1_gvt_cred_def_id(),
             referent: CREDENTIAL1_ID.to_string(),
             rev_reg_id: None,
@@ -501,6 +505,7 @@ impl AnoncredsUtils {
 
     pub fn issuer_1_xyz_credential() -> CredentialInfo {
         CredentialInfo {
+            schema_id: AnoncredsUtils::xyz_schema_id(),
             cred_def_id: AnoncredsUtils::issuer_1_xyz_cred_def_id(),
             referent: CREDENTIAL2_ID.to_string(),
             rev_reg_id: None,
@@ -514,6 +519,7 @@ impl AnoncredsUtils {
 
     pub fn issuer_2_gvt_credential() -> CredentialInfo {
         CredentialInfo {
+            schema_id: AnoncredsUtils::gvt_schema_id(),
             cred_def_id: AnoncredsUtils::issuer_2_gvt_cred_def_id(),
             referent: CREDENTIAL3_ID.to_string(),
             rev_reg_id: None,
@@ -799,6 +805,97 @@ impl AnoncredsUtils {
         }
     }
 
+    pub fn multi_steps_issuer_preparation(wallet_handle: i32,
+                                          did: &str,
+                                          schema_name: &str,
+                                          schema_attrs: &str) -> (String, String, String, String) {
+        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(did,
+                                                                            schema_name,
+                                                                            SCHEMA_VERSION,
+                                                                            schema_attrs).unwrap();
+
+        let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
+                                                                                               did,
+                                                                                               &schema_json,
+                                                                                               TAG_1,
+                                                                                               None,
+                                                                                               &AnoncredsUtils::default_cred_def_config()).unwrap();
+
+        (schema_id, schema_json, cred_def_id, cred_def_json)
+    }
+
+    pub fn multi_steps_issuer_revocation_preparation(wallet_handle: i32,
+                                                     did: &str,
+                                                     schema_name: &str,
+                                                     schema_attrs: &str,
+                                                     revoc_reg_def_config: &str) -> (String, String, String, String, String, String, String, i32) {
+        // Issuer creates schema
+        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(did,
+                                                                            schema_name,
+                                                                            SCHEMA_VERSION,
+                                                                            schema_attrs).unwrap();
+
+        // Issuer creates credential definition
+        let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
+                                                                                               did,
+                                                                                               &schema_json,
+                                                                                               TAG_1,
+                                                                                               None,
+                                                                                               &AnoncredsUtils::revocation_cred_def_config()).unwrap();
+
+        // Issuer creates revocation registry
+        let tails_writer_config = AnoncredsUtils::tails_writer_config();
+        let tails_writer_handle = BlobStorageUtils::open_writer("default", &tails_writer_config).unwrap();
+
+        let (rev_reg_id, revoc_reg_def_json, revoc_reg_entry_json) =
+            AnoncredsUtils::indy_issuer_create_and_store_revoc_reg(wallet_handle,
+                                                                   did,
+                                                                   None,
+                                                                   TAG_1,
+                                                                   &cred_def_id,
+                                                                   revoc_reg_def_config,
+                                                                   tails_writer_handle).unwrap();
+
+        let blob_storage_reader_handle = BlobStorageUtils::open_reader(TYPE, &tails_writer_config).unwrap();
+
+        (schema_id, schema_json, cred_def_id, cred_def_json, rev_reg_id, revoc_reg_def_json, revoc_reg_entry_json, blob_storage_reader_handle)
+    }
+
+    pub fn multi_steps_create_credential(prover_master_secret_id: &str,
+                                         prover_wallet_handle: i32,
+                                         issuer_wallet_handle: i32,
+                                         cred_id: &str,
+                                         cred_values: &str,
+                                         cred_def_id: &str,
+                                         cred_def_json: &str) {
+        // Issuer creates Credential Offer
+        let cred_offer_json = AnoncredsUtils::issuer_create_credential_offer(issuer_wallet_handle, &cred_def_id).unwrap();
+
+        // Prover creates Credential Request
+        let (cred_req, cred_req_metadata) = AnoncredsUtils::prover_create_credential_req(prover_wallet_handle,
+                                                                                         DID_MY1,
+                                                                                         &cred_offer_json,
+                                                                                         &cred_def_json,
+                                                                                         prover_master_secret_id).unwrap();
+
+        // Issuer creates Credential
+        let (cred_json, _, _) = AnoncredsUtils::issuer_create_credential(issuer_wallet_handle,
+                                                                         &cred_offer_json,
+                                                                         &cred_req,
+                                                                         &cred_values,
+                                                                         None,
+                                                                         None).unwrap();
+
+        // Prover stores received Credential
+        AnoncredsUtils::prover_store_credential(prover_wallet_handle,
+                                                cred_id,
+                                                &cred_req,
+                                                &cred_req_metadata,
+                                                &cred_json,
+                                                &cred_def_json,
+                                                None).unwrap();
+    }
+
     pub fn multi_steps_create_revocation_credential(prover_master_secret_id: &str,
                                                     prover_wallet_handle: i32,
                                                     issuer_wallet_handle: i32,
@@ -810,9 +907,6 @@ impl AnoncredsUtils {
                                                     revoc_reg_def_json: &str,
                                                     blob_storage_reader_handle: i32)
                                                     -> (String, Option<String>) {
-        // Prover creates Master Secret
-        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, prover_master_secret_id).unwrap();
-
         // Issuer creates Credential Offer for Prover
         let cred_offer_for_prover1_json = AnoncredsUtils::issuer_create_credential_offer(issuer_wallet_handle, cred_def_id).unwrap();
 

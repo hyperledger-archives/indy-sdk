@@ -337,7 +337,7 @@ async def build_get_nym_request(submitter_did: str,
 async def build_schema_request(submitter_did: str,
                                data: str) -> str:
     """
-    Builds a SCHEMA request. Request to add Claim's schema.
+    Builds a SCHEMA request. Request to add Credential's schema.
 
     :param submitter_did: DID of the submitter stored in secured Wallet.
     :param data: {
@@ -372,39 +372,30 @@ async def build_schema_request(submitter_did: str,
 
 
 async def build_get_schema_request(submitter_did: str,
-                                   dest: str,
-                                   data: str) -> str:
+                                   id_: str) -> str:
     """
-    Builds a GET_SCHEMA request. Request to get Claim's Schema.
+    Builds a GET_SCHEMA request. Request to get Credential's Schema.
 
     :param submitter_did: DID of the read request sender.
-    :param dest: Schema Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
-                 It differs from submitter_did field.
-    :param data: {
-        name (string): Schema's name string
-        version (string): Schema's version string
-    }
+    :param id_: Schema Id in ledger
     :return: Request result as json.
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_schema_request: >>> submitter_did: %r, dest: %r, data: %r",
+    logger.debug("build_get_schema_request: >>> submitter_did: %r, id: %r",
                  submitter_did,
-                 dest,
-                 data)
+                 id_)
 
     if not hasattr(build_get_schema_request, "cb"):
         logger.debug("build_get_schema_request: Creating callback")
         build_get_schema_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
-    c_dest = c_char_p(dest.encode('utf-8'))
-    c_data = c_char_p(data.encode('utf-8'))
+    c_id = c_char_p(id_.encode('utf-8'))
 
     request_json = await do_call('indy_build_get_schema_request',
                                  c_submitter_did,
-                                 c_dest,
-                                 c_data,
+                                 c_id,
                                  build_get_schema_request.cb)
 
     res = request_json.decode()
@@ -445,125 +436,115 @@ async def parse_get_schema_response(get_schema_response: str) -> (str, str):
     return res
 
 
-async def build_claim_def_txn(submitter_did: str,
-                              data: str) -> str:
+async def build_cred_def_request(submitter_did: str,
+                                 data: str) -> str:
     """
-    Builds an CLAIM_DEF request. Request to add a claim definition (in particular, public key),
-    that Issuer creates for a particular Claim Schema.
+    Builds an CRED_DEF request. Request to add a credential definition (in particular, public key),
+    that Issuer creates for a particular Credential Schema.
 
     :param submitter_did: DID of the submitter stored in secured Wallet.
     :param data: credential definition json {
          id: string - identifier of credential definition
          schemaId: string - identifier of stored in ledger schema
-         type: string - type of the claim definition. CL is the only supported type now.
+         type: string - type of the credential definition. CL is the only supported type now.
          tag: string - allows to distinct between credential definitions for the same issuer and schema
-         value: Dictionary with Claim Definition's data: {
-             primary: primary claim public key,
-             Optional<revocation>: revocation claim public key
+         value: Dictionary with Credential Definition's data: {
+             primary: primary credential public key,
+             Optional<revocation>: revocation credential public key
          }
      }
     :return: Request result as json.
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_schema_request: >>> submitter_did: %r, data: %r",
+    logger.debug("build_cred_def_request: >>> submitter_did: %r, data: %r",
                  submitter_did,
                  data)
 
-    if not hasattr(build_claim_def_txn, "cb"):
-        logger.debug("build_claim_def_txn: Creating callback")
-        build_claim_def_txn.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    if not hasattr(build_cred_def_request, "cb"):
+        logger.debug("build_cred_def_request: Creating callback")
+        build_cred_def_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_data = c_char_p(data.encode('utf-8'))
 
-    request_result = await do_call('indy_build_claim_def_txn',
+    request_result = await do_call('indy_build_cred_def_request',
                                    c_submitter_did,
                                    c_data,
-                                   build_claim_def_txn.cb)
+                                   build_cred_def_request.cb)
 
     res = request_result.decode()
-    logger.debug("build_claim_def_txn: <<< res: %r", res)
+    logger.debug("build_cred_def_request: <<< res: %r", res)
     return res
 
 
-async def build_get_claim_def_txn(submitter_did: str,
-                                  xref: int,
-                                  signature_type: str,
-                                  origin: str) -> str:
+async def build_get_cred_def_request(submitter_did: str,
+                                     id_: str) -> str:
     """
-   Builds a GET_CLAIM_DEF request. Request to get a claim definition (in particular, public key),
-   that Issuer creates for a particular Claim Schema.
+   Builds a GET_CRED_DEF request. Request to get a credential definition (in particular, public key),
+   that Issuer creates for a particular Credential Schema.
 
     :param submitter_did: DID of read request sender.
-    :param xref: Sequence number of a Schema transaction the claim definition is created for.
-    :param signature_type: Type of the claim definition. CL is the only supported type now.
-    :param origin: Claim Definition Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
+    :param id_: Credential Definition Id in ledger.
     :return: Request result as json.
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_claim_def_txn: >>> submitter_did: %r, xref: %r, signature_type: %r, origin: %r",
+    logger.debug("build_get_cred_def_request: >>> submitter_did: %r, id: %r",
                  submitter_did,
-                 xref,
-                 signature_type,
-                 origin)
+                 id_)
 
-    if not hasattr(build_get_claim_def_txn, "cb"):
-        logger.debug("build_get_claim_def_txn: Creating callback")
-        build_get_claim_def_txn.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    if not hasattr(build_get_cred_def_request, "cb"):
+        logger.debug("build_get_cred_def_request: Creating callback")
+        build_get_cred_def_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
-    c_xref = c_int32(xref)
-    c_signature_type = c_char_p(signature_type.encode('utf-8'))
-    c_origin = c_char_p(origin.encode('utf-8'))
+    c_id = c_char_p(id_.encode('utf-8'))
 
-    request_json = await do_call('indy_build_get_claim_def_txn',
+    request_json = await do_call('indy_build_get_cred_def_request',
                                  c_submitter_did,
-                                 c_xref,
-                                 c_signature_type,
-                                 c_origin,
-                                 build_get_claim_def_txn.cb)
+                                 c_id,
+                                 build_get_cred_def_request.cb)
 
     res = request_json.decode()
-    logger.debug("build_get_claim_def_txn: <<< res: %r", res)
+    logger.debug("build_get_cred_def_request: <<< res: %r", res)
     return res
 
 
-async def parse_get_claim_def_response(get_claim_def_response: str) -> (str, str):
+async def parse_get_cred_def_response(get_cred_def_response: str) -> (str, str):
     """
-    Parse a GET_CLAIM_DEF response.
+    Parse a GET_CRED_DEF response.
 
-    :param get_claim_def_response: response json
+    :param get_cred_def_response: response json
     :return: Credential Definition Id and Credential Definition json.
      {
          id: string - identifier of credential definition
          schemaId: string - identifier of stored in ledger schema
-         type: string - type of the claim definition. CL is the only supported type now.
+         type: string - type of the credential definition. CL is the only supported type now.
          tag: string - allows to distinct between credential definitions for the same issuer and schema
-         value: Dictionary with Claim Definition's data: {
-             primary: primary claim public key,
-             Optional<revocation>: revocation claim public key
+         value: Dictionary with Credential Definition's data: {
+             primary: primary credential public key,
+             Optional<revocation>: revocation credential public key
          } -
          ver: Version of the Credential Definition json
      }
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("parse_get_claim_def_response: >>> get_claim_def_response: %r", get_claim_def_response)
+    logger.debug("parse_get_cred_def_response: >>> get_cred_def_response: %r", get_cred_def_response)
 
-    if not hasattr(parse_get_claim_def_response, "cb"):
-        logger.debug("parse_get_claim_def_response: Creating callback")
-        parse_get_claim_def_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+    if not hasattr(parse_get_cred_def_response, "cb"):
+        logger.debug("parse_get_cred_def_response: Creating callback")
+        parse_get_cred_def_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
-    c_get_claim_def_response = c_char_p(get_claim_def_response.encode('utf-8'))
+    c_get_cred_def_response = c_char_p(get_cred_def_response.encode('utf-8'))
 
-    (claim_def_id, claim_def_json) = await do_call('indy_parse_get_claim_def_response',
-                                                   c_get_claim_def_response,
-                                                   parse_get_claim_def_response.cb)
+    (cred_def_id, cred_def_json) = await do_call('indy_parse_get_cred_def_response',
+                                                 c_get_cred_def_response,
+                                                 parse_get_cred_def_response.cb)
 
-    res = (claim_def_id.decode(), claim_def_json.decode())
-    logger.debug("parse_get_claim_def_response: <<< res: %r", res)
+    res = (cred_def_id.decode(), cred_def_json.decode())
+    logger.debug("parse_get_cred_def_response: <<< res: %r", res)
     return res
 
 
@@ -754,7 +735,7 @@ async def build_revoc_reg_def_request(submitter_did: str,
                                       data: str) -> str:
     """
     Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry
-    to an exists claim definition.
+    to an exists credential definition.
 
     :param submitter_did:DID of the submitter stored in secured Wallet.
     :param data: Revocation Registry specific data:
@@ -762,7 +743,7 @@ async def build_revoc_reg_def_request(submitter_did: str,
              "id": string - ID of the Revocation Registry,
              "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
              "tag": string - Unique descriptive ID of the Registry,
-             "credDefId": string - ID of the corresponding ClaimDef,
+             "credDefId": string - ID of the corresponding Credential Definition,
              "value": Registry-specific data {
                  "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
                  "maxCredNum": number - Maximum number of credentials the Registry can serve.
@@ -838,7 +819,7 @@ async def parse_get_revoc_reg_def_response(get_revoc_ref_def_response: str) -> (
          "id": string - ID of the Revocation Registry,
          "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
          "tag": string - Unique descriptive ID of the Registry,
-         "credDefId": string - ID of the corresponding ClaimDef,
+         "credDefId": string - ID of the corresponding Credential Definition,
          "value": Registry-specific data {
              "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
              "maxCredNum": number - Maximum number of credentials the Registry can serve.
@@ -875,7 +856,7 @@ async def build_revoc_reg_entry_request(submitter_did: str,
     """
     Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
     the new accumulator value and issued/revoked indices.
-    This is just a delta of indices, not the whole list. So, it can be sent each time a new claim is issued/revoked.
+    This is just a delta of indices, not the whole list. So, it can be sent each time a new credential is issued/revoked.
 
     :param submitter_did: DID of the submitter stored in secured Wallet.
     :param revoc_reg_def_id:  ID of the corresponding RevocRegDef.
@@ -950,12 +931,12 @@ async def build_get_revoc_reg_request(submitter_did: str,
     return res
 
 
-async def parse_get_revoc_reg_response(get_revoc_reg_response: str) -> (str, str):
+async def parse_get_revoc_reg_response(get_revoc_reg_response: str) -> (str, str, int):
     """
     Parse a GET_REVOC_REG response.
 
     :param get_revoc_reg_response: response json
-    :return: Revocation Registry Definition Id and Revocation Registry json.
+    :return: Revocation Registry Definition Id, Revocation Registry json and Timestamp.
      {
          "value": Registry-specific data {
              "accum": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
@@ -969,15 +950,15 @@ async def parse_get_revoc_reg_response(get_revoc_reg_response: str) -> (str, str
 
     if not hasattr(parse_get_revoc_reg_response, "cb"):
         logger.debug("parse_get_revoc_reg_response: Creating callback")
-        parse_get_revoc_reg_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+        parse_get_revoc_reg_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p, c_uint64))
 
     c_get_revoc_reg_response = c_char_p(get_revoc_reg_response.encode('utf-8'))
 
-    (revoc_reg_def_id, revoc_reg_json) = await do_call('indy_parse_get_revoc_reg_response',
-                                                       c_get_revoc_reg_response,
-                                                       parse_get_revoc_reg_response.cb)
+    (revoc_reg_def_id, revoc_reg_json, timestamp) = await do_call('indy_parse_get_revoc_reg_response',
+                                                                  c_get_revoc_reg_response,
+                                                                  parse_get_revoc_reg_response.cb)
 
-    res = (revoc_reg_def_id.decode(), revoc_reg_json.decode())
+    res = (revoc_reg_def_id.decode(), revoc_reg_json.decode(), timestamp)
     logger.debug("parse_get_revoc_reg_response: <<< res: %r", res)
     return res
 
@@ -1023,12 +1004,12 @@ async def build_get_revoc_reg_delta_request(submitter_did: str,
     return res
 
 
-async def parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: str) -> (str, str):
+async def parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: str) -> (str, str, int):
     """
     Parse a GET_REVOC_REG_DELTA response.
 
     :param get_revoc_reg_delta_response: response json
-    :return: Revocation Registry Definition Id and Revocation Registry Delta json.
+    :return: Revocation Registry Definition Id, Revocation Registry Delta json and Timestamp.
      {
          "value": Registry-specific data {
              prevAccum: string - previous accumulator value.
@@ -1046,14 +1027,15 @@ async def parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: str) 
 
     if not hasattr(parse_get_revoc_reg_delta_response, "cb"):
         logger.debug("parse_get_revoc_reg_delta_response: Creating callback")
-        parse_get_revoc_reg_delta_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+        parse_get_revoc_reg_delta_response.cb = create_cb(
+            CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p, c_uint64))
 
     c_get_revoc_reg_delta_response = c_char_p(get_revoc_reg_delta_response.encode('utf-8'))
 
-    (revoc_reg_def_id, revoc_reg_delta_json) = await do_call('indy_parse_get_revoc_reg_delta_response',
-                                                             c_get_revoc_reg_delta_response,
-                                                             parse_get_revoc_reg_delta_response.cb)
+    (revoc_reg_def_id, revoc_reg_delta_json, timestamp) = await do_call('indy_parse_get_revoc_reg_delta_response',
+                                                                        c_get_revoc_reg_delta_response,
+                                                                        parse_get_revoc_reg_delta_response.cb)
 
-    res = (revoc_reg_def_id.decode(), revoc_reg_delta_json.decode())
+    res = (revoc_reg_def_id.decode(), revoc_reg_delta_json.decode(), timestamp)
     logger.debug("parse_get_revoc_reg_delta_response: <<< res: %r", res)
     return res

@@ -28,7 +28,7 @@ Anoncreds protocol links:
 
 * Indy SDK and Indy Node should use the same format for public Anoncreds entities (Schema, Credential Definition, Revocation Registry Definition, Revocation Registry Delta)
 * Indy SDK and Indy Node should use the same entities referencing approach
-* It should be possible to integrate additional claim signature and revocation schemas without breaking API changes
+* It should be possible to integrate additional credential signature and revocation schemas without breaking API changes
 * API should provide flexible and pluggable approach to handle revocation tails files
 * API should provide the way to calculate revocation witness values on cloud agent to avoid downloading of the hole tails file on edge devices
 
@@ -38,7 +38,7 @@ Anoncreds protocol links:
 
 ## API
 
-### Schema Issuer
+### Issuer
 
 ```Rust
 /// Create credential schema entity that describes credential attributes list and allows credentials
@@ -69,11 +69,8 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
                                         version: *const c_char,
                                         attrs: *const c_char,
                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                             schema_id: *const c_char
-                                                             schema_json: *const c_char)>) -> ErrorCode
+                                                             id: *const c_char, schema_json: *const c_char)>) -> ErrorCode
 ```
-
-### Issuer
 
 ```Rust
 /// Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
@@ -86,10 +83,10 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to user context
 /// wallet_handle: wallet handler (created by open_wallet)
-/// issuer_did: a DID of the issuer signing claim_def transaction to the Ledger
+/// issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
 /// schema_json: credential schema as a json
 /// tag: allows to distinct between credential definitions for the same issuer and schema
-/// type_: credential definition type (optional, 'CL' by default) that defines claims signature and revocation math. Supported types are:
+/// type_: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math. Supported types are:
 /// - 'CL': Camenisch-Lysyanskaya credential signature type
 /// config_json: type-specific configuration of credential definition as json:
 /// - 'CL':
@@ -131,28 +128,31 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
 /// Revocation registry state is stored on the wallet and also intended to be shared as the ordered list of REVOC_REG_ENTRY transactions.
 /// This call initializes the state in the wallet and returns the initial entry.
 ///
-/// Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked claims in public
+/// Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked credentials in public
 /// revocation registry and intended to be distributed out of leger (REVOC_REG_DEF transaction will still contain uri and hash of tails).
 /// This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
 ///
 /// #Params
-/// command_handle: command handle to map callback to user context
-/// wallet_handle: wallet handler (created by open_wallet)
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing transaction to the Ledger
-/// blob_storage_writer_handle: pre-configured blob storage writer instance handle that will allow to write generated tails
-/// type_: revocation registry type (optional, default value depends on claim definition type). Supported types are:
-/// - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' claim definition type
+/// type_: revocation registry type (optional, default value depends on credential definition type). Supported types are:
+/// - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
 /// tag: allows to distinct between revocation registries for the same issuer and credential definition
+/// cred_def_id: id of stored in ledger credential definition
 /// config_json: type-specific configuration of revocation registry as json:
 /// - 'CL_ACCUM':
-///   - maxClaimsNum: maximum number of claims the new registry can process (optional, default 100000)
-///   - issuanceByDefault: issuance type (optional, default true). If:
-///       - true: all indices are assumed to be issued and initial accumulator is calculated over all indices; Revocation registry is updated only during revocation
-///       - false: nothing is issued initially accumulator is 1
-/// cb: Callback that takes command result as parameter
+///     "issuance_type": (optional) type of issuance. Currently supported:
+///         1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
+///            Revocation Registry is updated only during revocation.
+///         2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
+///     "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
+/// }
+/// tails_writer_handle: handle of blob storage to store tails
+/// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// revoc_reg_def_id: identifer of created revocation registry definition
+/// revoc_reg_id: identifier of created revocation registry definition
 /// revoc_reg_def_json: public part of revocation registry definition
 /// revoc_reg_entry_json: revocation registry entry that defines initial state of revocation registry
 ///
@@ -176,7 +176,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 
 ```Rust
 /// Create credential offer that will be used by Prover for
-/// claim request creation. Offer includes nonce and key correctness proof
+/// credential request creation. Offer includes nonce and key correctness proof
 /// for authentication between protocol steps and integrity checking.
 ///
 /// #Params
@@ -187,12 +187,12 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 ///
 /// #Returns
 /// credential offer json:
-///   {
-///     "cred_def_id": string,
-///     // Fields below can depend on Cred Def type
-///     "nonce": string,
-///     "key_correctness_proof" : <key_correctness_proof>
-///   }
+///     {
+///         "cred_def_id": string,
+///         // Fields below can depend on Cred Def type
+///         "nonce": string,
+///         "key_correctness_proof" : <key_correctness_proof>
+///     }
 ///
 /// #Errors
 /// Common*
@@ -299,36 +299,31 @@ pub extern fn indy_issuer_revoke_cred(command_handle: i32,
 ```
 
 ```Rust
-/// Recover a credential identified by a cred_revoc_id (returned by indy_issuer_create_cred).
-///
-/// The corresponding credential definition and revocation registry must be already
-/// created an stored into the wallet.
-/// 
-/// This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
-/// Note that it is possible to accumulate deltas to reduce ledger load.
+/// Merge two revocation registry deltas to accumulate common delta.
+/// Send common delta to ledger to reduce the load.
 ///
 /// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// rev_reg_id: id of revocation registry stored in wallet
-/// tails_reader_handle:
-/// user_revoc_index: index of the user in the revocation registry
+/// rev_reg_delta_json: revocation registry delta received by calling
+///                     indy_issuer_create_credential or indy_issuer_revoke_credential.
+/// other_rev_reg_delta_json: revocation registry delta received by calling
+///                     indy_issuer_create_credential or indy_issuer_revoke_credential.
+///                     PrevAccum value must be equal current accum value of rev_reg_delta_json.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// revoc_reg_delta_json: Revocation registry delta json with a revoked credential
+/// merged_rev_reg_delta: Merged revocation registry delta
 ///
 /// #Errors
 /// Annoncreds*
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_issuer_recover_credential(command_handle: i32,
-                                             wallet_handle: i32,
-                                             blob_storage_reader_handle: i32,
-                                             cred_revoc_id: *const c_char,
-                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                  revoc_reg_delta_json: *const c_char)>) -> ErrorCode
+pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: i32,
+                                                           rev_reg_delta_json: *const c_char,
+                                                           other_rev_reg_delta_json: *const c_char,
+                                                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                                merged_rev_reg_delta: *const c_char)>) -> ErrorCode
 ```
 
 ### Prover
@@ -343,7 +338,7 @@ pub extern fn indy_issuer_recover_credential(command_handle: i32,
 /// master_secret_id: (optional, if not present random one will be generated) new master id
 ///
 /// #Returns
-/// master_secret_id: Id of generated master secret
+/// out_master_secret_id: Id of generated master secret
 ///
 /// #Errors
 /// Annoncreds*
@@ -358,7 +353,7 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 ```
 
 ```Rust
-/// Creates a clam request for the given credential offer.
+/// Creates a credential request for the given credential offer.
 ///
 /// The method creates a blinded master secret for a master secret identified by a provided name.
 /// The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
@@ -417,7 +412,7 @@ pub extern fn indy_prover_create_credential_req(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// cred_id: identifier by which credential is stored in the wallet
+/// out_cred_id: identifier by which credential is stored in the wallet
 ///
 /// #Errors
 /// Annoncreds*
@@ -439,16 +434,13 @@ pub extern fn indy_prover_store_cred(command_handle: i32,
 ```Rust
 /// Gets human readable credentials according to the filter.
 /// If filter is NULL, then all credentials are returned.
-/// Claims can be filtered by Issuer, credential_def and/or Schema.
+/// Credentials can be filtered by Issuer, credential_def and/or Schema.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// filter_json: filter for credentials
 ///        {
 ///            "schema_id": string, (Optional)
-///            "schema_issuer_did": string, (Optional)
-///            "schema_name": string, (Optional)
-///            "schema_version": string, (Optional)
 ///            "issuer_did": string, (Optional)
 ///            "cred_def_id": string, (Optional)
 ///        }
@@ -532,6 +524,12 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 ///         "from": Optional<int>, // timestamp of interval beginning
 ///         "to": Optional<int>, // timestamp of interval ending
 ///     }
+/// filter: filter for credentials
+///        {
+///            "schema_id": string, (Optional)
+///            "issuer_did": string, (Optional)
+///            "cred_def_id": string, (Optional)
+///        }
 ///
 /// #Returns
 /// credentials_json: json with credentials for the given pool request.
@@ -589,10 +587,10 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
 ///              ...,
 ///         },
 ///         "requested_predicates": { // set of requested predicates
-///              "<predicate_referent>": <predicate_info>, // see below
+///              "<predicate_referent>": <predicate_info>, // see above
 ///              ...,
 ///          },
-///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+///         "non_revoked": Optional<<non_revoc_interval>>, // see above,
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval for each attribute
 ///                        // (can be overridden on attribute level)
@@ -786,10 +784,87 @@ pub extern fn indy_verifier_verify_proof(command_handle: i32,
                                                               valid: bool)>) -> ErrorCode
 ```
 
+```Rust
+/// Create user revocation state for revocation registry at the particular time moment.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context
+/// blob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails
+/// rev_reg_def_json: revocation registry definition json
+/// rev_reg_delta_json: revocation registry definition delta json
+/// timestamp: time represented as a total number of seconds from Unix Epoch
+/// cred_rev_id: user credential revocation id in revocation registry
+/// cb: Callback that takes command result as parameter
+///
+/// #Returns
+/// revocation state json:
+///     {
+///         "rev_reg": <revocation registry>,
+///         "witness": <witness>,
+///         "timestamp" : integer
+///     }
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Anoncreds*
+#[no_mangle]
+pub extern fn indy_create_revocation_state(command_handle: i32,
+                                           blob_storage_reader_handle: i32,
+                                           rev_reg_def_json: *const c_char,
+                                           rev_reg_delta_json: *const c_char,
+                                           timestamp: u64,
+                                           cred_rev_id: *const c_char,
+                                           cb: Option<extern fn(
+                                               xcommand_handle: i32, err: ErrorCode,
+                                               rev_state_json: *const c_char
+                                           )>) -> ErrorCode
+```
+
+```Rust
+/// Create new user revocation state for revocation registry at the
+/// particular time moment based on already existed (to reduce calculation time).
+///
+/// #Params
+/// command_handle: command handle to map callback to user context
+/// blob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails
+/// rev_state_json: revocation registry state json
+/// rev_reg_def_json: revocation registry definition json
+/// rev_reg_delta_json: revocation registry definition delta json
+/// timestamp: time represented as a total number of seconds from Unix Epoch
+/// cred_rev_id: user credential revocation id in revocation registry
+/// cb: Callback that takes command result as parameter
+///
+/// #Returns
+/// revocation state json:
+///     {
+///         "rev_reg": <revocation registry>,
+///         "witness": <witness>,
+///         "timestamp" : integer
+///     }
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Anoncreds*
+#[no_mangle]
+pub extern fn indy_update_revocation_state(command_handle: i32,
+                                           blob_storage_reader_handle: i32,
+                                           rev_state_json: *const c_char,
+                                           rev_reg_def_json: *const c_char,
+                                           rev_reg_delta_json: *const c_char,
+                                           timestamp: u64,
+                                           cred_rev_id: *const c_char,
+                                           cb: Option<extern fn(
+                                               xcommand_handle: i32, err: ErrorCode,
+                                               updated_rev_state_json: *const c_char
+                                           )>) -> ErrorCode
+```
+
 
 ### Blob Storage
 
-CL revocation schema introduces Revocation Tails entity used to hide information about revoked claims in public Revocation Registry. Tails
+CL revocation schema introduces Revocation Tails entity used to hide information about revoked credential in public Revocation Registry. Tails
 
 * are static (once generated) array of BigIntegers that can be represented as binary blob or file
 * may require quite huge amount of data (up to 1GB per Revocation Registry);

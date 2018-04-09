@@ -1,5 +1,6 @@
 import pytest
 
+from indy import wallet
 from indy.anoncreds import issuer_create_credential
 from indy.error import ErrorCode, IndyError
 

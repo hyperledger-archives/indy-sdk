@@ -29,7 +29,7 @@ use services::ledger::constants;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use self::indy_crypto::bls::Generator;
 
-const REQUESTS_FOR_STATE_PROOFS: [&'static str; 4] = [constants::GET_NYM, constants::GET_SCHEMA, constants::GET_CLAIM_DEF, constants::GET_ATTR];
+const REQUESTS_FOR_STATE_PROOFS: [&'static str; 4] = [constants::GET_NYM, constants::GET_SCHEMA, constants::GET_CRED_DEF, constants::GET_ATTR];
 const RESENDABLE_REQUEST_TIMEOUT: i64 = 1;
 const REQUEST_TIMEOUT_ACK: i64 = 10;
 const REQUEST_TIMEOUT_REPLY: i64 = 2000;
@@ -319,13 +319,13 @@ impl TransactionHandler {
                     return None;
                 }
             }
-            constants::GET_CLAIM_DEF => {
+            constants::GET_CRED_DEF => {
                 if let (Some(sign_type), Some(sch_seq_no)) = (json_msg["signature_type"].as_str(),
                                                               json_msg["ref"].as_u64()) {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_CLAIM_DEF sign_type {:?}, sch_seq_no: {:?}", sign_type, sch_seq_no);
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_CRED_DEF sign_type {:?}, sch_seq_no: {:?}", sign_type, sch_seq_no);
                     format!(":\x03:{}:{}", sign_type, sch_seq_no)
                 } else {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_CLAIM_DEF No key suffix");
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_CRED_DEF No key suffix");
                     return None;
                 }
             }
@@ -405,7 +405,7 @@ impl TransactionHandler {
                     hasher.process(data.as_bytes());
                     value["val"] = SJsonValue::String(hasher.fixed_result().to_hex());
                 }
-                constants::GET_CLAIM_DEF => {
+                constants::GET_CRED_DEF => {
                     value["val"] = parsed_data;
                 }
                 constants::GET_SCHEMA => {

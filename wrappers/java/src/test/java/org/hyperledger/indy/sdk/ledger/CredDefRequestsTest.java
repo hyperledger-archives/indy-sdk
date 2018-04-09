@@ -16,15 +16,13 @@ import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
+public class CredDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
 	@Rule
 	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
 
-	private String signatureType = "CL";
-
 	@Test
-	public void testBuildClaimDefRequestWorks() throws Exception {
+	public void testBuildCredDefRequestWorks() throws Exception {
 		String data = "{\n" +
 				"        \"ver\": \"1.0\",\n" +
 				"        \"id\": \"cred_def_id\",\n" +
@@ -52,14 +50,16 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 				"            \"signature_type\": \"CL\"\n" +
 				"        }";
 
-		String claimDefRequest = Ledger.buildClaimDefTxn(DID, data).get();
+		String credDefRequest = Ledger.buildCredDefRequest(DID, data).get();
 
-		assertTrue(claimDefRequest.replaceAll("\\s+", "").contains(expectedResult.replaceAll("\\s+", "")));
+		assertTrue(credDefRequest.replaceAll("\\s+", "").contains(expectedResult.replaceAll("\\s+", "")));
 	}
 
 	@Test
-	public void testBuildGetClaimDefRequestWorks() throws Exception {
+	public void testBuildGetCredDefRequestWorks() throws Exception {
 		int seqNo = 1;
+		String signatureType = "CL";
+		String id = DID + ":\\u0003:" + signatureType + ":" + seqNo;
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{" +
 				"\"type\":\"108\"," +
@@ -68,33 +68,33 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 				"\"origin\":\"%s\"" +
 				"}", DID, seqNo, signatureType, DID);
 
-		String getClaimDefRequest = Ledger.buildGetClaimDefTxn(DID, seqNo, signatureType, DID).get();
+		String getCredDefRequest = Ledger.buildGetCredDefRequest(DID, id).get();
 
-		assertTrue(getClaimDefRequest.replace("\\", "").contains(expectedResult));
+		assertTrue(getCredDefRequest.replace("\\", "").contains(expectedResult));
 	}
 
 	@Test
-	public void testBuildClaimDefRequestWorksForInvalidJson() throws Exception {
+	public void testBuildCredDefRequestWorksForInvalidJson() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String data = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"}}}";
 
-		Ledger.buildClaimDefTxn(DID, data).get();
+		Ledger.buildCredDefRequest(DID, data).get();
 	}
 
 	@Test(timeout = 200_000)
-	public void testClaimDefRequestsWorks() throws Exception {
+	public void testCredDefRequestsWorks() throws Exception {
 		String myDid = createStoreAndPublishDidFromTrustee();
 
 		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(myDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
 		String schema = createSchemaResult.getSchemaJson();
+		String schemaId = createSchemaResult.getSchemaId();
 
 		String schemaRequest = Ledger.buildSchemaRequest(myDid, schema).get();
 		Ledger.signAndSubmitRequest(pool, wallet, myDid, schemaRequest).get();
 
-		String getSchemaData = String.format("{\"name\":\"%s\",\"version\":\"%s\"}", GVT_SCHEMA_NAME, SCHEMA_VERSION);
-		String getSchemaRequest = Ledger.buildGetSchemaRequest(myDid, myDid, getSchemaData).get();
+		String getSchemaRequest = Ledger.buildGetSchemaRequest(myDid, schemaId).get();
 		String getSchemaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaRequest, response -> {
 			JSONObject getSchemaResponseObject = new JSONObject(response);
 			return !getSchemaResponseObject.getJSONObject("result").isNull("seqNo");
@@ -105,16 +105,17 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredDefResult =
 				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, myDid, parseSchemaResult.getObjectJson(), TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
 		String credDefJson = createCredDefResult.getCredDefJson();
+		String credDefId = createCredDefResult.getCredDefId();
 
-		String claimDefRequest = Ledger.buildClaimDefTxn(myDid, credDefJson).get();
-		Ledger.signAndSubmitRequest(pool, wallet, myDid, claimDefRequest).get();
+		String credDefRequest = Ledger.buildCredDefRequest(myDid, credDefJson).get();
+		Ledger.signAndSubmitRequest(pool, wallet, myDid, credDefRequest).get();
 
-		String getClaimDefRequest = Ledger.buildGetClaimDefTxn(myDid, Integer.parseInt(parseSchemaResult.getId()), signatureType, myDid).get();
-		String getClaimDefResponse = PoolUtils.ensurePreviousRequestApplied(pool, getClaimDefRequest, response -> {
+		String getCredDefRequest = Ledger.buildGetCredDefRequest(myDid, credDefId).get();
+		String getCredDefResponse = PoolUtils.ensurePreviousRequestApplied(pool, getCredDefRequest, response -> {
 			JSONObject responseObject = new JSONObject(response);
 			return !responseObject.getJSONObject("result").isNull("seqNo");
 		});
 
-		Ledger.parseGetClaimDefResponse(getClaimDefResponse).get();
+		Ledger.parseGetCredDefResponse(getCredDefResponse).get();
 	}
 }

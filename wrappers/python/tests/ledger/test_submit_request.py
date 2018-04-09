@@ -157,10 +157,10 @@ async def test_attrib_requests_works_for_enc_value(pool_handle, wallet_handle, i
 @pytest.mark.asyncio
 async def test_send_schema_request_works_without_signature(pool_handle, identity_my1):
     (my_did, _) = identity_my1
+    (schema_id, schema_json) = \
+        await anoncreds.issuer_create_schema(my_did, "gvt", "1.0", json.dumps(["name", "age", "sex", "height"]))
 
-    schema_data = {"id": "id", "name": "name", "version": "1.0", "attrNames": ["name"]}
-
-    schema_request = await ledger.build_schema_request(my_did, json.dumps(schema_data))
+    schema_request = await ledger.build_schema_request(my_did, schema_json)
 
     response = await ledger.submit_request(pool_handle, schema_request)
     assert json.loads(response)['op'] == 'REQNACK'
@@ -170,16 +170,12 @@ async def test_send_schema_request_works_without_signature(pool_handle, identity
 async def test_schema_requests_works(pool_handle, wallet_handle, identity_my):
     (my_did, my_ver_key) = identity_my
 
-    (_, schema_json) = await anoncreds.issuer_create_schema(my_did, "gvt2", "2.0", json.dumps(["name", "male"]))
-
+    (schema_id, schema_json) = \
+        await anoncreds.issuer_create_schema(my_did, "gvt", "1.0", json.dumps(["name", "age", "sex", "height"]))
     schema_request = await ledger.build_schema_request(my_did, schema_json)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
 
-    get_schema_data = {
-        "name": "gvt2",
-        "version": "2.0"
-    }
-    get_schema_request = await ledger.build_get_schema_request(my_did, my_did, json.dumps(get_schema_data))
+    get_schema_request = await ledger.build_get_schema_request(my_did, schema_id)
     get_schema_response = \
         await ensure_previous_request_applied(pool_handle, get_schema_request,
                                               lambda response: response['result']['seqNo'] is not None)
@@ -207,50 +203,45 @@ async def test_send_node_request_works_without_signature(pool_handle, identity_m
 
 
 @pytest.mark.asyncio
-async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_my):
+async def test_cred_def_requests_works(pool_handle, wallet_handle, identity_my):
     (my_did, my_ver_key) = identity_my
 
-    (_, schema_json) = await anoncreds.issuer_create_schema(my_did, "gvt2", "2.0", json.dumps(["name", "male"]))
+    (schema_id, schema_json) = \
+        await anoncreds.issuer_create_schema(my_did, "gvt", "1.0", json.dumps(["name", "age", "sex", "height"]))
 
     schema_request = await ledger.build_schema_request(my_did, schema_json)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
 
-    get_schema_data = {
-        "name": "gvt2",
-        "version": "2.0"
-    }
-
-    get_schema_request = await ledger.build_get_schema_request(my_did, my_did, json.dumps(get_schema_data))
+    get_schema_request = await ledger.build_get_schema_request(my_did, schema_id)
     get_schema_response = \
         await ensure_previous_request_applied(pool_handle, get_schema_request,
                                               lambda response: response['result']['seqNo'] is not None)
     (schema_id, schema_json) = await ledger.parse_get_schema_response(get_schema_response)
 
-    (_, cred_def_json) = \
+    (cred_def_id, cred_def_json) = \
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, my_did, schema_json, "TAG", "CL",
                                                                json.dumps({"support_revocation": False}))
 
-    claim_def_request = await ledger.build_claim_def_txn(my_did, cred_def_json)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, claim_def_request)
+    cred_def_request = await ledger.build_cred_def_request(my_did, cred_def_json)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, cred_def_request)
 
-    get_claim_def_request = await ledger.build_get_claim_def_txn(my_did, int(schema_id), "CL", my_did)
-    get_claim_def_response = \
-        await ensure_previous_request_applied(pool_handle, get_claim_def_request,
+    get_cred_def_request = await ledger.build_get_cred_def_request(my_did, cred_def_id)
+    get_cred_def_response = \
+        await ensure_previous_request_applied(pool_handle, get_cred_def_request,
                                               lambda response: response['result']['seqNo'] is not None)
-    await ledger.parse_get_claim_def_response(get_claim_def_response)
+    await ledger.parse_get_cred_def_response(get_cred_def_response)
 
 
 @pytest.mark.asyncio
 async def test_revoc_reg_def_requests_works(pool_handle, wallet_handle, identity_my, path_home):
     (my_did, my_ver_key) = identity_my
 
-    (_, schema_json) = await anoncreds.issuer_create_schema(my_did, "gvt2", "2.0", json.dumps(["name", "male"]))
-
+    (schema_id, schema_json) = \
+        await anoncreds.issuer_create_schema(my_did, "gvt", "1.0", json.dumps(["name", "age", "sex", "height"]))
     schema_request = await ledger.build_schema_request(my_did, schema_json)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
 
-    get_schema_data = {"name": "gvt2", "version": "2.0"}
-    get_schema_request = await ledger.build_get_schema_request(my_did, my_did, json.dumps(get_schema_data))
+    get_schema_request = await ledger.build_get_schema_request(my_did, schema_id)
     get_schema_response = \
         await ensure_previous_request_applied(pool_handle, get_schema_request,
                                               lambda response: response['result']['seqNo'] is not None)
@@ -260,8 +251,8 @@ async def test_revoc_reg_def_requests_works(pool_handle, wallet_handle, identity
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, my_did, schema_json, "TAG", "CL",
                                                                json.dumps({"support_revocation": True}))
 
-    claim_def_request = await ledger.build_claim_def_txn(my_did, cred_def_json)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, claim_def_request)
+    cred_def_request = await ledger.build_cred_def_request(my_did, cred_def_json)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, cred_def_request)
 
     tails_writer_config = json.dumps({'base_dir': str(path_home.joinpath("tails")), 'uri_pattern': ''})
     tails_writer = await blob_storage.open_writer('default', tails_writer_config)
@@ -284,13 +275,12 @@ async def test_revoc_reg_def_requests_works(pool_handle, wallet_handle, identity
 async def test_revoc_reg_requests_works(pool_handle, wallet_handle, identity_my, path_home):
     (my_did, my_ver_key) = identity_my
 
-    (_, schema_json) = await anoncreds.issuer_create_schema(my_did, "gvt2", "2.0", json.dumps(["name", "male"]))
-
+    (schema_id, schema_json) = \
+        await anoncreds.issuer_create_schema(my_did, "gvt", "1.0", json.dumps(["name", "age", "sex", "height"]))
     schema_request = await ledger.build_schema_request(my_did, schema_json)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
 
-    get_schema_data = {"name": "gvt2", "version": "2.0"}
-    get_schema_request = await ledger.build_get_schema_request(my_did, my_did, json.dumps(get_schema_data))
+    get_schema_request = await ledger.build_get_schema_request(my_did, schema_id)
     get_schema_response = \
         await ensure_previous_request_applied(pool_handle, get_schema_request,
                                               lambda response: response['result']['seqNo'] is not None)
@@ -300,8 +290,8 @@ async def test_revoc_reg_requests_works(pool_handle, wallet_handle, identity_my,
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, my_did, schema_json, "TAG", "CL",
                                                                json.dumps({"support_revocation": True}))
 
-    claim_def_request = await ledger.build_claim_def_txn(my_did, cred_def_json)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, claim_def_request)
+    cred_def_request = await ledger.build_cred_def_request(my_did, cred_def_json)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, cred_def_request)
 
     tails_writer_config = json.dumps({'base_dir': str(path_home.joinpath("tails")), 'uri_pattern': ''})
     tails_writer = await blob_storage.open_writer('default', tails_writer_config)
@@ -329,13 +319,12 @@ async def test_revoc_reg_requests_works(pool_handle, wallet_handle, identity_my,
 async def test_revoc_reg_delta_requests_works(pool_handle, wallet_handle, identity_my, path_home):
     (my_did, my_ver_key) = identity_my
 
-    (_, schema_json) = await anoncreds.issuer_create_schema(my_did, "gvt2", "2.0", json.dumps(["name", "male"]))
-
+    (schema_id, schema_json) = \
+        await anoncreds.issuer_create_schema(my_did, "gvt", "1.0", json.dumps(["name", "age", "sex", "height"]))
     schema_request = await ledger.build_schema_request(my_did, schema_json)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
+    schema_response = await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
 
-    get_schema_data = {"name": "gvt2", "version": "2.0"}
-    get_schema_request = await ledger.build_get_schema_request(my_did, my_did, json.dumps(get_schema_data))
+    get_schema_request = await ledger.build_get_schema_request(my_did, schema_id)
     get_schema_response = \
         await ensure_previous_request_applied(pool_handle, get_schema_request,
                                               lambda response: response['result']['seqNo'] is not None)
@@ -345,8 +334,8 @@ async def test_revoc_reg_delta_requests_works(pool_handle, wallet_handle, identi
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, my_did, schema_json, "TAG", "CL",
                                                                json.dumps({"support_revocation": True}))
 
-    claim_def_request = await ledger.build_claim_def_txn(my_did, cred_def_json)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, claim_def_request)
+    cred_def_request = await ledger.build_cred_def_request(my_did, cred_def_json)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, cred_def_request)
 
     tails_writer_config = json.dumps({'base_dir': str(path_home.joinpath("tails")), 'uri_pattern': ''})
     tails_writer = await blob_storage.open_writer('default', tails_writer_config)
@@ -374,21 +363,14 @@ async def test_revoc_reg_delta_requests_works(pool_handle, wallet_handle, identi
 async def test_get_txn_request_works(pool_handle, wallet_handle, identity_my):
     (my_did, _) = identity_my
 
-    (_, schema_json) = await anoncreds.issuer_create_schema(my_did, "gvt3", "3.0", json.dumps(["name", "male"]))
-
-    schema_request = await ledger.build_schema_request(my_did, schema_json)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
-
-    get_schema_data = {
-        "name": "gvt3",
-        "version": "3.0"
-    }
-    get_schema_request = await ledger.build_get_schema_request(my_did, my_did, json.dumps(get_schema_data))
-    get_schema_response = await ledger.submit_request(pool_handle, get_schema_request)
-    (schema_id, schema_json) = await ledger.parse_get_schema_response(get_schema_response)
+    (schema_id, schema_json) = \
+        await anoncreds.issuer_create_schema(my_did, "gvt", "1.0", json.dumps(["name", "age", "sex", "height"]))
     schema = json.loads(schema_json)
+    schema_request = await ledger.build_schema_request(my_did, schema_json)
+    schema_response = await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
+    seq_no = json.loads(schema_response)["result"]["seqNo"]
 
-    get_txn_request = await ledger.build_get_txn_request(my_did, int(schema_id))
+    get_txn_request = await ledger.build_get_txn_request(my_did, seq_no)
     get_txn_response = json.loads(await ledger.submit_request(pool_handle, get_txn_request))
 
     received_schema = get_txn_response['result']['data']['data']
@@ -400,12 +382,13 @@ async def test_get_txn_request_works(pool_handle, wallet_handle, identity_my):
 async def test_get_txn_request_works_for_invalid_seq_no(pool_handle, wallet_handle, identity_my):
     (my_did, _) = identity_my
 
-    (_, schema_json) = await anoncreds.issuer_create_schema(my_did, "gvt4", "4.0", json.dumps(["name", "male"]))
-
+    (schema_id, schema_json) = \
+        await anoncreds.issuer_create_schema(my_did, "gvt", "1.0", json.dumps(["name", "age", "sex", "height"]))
     schema_request = await ledger.build_schema_request(my_did, schema_json)
     schema_response = await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
+    schema_id = json.loads(schema_response)["result"]["seqNo"]
 
-    seq_no = json.loads(schema_response)['result']['seqNo'] + 1
+    seq_no = schema_id + 1
 
     get_txn_request = await ledger.build_get_txn_request(my_did, seq_no)
     get_txn_response = json.loads(await ledger.submit_request(pool_handle, get_txn_request))

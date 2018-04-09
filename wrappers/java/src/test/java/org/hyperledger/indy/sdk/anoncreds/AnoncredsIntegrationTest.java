@@ -3,7 +3,6 @@ package org.hyperledger.indy.sdk.anoncreds;
 import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
-import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateSchemaResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreCredentialDefResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.ProverCreateCredentialRequestResult;
 import org.json.JSONObject;
@@ -88,7 +87,7 @@ public class AnoncredsIntegrationTest {
 		Wallet.createWallet("default", walletName, "default", null, null).get();
 		wallet = Wallet.openWallet(walletName, null, null).get();
 
-		IssuerCreateSchemaResult createSchemaResult =
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult =
 				Anoncreds.issuerCreateSchema(issuerDid, gvtSchemaName, schemaVersion, gvtSchemaAttributes).get();
 		gvtSchemaId = createSchemaResult.getSchemaId();
 		gvtSchema = createSchemaResult.getSchemaJson();

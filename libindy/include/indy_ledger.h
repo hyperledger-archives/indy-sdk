@@ -238,7 +238,7 @@ extern "C" {
                                                                         const char*   request_json)
                                                   );
 
-    /// Builds a SCHEMA request. Request to add Claim's schema.
+    /// Builds a SCHEMA request. Request to add Credential's schema.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
@@ -266,17 +266,12 @@ extern "C" {
                                                                        const char*   request_json)
                                                  );
 
-    /// Builds a GET_SCHEMA request. Request to get Claim's Schema.
+    /// Builds a GET_SCHEMA request. Request to get Credential's Schema.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: DID of the read request sender.
-    /// dest: Schema Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
-    /// It differs from submitter_did field.
-    /// data: {
-    ///     name (string): Schema's name string
-    ///     version (string): Schema's version string
-    /// }
+    /// id: Schema ID in ledger
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -287,8 +282,7 @@ extern "C" {
     
     extern indy_error_t indy_build_get_schema_request(indy_handle_t command_handle,
                                                       const char *  submitter_did,
-                                                      const char *  dest,
-                                                      const char *  data,
+                                                      const char *  id,
 
                                                       void           (*cb)(indy_handle_t xcommand_handle,
                                                                            indy_error_t  err,
@@ -323,8 +317,8 @@ extern "C" {
                                                                             const char*   schema_json)
                                                        );
     
-    /// Builds an CLAIM_DEF request. Request to add a claim definition (in particular, public key),
-    /// that Issuer creates for a particular Claim Schema.
+    /// Builds an CRED_DEF request. Request to add a credential definition (in particular, public key),
+    /// that Issuer creates for a particular Credential Schema.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
@@ -333,11 +327,11 @@ extern "C" {
     /// {
     ///     id: string - identifier of credential definition
     ///     schemaId: string - identifier of stored in ledger schema
-    ///     type: string - type of the claim definition. CL is the only supported type now.
+    ///     type: string - type of the credential definition. CL is the only supported type now.
     ///     tag: string - allows to distinct between credential definitions for the same issuer and schema
-    ///     value: Dictionary with Claim Definition's data: {
-    ///         primary: primary claim public key,
-    ///         Optional<revocation>: revocation claim public key
+    ///     value: Dictionary with Credential Definition's data: {
+    ///         primary: primary credential public key,
+    ///         Optional<revocation>: revocation credential public key
     ///     }
     /// }
     /// cb: Callback that takes command result as parameter.
@@ -348,24 +342,22 @@ extern "C" {
     /// #Errors
     /// Common*
     
-    extern indy_error_t indy_build_claim_def_txn(indy_handle_t command_handle,
-                                                 const char *  submitter_did,
-                                                 const char *  data,
+    extern indy_error_t indy_build_cred_def_request(indy_handle_t command_handle,
+                                                    const char *  submitter_did,
+                                                    const char *  data,
 
-                                                 void           (*cb)(indy_handle_t xcommand_handle,
-                                                                      indy_error_t  err,
-                                                                      const char*   request_json)
-                                                 );
+                                                    void           (*cb)(indy_handle_t xcommand_handle,
+                                                                         indy_error_t  err,
+                                                                         const char*   request_json)
+                                                    );
     
-    /// Builds a GET_CLAIM_DEF request. Request to get a claim definition (in particular, public key),
-    /// that Issuer creates for a particular Claim Schema.
+    /// Builds a GET_CRED_DEF request. Request to get a credential definition (in particular, public key),
+    /// that Issuer creates for a particular Credential Schema.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: DID of the read request sender.
-    /// xref: Sequence number of a Schema transaction the claim definition is created for.
-    /// signature_type: Type of the claim definition. CL is the only supported type now.
-    /// origin: Claim Definition Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
+    /// id: Credential definition ID in Ledger
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -374,21 +366,20 @@ extern "C" {
     /// #Errors
     /// Common*
 
-     extern indy_error_t indy_build_get_claim_def_txn(indy_handle_t command_handle,
-                                                      const char *  submitter_did,
-                                                      indy_i32_t  xref,
-                                                      const char *  signature_type,
-                                                      const char *  origin,
-                                                      void           (*cb)(indy_handle_t xcommand_handle,
-                                                                           indy_error_t  err,
-                                                                           const char*   request_json)
-                                                      );
+     extern indy_error_t indy_build_get_cred_def_request(indy_handle_t command_handle,
+                                                         const char *  submitter_did,
+                                                         const char *  id,
 
-    /// Parse a GET_CLAIM_DEF response.
+                                                         void           (*cb)(indy_handle_t xcommand_handle,
+                                                                              indy_error_t  err,
+                                                                              const char*   request_json)
+                                                         );
+
+    /// Parse a GET_CRED_DEF response.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// get_claim_def_response: response json
+    /// get_cred_def_response: response json
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -396,11 +387,11 @@ extern "C" {
     /// {
     ///     id: string - identifier of credential definition
     ///     schemaId: string - identifier of stored in ledger schema
-    ///     type: string - type of the claim definition. CL is the only supported type now.
+    ///     type: string - type of the credential definition. CL is the only supported type now.
     ///     tag: string - allows to distinct between credential definitions for the same issuer and schema
-    ///     value: Dictionary with Claim Definition's data: {
-    ///         primary: primary claim public key,
-    ///         Optional<revocation>: revocation claim public key
+    ///     value: Dictionary with Credential Definition's data: {
+    ///         primary: primary credential public key,
+    ///         Optional<revocation>: revocation credential public key
     ///     } -
     ///     ver: Version of the Credential Definition json
     /// }
@@ -408,13 +399,13 @@ extern "C" {
     /// #Errors
     /// Common*
 
-     extern indy_error_t indy_parse_get_claim_def_response(indy_handle_t command_handle,
-                                                           const char *  get_claim_def_response,
-                                                           void           (*cb)(indy_handle_t xcommand_handle,
-                                                                                indy_error_t  err,
-                                                                                const char*   claim_def_id,
-                                                                                const char*   claim_def_json)
-                                                           );
+     extern indy_error_t indy_parse_get_cred_def_response(indy_handle_t command_handle,
+                                                          const char *  get_cred_def_response,
+                                                          void           (*cb)(indy_handle_t xcommand_handle,
+                                                                               indy_error_t  err,
+                                                                               const char*   cred_def_id,
+                                                                               const char*   cred_def_json)
+                                                          );
 
     /// Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
     ///
@@ -542,7 +533,7 @@ extern "C" {
                                                         );
 
     /// Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry
-    /// to an exists claim definition.
+    /// to an exists credential definition.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
@@ -552,7 +543,7 @@ extern "C" {
     ///         "id": string - ID of the Revocation Registry,
     ///         "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
     ///         "tag": string - Unique descriptive ID of the Registry,
-    ///         "credDefId": string - ID of the corresponding ClaimDef,
+    ///         "credDefId": string - ID of the corresponding credential definition,
     ///         "value": Registry-specific data {
     ///             "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
     ///             "maxCredNum": number - Maximum number of credentials the Registry can serve.
@@ -614,7 +605,7 @@ extern "C" {
     /// Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
     /// the new accumulator value and issued/revoked indices.
     /// This is just a delta of indices, not the whole list.
-    /// So, it can be sent each time a new claim is issued/revoked.
+    /// So, it can be sent each time a new credential is issued/revoked.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
@@ -680,7 +671,7 @@ extern "C" {
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// Revocation Registry json.
+    /// Revocation Registry Id, Revocation Registry json and Timestamp.
     /// {
     ///     "value": Registry-specific data {
     ///         "accum": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
@@ -697,7 +688,8 @@ extern "C" {
                                                           void           (*cb)(indy_handle_t xcommand_handle,
                                                                                indy_error_t  err,
                                                                                const char*   revoc_reg_def_id,
-                                                                               const char*   revoc_reg_json)
+                                                                               const char*   revoc_reg_json,
+                                                                               uint64_t      timestamp)
                                                          );
 
     /// Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
@@ -737,7 +729,7 @@ extern "C" {
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// Revocation Registry Delta json.
+    /// Revocation Registry Id, Revocation Registry Delta json and Timestamp.
     /// {
     ///     "value": Registry-specific data {
     ///         prevAccum: string - previous accumulator value.
@@ -757,7 +749,8 @@ extern "C" {
                                                                 void           (*cb)(indy_handle_t xcommand_handle,
                                                                                      indy_error_t  err,
                                                                                      const char*   revoc_reg_def_id,
-                                                                                     const char*   revoc_reg_delta_json)
+                                                                                     const char*   revoc_reg_delta_json,
+                                                                                     uint64_t      timestamp)
                                                                );
 
 #ifdef __cplusplus

@@ -17,6 +17,9 @@ async def issuer_create_schema(issuer_did: str,
     Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
     to Indy distributed ledger.
 
+    It is IMPORTANT now POST Schema in Ledger and GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
+	After that can call indy_issuer_create_and_store_credential_def to build corresponding Credential Definition.
+
     :param issuer_did: DID of schema issuer
     :param name: a name the schema
     :param version: a version of the schema
@@ -72,7 +75,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
     :param issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
     :param schema_json: credential schema as a json
     :param tag: allows to distinct between credential definitions for the same issuer and schema
-    :param type_: credential definition type (optional, 'CL' by default) that defines claims signature and revocation math.
+    :param type_: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
     Supported types are:
         - 'CL': Camenisch-Lysyanskaya credential signature type
     :param  config_json: type-specific configuration of credential definition as json:
@@ -139,14 +142,14 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     Revocation registry state is stored on the wallet and also intended to be shared as the ordered list of REVOC_REG_ENTRY transactions.
     This call initializes the state in the wallet and returns the initial entry.
 
-    Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked claims in public
+    Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked credentials in public
     revocation registry and intended to be distributed out of leger (REVOC_REG_DEF transaction will still contain uri and hash of tails).
     This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param issuer_did: a DID of the issuer signing transaction to the Ledger
-    :param type_: type_: revocation registry type (optional, default value depends on claim definition type). Supported types are:
-        - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' claim definition type
+    :param type_: type_: revocation registry type (optional, default value depends on credential definition type). Supported types are:
+        - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
     :param tag: allows to distinct between revocation registries for the same issuer and credential definition
     :param cred_def_id: id of stored in ledger credential definition
     :param config_json: type-specific configuration of revocation registry as json:
@@ -155,7 +158,7 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                 1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
                    Revocation Registry is updated only during revocation.
                 2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
-            "max_cred_num": maximum number of claims the new registry can process (optional, default 100000)
+            "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
         }
     :param tails_writer_handle:
     :return: 
@@ -206,7 +209,7 @@ async def issuer_create_credential_offer(wallet_handle: int,
                                          cred_def_id: str) -> str:
     """
     Create credential offer that will be used by Prover for
-    claim request creation. Offer includes nonce and key correctness proof
+    credential request creation. Offer includes nonce and key correctness proof
     for authentication between protocol steps and integrity checking.
 
     :param wallet_handle: wallet handler (created by open_wallet).
@@ -375,58 +378,67 @@ async def issuer_revoke_credential(wallet_handle: int,
     return res
 
 
-async def issuer_recover_credential(wallet_handle: int,
-                                    blob_storage_reader_handle: int,
-                                    rev_reg_id: str,
-                                    cred_revoc_id: str) -> str:
-    """
-    Recover a credential identified by a cred_revoc_id (returned by indy_issuer_create_cred).
-
-    The corresponding credential definition and revocation registry must be already
-    created an stored into the wallet.
-
-    This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
-    Note that it is possible to accumulate deltas to reduce ledger load.
-
-    :param wallet_handle: wallet handler (created by open_wallet).
-    :param blob_storage_reader_handle: pre-configured blob storage reader instance handle that will allow
-    to read revocation tails
-    :param rev_reg_id: id of revocation registry stored in wallet
-    :param cred_revoc_id: local id for revocation info
-    :return: Revocation registry update json with a revoked credential
-    """
-
-    logger = logging.getLogger(__name__)
-    logger.debug(
-        "issuer_recover_credential: >>> wallet_handle: %r, blob_storage_reader_handle: %r, rev_reg_id: %r, "
-        "cred_revoc_id: %r",
-        wallet_handle,
-        blob_storage_reader_handle,
-        rev_reg_id,
-        cred_revoc_id)
-
-    if not hasattr(issuer_recover_credential, "cb"):
-        logger.debug("issuer_recover_credential: Creating callback")
-        issuer_recover_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
-
-    c_wallet_handle = c_int32(wallet_handle)
-    c_blob_storage_reader_handle = c_int32(blob_storage_reader_handle)
-    c_rev_reg_id = c_char_p(rev_reg_id.encode('utf-8'))
-    c_cred_revoc_id = c_char_p(cred_revoc_id.encode('utf-8'))
-
-    revoc_reg_delta_json = await do_call('indy_issuer_recover_credential',
-                                         c_wallet_handle,
-                                         c_blob_storage_reader_handle,
-                                         c_rev_reg_id,
-                                         c_cred_revoc_id,
-                                         issuer_recover_credential.cb)
-    res = revoc_reg_delta_json.decode()
-    logger.debug("issuer_recover_credential: <<< res: %r", res)
-    return res
+# async def issuer_recover_credential(wallet_handle: int,
+#                                     blob_storage_reader_handle: int,
+#                                     rev_reg_id: str,
+#                                     cred_revoc_id: str) -> str:
+#     """
+#     Recover a credential identified by a cred_revoc_id (returned by indy_issuer_create_cred).
+#
+#     The corresponding credential definition and revocation registry must be already
+#     created an stored into the wallet.
+#
+#     This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
+#     Note that it is possible to accumulate deltas to reduce ledger load.
+#
+#     :param wallet_handle: wallet handler (created by open_wallet).
+#     :param blob_storage_reader_handle: pre-configured blob storage reader instance handle that will allow
+#     to read revocation tails
+#     :param rev_reg_id: id of revocation registry stored in wallet
+#     :param cred_revoc_id: local id for revocation info
+#     :return: Revocation registry update json with a revoked credential
+#     """
+#
+#     logger = logging.getLogger(__name__)
+#     logger.debug(
+#         "issuer_recover_credential: >>> wallet_handle: %r, blob_storage_reader_handle: %r, rev_reg_id: %r, "
+#         "cred_revoc_id: %r",
+#         wallet_handle,
+#         blob_storage_reader_handle,
+#         rev_reg_id,
+#         cred_revoc_id)
+#
+#     if not hasattr(issuer_recover_credential, "cb"):
+#         logger.debug("issuer_recover_credential: Creating callback")
+#         issuer_recover_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+#
+#     c_wallet_handle = c_int32(wallet_handle)
+#     c_blob_storage_reader_handle = c_int32(blob_storage_reader_handle)
+#     c_rev_reg_id = c_char_p(rev_reg_id.encode('utf-8'))
+#     c_cred_revoc_id = c_char_p(cred_revoc_id.encode('utf-8'))
+#
+#     revoc_reg_delta_json = await do_call('indy_issuer_recover_credential',
+#                                          c_wallet_handle,
+#                                          c_blob_storage_reader_handle,
+#                                          c_rev_reg_id,
+#                                          c_cred_revoc_id,
+#                                          issuer_recover_credential.cb)
+#     res = revoc_reg_delta_json.decode()
+#     logger.debug("issuer_recover_credential: <<< res: %r", res)
+#     return res
 
 
 async def issuer_merge_revocation_registry_deltas(rev_reg_delta_json: str,
                                                   other_rev_reg_delta_json: str) -> str:
+    """
+    Merge two revocation registry deltas to accumulate common delta.
+    Send common delta to ledger to reduce the load.
+
+    :param rev_reg_delta_json: revocation registry delta json
+    :param other_rev_reg_delta_json: revocation registry delta json. PrevAccum value must be equal current accum value of rev_reg_delta_json.
+    :return: Merged revocation registry delta
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug(
         "issuer_merge_revocation_registry_deltas: >>> rev_reg_delta_json: %r, other_rev_reg_delta_json: %r",
@@ -1050,6 +1062,21 @@ async def create_revocation_state(blob_storage_reader_handle: int,
                                   rev_reg_delta_json: str,
                                   timestamp: int,
                                   cred_rev_id: str) -> str:
+    """
+    Create revocation state for revocation registry at the particular time moment.
+
+    :param blob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails
+    :param rev_reg_def_json: revocation registry definition json
+    :param rev_reg_delta_json: revocation registry definition delta json
+    :param timestamp: time represented as a total number of seconds from Unix Epoch
+    :param cred_rev_id: user credential revocation id in revocation registry
+    :return: revocation state json {
+         "rev_reg": <revocation registry>,
+         "witness": <witness>,
+         "timestamp" : integer
+    }
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug("create_revocation_info: >>> blob_storage_reader_handle: %r, rev_reg_def_json: %r,"
                  " rev_reg_delta_json: %r, timestamp: %r, cred_rev_id: %r",
@@ -1088,6 +1115,23 @@ async def update_revocation_state(blob_storage_reader_handle: int,
                                   rev_reg_delta_json: str,
                                   timestamp: int,
                                   cred_rev_id: str) -> str:
+    """
+    Create new revocation state for revocation registry at the
+    particular time moment based on already existed (to reduce calculation time).
+
+    :param blob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails
+    :param rev_state_json: revocation registry state json
+    :param rev_reg_def_json: revocation registry definition json
+    :param rev_reg_delta_json: revocation registry definition delta json
+    :param timestamp: time represented as a total number of seconds from Unix Epoch
+    :param cred_rev_id: user credential revocation id in revocation registry
+    :return: revocation state json {
+         "rev_reg": <revocation registry>,
+         "witness": <witness>,
+         "timestamp" : integer
+    }
+    """
+
     logger = logging.getLogger(__name__)
     logger.debug("update_revocation_state: >>> blob_storage_reader_handle: %r, rev_state_json: %r, "
                  "rev_reg_def_json: %r, rev_reg_delta_json: %r, timestamp: %r, cred_rev_id: %r",

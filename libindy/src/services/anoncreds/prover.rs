@@ -176,8 +176,8 @@ impl Prover {
         for (cred_key, &(ref req_attrs_for_cred, ref req_predicates_for_cred)) in credentials_for_proving.iter() {
             let credential: &Credential = credentials.get(cred_key.cred_id.as_str())
                 .ok_or(CommonError::InvalidStructure(format!("Credential not found by id: {:?}", cred_key.cred_id)))?;
-            let schema: &SchemaV1 = schemas.get(&credential.schema_id())
-                .ok_or(CommonError::InvalidStructure(format!("Schema not found by id: {:?}", credential.schema_id())))?;
+            let schema: &SchemaV1 = schemas.get(&credential.schema_id)
+                .ok_or(CommonError::InvalidStructure(format!("Schema not found by id: {:?}", credential.schema_id)))?;
             let cred_def: &CredentialDefinition = cred_defs.get(&credential.cred_def_id)
                 .ok_or(CommonError::InvalidStructure(format!("CredentialDefinition not found by id: {:?}", credential.cred_def_id)))?;
 
@@ -205,7 +205,7 @@ impl Prover {
                                                 rev_state.as_ref().map(|r_info| &r_info.witness))?;
 
             identifiers.push(Identifier {
-                schema_id: credential.schema_id(),
+                schema_id: credential.schema_id.clone(),
                 cred_def_id: credential.cred_def_id.clone(),
                 rev_reg_id: credential.rev_reg_id.clone(),
                 timestamp: cred_key.timestamp.clone()

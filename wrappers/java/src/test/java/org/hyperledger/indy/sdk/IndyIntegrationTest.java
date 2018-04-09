@@ -7,6 +7,7 @@ import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
 import org.hyperledger.indy.sdk.wallet.InMemWalletType;
 import org.hyperledger.indy.sdk.wallet.Wallet;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -17,6 +18,8 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+
+import static org.hyperledger.indy.sdk.utils.EnvironmentUtils.getIndyHomePath;
 
 public class IndyIntegrationTest {
 
@@ -35,7 +38,7 @@ public class IndyIntegrationTest {
 	protected static final String INVALID_DID = "invalid_base58string";
 	protected static final String IDENTITY_JSON_TEMPLATE = "{\"did\":\"%s\",\"verkey\":\"%s\"}";
 	protected static final byte[] MESSAGE = "{\"reqId\":1496822211362017764}".getBytes();
-	protected static final String SCHEMA_DATA = "{\"id\":\"id\",\"name\":\"gvt2\",\"version\":\"3.0\",\"attrNames\": [\"name\", \"male\"]}";
+	protected static final String SCHEMA_DATA = "{\"id\":\"id\", \"name\":\"gvt\",\"version\":\"1.0\",\"attrNames\":[\"name\"],\"ver\":\"1.0\"}";
 	protected static final String POOL = "Pool1";
 	protected static final String WALLET = "Wallet1";
 	protected static final String TYPE = "default";
@@ -54,6 +57,9 @@ public class IndyIntegrationTest {
 	protected String XYZ_SCHEMA_ATTRIBUTES = "[\"status\", \"period\"]";
 	protected String REVOC_REG_TYPE = "CL_ACCUM";
 	protected String SIGNATURE_TYPE = "CL";
+	protected String TAILS_WRITER_CONFIG = new JSONObject(String.format("{\"base_dir\":\"%s\", \"uri_pattern\":\"\"}", getIndyHomePath("tails")).replace('\\', '/')).toString();
+	protected String REV_CRED_DEF_CONFIG = "{\"support_revocation\":true}";
+
 
 	protected static final String TRUSTEE_IDENTITY_JSON =
 			new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null).toJson();

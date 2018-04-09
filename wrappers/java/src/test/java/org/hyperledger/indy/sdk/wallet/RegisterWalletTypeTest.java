@@ -44,32 +44,32 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
 		String walletName = "inmemWorkoutWallet";
 
-		// 1. Creates and opens wallet
+		//  Creates and opens wallet
 		Wallet.createWallet(POOL, walletName, type, null, null).get();
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 
-		// 2. Issuer creates Schema
+		//  Issuer creates Schema
 		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(DID, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
 		String gvtSchemaJson = createSchemaResult.getSchemaJson();
 
-		// 3. Issuer creates Credential Definition
+		//  Issuer creates Credential Definition
 		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredentialDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(wallet, DID, gvtSchemaJson, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
 		String credentialDefId = createCredentialDefResult.getCredDefId();
 		String credentialDef = createCredentialDefResult.getCredDefJson();
 
-		// 4. Issuer creates Credential Offer
+		//  Issuer creates Credential Offer
 		String credentialOffer = Anoncreds.issuerCreateCredentialOffer(wallet, credentialDefId).get();
 
-		// 5. Issuer creates Master Secret
+		//  Issuer creates Master Secret
 		String masterSecretId = "master_secret";
 		Anoncreds.proverCreateMasterSecret(wallet, masterSecretId).get();
 
-		// 6. Prover creates Credential Request
+		//  Prover creates Credential Request
 		AnoncredsResults.ProverCreateCredentialRequestResult createCredReqResult = Anoncreds.proverCreateCredentialReq(wallet, DID_MY1, credentialOffer, credentialDef, masterSecretId).get();
 		String credentialRequest = createCredReqResult.getCredentialRequestJson();
 		String credentialRequestMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
-		// 7. Issuer creates Credential
+		//  Issuer creates Credential
 		String gvtCredentialValues = "{\n" +
 				"               \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
 				"               \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
@@ -80,10 +80,10 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 				Anoncreds.issuerCreateCredential(wallet, credentialOffer, credentialRequest, gvtCredentialValues, null,  - 1).get();
 		String credential = createCredentialResult.getCredentialJson();
 
-		// 8. Prover stores Credential
+		//  Prover stores Credential
 		Anoncreds.proverStoreCredential(wallet, "id1", credentialRequest, credentialRequestMetadata, credential, credentialDef, null).get();
 
-		// 9. Prover gets Credential
+		//  Prover gets Credential
 		String credentials = Anoncreds.proverGetCredentials(wallet, String.format("{\"issuer_did\":\"%s\"}", DID)).get();
 
 		JSONArray credentialsArray = new JSONArray(credentials);
