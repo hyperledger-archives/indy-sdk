@@ -1,0 +1,29 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+	ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+	Actorbackgroundcolor white
+}
+
+participant "Agent" as ag
+participant "Ledger" as le
+ag -> le: update A<sub>p</sub><sup>1-pk</sup> to policy registry at **//P//**\n\
+with authorizations and policy updates
+note right
+	Authorizations include
+	PROVE,REVOKE_PROVE,PROVISION_PROVE,ADMIN
+end note
+le --> le: add A<sub>p</sub><sup>1-pk</sup> to prover registry
+le -> ag: result
+
+@enduml
