@@ -10,6 +10,7 @@ use utils::anoncreds::AnoncredsUtils;
 use utils::blob_storage::BlobStorageUtils;
 use utils::did::DidUtils;
 use utils::wallet::WalletUtils;
+use utils::pool::PoolUtils;
 use utils::constants::*;
 
 use std::ffi::CString;
@@ -18,6 +19,8 @@ use std::sync::{Once, ONCE_INIT};
 use std::mem;
 
 pub static mut SCHEMA_ID: &'static str = "";
+pub static mut CRED_DEF_ID: &'static str = "";
+pub static mut REV_REG_DEF_ID: &'static str = "";
 pub const SCHEMA_DATA: &'static str = r#"{"id":"id","name":"gvt","version":"1.0","attr_names":["name", "age", "sex", "height"]}"#;
 
 pub struct LedgerUtils {}
@@ -459,98 +462,74 @@ impl LedgerUtils {
         super::results::result_to_string_string_u64(err, receiver)
     }
 
-    pub fn post_schema_to_ledger(pool_handle: i32, wallet_handle: i32, did: &str) -> (String, String) {
-        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(did,
-                                                                    GVT_SCHEMA_NAME,
-                                                                    SCHEMA_VERSION,
-                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
-
-        let schema_request = LedgerUtils::build_schema_request(did, &schema_json).unwrap();
-        let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
-
-        let get_schema_request = LedgerUtils::build_get_schema_request(&did, &schema_id).unwrap();
-        let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
-
-        LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap()
-    }
-
-    pub fn prepare_cred_def(wallet_handle: i32, did: &str, schema_json: &str) -> (String, String) {
-        let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
-                                                                                               &did,
-                                                                                               &schema_json,
-                                                                                               TAG_1,
-                                                                                               None,
-                                                                                               &AnoncredsUtils::revocation_cred_def_config()).unwrap();
-        (cred_def_id, cred_def_json)
-    }
-
-    pub fn post_cred_def_to_ledger(pool_handle: i32, wallet_handle: i32, did: &str, schema_json: &str) -> String {
-        let (cred_def_id, cred_def_json) = LedgerUtils::prepare_cred_def(wallet_handle, did, schema_json);
-
-        let cred_def_request = LedgerUtils::build_cred_def_txn(&did, &cred_def_json).unwrap();
-        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &cred_def_request).unwrap();
-
-        cred_def_id
-    }
-
-    pub fn prepare_rev_reg(wallet_handle: i32, did: &str, cred_def_id: &str) -> (String, String, String) {
-        let tails_writer_config = AnoncredsUtils::tails_writer_config();
-        let tails_writer_handle = BlobStorageUtils::open_writer("default", &tails_writer_config).unwrap();
-
-        let (rev_reg_id, revoc_reg_def_json, rev_reg_entry_json) =
-            AnoncredsUtils::indy_issuer_create_and_store_revoc_reg(wallet_handle,
-                                                                   &did,
-                                                                   None,
-                                                                   TAG_1,
-                                                                   &cred_def_id,
-                                                                   &AnoncredsUtils::issuance_on_demand_rev_reg_config(),
-                                                                   tails_writer_handle).unwrap();
-
-        (rev_reg_id, revoc_reg_def_json, rev_reg_entry_json)
-    }
-
-    pub fn post_rev_reg_def(pool_handle: i32, wallet_handle: i32, did: &str, cred_def_id: &str) -> (String, String, String) {
-        let (rev_reg_id, revoc_reg_def_json, rev_reg_entry_json) = LedgerUtils::prepare_rev_reg(wallet_handle, did, cred_def_id);
-
-        let rev_reg_def_request = LedgerUtils::build_revoc_reg_def_request(&did, &revoc_reg_def_json).unwrap();
-        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &rev_reg_def_request).unwrap();
-
-        (rev_reg_id, revoc_reg_def_json, rev_reg_entry_json)
-    }
-
-    pub fn post_rev_reg_entry(pool_handle: i32, wallet_handle: i32, did: &str, rev_reg_id: &str, rev_reg_entry_json: &str) -> String {
-        let rev_reg_entry_request = LedgerUtils::build_revoc_reg_entry_request(&did, &rev_reg_id, REVOC_REG_TYPE, rev_reg_entry_json).unwrap();
-        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &rev_reg_entry_request).unwrap()
-    }
-
-    pub fn publish_schema_in_ledger(pool_handle: i32) -> &'static str {
+    pub fn post_entities() -> (&'static str, &'static str, &'static str) {
         lazy_static! {
-                    static ref COMMON_SCHEMA_INIT: Once = ONCE_INIT;
+                    static ref COMMON_ENTITIES_INIT: Once = ONCE_INIT;
 
                 }
 
         unsafe {
-            COMMON_SCHEMA_INIT.call_once(|| {
-                let schema_issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            COMMON_ENTITIES_INIT.call_once(|| {
+                let pool_name = "COMMON_ENTITIES_POOL";
+                let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
 
-                // Issuer create DID
-                let (schema_issuer_did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(schema_issuer_wallet_handle, pool_handle).unwrap();
+                let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
 
-                let schema_request = LedgerUtils::build_schema_request(&schema_issuer_did, SCHEMA_DATA).unwrap();
-                let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, schema_issuer_wallet_handle, &schema_issuer_did, &schema_request).unwrap();
-                let schema: serde_json::Value = serde_json::from_str(&schema_response).unwrap();
-                let schema_seq_no = schema["result"]["seqNo"].as_i64().unwrap().to_string();
+                let (issuer_did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
-                let get_schema_request = LedgerUtils::build_get_schema_request(&schema_issuer_did, &schema_seq_no).unwrap();
+                let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(&issuer_did,
+                                                                                    GVT_SCHEMA_NAME,
+                                                                                    SCHEMA_VERSION,
+                                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
+
+                let schema_request = LedgerUtils::build_schema_request(&issuer_did, &schema_json).unwrap();
+                let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &schema_request).unwrap();
+
+                let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &schema_id).unwrap();
                 let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
-                let (schema_id, _) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
+                let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
+
+                let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
+                                                                                                       &issuer_did,
+                                                                                                       &schema_json,
+                                                                                                       TAG_1,
+                                                                                                       None,
+                                                                                                       &AnoncredsUtils::revocation_cred_def_config()).unwrap();
+                let cred_def_request = LedgerUtils::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
+                let cred_def_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
+
+                let tails_writer_config = AnoncredsUtils::tails_writer_config();
+                let tails_writer_handle = BlobStorageUtils::open_writer("default", &tails_writer_config).unwrap();
+
+                let (rev_reg_id, revoc_reg_def_json, rev_reg_entry_json) =
+                    AnoncredsUtils::indy_issuer_create_and_store_revoc_reg(wallet_handle,
+                                                                           &issuer_did,
+                                                                           None,
+                                                                           TAG_1,
+                                                                           &cred_def_id,
+                                                                           &AnoncredsUtils::issuance_on_demand_rev_reg_config(),
+                                                                           tails_writer_handle).unwrap();
+
+                let rev_reg_def_request = LedgerUtils::build_revoc_reg_def_request(&issuer_did, &revoc_reg_def_json).unwrap();
+                let rev_reg_def_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &rev_reg_def_request).unwrap();
+
+                let rev_reg_entry_request = LedgerUtils::build_revoc_reg_entry_request(&issuer_did, &rev_reg_id, REVOC_REG_TYPE, &rev_reg_entry_json).unwrap();
+                let rev_reg_entry_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &rev_reg_entry_request).unwrap();
 
                 let res = mem::transmute(&schema_id as &str);
                 mem::forget(schema_id);
                 SCHEMA_ID = res;
+
+                let res = mem::transmute(&cred_def_id as &str);
+                mem::forget(cred_def_id);
+                CRED_DEF_ID = res;
+
+                let res = mem::transmute(&rev_reg_id as &str);
+                mem::forget(rev_reg_id);
+                REV_REG_DEF_ID = res;
             });
 
-            SCHEMA_ID
+            (SCHEMA_ID, CRED_DEF_ID, REV_REG_DEF_ID)
         }
     }
 }
