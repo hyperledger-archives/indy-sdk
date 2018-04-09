@@ -1,9 +1,6 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
-import org.hyperledger.indy.sdk.anoncreds.Anoncreds;
-import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.*;
@@ -13,7 +10,7 @@ import java.util.concurrent.ExecutionException;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertTrue;
 
-public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
+public class SchemaRequestsTest extends LedgerIntegrationTest {
 
 	@Test
 	public void testBuildSchemaRequestWorks() throws Exception {
@@ -50,13 +47,6 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testSchemaRequestsWorks() throws Exception {
 		String did = createStoreAndPublishDidFromTrustee();
-
-		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(did, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
-		String schema = createSchemaResult.getSchemaJson();
-		String schemaId = createSchemaResult.getSchemaId();
-
-		String schemaRequest = Ledger.buildSchemaRequest(did, schema).get();
-		Ledger.signAndSubmitRequest(pool, wallet, did, schemaRequest).get();
 
 		String getSchemaRequest = Ledger.buildGetSchemaRequest(did, String.valueOf(schemaId)).get();
 		String getSchemaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaRequest, response -> {

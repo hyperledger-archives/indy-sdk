@@ -77,7 +77,7 @@ public class IndyIntegrationTest {
 	private static Boolean isWalletRegistered = false;
 
 	@Before
-	public void setUp() throws IOException, InterruptedException, ExecutionException, IndyException {
+	public void setUp() throws IOException, InterruptedException, ExecutionException, IndyException, Exception {
 		InitHelper.init();
 		StorageUtils.cleanupStorage();
 		if (! isWalletRegistered) {

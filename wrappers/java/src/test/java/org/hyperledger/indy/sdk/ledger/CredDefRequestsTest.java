@@ -1,9 +1,6 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
-import org.hyperledger.indy.sdk.anoncreds.Anoncreds;
-import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.*;
@@ -13,10 +10,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.isA;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class CredDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
+public class CredDefRequestsTest extends LedgerIntegrationTest {
 
 	@Rule
 	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
@@ -83,32 +79,9 @@ public class CredDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWal
 		Ledger.buildCredDefRequest(DID, data).get();
 	}
 
-	@Test(timeout = 200_000)
+	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testCredDefRequestsWorks() throws Exception {
 		String myDid = createStoreAndPublishDidFromTrustee();
-
-		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(myDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
-		String schema = createSchemaResult.getSchemaJson();
-		String schemaId = createSchemaResult.getSchemaId();
-
-		String schemaRequest = Ledger.buildSchemaRequest(myDid, schema).get();
-		Ledger.signAndSubmitRequest(pool, wallet, myDid, schemaRequest).get();
-
-		String getSchemaRequest = Ledger.buildGetSchemaRequest(myDid, schemaId).get();
-		String getSchemaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaRequest, response -> {
-			JSONObject getSchemaResponseObject = new JSONObject(response);
-			return !getSchemaResponseObject.getJSONObject("result").isNull("seqNo");
-		});
-
-		LedgerResults.ParseResponseResult parseSchemaResult = Ledger.parseGetSchemaResponse(getSchemaResponse).get();
-
-		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredDefResult =
-				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, myDid, parseSchemaResult.getObjectJson(), TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
-		String credDefJson = createCredDefResult.getCredDefJson();
-		String credDefId = createCredDefResult.getCredDefId();
-
-		String credDefRequest = Ledger.buildCredDefRequest(myDid, credDefJson).get();
-		Ledger.signAndSubmitRequest(pool, wallet, myDid, credDefRequest).get();
 
 		String getCredDefRequest = Ledger.buildGetCredDefRequest(myDid, credDefId).get();
 		String getCredDefResponse = PoolUtils.ensurePreviousRequestApplied(pool, getCredDefRequest, response -> {

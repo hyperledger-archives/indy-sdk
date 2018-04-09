@@ -3252,7 +3252,7 @@ mod demos {
 
         let timestamp2 = time::get_time().sec as u64;
 
-        let (prover2_cred_rev_id, revoc_reg_delta2_json) = AnoncredsUtils::multi_steps_create_revocation_credential(
+        let (_, revoc_reg_delta2_json) = AnoncredsUtils::multi_steps_create_revocation_credential(
             prover2_master_secret_id,
             prover2_wallet_handle,
             issuer_wallet_handle,
@@ -3307,7 +3307,8 @@ mod demos {
                                                                                &prover1_cred_rev_id).unwrap();
 
         // Prover1 creates RevocationState for Timestamp 2
-        let prover1_rev_state_2_json = AnoncredsUtils::create_revocation_state(blob_storage_reader_handle,
+        let prover1_rev_state_2_json = AnoncredsUtils::update_revocation_state(blob_storage_reader_handle,
+                                                                               &prover1_rev_state_1_json,
                                                                                &revoc_reg_def_json,
                                                                                &revoc_reg_delta_json,
                                                                                timestamp2,
