@@ -282,6 +282,7 @@ async def issuer_create_credential(wallet_handle: int,
     :return: 
      cred_json: Credential json containing signed credential values
          {
+             "schema_id": string,
              "cred_def_id": string,
              "rev_reg_def_id", Optional<string>,
              "values": <see credential_values_json above>,
@@ -471,7 +472,7 @@ async def prover_create_master_secret(wallet_handle: int,
     The name must be unique.
 
     :param wallet_handle: wallet handler (created by open_wallet).
-    :param master_secret_name: a new master secret name
+    :param master_secret_name: (optional, if not present random one will be generated) new master id
     :return: None.
     """
 
@@ -517,9 +518,8 @@ async def prover_create_credential_req(wallet_handle: int,
     :return: 
      cred_req_json: Credential request json for creation of credential by Issuer
          {
-          "cred_def_id" : string,
-          "rev_reg_id" : Optional<string>,
           "prover_did" : string,
+          "cred_def_id" : string,
              // Fields below can depend on Cred Def type
           "blinded_ms" : <blinded_master_secret>,
           "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
@@ -636,7 +636,6 @@ async def prover_get_credentials(wallet_handle: int,
             "schema_issuer_did": string, (Optional)
             "schema_name": string, (Optional)
             "schema_version": string, (Optional)
-            "issuer_did": string, (Optional)
             "issuer_did": string, (Optional)
             "cred_def_id": string, (Optional)
         }
@@ -792,7 +791,7 @@ async def prover_create_proof(wallet_handle: int,
              "name": string,
              "version": string,
              "nonce": string,
-             "requested_attrs": { // set of requested attributes
+             "requested_attributes": { // set of requested attributes
                   "<attr_referent>": <attr_info>, // see below
                   ...,
              },
@@ -826,21 +825,21 @@ async def prover_create_proof(wallet_handle: int,
 
     :param credential_defs_json: all credential definitions json participating in the proof request
          {
-             "credential_def1_id": <credential_def1_json>,
-             "credential_def2_id": <credential_def2_json>,
-             "credential_def3_id": <credential_def3_json>,
+             "cred_def1_id": <credential_def1_json>,
+             "cred_def2_id": <credential_def2_json>,
+             "cred_def3_id": <credential_def3_json>,
          }
     :param rev_states_json: all revocation states json participating in the proof request
          {
-             "rev_reg1_id": {
-                 "freshness1": <rev_state1>,
-                 "freshness2": <rev_state2>,
+             "rev_reg_def1_id": {
+                 "timestamp1": <rev_state1>,
+                 "timestamp2": <rev_state2>,
              },
-             "credential2_referent_in_wallet": {
-                 "freshness3": <rev_state3>
+             "rev_reg_def2_id": {
+                 "timestamp3": <rev_state3>
              },
-             "credential3_referent_in_wallet": {
-                 "freshness4": <rev_state4>
+             "rev_reg_def3_id": {
+                 "timestamp4": <rev_state4>
              },
          }
     where
@@ -957,7 +956,7 @@ async def verifier_verify_proof(proof_request_json: str,
              "name": string,
              "version": string,
              "nonce": string,
-             "requested_attrs": { // set of requested attributes
+             "requested_attributes": { // set of requested attributes
                   "<attr_referent>": <attr_info>, // see below
                   ...,
              },
@@ -1002,9 +1001,9 @@ async def verifier_verify_proof(proof_request_json: str,
          }
     :param credential_defs_json: all credential definitions json participating in the proof
          {
-             "credential_def1_id": <credential_def1_json>,
-             "credential_def2_id": <credential_def2_json>,
-             "credential_def3_id": <credential_def3_json>,
+             "cred_def1_id": <credential_def1_json>,
+             "cred_def2_id": <credential_def2_json>,
+             "cred_def3_id": <credential_def3_json>,
          }
     :param rev_reg_defs_json: all revocation registry definitions json participating in the proof
          {
@@ -1014,15 +1013,15 @@ async def verifier_verify_proof(proof_request_json: str,
          }
     :param rev_regs_json: all revocation registries json participating in the proof
          {
-             "rev_reg1_id": {
-                 "freshness1": <rev_reg1>,
-                 "freshness2": <rev_reg2>,
+             "rev_reg_def1_id": {
+                 "timestamp1": <rev_reg1>,
+                 "timestamp2": <rev_reg2>,
              },
-             "credential2_referent_in_wallet": {
-                 "freshness3": <rev_reg3>
+             "rev_reg_def2_id": {
+                 "timestamp3": <rev_reg3>
              },
-             "credential3_referent_in_wallet": {
-                 "freshness4": <rev_reg4>
+             "rev_reg_def3_id": {
+                 "timestamp4": <rev_reg4>
              },
          }
     :return: valid: true - if signature is valid, false - otherwise
