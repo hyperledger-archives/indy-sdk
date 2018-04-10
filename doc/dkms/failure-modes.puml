@@ -1,0 +1,46 @@
+@startuml
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam state {
+	ArrowColor grey
+	BorderColor grey
+	FontSize 17
+}
+
+state Oblivious {
+    state "Stolen" as stdk
+    state "Lurk" as lkdk
+    state "Lost" as ltdk
+    state "Misuse" as imdk
+}
+Oblivious: Mitigation by prevention, reducing impact\nand attacker benefit
+
+state Cognizant {
+    state Stolen
+    state Lurk
+    state Lost
+    state Misuse
+}
+Cognizant: Mitigation by prevention, quick recovery,\nreducing impact and attacker benefit
+
+
+Functional --> Cognizant
+Functional --> Oblivious
+Oblivious --> stdk
+Oblivious --> lkdk
+Oblivious --> ltdk
+Oblivious --> imdk
+Cognizant --> Stolen
+Cognizant --> Lurk
+Cognizant --> Lost
+Cognizant --> Misuse
+
+stdk --> Stolen
+lkdk --> Lurk
+ltdk --> Lost
+
+Lost --> stdk
+lkdk -right-> imdk
+Lurk -right-> Misuse
+
+@enduml

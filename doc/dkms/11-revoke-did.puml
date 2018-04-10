@@ -1,0 +1,69 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor "Alice" as al
+participant "Alice's\nEdge Agent" as aea
+participant "Alice's\nCloud Agent" as aca
+participant "Bob's\nCloud Agent" as bca
+participant "Bob's\nEdge Agent" as bea
+
+note over al, bea #f0f0e0
+Alice is ending her relationship with Bob.
+end note
+
+al -> aea: delete Bob from connections
+
+aea -> aea: add DISABLE event to microledger A<sub>B</sub><sup>ml</sup>, signed by A<sub>B</sub><sup>1-sk</sup>
+
+aea -[#blue]> aca: A<sub>B</sub><sup>ml</sup> deltas
+
+aca -> aca: applies deltas to local A<sub>B</sub><sup>ml</sup>
+
+aea <-[#blue] aca: ack
+
+opt if Alice chooses to notify Bob...
+par2
+aea -[#blue]> aca: A<sub>B</sub><sup>ml</sup> deltas
+else
+aca -[#blue]> bca: \n
+else
+bca -[#blue]> bea: \n
+end
+
+bea -> bea: applies deltas to local A<sub>B</sub><sup>ml</sup>
+note left
+Propagation of the microledger is a
+general solution for messages related
+to the connection state. Bob knows
+his relationship with Alice is disabled.
+end note
+
+par2
+bea -[#blue]> bca: ack
+else
+bca -[#blue]> aca: <i> </i>
+else
+aca -[#blue]> aea: <i> </i>
+end
+
+end
+
+aea -> al: success
+
+
+
+@enduml

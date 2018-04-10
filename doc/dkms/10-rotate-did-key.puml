@@ -1,0 +1,105 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor "Alice" as al
+participant "Alice's\nEdge Agent 1" as aea1
+participant "Alice's\nCloud Agent" as aca
+participant "Alice's\nEdge Agent 2" as aea2
+participant "Bob's\nCloud Agent" as bca
+participant "Bob's\nEdge Agent" as bea
+
+note over al, bea #f0f0e0
+Alice rotates keys for her relationship with Bob, and propagates those changes to Bob's agents.
+end note
+
+== rotate DID keys Part 1 ==
+
+alt
+note over aca
+Agent recovery triggers a DID key change event
+end note
+else
+note over aca
+DID key expiration triggers a DID key change event
+end note
+end
+
+aea1 -> aea1: generate keys (A<sub>B</sub><sup>1</sup>)
+opt if changing keys for cloud agent as well...
+aea1 -[#blue]> aca: key change request for A<sub>B</sub><sup>DID</sup>
+aca -> aca: create new keypair (A<sub>B</sub><sup>2</sup>)
+aea1 <-[#blue] aca: A<sub>B</sub><sup>2-vk</sup>
+end
+
+
+opt if policy in microledger dictates multisig for keychange...
+par2
+aea1 -> aea1: generate a one time passcode
+aea1 -[#blue]> aca: request for signature over key change event
+else
+aca -[#blue]>aea2: \n\n\n\n\n\n\n
+end
+aea2 -> al: <i>[Warning]
+note over aca, aea2
+"Another device is attempting to change the keys you use in your relationship with Bob.
+If you approve this change, please enter the passcode from the other device."
+end note
+
+al -> aea2: passcode
+
+aea2 -> aea2: verify passcode matches
+par2
+aea2 -[#blue]> aca: signed key change event
+else
+aca -[#blue]> aea1: \n
+end
+
+end
+
+newpage
+
+== rotate DID keys Part 2 ==
+
+aea1 -> aea1: write key change events to microledger (A<sub>B</sub><sup>ml</sup>) along with signatures
+par2
+aea1 -[#blue]> aca: A<sub>B</sub><sup>ml</sup> deltas
+else
+aca -[#blue]> bca: <sub> </sub><sup> </sup>
+else
+bca -[#blue]> bea: <sub> </sub><sup> </sup>
+bea -> bea: verifies and updates local copy of A<sub>B</sub><sup>ml</sup> with new events
+
+par2
+bca <-[#blue] bea: ack
+else
+aca <-[#blue] bca: <i> </i>
+else
+aea1 <-[#blue] aca: <i> </i>
+
+opt
+bca <-[#blue] bea: A<sub>B</sub><sup>ml</sup> deltas
+note left
+Any of Bob's agents that
+he uses with Alice need to
+know about the key changes
+as well.
+end note
+bca -> bca: verifies and updates local copy of A<sub>B</sub><sup>ml</sup> with new events
+end
+
+
+@enduml
