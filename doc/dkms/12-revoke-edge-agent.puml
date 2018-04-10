@@ -1,0 +1,40 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor Alice as al
+participant "Edge\nAgent 2" as ea
+participant "Ledger" as le
+
+note over al, le #f0f0e0
+Alice wishes to revoke edge agent 1.
+Alice has previously provisioned edge agent 2.
+end note
+
+== Revoking Agent 1 ==
+
+al -> ea: revoke agent 1
+ea -> le: remove agent 1 policy keys
+le -> le: update agent policy registry
+ea -> ea: remove agent 1 DID keys
+
+note over al, le #77ccff
+include <b>Rotate DID Key</b> diagram
+end note
+
+ea -> al: success
+
+@enduml
