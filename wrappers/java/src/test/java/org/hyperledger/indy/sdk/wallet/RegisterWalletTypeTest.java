@@ -70,14 +70,8 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		String credentialRequestMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
 		//  Issuer creates Credential
-		String gvtCredentialValues = "{\n" +
-				"        \"sex\": {\"raw\": \"male\", \"encoded\": \"5944657099558967239210949258394887428692050081607692519917050\"},\n" +
-				"        \"name\": {\"raw\": \"Alex\", \"encoded\": \"1139481716457488690172217916278103335\"},\n" +
-				"        \"height\": {\"raw\": \"175\", \"encoded\": \"175\"},\n" +
-				"        \"age\": {\"raw\": \"28\", \"encoded\": \"28\"}\n" +
-				"    }";
 		AnoncredsResults.IssuerCreateCredentialResult createCredentialResult =
-				Anoncreds.issuerCreateCredential(wallet, credentialOffer, credentialRequest, gvtCredentialValues, null,  - 1).get();
+				Anoncreds.issuerCreateCredential(wallet, credentialOffer, credentialRequest, GVT_CRED_VALUES, null,  - 1).get();
 		String credential = createCredentialResult.getCredentialJson();
 
 		//  Prover stores Credential

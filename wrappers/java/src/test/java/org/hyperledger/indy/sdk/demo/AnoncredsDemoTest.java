@@ -44,12 +44,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 	private String credentialId2 = "id2";
 	private String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 	private String proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-	private String gvtCredentialValues = new JSONObject("{\n" +
-			"        \"sex\": {\"raw\": \"male\", \"encoded\": \"594465709955896723921094925839488742869205008160769251991705001\"},\n" +
-			"        \"name\": {\"raw\": \"Alex\", \"encoded\": \"1139481716457488690172217916278103335\"},\n" +
-			"        \"height\": {\"raw\": \"175\", \"encoded\": \"175\"},\n" +
-			"        \"age\": {\"raw\": \"28\", \"encoded\": \"28\"}\n" +
-			"    }").toString();
+	private String gvtCredentialValues = GVT_CRED_VALUES;
 	private String xyzCredentialValues = new JSONObject("{\n" +
 			"        \"status\":{\"raw\":\"partial\", \"encoded\":\"51792877103171595686471452153480627530895\"},\n" +
 			"        \"period\":{\"raw\":\"8\", \"encoded\":\"8\"}\n" +

@@ -78,11 +78,11 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
 
     // Issuer posts Schema to Ledger
     let schema_request = LedgerUtils::build_schema_request(&issuer_did, &schema_json).unwrap();
-    LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
+    let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
 
     // Issuer gets Schema from Ledger
     let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &schema_id).unwrap();
-    let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
+    let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
     let (_, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
 
     // Issuer creates CredentialDefinition
@@ -177,7 +177,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     // Verifying Prover Credential
     thread::sleep(std::time::Duration::from_secs(3));
 
-    let to = time::get_time().sec  as u64;
+    let to = time::get_time().sec as u64;
 
     let proof_request = json!({
            "nonce":"123432421212",
@@ -314,7 +314,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     thread::sleep(std::time::Duration::from_secs(3));
 
     let from = to;
-    let to = time::get_time().sec  as u64;
+    let to = time::get_time().sec as u64;
 
     // Prover gets RevocationRegistryDelta from Ledger
     let get_rev_reg_delta_request = LedgerUtils::build_get_revoc_reg_delta_request(&prover_did, &cred_info.rev_reg_id.clone().unwrap(), Some(from), to).unwrap();
@@ -322,7 +322,8 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     let (rev_reg_id, revoc_reg_delta_json, timestamp) = LedgerUtils::parse_get_revoc_reg_delta_response(&get_rev_reg_delta_response).unwrap();
 
     // Prover creates RevocationState
-    let rev_state_json = AnoncredsUtils::create_revocation_state(blob_storage_reader_handle,
+    let rev_state_json = AnoncredsUtils::update_revocation_state(blob_storage_reader_handle,
+                                                                 &rev_state_json,
                                                                  &revoc_reg_def_json,
                                                                  &revoc_reg_delta_json,
                                                                  timestamp,
@@ -420,11 +421,11 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
 
     // Issuer posts Schema to Ledger
     let schema_request = LedgerUtils::build_schema_request(&issuer_did, &schema_json).unwrap();
-    LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
+    let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
 
     // Issuer gets Schema from Ledger
     let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &schema_id).unwrap();
-    let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
+    let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
     let (_, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
 
     // Issuer creates CredentialDefinition
@@ -513,7 +514,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
     // Verifying Prover Credential
     thread::sleep(std::time::Duration::from_secs(3));
 
-    let to = time::get_time().sec  as u64;
+    let to = time::get_time().sec as u64;
 
     let proof_request = json!({
            "nonce":"123432421212",
@@ -623,7 +624,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
     thread::sleep(std::time::Duration::from_secs(3));
 
     let from = to;
-    let to = time::get_time().sec  as u64;
+    let to = time::get_time().sec as u64;
 
     // Prover gets RevocationRegistryDelta from Ledger
     let get_rev_reg_delta_request = LedgerUtils::build_get_revoc_reg_delta_request(&prover_did, &rev_reg_id, Some(from), to).unwrap();
@@ -729,11 +730,11 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 
     // Issuer posts Schema to Ledger
     let schema_request = LedgerUtils::build_schema_request(&issuer_did, &schema_json).unwrap();
-    LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
+    let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
 
     // Issuer gets Schema from Ledger
     let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &schema_id).unwrap();
-    let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
+    let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
     let (_, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
 
     // Issuer creates CredentialDefinition
@@ -859,7 +860,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     // Verifying Prover1 Credential
     thread::sleep(std::time::Duration::from_secs(3));
 
-    let to = time::get_time().sec  as u64;
+    let to = time::get_time().sec as u64;
 
     let proof_request = json!({
            "nonce":"123432421212",
@@ -1011,11 +1012,11 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 
     // Issuer posts Schema to Ledger
     let schema_request = LedgerUtils::build_schema_request(&issuer_did, &schema_json).unwrap();
-    LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
+    let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, issuer_wallet_handle, &issuer_did, &schema_request).unwrap();
 
     // Issuer gets Schema from Ledger
     let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &schema_id).unwrap();
-    let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
+    let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
     let (_, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
 
     // Issuer creates CredentialDefinition
@@ -1136,7 +1137,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     // Verifying Prover1 Credential
     thread::sleep(std::time::Duration::from_secs(3));
 
-    let to = time::get_time().sec  as u64;
+    let to = time::get_time().sec as u64;
 
     let proof_request = json!({
            "nonce":"123432421212",
