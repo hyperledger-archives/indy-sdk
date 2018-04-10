@@ -39,7 +39,7 @@ rmp = "0.8"
 rmp-serde = "0.13.7"
 base64 = "0.8.0"
 openssl = "0.10"
-rusqlite = "0.13.0"
+rusqlite = { version = "0.13.0", features=["bundled"] }
 num-traits = "0.2.0"
 
 [build-dependencies]
