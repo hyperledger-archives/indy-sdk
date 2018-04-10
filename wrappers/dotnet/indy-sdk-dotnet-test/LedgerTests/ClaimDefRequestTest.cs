@@ -1,5 +1,5 @@
 ﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.DidApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
@@ -85,10 +85,10 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod] 
         public async Task TestClaimDefRequestWorks()
         {
-            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var trusteeDid = trusteeDidResult.Did;
 
-            var myDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
+            var myDidResult = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
             var myDid = myDidResult.Did;
             var myVerkey = myDidResult.VerKey;
 
@@ -129,10 +129,10 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestClaimDefRequestWorksWithoutSignature()
         {
-            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var trusteeDid = trusteeDidResult.Did;
 
-            var myDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
+            var myDidResult = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
             var myDid = myDidResult.Did;
             var myVerkey = myDidResult.VerKey;
 

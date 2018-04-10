@@ -1,0 +1,74 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+participant "Alice's\nEdge Agent" as aea
+participant "Alice's\nCloud Agent" as aca
+participant "Recovery Buddy\nCloud Agent" as rca
+participant "Recovery Buddy\nEdge Agent" as rea
+actor "Recovery\nBuddy" as rb1
+
+== add recovery buddy ==
+
+aea -[#blue]> aca: create recovery buddy invitation
+aca -> aca: assign recovery endpoint
+note right
+This is a unique URL known only to Alice's cloud agent;
+it will be used only for a specific recovery invitation
+end note
+aca -[#blue]> aea: return recovery buddy invitation
+aea -> aea: create recovery data share
+note right
+This is a share of the recovery data - see **Recovery Setup**
+end note
+
+alt connection exists
+par2
+aea -[#blue]> aca: recovery buddy invitation
+else
+aca -[#blue]> rca: \nforward
+else
+rca -[#blue]> rea: \n
+end
+rea -> rb1: notify pending recovery buddy invitation
+else connection does not exist
+aea --> rb1: recovery buddy invitation
+note right
+Out of band
+end note
+note over aea, rb1 #f0f0e0
+Some time later
+end note
+alt If Buddy doesn't have software installed
+note over aea, rb1 #77ccff
+include <b>Add Connection to Private DID (Unprovisioned)</b> diagram
+end note
+else If Buddy does not already have a connection with Alice
+note over aea, rb1 #77ccff
+include <b>Add Connection to Private DID (Provisioned)</b> diagram
+end note
+end
+end
+rb1 -> rea: accepts recovery buddy invitation
+par2
+rea -[#blue]> rca: accept recovery buddy invitation
+else
+rca -[#blue]> aca: \n\nforward
+else
+aca -[#blue]> aea: \n\n
+end
+
+@enduml

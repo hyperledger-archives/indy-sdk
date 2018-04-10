@@ -1,0 +1,89 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor Alice as al
+participant "Alice\nEdge Agent" as aea
+participant "Alice\nCloud Agent" as aca
+participant "Bob\nCloud Agent" as bca
+participant "Bob\nEdge Agent" as bea
+actor Bob as bob
+
+note over al, bob #f0f0e0
+Alice and Bob know each other and want to connect.
+Alice has an agent but Bob does not.
+end note
+
+== add connection to private DID (unprovisioned) Part 1 ==
+
+al -> aea: add connection to Bob
+aea -> aea: create DID, keypair, and microledger (A<sub>B</sub><sup>DID</sup>, A<sub>B</sub><sup>1</sup>, A<sub>B</sub><sup>ml</sup>)
+aea -[#blue]> aca: request agent DID verification key for A<sub>B</sub><sup>DID</sup>
+aca -> aca: create keypair and endpoint for connection with Bob (A<sub>B</sub><sup>2</sup>)
+
+note right
+This registration will be revoked
+if the invitation expires.
+end note
+
+aca -[#blue]> aea: A<sub>B</sub><sup>2-vk</sup>
+
+aea->aea: add cloud agent DID verification key A<sub>B</sub><sup>2-vk</sup> and endpoint to microledger
+aea->aea: create complete connection invitation
+note right
+this includes the microledger A<sub>B</sub><sup>ml</sup>
+end note
+
+newpage
+
+== add connection to private DID (unprovisioned) Part 2 ==
+
+note over al, bob
+Send SMS, email, QR code etc. containing connection invitation and a helper URL.
+end note
+
+aea --> bob: connection invitation
+
+note over bea, bob
+Download edge agent from helper URL.
+end note
+
+note over al, bob #77ccff
+include <b>First Edge Agent</b> diagram.
+end note
+
+note over bea
+Edge agent gets gets connection inviation from helper URL.
+end note
+
+bea -> bob: display connection invitation
+bob -> bea: accept connection invitation
+bea -> bea: create DID, keypair, and microledger (B<sub>A</sub><sup>DID</sup>, B<sub>A</sub><sup>1</sup>, B<sub>A</sub><sup>ml</sup>)
+bea -[#blue]> bca: request agent DID verification key for B<sub>A</sub><sup>ml</sup>
+bca -> bca: create keypair B<sub>A</sub><sup>2</sup>
+bca -[#blue]> bea: endpoint and B<sub>A</sub><sup>2-vk</sup>
+bea->bea: add cloud agent DID verification key and endpoint B<sub>A</sub><sup>2-vk</sup> to microledger
+
+par2
+bea-[#blue]>bca: success and microledger deltas
+else
+bca-[#blue]>aca: \n\nsuccess
+else
+aca-[#blue]>aea: \n\n
+else
+aea->al: \n\n
+
+@enduml

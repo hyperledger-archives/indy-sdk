@@ -65,6 +65,8 @@ RUN pip3 install \
 RUN apt-get install -y devscripts \
                        libncursesw5-dev
 
+RUN apt-get install -y libzmq3-dev
+
 ARG anoncreds_revision=1.0.32-master
 USER indy
 RUN git clone https://github.com/hyperledger/indy-anoncreds.git

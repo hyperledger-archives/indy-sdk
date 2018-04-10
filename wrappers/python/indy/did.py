@@ -29,7 +29,7 @@ async def create_and_store_my_did(wallet_handle: int,
                       currently only 'ed25519' value is supported for this field)
             "cid": bool, (optional; if not set then false is used;)
         }
-    :return: DID, verkey (for verification of signature) and public_key (for decryption)
+    :return: DID and verkey (for verification of signature)
     """
 
     logger = logging.getLogger(__name__)
@@ -435,7 +435,7 @@ async def get_endpoint_for_did(wallet_handle: int,
                                            get_endpoint_for_did.cb)
 
     endpoint = endpoint.decode()
-    transport_vk = transport_vk.decode() if transport_vk else None
+    transport_vk = transport_vk.decode() if transport_vk is not None else None
     res = (endpoint, transport_vk)
 
     logger.debug("get_endpoint_for_did: <<< res: %r", res)

@@ -18,7 +18,7 @@ RUN \
            spectool
 
 RUN cd /tmp && \
-   curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.12.tar.gz | tar -xz && \
+   curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.12.tar.gz | tar -xz && \
     cd /tmp/libsodium-1.0.12 && \
     ./configure && \
     make && \
@@ -57,6 +57,15 @@ RUN cd /usr/src && \
     make altinstall
 
 RUN yum install -y ncurses-devel
+
+RUN cd /tmp && \
+    wget https://github.com/zeromq/libzmq/releases/download/v4.2.2/zeromq-4.2.2.tar.gz && \
+    tar xfz zeromq-4.2.2.tar.gz && rm zeromq-4.2.2.tar.gz && \
+    cd /tmp/zeromq-4.2.2 && \
+    ./configure && \
+    make && \
+    make install && \
+    rm -rf /tmp/zeromq-4.2.2
 
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy

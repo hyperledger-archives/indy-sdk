@@ -1,0 +1,93 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor Alice as al
+participant "Alice's\nEdge Agent" as aea
+participant "Alice's\nCloud Agent" as aca
+participant "Recovery Buddy\nCloud Agent" as rca
+participant "Recovery Buddy\nEdge Agent" as rea
+actor "Recovery\nBuddy" as rb1
+
+note over al, rb1 #f0f0e0
+Assumptions: <b>Recovery Setup</b> diagram has happened
+end note
+
+== recovery update ==
+
+al -> aea: update recovery options
+opt Add more recovery buddies
+al -> aea: select another recovery buddy
+
+aea -> aea: create new backup keypair
+
+note over al, rb1 #77ccff
+include <b>Add Recovery Buddy</b> diagram (for each recovery buddy)
+end note
+
+par2
+aea -[#blue]> aca: PREPARE msg for share
+else
+aca -[#blue]> rca: \nforward
+else
+rca -[#blue]> rea: \n
+end
+
+rea -> rea: store new share with pending status
+
+par2
+rea -[#blue]> rca: \nack
+else
+rca -[#blue]> aca: \n
+else
+aca -[#blue]> aea:\n
+end
+
+aea -> aea: wait for enough responses
+
+par2
+aea -[#blue]> aca: COMMIT msg for new share
+else
+aca -[#blue]> rca: \nforward
+else
+rca -[#blue]> rea: \n
+end
+
+rea -> rea: delete old share; replace with new share
+
+par2
+rea -[#blue]> rca: \nack
+else
+rca -[#blue]> aca: \n
+else
+aca -[#blue]> aea: \n
+end
+
+aea -> al: success
+
+else Adding or changing to offline recovery
+al -> aea: select paper wallet backup
+aea -> aea: create paper wallet
+note right
+Includes private recovery key A<sub>R</sub><sup>sk</sup>
+link secret A<sub>LS</sub>, and agency's DID for Alice
+end note
+aea -> al: display paper wallet
+al -> al: save paper wallet
+
+end
+
+@enduml
