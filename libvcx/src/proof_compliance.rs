@@ -32,7 +32,7 @@ fn verify_requested_predicates(request: &ProofRequestData, proof: &ProofMessage)
             }
         };
         let proved_predicates = proof_data.proof.primary_proof
-            .get_predicates_from_claim(proof_id)
+            .get_predicates_from_credential(proof_id)
             .map_err(|ec| ProofError::ProofMessageError(ec))?;
         let predicate = proved_predicates.iter().find(|predicate| {
             predicate.attr_info.clone().unwrap_or(Attr::new()).name == requested_predicate.attr_name
@@ -40,8 +40,8 @@ fn verify_requested_predicates(request: &ProofRequestData, proof: &ProofMessage)
 
         match predicate {
             Some(x) => {
-                // Todo: Which issuer did and schema do I use?? The one in the GE.predicate or the one in the claim
-                // Todo: currently using the one for the entire claim
+                // Todo: Which issuer did and schema do I use?? The one in the GE.predicate or the one in the credential
+                // Todo: currently using the one for the entire credential
 
                 if !check_value(requested_predicate.issuer_did.clone(),
                                &proof_data.issuer_did) {
@@ -263,9 +263,9 @@ mod tests {
 
     #[test]
     fn test_proof_with_predicates() {
-        let add_claim: Proofs = from_str(r#"{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"t2":"Hash for 2"},"a_prime":"3","e":"2","v":"5","m":{"t2":"2"},"m1":"2","m2":"2"},"ge_proofs":[{"u":{"2":"2","0":"2","3":"2","1":"2"},"r":{"1":"2","3":"2","DELTA":"2","2":"2","0":"2"},"mj":"3","alpha":"2","t":{"0":"2","2":"2","DELTA":"4","1":"5","3":"3"},"predicate":{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}}]},"non_revoc_proof":null},"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();
+        let add_credential: Proofs = from_str(r#"{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"t2":"Hash for 2"},"a_prime":"3","e":"2","v":"5","m":{"t2":"2"},"m1":"2","m2":"2"},"ge_proofs":[{"u":{"2":"2","0":"2","3":"2","1":"2"},"r":{"1":"2","3":"2","DELTA":"2","2":"2","0":"2"},"mj":"3","alpha":"2","t":{"0":"2","2":"2","DELTA":"4","1":"5","3":"3"},"predicate":{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}}]},"non_revoc_proof":null},"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();
         let mut proof = ProofMessage::from_str(PROOF).unwrap();
-        proof.proofs.insert("claim2_uuid".to_string(), add_claim);
+        proof.proofs.insert("claim2_uuid".to_string(), add_credential);
         proof.requested_proof.predicates.insert("pred_uuid".to_string(), "claim2_uuid".to_string());
         let mut proof_req: ProofRequestData = from_str(REQUEST).unwrap();
         let added_predicate: Predicate = from_str(r#"{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();
@@ -275,9 +275,9 @@ mod tests {
 
     #[test]
     fn test_compliance_failed_with_missing_predicate() {
-        let add_claim: Proofs = from_str(r#"{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"t2":"Hash for 2"},"a_prime":"3","e":"2","v":"5","m":{"t2":"2"},"m1":"2","m2":"2"},"ge_proofs":[{"u":{"2":"2","0":"2","3":"2","1":"2"},"r":{"1":"2","3":"2","DELTA":"2","2":"2","0":"2"},"mj":"3","alpha":"2","t":{"0":"2","2":"2","DELTA":"4","1":"5","3":"3"},"predicate":{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}}]},"non_revoc_proof":null},"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();
+        let add_credential: Proofs = from_str(r#"{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"t2":"Hash for 2"},"a_prime":"3","e":"2","v":"5","m":{"t2":"2"},"m1":"2","m2":"2"},"ge_proofs":[{"u":{"2":"2","0":"2","3":"2","1":"2"},"r":{"1":"2","3":"2","DELTA":"2","2":"2","0":"2"},"mj":"3","alpha":"2","t":{"0":"2","2":"2","DELTA":"4","1":"5","3":"3"},"predicate":{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}}]},"non_revoc_proof":null},"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();
         let mut proof = ProofMessage::from_str(PROOF).unwrap();
-        proof.proofs.insert("claim2_uuid".to_string(), add_claim);
+        proof.proofs.insert("claim2_uuid".to_string(), add_credential);
         proof.requested_proof.predicates.insert("pred_uuid".to_string(), "claim2_uuid".to_string());
         let mut proof_req: ProofRequestData = from_str(REQUEST).unwrap();
         let added_predicate: Predicate = from_str(r#"{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();
@@ -289,9 +289,9 @@ mod tests {
 
     #[test]
     fn test_proof_with_predicates_fails_with_differing_dids() {
-        let add_claim: Proofs = from_str(r#"{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"t2":"Hash for 2"},"a_prime":"3","e":"2","v":"5","m":{"t2":"2"},"m1":"2","m2":"2"},"ge_proofs":[{"u":{"2":"2","0":"2","3":"2","1":"2"},"r":{"1":"2","3":"2","DELTA":"2","2":"2","0":"2"},"mj":"3","alpha":"2","t":{"0":"2","2":"2","DELTA":"4","1":"5","3":"3"},"predicate":{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}}]},"non_revoc_proof":null},"schema_seq_no":778,"issuer_did":"98765"}"#).unwrap();
+        let add_credential: Proofs = from_str(r#"{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"t2":"Hash for 2"},"a_prime":"3","e":"2","v":"5","m":{"t2":"2"},"m1":"2","m2":"2"},"ge_proofs":[{"u":{"2":"2","0":"2","3":"2","1":"2"},"r":{"1":"2","3":"2","DELTA":"2","2":"2","0":"2"},"mj":"3","alpha":"2","t":{"0":"2","2":"2","DELTA":"4","1":"5","3":"3"},"predicate":{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}}]},"non_revoc_proof":null},"schema_seq_no":778,"issuer_did":"98765"}"#).unwrap();
         let mut proof = ProofMessage::from_str(PROOF).unwrap();
-        proof.proofs.insert("claim2_uuid".to_string(), add_claim);
+        proof.proofs.insert("claim2_uuid".to_string(), add_credential);
         proof.requested_proof.predicates.insert("pred_uuid".to_string(), "claim2_uuid".to_string());
         let mut proof_req: ProofRequestData = from_str(REQUEST).unwrap();
         let added_predicate: Predicate = from_str(r#"{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();
@@ -301,9 +301,9 @@ mod tests {
 
     #[test]
     fn test_proof_with_predicates_fails_with_differing_schema_no() {
-        let add_claim: Proofs = from_str(r#"{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"t2":"Hash for 2"},"a_prime":"3","e":"2","v":"5","m":{"t2":"2"},"m1":"2","m2":"2"},"ge_proofs":[{"u":{"2":"2","0":"2","3":"2","1":"2"},"r":{"1":"2","3":"2","DELTA":"2","2":"2","0":"2"},"mj":"3","alpha":"2","t":{"0":"2","2":"2","DELTA":"4","1":"5","3":"3"},"predicate":{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":null,"issuer_did":null}}]},"non_revoc_proof":null},"schema_seq_no":321,"issuer_did":"98765"}"#).unwrap();
+        let add_credential: Proofs = from_str(r#"{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"t2":"Hash for 2"},"a_prime":"3","e":"2","v":"5","m":{"t2":"2"},"m1":"2","m2":"2"},"ge_proofs":[{"u":{"2":"2","0":"2","3":"2","1":"2"},"r":{"1":"2","3":"2","DELTA":"2","2":"2","0":"2"},"mj":"3","alpha":"2","t":{"0":"2","2":"2","DELTA":"4","1":"5","3":"3"},"predicate":{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":null,"issuer_did":null}}]},"non_revoc_proof":null},"schema_seq_no":321,"issuer_did":"98765"}"#).unwrap();
         let mut proof = ProofMessage::from_str(PROOF).unwrap();
-        proof.proofs.insert("claim2_uuid".to_string(), add_claim);
+        proof.proofs.insert("claim2_uuid".to_string(), add_credential);
         proof.requested_proof.predicates.insert("pred_uuid".to_string(), "claim2_uuid".to_string());
         let mut proof_req: ProofRequestData = from_str(REQUEST).unwrap();
         let added_predicate: Predicate = from_str(r#"{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();

@@ -53,7 +53,7 @@ struct Connection {
     agent_did: String,
     agent_vk: String,
     their_pw_did: String,
-    their_pw_verkey: String, // used by proofs/claims when sending to edge device
+    their_pw_verkey: String, // used by proofs/credentials when sending to edge device
 }
 
 impl Connection {
@@ -219,17 +219,17 @@ pub fn set_agent_did(handle: u32, did: &str) {
     };
 }
 
-pub fn get_agent_did(handle: u32) -> Result<String, u32> {
+pub fn get_agent_did(handle: u32) -> Result<String, ConnectionError> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
         Some(cxn) => Ok(cxn.get_agent_did().clone()),
-        None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
+        None => Err(ConnectionError::InvalidHandle()),
     }
 }
 
-pub fn get_pw_did(handle: u32) -> Result<String, u32> {
+pub fn get_pw_did(handle: u32) -> Result<String, ConnectionError> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
         Some(cxn) => Ok(cxn.get_pw_did().clone()),
-        None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
+        None => Err(ConnectionError::InvalidHandle()),
     }
 }
 
@@ -240,10 +240,10 @@ pub fn set_pw_did(handle: u32, did: &str) {
     };
 }
 
-pub fn get_their_pw_did(handle: u32) -> Result<String, u32> {
+pub fn get_their_pw_did(handle: u32) -> Result<String, ConnectionError> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
         Some(cxn) => Ok(cxn.get_their_pw_did().clone()),
-        None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
+        None => Err(ConnectionError::InvalidHandle()),
     }
 }
 
@@ -254,10 +254,10 @@ pub fn set_their_pw_did(handle: u32, did: &str) {
     };
 }
 
-pub fn get_their_pw_verkey(handle: u32) -> Result<String, u32> {
+pub fn get_their_pw_verkey(handle: u32) -> Result<String, ConnectionError> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
         Some(cxn) => Ok(cxn.get_their_pw_verkey().clone()),
-        None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
+        None => Err(ConnectionError::InvalidHandle()),
     }
 }
 
@@ -268,10 +268,10 @@ pub fn set_their_pw_verkey(handle: u32, verkey: &str) {
     };
 }
 
-pub fn get_uuid(handle: u32) -> Result<String, u32> {
+pub fn get_uuid(handle: u32) -> Result<String, ConnectionError> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
         Some(cxn) => Ok(cxn.get_uuid().clone()),
-        None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
+        None => Err(ConnectionError::InvalidHandle()),
     }
 }
 
@@ -282,6 +282,7 @@ pub fn set_uuid(handle: u32, uuid: &str) {
     };
 }
 
+// TODO: Add NO_ENDPOINT error to connection error
 pub fn get_endpoint(handle: u32) -> Result<String, u32> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
         Some(cxn) => Ok(cxn.get_endpoint().clone()),
@@ -296,10 +297,10 @@ pub fn set_endpoint(handle: u32, endpoint: &str) {
     };
 }
 
-pub fn get_agent_verkey(handle: u32) -> Result<String, u32> {
+pub fn get_agent_verkey(handle: u32) -> Result<String, ConnectionError> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
         Some(cxn) => Ok(cxn.get_agent_verkey().clone()),
-        None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
+        None => Err(ConnectionError::InvalidHandle()),
     }
 }
 
@@ -310,10 +311,10 @@ pub fn set_agent_verkey(handle: u32, verkey: &str) {
     };
 }
 
-pub fn get_pw_verkey(handle: u32) -> Result<String, u32> {
+pub fn get_pw_verkey(handle: u32) -> Result<String, ConnectionError> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
         Some(cxn) => Ok(cxn.get_pw_verkey().clone()),
-        None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
+        None => Err(ConnectionError::InvalidHandle()),
     }
 }
 
@@ -345,25 +346,23 @@ pub fn get_source_id(handle: u32) -> Result<String, ConnectionError> {
     }
 }
 
-pub fn create_agent_pairwise(handle: u32) -> Result<u32, u32> {
+pub fn create_agent_pairwise(handle: u32) -> Result<u32, ConnectionError> {
     debug!("creating pairwise keys on agent for connection handle {}", handle);
     let pw_did = get_pw_did(handle)?;
     let pw_verkey = get_pw_verkey(handle)?;
 
-    let result = match messages::create_keys()
+    let result = messages::create_keys()
         .for_did(&pw_did)
         .for_verkey(&pw_verkey)
-        .send_secure() {
-        Ok(x) => x,
-        Err(x) => return Err(x),
-    };
+        .send_secure()
+        .or(Err(ConnectionError::InvalidWalletSetup()))?;   // Throw a context specific error
     debug!("create key for handle: {} with did/vk: {:?}",  handle,  result);
     set_agent_did(handle,&result[0]);
     set_agent_verkey(handle,&result[1]);
     Ok(error::SUCCESS.code_num)
 }
 
-pub fn update_agent_profile(handle: u32) -> Result<u32, u32> {
+pub fn update_agent_profile(handle: u32) -> Result<u32, ConnectionError> {
     debug!("updating agent config for connection handle {}", handle);
     let pw_did = get_pw_did(handle)?;
 
@@ -373,7 +372,7 @@ pub fn update_agent_profile(handle: u32) -> Result<u32, u32> {
         .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL).unwrap())
         .send_secure() {
         Ok(_) => Ok(error::SUCCESS.code_num),
-        Err(x) => Err(x),
+        Err(ec) => Err(ConnectionError::CommonError(ec)),
     }
 }
 
@@ -422,10 +421,10 @@ fn init_connection(handle: u32) -> Result<u32, ConnectionError> {
     set_pw_verkey(handle, &my_verkey);
 
     match create_agent_pairwise(handle) {
-        Err(x) => {
-            error!("could not create pairwise key on agent: {}", x);
+        Err(err) => {
+            error!("Error while Creating Agent Pairwise: {}", err);
             release(handle)?;
-            return Err(ConnectionError::CommonError(x))
+            return Err(err)
         },
         Ok(_) => debug!("created pairwise key on agent"),
     };
@@ -434,7 +433,7 @@ fn init_connection(handle: u32) -> Result<u32, ConnectionError> {
         Err(x) => {
             error!("could not update profile on agent: {}", x);
             release(handle)?;
-            return Err(ConnectionError::CommonError(x))
+            return Err(x)
         },
         Ok(_) => debug!("updated profile on agent"),
     };
@@ -517,10 +516,10 @@ pub fn parse_acceptance_details(handle: u32, message: &Message) -> Result<Sender
 pub fn update_state(handle: u32) -> Result<u32, ConnectionError> {
     debug!("updating state for connection handle {}", handle);
     // TODO: Refactor Error
-    let pw_did = get_pw_did(handle).map_err(|e| ConnectionError::CommonError(e))?;
-    let pw_vk = get_pw_verkey(handle).map_err(|e| ConnectionError::CommonError(e))?;
-    let agent_did = get_agent_did(handle).map_err(|e| ConnectionError::CommonError(e))?;
-    let agent_vk = get_agent_verkey(handle).map_err(|e| ConnectionError::CommonError(e))?;
+    let pw_did = get_pw_did(handle)?;
+    let pw_vk = get_pw_verkey(handle)?;
+    let agent_did = get_agent_did(handle)?;
+    let agent_vk = get_agent_verkey(handle)?;
 
     let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).unwrap());
 
@@ -532,7 +531,6 @@ pub fn update_state(handle: u32) -> Result<u32, ConnectionError> {
         .send_secure() {
         Err(x) => {
             error!("could not update state for handle {}: {}",  handle, x);
-            println!("could not update state");
             // TODO: Refactor Error
             Err(ConnectionError::CommonError(error::POST_MSG_FAILURE.code_num))
         }
@@ -643,10 +641,10 @@ pub fn parse_invite_detail(response: &str) -> Result<InviteDetail, ConnectionErr
 }
 
 // TODO: Refactor Error
-// this will become a CommonError, because multiple types (Connection/Issuer Claim) use this function
+// this will become a CommonError, because multiple types (Connection/Issuer Credential) use this function
 // Possibly this function moves out of this file.
 // On second thought, this should stick as a ConnectionError.
-pub fn generate_encrypted_payload(my_vk: &str, their_vk: &str, data: &str, msg_type: &str) -> Result<Vec<u8>, u32> {
+pub fn generate_encrypted_payload(my_vk: &str, their_vk: &str, data: &str, msg_type: &str) -> Result<Vec<u8>, ConnectionError> {
     let my_payload = messages::Payload {
         msg_info: messages::MsgInfo { name: msg_type.to_string(), ver: "1.0".to_string(), fmt: "json".to_string(), },
         msg: data.to_string(),
@@ -655,11 +653,11 @@ pub fn generate_encrypted_payload(my_vk: &str, their_vk: &str, data: &str, msg_t
         Ok(x) => x,
         Err(x) => {
             error!("could not encode create_keys msg: {}", x);
-            return Err(error::INVALID_MSGPACK.code_num);
+            return Err(ConnectionError::InvalidMessagePack());
         },
     };
     debug!("Sending payload: {:?}", bytes);
-    crypto::prep_msg(wallet::get_wallet_handle(),&my_vk, &their_vk, &bytes)
+    crypto::prep_msg(wallet::get_wallet_handle(),&my_vk, &their_vk, &bytes).map_err(|ec| ConnectionError::CommonError(ec))
 }
 
 
@@ -1069,30 +1067,6 @@ mod tests {
         assert_eq!(release(h3).err(),Some(ConnectionError::CommonError(error::INVALID_CONNECTION_HANDLE.code_num)));
         assert_eq!(release(h4).err(),Some(ConnectionError::CommonError(error::INVALID_CONNECTION_HANDLE.code_num)));
         assert_eq!(release(h5).err(),Some(ConnectionError::CommonError(error::INVALID_CONNECTION_HANDLE.code_num)));
-    }
-
-    #[ignore]
-    #[test]
-    fn test_two_connections() {
-        settings::set_to_defaults();
-        //BE INSTITUTION AND GENERATE INVITE FOR CONSUMER
-        ::utils::devsetup::setup_dev_env("test_two_connections");
-        let faber = build_connection("faber").unwrap();
-        connect(faber, Some("{}".to_string())).unwrap();
-        let details = get_invite_details(faber,true).unwrap();
-        println!("details: {}", details);
-        //BE CONSUMER AND ACCEPT INVITE FROM INSTITUTION
-        ::utils::devsetup::be_consumer();
-        let alice = build_connection_with_invite("alice", &details).unwrap();
-        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(alice));
-        assert_eq!(VcxStateType::VcxStateOfferSent as u32, get_state(faber));
-        connect(alice, Some("{}".to_string())).unwrap();
-        //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
-        ::utils::devsetup::be_institution();
-        thread::sleep(Duration::from_millis(2000));
-        update_state(faber).unwrap();
-        assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(faber));
-        ::utils::devsetup::cleanup_dev_env("test_two_connections");
     }
 
     #[test]

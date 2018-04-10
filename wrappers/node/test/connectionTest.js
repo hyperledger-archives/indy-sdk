@@ -4,7 +4,7 @@ const vcx = require('../dist')
 const { stubInitVCX } = require('./helpers')
 const assert = chai.assert
 
-const { Connection, StateType, Error, rustAPI } = vcx
+const { Connection, StateType, Error, rustAPI, VCXMock, VCXMockMessage } = vcx
 
 describe('A Connection object with ', function () {
   this.timeout(10000)
@@ -145,6 +145,16 @@ describe('A Connection object with ', function () {
     assert.notEqual(connection._handle, undefined)
     await connection.updateState()
     assert.equal(await connection.getState(), StateType.Initialized)
+  })
+
+  it(`call to updateState with mocked updateState reply should have a state value of ${StateType.Accepted}`, async () => {
+    const connection = await Connection.create({ id: '234' })
+    assert.notEqual(connection._handle, undefined)
+    const inviteDetails = await connection.connect({ sms: true })
+    assert(inviteDetails)
+    VCXMock.setVcxMock(VCXMockMessage.GetMessages)
+    await connection.updateState()
+    assert.equal(await connection.getState(), StateType.Accepted)
   })
 
   it('call to inviteDetails with abbr returns non-empty string', async () => {

@@ -6,7 +6,7 @@ from demo.enterprise_settings import settings
 from vcx.error import VcxError
 from vcx.state import State
 from vcx.api.connection import Connection
-from vcx.api.issuer_claim import IssuerClaim
+from vcx.api.issuer_credential import IssuerCredential
 from vcx.api.schema import Schema
 from vcx.api.proof import Proof
 
@@ -33,7 +33,7 @@ DETAILS= [{
 QR_DATA= '{"sm": "message created", "t": "there", "s": {"v": "E2u2xA7RqRgGZ5aSyaJMGr1yEUfKUoyPot9qtnWJUXPC", "n": "DoomTown", "dp": {"k": "DVKwoWZ8PtYqGqSjEcExxggLc46iM91jW31qvgXABq9h", "s": "TW8FLdouR5KKb/35wNvSsi5pzcb59ycDzZCIftMSX2Tlmx2IFy1zmKopKj6L3EUfHaX9F1gQRggD7OEnkVFeDg==", "d": "PuxVjQ9imGLnVwrCbYukjn"}, "d": "Qut5k3WJVeDkvLx2Z5XHDe", "l": "https://robohash.org/469b25d"}, "id": "nzvmmwn", "sc": "MS-101", "sa": {"v": "4hmBc54YanNhQHTD66u6XDp1NSgQm1BacPFbE7b5gtat", "d": "7o2xT9Qtp83cJUJMUBTF3M", "e": "52.38.32.107:80/agency/msg"}}'
 VCXCONFIG_PATH = 'utils/vcxconfig.json'
 SCHEMA_SEQ_NUMBER = 22
-CLAIM_NAME = 'Planet Express Club Member'
+CREDENTIAL_NAME = 'Planet Express Club Member'
 SCHEMA_NAME = 'Club Membership'
 
 
@@ -84,9 +84,9 @@ def test_demo():
 
     schema_name = 'Club Membership'
     init_vcxdemo(VCXCONFIG_PATH)
-    claim_name = 'Club Membership'
+    credential_name = 'Club Membership'
     schema_source_id = random_enterprise_name
-    claim_def_source_id = random_enterprise_name
+    credential_def_source_id = random_enterprise_name
     connection_source_id = random_enterprise_name
     assert len(Vcxdemo.schemas) == 0
     util_create_schema(schema_source_id, schema_name)
@@ -96,11 +96,11 @@ def test_demo():
     assert len(Vcxdemo.schemas) == 1
     s0 = Vcxdemo.get_schema_attr_list(0)
 
-    # Create Claim Def on Ledger (and wallet)
+    # Create Credential Def on Ledger (and wallet)
     schema_sequence_number = Vcxdemo.get_schema_sequence_number(0)
-    Vcxdemo.create_claim_def(claim_def_source_id, claim_name, schema_sequence_number)
-    assert len(Vcxdemo.claim_defs) > 0
-    assert Vcxdemo.claim_defs[claim_name]
+    Vcxdemo.create_credential_def(credential_def_source_id, credential_name, schema_sequence_number)
+    assert len(Vcxdemo.credential_defs) > 0
+    assert Vcxdemo.credential_defs[credential_name]
 
     customer1 = Vcxdemo(connection_source_id)
 
@@ -112,25 +112,25 @@ def test_demo():
     # Write Connection to file
     write_json_to_file(customer1.serialize_connection(), 'connection.dat')
 
-    # Claim
-    customer1.create_claim(Vcxdemo.get_schema_sequence_number(0), DETAILS[0], claim_name)
-    assert type(customer1.claim) == IssuerClaim
-    customer1.update_claim_state()
-    assert customer1.state['claim'] == State.Initialized
-    # Write Claim to file
-    write_json_to_file(customer1.serialize_claim(), 'claim.dat')
-    customer1.update_claim_state()
-    assert customer1.state['claim'] == State.Initialized
-    customer1.issue_claim_offer()
-    customer1.update_claim_state()
-    assert customer1.state['claim'] == State.OfferSent
-    customer1.wait_for_claim_state(State.RequestReceived)
-    print("About to send claim offer...")
+    # Credential
+    customer1.create_credential(Vcxdemo.get_schema_sequence_number(0), DETAILS[0], credential_name)
+    assert type(customer1.credential) == IssuerCredential
+    customer1.update_credential_state()
+    assert customer1.state['credential'] == State.Initialized
+    # Write Credential to file
+    write_json_to_file(customer1.serialize_credential(), 'credential.dat')
+    customer1.update_credential_state()
+    assert customer1.state['credential'] == State.Initialized
+    customer1.issue_credential_offer()
+    customer1.update_credential_state()
+    assert customer1.state['credential'] == State.OfferSent
+    customer1.wait_for_credential_state(State.RequestReceived)
+    print("About to send credential offer...")
     # time.sleep(5)
-    customer1.send_issuer_claim()
-    print("Waiting for claim state to become accepted")
-    customer1.wait_for_claim_state(State.Accepted)
-    print("Claim State became accepted")
+    customer1.send_issuer_credential()
+    print("Waiting for credential state to become accepted")
+    customer1.wait_for_credential_state(State.Accepted)
+    print("Credential State became accepted")
     time.sleep(5)
     # Proof
     proof_id = '222'
@@ -155,7 +155,7 @@ def request_proof(connection, source_id, proof_attr, proof_id):
 
 
 # demo
-def test_vcx_deserialize_connection_fulfill_claim():
+def test_vcx_deserialize_connection_fulfill_credential():
     try:
         Vcxdemo.init(VCXCONFIG_PATH)
     except VcxError as e:
@@ -164,36 +164,36 @@ def test_vcx_deserialize_connection_fulfill_claim():
     frank = Vcxdemo(SOURCE_ID, details=DETAILS)
     frank.deserialize_connection('connection.dat')
     assert type(frank.connection) == Connection
-    # Claim
-    frank.create_claim(SCHEMA_SEQ_NUMBER, DETAILS[1], 'Planet Express Info')
-    assert type(frank.claim) == IssuerClaim
-    frank.update_claim_state()
-    assert frank.state['claim'] == State.Initialized
-    frank.issue_claim_offer()
-    assert frank.state['claim'] == State.OfferSent
-    frank.wait_for_claim_state(State.RequestReceived)
-    assert frank.state['claim'] == State.RequestReceived
-    # write claim out to claim2.dat
+    # Credential
+    frank.create_credential(SCHEMA_SEQ_NUMBER, DETAILS[1], 'Planet Express Info')
+    assert type(frank.credential) == IssuerCredential
+    frank.update_credential_state()
+    assert frank.state['credential'] == State.Initialized
+    frank.issue_credential_offer()
+    assert frank.state['credential'] == State.OfferSent
+    frank.wait_for_credential_state(State.RequestReceived)
+    assert frank.state['credential'] == State.RequestReceived
+    # write credential out to credential2.dat
     try:
-        with open('claim.dat', 'w') as out_file:
-            json.dump(frank.serialize_claim(), out_file)
+        with open('credential.dat', 'w') as out_file:
+            json.dump(frank.serialize_credential(), out_file)
     except IOError as e:
-        print('error writing to claim.dat: %s' % e)
+        print('error writing to credential.dat: %s' % e)
 
 
 # demo
-def test_deserialize_accepted_claim_and_issue_claim():
+def test_deserialize_accepted_credential_and_issue_credential():
     init_vcxdemo()
     frank = Vcxdemo(SOURCE_ID, details=DETAILS)
     frank.deserialize_connection('connection.dat')
-    frank.deserialize_claim('claim2.dat')
-    assert type(frank.claim) == IssuerClaim
-    frank.send_issuer_claim()
-    assert frank.state['claim'] == State.Accepted
+    frank.deserialize_credential('credential2.dat')
+    assert type(frank.credential) == IssuerCredential
+    frank.send_issuer_credential()
+    assert frank.state['credential'] == State.Accepted
 
 
 # demo
-def test_insert_claim_def_into_wallet():
+def test_insert_credential_def_into_wallet():
     init_vcxdemo()
     schema_name = 'Account Ledger'
     attr_names = ['name', 'account']
@@ -209,12 +209,12 @@ def test_insert_claim_def_into_wallet():
     assert len(Vcxdemo.schemas) == 2
     write_json_to_file(Vcxdemo.serialize_schema(0), 'schema.dat')
 
-    # Claim Def
+    # Credential Def
     name = 'Customer'
     schema_number = Vcxdemo.get_schema_sequence_number(0)
-    Vcxdemo.create_claim_def(source_id, name, schema_number)
-    assert len(Vcxdemo.claim_defs) > 0
-    assert Vcxdemo.claim_defs[name]
+    Vcxdemo.create_credential_def(source_id, name, schema_number)
+    assert len(Vcxdemo.credential_defs) > 0
+    assert Vcxdemo.credential_defs[name]
 
 
 # demo
@@ -224,9 +224,9 @@ def test_connection_request_qr_code():
 
 
 # demo
-def test_claim_data():
+def test_credential_data():
     c = None
-    with open('claim.dat') as in_file:
+    with open('credential.dat') as in_file:
         c = json.load(in_file)
     assert c['issuer_did'] == '2hoqvcwupRTUNkXn6ArYzs'
 
@@ -297,7 +297,7 @@ def test_request_proof():
     customer1 = Vcxdemo('Fry')
     customer1.deserialize_connection('connection.dat')
     assert isinstance(customer1.connection, Connection)
-    customer1.deserialize_claim('claim.dat')
+    customer1.deserialize_credential('credential.dat')
     Vcxdemo.deserialize_schema('schema.dat')
 
     proof_id = '222'
@@ -344,7 +344,7 @@ def test_lookup():
     customer1 = Vcxdemo('Fry')
     customer1.deserialize_connection('connection.dat')
     assert isinstance(customer1.connection, Connection)
-    customer1.deserialize_claim('claim.dat')
+    customer1.deserialize_credential('credential.dat')
     Vcxdemo.deserialize_schema(schema_filename)
     lookup_schema = Vcxdemo.lookup_schema('FindSchema', Vcxdemo.get_schema_sequence_number(0))
     Vcxdemo.schemas.append(lookup_schema)
