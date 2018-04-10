@@ -363,6 +363,8 @@ public class Anoncreds extends IndyJava.API {
 	 * Credential definition entity contains private and public parts. Private part will be stored in the wallet. Public part
 	 * will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing CRED_DEF transaction
 	 * to Indy distributed ledger.
+	 * <p>
+	 * It is IMPORTANT now GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
 	 *
 	 * @param wallet     The wallet.
 	 * @param issuerDid  DID of the issuer signing cred_def transaction to the Ledger

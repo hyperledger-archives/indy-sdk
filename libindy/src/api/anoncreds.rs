@@ -76,6 +76,8 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
 /// will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing CRED_DEF transaction
 /// to Indy distributed ledger.
 ///
+/// It is IMPORTANT now GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
+///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.

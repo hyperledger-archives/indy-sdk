@@ -71,6 +71,8 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
     Public part will be returned as json intended to be shared with all anoncreds workflow actors usually by
     publishing CRED_DEF transaction to Indy distributed ledger.
 
+    It is IMPORTANT now GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
+
     :param wallet_handle: wallet handler (created by open_wallet).
     :param issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
     :param schema_json: credential schema as a json

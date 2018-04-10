@@ -158,11 +158,13 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] //TODO: looks like we can't check it
         fn prover_create_credential_req_works_for_credential_def_not_correspond_to_credential_offer() {
             let (wallet_handle, issuer1_gvt_credential_def, issuer1_gvt_credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
-            let other_credential_offer = issuer1_gvt_credential_offer.replace(ISSUER_DID, DID_MY2);
+            let mut issuer_create_credential_offer: serde_json::Value = serde_json::from_str(&issuer1_gvt_credential_offer).unwrap();
+            issuer_create_credential_offer["key_correctness_proof"]["c"] = serde_json::Value::String("11111111".to_string());
+
+            let other_credential_offer = serde_json::to_string(&issuer_create_credential_offer).unwrap();
 
             let res = AnoncredsUtils::prover_create_credential_req(wallet_handle,
                                                                    DID_MY1,
