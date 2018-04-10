@@ -47,9 +47,9 @@
     - As of now there is no distribution channel for Android for LibIndy. You have to build it manually.
     - Copy generated `libindy.a` file to whatever location you want
     - in android_build.sh update LD_LIBRARY_PATH with the directory of libindy.a
-4) Run `install_toolchains.s`. You need to run this once to setup toolchains for android
+4) Run `install_toolchains.sh`. You need to run this once to setup toolchains for android
 5) Run `android_build.sh aarm64` to build libvcx for aarm64 architecture.(Other architerctures will follow soon)
-5) Tests are not working on OSX as of now.
+5) Tests are not working on Android as of now.
 
 
 
