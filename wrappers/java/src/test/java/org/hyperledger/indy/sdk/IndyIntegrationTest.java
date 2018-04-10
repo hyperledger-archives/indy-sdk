@@ -55,8 +55,11 @@ public class IndyIntegrationTest {
 	protected String SCHEMA_VERSION = "1.0";
 	protected String GVT_SCHEMA_ATTRIBUTES = "[\"name\", \"age\", \"sex\", \"height\"]";
 	protected String XYZ_SCHEMA_ATTRIBUTES = "[\"status\", \"period\"]";
+	protected String REVOC_REG_TYPE = "CL_ACCUM";
+	protected String SIGNATURE_TYPE = "CL";
 	protected String TAILS_WRITER_CONFIG = new JSONObject(String.format("{\"base_dir\":\"%s\", \"uri_pattern\":\"\"}", getIndyHomePath("tails")).replace('\\', '/')).toString();
 	protected String REV_CRED_DEF_CONFIG = "{\"support_revocation\":true}";
+
 
 	protected static final String TRUSTEE_IDENTITY_JSON =
 			new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null).toJson();
