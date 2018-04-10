@@ -40,7 +40,7 @@
     ```
 5) Tests are not working on OSX as of now.
 
-##Android
+## Android
 1) Install rust and rustup (https://www.rust-lang.org/install.html).
 2) Clone this repo to your local machine.
 3) Install libindy (https://repo.evernym.com/libindy/).
