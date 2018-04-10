@@ -21,5 +21,5 @@ if [ "$1" == "aarm64" ]; then
 
     # build commands
     cargo clean --target aarch64-linux-android
-    cargo build --target aarch64-linux-android --verbose
+    cargo build --target aarch64-linux-android --release --verbose
 fi
