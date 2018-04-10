@@ -729,7 +729,6 @@ public class Anoncreds extends IndyJava.API {
 			String masterSecretId) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNullOrWhiteSpace(masterSecretId, "masterSecretId");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -829,7 +828,6 @@ public class Anoncreds extends IndyJava.API {
 			String revRegDefJson) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNullOrWhiteSpace(credId, "credId");
 		ParamGuard.notNullOrWhiteSpace(credReqJson, "credReqJson");
 		ParamGuard.notNullOrWhiteSpace(credReqMetadataJson, "credReqMetadataJson");
 		ParamGuard.notNullOrWhiteSpace(credJson, "credJson");

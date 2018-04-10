@@ -71,11 +71,11 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
 		//  Issuer creates Credential
 		String gvtCredentialValues = "{\n" +
-				"               \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
-				"               \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
-				"               \"height\":[\"175\",\"175\"],\n" +
-				"               \"age\":[\"28\",\"28\"]\n" +
-				"        }";
+				"        \"sex\": {\"raw\": \"male\", \"encoded\": \"5944657099558967239210949258394887428692050081607692519917050\"},\n" +
+				"        \"name\": {\"raw\": \"Alex\", \"encoded\": \"1139481716457488690172217916278103335\"},\n" +
+				"        \"height\": {\"raw\": \"175\", \"encoded\": \"175\"},\n" +
+				"        \"age\": {\"raw\": \"28\", \"encoded\": \"28\"}\n" +
+				"    }";
 		AnoncredsResults.IssuerCreateCredentialResult createCredentialResult =
 				Anoncreds.issuerCreateCredential(wallet, credentialOffer, credentialRequest, gvtCredentialValues, null,  - 1).get();
 		String credential = createCredentialResult.getCredentialJson();

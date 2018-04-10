@@ -137,13 +137,11 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name,
                                                      cred_def_json, master_secret_id)
 
     # 7. Issuer open Tails reader
-    rev_reg_reg = json.loads(rev_reg_def_json)
     blob_storage_reader_cfg_handle = await blob_storage.open_reader('default', tails_writer_config)
 
     #  8. Issuer create credential for credential Request
     cred_values_json = json.dumps({
-        "sex": {
-            "raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050011144233115103"},
+        "sex": {"raw": "male", "encoded": "594465709955896723921094925839488742869205008160769251991705001"},
         "name": {"raw": "Alex", "encoded": "1139481716457488690172217916278103335"},
         "height": {"raw": "175", "encoded": "175"},
         "age": {"raw": "28", "encoded": "28"}

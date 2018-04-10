@@ -346,7 +346,7 @@ At this point we have the **Transcript** and the **Job-Certificate** Credential 
 
 A Credential Definition can be created and saved in the Ledger by any **Trust Anchor**. Here **Faber** creates and publishes a Credential Definition for the known **Transcript** Credential Schema to the Ledger.
 
-1. The **Trust Anchor** gets the specific **Credential Schema** from the Ledger by consistently calling the ``ledger.build_get_schema_request`` to build the `GetSchema` request and ``ledger.sign_and_submit_request`` to send the created request.
+1. The **Trust Anchor** gets the specific **Credential Schema** from the Ledger by consistently calling the ``ledger.build_get_schema_request`` to build the `GetSchema` request, ``ledger.sign_and_submit_request`` to send the created request and the ``ledger.parse_get_schema_response`` to get the `Schema` in the format required by Anoncreds API from the `GetSchema` response.
     ```python
     # Faber Agent
     get_schema_request = await ledger.build_get_schema_request(faber_did, transcript_schema_id)

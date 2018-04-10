@@ -45,10 +45,6 @@ public class ProverCreateMasterSecretTest extends AnoncredsIntegrationTest {
 
 	@Test
 	public void testProverCreateMasterSecretWorksForEmptyName() throws Exception {
-
-		thrown.expect(IllegalArgumentException.class);
-
-		Anoncreds.proverCreateMasterSecret(wallet, "").get();
-
+		Anoncreds.proverCreateMasterSecret(wallet, null).get();
 	}
 }
