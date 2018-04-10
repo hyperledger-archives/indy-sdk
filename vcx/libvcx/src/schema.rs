@@ -573,7 +573,7 @@ mod tests {
     fn test_get_schema_attrs_from_ledger(){
         settings::set_defaults();
         pool::open_sandbox_pool();
-        let data = r#""data":{"name":"New Claim - Claim5","version":"1.0","attr_names":["New Claim","claim5","a5","b5","c5","d5"]}"#.to_string();
+        let data = r#""data":{"name":"New Credential - Credential5","version":"1.0","attr_names":["New Credential","credential5","a5","b5","c5","d5"]}"#.to_string();
         init_wallet("test_get_schema_attrs_from_ledger").unwrap();
         let wallet_handle = get_wallet_handle();
         let schema_attrs = get_schema_attrs("id".to_string(), 74).unwrap();

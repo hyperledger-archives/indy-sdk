@@ -1,9 +1,10 @@
-pub mod connection;
 pub mod base;
+pub mod connection;
 pub mod schema;
 pub mod cred_def;
 pub mod issuer_cred;
 pub mod proof;
+pub mod credential;
 
 
 pub trait ToErrorCode {
