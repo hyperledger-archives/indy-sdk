@@ -38,8 +38,9 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		String issuerDid = issuerDidInfo.getDid();
 		// Prover creates wallet, gets wallet handle
-		Wallet.createWallet(POOL, "walletOpen", TYPE, null, null).get();
-		Wallet proverWalletHandle = Wallet.openWallet("walletOpen", null, null).get();
+		String proverWalletName = "proverWallet";
+		Wallet.createWallet(POOL, proverWalletName, TYPE, null, null).get();
+		Wallet proverWalletHandle = Wallet.openWallet(proverWalletName, null, null).get();
 
 		// Prover create DID
 		DidResults.CreateAndStoreMyDidResult proverDidInfo = Did.createAndStoreMyDid(proverWalletHandle,
@@ -199,7 +200,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Prover gets RevocationRegistryDelta from Ledger
 
-		String getRevRegDeltaRequest = Ledger.buildGetRevocRegDeltaRequest(proverDid, cred_info.getString("rev_reg_id"), -1, (int) to).get();
+		String getRevRegDeltaRequest = Ledger.buildGetRevocRegDeltaRequest(proverDid, cred_info.getString("rev_reg_id"), - 1, (int) to).get();
 		String getRevRegDeltaResponse = Ledger.submitRequest(pool, getRevRegDeltaRequest).get();
 
 		LedgerResults.ParseRegistryResponseResult revRegInfo2 = Ledger.parseGetRevocRegDeltaResponse(getRevRegDeltaResponse).get();
@@ -373,6 +374,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		Assert.assertFalse(valid);
 
 		proverWalletHandle.close();
+		Wallet.deleteWallet(proverWalletName, null).get();
 	}
 
 	@Test
@@ -386,8 +388,9 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		String issuerDid = issuerDidInfo.getDid();
 		// Prover creates wallet, gets wallet handle
-		Wallet.createWallet(POOL, "walletOpen", TYPE, null, null).get();
-		Wallet proverWalletHandle = Wallet.openWallet("walletOpen", null, null).get();
+		String proverWalletName = "proverWallet";
+		Wallet.createWallet(POOL, proverWalletName, TYPE, null, null).get();
+		Wallet proverWalletHandle = Wallet.openWallet(proverWalletName, null, null).get();
 
 		// Prover create DID
 		DidResults.CreateAndStoreMyDidResult proverDidInfo = Did.createAndStoreMyDid(proverWalletHandle,
@@ -443,7 +446,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		Ledger.signAndSubmitRequest(pool, wallet, issuerDid, credDefRequest).get();
 
 		// Issuer creates RevocationRegistry
-	    /* FIXME: getIndyHomePath hard coded forward slash "/". It will not work for Windows. */
+		/* FIXME: getIndyHomePath hard coded forward slash "/". It will not work for Windows. */
 		String tailsWriterConfig = new JSONObject(String.format("{\"base_dir\":\"%s\", \"uri_pattern\":\"\"}",
 				getIndyHomePath("tails")).replace('\\', '/')).toString();
 		BlobStorageWriter tailsWriterHandle = BlobStorageWriter.openWriter("default", tailsWriterConfig).get();
@@ -552,7 +555,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		// Prover gets RevocationRegistryDelta from Ledger
 
         /* FIXME */
-		String getRevRegDeltaRequest = Ledger.buildGetRevocRegDeltaRequest(proverDid, revRegId, -1, (int) to).get();
+		String getRevRegDeltaRequest = Ledger.buildGetRevocRegDeltaRequest(proverDid, revRegId, - 1, (int) to).get();
 		String getRevRegDeltaResponse = Ledger.submitRequest(pool, getRevRegDeltaRequest).get();
 
 		LedgerResults.ParseRegistryResponseResult revRegInfo2 = Ledger.parseGetRevocRegDeltaResponse(getRevRegDeltaResponse).get();
@@ -703,5 +706,6 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		Assert.assertFalse(valid);
 
 		proverWalletHandle.close();
+		Wallet.deleteWallet(proverWalletName, null).get();
 	}
 }
