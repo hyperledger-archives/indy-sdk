@@ -1,7 +1,6 @@
 from indy.anoncreds import prover_create_credential_req
 from indy.error import ErrorCode, IndyError
 
-import json
 import pytest
 
 

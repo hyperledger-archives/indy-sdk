@@ -197,29 +197,4 @@
     [TestUtils cleanupStorage];
 }
 
-- (void)testBuildClaimDefRequestWorksForInvalidDataJson
-{
-    [TestUtils cleanupStorage];
-    NSString *identifier = @"some_identifier";
-    NSString *signature_type = @"CL";
-    NSNumber *schemaSeqNo = @(1);
-    NSString *data = @"{"\
-                        "\"primary\":{"\
-                            "\"n\":\"1\","\
-                            "\"s\":\"2\","\
-                            "\"rsm\":\"3\","\
-                            "\"r\":{\"name\":\"1\"}"\
-                        "}}";
-    
-    NSString *claimDefTxn;
-    NSError *ret = [[LedgerUtils sharedInstance] buildClaimDefTxnWithSubmitterDid:identifier
-                                                                             xref:schemaSeqNo
-                                                                    signatureType:signature_type
-                                                                             data:data
-                                                                       resultJson:&claimDefTxn];
-    XCTAssertEqual(ret.code, CommonInvalidStructure, @"LedgerUtils::buildClaimDefTxnWithSubmitterDid() failed");
-    
-    [TestUtils cleanupStorage];
-}
-
 @end

@@ -19,8 +19,16 @@ use errors::anoncreds::AnoncredsError;
 
 use services::anoncreds::helpers::*;
 
-use self::indy_crypto::cl::*;
+use self::indy_crypto::cl::{
+    BlindedMasterSecret,
+    BlindedMasterSecretCorrectnessProof,
+    CredentialPublicKey,
+    MasterSecret,
+    MasterSecretBlindingData,
+    SubProofRequest
+};
 use self::indy_crypto::cl::prover::Prover as CryptoProver;
+use self::indy_crypto::cl::verifier::Verifier as CryptoVerifier;
 
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
@@ -168,8 +176,8 @@ impl Prover {
         for (cred_key, &(ref req_attrs_for_cred, ref req_predicates_for_cred)) in credentials_for_proving.iter() {
             let credential: &Credential = credentials.get(cred_key.cred_id.as_str())
                 .ok_or(CommonError::InvalidStructure(format!("Credential not found by id: {:?}", cred_key.cred_id)))?;
-            let schema: &SchemaV1 = schemas.get(&credential.schema_id())
-                .ok_or(CommonError::InvalidStructure(format!("Schema not found by id: {:?}", credential.schema_id())))?;
+            let schema: &SchemaV1 = schemas.get(&credential.schema_id)
+                .ok_or(CommonError::InvalidStructure(format!("Schema not found by id: {:?}", credential.schema_id)))?;
             let cred_def: &CredentialDefinition = cred_defs.get(&credential.cred_def_id)
                 .ok_or(CommonError::InvalidStructure(format!("CredentialDefinition not found by id: {:?}", credential.cred_def_id)))?;
 
@@ -197,7 +205,7 @@ impl Prover {
                                                 rev_state.as_ref().map(|r_info| &r_info.witness))?;
 
             identifiers.push(Identifier {
-                schema_id: credential.schema_id(),
+                schema_id: credential.schema_id.clone(),
                 cred_def_id: credential.cred_def_id.clone(),
                 rev_reg_id: credential.rev_reg_id.clone(),
                 timestamp: cred_key.timestamp.clone()
@@ -411,7 +419,7 @@ impl Prover {
         trace!("_build_sub_proof_request <<< req_attrs_for_credential: {:?}, req_predicates_for_credential: {:?}",
                req_attrs_for_credential, req_predicates_for_credential);
 
-        let mut sub_proof_request_builder = verifier::Verifier::new_sub_proof_request_builder()?;
+        let mut sub_proof_request_builder = CryptoVerifier::new_sub_proof_request_builder()?;
 
         for attr in req_attrs_for_credential {
             if attr.revealed {

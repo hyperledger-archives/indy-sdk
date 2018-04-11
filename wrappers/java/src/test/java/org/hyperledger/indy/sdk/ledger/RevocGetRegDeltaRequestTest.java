@@ -1,11 +1,14 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
+import org.hyperledger.indy.sdk.utils.PoolUtils;
+import org.json.JSONObject;
 import org.junit.Test;
+
+import java.util.Date;
 
 import static org.junit.Assert.assertTrue;
 
-public class RevocGetRegDeltaRequestTest extends IndyIntegrationTestWithPoolAndSingleWallet {
+public class RevocGetRegDeltaRequestTest extends LedgerIntegrationTest {
 
 	@Test
 	public void testBuildGetRevocRegDeltaRequestWorks() throws Exception {
@@ -19,5 +22,20 @@ public class RevocGetRegDeltaRequestTest extends IndyIntegrationTestWithPoolAndS
 		String request = Ledger.buildGetRevocRegDeltaRequest(DID, "RevocRegID", - 1, 100).get();
 
 		assertTrue(request.replaceAll("\\s+", "").contains(expectedResult.replaceAll("\\s+", "")));
+	}
+
+	@Test
+	public void testRevocRegRequestsDeltaWorks() throws Exception {
+		String myDid = createStoreAndPublishDidFromTrustee();
+
+		int to = (int) (new Date().getTime()/1000) + 100;
+
+		String getRevRegRequest = Ledger.buildGetRevocRegDeltaRequest(myDid, revRegDefId, -1, to).get();
+		String getRevReResponse = PoolUtils.ensurePreviousRequestApplied(pool, getRevRegRequest, response -> {
+			JSONObject responseObject = new JSONObject(response);
+			return !responseObject.getJSONObject("result").isNull("seqNo");
+		});
+
+		Ledger.parseGetRevocRegDeltaResponse(getRevReResponse).get();
 	}
 }

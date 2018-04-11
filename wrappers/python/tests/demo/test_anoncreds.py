@@ -109,42 +109,39 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name,
     issuer_did = 'NcYxiDXkpYi6ov5FcYDi1e'
     prover_did = 'VsKV7grR1BUE29mG2Fm2kX'
 
-    # 2. Issuer create Schema
+    # 2. Issuer create credential Definition for Schema
     (schema_id, schema_json) = await anoncreds.issuer_create_schema(issuer_did, "gvt", '1.0',
                                                                     '["age", "sex", "height", "name"]')
 
-    # 3. Issuer create credential Definition for Schema
     (cred_def_id, cred_def_json) = \
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, issuer_did, schema_json, 'tag1', 'CL',
                                                                '{"support_revocation": true}')
 
-    # 4. Issuer create Revocation Registry
+    # 3. Issuer create Revocation Registry
     tails_writer_config = json.dumps({'base_dir': str(path_home.joinpath("tails")), 'uri_pattern': ''})
     tails_writer = await blob_storage.open_writer('default', tails_writer_config)
     (rev_reg_id, rev_reg_def_json, _) = \
         await anoncreds.issuer_create_and_store_revoc_reg(wallet_handle, issuer_did, None, 'tag1', cred_def_id,
                                                           '{"max_cred_num": 5}', tails_writer)
 
-    # 5. Prover create Master Secret
+    # 4. Prover create Master Secret
     master_secret_id = "master_secret"
     await anoncreds.prover_create_master_secret(wallet_handle, master_secret_id)
 
-    # 6. Issuer create credential Offer
+    # 5. Issuer create credential Offer
     cred_offer_json = await anoncreds.issuer_create_credential_offer(wallet_handle, cred_def_id)
 
-    # 7. Prover create credential Request
+    # 6. Prover create credential Request
     (cred_req_json, cred_req_metadata_json) = \
         await anoncreds.prover_create_credential_req(wallet_handle, prover_did, cred_offer_json,
                                                      cred_def_json, master_secret_id)
 
-    # 8. Issuer open Tails reader
-    rev_reg_reg = json.loads(rev_reg_def_json)
+    # 7. Issuer open Tails reader
     blob_storage_reader_cfg_handle = await blob_storage.open_reader('default', tails_writer_config)
 
-    #  9. Issuer create credential for credential Request
+    #  8. Issuer create credential for credential Request
     cred_values_json = json.dumps({
-        "sex": {
-            "raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050011144233115103"},
+        "sex": {"raw": "male", "encoded": "594465709955896723921094925839488742869205008160769251991705001"},
         "name": {"raw": "Alex", "encoded": "1139481716457488690172217916278103335"},
         "height": {"raw": "175", "encoded": "175"},
         "age": {"raw": "28", "encoded": "28"}
@@ -154,12 +151,12 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name,
         await anoncreds.issuer_create_credential(wallet_handle, cred_offer_json, cred_req_json,
                                                  cred_values_json, rev_reg_id, blob_storage_reader_cfg_handle)
 
-    # 10. Prover process and store credential
+    # 9. Prover process and store credential
     cred_id = 'cred_1_id'
     await anoncreds.prover_store_credential(wallet_handle, cred_id, cred_req_json, cred_req_metadata_json,
                                             cred_json, cred_def_json, rev_reg_def_json)
 
-    # 11. Prover gets credentials for Proof Request
+    # 10. Prover gets credentials for Proof Request
     proof_req_json = json.dumps({
         'nonce': '123432421212',
         'name': 'proof_req_1',
@@ -176,7 +173,7 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name,
     credential_for_proof_json = await anoncreds.prover_get_credentials_for_proof_req(wallet_handle, proof_req_json)
     credentials_for_proof = json.loads(credential_for_proof_json)
 
-    # 12. Prover creates revocation state
+    # 11. Prover creates revocation state
     timestamp = 100
     rev_state_json = await anoncreds.create_revocation_state(blob_storage_reader_cfg_handle, rev_reg_def_json,
                                                              rev_reg_delta_json, timestamp, rev_id)
@@ -184,7 +181,7 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name,
     credential_for_attr1 = credentials_for_proof['attrs']['attr1_referent']
     referent = credential_for_attr1[0]['cred_info']['referent']
 
-    # 13. Prover create Proof for Proof Request
+    # 12. Prover create Proof for Proof Request
     requested_credentials_json = json.dumps({
         'self_attested_attributes': {},
         'requested_attributes': {'attr1_referent': {'cred_id': referent, 'revealed': True, 'timestamp': timestamp}},
@@ -200,7 +197,7 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name,
                                                      revoc_states_json)
     proof = json.loads(proof_json)
 
-    # 14. Verifier verify proof
+    # 13. Verifier verify proof
     assert 'Alex' == proof['requested_proof']['revealed_attrs']['attr1_referent']['raw']
 
     revoc_ref_defs_json = json.dumps({rev_reg_id: json.loads(rev_reg_def_json)})
@@ -209,5 +206,5 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name,
     assert await anoncreds.verifier_verify_proof(proof_req_json, proof_json, schemas_json, credential_defs_json,
                                                  revoc_ref_defs_json, revoc_regs_json)
 
-    # 15. Close wallet
+    # 14. Close wallet
     await wallet.close_wallet(wallet_handle)

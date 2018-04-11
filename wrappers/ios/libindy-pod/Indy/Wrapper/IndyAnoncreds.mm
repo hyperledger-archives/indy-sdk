@@ -168,7 +168,7 @@
     }
 }
 
-+ (void)issuerRecoverCredentialByCredRevocId:(NSString *)credRevocId
+/*+ (void)issuerRecoverCredentialByCredRevocId:(NSString *)credRevocId
                                     revRegId:(NSString *)revRegId
                      blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
                                 walletHandle:(IndyHandle)walletHandle
@@ -191,7 +191,7 @@
             completion([NSError errorFromIndyError:ret], nil);
         });
     }
-}
+}*/
 
 + (void)issuerMergerRevocationRegistryDelta:(NSString *)revRegDelta
                                   withDelta:(NSString *)otherRevRegDelta

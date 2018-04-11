@@ -4,8 +4,12 @@ extern crate indy_crypto;
 
 use services::ledger::constants::*;
 
-use self::indy_crypto::cl::*;
-use self::indy_crypto::cl::RevocationRegistryDelta;
+use self::indy_crypto::cl::{
+    CredentialPrimaryPublicKey,
+    CredentialRevocationPublicKey,
+    RevocationRegistry,
+    RevocationRegistryDelta
+};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use domain::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1, SignatureType};
@@ -224,7 +228,7 @@ impl JsonEncodable for GetSchemaOperationData {}
 impl<'a> JsonDecodable<'a> for GetSchemaOperationData {}
 
 #[derive(Serialize, Debug)]
-pub struct ClaimDefOperation {
+pub struct CredDefOperation {
     #[serde(rename = "ref")]
     pub _ref: i32,
     pub data: CredentialDefinitionData,
@@ -233,41 +237,41 @@ pub struct ClaimDefOperation {
     pub signature_type: String
 }
 
-impl ClaimDefOperation {
-    pub fn new(data: CredentialDefinitionV1) -> ClaimDefOperation {
-        ClaimDefOperation {
+impl CredDefOperation {
+    pub fn new(data: CredentialDefinitionV1) -> CredDefOperation {
+        CredDefOperation {
             _ref: data.schema_id.parse::<i32>().unwrap_or(0), // TODO: FIXME
             signature_type: data.signature_type.to_str().to_string(),
             data: data.value,
-            _type: CLAIM_DEF.to_string()
+            _type: CRED_DEF.to_string()
         }
     }
 }
 
-impl JsonEncodable for ClaimDefOperation {}
+impl JsonEncodable for CredDefOperation {}
 
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
-pub struct ClaimDefOperationData {
+pub struct CredDefOperationData {
     pub primary: CredentialPrimaryPublicKey,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub revocation: Option<CredentialRevocationPublicKey>
 }
 
-impl ClaimDefOperationData {
-    pub fn new(primary: CredentialPrimaryPublicKey, revocation: Option<CredentialRevocationPublicKey>) -> ClaimDefOperationData {
-        ClaimDefOperationData {
+impl CredDefOperationData {
+    pub fn new(primary: CredentialPrimaryPublicKey, revocation: Option<CredentialRevocationPublicKey>) -> CredDefOperationData {
+        CredDefOperationData {
             primary,
             revocation
         }
     }
 }
 
-impl JsonEncodable for ClaimDefOperationData {}
+impl JsonEncodable for CredDefOperationData {}
 
-impl<'a> JsonDecodable<'a> for ClaimDefOperationData {}
+impl<'a> JsonDecodable<'a> for CredDefOperationData {}
 
 #[derive(Serialize, PartialEq, Debug)]
-pub struct GetClaimDefOperation {
+pub struct GetCredDefOperation {
     #[serde(rename = "type")]
     pub _type: String,
     #[serde(rename = "ref")]
@@ -276,10 +280,10 @@ pub struct GetClaimDefOperation {
     pub origin: String
 }
 
-impl GetClaimDefOperation {
-    pub fn new(_ref: i32, signature_type: String, origin: String) -> GetClaimDefOperation {
-        GetClaimDefOperation {
-            _type: GET_CLAIM_DEF.to_string(),
+impl GetCredDefOperation {
+    pub fn new(_ref: i32, signature_type: String, origin: String) -> GetCredDefOperation {
+        GetCredDefOperation {
+            _type: GET_CRED_DEF.to_string(),
             _ref,
             signature_type,
             origin
@@ -287,7 +291,7 @@ impl GetClaimDefOperation {
     }
 }
 
-impl JsonEncodable for GetClaimDefOperation {}
+impl JsonEncodable for GetCredDefOperation {}
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct NodeOperation {
@@ -622,7 +626,7 @@ impl JsonEncodable for GetRevRegDeltaOperation {}
 pub struct GetSchemaReplyResult {
     pub identifier: String,
     pub req_id: u64,
-    pub seq_no: i32,
+    pub seq_no: u32,
     #[serde(rename = "type")]
     pub  _type: String,
     pub  data: SchemaOperationData,
@@ -632,7 +636,7 @@ pub struct GetSchemaReplyResult {
 impl<'a> JsonDecodable<'a> for GetSchemaReplyResult {}
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct GetClaimDefReplyResult {
+pub struct GetCredDefReplyResult {
     pub identifier: String,
     #[serde(rename = "reqId")]
     pub req_id: u64,
@@ -647,7 +651,7 @@ pub struct GetClaimDefReplyResult {
     pub  data: CredentialDefinitionData
 }
 
-impl<'a> JsonDecodable<'a> for GetClaimDefReplyResult {}
+impl<'a> JsonDecodable<'a> for GetCredDefReplyResult {}
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -672,7 +676,8 @@ pub struct GetRevocRegReplyResult {
     #[serde(rename = "type")]
     pub  _type: String,
     pub revoc_reg_def_id: String,
-    pub  data: RevocationRegistryV1
+    pub  data: RevocationRegistryV1,
+    pub txn_time: u64
 }
 
 impl<'a> JsonDecodable<'a> for GetRevocRegReplyResult {}
@@ -692,8 +697,10 @@ pub struct RevocationRegistryDeltaValue {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AccumulatorState {
-    pub value: RevocationRegistry
+    pub value: RevocationRegistry,
+    pub txn_time: u64
 }
 
 #[derive(Deserialize, Serialize, Debug)]

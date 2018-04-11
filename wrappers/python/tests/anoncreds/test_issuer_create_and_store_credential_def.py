@@ -8,7 +8,7 @@ from indy.error import ErrorCode, IndyError
 
 @pytest.mark.asyncio
 async def test_issuer_create_and_store_credential_def_works(wallet_handle, issuer_did, gvt_schema, tag,
-                                                            default_cred_def_config):
+                                                             default_cred_def_config):
     gvt_schema["id"] = "test_issuer_create_and_store_credential_def_works"
 
     (_, cred_def_json) = await issuer_create_and_store_credential_def(wallet_handle, issuer_did,
@@ -49,4 +49,4 @@ async def test_issuer_create_and_store_credential_def_works_for_duplicate(wallet
         await issuer_create_and_store_credential_def(wallet_handle, issuer_did, json.dumps(gvt_schema), tag, "CL",
                                                      default_cred_def_config)
 
-    assert ErrorCode.AnoncredsClaimDefAlreadyExistsError == e.value.error_code
+    assert ErrorCode.AnoncredsCredDefAlreadyExistsError == e.value.error_code

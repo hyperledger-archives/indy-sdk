@@ -18,6 +18,9 @@ use std::ptr;
 /// Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
 /// to Indy distributed ledger.
 ///
+/// It is IMPORTANT now POST Schema in Ledger and GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
+/// After that can call indy_issuer_create_and_store_credential_def to build corresponding Credential Definition.
+///
 /// #Params
 /// command_handle: command handle to map callback to user context
 /// issuer_did: DID of schema issuer
@@ -40,7 +43,7 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
                                         version: *const c_char,
                                         attrs: *const c_char,
                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                             id: *const c_char, schema_json: *const c_char)>) -> ErrorCode {
+                                                             schema_id: *const c_char, schema_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
@@ -73,13 +76,15 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
 /// will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing CRED_DEF transaction
 /// to Indy distributed ledger.
 ///
+/// It is IMPORTANT now GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
+///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
 /// schema_json: credential schema as a json
 /// tag: allows to distinct between credential definitions for the same issuer and schema
-/// type_: credential definition type (optional, 'CL' by default) that defines claims signature and revocation math. Supported types are:
+/// type_: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math. Supported types are:
 /// - 'CL': Camenisch-Lysyanskaya credential signature type
 /// config_json: type-specific configuration of credential definition as json:
 /// - 'CL':
@@ -146,7 +151,7 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
 /// Revocation registry state is stored on the wallet and also intended to be shared as the ordered list of REVOC_REG_ENTRY transactions.
 /// This call initializes the state in the wallet and returns the initial entry.
 ///
-/// Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked claims in public
+/// Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked credentials in public
 /// revocation registry and intended to be distributed out of leger (REVOC_REG_DEF transaction will still contain uri and hash of tails).
 /// This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
 ///
@@ -154,8 +159,8 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing transaction to the Ledger
-/// type_: revocation registry type (optional, default value depends on claim definition type). Supported types are:
-/// - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' claim definition type
+/// type_: revocation registry type (optional, default value depends on credential definition type). Supported types are:
+/// - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
 /// tag: allows to distinct between revocation registries for the same issuer and credential definition
 /// cred_def_id: id of stored in ledger credential definition
 /// config_json: type-specific configuration of revocation registry as json:
@@ -164,7 +169,7 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
 ///         1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
 ///            Revocation Registry is updated only during revocation.
 ///         2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
-///     "max_cred_num": maximum number of claims the new registry can process (optional, default 100000)
+///     "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
 /// }
 /// tails_writer_handle: handle of blob storage to store tails
 /// cb: Callback that takes command result as parameter.
@@ -222,7 +227,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 }
 
 /// Create credential offer that will be used by Prover for
-/// claim request creation. Offer includes nonce and key correctness proof
+/// credential request creation. Offer includes nonce and key correctness proof
 /// for authentication between protocol steps and integrity checking.
 ///
 /// #Params
@@ -234,6 +239,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// #Returns
 /// credential offer json:
 ///     {
+///         "schema_id": string,
 ///         "cred_def_id": string,
 ///         // Fields below can depend on Cred Def type
 ///         "nonce": string,
@@ -299,6 +305,7 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: i32,
 /// #Returns
 /// cred_json: Credential json containing signed credential values
 ///     {
+///         "schema_id": string,
 ///         "cred_def_id": string,
 ///         "rev_reg_def_id", Optional<string>,
 ///         "values": <see credential_values_json above>,
@@ -411,7 +418,7 @@ pub extern fn indy_issuer_revoke_credential(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Recover a credential identified by a cred_revoc_id (returned by indy_issuer_create_credential).
+/*/// Recover a credential identified by a cred_revoc_id (returned by indy_issuer_create_credential).
 ///
 /// The corresponding credential definition and revocation registry must be already
 /// created an stored into the wallet.
@@ -463,8 +470,27 @@ pub extern fn indy_issuer_recover_credential(command_handle: i32,
                 ))));
 
     result_to_err_code!(result)
-}
+}*/
 
+/// Merge two revocation registry deltas to accumulate common delta.
+/// Send common delta to ledger to reduce the load.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// rev_reg_delta_json: revocation registry delta received by calling
+///                     indy_issuer_create_credential or indy_issuer_revoke_credential.
+/// other_rev_reg_delta_json: revocation registry delta received by calling
+///                     indy_issuer_create_credential or indy_issuer_revoke_credential.
+///                     PrevAccum value must be equal current accum value of rev_reg_delta_json.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// merged_rev_reg_delta: Merged revocation registry delta
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
 #[no_mangle]
 pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: i32,
                                                            rev_reg_delta_json: *const c_char,
@@ -500,7 +526,7 @@ pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: i32,
 /// master_secret_id: (optional, if not present random one will be generated) new master id
 ///
 /// #Returns
-/// master_secret_id: Id of generated master secret
+/// out_master_secret_id: Id of generated master secret
 ///
 /// #Errors
 /// Annoncreds*
@@ -510,7 +536,8 @@ pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: i32,
 pub extern fn indy_prover_create_master_secret(command_handle: i32,
                                                wallet_handle: i32,
                                                master_secret_id: *const c_char,
-                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, out_master_secret_id: *const c_char
+                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                    out_master_secret_id: *const c_char
                                                )>) -> ErrorCode {
     check_useful_opt_c_str!(master_secret_id, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
@@ -531,7 +558,7 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Creates a clam request for the given credential offer.
+/// Creates a credential request for the given credential offer.
 ///
 /// The method creates a blinded master secret for a master secret identified by a provided name.
 /// The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
@@ -549,9 +576,8 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 /// #Returns
 /// cred_req_json: Credential request json for creation of credential by Issuer
 ///     {
-///      "cred_def_id" : string,
-///      "rev_reg_id" : Optional<string>,
 ///      "prover_did" : string,
+///      "cred_def_id" : string,
 ///         // Fields below can depend on Cred Def type
 ///      "blinded_ms" : <blinded_master_secret>,
 ///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
@@ -615,7 +641,7 @@ pub extern fn indy_prover_create_credential_req(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// cred_id: identifier by which credential is stored in the wallet
+/// out_cred_id: identifier by which credential is stored in the wallet
 ///
 /// #Errors
 /// Annoncreds*
@@ -675,7 +701,6 @@ pub extern fn indy_prover_store_credential(command_handle: i32,
 ///            "schema_name": string, (Optional)
 ///            "schema_version": string, (Optional)
 ///            "issuer_did": string, (Optional)
-///            "issuer_did": string, (Optional)
 ///            "cred_def_id": string, (Optional)
 ///        }
 /// cb: Callback that takes command result as parameter.
@@ -685,6 +710,7 @@ pub extern fn indy_prover_store_credential(command_handle: i32,
 ///     [{
 ///         "referent": string, // cred_id in the wallet
 ///         "values": <see credential_values_json above>,
+///         "schema_id": string,
 ///         "cred_def_id": string,
 ///         "rev_reg_id": Optional<string>,
 ///         "cred_rev_id": Optional<string>
@@ -775,6 +801,15 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 ///         "from": Optional<int>, // timestamp of interval beginning
 ///         "to": Optional<int>, // timestamp of interval ending
 ///     }
+/// filter: filter for credentials
+///        {
+///            "schema_id": string, (Optional)
+///            "schema_issuer_did": string, (Optional)
+///            "schema_name": string, (Optional)
+///            "schema_version": string, (Optional)
+///            "issuer_did": string, (Optional)
+///            "cred_def_id": string, (Optional)
+///        }
 ///
 /// #Returns
 /// credentials_json: json with credentials for the given pool request.
@@ -791,6 +826,7 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 ///     {
 ///         "referent": <string>,
 ///         "attrs": [{"attr_name" : "attr_raw_value"}],
+///         "schema_id": string,
 ///         "cred_def_id": string,
 ///         "rev_reg_id": Optional<int>,
 ///         "cred_rev_id": Optional<int>,
@@ -843,7 +879,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
 ///         "name": string,
 ///         "version": string,
 ///         "nonce": string,
-///         "requested_attrs": { // set of requested attributes
+///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
 ///         },
@@ -878,21 +914,21 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
 ///     }
 /// credential_defs_json: all credential definitions json participating in the proof request
 ///     {
-///         "credential_def1_id": <credential_def1_json>,
-///         "credential_def2_id": <credential_def2_json>,
-///         "credential_def3_id": <credential_def3_json>,
+///         "cred_def1_id": <credential_def1_json>,
+///         "cred_def2_id": <credential_def2_json>,
+///         "cred_def3_id": <credential_def3_json>,
 ///     }
 /// rev_states_json: all revocation states json participating in the proof request
 ///     {
-///         "rev_reg1_id": {
-///             "freshness1": <rev_state1>,
-///             "freshness2": <rev_state2>,
+///         "rev_reg_def1_id": {
+///             "timestamp1": <rev_state1>,
+///             "timestamp2": <rev_state2>,
 ///         },
-///         "credential2_referent_in_wallet": {
-///             "freshness3": <rev_state3>
+///         "rev_reg_def2_id": {
+///             "timestamp3": <rev_state3>
 ///         },
-///         "credential3_referent_in_wallet": {
-///             "freshness4": <rev_state4>
+///         "rev_reg_def3_id": {
+///             "timestamp4": <rev_state4>
 ///         },
 ///     }
 /// cb: Callback that takes command result as parameter.
@@ -902,7 +938,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
 /// attr_info: Describes requested attribute
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
-///         "restrictions": Optional<[<attr_filter>]> // see below,
+///         "restrictions": Optional<[<attr_filter>]> // see above,
 //                          // if specified, credential must satisfy to one of the given restriction.
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
@@ -915,7 +951,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
 ///         "name": attribute name, (case insensitive and ignore spaces)
 ///         "p_type": predicate type (Currently >= only)
 ///         "p_value": predicate value
-///         "restrictions": Optional<[<attr_filter>]> // see below,
+///         "restrictions": Optional<[<attr_filter>]> // see above,
 ///                         // if specified, credential must satisfy to one of the given restriction.
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
@@ -1011,7 +1047,7 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
 ///         "name": string,
 ///         "version": string,
 ///         "nonce": string,
-///         "requested_attrs": { // set of requested attributes
+///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
 ///         },
@@ -1056,9 +1092,9 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
 ///     }
 /// credential_defs_json: all credential definitions json participating in the proof
 ///     {
-///         "credential_def1_id": <credential_def1_json>,
-///         "credential_def2_id": <credential_def2_json>,
-///         "credential_def3_id": <credential_def3_json>,
+///         "cred_def1_id": <credential_def1_json>,
+///         "cred_def2_id": <credential_def2_json>,
+///         "cred_def3_id": <credential_def3_json>,
 ///     }
 /// rev_reg_defs_json: all revocation registry definitions json participating in the proof
 ///     {
@@ -1068,15 +1104,15 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
 ///     }
 /// rev_regs_json: all revocation registries json participating in the proof
 ///     {
-///         "rev_reg1_id": {
-///             "freshness1": <rev_reg1>,
-///             "freshness2": <rev_reg2>,
+///         "rev_reg_def1_id": {
+///             "timestamp1": <rev_reg1>,
+///             "timestamp2": <rev_reg2>,
 ///         },
-///         "credential2_referent_in_wallet": {
-///             "freshness3": <rev_reg3>
+///         "rev_reg_def2_id": {
+///             "timestamp3": <rev_reg3>
 ///         },
-///         "credential3_referent_in_wallet": {
-///             "freshness4": <rev_reg4>
+///         "rev_reg_def3_id": {
+///             "timestamp4": <rev_reg4>
 ///         },
 ///     }
 /// cb: Callback that takes command result as parameter.
@@ -1123,6 +1159,29 @@ pub extern fn indy_verifier_verify_proof(command_handle: i32,
     result_to_err_code!(result)
 }
 
+/// Create revocation state for revocation registry at the particular time moment.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context
+/// blob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails
+/// rev_reg_def_json: revocation registry definition json
+/// rev_reg_delta_json: revocation registry definition delta json
+/// timestamp: time represented as a total number of seconds from Unix Epoch
+/// cred_rev_id: user credential revocation id in revocation registry
+/// cb: Callback that takes command result as parameter
+///
+/// #Returns
+/// revocation state json:
+///     {
+///         "rev_reg": <revocation registry>,
+///         "witness": <witness>,
+///         "timestamp" : integer
+///     }
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Anoncreds*
 #[no_mangle]
 pub extern fn indy_create_revocation_state(command_handle: i32,
                                            blob_storage_reader_handle: i32,
@@ -1156,6 +1215,31 @@ pub extern fn indy_create_revocation_state(command_handle: i32,
     result_to_err_code!(result)
 }
 
+/// Create new revocation state for revocation registry at the
+/// particular time moment based on already existed (to reduce calculation time).
+///
+/// #Params
+/// command_handle: command handle to map callback to user context
+/// blob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails
+/// rev_state_json: revocation registry state json
+/// rev_reg_def_json: revocation registry definition json
+/// rev_reg_delta_json: revocation registry definition delta json
+/// timestamp: time represented as a total number of seconds from Unix Epoch
+/// cred_rev_id: user credential revocation id in revocation registry
+/// cb: Callback that takes command result as parameter
+///
+/// #Returns
+/// revocation state json:
+///     {
+///         "rev_reg": <revocation registry>,
+///         "witness": <witness>,
+///         "timestamp" : integer
+///     }
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Anoncreds*
 #[no_mangle]
 pub extern fn indy_update_revocation_state(command_handle: i32,
                                            blob_storage_reader_handle: i32,

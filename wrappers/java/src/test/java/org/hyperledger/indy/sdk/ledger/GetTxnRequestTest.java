@@ -34,11 +34,13 @@ public class GetTxnRequestTest extends IndyIntegrationTestWithPoolAndSingleWalle
 		int seqNo = schemaResponseObj.getJSONObject("result").getInt("seqNo");
 
 		String getTxnRequest = Ledger.buildGetTxnRequest(did, seqNo).get();
+		String expectedData = "{\"name\":\"gvt\",\"version\":\"1.0\",\"attr_names\": [\"name\"]}";
+
 		String getTxnResponse = PoolUtils.ensurePreviousRequestApplied(pool, getTxnRequest, response -> {
 			JSONObject getTxnResponseObj = new JSONObject(response);
 			JSONObject schemaTransactionObj = getTxnResponseObj.getJSONObject("result").getJSONObject("data");
 
-			return new JSONObject(SCHEMA_DATA).similar(schemaTransactionObj.getJSONObject("data"));
+			return new JSONObject(expectedData).similar(schemaTransactionObj.getJSONObject("data"));
 		});
 		assertNotNull(getTxnResponse);
 	}

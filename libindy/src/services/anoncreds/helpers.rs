@@ -43,3 +43,8 @@ pub fn build_sub_proof_request(attrs_for_credential: &Vec<AttributeInfo>, predic
 
     Ok(sub_proof_request_builder.finalize()?)
 }
+
+pub fn parse_cred_rev_id(cred_rev_id: &str) -> Result<u32, CommonError> {
+    Ok(cred_rev_id.parse::<u32>()
+        .map_err(|err| CommonError::InvalidStructure(format!("Cannot parse CredentialRevocationId: {}", err)))?)
+}

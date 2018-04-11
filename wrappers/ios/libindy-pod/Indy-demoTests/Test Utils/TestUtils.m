@@ -42,7 +42,7 @@
 
 +(NSTimeInterval) longTimeout
 {
-    return  100;
+    return  200;
 }
 
 + (NSString *)tmpFilePathAppending:(NSString *)fileName

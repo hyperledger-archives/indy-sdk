@@ -10,12 +10,12 @@ import java.util.concurrent.ExecutionException;
 public class ProverStoreCredentialTest extends AnoncredsIntegrationTest {
 
 	@Test
-	public void testProverStoreClaimWorks() throws Exception {
+	public void testProverStoreCredentialWorks() throws Exception {
 		Anoncreds.proverStoreCredential(wallet, credentialId1, issuer1GvtCredReq, issuer1GvtCredReqMetadata, issuer1GvtCredential, issuer1gvtCredDef,  null).get();
 	}
 
 	@Test
-	public void testProverStoreClaimWorksForInvalidCredentialJson() throws Exception {
+	public void testProverStoreCredentialWorksForInvalidCredentialJson() throws Exception {
 
 		Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretId).get();
 

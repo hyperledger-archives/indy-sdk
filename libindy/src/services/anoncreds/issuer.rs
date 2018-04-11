@@ -5,7 +5,19 @@ use errors::anoncreds::AnoncredsError;
 use errors::common::CommonError;
 use services::anoncreds::helpers::*;
 use std::collections::HashMap;
-use self::indy_crypto::cl::*;
+use self::indy_crypto::cl::{
+    CredentialPublicKey,
+    CredentialPrivateKey,
+    CredentialKeyCorrectnessProof,
+    CredentialSignature,
+    Nonce,
+    RevocationKeyPrivate,
+    RevocationRegistry,
+    RevocationRegistryDelta,
+    RevocationTailsAccessor,
+    RevocationTailsGenerator,
+    SignatureCorrectnessProof
+};
 use self::indy_crypto::cl::issuer::Issuer as CryptoIssuer;
 
 use domain::schema::SchemaV1;

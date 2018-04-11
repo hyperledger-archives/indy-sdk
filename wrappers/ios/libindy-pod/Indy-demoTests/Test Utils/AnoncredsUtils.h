@@ -162,4 +162,6 @@
                                  credentialReqJson:(NSString **)credentialReqJson
                                     credentialJson:(NSString **)credentialfJson;
 
+- (NSString *)toJson:(NSDictionary *)dictionary;
+
 @end

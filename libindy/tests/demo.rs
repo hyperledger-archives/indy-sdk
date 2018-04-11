@@ -25,6 +25,7 @@ use utils::domain::credential_definition::CredentialDefinition;
 use utils::domain::credential_for_proof_request::CredentialsForProofRequest;
 use utils::domain::proof::Proof;
 use utils::domain::revocation_registry_definition::RevocationRegistryDefinition;
+use utils::domain::revocation_registry::RevocationRegistry;
 use utils::domain::revocation_state::RevocationState;
 use utils::domain::schema::Schema;
 
@@ -40,7 +41,6 @@ use indy::api::ledger::*;
 use indy::api::pool::*;
 use indy::api::wallet::*;
 use indy::api::did::*;
-use indy_crypto::cl::RevocationRegistry;
 
 use std::ptr::null;
 use std::ffi::CString;
@@ -278,7 +278,7 @@ fn anoncreds_demo_works() {
                                    }"#;
 
     // 10 Prover prepare Credential to prove
-    // 10.1 Prover gets Claims for Proof Request
+    // 10.1 Prover gets Credentials for Proof Request
     let err =
         indy_prover_get_credentials_for_proof_req(prover_get_credentials_for_proof_req_command_handle,
                                                   wallet_handle,
@@ -372,6 +372,7 @@ fn anoncreds_demo_works() {
     let rev_reg_defs_json = json!({
         rev_reg_id.as_str(): serde_json::from_str::<RevocationRegistryDefinition>(&revoc_reg_def_json).unwrap()
     }).to_string();
+
     let rev_regs_json = json!({
         rev_reg_id: {
             issue_ts.to_string(): serde_json::from_str::<RevocationRegistry>(&rreg_issue_delta_json).unwrap()

@@ -317,11 +317,14 @@ public class Anoncreds extends IndyJava.API {
 	 * Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
 	 * to Indy distributed ledger.
 	 *
-	 * @param issuerDid  The DID of the issuer.
-	 * @param name       Human-readable name of schema.
-	 * @param version    Version of schema.
-	 * @param attrs: List of schema attributes descriptions
-	 * @return A future resolving to IssuerCreateSchemaResult containing
+	 * It is IMPORTANT now POST Schema in Ledger and GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
+	 * After that can call indy_issuer_create_and_store_credential_def to build corresponding Credential Definition.
+	 *
+	 * @param issuerDid The DID of the issuer.
+	 * @param name      Human-readable name of schema.
+	 * @param version   Version of schema.
+	 * @param attrs:    List of schema attributes descriptions
+	 * @return A future resolving to ParseResponseResult containing
 	 * schemaId: identifier of created schema
 	 * schemaJson: schema as json
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -356,16 +359,18 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
 	 * and secrets used for credentials revocation.
-	 *
+	 * <p>
 	 * Credential definition entity contains private and public parts. Private part will be stored in the wallet. Public part
 	 * will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing CRED_DEF transaction
 	 * to Indy distributed ledger.
+	 * <p>
+	 * It is IMPORTANT now GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
 	 *
 	 * @param wallet     The wallet.
 	 * @param issuerDid  DID of the issuer signing cred_def transaction to the Ledger
 	 * @param schemaJson Сredential schema as a json
 	 * @param tag        Allows to distinct between credential definitions for the same issuer and schema
-	 * @param type       Credential definition type (optional, 'CL' by default) that defines claims signature and revocation math.
+	 * @param type       Credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
 	 *                   Supported types are:
 	 *                   - 'CL': Camenisch-Lysyanskaya credential signature type
 	 * @param configJson Type-specific configuration of credential definition as json:
@@ -413,41 +418,40 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Create a new revocation registry for the given credential definition as tuple of entities:
 	 * - Revocation registry definition that encapsulates credentials definition reference, revocation type specific configuration and
-	 *   secrets used for credentials revocation
+	 * secrets used for credentials revocation
 	 * - Revocation registry state that stores the information about revoked entities in a non-disclosing way. The state can be
-	 *   represented as ordered list of revocation registry entries were each entry represents the list of revocation or issuance operations.
-	 *
+	 * represented as ordered list of revocation registry entries were each entry represents the list of revocation or issuance operations.
+	 * <p>
 	 * Revocation registry definition entity contains private and public parts. Private part will be stored in the wallet. Public part
 	 * will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing REVOC_REG_DEF transaction
 	 * to Indy distributed ledger.
-	 *
+	 * <p>
 	 * Revocation registry state is stored on the wallet and also intended to be shared as the ordered list of REVOC_REG_ENTRY transactions.
 	 * This call initializes the state in the wallet and returns the initial entry.
-	 *
-	 * Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked claims in public
+	 * <p>
+	 * Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked credentials in public
 	 * revocation registry and intended to be distributed out of leger (REVOC_REG_DEF transaction will still contain uri and hash of tails).
 	 * This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
 	 *
-	 * @param wallet            The wallet.
-	 * @param issuerDid         The DID of the issuer.
-	 * @param type              Revocation registry type (optional, default value depends on claim definition type). Supported types are:
-	 *                             - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' claim definition type
-	 * @param tag               Allows to distinct between revocation registries for the same issuer and credential definition
-	 * @param credDefId         Id of stored in ledger credential definition
-	 * @param configJson        type-specific configuration of revocation registry as json:
-	 * - 'CL_ACCUM':
-	 *     "issuance_type": (optional) type of issuance. Currently supported:
-	 *         1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
-	 *            Revocation Registry is updated only during revocation.
-	 *         2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
-	 *     "max_cred_num": maximum number of claims the new registry can process (optional, default 100000)
-	 * }
-	 * @param tailsWriterType
-	 * @param tailsWriterConfig
+	 * @param wallet      The wallet.
+	 * @param issuerDid   The DID of the issuer.
+	 * @param type        Revocation registry type (optional, default value depends on credential definition type). Supported types are:
+	 *                    - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
+	 * @param tag         Allows to distinct between revocation registries for the same issuer and credential definition
+	 * @param credDefId   Id of stored in ledger credential definition
+	 * @param configJson  type-specific configuration of revocation registry as json:
+	 *                    - 'CL_ACCUM':
+	 *                    "issuance_type": (optional) type of issuance. Currently supported:
+	 *                    1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
+	 *                    Revocation Registry is updated only during revocation.
+	 *                    2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
+	 *                    "max_cred_num": maximum number of credential the new registry can process (optional, default 100000)
+	 *                    }
+	 * @param tailsWriter Handle of blob storage to store tails
 	 * @return A future resolving to:
-	 *  revocRegId: identifier of created revocation registry definition
-	 *  revocRegDefJson: public part of revocation registry definition
-	 *  revocRegEntryJson: revocation registry entry that defines initial state of revocation registry
+	 * revocRegId: identifier of created revocation registry definition
+	 * revocRegDefJson: public part of revocation registry definition
+	 * revocRegEntryJson: revocation registry entry that defines initial state of revocation registry
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<IssuerCreateAndStoreRevocRegResult> issuerCreateAndStoreRevocReg(
@@ -488,19 +492,20 @@ public class Anoncreds extends IndyJava.API {
 
 	/**
 	 * Create credential offer that will be used by Prover for
-	 * claim request creation. Offer includes nonce and key correctness proof
+	 * credential request creation. Offer includes nonce and key correctness proof
 	 * for authentication between protocol steps and integrity checking.
 	 *
 	 * @param wallet    The wallet.
 	 * @param credDefId Id of stored in ledger credential definition.
 	 * @return A future resolving to a JSON string containing the credential offer.
 	 * credential offer json:
-  	 *     {
- 	 *         "cred_def_id": string,
- 	 *         // Fields below can depend on Cred Def type
-	 *         "nonce": string,
-	 *         "key_correctness_proof" : <key_correctness_proof>
-	 *     }
+	 * {
+	 * "schema_id": string,
+	 * "cred_def_id": string,
+	 * // Fields below can depend on Cred Def type
+	 * "nonce": string,
+	 * "key_correctness_proof" : <key_correctness_proof>
+	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> issuerCreateCredentialOffer(
@@ -552,6 +557,7 @@ public class Anoncreds extends IndyJava.API {
 	 * @return A future resolving to a IssuerCreateCredentialResult containing:
 	 * credentialJson: Credential json containing signed credential values
 	 * {
+	 * "schema_id": string,
 	 * "cred_def_id": string,
 	 * "rev_reg_def_id", Optional<string>,
 	 * "values": <see credential_values_json above>,
@@ -599,10 +605,10 @@ public class Anoncreds extends IndyJava.API {
 
 	/**
 	 * Revoke a credential identified by a cred_revoc_id (returned by indy_issuer_create_credential).
-	 *
+	 * <p>
 	 * The corresponding credential definition and revocation registry must be already
 	 * created an stored into the wallet.
-	 *
+	 * <p>
 	 * This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
 	 * Note that it is possible to accumulate deltas to reduce ledger load.
 	 *
@@ -641,50 +647,58 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
+//	/**
+//	 * Recover a credential identified by a cred_revoc_id (returned by indy_issuer_create_credential).
+//	 * <p>
+//	 * The corresponding credential definition and revocation registry must be already
+//	 * created an stored into the wallet.
+//	 * <p>
+//	 * This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
+//	 * Note that it is possible to accumulate deltas to reduce ledger load.
+//	 *
+//	 * @param wallet                  A wallet.
+//	 * @param blobStorageReaderHandle Pre-configured blob storage reader instance handle that will allow to read revocation tails
+//	 * @param revRegId                Id of revocation registry stored in wallet.
+//	 * @param credRevocId             Local id for revocation info
+//	 * @return A future resolving to a revocation registry update json with a recovered credential
+//	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+//	 */
+//	public static CompletableFuture<String> issuerRecoverCredential(
+//			Wallet wallet,
+//			int blobStorageReaderHandle,
+//			String revRegId,
+//			String credRevocId) throws IndyException {
+//
+//		ParamGuard.notNull(wallet, "wallet");
+//		ParamGuard.notNull(revRegId, "revRegId");
+//		ParamGuard.notNull(credRevocId, "credRevocId");
+//
+//		CompletableFuture<String> future = new CompletableFuture<String>();
+//		int commandHandle = addFuture(future);
+//
+//		int walletHandle = wallet.getWalletHandle();
+//
+//		int result = LibIndy.api.indy_issuer_recover_credential(
+//				commandHandle,
+//				walletHandle,
+//				blobStorageReaderHandle,
+//				revRegId,
+//				credRevocId,
+//				issuerRecoverCredentialCb);
+//
+//		checkResult(result);
+//
+//		return future;
+//	}
+
 	/**
-	 * Recover a credential identified by a cred_revoc_id (returned by indy_issuer_create_credential).
+	 * Merge two revocation registry deltas to accumulate common delta.
+	 * Send common delta to ledger to reduce the load.
 	 *
-	 * The corresponding credential definition and revocation registry must be already
-	 * created an stored into the wallet.
-	 *
-	 * This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
-	 * Note that it is possible to accumulate deltas to reduce ledger load.
-	 *
-	 * @param wallet                  A wallet.
-	 * @param blobStorageReaderHandle Pre-configured blob storage reader instance handle that will allow to read revocation tails
-	 * @param revRegId                Id of revocation registry stored in wallet.
-	 * @param credRevocId             Local id for revocation info
-	 * @return A future resolving to a revocation registry update json with a recovered credential
+	 * @param revRegDelta      Revocation registry delta json.
+	 * @param otherRevRegDelta Revocation registry delta json. PrevAccum value must be equal current accum value of rev_reg_delta_json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> issuerRecoverCredential(
-			Wallet wallet,
-			int blobStorageReaderHandle,
-			String revRegId,
-			String credRevocId) throws IndyException {
-
-		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNull(revRegId, "revRegId");
-		ParamGuard.notNull(credRevocId, "credRevocId");
-
-		CompletableFuture<String> future = new CompletableFuture<String>();
-		int commandHandle = addFuture(future);
-
-		int walletHandle = wallet.getWalletHandle();
-
-		int result = LibIndy.api.indy_issuer_recover_credential(
-				commandHandle,
-				walletHandle,
-				blobStorageReaderHandle,
-				revRegId,
-				credRevocId,
-				issuerRecoverCredentialCb);
-
-		checkResult(result);
-
-		return future;
-	}
-
 	public static CompletableFuture<String> issuerMergeRevocationRegistryDeltas(
 			String revRegDelta,
 			String otherRevRegDelta) throws IndyException {
@@ -710,7 +724,7 @@ public class Anoncreds extends IndyJava.API {
 	 * Creates a master secret with a given name and stores it in the wallet.
 	 *
 	 * @param wallet         A wallet.
-	 * @param masterSecretId a new master secret name.mester secret id
+	 * @param masterSecretId (Optional, if not present random one will be generated) New master id
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> proverCreateMasterSecret(
@@ -718,7 +732,6 @@ public class Anoncreds extends IndyJava.API {
 			String masterSecretId) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNullOrWhiteSpace(masterSecretId, "masterSecretId");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -750,15 +763,14 @@ public class Anoncreds extends IndyJava.API {
 	 * @param masterSecretId      the name of the master secret stored in the wallet
 	 * @return A future that resolves to:
 	 * * credReqJson: Credential request json for creation of credential by Issuer
-	 *     {
-	 *      "cred_def_id" : string,
-	 *      "rev_reg_id" : Optional<string>,
-	 *      "prover_did" : string,
-	 *         // Fields below can depend on Cred Def type
-	 *      "blinded_ms" : <blinded_master_secret>,
-	 *      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
-	 *      "nonce": string
-	 *    }
+	 * {
+	 * "prover_did" : string,
+	 * "cred_def_id" : string,
+	 * // Fields below can depend on Cred Def type
+	 * "blinded_ms" : <blinded_master_secret>,
+	 * "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+	 * "nonce": string
+	 * }
 	 * credReqMetadataJson: Credential request metadata json for processing of received form Issuer credential.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -818,7 +830,6 @@ public class Anoncreds extends IndyJava.API {
 			String revRegDefJson) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNullOrWhiteSpace(credId, "credId");
 		ParamGuard.notNullOrWhiteSpace(credReqJson, "credReqJson");
 		ParamGuard.notNullOrWhiteSpace(credReqMetadataJson, "credReqMetadataJson");
 		ParamGuard.notNullOrWhiteSpace(credJson, "credJson");
@@ -850,23 +861,23 @@ public class Anoncreds extends IndyJava.API {
 	 *
 	 * @param wallet A wallet.
 	 * @param filter filter for credentials
-	 *        {
-	  *            "schema_id": string, (Optional)
-	 *            "schema_issuer_did": string, (Optional)
-	 *            "schema_name": string, (Optional)
-	 *            "schema_version": string, (Optional)
-	 *             "issuer_did": string, (Optional)
-	 *            "issuer_did": string, (Optional)
-	 *            "cred_def_id": string, (Optional)
-	 *        }
+	 *               {
+	 *               "schema_id": string, (Optional)
+	 *               "schema_issuer_did": string, (Optional)
+	 *               "schema_name": string, (Optional)
+	 *               "schema_version": string, (Optional)
+	 *               "issuer_did": string, (Optional)
+	 *               "cred_def_id": string, (Optional)
+	 *               }
 	 * @return A future that resolves to a credentials json
-	 *     [{
-	 *         "referent": string, // cred_id in the wallet
-	 *         "values": <see credential_values_json above>,
-	 *         "cred_def_id": string,
-	 *         "rev_reg_id": Optional<string>,
-	 *         "cred_rev_id": Optional<string>
-	 *     }]
+	 * [{
+	 * "referent": string, // cred_id in the wallet
+	 * "values": <see credential_values_json above>,
+	 * "schema_id": string,
+	 * "cred_def_id": string,
+	 * "rev_reg_id": Optional<string>,
+	 * "cred_rev_id": Optional<string>
+	 * }]
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> proverGetCredentials(
@@ -897,73 +908,73 @@ public class Anoncreds extends IndyJava.API {
 	 *
 	 * @param wallet       A wallet.
 	 * @param proofRequest proof request json
-	 *     {
-	 *         "name": string,
-	 *         "version": string,
-	 *         "nonce": string,
-	 *         "requested_attrs": { // set of requested attributes
-	 *              "<attr_referent>": <attr_info>, // see below
-	 *              ...,
-	 *         },
-	 *         "requested_predicates": { // set of requested predicates
-	 *              "<predicate_referent>": <predicate_info>, // see below
-	 *              ...,
-	 *          },
-	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
-	 *                        // If specified prover must proof non-revocation
-	 *                        // for date in this interval for each attribute
-	 *                        // (can be overridden on attribute level)
-	 *     }
-	 *
-	 * where
-	 * attr_referent: Proof-request local identifier of requested attribute
-	 * attr_info: Describes requested attribute
-	 *     {
-	 *         "name": string, // attribute name, (case insensitive and ignore spaces)
-	 *         "restrictions": Optional<[<attr_filter>]> // see below,
-	 *                          // if specified, credential must satisfy to one of the given restriction.
-	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
-	 *                        // If specified prover must proof non-revocation
-	 *                        // for date in this interval this attribute
-	 *                        // (overrides proof level interval)
-	 *     }
-	 * predicate_referent: Proof-request local identifier of requested attribute predicate
-	 * predicate_info: Describes requested attribute predicate
-	 *     {
-	 *         "name": attribute name, (case insensitive and ignore spaces)
-	 *         "p_type": predicate type (Currently >= only)
-	 *         "p_value": predicate value
-	 *         "restrictions": Optional<[<attr_filter>]> // see below,
-	 *                         // if specified, credential must satisfy to one of the given restriction.
-	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
-	 *                        // If specified prover must proof non-revocation
-	 *                        // for date in this interval this attribute
-	 *                        // (overrides proof level interval)
-	 *     }
-	 * non_revoc_interval: Defines non-revocation interval
-	 *     {
-	 *         "from": Optional<int>, // timestamp of interval beginning
-	 *         "to": Optional<int>, // timestamp of interval ending
-	 *     }
-	 *
+	 *                     {
+	 *                     "name": string,
+	 *                     "version": string,
+	 *                     "nonce": string,
+	 *                     "requested_attributes": { // set of requested attributes
+	 *                     "<attr_referent>": <attr_info>, // see below
+	 *                     ...,
+	 *                     },
+	 *                     "requested_predicates": { // set of requested predicates
+	 *                     "<predicate_referent>": <predicate_info>, // see below
+	 *                     ...,
+	 *                     },
+	 *                     "non_revoked": Optional<<non_revoc_interval>>, // see below,
+	 *                     // If specified prover must proof non-revocation
+	 *                     // for date in this interval for each attribute
+	 *                     // (can be overridden on attribute level)
+	 *                     }
+	 *                     <p>
+	 *                     where
+	 *                     attr_referent: Proof-request local identifier of requested attribute
+	 *                     attr_info: Describes requested attribute
+	 *                     {
+	 *                     "name": string, // attribute name, (case insensitive and ignore spaces)
+	 *                     "restrictions": Optional<[<attr_filter>]> // see below,
+	 *                     // if specified, credential must satisfy to one of the given restriction.
+	 *                     "non_revoked": Optional<<non_revoc_interval>>, // see below,
+	 *                     // If specified prover must proof non-revocation
+	 *                     // for date in this interval this attribute
+	 *                     // (overrides proof level interval)
+	 *                     }
+	 *                     predicate_referent: Proof-request local identifier of requested attribute predicate
+	 *                     predicate_info: Describes requested attribute predicate
+	 *                     {
+	 *                     "name": attribute name, (case insensitive and ignore spaces)
+	 *                     "p_type": predicate type (Currently >= only)
+	 *                     "p_value": predicate value
+	 *                     "restrictions": Optional<[<attr_filter>]> // see below,
+	 *                     // if specified, credential must satisfy to one of the given restriction.
+	 *                     "non_revoked": Optional<<non_revoc_interval>>, // see below,
+	 *                     // If specified prover must proof non-revocation
+	 *                     // for date in this interval this attribute
+	 *                     // (overrides proof level interval)
+	 *                     }
+	 *                     non_revoc_interval: Defines non-revocation interval
+	 *                     {
+	 *                     "from": Optional<int>, // timestamp of interval beginning
+	 *                     "to": Optional<int>, // timestamp of interval ending
+	 *                     }
 	 * @return A future that resolves to a json with credentials for the given pool request.
-	 *     {
-	 *         "requested_attrs": {
-	 *             "<attr_referent>": [{ cred_info: <credential_info>, interval: Optional<non_revoc_interval> }],
-	 *             ...,
-	 *         },
-	 *         "requested_predicates": {
-	 *             "requested_predicates": [{ cred_info: <credential_info>, timestamp: Optional<integer> }, { cred_info: <credential_2_info>, timestamp: Optional<integer> }],
-	 *             "requested_predicate_2_referent": [{ cred_info: <credential_2_info>, timestamp: Optional<integer> }]
-	 *         }
-	 *     }, where credential is
-	 *     {
-	 *         "referent": <string>,
-	 *         "attrs": [{"attr_name" : "attr_raw_value"}],
-	 *         "cred_def_id": string,
-	 *         "rev_reg_id": Optional<int>,
-	 *         "cred_rev_id": Optional<int>,
-	 *     }
+	 * {
+	 * "requested_attributes": {
+	 * "<attr_referent>": [{ cred_info: <credential_info>, interval: Optional<non_revoc_interval> }],
+	 * ...,
+	 * },
+	 * "requested_predicates": {
+	 * "requested_predicates": [{ cred_info: <credential_info>, timestamp: Optional<integer> }, { cred_info: <credential_2_info>, timestamp: Optional<integer> }],
+	 * "requested_predicate_2_referent": [{ cred_info: <credential_2_info>, timestamp: Optional<integer> }]
+	 * }
+	 * }, where credential is
+	 * {
+	 * "referent": <string>,
+	 * "attrs": [{"attr_name" : "attr_raw_value"}],
+	 * "schema_id": string,
+	 * "cred_def_id": string,
+	 * "rev_reg_id": Optional<int>,
+	 * "cred_rev_id": Optional<int>,
+	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> proverGetCredentialsForProofReq(
@@ -994,86 +1005,86 @@ public class Anoncreds extends IndyJava.API {
 	 *
 	 * @param wallet               A wallet.
 	 * @param proofRequest         proof request json as come from the verifier
-	 *     {
-	 *         "name": string,
-	 *         "version": string,
-	 *         "nonce": string,
-	 *         "requested_attrs": { // set of requested attributes
-	 *              "<attr_referent>": <attr_info>, // see below
-	 *              ...,
-	 *         },
-	 *         "requested_predicates": { // set of requested predicates
-	 *              "<predicate_referent>": <predicate_info>, // see below
-	 *              ...,
-	 *          },
-	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
-	 *                        // If specified prover must proof non-revocation
-	 *                        // for date in this interval for each attribute
-	 *                        // (can be overridden on attribute level)
-	 *     }
+	 *                             {
+	 *                             "name": string,
+	 *                             "version": string,
+	 *                             "nonce": string,
+	 *                             "requested_attrs": { // set of requested attributes
+	 *                             "<attr_referent>": <attr_info>, // see below
+	 *                             ...,
+	 *                             },
+	 *                             "requested_predicates": { // set of requested predicates
+	 *                             "<predicate_referent>": <predicate_info>, // see below
+	 *                             ...,
+	 *                             },
+	 *                             "non_revoked": Optional<<non_revoc_interval>>, // see below,
+	 *                             // If specified prover must proof non-revocation
+	 *                             // for date in this interval for each attribute
+	 *                             // (can be overridden on attribute level)
+	 *                             }
 	 * @param requestedCredentials either a credential or self-attested attribute for each requested attribute
-	 *     {
-	 *         "self_attested_attributes": {
-	 *             "self_attested_attribute_referent": string
-	 *         },
-	 *         "requested_attributes": {
-	 *             "requested_attribute_referent_1": {"cred_id": string, "timestamp": Optional<number>, revealed: <bool> }},
-	 *             "requested_attribute_referent_2": {"cred_id": string, "timestamp": Optional<number>, revealed: <bool> }}
-	 *         },
-	 *         "requested_predicates": {
-	 *             "requested_predicates_referent_1": {"cred_id": string, "timestamp": Optional<number> }},
-	 *         }
-	 *     }                            
-	 * @param masterSecret         the name of the master secret stored in the wallet 	
+	 *                             {
+	 *                             "self_attested_attributes": {
+	 *                             "self_attested_attribute_referent": string
+	 *                             },
+	 *                             "requested_attributes": {
+	 *                             "requested_attribute_referent_1": {"cred_id": string, "timestamp": Optional<number>, revealed: <bool> }},
+	 *                             "requested_attribute_referent_2": {"cred_id": string, "timestamp": Optional<number>, revealed: <bool> }}
+	 *                             },
+	 *                             "requested_predicates": {
+	 *                             "requested_predicates_referent_1": {"cred_id": string, "timestamp": Optional<number> }},
+	 *                             }
+	 *                             }
+	 * @param masterSecret         the name of the master secret stored in the wallet
 	 * @param schemas              all schema jsons participating in the proof request
-	 *     {
-	 *         <schema1_id>: <schema1_json>,
-	 *         <schema2_id>: <schema2_json>,
-	 *         <schema3_id>: <schema3_json>,
-	 *     }                               
+	 *                             {
+	 *                             <schema1_id>: <schema1_json>,
+	 *                             <schema2_id>: <schema2_json>,
+	 *                             <schema3_id>: <schema3_json>,
+	 *                             }
 	 * @param credentialDefs       all credential definition jsons participating in the proof request
-	 *     {
-	 *         "credential_def1_id": <credential_def1_json>,
-	 *         "credential_def2_id": <credential_def2_json>,
-	 *         "credential_def3_id": <credential_def3_json>,
-	 *     }                              
+	 *                             {
+	 *                             "cred_def1_id": <credential_def1_json>,
+	 *                             "cred_def2_id": <credential_def2_json>,
+	 *                             "cred_def3_id": <credential_def3_json>,
+	 *                             }
 	 * @param revStates            all revocation registry jsons participating in the proof request
-	 *     {
-	 *         "rev_reg1_id": {
-	 *             "freshness1": <rev_state1>,
-	 *             "freshness2": <rev_state2>,
-	 *         },
-	 *         "credential2_referent_in_wallet": {
-	 *             "freshness3": <rev_state3>
-	 *         },
-	 *         "credential3_referent_in_wallet": {
-	 *             "freshness4": <rev_state4>
-	 *         },
-	 *     }                               
+	 *                             {
+	 *                             "rev_reg_def1_id": {
+	 *                             "timestamp1": <rev_state1>,
+	 *                             "timestamp2": <rev_state2>,
+	 *                             },
+	 *                             "rev_reg_def2_id": {
+	 *                             "timestamp3": <rev_state3>
+	 *                             },
+	 *                             "rev_reg_def3_id": {
+	 *                             "timestamp4": <rev_state4>
+	 *                             },
+	 *                             }
 	 * @return A future resolving to a Proof json
-	 *     {
-	 *         "requested": {
-	 *             "revealed_attrs": {
-	 *                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
-	 *                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
-	 *             },
-	 *             "unrevealed_attrs": {
-	 *                 "requested_attr3_id": {sub_proof_index: number}
-	 *             },
-	 *             "self_attested_attrs": {
-	 *                 "requested_attr2_id": self_attested_value,
-	 *             },
-	 *             "requested_predicates": {
-	 *                 "requested_predicate_1_referent": {sub_proof_index: int},
-	 *                 "requested_predicate_2_referent": {sub_proof_index: int},
-	 *             }
-	 *         }
-	 *         "proof": {
-	 *             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
-	 *             "aggregated_proof": <aggregated_proof>
-	 *         }
-	 *         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
-	 *     }
+	 * {
+	 * "requested": {
+	 * "revealed_attrs": {
+	 * "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
+	 * "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+	 * },
+	 * "unrevealed_attrs": {
+	 * "requested_attr3_id": {sub_proof_index: number}
+	 * },
+	 * "self_attested_attrs": {
+	 * "requested_attr2_id": self_attested_value,
+	 * },
+	 * "requested_predicates": {
+	 * "requested_predicate_1_referent": {sub_proof_index: int},
+	 * "requested_predicate_2_referent": {sub_proof_index: int},
+	 * }
+	 * }
+	 * "proof": {
+	 * "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
+	 * "aggregated_proof": <aggregated_proof>
+	 * }
+	 * "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
+	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> proverCreateProof(
@@ -1118,78 +1129,78 @@ public class Anoncreds extends IndyJava.API {
 	 * Verifies a proof (of multiple credential).
 	 *
 	 * @param proofRequest   initial proof request as sent by the verifier
-	 *     {
-	 *         "name": string,
-	 *         "version": string,
-	 *         "nonce": string,
-	 *         "requested_attrs": { // set of requested attributes
-	 *              "<attr_referent>": <attr_info>, // see below
-	 *              ...,
-	 *         },
-	 *         "requested_predicates": { // set of requested predicates
-	 *              "<predicate_referent>": <predicate_info>, // see below
-	 *              ...,
-	 *          },
-	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
-	 *                        // If specified prover must proof non-revocation
-	 *                        // for date in this interval for each attribute
-	 *                        // (can be overridden on attribute level)
-	 *     }                        
-	 * @param proof     proof json
-	 *     {
-	 *         "requested": {
-	 *             "revealed_attrs": {
-	 *                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
-	 *                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
-	 *             },
-	 *             "unrevealed_attrs": {
-	 *                 "requested_attr3_id": {sub_proof_index: number}
-	 *             },
-	 *             "self_attested_attrs": {
-	 *                 "requested_attr2_id": self_attested_value,
-	 *             },
-	 *             "requested_predicates": {
-	 *                 "requested_predicate_1_referent": {sub_proof_index: int},
-	 *                 "requested_predicate_2_referent": {sub_proof_index: int},
-	 *             }
-	 *         }
-	 *         "proof": {
-	 *             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
-	 *             "aggregated_proof": <aggregated_proof>
-	 *         }
-	 *         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
-	 *     }                         
-	 * @param schemas   all schema jsons participating in the proof
-	 *     {
-	 *         <schema1_id>: <schema1_json>,
-	 *         <schema2_id>: <schema2_json>,
-	 *         <schema3_id>: <schema3_json>,
-	 *     }                               
-	 * @param credentialDefs    all credential definition jsons participating in the proof
-	 *     {
-	 *         "credential_def1_id": <credential_def1_json>,
-	 *         "credential_def2_id": <credential_def2_json>,
-	 *         "credential_def3_id": <credential_def3_json>,
-	 *     } 
+	 *                       {
+	 *                       "name": string,
+	 *                       "version": string,
+	 *                       "nonce": string,
+	 *                       "requested_attributes": { // set of requested attributes
+	 *                       "<attr_referent>": <attr_info>, // see below
+	 *                       ...,
+	 *                       },
+	 *                       "requested_predicates": { // set of requested predicates
+	 *                       "<predicate_referent>": <predicate_info>, // see below
+	 *                       ...,
+	 *                       },
+	 *                       "non_revoked": Optional<<non_revoc_interval>>, // see below,
+	 *                       // If specified prover must proof non-revocation
+	 *                       // for date in this interval for each attribute
+	 *                       // (can be overridden on attribute level)
+	 *                       }
+	 * @param proof          proof json
+	 *                       {
+	 *                       "requested": {
+	 *                       "revealed_attrs": {
+	 *                       "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
+	 *                       "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+	 *                       },
+	 *                       "unrevealed_attrs": {
+	 *                       "requested_attr3_id": {sub_proof_index: number}
+	 *                       },
+	 *                       "self_attested_attrs": {
+	 *                       "requested_attr2_id": self_attested_value,
+	 *                       },
+	 *                       "requested_predicates": {
+	 *                       "requested_predicate_1_referent": {sub_proof_index: int},
+	 *                       "requested_predicate_2_referent": {sub_proof_index: int},
+	 *                       }
+	 *                       }
+	 *                       "proof": {
+	 *                       "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
+	 *                       "aggregated_proof": <aggregated_proof>
+	 *                       }
+	 *                       "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
+	 *                       }
+	 * @param schemas        all schema jsons participating in the proof
+	 *                       {
+	 *                       <schema1_id>: <schema1_json>,
+	 *                       <schema2_id>: <schema2_json>,
+	 *                       <schema3_id>: <schema3_json>,
+	 *                       }
+	 * @param credentialDefs all credential definition jsons participating in the proof
+	 *                       {
+	 *                       "cred_def1_id": <credential_def1_json>,
+	 *                       "cred_def2_id": <credential_def2_json>,
+	 *                       "cred_def3_id": <credential_def3_json>,
+	 *                       }
 	 * @param revocRegDefs   all revocation registry definition jsons participating in the proof
-	 *     {
-	 *         "rev_reg_def1_id": <rev_reg_def1_json>,
-	 *         "rev_reg_def2_id": <rev_reg_def2_json>,
-	 *         "rev_reg_def3_id": <rev_reg_def3_json>,
-	 *     }                      
+	 *                       {
+	 *                       "rev_reg_def1_id": <rev_reg_def1_json>,
+	 *                       "rev_reg_def2_id": <rev_reg_def2_json>,
+	 *                       "rev_reg_def3_id": <rev_reg_def3_json>,
+	 *                       }
 	 * @param revocRegs      all revocation registry jsons participating in the proof
-	 *     {
-	 *         "rev_reg1_id": {
-	 *             "freshness1": <rev_reg1>,
-	 *             "freshness2": <rev_reg2>,
-	 *         },
-	 *         "credential2_referent_in_wallet": {
-	 *             "freshness3": <rev_reg3>
-	 *         },
-	 *         "credential3_referent_in_wallet": {
-	 *             "freshness4": <rev_reg4>
-	 *         },
-	 *     }
+	 *                       {
+	 *                       "rev_reg_def1_id": {
+	 *                       "timestamp1": <rev_reg1>,
+	 *                       "timestamp2": <rev_reg2>,
+	 *                       },
+	 *                       "rev_reg_def2_id": {
+	 *                       "timestamp3": <rev_reg3>
+	 *                       },
+	 *                       "rev_reg_def3_id": {
+	 *                       "timestamp4": <rev_reg4>
+	 *                       },
+	 *                       }
 	 * @return A future resolving to true if signature is valid, otherwise false.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -1226,6 +1237,22 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Create user revocation state for revocation registry at the particular time moment.
+	 *
+	 * @param blobStorageReaderHandle Configuration of blob storage reader handle that will allow to read revocation tails
+	 * @param revRegDef               Revocation registry definition json
+	 * @param revRegDelta             Revocation registry definition delta json
+	 * @param timestamp               Time represented as a total number of seconds from Unix Epoch
+	 * @param credRevId               user credential revocation id in revocation registry
+	 * @return A future that resolves to a revocation state json
+	 * {
+	 * "rev_reg": <revocation registry>,
+	 * "witness": <witness>,
+	 * "timestamp" : integer
+	 * }
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> createRevocationState(
 			int blobStorageReaderHandle,
 			String revRegDef,
@@ -1254,6 +1281,24 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Create new revocation state for revocation registry at the
+	 * particular time moment based on already existed (to reduce calculation time).
+	 *
+	 * @param blobStorageReaderHandle Configuration of blob storage reader handle that will allow to read revocation tails
+	 * @param revState                Rrevocation registry state json
+	 * @param revRegDef               Revocation registry definition json
+	 * @param revRegDelta             Revocation registry definition delta json
+	 * @param timestamp               Time represented as a total number of seconds from Unix Epoch
+	 * @param credRevId               user credential revocation id in revocation registry
+	 * @return A future that resolves to a revocation state json
+	 * {
+	 * "rev_reg": <revocation registry>,
+	 * "witness": <witness>,
+	 * "timestamp" : integer
+	 * }
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> updateRevocationState(
 			int blobStorageReaderHandle,
 			String revState,

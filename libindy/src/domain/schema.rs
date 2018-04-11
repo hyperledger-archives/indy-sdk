@@ -2,6 +2,7 @@ extern crate indy_crypto;
 extern crate serde;
 extern crate serde_json;
 
+
 use super::DELIMITER;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
@@ -11,17 +12,20 @@ use std::collections::{HashMap, HashSet};
 pub const SCHEMA_MARKER: &'static str = "\x02";
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SchemaV1 {
     pub id: String,
     pub name: String,
     pub version: String,
     #[serde(rename = "attrNames")]
-    pub attr_names: HashSet<String>
+    pub attr_names: HashSet<String>,
+    pub seq_no: Option<u32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "ver")]
 pub enum Schema {
+    #[serde(rename = "1.0")]
     SchemaV1(SchemaV1)
 }
 

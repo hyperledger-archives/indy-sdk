@@ -39,7 +39,7 @@
  @param issuerDID DID of the issuer signing credential_def transaction to the Ledger
  @param schemaJSON Schema as a json
  @param tag: allows to distinct between credential definitions for the same issuer and schema
- @param type: type_: credential definition type (optional, 'CL' by default) that defines claims signature and revocation math. 
+ @param type: type_: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
  Supported types are:
     - 'CL': Camenisch-Lysyanskaya credential signature type
  @param configJSON: type-specific configuration of credential definition as json:
@@ -174,11 +174,11 @@
                                walletHandle:(IndyHandle)walletHandle
                                  completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion;
 
-+ (void)issuerRecoverCredentialByCredRevocId:(NSString *)credRevocId
+/*+ (void)issuerRecoverCredentialByCredRevocId:(NSString *)credRevocId
                                     revRegId:(NSString *)revRegId
                      blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
                                 walletHandle:(IndyHandle)walletHandle
-                                  completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion;
+                                  completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion;*/
 
 + (void)issuerMergerRevocationRegistryDelta:(NSString *)revRegDelta
                                   withDelta:(NSString *)otherRevRegDelta

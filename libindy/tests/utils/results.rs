@@ -155,3 +155,18 @@ pub fn result_to_string_vec_u8(err: ErrorCode, receiver: Receiver<(ErrorCode, St
 
     Ok((str, vec))
 }
+
+
+pub fn result_to_string_string_u64(err: ErrorCode, receiver: Receiver<(ErrorCode, String, String, u64)>) -> Result<(String, String, u64), ErrorCode> {
+    if err != ErrorCode::Success {
+        return Err(err);
+    }
+
+    let (err, val, val2, val3) = receiver.recv().unwrap();
+
+    if err != ErrorCode::Success {
+        return Err(err);
+    }
+
+    Ok((val, val2, val3))
+}

@@ -82,7 +82,7 @@ extern "C" {
                                                                            const char*   revoc_reg_delta_json)
                                                       );
 
-    extern indy_error_t indy_issuer_recover_credential(indy_handle_t command_handle,
+/*    extern indy_error_t indy_issuer_recover_credential(indy_handle_t command_handle,
                                                        indy_handle_t wallet_handle,
                                                        indy_i32_t    blob_storage_reader_handle,
                                                        const char *  rev_reg_id,
@@ -91,7 +91,7 @@ extern "C" {
                                                        void           (*cb)(indy_handle_t xcommand_handle,
                                                                             indy_error_t  err,
                                                                             const char*   revoc_reg_delta_json)
-                                                       );
+                                                       );*/
 
 
     extern indy_error_t indy_issuer_merge_revocation_registry_deltas(indy_handle_t command_handle,

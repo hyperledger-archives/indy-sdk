@@ -45,9 +45,17 @@
                                                                   credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. issuer create credential definition
-    NSString *schemaJson = [[AnoncredsUtils sharedInstance] getGvtSchemaJson];
+    // 2. Issuer create Schema
+    NSString *schemaJson;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaWithName:@"other_schema"
+                                                              version:[TestUtils schemaVersion]
+                                                                attrs:[TestUtils gvtSchemaAttrs]
+                                                            issuerDID:[TestUtils issuerDid]
+                                                             schemaId:nil
+                                                           schemaJson:&schemaJson];
+    XCTAssertEqual(ret.code, Success, @"issuerCreateSchemaForIssuerDID failed");
 
+    // 3. issuer create credential definition
     NSString *credentialDefId;
     NSString *credentialDefJSON;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateAndStoreCredentialDefForSchema:schemaJson

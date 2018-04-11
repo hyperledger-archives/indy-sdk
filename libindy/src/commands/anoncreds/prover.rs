@@ -6,6 +6,7 @@ use errors::common::CommonError;
 use errors::indy::IndyError;
 use errors::anoncreds::AnoncredsError;
 use services::anoncreds::AnoncredsService;
+use services::anoncreds::helpers::parse_cred_rev_id;
 use services::wallet::WalletService;
 use services::crypto::CryptoService;
 use std::rc::Rc;
@@ -316,6 +317,7 @@ impl ProverCommandExecutor {
                 CredentialInfo {
                     referent: referent.replace("credential::", ""),
                     attrs: credential_values,
+                    schema_id: credential.schema_id.clone(),
                     cred_def_id: credential.cred_def_id.clone(),
                     rev_reg_id: credential.rev_reg_id.as_ref().map(|s| s.to_string()),
                     cred_rev_id: credential.signature.extract_index().map(|idx| idx.to_string())
@@ -422,23 +424,23 @@ impl ProverCommandExecutor {
         trace!("create_revocation_state >>> , blob_storage_reader_handle: {:?}, rev_reg_def: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, cred_rev_id: {:?}",
                blob_storage_reader_handle, rev_reg_def, rev_reg_delta_json, timestamp, cred_rev_id);
 
-        let revocation_registry_definition: RevocationRegistryDefinitionV1 =
+        let revoc_reg_def: RevocationRegistryDefinitionV1 =
             RevocationRegistryDefinitionV1::from(RevocationRegistryDefinition::from_json(rev_reg_def)
                 .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDefinition: {:?}", err)))?);
 
         let rev_reg_delta: RevocationRegistryDelta = RevocationRegistryDelta::from_json(rev_reg_delta_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDelta: {:?}", err)))?;
 
-        let rev_idx = cred_rev_id.parse::<u32>()
-            .map_err(|_| CommonError::InvalidStructure(format!("Cannot parse CredentialRevocationIndex: {}", cred_rev_id)))?;
+        let rev_idx = parse_cred_rev_id(cred_rev_id)?;
+        ;
 
         let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
                                                        blob_storage_reader_handle,
-                                                       &revocation_registry_definition)?;
+                                                       &revoc_reg_def)?;
 
         let rev_reg_delta = RevocationRegistryDeltaV1::from(rev_reg_delta);
 
-        let witness = Witness::new(rev_idx, revocation_registry_definition.value.max_cred_num, &rev_reg_delta.value, &sdk_tails_accessor)
+        let witness = Witness::new(rev_idx, revoc_reg_def.value.max_cred_num, revoc_reg_def.value.issuance_type.to_bool(), &rev_reg_delta.value, &sdk_tails_accessor)
             .map_err(|err| IndyError::CommonError(CommonError::from(err)))?;
 
         let revocation_state = RevocationState {
@@ -475,8 +477,7 @@ impl ProverCommandExecutor {
         let rev_reg_delta: RevocationRegistryDelta = RevocationRegistryDelta::from_json(rev_reg_delta_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDelta: {:?}", err)))?;
 
-        let rev_idx = cred_rev_id.parse::<u32>()
-            .map_err(|_| CommonError::InvalidStructure(format!("Cannot parse CredentialRevocationIndex: {}", cred_rev_id)))?;
+        let rev_idx = parse_cred_rev_id(cred_rev_id)?;
 
         let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
                                                        blob_storage_reader_handle,
