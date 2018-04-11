@@ -39,11 +39,11 @@ export interface IProofResponses {
 export interface IProofResponseAttr {
   schema_seq_no?: number,
   issuer_did?: string,
-  claim_uuid?: string,
-  attr_info: IClaimInfo
+  credential_uuid?: string,
+  attr_info: ICredentialInfo
 }
 
-export interface IClaimInfo {
+export interface ICredentialInfo {
   name: string,
   value: string,
   type: ProofFieldType,

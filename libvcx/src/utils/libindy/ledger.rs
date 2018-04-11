@@ -21,11 +21,11 @@ extern {
     ) -> i32;
 
     fn indy_build_schema_request(command_handle: i32,
-                                  submitter_did: *const c_char,
-                                  data: *const c_char,
-                                  cb: Option<extern fn(xcommand_handle: i32,
-                                                       err: i32,
-                                                       request_json: *const c_char)>
+                                 submitter_did: *const c_char,
+                                 data: *const c_char,
+                                 cb: Option<extern fn(xcommand_handle: i32,
+                                                      err: i32,
+                                                      request_json: *const c_char)>
     ) -> i32;
 
     fn indy_submit_request(command_handle: i32,
@@ -135,19 +135,19 @@ pub fn libindy_build_schema_request(submitter_did: &str, data: &str) -> Result<S
     unsafe {
         indy_function_eval(
             indy_build_schema_request(rtn_obj.command_handle,
-                                       did.as_ptr(),
-                                       data.as_ptr(),
-                                       Some(rtn_obj.get_callback()))
+                                      did.as_ptr(),
+                                      data.as_ptr(),
+                                      Some(rtn_obj.get_callback()))
         ).map_err(map_indy_error_code)?;
     }
 
     rtn_obj.receive(None).and_then(check_str)
 }
 
-pub fn libindy_build_get_claim_def_txn(submitter_did: &str,
-                                       schema_sequence_num: i32,
-                                       sig_type: Option<SigTypes>,
-                                       issuer_did: &str)  -> Result<String, u32>{
+pub fn libindy_build_get_credential_def_txn(submitter_did: &str,
+                                            schema_sequence_num: i32,
+                                            sig_type: Option<SigTypes>,
+                                            issuer_did: &str)  -> Result<String, u32>{
 
     let rtn_obj = Return_I32_STR::new()?;
     let sub_did = CString::new(submitter_did).map_err(map_string_error)?;
@@ -167,22 +167,22 @@ pub fn libindy_build_get_claim_def_txn(submitter_did: &str,
     rtn_obj.receive(None).and_then(check_str)
 }
 
-pub fn libindy_build_create_claim_def_txn(submitter_did: &str,
-                                          schema_sequence_num: i32,
-                                          sig_type: Option<SigTypes>,
-                                          claim_def_json: &str)  -> Result<String, u32>{
+pub fn libindy_build_create_credential_def_txn(submitter_did: &str,
+                                               schema_sequence_num: i32,
+                                               sig_type: Option<SigTypes>,
+                                               credential_def_json: &str)  -> Result<String, u32>{
 
     let rtn_obj = Return_I32_STR::new()?;
     let s_did = CString::new(submitter_did).map_err(map_string_error)?;
     let s_type = CString::new(sig_type.unwrap_or(SigTypes::CL).to_string()).map_err(map_string_error)?;
-    let claim_def_json = CString::new(claim_def_json).map_err(map_string_error)?;
+    let credential_def_json = CString::new(credential_def_json).map_err(map_string_error)?;
     unsafe {
         indy_function_eval(
             indy_build_claim_def_txn(rtn_obj.command_handle,
                                      s_did.as_ptr(),
                                      schema_sequence_num,
                                      s_type.as_ptr(),
-                                     claim_def_json.as_ptr(),
+                                     credential_def_json.as_ptr(),
                                      Some(rtn_obj.get_callback()))
         ).map_err(map_indy_error_code)?;
     }
@@ -193,7 +193,7 @@ pub fn libindy_build_create_claim_def_txn(submitter_did: &str,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::constants::{CLAIM_DEF_DATA};
+    use utils::constants::{CREDENTIAL_DEF_DATA};
     #[test]
     fn simple_libindy_build_get_txn_request_test() {
         let result = libindy_build_get_txn_request("GGBDg1j8bsKmr4h5T9XqYf",15);
@@ -202,18 +202,18 @@ mod tests {
     }
 
     #[test]
-    fn simple_libindy_build_get_claim_def_txn_test() {
-        let result = libindy_build_get_claim_def_txn("GGBDg1j8bsKmr4h5T9XqYf",
-                                                     15,
-                                                     None,
-                                                     "GGBDg1j8bsKmr4h5T9XqYf");
+    fn simple_libindy_build_get_credential_def_txn_test() {
+        let result = libindy_build_get_credential_def_txn("GGBDg1j8bsKmr4h5T9XqYf",
+                                                          15,
+                                                          None,
+                                                          "GGBDg1j8bsKmr4h5T9XqYf");
         assert!(result.is_ok());
         println!("{}",result.unwrap());
     }
 
     #[test]
     fn simple_libindy_build_create_txn_request_test() {
-        let result = libindy_build_create_claim_def_txn("GGBDg1j8bsKmr4h5T9XqYf",15, None, CLAIM_DEF_DATA);
+        let result = libindy_build_create_credential_def_txn("GGBDg1j8bsKmr4h5T9XqYf",15, None, CREDENTIAL_DEF_DATA);
         assert!(result.is_ok());
         println!("{}",result.unwrap());
     }

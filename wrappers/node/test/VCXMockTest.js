@@ -1,7 +1,7 @@
 const assert = require('chai').assert
 const vcx = require('../dist/index')
 const { stubInitVCX } = require('./helpers')
-const { Connection, VCXMock } = vcx
+const { Connection, VCXMock, VCXMockMessage } = vcx
 
 describe('A VCXMock', function () {
   this.timeout(30000)
@@ -12,7 +12,7 @@ describe('A VCXMock', function () {
   })
 
   it('can be called.', async () => {
-    VCXMock.setVcxMock(1)
+    VCXMock.setVcxMock(VCXMockMessage.CreateKey)
     try {
       await Connection.create({ id: '234', DIDself: '456', DIDremote: '0' })
     } catch (err) {

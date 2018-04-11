@@ -24,31 +24,31 @@ pub static INVALID_NONCE: Error = Error{code_num:1011, message:"Invalid NONCE"};
 pub static INVALID_KEY_DELEGATE: Error = Error{code_num:1012, message:"Invalid DELEGATE"};
 pub static INVALID_URL: Error = Error{code_num:1013, message:"Invalid URL"};
 pub static NOT_BASE58: Error = Error{code_num:1014, message:"Value needs to be base58"};
-pub static INVALID_ISSUER_CLAIM_HANDLE: Error = Error{code_num:1015, message:"Invalid Claim Issuer Handle"};
+pub static INVALID_ISSUER_CREDENTIAL_HANDLE: Error = Error{code_num:1015, message:"Invalid Credential Issuer Handle"};
 pub static INVALID_JSON: Error = Error{code_num:1016, message:"Invalid JSON string"};
 pub static INVALID_PROOF_HANDLE: Error = Error{code_num:1017, message:"Invalid Proof Handle"};
-pub static INVALID_CLAIM_REQUEST: Error = Error{code_num:1018, message:"Invalid Claim Request"};
+pub static INVALID_CREDENTIAL_REQUEST: Error = Error{code_num:1018, message:"Invalid Credential Request"};
 pub static INVALID_MSGPACK: Error = Error{code_num:1019, message:"Invalid MessagePack"};
 pub static INVALID_MESSAGES: Error = Error{code_num:1020, message:"Error Retrieving messages from API"};
-pub static INVALID_ATTRIBUTES_STRUCTURE: Error = Error{code_num:1021, message: "Attributes provided to Claim Offer are not correct, possibly malformed"};
+pub static INVALID_ATTRIBUTES_STRUCTURE: Error = Error{code_num:1021, message: "Attributes provided to Credential Offer are not correct, possibly malformed"};
 pub static BIG_NUMBER_ERROR: Error = Error{code_num: 1022, message: "Could not encode string to a big integer."};
 pub static INVALID_PROOF: Error = Error{code_num: 1023, message: "Proof had invalid format"};
 pub static INVALID_GENESIS_TXN_PATH: Error = Error{code_num: 1024, message: "Must have valid genesis txn file path"};
 pub static CREATE_POOL_CONFIG_PARAMETERS: Error = Error{code_num: 1025, message: "Parameters for creating pool config are incorrect."};
 pub static CREATE_POOL_CONFIG: Error = Error{code_num: 1026, message: "Formatting for Pool Config are incorrect."};
-pub static INVALID_PROOF_CLAIM_DATA: Error = Error{code_num: 1027, message: "The Proof received does not have valid claims listed."};
+pub static INVALID_PROOF_CREDENTIAL_DATA: Error = Error{code_num: 1027, message: "The Proof received does not have valid credentials listed."};
 pub static INDY_SUBMIT_REQUEST_ERR: Error = Error{code_num: 1028, message: "Call to indy submit request failed"};
-pub static BUILD_CLAIM_DEF_REQ_ERR: Error = Error{code_num: 1029, message: "Call to indy claim def request failed"};
+pub static BUILD_CREDENTIAL_DEF_REQ_ERR: Error = Error{code_num: 1029, message: "Call to indy credential def request failed"};
 pub static NO_POOL_OPEN: Error = Error{code_num: 1030, message: "No Pool open. Can't return handle."};
 pub static INVALID_SCHEMA: Error = Error{code_num: 1031, message: "Schema was invalid or corrupt"};
 pub static FAILED_PROOF_COMPLIANCE: Error = Error{code_num: 1032, message: "Proof is not compliant to proof request"};
 pub static INVALID_HTTP_RESPONSE: Error = Error{code_num: 1033, message: "Invalid HTTP response."};
-pub static CREATE_CLAIM_DEF_ERR: Error = Error{code_num: 1034, message: "Call to create Claim Definition failed"};
+pub static CREATE_CREDENTIAL_DEF_ERR: Error = Error{code_num: 1034, message: "Call to create Credential Definition failed"};
 pub static UNKNOWN_LIBINDY_ERROR: Error = Error{code_num: 1035, message: "Unknown libindy error"};
-pub static INVALID_CLAIM_DEF_JSON: Error = Error{code_num: 1036, message: "Claim Def not in valid json"};
-pub static INVALID_CLAIM_DEF_HANDLE: Error = Error{code_num: 1037, message: "Invalid Claim Definition handle"};
+pub static INVALID_CREDENTIAL_DEF_JSON: Error = Error{code_num: 1036, message: "Credential Def not in valid json"};
+pub static INVALID_CREDENTIAL_DEF_HANDLE: Error = Error{code_num: 1037, message: "Invalid Credential Definition handle"};
 pub static TIMEOUT_LIBINDY_ERROR: Error = Error{code_num: 1038, message: "Waiting for callback timed out"};
-pub static CLAIM_DEF_ALREADY_CREATED: Error = Error{code_num: 1039, message: "Can't create, Claim Def already on ledger"};
+pub static CREDENTIAL_DEF_ALREADY_CREATED: Error = Error{code_num: 1039, message: "Can't create, Credential Def already on ledger"};
 pub static INVALID_SCHEMA_SEQ_NO: Error = Error{code_num: 1040, message: "No Schema for that schema sequence number"};
 pub static INVALID_SCHEMA_CREATION: Error = Error{code_num: 1041, message: "Could not create schema"};
 pub static INVALID_SCHEMA_HANDLE: Error = Error{code_num: 1042, message: "Invalid Schema Handle"};
@@ -62,9 +62,9 @@ pub static INVALID_DISCLOSED_PROOF_HANDLE: Error = Error{code_num: 1049, message
 pub static SERIALIZATION_ERROR: Error = Error{code_num: 1050, message: "Unable to serialize"};
 pub static WALLET_ALREADY_EXISTS: Error = Error{code_num: 1051, message: "Indy wallet already exists"};
 pub static WALLET_ALREADY_OPEN: Error = Error{code_num: 1052, message: "Indy wallet already open"};
-pub static INVALID_CLAIM_HANDLE: Error = Error{code_num: 1053, message: "Invalid claim handle"};
-pub static INVALID_CLAIM_JSON: Error = Error{code_num: 1054, message: "Invalid claim json"};
-pub static CREATE_CLAIM_REQUEST_ERROR: Error = Error{code_num: 1055, message: "could not create claim request"};
+pub static INVALID_CREDENTIAL_HANDLE: Error = Error{code_num: 1053, message: "Invalid credential handle"};
+pub static INVALID_CREDENTIAL_JSON: Error = Error{code_num: 1054, message: "Invalid credential json"};
+pub static CREATE_CREDENTIAL_REQUEST_ERROR: Error = Error{code_num: 1055, message: "could not create credential request"};
 pub static CREATE_PROOF_ERROR: Error = Error{code_num: 1056, message: "could not create proof"};
 
 lazy_static! {
@@ -85,31 +85,31 @@ lazy_static! {
         insert_c_message(&mut m, &INVALID_KEY_DELEGATE);
         insert_c_message(&mut m, &INVALID_URL);
         insert_c_message(&mut m, &NOT_BASE58);
-        insert_c_message(&mut m, &INVALID_ISSUER_CLAIM_HANDLE);
+        insert_c_message(&mut m, &INVALID_ISSUER_CREDENTIAL_HANDLE);
         insert_c_message(&mut m, &INVALID_JSON);
         insert_c_message(&mut m, &INVALID_MESSAGES);
         insert_c_message(&mut m, &INVALID_MSGPACK);
         insert_c_message(&mut m, &INVALID_ATTRIBUTES_STRUCTURE);
         insert_c_message(&mut m, &INVALID_PROOF_HANDLE);
-        insert_c_message(&mut m, &INVALID_CLAIM_REQUEST);
+        insert_c_message(&mut m, &INVALID_CREDENTIAL_REQUEST);
         insert_c_message(&mut m, &BIG_NUMBER_ERROR);
         insert_c_message(&mut m, &INVALID_PROOF);
         insert_c_message(&mut m, &INVALID_GENESIS_TXN_PATH);
         insert_c_message(&mut m, &CREATE_POOL_CONFIG);
-        insert_c_message(&mut m, &INVALID_PROOF_CLAIM_DATA);
+        insert_c_message(&mut m, &INVALID_PROOF_CREDENTIAL_DATA);
         insert_c_message(&mut m, &CREATE_POOL_CONFIG_PARAMETERS);
         insert_c_message(&mut m, &INDY_SUBMIT_REQUEST_ERR);
-        insert_c_message(&mut m, &BUILD_CLAIM_DEF_REQ_ERR);
+        insert_c_message(&mut m, &BUILD_CREDENTIAL_DEF_REQ_ERR);
         insert_c_message(&mut m, &NO_POOL_OPEN);
         insert_c_message(&mut m, &INVALID_SCHEMA);
         insert_c_message(&mut m, &FAILED_PROOF_COMPLIANCE);
         insert_c_message(&mut m, &INVALID_HTTP_RESPONSE);
-        insert_c_message(&mut m, &CREATE_CLAIM_DEF_ERR);
+        insert_c_message(&mut m, &CREATE_CREDENTIAL_DEF_ERR);
         insert_c_message(&mut m, &UNKNOWN_LIBINDY_ERROR);
         insert_c_message(&mut m, &TIMEOUT_LIBINDY_ERROR);
-        insert_c_message(&mut m, &INVALID_CLAIM_DEF_JSON);
-        insert_c_message(&mut m, &INVALID_CLAIM_DEF_HANDLE);
-        insert_c_message(&mut m, &CLAIM_DEF_ALREADY_CREATED);
+        insert_c_message(&mut m, &INVALID_CREDENTIAL_DEF_JSON);
+        insert_c_message(&mut m, &INVALID_CREDENTIAL_DEF_HANDLE);
+        insert_c_message(&mut m, &CREDENTIAL_DEF_ALREADY_CREATED);
         insert_c_message(&mut m, &INVALID_SCHEMA_SEQ_NO);
         insert_c_message(&mut m, &INVALID_SCHEMA_CREATION);
         insert_c_message(&mut m, &INVALID_SCHEMA_HANDLE);
@@ -121,9 +121,9 @@ lazy_static! {
         insert_c_message(&mut m, &SERIALIZATION_ERROR);
         insert_c_message(&mut m, &WALLET_ALREADY_EXISTS);
         insert_c_message(&mut m, &WALLET_ALREADY_OPEN);
-        insert_c_message(&mut m, &INVALID_CLAIM_HANDLE);
-        insert_c_message(&mut m, &INVALID_CLAIM_JSON);
-        insert_c_message(&mut m, &CREATE_CLAIM_REQUEST_ERROR);
+        insert_c_message(&mut m, &INVALID_CREDENTIAL_HANDLE);
+        insert_c_message(&mut m, &INVALID_CREDENTIAL_JSON);
+        insert_c_message(&mut m, &CREATE_CREDENTIAL_REQUEST_ERROR);
         insert_c_message(&mut m, &CREATE_PROOF_ERROR);
        m
     };
@@ -247,7 +247,7 @@ mod tests {
     }
 
     #[test]
-    fn test_malformed_attributes_for_claim_offer(){
+    fn test_malformed_attributes_for_credential_offer(){
         assert_eq!(error_message(&INVALID_ATTRIBUTES_STRUCTURE.code_num), INVALID_ATTRIBUTES_STRUCTURE.message);
     }
 
@@ -257,8 +257,8 @@ mod tests {
     }
 
     #[test]
-    fn test_claim_request_incorrect_json_format_error(){
-        assert_eq!(error_message(&INVALID_CLAIM_REQUEST.code_num), INVALID_CLAIM_REQUEST.message);
+    fn test_credential_request_incorrect_json_format_error(){
+        assert_eq!(error_message(&INVALID_CREDENTIAL_REQUEST.code_num), INVALID_CREDENTIAL_REQUEST.message);
     }
 
     #[test]
@@ -280,9 +280,9 @@ mod tests {
     #[test]
     fn test_error_big_number() {
         assert_eq!(error_message(&BIG_NUMBER_ERROR.code_num), BIG_NUMBER_ERROR.message);
-        assert_eq!(error_message(&INVALID_PROOF_CLAIM_DATA.code_num), INVALID_PROOF_CLAIM_DATA.message);
+        assert_eq!(error_message(&INVALID_PROOF_CREDENTIAL_DATA.code_num), INVALID_PROOF_CREDENTIAL_DATA.message);
         assert_eq!(error_message(&INDY_SUBMIT_REQUEST_ERR.code_num), INDY_SUBMIT_REQUEST_ERR.message);
-        assert_eq!(error_message(&BUILD_CLAIM_DEF_REQ_ERR.code_num), BUILD_CLAIM_DEF_REQ_ERR.message);
+        assert_eq!(error_message(&BUILD_CREDENTIAL_DEF_REQ_ERR.code_num), BUILD_CREDENTIAL_DEF_REQ_ERR.message);
         assert_eq!(error_message(&NO_POOL_OPEN.code_num), NO_POOL_OPEN.message);
     }
 
@@ -292,8 +292,8 @@ mod tests {
     }
 
     #[test]
-    fn test_error_claim_data() {
-        assert_eq!(error_message(&INVALID_PROOF_CLAIM_DATA.code_num), INVALID_PROOF_CLAIM_DATA.message);
+    fn test_error_credential_data() {
+        assert_eq!(error_message(&INVALID_PROOF_CREDENTIAL_DATA.code_num), INVALID_PROOF_CREDENTIAL_DATA.message);
     }
     #[test]
     fn test_failed_proof_compliance() {
@@ -301,8 +301,8 @@ mod tests {
     }
 
     #[test]
-    fn test_claim_def_err() {
-        assert_eq!(error_message(&CREATE_CLAIM_DEF_ERR.code_num), CREATE_CLAIM_DEF_ERR.message);
+    fn test_credential_def_err() {
+        assert_eq!(error_message(&CREATE_CREDENTIAL_DEF_ERR.code_num), CREATE_CREDENTIAL_DEF_ERR.message);
     }
 
     #[test]
@@ -315,18 +315,18 @@ mod tests {
         assert_eq!(error_message(&TIMEOUT_LIBINDY_ERROR.code_num), TIMEOUT_LIBINDY_ERROR.message);
     }
 
-    fn test_invalid_claim_def_json() {
-        assert_eq!(error_message(&INVALID_CLAIM_DEF_JSON.code_num), INVALID_CLAIM_DEF_JSON.message);
+    fn test_invalid_credential_def_json() {
+        assert_eq!(error_message(&INVALID_CREDENTIAL_DEF_JSON.code_num), INVALID_CREDENTIAL_DEF_JSON.message);
     }
 
     #[test]
-    fn test_claim_def_handle_err() {
-        assert_eq!(error_message(&INVALID_CLAIM_DEF_HANDLE.code_num), INVALID_CLAIM_DEF_HANDLE.message);
+    fn test_credential_def_handle_err() {
+        assert_eq!(error_message(&INVALID_CREDENTIAL_DEF_HANDLE.code_num), INVALID_CREDENTIAL_DEF_HANDLE.message);
     }
 
     #[test]
-    fn test_claim_def_already_on_ledger_err() {
-        assert_eq!(error_message(&CLAIM_DEF_ALREADY_CREATED.code_num), CLAIM_DEF_ALREADY_CREATED.message);
+    fn test_credential_def_already_on_ledger_err() {
+        assert_eq!(error_message(&CREDENTIAL_DEF_ALREADY_CREATED.code_num), CREDENTIAL_DEF_ALREADY_CREATED.message);
     }
 
     #[test]

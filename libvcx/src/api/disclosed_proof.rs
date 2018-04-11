@@ -147,7 +147,7 @@ pub extern fn vcx_disclosed_proof_get_requests(command_handle: u32,
             Err(x) => {
                 error!("vcx_disclosed_proof_get_requests_cb(command_handle: {}, rc: {}, msg: {})",
                       command_handle, error_string(0), x);
-                cb(command_handle, x, ptr::null_mut());
+                cb(command_handle, x.to_error_code(), ptr::null_mut());
             },
         };
     });

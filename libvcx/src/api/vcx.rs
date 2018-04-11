@@ -68,7 +68,7 @@ pub extern fn vcx_init (command_handle: u32,
                 Ok(_) => (),
             };
             ::utils::logger::LoggerUtils::init();
-            println!("config_path: {}", config_path);
+            info!("config_path: {}", config_path);
         }
     } else {
         error!("Cannot initialize with given config path: config path is null.");
@@ -164,7 +164,7 @@ pub extern fn vcx_init (command_handle: u32,
     }
 
     thread::spawn(move|| {
-        match wallet::init_wallet(&wallet_name) {
+        match wallet::open_wallet(&wallet_name) {
             Err(e) => {
                 warn!("Init Wallet Error {}.", e);
                 cb(command_handle, e);
@@ -184,8 +184,8 @@ pub extern fn vcx_reset() -> u32 {
 
     ::schema::release_all();
     ::connection::release_all();
-    ::issuer_claim::release_all();
-    ::claim_def::release_all();
+    ::issuer_credential::release_all();
+    ::credential_def::release_all();
     ::proof::release_all();
 
     match wallet::close_wallet() {
@@ -299,16 +299,16 @@ mod tests {
 
         wallet::init_wallet("wallet1").unwrap();
         let connection = ::connection::build_connection("h1").unwrap();
-        let claim = ::issuer_claim::issuer_claim_create(0,"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
+        let credential = ::issuer_credential::issuer_credential_create(0,"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
         let proof = ::proof::create_proof("1".to_string(),req_attr.to_owned(),req_predicates.to_owned(),"Optional".to_owned()).unwrap();
-        let claimdef = ::claim_def::create_new_claimdef("SID".to_string(),"NAME".to_string(),15,"4fUDR9R7fjwELRvH9JT6HH".to_string(),false).unwrap();
+        let credentialdef = ::credential_def::create_new_credentialdef("SID".to_string(),"NAME".to_string(),15,"4fUDR9R7fjwELRvH9JT6HH".to_string(),false).unwrap();
         let schema = ::schema::create_new_schema("5", "name".to_string(), "VsKV7grR1BUE29mG2Fm2kX".to_string(), data.to_string()).unwrap();
         vcx_reset();
         assert_eq!(::connection::release(connection),Err(connection::ConnectionError::CommonError(error::INVALID_CONNECTION_HANDLE.code_num)));
-        assert_eq!(::issuer_claim::release(claim),Err(issuer_cred::IssuerCredError::InvalidHandle()));
+        assert_eq!(::issuer_credential::release(credential),Err(issuer_cred::IssuerCredError::InvalidHandle()));
         assert_eq!(::schema::release(schema).err(),Some(schema::SchemaError::InvalidHandle()));
         assert_eq!(::proof::release(proof).err(),Some(ProofError::InvalidHandle()));
-        assert_eq!(::claim_def::release(claimdef),error::INVALID_CLAIM_DEF_HANDLE.code_num);
+        assert_eq!(::credential_def::release(credentialdef),error::INVALID_CREDENTIAL_DEF_HANDLE.code_num);
         assert_eq!(wallet::get_wallet_handle(), 0);
     }
 

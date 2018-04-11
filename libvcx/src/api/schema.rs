@@ -32,7 +32,7 @@ pub extern fn vcx_schema_create(command_handle: u32,
                                 source_id: *const c_char,
                                 schema_name: *const c_char,
                                 schema_data: *const c_char,
-                                cb: Option<extern fn(xcommand_handle: u32, err: u32, claimdef_handle: u32)>) -> u32 {
+                                cb: Option<extern fn(xcommand_handle: u32, err: u32, credentialdef_handle: u32)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(schema_name, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
@@ -256,7 +256,7 @@ mod tests {
     extern crate serde_json;
 
     use super::*;
-    use api::claim_def::vcx_claimdef_create;
+    use api::credential_def::vcx_credentialdef_create;
     use std::ffi::CString;
     use std::thread;
     use std::time::Duration;
@@ -292,7 +292,7 @@ mod tests {
             panic!("schema_data is null");
         }
         check_useful_c_str!(schema_data, ());
-        let mut data = r#""data":{"name":"New Claim - Claim5","version":"1.0","attr_names":["New Claim","claim5","a5","b5","c5","d5"]}"#;
+        let mut data = r#""data":{"name":"New Credential - Credential5","version":"1.0","attr_names":["New Credential","credential5","a5","b5","c5","d5"]}"#;
         if settings::test_indy_mode_enabled() {
             data = SCHEMA_TXN;
         }
@@ -309,15 +309,15 @@ mod tests {
         thread::sleep(Duration::from_millis(200));
     }
 
-    extern "C" fn create_schema_and_claimdef_cb(command_handle: u32, err: u32, schema_handle: u32) {
+    extern "C" fn create_schema_and_credentialdef_cb(command_handle: u32, err: u32, schema_handle: u32) {
         assert_eq!(err, 0);
         assert!(schema_handle > 0);
-        println!("successfully called create_schema_and_claimdef_cb");
+        println!("successfully called create_schema_and_credentialdef_cb");
         let schema_seq_no = schema::get_sequence_num(schema_handle).unwrap();
         println!("created schema with schema_seq_no: {}", schema_seq_no);
-        assert_eq!(vcx_claimdef_create(0,
+        assert_eq!(vcx_credentialdef_create(0,
                                        CString::new("Test Source ID").unwrap().into_raw(),
-                                       CString::new("Test Claim Def").unwrap().into_raw(),
+                                       CString::new("Test Credential Def").unwrap().into_raw(),
                                        schema_seq_no,
                                        ptr::null(),
                                        false,
@@ -381,14 +381,14 @@ mod tests {
                                      CString::new("Test Source ID").unwrap().into_raw(),
                                      CString::new("Test Schema").unwrap().into_raw(),
                                      CString::new(data).unwrap().into_raw(),
-                                     Some(create_schema_and_claimdef_cb)), error::SUCCESS.code_num);
+                                     Some(create_schema_and_credentialdef_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_secs(1));
         delete_wallet("a_test_wallet").unwrap();
     }
 
     #[ignore]
     #[test]
-    fn test_vcx_create_schema_and_create_claimdef_with_pool() {
+    fn test_vcx_create_schema_and_create_credentialdef_with_pool() {
         settings::set_defaults();
         pool::open_sandbox_pool();
         init_wallet("a_test_wallet").unwrap();
@@ -396,12 +396,12 @@ mod tests {
         let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_ISSUER_PW_SEED)).unwrap();
         SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_AGENT_PW_SEED)).unwrap();
         settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
-        let data = r#"{"name":"Claim For Driver's License","version":"1.0","attr_names":["address1","address2","city","state","zip"]}"#.to_string();
+        let data = r#"{"name":"Credential For Driver's License","version":"1.0","attr_names":["address1","address2","city","state","zip"]}"#.to_string();
         assert_eq!(vcx_schema_create(0,
                                      CString::new("Test Source ID").unwrap().into_raw(),
                                      CString::new("Test Schema").unwrap().into_raw(),
                                      CString::new(data).unwrap().into_raw(),
-                                     Some(create_schema_and_claimdef_cb)), error::SUCCESS.code_num);
+                                     Some(create_schema_and_credentialdef_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_secs(60));
         delete_wallet("a_test_wallet").unwrap();
     }

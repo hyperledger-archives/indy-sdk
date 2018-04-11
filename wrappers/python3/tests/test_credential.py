@@ -1,7 +1,7 @@
 import pytest
 from vcx.error import ErrorCode, VcxError
 from vcx.state import State
-from vcx.api.claim import Claim
+from vcx.api.credential import Credential
 from vcx.api.connection import Connection
 
 phone_number = '8019119191'
@@ -26,12 +26,12 @@ offer = {
     'msg_ref_id':  None
   }
 
-claim_json = {
+credential_json = {
     'source_id': 'wrapper_tests',
     'state': 3,
-    'claim_name': None,
-    'claim_request': None,
-    'claim_offer': {
+    'credential_name': None,
+    'credential_request': None,
+    'credential_offer': {
         'msg_type': 'CLAIM_OFFER',
         'version': '0.1',
         'to_did': 'LtMgSjtFcyPwenK9SHCyb8',
@@ -56,18 +56,18 @@ claim_json = {
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
-async def test_create_claim():
-    claim = await Claim.create(source_id, offer)
-    assert claim.source_id == source_id
-    assert claim.handle > 0
-    assert await claim.get_state() == State.RequestReceived
+async def test_create_credential():
+    credential = await Credential.create(source_id, offer)
+    assert credential.source_id == source_id
+    assert credential.handle > 0
+    assert await credential.get_state() == State.RequestReceived
 
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_serialize():
-    claim = await Claim.create(source_id, offer)
-    data = await claim.serialize()
+    credential = await Credential.create(source_id, offer)
+    data = await credential.serialize()
     assert data.get('source_id') == source_id
 
 
@@ -75,21 +75,21 @@ async def test_serialize():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_serialize_with_bad_handle():
     with pytest.raises(VcxError) as e:
-        claim = Claim(source_id)
-        claim.handle = 0
-        await claim.serialize()
-    assert ErrorCode.InvalidClaimHandle == e.value.error_code
+        credential = Credential(source_id)
+        credential.handle = 0
+        await credential.serialize()
+    assert ErrorCode.InvalidCredentialHandle == e.value.error_code
 
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_deserialize():
-    claim = await Claim.create(source_id, offer)
-    data = await claim.serialize()
+    credential = await Credential.create(source_id, offer)
+    data = await credential.serialize()
     data['state'] = State.Expired
-    claim2 = await Claim.deserialize(data)
-    assert claim2.source_id == data.get('source_id')
-    assert await claim2.get_state() == State.Expired
+    credential2 = await Credential.deserialize(data)
+    assert credential2.source_id == data.get('source_id')
+    assert await credential2.get_state() == State.Expired
 
 
 @pytest.mark.asyncio
@@ -97,53 +97,53 @@ async def test_deserialize():
 async def test_deserialize_with_invalid_data():
     with pytest.raises(VcxError) as e:
         data = {'invalid': -99}
-        await Claim.deserialize(data)
+        await Credential.deserialize(data)
     assert ErrorCode.InvalidJson == e.value.error_code
 
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_serialize_deserialize_and_then_serialize():
-    claim = await Claim.create(source_id, offer)
-    data1 = await claim.serialize()
-    claim2 = await Claim.deserialize(data1)
-    data2 = await claim2.serialize()
+    credential = await Credential.create(source_id, offer)
+    data1 = await credential.serialize()
+    credential2 = await Credential.deserialize(data1)
+    data2 = await credential2.serialize()
     assert data1 == data2
 
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_update_state():
-    claim = await Claim.create(source_id, offer)
-    assert await claim.update_state() == State.RequestReceived
+    credential = await Credential.create(source_id, offer)
+    assert await credential.update_state() == State.RequestReceived
 
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_update_state_with_invalid_handle():
     with pytest.raises(VcxError) as e:
-        claim = Claim(source_id)
-        claim.handle = 0
-        await claim.update_state()
-    assert ErrorCode.InvalidClaimHandle == e.value.error_code
+        credential = Credential(source_id)
+        credential.handle = 0
+        await credential.update_state()
+    assert ErrorCode.InvalidCredentialHandle == e.value.error_code
 
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_get_state():
-    claim = await Claim.create(source_id, offer)
-    assert await claim.get_state() == State.RequestReceived
+    credential = await Credential.create(source_id, offer)
+    assert await credential.get_state() == State.RequestReceived
 
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
-async def test_claim_release():
+async def test_credential_release():
     with pytest.raises(VcxError) as e:
-        claim = await Claim.create(source_id, offer)
-        assert claim.handle > 0
-        claim.release()
-        await claim.serialize()
-    assert ErrorCode.InvalidClaimHandle == e.value.error_code
+        credential = await Credential.create(source_id, offer)
+        assert credential.handle > 0
+        credential.release()
+        await credential.serialize()
+    assert ErrorCode.InvalidCredentialHandle == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -151,9 +151,9 @@ async def test_claim_release():
 async def test_send_request():
     connection = await Connection.create(source_id)
     await connection.connect(phone_number)
-    claim = await Claim.deserialize(claim_json)
-    await claim.send_request(connection)
-    assert await claim.update_state() == State.OfferSent
+    credential = await Credential.deserialize(credential_json)
+    await credential.send_request(connection)
+    assert await credential.update_state() == State.OfferSent
 
 
 @pytest.mark.asyncio
@@ -162,21 +162,21 @@ async def test_send_request_with_invalid_state():
     with pytest.raises(VcxError) as e:
         connection = await Connection.create(source_id)
         await connection.connect(phone_number)
-        claim = await Claim.create(source_id, offer)
-        await claim.send_request(connection)
-    assert ErrorCode.CreateClaimFailed == e.value.error_code
+        credential = await Credential.create(source_id, offer)
+        await credential.send_request(connection)
+    assert ErrorCode.CreateCredentialFailed == e.value.error_code
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_send_request_with_bad_connection():
     with pytest.raises(VcxError) as e:
         connection = Connection(source_id)
-        claim = await Claim.create(source_id, offer)
-        await claim.send_request(connection)
+        credential = await Credential.create(source_id, offer)
+        await credential.send_request(connection)
     assert ErrorCode.InvalidConnectionHandle == e.value.error_code
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_get_offers():
     connection = await Connection.create(source_id)
-    await Claim.get_offers(connection)
+    await Credential.get_offers(connection)
