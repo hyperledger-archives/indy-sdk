@@ -44,7 +44,7 @@
                               [completionExpectation fulfill];
                           }];
 
-    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
     if (responseJson) {*responseJson = outJson;}
 
@@ -272,7 +272,7 @@
     return err;
 }
 
-// MARK: Build claim definition reques
+// MARK: Build cred definition request
 
 - (NSError *)buildCredDefRequestWithSubmitterDid:(NSString *)submitterDid
                                             data:(NSString *)data
@@ -302,13 +302,13 @@
     __block NSError *err = nil;
     __block NSString *result = nil;
 
-    [IndyLedger buildGetClaimDefRequestWithSubmitterDid:submitterDid
-                                                     id:id
-                                             completion:^(NSError *error, NSString *request) {
-                                                 err = error;
-                                                 result = request;
-                                                 [completionExpectation fulfill];
-                                             }];
+    [IndyLedger buildGetCredDefRequestWithSubmitterDid:submitterDid
+                                                    id:id
+                                            completion:^(NSError *error, NSString *request) {
+                                                err = error;
+                                                result = request;
+                                                [completionExpectation fulfill];
+                                            }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
