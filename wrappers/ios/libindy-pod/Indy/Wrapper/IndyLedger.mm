@@ -514,8 +514,8 @@
 
     ret = indy_build_revoc_reg_entry_request(handle,
             [submitterDid UTF8String],
-            [type UTF8String],
             [revocRegDefId UTF8String],
+            [type UTF8String],
             [value UTF8String],
             IndyWrapperCommon3PSCallback);
     if (ret != Success) {

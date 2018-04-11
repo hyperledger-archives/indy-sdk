@@ -587,7 +587,7 @@
     return err;
 }
 
-- (NSError *)parseGetRevocRegDeltaResponse:(NSString *)getRevocRegResponse
+- (NSError *)parseGetRevocRegDeltaResponse:(NSString *)getRevocRegDeltaResponse
                              revocRegDefId:(NSString **)revocRegDefId
                          revocRegDeltaJson:(NSString **)revocRegDeltaJson
                                  timestamp:(NSNumber **)timestamp {
@@ -597,14 +597,14 @@
     __block NSString *outJson = nil;
     __block NSNumber *outTimestamp = nil;
 
-    [IndyLedger parseGetRevocRegResponse:(NSString *) getRevocRegResponse
-                              completion:^(NSError *error, NSString *id, NSString *json, NSNumber *oTimestamp) {
-                                  err = error;
-                                  outId = id;
-                                  outJson = json;
-                                  outTimestamp = oTimestamp;
-                                  [completionExpectation fulfill];
-                              }];
+    [IndyLedger parseGetRevocRegDeltaResponse:(NSString *) getRevocRegDeltaResponse
+                                   completion:^(NSError *error, NSString *id, NSString *json, NSNumber *oTimestamp) {
+                                       err = error;
+                                       outId = id;
+                                       outJson = json;
+                                       outTimestamp = oTimestamp;
+                                       [completionExpectation fulfill];
+                                   }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
