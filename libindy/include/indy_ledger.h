@@ -656,7 +656,7 @@ extern "C" {
     extern indy_error_t indy_build_get_revoc_reg_request(indy_handle_t command_handle,
                                                          const char *  submitter_did,
                                                          const char *  revoc_reg_def_id,
-                                                         indy_i64_t    timestamp,
+                                                         long long    timestamp,
 
                                                          void           (*cb)(indy_handle_t xcommand_handle,
                                                                               indy_error_t  err,
@@ -689,7 +689,7 @@ extern "C" {
                                                                                indy_error_t  err,
                                                                                const char*   revoc_reg_def_id,
                                                                                const char*   revoc_reg_json,
-                                                                               uint64_t      timestamp)
+                                                                               unsigned long long      timestamp)
                                                          );
 
     /// Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
@@ -713,8 +713,8 @@ extern "C" {
     extern indy_error_t indy_build_get_revoc_reg_delta_request(indy_handle_t command_handle,
                                                                const char *  submitter_did,
                                                                const char *  revoc_reg_def_id,
-                                                               indy_i64_t    from,
-                                                               indy_i64_t    to,
+                                                               long long    from,
+                                                               long long    to,
 
                                                                void           (*cb)(indy_handle_t xcommand_handle,
                                                                                     indy_error_t  err,
@@ -750,7 +750,7 @@ extern "C" {
                                                                                      indy_error_t  err,
                                                                                      const char*   revoc_reg_def_id,
                                                                                      const char*   revoc_reg_delta_json,
-                                                                                     uint64_t      timestamp)
+                                                                                     unsigned long long      timestamp)
                                                                );
 
 #ifdef __cplusplus

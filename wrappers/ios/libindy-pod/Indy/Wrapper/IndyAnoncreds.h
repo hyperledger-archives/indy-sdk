@@ -174,11 +174,11 @@
                                walletHandle:(IndyHandle)walletHandle
                                  completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion;
 
-+ (void)issuerRecoverCredentialByCredRevocId:(NSString *)credRevocId
+/*+ (void)issuerRecoverCredentialByCredRevocId:(NSString *)credRevocId
                                     revRegId:(NSString *)revRegId
                      blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
                                 walletHandle:(IndyHandle)walletHandle
-                                  completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion;
+                                  completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion;*/
 
 + (void)issuerMergerRevocationRegistryDelta:(NSString *)revRegDelta
                                   withDelta:(NSString *)otherRevRegDelta

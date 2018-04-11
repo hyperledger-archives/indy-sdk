@@ -181,8 +181,8 @@
                                      \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%@\"}}\
                                      }", credentialReferent, credentialReferent];
 
-    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", schemaId, schemaJson];
-    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialDefId, credentialDefJSON];
+    NSString *schemasJson = [[AnoncredsUtils sharedInstance] toJson:@{schemaId: [NSDictionary fromString:schemaJson]}];
+    NSString *credentialDefsJson = [[AnoncredsUtils sharedInstance] toJson:@{credentialDefId: [NSDictionary fromString:credentialDefJSON]}];
     NSString *revocStatesJson = @"{}";
 
     NSString *proofJSON = nil;
@@ -383,8 +383,8 @@
                                      \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%@\"}}\
                                      }", credentialReferent, credentialReferent];
 
-    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", schemaId, schemaJson];
-    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialDefId, credentialDefJSON];
+    NSString *schemasJson = [[AnoncredsUtils sharedInstance] toJson:@{schemaId: [NSDictionary fromString:schemaJson]}];
+    NSString *credentialDefsJson = [[AnoncredsUtils sharedInstance] toJson:@{credentialDefId: [NSDictionary fromString:credentialDefJSON]}];
     NSString *revocStatesJson = @"{}";
 
     NSString *proofJSON = nil;

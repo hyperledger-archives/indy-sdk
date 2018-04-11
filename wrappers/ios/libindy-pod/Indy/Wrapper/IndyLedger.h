@@ -129,11 +129,12 @@
 // MARK: - Schema request
 
 /**
- Builds a SCHEMA request. Request to add Claim's schema.
+ Builds a SCHEMA request. Request to add Credential's schema.
  
  @param submitterDid DID of the submitter stored in secured Wallet.
- @param data {
-     attr_names: array of attribute name strings
+ @param data  {
+     id: identifier of schema
+     attrNames: array of attribute name strings
      name: Schema's name string
      version: Schema's version string
  }
@@ -147,54 +148,67 @@
  Builds a GET_SCHEMA request. Request to get Claim's Schema.
  
  @param submitterDid DID of the read request sender.
- @param dest Schema Issuer's DID as base58-encoded string for 16 or 32 bit DID value. It differs from submitter_did field.
- @param data {
-     name (string): Schema's name string
-     version (string): Schema's version string
- }
+ @param id Schema ID in ledger
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildGetSchemaRequestWithSubmitterDid:(NSString *)submitterDid
-                                         dest:(NSString *)dest
-                                         data:(NSString *)data
+                                           id:(NSString *)id
                                    completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
-// MARK: - ClaimDefTxn request
+/**
+ Parse a GET_SCHEMA response.
+ 
+ @param getSchemaResponse  response json
+ @param completion Callback that takes command result as parameter. Schema Id and Schema json.
+ */
++ (void)parseGetSchemaResponse:(NSString *)getSchemaResponse
+                    completion:(void (^)(NSError *error, NSString *schemaId, NSString *schemaJson))completion;
+
+// MARK: - CredDefRequest request
 
 /**
- Builds an CLAIM_DEF request. Request to add a claim definition (in particular, public key),
- that Issuer creates for a particular Claim Schema.
+ Builds an CRED_DEF request. Request to add a Credential Definition (in particular, public key),
+ that Issuer creates for a particular Credential Schema.
  
  @param submitterDid DID of the submitter stored in secured Wallet.
- @param xref Sequence number of a Schema transaction the claim definition is created for.
- @param signatureType Type of the claim definition. CL is the only supported type now.
- @param data Dictionary with Claim Definition's data: {
-     primary: primary claim public key
-     revocation: revocation claim public key
+ @param data credential definition json
+ {
+     id: string - identifier of credential definition
+     schemaId: string - identifier of stored in ledger schema
+     type: string - type of the credential definition. CL is the only supported type now.
+     tag: string - allows to distinct between credential definitions for the same issuer and schema
+     value: Dictionary with Credential Definition's data: {
+         primary: primary credential public key,
+         Optional<revocation>: revocation credential public key
+     },
+     ver: Version of the CredDef json
  }
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
-+ (void)buildClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                    xref:(NSNumber *)xref
-                           signatureType:(NSString *)signatureType
-                                    data:(NSString *)data
-                              completion:(void (^)(NSError *error, NSString *requestJSON))completion;
++ (void)buildCredDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                       data:(NSString *)data
+                                 completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 /**
- Builds a GET_CLAIM_DEF request. Request to get a claim definition (in particular, public key),
- that Issuer creates for a particular Claim Schema.
+ Builds a GET_CRED_DEF request. Request to get a Credential Definition (in particular, public key),
+ that Issuer creates for a particular Credential Schema.
  
  @param submitterDid DID of the read request sender.
- @param xref Sequence number of a Schema transaction the claim definition is created for.
- @param signatureType Type of the claim definition. CL is the only supported type now.
- @param origin Claim Definition Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
+ @param id Credential Definition ID in ledger
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
-+ (void)buildGetClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                       xref:(NSNumber *)xref
-                              signatureType:(NSString *)signatureType
-                                     origin:(NSString *)origin
-                                 completion:(void (^)(NSError *error, NSString *requestJSON))completion;
++ (void)buildGetClaimDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                             id:(NSString *)id
+                                     completion:(void (^)(NSError *error, NSString *requestJSON))completion;
+
+/**
+ Parse a GET_CRED_DEF response.
+ 
+ @param getCredDefResponse  response json
+ @param completion Callback that takes command result as parameter. Cred Def Id and Cred Def json.
+ */
++ (void)parseGetCredDefResponse:(NSString *)getCredDefResponse
+                     completion:(void (^)(NSError *error, NSString *credDefId, NSString *credDefJson))completion;
 
 // MARK: - Ddo request
 
@@ -295,51 +309,163 @@
 // MARK: - Revocation registry definition request
 
 /**
- Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry to an exists claim definition.
+ Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry
+ to an exists credential definition.
 
  @param submitterDid DID of the submitter stored in secured Wallet.
- @param type Revocation Registry type (only CL_ACCUM is supported for now).
- @param tag Unique descriptive ID of the Registry.
- @param credDefId ID of the corresponding ClaimDef.
- @param value Registry-specific data: {
-     issuance_type: string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
-     max_cred_num: number - Maximum number of credentials the Registry can serve.
-     public_keys: <public_keys> - Registry's public key.
-     tails_hash: string - Hash of tails.
-     tails_locaiton: string - Location of tails file.
- }
+ @param data Revocation Registry data:
+     {
+         "id": string - ID of the Revocation Registry,
+         "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+         "tag": string - Unique descriptive ID of the Registry,
+         "credDefId": string - ID of the corresponding CredentialDefinition,
+         "value": Registry-specific data {
+             "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+             "maxCredNum": number - Maximum number of credentials the Registry can serve.
+             "tailsHash": string - Hash of tails.
+             "tailsLocation": string - Location of tails file.
+             "publicKeys": <public_keys> - Registry's public key.
+         },
+         ver: RevRegDef json version
+     }
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildRevocRegDefRequestWithSubmitterDid:(NSString *)submitterDid
-                                           type:(NSString *)type
-                                            tag:(NSString *)tag
-                                      credDefId:(NSString *)credDefId
-                                          value:(NSString *)value
+                                           data:(NSString *)data
                                      completion:(void (^)(NSError *error, NSString *requestJSON))completion;
-// MARK: - Revocation registry delta request
+
+/**
+ Builds a GET_REVOC_REG_DEF request. Request to get a revocation registry definition,
+ that Issuer creates for a particular Credential Definition.
+
+ @param submitterDid DID of the submitter stored in secured Wallet.
+ @param id ID of the RevocRegDef in ledger.
+ @param completion Callback that takes command result as parameter. Returns request result as json.
+ */
++ (void)buildGetRevocRegDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                                id:(NSString *)id
+                                        completion:(void (^)(NSError *error, NSString *requestJSON))completion;
+
+/**
+ Parse a GET_REVOC_REG_DEF response.
+
+ @param getRevocRegDefResponse response json
+ @param completion Callback that takes command result as parameter. 
+ Returns Revocation Registry Definition Id and Revocation Registry Definition json.
+ {
+     "id": string - ID of the Revocation Registry,
+     "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+     "tag": string - Unique descriptive ID of the Registry,
+     "credDefId": string - ID of the corresponding CredentialDefinition,
+     "value": Registry-specific data {
+         "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+         "maxCredNum": number - Maximum number of credentials the Registry can serve.
+         "tailsHash": string - Hash of tails.
+         "tailsLocation": string - Location of tails file.
+         "publicKeys": <public_keys> - Registry's public key.
+     },
+     "ver": string
+ }
+ */
++ (void)parseGetRevocRegDefResponse:(NSString *)getRevocRegDefResponse
+                         completion:(void (^)(NSError *error, NSString *revocRegDefId, NSString *revocRegDefJson))completion;
+
+
+// MARK: - Revocation registry entry request
 
 /**
  Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
- /// the new accumulator value and issued/revoked indices.
- /// This is just a delta of indices, not the whole list.
- /// So, it can be sent each time a new claim is issued/revoked.
+ the new accumulator value and issued/revoked indices.
+ This is just a delta of indices, not the whole list.
+ So, it can be sent each time a new claim is issued/revoked.
 
  @param submitterDid DID of the submitter stored in secured Wallet.
  @param type Revocation Registry type (only CL_ACCUM is supported for now).
  @param revocRegDefId ID of the corresponding RevocRegDef.
  @param value Registry-specific data: {
-     issued: array<number> - an array of issued indices.
-     revoked: array<number> an array of revoked indices
-     prev_accum: previous accumulator value.
-     accum: current accumulator value.
+     value: {
+         prevAccum: string - previous accumulator value.
+         accum: string - current accumulator value.
+         issued: array<number> - an array of issued indices.
+         revoked: array<number> an array of revoked indices.
+     },
+     ver: RevocRegEntry json version
+     
  }
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
-+ (void)buildRevocRegDeltaRequestWithSubmitterDid:(NSString *)submitterDid
++ (void)buildRevocRegEntryRequestWithSubmitterDid:(NSString *)submitterDid
                                              type:(NSString *)type
                                     revocRegDefId:(NSString *)revocRegDefId
                                             value:(NSString *)value
                                        completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
+/**
+ Builds a GET_REVOC_REG request. Request to get the accumulated state of the Revocation Registry
+ by ID. The state is defined by the given timestamp.
+
+ @param submitterDid DID of the submitter stored in secured Wallet.
+ @param revocRegDefId ID of the corresponding RevocRegDef in ledger.
+ @param timestamp Requested time represented as a total number of seconds from Unix Epoch
+ @param completion Callback that takes command result as parameter. Returns request result as json.
+ */
++ (void)buildGetRevocRegRequestWithSubmitterDid:(NSString *)submitterDid
+                                  revocRegDefId:(NSString *)revocRegDefId
+                                      timestamp:(NSNumber *)timestamp
+                                     completion:(void (^)(NSError *error, NSString *requestJSON))completion;
+
+
+/**
+ Parse a GET_REVOC_REG response.
+
+ @param getRevocRegResponse response json
+ @param completion Callback that takes command result as parameter. 
+ Returns Revocation Registry Definition Id, Revocation Registry json and Timestamp.
+ {
+     "value": Registry-specific data {
+         "accum": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+     },
+     "ver": string
+ }
+ */
++ (void)parseGetRevocRegResponse:(NSString *)getRevocRegResponse
+                      completion:(void (^)(NSError *error, NSString *revocRegDefId, NSString *revocRegJson, NSNumber *timestamp))completion;
+
+/**
+ Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
+ The Delta is defined by from and to timestamp fields.
+ If from is not specified, then the whole state till to will be returned.
+
+ @param submitterDid DID of the submitter stored in secured Wallet.
+ @param revocRegDefId ID of the corresponding RevocRegDef in ledger.
+ @param from Requested time represented as a total number of seconds from Unix Epoch
+ @param to Requested time represented as a total number of seconds from Unix Epoch
+ @param completion Callback that takes command result as parameter. Returns request result as json.
+ */
++ (void)buildGetRevocRegDeltaRequestWithSubmitterDid:(NSString *)submitterDid
+                                       revocRegDefId:(NSString *)revocRegDefId
+                                                from:(NSNumber *)from
+                                                  to:(NSNumber *)to
+                                          completion:(void (^)(NSError *error, NSString *requestJSON))completion;
+
+
+/**
+ Parse a GET_REVOC_REG_DELTA response.
+
+ @param getRevocRegDeltaResponse response json
+ @param completion Callback that takes command result as parameter. 
+ Returns evocation Registry Definition Id, Revocation Registry Delta json and Timestamp.
+ {
+     "value": Registry-specific data {
+         prevAccum: string - previous accumulator value.
+         accum: string - current accumulator value.
+         issued: array<number> - an array of issued indices.
+         revoked: array<number> an array of revoked indices.
+     },
+     "ver": string
+ }
+ */
++ (void)parseGetRevocRegDeltaResponse:(NSString *)getRevocRegDeltaResponse
+                           completion:(void (^)(NSError *error, NSString *revocRegDefId, NSString *revocRegDeltaJson, NSNumber *timestamp))completion;
 
 @end

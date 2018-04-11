@@ -380,7 +380,8 @@ pub extern fn indy_build_get_nym_request(command_handle: i32,
 ///     id: identifier of schema
 ///     attrNames: array of attribute name strings
 ///     name: Schema's name string
-///     version: Schema's version string
+///     version: Schema's version string,
+///     ver: Version of the Schema json
 /// }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -507,7 +508,8 @@ pub extern fn indy_parse_get_schema_response(command_handle: i32,
 ///     value: Dictionary with Credential Definition's data: {
 ///         primary: primary credential public key,
 ///         Optional<revocation>: revocation credential public key
-///     }
+///     },
+///     ver: Version of the CredDef json
 /// }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -546,9 +548,7 @@ pub extern fn indy_build_cred_def_request(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: DID of the read request sender.
-/// xref: Sequence number of a Schema transaction the credential definition is created for.
-/// signature_type: Type of the credential definition. CL is the only supported type now.
-/// origin: Credential Definition Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
+/// id: Credential Definition ID in ledger.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -978,7 +978,9 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: i32,
 ///         accum: string - current accumulator value.
 ///         issued: array<number> - an array of issued indices.
 ///         revoked: array<number> an array of revoked indices.
-///     }
+///     },
+///     ver: revoc reg entry json version
+///
 /// }
 /// cb: Callback that takes command result as parameter.
 ///
