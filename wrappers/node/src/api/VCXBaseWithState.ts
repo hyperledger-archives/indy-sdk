@@ -33,7 +33,7 @@ export abstract class VCXBaseWithState extends VCXBase {
     )
   }
 
-  protected async _getState (): Promise<number> {
+  protected async _getState (): Promise<StateType> {
     const commandHandle = 0
     return await createFFICallbackPromise<number>(
       (resolve, reject, cb) => {
