@@ -1,14 +1,14 @@
 import json
 from vcx.error import VcxError
 from vcx.api import vcx_init, schema
-from vcx.api.issuer_claim import IssuerClaim
+from vcx.api.issuer_credential import IssuerCredential
 from vcx.state import State
 from vcx.api import connection
 import asyncio
 
 SCHEMA_SEQ_NUMBER = 22
 SCHEMAS = {}
-CLAIMS = {}
+CREDENTIALS = {}
 
 SCHEMA_22_SERIALIZED = "{'handle': 1718697361, 'name': '', 'sequence_num': 22, 'data': {'seqNo': 22, 'txnTime': 1516383536, 'identifier': '2hoqvcwupRTUNkXn6ArYzs', 'data': {'name': 'Home Address', 'version': '0.1', 'attr_names': ['address1', 'address2', 'city', 'state', 'zip']}, 'type': '101'}, 'source_id': 'test1'}"
 SCHEMA_22_JSON = '{"sequence_num": 22, "handle": 3674279773, "data": {"type": "101", "data": {"version": "0.1", "attr_names": ["address1", "address2", "city", "state", "zip"], "name": "Home Address"}, "txnTime": 1516383536, "seqNo": 22, "identifier": "2hoqvcwupRTUNkXn6ArYzs"}, "name": "", "source_id": "test1"}'
@@ -57,12 +57,12 @@ def run_task(task, loop):
     loop.run_until_complete(wait_tasks)
 
 
-async def create_issuer_claim(schema_seq_number, schema_attr, claim_name, source_id):
-    return await IssuerClaim.create(source_id, schema_attr, schema_seq_number, claim_name)
+async def create_issuer_credential(schema_seq_number, schema_attr, credential_name, source_id):
+    return await IssuerCredential.create(source_id, schema_attr, schema_seq_number, credential_name)
 
 
-async def send_claim_offer(issuer_claim, connection):
-    await issuer_claim.send_offer(connection)
+async def send_credential_offer(issuer_credential, connection):
+    await issuer_credential.send_offer(connection)
 
 
 def main():
@@ -77,9 +77,9 @@ def main():
         print(schema_22)
         schema_22 = json.loads(schema_22)
         print(schema_22['handle'])
-        task = create_issuer_claim(SCHEMA_SEQ_NUMBER, FRANKS_DATA, 'Generic Claim Name', '1')
-        issuer_claim = loop.run_until_complete(asyncio.gather(task))
-        print(issuer_claim)
+        task = create_issuer_credential(SCHEMA_SEQ_NUMBER, FRANKS_DATA, 'Generic Credential Name', '1')
+        issuer_credential = loop.run_until_complete(asyncio.gather(task))
+        print(issuer_credential)
         task = create_and_connect()
         results = loop.run_until_complete(asyncio.gather(task))
         if len(results) > 0:
@@ -88,7 +88,7 @@ def main():
 
 
 
-        # task = send_claim_offer(issuer_claim, )
+        # task = send_credential_offer(issuer_credential, )
     loop.close()
 
 

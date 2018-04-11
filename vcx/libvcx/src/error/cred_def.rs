@@ -1,6 +1,6 @@
 use std::fmt;
 use error::ToErrorCode;
-use utils::error::{BUILD_CLAIM_DEF_REQ_ERR, CLAIM_DEF_ALREADY_CREATED, CREATE_CLAIM_DEF_ERR };
+use utils::error::{BUILD_CREDENTIAL_DEF_REQ_ERR, CREDENTIAL_DEF_ALREADY_CREATED, CREATE_CREDENTIAL_DEF_ERR };
 
 #[derive(Debug)]
 pub enum CredDefError {
@@ -14,17 +14,17 @@ impl fmt::Display for CredDefError {
         match *self {
             CredDefError::BuildCredDefRequestError() => write!(f, "Error Building Cred Def Request"),
             CredDefError::CommonError(x) => write!(f, "This Cred Def common error had a value: {}", x),
-            CredDefError::CreateCredDefError() => write!(f, "{}", CREATE_CLAIM_DEF_ERR.message ),
-            CredDefError::CredDefAlreadyCreatedError() => write!(f, "{}", CLAIM_DEF_ALREADY_CREATED.message ),
+            CredDefError::CreateCredDefError() => write!(f, "{}", CREATE_CREDENTIAL_DEF_ERR.message ),
+            CredDefError::CredDefAlreadyCreatedError() => write!(f, "{}", CREDENTIAL_DEF_ALREADY_CREATED.message ),
         }
     }
 }
 impl ToErrorCode for CredDefError {
     fn to_error_code(&self) -> u32 {
         match *self {
-            CredDefError::BuildCredDefRequestError() => BUILD_CLAIM_DEF_REQ_ERR.code_num,
-            CredDefError::CreateCredDefError() => CREATE_CLAIM_DEF_ERR.code_num,
-            CredDefError::CredDefAlreadyCreatedError() => CLAIM_DEF_ALREADY_CREATED.code_num,
+            CredDefError::BuildCredDefRequestError() => BUILD_CREDENTIAL_DEF_REQ_ERR.code_num,
+            CredDefError::CreateCredDefError() => CREATE_CREDENTIAL_DEF_ERR.code_num,
+            CredDefError::CredDefAlreadyCreatedError() => CREDENTIAL_DEF_ALREADY_CREATED.code_num,
             CredDefError::CommonError(x) => x,
         }
     }

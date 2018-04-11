@@ -3,8 +3,6 @@ extern crate tempfile;
 extern crate libc;
 extern crate serde_json;
 
-use utils::timeout::TimeoutUtils;
-use utils::cstring::CStringUtils;
 use std::ptr;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
@@ -13,8 +11,23 @@ use std::thread;
 use std::time::Duration;
 use std::ffi::CString;
 use vcx::api;
+use vcx::utils::cstring::CStringUtils;
+use vcx::utils::timeout::TimeoutUtils;
 use std::sync::Mutex;
 use std::sync::mpsc::channel;
+
+macro_rules! check_useful_c_str {
+    ($x:ident, $e:expr) => {
+        let $x = match CStringUtils::c_str_to_string($x) {
+            Ok(Some(val)) => val,
+            _ => return $e,
+        };
+
+        if $x.is_empty() {
+            return $e
+        }
+    }
+}
 
 lazy_static! {
     static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
@@ -30,34 +43,34 @@ pub extern "C" fn generic_cb(command_handle:u32, err:u32) {
 
 
 #[allow(dead_code)]
-pub fn create_claim_offer(claim_name: &str, source_id: &str, claim_data_value: serde_json::Value, issuer_did: &str, schema_seq_no: u32) -> (u32, u32){
+pub fn create_credential_offer(credential_name: &str, source_id: &str, credential_data_value: serde_json::Value, issuer_did: &str, schema_seq_no: u32) -> (u32, u32){
     let source_id_cstring = CString::new(source_id).unwrap();
     let (sender, receiver) = channel();
-    let cb = Box::new(move|err, claim_handle|{sender.send((err, claim_handle)).unwrap();});
-    let (command_handle, cb) = closure_to_create_claim(cb);
-    let claim_data_str = serde_json::to_string(&claim_data_value).unwrap();
-    let claim_data_cstring = CString::new(claim_data_str).unwrap();
+    let cb = Box::new(move|err, credential_handle|{sender.send((err, credential_handle)).unwrap();});
+    let (command_handle, cb) = closure_to_create_credential(cb);
+    let credential_data_str = serde_json::to_string(&credential_data_value).unwrap();
+    let credential_data_cstring = CString::new(credential_data_str).unwrap();
     #[allow(unused_variables)]
     let issuer_did_cstring = CString::new(issuer_did).unwrap();
-    let claim_name_cstring = CString::new(claim_name).unwrap();
-    let rc = api::issuer_claim::vcx_issuer_create_claim(command_handle,
+    let credential_name_cstring = CString::new(credential_name).unwrap();
+    let rc = api::issuer_credential::vcx_issuer_create_credential(command_handle,
                                                         source_id_cstring.as_ptr(),
                                                         schema_seq_no,
                                                         ptr::null(),
-                                                        claim_data_cstring.as_ptr(),
-                                                        claim_name_cstring.as_ptr(),
+                                                        credential_data_cstring.as_ptr(),
+                                                        credential_name_cstring.as_ptr(),
                                                         cb);
     assert_eq!(rc, 0);
     receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap()
 }
 
 #[allow(dead_code)]
-pub fn send_claim_offer(claim_handle: u32, connection_handle: u32) -> u32 {
+pub fn send_credential_offer(credential_handle: u32, connection_handle: u32) -> u32 {
     let (sender, receiver) = channel();
     let cb = Box::new(move|err|{sender.send(err).unwrap();});
-    let (command_handle, cb) = closure_to_send_claim_object(cb);
-    let rc = api::issuer_claim::vcx_issuer_send_claim_offer(command_handle,
-                                                            claim_handle,
+    let (command_handle, cb) = closure_to_send_credential_object(cb);
+    let rc = api::issuer_credential::vcx_issuer_send_credential_offer(command_handle,
+                                                            credential_handle,
                                                             connection_handle,
                                                             cb);
     assert_eq!(rc,0);
@@ -65,11 +78,11 @@ pub fn send_claim_offer(claim_handle: u32, connection_handle: u32) -> u32 {
 }
 
 #[allow(dead_code)]
-pub fn send_claim(claim_handle: u32, connection_handle: u32) -> u32 {
+pub fn send_credential(credential_handle: u32, connection_handle: u32) -> u32 {
     let (sender, receiver) = channel();
     let cb = Box::new(move|err|{sender.send(err).unwrap();});
-    let (command_handle, cb) = closure_to_send_claim_object(cb);
-    let rc = api::issuer_claim::vcx_issuer_send_claim(command_handle, claim_handle, connection_handle, cb);
+    let (command_handle, cb) = closure_to_send_credential_object(cb);
+    let rc = api::issuer_credential::vcx_issuer_send_credential(command_handle, credential_handle, connection_handle, cb);
     assert_eq!(rc,0);
     receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap()
 
@@ -111,19 +124,19 @@ pub fn deserialize_vcx_object(serialized_connection: &str,f:extern fn(u32, *cons
 #[allow(dead_code)]
 pub fn serialize_vcx_object(connection_handle: u32, f:extern fn(u32, u32, Option<extern fn(u32, u32, *const c_char)> ) ->u32) -> u32{
     fn closure_to_serialize_connection(closure: Box<FnMut(u32) + Send>) ->
-    (u32, Option<extern fn( command_handle: u32, err: u32 , claim_string: *const c_char)>) {
+    (u32, Option<extern fn( command_handle: u32, err: u32 , credential_string: *const c_char)>) {
         lazy_static! { static ref CALLBACKS_SERIALIZE_CONNECTION: Mutex<HashMap<u32,
                                         Box<FnMut(u32) + Send>>> = Default::default(); }
 
-        extern "C" fn callback(command_handle: u32, err: u32, claim_string: *const c_char) {
+        extern "C" fn callback(command_handle: u32, err: u32, credential_string: *const c_char) {
             let mut callbacks = CALLBACKS_SERIALIZE_CONNECTION.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             assert_eq!(err, 0);
-            if claim_string.is_null() {
-                panic!("claim_string is empty");
+            if credential_string.is_null() {
+                panic!("credential_string is empty");
             }
-            check_useful_c_str!(claim_string, ());
-            println!("successfully called serialize_cb: {}", claim_string);
+            check_useful_c_str!(credential_string, ());
+            println!("successfully called serialize_cb: {}", credential_string);
             cb(err)
         }
 
@@ -269,17 +282,17 @@ pub fn closure_to_update_state(closure: Box<FnMut(u32) + Send>) ->
 }
 
 #[allow(dead_code)]
-pub fn closure_to_create_claim(closure: Box<FnMut(u32, u32) + Send>) ->
-(u32, Option<extern fn( command_handle: u32, err: u32, claim_handle: u32)>) {
-    lazy_static! { static ref CALLBACKS_CREATE_CLAIM: Mutex<HashMap<u32, Box<FnMut(u32, u32) + Send>>> = Default::default(); }
+pub fn closure_to_create_credential(closure: Box<FnMut(u32, u32) + Send>) ->
+(u32, Option<extern fn( command_handle: u32, err: u32, credential_handle: u32)>) {
+    lazy_static! { static ref CALLBACKS_CREATE_CREDENTIAL: Mutex<HashMap<u32, Box<FnMut(u32, u32) + Send>>> = Default::default(); }
 
-    extern "C" fn callback(command_handle: u32, err: u32, claim_handle: u32) {
-        let mut callbacks = CALLBACKS_CREATE_CLAIM.lock().unwrap();
+    extern "C" fn callback(command_handle: u32, err: u32, credential_handle: u32) {
+        let mut callbacks = CALLBACKS_CREATE_CREDENTIAL.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
-        cb(err, claim_handle)
+        cb(err, credential_handle)
     }
 
-    let mut callbacks = CALLBACKS_CREATE_CLAIM.lock().unwrap();
+    let mut callbacks = CALLBACKS_CREATE_CREDENTIAL.lock().unwrap();
     let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as u32;
     callbacks.insert(command_handle, closure);
 
@@ -287,17 +300,17 @@ pub fn closure_to_create_claim(closure: Box<FnMut(u32, u32) + Send>) ->
 }
 
 #[allow(dead_code)]
-pub fn closure_to_create_claimdef(closure: Box<FnMut(u32, u32) + Send>) ->
-(u32, Option<extern fn( command_handle: u32, err: u32, claimdef_handle: u32)>) {
-    lazy_static! { static ref CALLBACKS_CREATE_CLAIMDEF: Mutex<HashMap<u32, Box<FnMut(u32, u32) + Send>>> = Default::default(); }
+pub fn closure_to_create_credentialdef(closure: Box<FnMut(u32, u32) + Send>) ->
+(u32, Option<extern fn( command_handle: u32, err: u32, credentialdef_handle: u32)>) {
+    lazy_static! { static ref CALLBACKS_CREATE_CREDENTIALDEF: Mutex<HashMap<u32, Box<FnMut(u32, u32) + Send>>> = Default::default(); }
 
-    extern "C" fn callback(command_handle: u32, err: u32, claimdef_handle: u32) {
-        let mut callbacks = CALLBACKS_CREATE_CLAIMDEF.lock().unwrap();
+    extern "C" fn callback(command_handle: u32, err: u32, credentialdef_handle: u32) {
+        let mut callbacks = CALLBACKS_CREATE_CREDENTIALDEF.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
-        cb(err, claimdef_handle)
+        cb(err, credentialdef_handle)
     }
 
-    let mut callbacks = CALLBACKS_CREATE_CLAIMDEF.lock().unwrap();
+    let mut callbacks = CALLBACKS_CREATE_CREDENTIALDEF.lock().unwrap();
     let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as u32;
     callbacks.insert(command_handle, closure);
 
@@ -305,16 +318,16 @@ pub fn closure_to_create_claimdef(closure: Box<FnMut(u32, u32) + Send>) ->
 }
 
 #[allow(dead_code)]
-pub fn closure_to_send_claim_object(closure: Box<FnMut(u32) + Send>) -> (u32, Option<extern fn(command_handle: u32, err: u32 )>) {
-    lazy_static! { static ref CALLBACKS_SEND_CLAIM: Mutex<HashMap<u32, Box<FnMut(u32) + Send>>> = Default::default(); }
+pub fn closure_to_send_credential_object(closure: Box<FnMut(u32) + Send>) -> (u32, Option<extern fn(command_handle: u32, err: u32 )>) {
+    lazy_static! { static ref CALLBACKS_SEND_CREDENTIAL: Mutex<HashMap<u32, Box<FnMut(u32) + Send>>> = Default::default(); }
 
     extern "C" fn callback(command_handle: u32, err: u32) {
-        let mut callbacks = CALLBACKS_SEND_CLAIM.lock().unwrap();
+        let mut callbacks = CALLBACKS_SEND_CREDENTIAL.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
         cb(err)
     }
 
-    let mut callbacks = CALLBACKS_SEND_CLAIM.lock().unwrap();
+    let mut callbacks = CALLBACKS_SEND_CREDENTIAL.lock().unwrap();
     let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as u32;
     callbacks.insert(command_handle, closure);
 
@@ -325,7 +338,7 @@ pub fn closure_to_send_claim_object(closure: Box<FnMut(u32) + Send>) -> (u32, Op
 pub fn send_proof_request(proof_handle: u32, connection_handle: u32) -> u32 {
     let (sender, receiver) = channel();
     let cb = Box::new(move|err|{sender.send(err).unwrap();});
-    let (command_handle, cb) = closure_to_send_claim_object(cb);
+    let (command_handle, cb) = closure_to_send_credential_object(cb);
     let rc = api::proof::vcx_proof_send_request(command_handle, proof_handle, connection_handle, cb);
     assert_eq!(rc,0);
     receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap()
@@ -336,8 +349,8 @@ pub fn create_proof_request(source_id: &str, requested_attrs: &str) -> (u32, u32
     let requested_attrs = CString::new(requested_attrs).unwrap();
     let source_id_cstring = CString::new(source_id).unwrap();
     let (sender, receiver) = channel();
-    let cb = Box::new(move|err, claim_handle|{sender.send((err, claim_handle)).unwrap();});
-    let (command_handle, cb) = closure_to_create_claim(cb);
+    let cb = Box::new(move|err, credential_handle|{sender.send((err, credential_handle)).unwrap();});
+    let (command_handle, cb) = closure_to_create_credential(cb);
     let predicates_cstring = CString::new("[]").unwrap();
     let proof_name_cstring = CString::new("proof name").unwrap();
     let rc = api::proof::vcx_proof_create(command_handle,
@@ -392,15 +405,15 @@ pub fn get_proof(proof_handle: u32, connection_handle: u32) -> u32 {
 }
 
 #[allow(dead_code)]
-pub fn create_claimdef(source_id: &str, claimdef_name: &str, schema_seq_no: u32) -> (u32, u32){
+pub fn create_credentialdef(source_id: &str, credentialdef_name: &str, schema_seq_no: u32) -> (u32, u32){
     let source_id_cstring = CString::new(source_id).unwrap();
     let (sender, receiver) = channel();
-    let cb = Box::new(move|err, claimdef_handle|{sender.send((err, claimdef_handle)).unwrap();});
-    let (command_handle, cb) = closure_to_create_claimdef(cb);
-    let claimdef_name_cstring = CString::new(claimdef_name).unwrap();
-    let rc = api::claim_def::vcx_claimdef_create(command_handle,
+    let cb = Box::new(move|err, credentialdef_handle|{sender.send((err, credentialdef_handle)).unwrap();});
+    let (command_handle, cb) = closure_to_create_credentialdef(cb);
+    let credentialdef_name_cstring = CString::new(credentialdef_name).unwrap();
+    let rc = api::credential_def::vcx_credentialdef_create(command_handle,
                                                      source_id_cstring.as_ptr(),
-                                                     claimdef_name_cstring.as_ptr(),
+                                                     credentialdef_name_cstring.as_ptr(),
                                                         schema_seq_no,
                                                         ptr::null(),
                                                  false,
@@ -413,8 +426,8 @@ pub fn create_claimdef(source_id: &str, claimdef_name: &str, schema_seq_no: u32)
 pub fn create_schema(source_id: &str, schema_name: &str, schema_data: &str) -> (u32, u32, u32){
     let source_id_cstring = CString::new(source_id).unwrap();
     let (sender, receiver) = channel();
-    let cb = Box::new(move|err, claimdef_handle|{sender.send((err, claimdef_handle)).unwrap();});
-    let (command_handle, cb) = closure_to_create_claimdef(cb);
+    let cb = Box::new(move|err, credentialdef_handle|{sender.send((err, credentialdef_handle)).unwrap();});
+    let (command_handle, cb) = closure_to_create_credentialdef(cb);
     let schema_name_cstring = CString::new(schema_name).unwrap();
     let schema_data_cstring = CString::new(schema_data).unwrap();
     let rc = api::schema::vcx_schema_create(command_handle,

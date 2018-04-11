@@ -10,7 +10,7 @@ use rand::Rng;
 use api::{ VcxStateType, ProofStateType };
 use std::sync::Mutex;
 use std::collections::HashMap;
-use messages::proofs::proof_message::{ProofMessage, ClaimData };
+use messages::proofs::proof_message::{ProofMessage, CredentialData };
 use messages;
 use messages::proofs::proof_request::{ ProofRequestMessage };
 use messages::GeneralMessage;
@@ -19,7 +19,7 @@ use utils::error;
 use utils::constants::*;
 use utils::libindy::SigTypes;
 use utils::libindy::anoncreds::libindy_verifier_verify_proof;
-use claim_def::{ RetrieveClaimDef, ClaimDefCommon, ClaimDefinition };
+use credential_def::{ RetrieveCredentialDef, CredentialDefCommon, CredentialDefinition };
 use schema::{ LedgerSchema, SchemaTransaction };
 use proof_compliance::{ proof_compliance };
 use error::ToErrorCode;
@@ -45,7 +45,7 @@ pub struct Proof {
     name: String,
     version: String,
     nonce: String,
-    proof: Option<ProofMessage>,
+    proof: Option<ProofMessage>, // Refactoring this name to 'proof_message' causes some tests to fail.
     proof_request: Option<ProofRequestMessage>,
     remote_did: String,
     remote_vk: String,
@@ -66,7 +66,7 @@ impl Proof {
                            proof_req_json: &str,
                            proof_json: &str,
                            schemas_json: &str,
-                           claim_defs_json: &str,
+                           credential_defs_json: &str,
                            revoc_regs_json: &str) -> Result<u32, ProofError> {
         if settings::test_indy_mode_enabled() {return Ok(error::SUCCESS.code_num);}
 
@@ -74,7 +74,7 @@ impl Proof {
         let valid = libindy_verifier_verify_proof(proof_req_json,
                                                   proof_json,
                                                   schemas_json,
-                                                  claim_defs_json,
+                                                  credential_defs_json,
                                                   revoc_regs_json).map_err(|err| {
                 error!("Error: {}, Proof {} wasn't valid", err, self.handle);
                 self.proof_state = ProofStateType::ProofInvalid;
@@ -91,38 +91,38 @@ impl Proof {
         Ok(error::SUCCESS.code_num)
     }
 
-    fn build_claim_defs_json(&self, claim_data:&Vec<ClaimData>) -> Result<String, ProofError> {
-        debug!("building claimdef json for proof validation");
-        let mut claim_json: HashMap<String, ClaimDefinition> = HashMap::new();
-        for claim in claim_data.iter() {
-            let schema_seq_no = match claim.schema_seq_no {
+    fn build_credential_defs_json(&self, credential_data:&Vec<CredentialData>) -> Result<String, ProofError> {
+        debug!("building credentialdef json for proof validation");
+        let mut credential_json: HashMap<String, CredentialDefinition> = HashMap::new();
+        for credential in credential_data.iter() {
+            let schema_seq_no = match credential.schema_seq_no {
                 Some(x) => x,
-                None => return Err(ProofError::CommonError(error::INVALID_CLAIM_DEF_JSON.code_num))
+                None => return Err(ProofError::CommonError(error::INVALID_CREDENTIAL_DEF_JSON.code_num))
             };
-            let issuer_did = match claim.issuer_did {
+            let issuer_did = match credential.issuer_did {
                 Some(ref x) => x,
-                None => return Err(ProofError::CommonError(error::INVALID_CLAIM_DEF_JSON.code_num))
+                None => return Err(ProofError::CommonError(error::INVALID_CREDENTIAL_DEF_JSON.code_num))
             };
-            let claim_uuid = match claim.claim_uuid {
+            let credential_uuid = match credential.credential_uuid {
                 Some(ref x) => x,
-                None => return Err(ProofError::CommonError(error::INVALID_CLAIM_DEF_JSON.code_num))
+                None => return Err(ProofError::CommonError(error::INVALID_CREDENTIAL_DEF_JSON.code_num))
             };
 
-            let claim_def = RetrieveClaimDef::new()
-                .retrieve_claim_def("GGBDg1j8bsKmr4h5T9XqYf",
+            let credential_def = RetrieveCredentialDef::new()
+                .retrieve_credential_def("GGBDg1j8bsKmr4h5T9XqYf",
                                     schema_seq_no,
                                     Some(SigTypes::CL),
                                     issuer_did)
                 .map_err(|ec| ProofError::CommonError(ec.to_error_code()))?;
 
-            let claim_obj: ClaimDefinition = serde_json::from_str(&claim_def)
+            let credential_obj: CredentialDefinition = serde_json::from_str(&credential_def)
                 .map_err(|_| ProofError::CommonError(error::INVALID_JSON.code_num))?;
-            claim_json.insert(claim_uuid.to_string(), claim_obj);
+            credential_json.insert(credential_uuid.to_string(), credential_obj);
         }
 
-        serde_json::to_string(&claim_json).map_err(|err| {
-            warn!("{} with serde error: {}",error::INVALID_CLAIM_DEF_JSON.message, err);
-            ProofError::CommonError(error::INVALID_CLAIM_DEF_JSON.code_num)
+        serde_json::to_string(&credential_json).map_err(|err| {
+            warn!("{} with serde error: {}",error::INVALID_CREDENTIAL_DEF_JSON.message, err);
+            ProofError::CommonError(error::INVALID_CREDENTIAL_DEF_JSON.code_num)
         })
     }
 
@@ -134,16 +134,16 @@ impl Proof {
         }
     }
 
-    fn build_schemas_json(&self, claim_data:&Vec<ClaimData>) -> Result<String, ProofError> {
+    fn build_schemas_json(&self, credential_data:&Vec<CredentialData>) -> Result<String, ProofError> {
         debug!("building schemas json for proof validation");
 
         let mut schema_json: HashMap<String, SchemaTransaction> = HashMap::new();
-        for schema in claim_data.iter() {
+        for schema in credential_data.iter() {
             let schema_seq_no = match schema.schema_seq_no {
                 Some(x) => x,
                 None => return Err(ProofError::InvalidSchema())
             };
-            let claim_uuid = match schema.claim_uuid {
+            let credential_uuid = match schema.credential_uuid {
                 Some(ref x) => x,
                 None => return Err(ProofError::InvalidSchema())
             };
@@ -152,7 +152,7 @@ impl Proof {
                 Some(x) => x,
                 None => return Err(ProofError::InvalidProof())
             };
-            schema_json.insert(claim_uuid.to_string(), data);
+            schema_json.insert(credential_uuid.to_string(), data);
         }
 
         serde_json::to_string(&schema_json).map_err(|err| {
@@ -182,21 +182,21 @@ impl Proof {
             None => return Err(ProofError::InvalidProof()),
         };
 
-        let claim_data = proof_msg.get_claim_info().map_err(|ec| ProofError::CommonError(ec))?;
+        let credential_data = proof_msg.get_credential_info().map_err(|ec| ProofError::CommonError(ec))?;
 
-        if claim_data.len() == 0 {
+        if credential_data.len() == 0 {
             return Err(ProofError::InvalidCredData())
         }
-        let claim_def_msg = self.build_claim_defs_json(&claim_data)?;
-        let schemas_json = self.build_schemas_json(&claim_data)?;
+        let credential_def_msg = self.build_credential_defs_json(&credential_data)?;
+        let schemas_json = self.build_schemas_json(&credential_data)?;
         let proof_json = self.build_proof_json()?;
         let proof_req_json = self.build_proof_req_json()?;
-        debug!("*******\n{}\n********", claim_def_msg);
+        debug!("*******\n{}\n********", credential_def_msg);
         debug!("*******\n{}\n********", schemas_json);
         debug!("*******\n{}\n********", proof_json);
         debug!("*******\n{}\n********", proof_req_json);
         proof_compliance(&proof_req_msg.proof_request_data, &proof_msg)?;
-        self.validate_proof_indy(&proof_req_json, &proof_json, &schemas_json, &claim_def_msg, INDY_REVOC_REGS_JSON)
+        self.validate_proof_indy(&proof_req_json, &proof_json, &schemas_json, &credential_def_msg, INDY_REVOC_REGS_JSON)
     }
 
     fn send_proof_request(&mut self, connection_handle: u32) -> Result<u32, ProofError> {
@@ -234,7 +234,7 @@ impl Proof {
 
         self.proof_request = Some(proof_obj);
         let data = connection::generate_encrypted_payload(&self.prover_vk, &self.remote_vk, &proof_request, "PROOF_REQUEST").map_err(|_| ProofError::ProofConnectionError())?;
-        if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_CLAIM_OFFER_RESPONSE.to_vec()); }
+        if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_CREDENTIAL_OFFER_RESPONSE.to_vec()); }
         let title = format!("{} wants you to share {}", settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap(), self.name);
 
         match messages::send_message().to(&self.prover_did)
@@ -261,9 +261,11 @@ impl Proof {
     fn get_proof(&self) -> Result<String, ProofError> {
         let proof = match self.proof {
             Some(ref x) => x,
-            None => return Err(ProofError::InvalidHandle()),
+            None => {
+                return Err(ProofError::InvalidHandle())
+            },
         };
-        proof.get_proof_attributes().map_err(|ec| ProofError::CommonError(ec))
+        proof.get_proof_attributes().map_err(|ec| ProofError::ProofMessageError(ec))
     }
 
     fn get_proof_request_status(&mut self) -> Result<u32, ProofError> {
@@ -381,7 +383,7 @@ pub fn is_valid_handle(handle: u32) -> bool {
 pub fn update_state(handle: u32) {
     match PROOF_MAP.lock().unwrap().get_mut(&handle) {
         Some(t) => t.update_state(),
-        None => {}
+        None => {},
     };
 }
 
@@ -439,6 +441,7 @@ pub fn from_string(proof_data: &str) -> Result<u32, ProofError> {
     {
         let mut m = PROOF_MAP.lock().unwrap();
         debug!("inserting handle {} with source_id {:?} into proof table", new_handle, source_id);
+        println!("INSERTED INTO MAP, new_handle: {}", new_handle);
         m.insert(new_handle, proof);
     }
     Ok(new_handle)
@@ -482,11 +485,11 @@ fn parse_proof_payload(payload: &Vec<u8>) -> Result<ProofMessage, u32> {
     debug!("parsing proof payload: {:?}", payload);
     let data = messages::extract_json_payload(payload)?;
 
-    let my_claim_req = ProofMessage::from_str(&data).map_err(|err| {
+    let my_credential_req = ProofMessage::from_str(&data).map_err(|err| {
         warn!("invalid json {}", err);
         error::INVALID_JSON.code_num
     })?;
-    Ok(my_claim_req)
+    Ok(my_credential_req)
 }
 
 pub fn get_proof(handle: u32) -> Result<String, ProofError> {
@@ -511,7 +514,6 @@ mod tests {
     use connection::build_connection;
     use utils::libindy::{pool, set_libindy_rc};
     use messages::proofs::proof_message::{Attr};
-    use utils::error::POST_MSG_FAILURE;
     static REQUESTED_ATTRS: &'static str = "[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]";
     static REQUESTED_PREDICATES: &'static str = r#"[{"attr_name":"age","p_type":"GE","value":18,"schema_seq_no":1,"issuer_did":"8XFh8yBzrpJQmNyZzgoTqB"},{"attr_name":"num","p_type":"LE","value":99,"schema_seq_no":1,"issuer_did":"8XFh8yBzrpJQmNyZzgoTqB"}]"#;
     static PROOF_MSG: &str = r#"{"msg_type":"proof","version":"0.1","to_did":"BnRXf8yDMUwGyZVDkSENeq","from_did":"GxtnGN6ypZYgEqcftSQFnC","proof_request_id":"cCanHnpFAD","proofs":{"claim::e5fec91f-d03d-4513-813c-ab6db5715d55":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"state":"96473275571522321025213415717206189191162"},"a_prime":"22605045280481376895214546474258256134055560453004805058368015338423404000586901936329279496160366852115900235316791489357953785379851822281248296428005020302405076144264617943389810572564188437603815231794326272302243703078443007359698858400857606408856314183672828086906560155576666631125808137726233827430076624897399072853872527464581329767287002222137559918765406079546649258389065217669558333867707240780369514832185660287640444094973804045885379406641474693993903268791773620198293469768106363470543892730424494655747935463337367735239405840517696064464669905860189004121807576749786474060694597244797343224031","e":"70192089123105616042684481760592174224585053817450673797400202710878562748001698340846985261463026529360990669802293480312441048965520897","v":"1148619141217957986496757711054111791862691178309410923416837802801708689012670430650138736456223586898110113348220116209094530854607083005898964558239710027534227973983322542548800291320747321452329327824406430787211689678096549398458892087551551587767498991043777397791000822007896620414888602588897806008609113730393639807814070738699614969916095861363383223421727858670289337712185089527052065958362840287749622133424503902085247641830693297082507827948006947829401008622239294382186995101394791468192083810475776455445579931271665980788474331866572497866962452476638881287668931141052552771328556458489781734943404258692308937784221642452132005267809852656378394530342203469943982066011466088478895643800295937901139711103301249691253510784029114718919483272055970725860849610885050165709968510696738864528287788491998027072378656038991754015693216663830793243584350961586874315757599094357535856429087122365865868729","m":{"address2":"11774234640096848605908744857306447015748098256395922562149769943967941106193320512788344020652220849708117081570187385467979956319507248530701654682748372348387275979419669108338","city":"4853213962270369118453000522408430296589146124488849630769837449684434138367659379663124155088827069418193027370932024893343033367076071757003149452226758383807126385017161888440","address1":"12970590675851114145396120869959510754345567924518524026685086869487243290925032320159287997675756075512889990901552679591155319959039145119122576164798225386578339739435869622811","zip":"8333721522340131864419931745588776943042067606218561135102011966361165456174036379901390244538991611895455576519950813910672825465382312504250936740379785802177629077591444977329"},"m1":"92853615502250003546205004470333326341901175168428906399291824325990659330595200000112546157141090642053863739870044907457400076448073272490169488870502566172795456430489790324815765612798273406119873266684053517977802902202155082987833343670942161987285661291655743810590661447300059024966135828466539810035","m2":"14442362430453309930284822850357071315613831915865367971974791350454381198894252834180803515368579729220423713315556807632571621646127926114010380486713602821529657583905131582938"},"ge_proofs":[]},"non_revoc_proof":null},"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH"}},"aggregated_proof":{"c_hash":"68430476900085482958838239880418115228681348197588159723604944078288347793331","c_list":[[179,17,2,242,194,227,92,203,28,32,255,113,112,20,5,243,9,111,220,111,21,210,116,12,167,119,253,181,37,40,143,215,140,42,179,97,75,229,96,94,54,248,206,3,48,14,61,219,160,122,139,227,166,183,37,43,197,200,28,220,217,10,65,42,6,195,124,44,164,65,114,206,51,231,254,156,170,141,21,153,50,251,237,65,147,97,243,17,157,116,213,201,80,119,106,70,88,60,55,36,33,160,135,106,60,212,191,235,116,57,78,177,61,86,44,226,205,100,134,118,93,6,26,58,220,66,232,166,202,62,90,174,231,207,19,239,233,223,70,191,199,100,157,62,139,176,28,184,9,70,116,199,142,237,198,183,12,32,53,84,207,202,77,56,97,177,154,169,223,201,212,163,212,101,184,255,215,167,16,163,136,44,25,123,49,15,229,41,149,133,159,86,106,208,234,73,207,154,194,162,141,63,159,145,94,47,174,51,225,91,243,2,221,202,59,11,212,243,197,208,116,42,242,131,221,137,16,169,203,215,239,78,254,150,42,169,202,132,172,106,179,130,178,130,147,24,173,213,151,251,242,44,54,47,208,223]]},"requested_proof":{"revealed_attrs":{"sdf":["claim::e5fec91f-d03d-4513-813c-ab6db5715d55","UT","96473275571522321025213415717206189191162"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{}}}"#;
@@ -727,20 +729,20 @@ mod tests {
 
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
         httpclient::set_next_u8_response(UPDATE_PROOF_RESPONSE.to_vec());
-        //httpclient::set_next_u8_response(GET_PROOF_OR_CLAIM_RESPONSE.to_vec());
+        //httpclient::set_next_u8_response(GET_PROOF_OR_CREDENTIAL_RESPONSE.to_vec());
 
         proof.update_state();
         assert_eq!(proof.get_state(), VcxStateType::VcxStateRequestReceived as u32);
         assert_eq!(proof.get_proof_state(), ProofStateType::ProofInvalid as u32);
         assert_eq!(proof.prover_did, "GxtnGN6ypZYgEqcftSQFnC");
         let proof_data = proof.get_proof().unwrap();
-        assert!(proof_data.contains(r#"{"schema_seq_no":15,"issuer_did":"2hoqvcwupRTUNkXn6ArYzs","claim_uuid":"claim::b2bde299-2db7-425d-ac10-840ddbc464b1","attr_info":{"name":"state","value":"UT","type":"revealed"}}"#));
+        assert!(proof_data.contains(r#"{"schema_seq_no":15,"issuer_did":"2hoqvcwupRTUNkXn6ArYzs","credential_uuid":"claim::b2bde299-2db7-425d-ac10-840ddbc464b1","attr_info":{"name":"state","value":"UT","type":"revealed"}}"#));
         /* converting proof to a string produces non-deterministic results */
     }
 
     #[test]
-    fn test_build_claim_defs_json_with_multiple_claims() {
-        let claim_result = r#"{"auditPath":["7hRA1eWgHDmqFfXQHmHLzCE1ZeXvvkq5VaJEpb6NWz74","4QvchQ6JGxvU57kyzHzKJvUV7rb12jpFX7FBP9LrN9qA","G14qswNCM1mxhRHPMLx4h5qmbLEDQkczjJUVUEedUGxQ","4B6hCrJc2TubiFE1rgxjM1Hj7zvTTjxkzo9Gikhy4MVZ"],"data":{"attr_names":["name","male"],"name":"name","version":"1.0"},"identifier":"VsKV7grR1BUE29mG2Fm2kX","reqId":1515795761424583710,"rootHash":"C98M4qjp4zzHw6APDWwGxTBHkEdAhjUQepi3Bxz2auna","seqNo":299,"signature":"4iFhpLknpRiCU6Axrj8HcFxMaxGaMmnzwJ1WMKndK653k4B7LYGZD2PNHEEGZQEBVXwhgDxPFe1t9bSzdVcEQ3eL","txnTime":1515795761,"type":"101"}"#;
+    fn test_build_credential_defs_json_with_multiple_credentials() {
+        let credential_result = r#"{"auditPath":["7hRA1eWgHDmqFfXQHmHLzCE1ZeXvvkq5VaJEpb6NWz74","4QvchQ6JGxvU57kyzHzKJvUV7rb12jpFX7FBP9LrN9qA","G14qswNCM1mxhRHPMLx4h5qmbLEDQkczjJUVUEedUGxQ","4B6hCrJc2TubiFE1rgxjM1Hj7zvTTjxkzo9Gikhy4MVZ"],"data":{"attr_names":["name","male"],"name":"name","version":"1.0"},"identifier":"VsKV7grR1BUE29mG2Fm2kX","reqId":1515795761424583710,"rootHash":"C98M4qjp4zzHw6APDWwGxTBHkEdAhjUQepi3Bxz2auna","seqNo":299,"signature":"4iFhpLknpRiCU6Axrj8HcFxMaxGaMmnzwJ1WMKndK653k4B7LYGZD2PNHEEGZQEBVXwhgDxPFe1t9bSzdVcEQ3eL","txnTime":1515795761,"type":"101"}"#;
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let data = r#"{"ref":1,"origin":"NcYxiDXkpYi6ov5FcYDi1e","signature_type":"CL","data":{"primary":{"n":"9","s":"8","rms":"7","r":{"height":"6","sex":"5","age":"4","name":"3"},"rctxt":"2","z":"1"},"revocation":null}}"#;
@@ -765,53 +767,53 @@ mod tests {
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
         };
-        let claim1 = ClaimData {
+        let credential1 = CredentialData {
             schema_seq_no: Some(1),
             issuer_did: Some("11".to_string()),
-            claim_uuid: Some("claim1".to_string()),
+            credential_uuid: Some("credential1".to_string()),
             attr_info: Some(Attr {
-                name: "claim1Name".to_string(),
+                name: "credential1Name".to_string(),
                 value: serde_json::to_value("val1").unwrap(),
                 attr_type: "attr1".to_string(),
                 predicate_type: None,
             })
         };
-        let claim2 = ClaimData {
+        let credential2 = CredentialData {
             schema_seq_no: Some(2),
             issuer_did: Some("22".to_string()),
-            claim_uuid: Some("claim2".to_string()),
+            credential_uuid: Some("credential2".to_string()),
             attr_info: Some(Attr {
-                name: "claim2Name".to_string(),
+                name: "credential2Name".to_string(),
                 value: serde_json::to_value("val2").unwrap(),
                 attr_type: "attr2".to_string(),
                 predicate_type: None,
             })
         };
-        let claim3 = ClaimData {
+        let credential3 = CredentialData {
             schema_seq_no: Some(3),
             issuer_did: Some("33".to_string()),
-            claim_uuid: Some("claim3".to_string()),
+            credential_uuid: Some("credential3".to_string()),
             attr_info: Some(Attr {
-                name: "claim3Name".to_string(),
+                name: "credential3Name".to_string(),
                 value: serde_json::to_value("val3").unwrap(),
                 attr_type: "attr3".to_string(),
                 predicate_type: None,
             })
         };
-        let claims = vec![claim1.clone(), claim2.clone(), claim3.clone()];
-        let claim_json = proof.build_claim_defs_json(claims.as_ref()).unwrap();
-        let test_claim_json = format!(r#"{{"{}":{},"{}":{},"{}":{}}}"#,
-                                      claim1.claim_uuid.unwrap(), data,
-                                      claim2.claim_uuid.unwrap(), data,
-                                      claim3.claim_uuid.unwrap(), data);
-        assert!(claim_json.contains("\"claim1\":{\"ref\":1,\"origin\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"signature_type\":\"CL\""));
-        assert!(claim_json.contains("\"claim2\":{\"ref\":1,\"origin\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"signature_type\":\"CL\""));
-        assert!(claim_json.contains("\"claim3\":{\"ref\":1,\"origin\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"signature_type\":\"CL\""));
+        let credentials = vec![credential1.clone(), credential2.clone(), credential3.clone()];
+        let credential_json = proof.build_credential_defs_json(credentials.as_ref()).unwrap();
+        let test_credential_json = format!(r#"{{"{}":{},"{}":{},"{}":{}}}"#,
+                                      credential1.credential_uuid.unwrap(), data,
+                                      credential2.credential_uuid.unwrap(), data,
+                                      credential3.credential_uuid.unwrap(), data);
+        assert!(credential_json.contains("\"credential1\":{\"ref\":1,\"origin\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"signature_type\":\"CL\""));
+        assert!(credential_json.contains("\"credential2\":{\"ref\":1,\"origin\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"signature_type\":\"CL\""));
+        assert!(credential_json.contains("\"credential3\":{\"ref\":1,\"origin\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"signature_type\":\"CL\""));
     }
 
     #[test]
     fn test_build_schemas_json_with_multiple_schemas() {
-        let claim_result = r#"{"auditPath":["7hRA1eWgHDmqFfXQHmHLzCE1ZeXvvkq5VaJEpb6NWz74","4QvchQ6JGxvU57kyzHzKJvUV7rb12jpFX7FBP9LrN9qA","G14qswNCM1mxhRHPMLx4h5qmbLEDQkczjJUVUEedUGxQ","4B6hCrJc2TubiFE1rgxjM1Hj7zvTTjxkzo9Gikhy4MVZ"],"data":{"attr_names":["name","male"],"name":"name","version":"1.0"},"identifier":"VsKV7grR1BUE29mG2Fm2kX","reqId":1515795761424583710,"rootHash":"C98M4qjp4zzHw6APDWwGxTBHkEdAhjUQepi3Bxz2auna","seqNo":299,"signature":"4iFhpLknpRiCU6Axrj8HcFxMaxGaMmnzwJ1WMKndK653k4B7LYGZD2PNHEEGZQEBVXwhgDxPFe1t9bSzdVcEQ3eL","txnTime":1515795761,"type":"101"}"#;
+        let credential_result = r#"{"auditPath":["7hRA1eWgHDmqFfXQHmHLzCE1ZeXvvkq5VaJEpb6NWz74","4QvchQ6JGxvU57kyzHzKJvUV7rb12jpFX7FBP9LrN9qA","G14qswNCM1mxhRHPMLx4h5qmbLEDQkczjJUVUEedUGxQ","4B6hCrJc2TubiFE1rgxjM1Hj7zvTTjxkzo9Gikhy4MVZ"],"data":{"attr_names":["name","male"],"name":"name","version":"1.0"},"identifier":"VsKV7grR1BUE29mG2Fm2kX","reqId":1515795761424583710,"rootHash":"C98M4qjp4zzHw6APDWwGxTBHkEdAhjUQepi3Bxz2auna","seqNo":299,"signature":"4iFhpLknpRiCU6Axrj8HcFxMaxGaMmnzwJ1WMKndK653k4B7LYGZD2PNHEEGZQEBVXwhgDxPFe1t9bSzdVcEQ3eL","txnTime":1515795761,"type":"101"}"#;
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let data = r#"{"ref":1,"origin":"NcYxiDXkpYi6ov5FcYDi1e","signature_type":"CL","data":{"primary":{"n":"9","s":"8","rms":"7","r":{"height":"6","sex":"5","age":"4","name":"3"},"rctxt":"2","z":"1"},"revocation":null}}"#;
@@ -836,44 +838,44 @@ mod tests {
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
         };
-        let claim1 = ClaimData {
+        let credential1 = CredentialData {
             schema_seq_no: Some(1),
             issuer_did: Some("11".to_string()),
-            claim_uuid: Some("claim1".to_string()),
+            credential_uuid: Some("credential1".to_string()),
             attr_info: Some(Attr {
-                name: "claim1Name".to_string(),
+                name: "credential1Name".to_string(),
                 value: serde_json::to_value("val1").unwrap(),
                 attr_type: "attr1".to_string(),
                 predicate_type: None,
             })
         };
-        let claim2 = ClaimData {
+        let credential2 = CredentialData {
             schema_seq_no: Some(2),
             issuer_did: Some("22".to_string()),
-            claim_uuid: Some("claim2".to_string()),
+            credential_uuid: Some("credential2".to_string()),
             attr_info: Some(Attr {
-                name: "claim2Name".to_string(),
+                name: "credential2Name".to_string(),
                 value: serde_json::to_value("val2").unwrap(),
                 attr_type: "attr2".to_string(),
                 predicate_type: None,
             })
         };
-        let claim3 = ClaimData {
+        let credential3 = CredentialData {
             schema_seq_no: Some(3),
             issuer_did: Some("33".to_string()),
-            claim_uuid: Some("claim3".to_string()),
+            credential_uuid: Some("credential3".to_string()),
             attr_info: Some(Attr {
-                name: "claim3Name".to_string(),
+                name: "credential3Name".to_string(),
                 value: serde_json::to_value("val3").unwrap(),
                 attr_type: "attr3".to_string(),
                 predicate_type: None,
             })
         };
-        let claims = vec![claim1.clone(), claim2.clone(), claim3.clone()];
-        let schemas_json = proof.build_schemas_json(claims.as_ref()).unwrap();
-        assert!(schemas_json.contains("\"claim1\":{\"seqNo\":344,\"identifier\":\"VsKV7grR1BUE29mG2Fm2kX\",\"txnTime\":1516284381,\"type\":\"101\",\"data\":{\"name\":\"get schema attrs\",\"version\":\"1.0\",\"attr_names\":[\"test\",\"get\",\"schema\",\"attrs\"]}}"));
-        assert!(schemas_json.contains("\"claim2\":{\"seqNo\":344,\"identifier\":\"VsKV7grR1BUE29mG2Fm2kX\",\"txnTime\":1516284381,\"type\":\"101\",\"data\":{\"name\":\"get schema attrs\",\"version\":\"1.0\",\"attr_names\":[\"test\",\"get\",\"schema\",\"attrs\"]}}"));
-        assert!(schemas_json.contains("\"claim3\":{\"seqNo\":344,\"identifier\":\"VsKV7grR1BUE29mG2Fm2kX\",\"txnTime\":1516284381,\"type\":\"101\",\"data\":{\"name\":\"get schema attrs\",\"version\":\"1.0\",\"attr_names\":[\"test\",\"get\",\"schema\",\"attrs\"]}}"));
+        let credentials = vec![credential1.clone(), credential2.clone(), credential3.clone()];
+        let schemas_json = proof.build_schemas_json(credentials.as_ref()).unwrap();
+        assert!(schemas_json.contains("\"credential1\":{\"seqNo\":344,\"identifier\":\"VsKV7grR1BUE29mG2Fm2kX\",\"txnTime\":1516284381,\"type\":\"101\",\"data\":{\"name\":\"get schema attrs\",\"version\":\"1.0\",\"attr_names\":[\"test\",\"get\",\"schema\",\"attrs\"]}}"));
+        assert!(schemas_json.contains("\"credential2\":{\"seqNo\":344,\"identifier\":\"VsKV7grR1BUE29mG2Fm2kX\",\"txnTime\":1516284381,\"type\":\"101\",\"data\":{\"name\":\"get schema attrs\",\"version\":\"1.0\",\"attr_names\":[\"test\",\"get\",\"schema\",\"attrs\"]}}"));
+        assert!(schemas_json.contains("\"credential3\":{\"seqNo\":344,\"identifier\":\"VsKV7grR1BUE29mG2Fm2kX\",\"txnTime\":1516284381,\"type\":\"101\",\"data\":{\"name\":\"get schema attrs\",\"version\":\"1.0\",\"attr_names\":[\"test\",\"get\",\"schema\",\"attrs\"]}}"));
     }
 
     #[test]
@@ -905,9 +907,9 @@ mod tests {
             agent_vk: VERKEY.to_string(),
         };
         let proof_str = proof.get_proof().unwrap();
-        assert!(proof_str.contains(r#"{"schema_seq_no":103,"issuer_did":"V4SGRU86Z58d6TV7PBUe6f","claim_uuid":"claim::71b6070f-14ba-45fa-876d-1fe8491fe5d4","attr_info":{"name":"name","value":"Alex","type":"revealed"}}"#));
+        assert!(proof_str.contains(r#"{"schema_seq_no":103,"issuer_did":"V4SGRU86Z58d6TV7PBUe6f","credential_uuid":"claim::71b6070f-14ba-45fa-876d-1fe8491fe5d4","attr_info":{"name":"name","value":"Alex","type":"revealed"}}"#));
         assert!(proof_str.contains(r#"{"name":"self_attested_attr","value":"self_value","type":"self_attested"}"#));
-        assert!(proof_str.contains(r#"{"schema_seq_no":778,"issuer_did":"12345","claim_uuid":"claim::71b6070f-14ba-45fa-876d-1fe8491fe5d4","attr_info":{"name":"predicate2","value":99,"type":"predicate","predicate_type":"LE"}}"#));
+        assert!(proof_str.contains(r#"{"schema_seq_no":778,"issuer_did":"12345","credential_uuid":"claim::71b6070f-14ba-45fa-876d-1fe8491fe5d4","attr_info":{"name":"predicate2","value":99,"type":"predicate","predicate_type":"LE"}}"#));
     }
 
     #[test]
@@ -965,7 +967,7 @@ mod tests {
         assert_eq!(proof.proof_state, ProofStateType::ProofValidated);
 
         let proof_data = proof.get_proof().unwrap();
-        assert!(proof_data.contains(r#""schema_seq_no":694,"issuer_did":"DunkM3x1y7S4ECgSL4Wkru","claim_uuid":"claim::1f927d68-8905-4188-afd6-374b93202802","attr_info":{"name":"age","value":18,"type":"predicate","predicate_type":"GE"}}"#));
+        assert!(proof_data.contains(r#""schema_seq_no":694,"issuer_did":"DunkM3x1y7S4ECgSL4Wkru","credential_uuid":"claim::1f927d68-8905-4188-afd6-374b93202802","attr_info":{"name":"age","value":18,"type":"predicate","predicate_type":"GE"}}"#));
     }
     #[ignore]
     #[test]
@@ -1007,7 +1009,7 @@ mod tests {
 
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
         httpclient::set_next_u8_response(UPDATE_PROOF_RESPONSE.to_vec());
-        //httpclient::set_next_u8_response(GET_PROOF_OR_CLAIM_RESPONSE.to_vec());
+        //httpclient::set_next_u8_response(GET_PROOF_OR_CREDENTIAL_RESPONSE.to_vec());
 
         proof.get_proof_request_status().unwrap();
         assert_eq!(proof.get_state(), VcxStateType::VcxStateRequestReceived as u32);
@@ -1026,11 +1028,13 @@ mod tests {
     }
 
     #[test]
-    fn test_errors() {
-        use utils::error::INVALID_JSON;
+    fn test_proof_errors() {
+        use utils::error::{ INVALID_JSON, POST_MSG_FAILURE };
+        use utils::libindy::wallet;
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
 
+        let my_wallet = wallet::init_wallet("proof_errors").unwrap();
         let mut proof = create_boxed_proof();
 
         assert_eq!(proof.validate_proof_indy("{}", "{}", "{}", "{}","").err(),
@@ -1040,7 +1044,7 @@ mod tests {
         let bad_handle = rand::thread_rng().gen::<u32>();
         assert_eq!(proof.send_proof_request(bad_handle).err(),
                    Some(ProofError::ProofNotReadyError()));
-        // TODO: Add test that returns a INVALID_PROOF_CLAIM_DATA
+        // TODO: Add test that returns a INVALID_PROOF_CREDENTIAL_DATA
         assert_eq!(proof.get_proof_request_status().err(),
                    Some(ProofError::ProofMessageError(POST_MSG_FAILURE.code_num)));
 
@@ -1055,6 +1059,10 @@ mod tests {
         assert_eq!(to_string(bad_handle).err(), Some(ProofError::InvalidHandle()));
         assert_eq!(get_source_id(bad_handle).err(), Some(ProofError::InvalidHandle()));
         assert_eq!(from_string(empty).err(), Some(ProofError::CommonError(INVALID_JSON.code_num)));
+        let mut proof_good = create_boxed_proof();
+        assert_eq!(proof_good.get_proof_request_status().err(), Some(ProofError::ProofMessageError(POST_MSG_FAILURE.code_num)));
+
+        wallet::delete_wallet("proof_errors").unwrap();
     }
 }
 

@@ -1,6 +1,6 @@
 use std::fmt;
 use error::ToErrorCode;
-use utils::error::{INVALID_PROOF_HANDLE, INVALID_PROOF, INVALID_PROOF_CLAIM_DATA, INVALID_SCHEMA,
+use utils::error::{INVALID_PROOF_HANDLE, INVALID_PROOF, INVALID_PROOF_CREDENTIAL_DATA, INVALID_SCHEMA,
 NOT_READY, INVALID_CONNECTION_HANDLE, CONNECTION_ERROR, FAILED_PROOF_COMPLIANCE, CREATE_PROOF_ERROR };
 
 
@@ -26,7 +26,7 @@ impl fmt::Display for ProofError {
             ProofError::InvalidHandle() => write!(f, "{}", INVALID_PROOF_HANDLE.message),
             ProofError::InvalidProof() => write!(f, "{}", INVALID_PROOF.message),
             ProofError::InvalidSchema() => write!(f, "{}", INVALID_SCHEMA.message),
-            ProofError::InvalidCredData() => write!(f, "{}", INVALID_PROOF_CLAIM_DATA.message),
+            ProofError::InvalidCredData() => write!(f, "{}", INVALID_PROOF_CREDENTIAL_DATA.message),
             ProofError::InvalidConnection() => write!(f, "{}",  CONNECTION_ERROR.message),
             ProofError::ProofNotReadyError() => write!(f, "{}", NOT_READY.message),
             ProofError::ProofConnectionError() => write!(f, "{}", INVALID_CONNECTION_HANDLE.message),
@@ -50,7 +50,7 @@ impl ToErrorCode for ProofError {
             ProofError::InvalidHandle() => INVALID_PROOF_HANDLE.code_num,
             ProofError::InvalidProof() => INVALID_PROOF.code_num,
             ProofError::InvalidSchema() => INVALID_SCHEMA.code_num,
-            ProofError::InvalidCredData() => INVALID_PROOF_CLAIM_DATA.code_num,
+            ProofError::InvalidCredData() => INVALID_PROOF_CREDENTIAL_DATA.code_num,
             ProofError::InvalidConnection() => CONNECTION_ERROR.code_num,
             ProofError::CreateProofError() => CREATE_PROOF_ERROR.code_num,
             ProofError::ProofNotReadyError() => NOT_READY.code_num,
@@ -61,3 +61,4 @@ impl ToErrorCode for ProofError {
         }
     }
 }
+

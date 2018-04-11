@@ -6,7 +6,7 @@ from vcx.common import error_message
 import json
 
 
-class ClaimDef(VcxBase):
+class CredentialDef(VcxBase):
 
     def __init__(self, source_id: str, name: str, schema_no: int):
         VcxBase.__init__(self, source_id)
@@ -16,7 +16,7 @@ class ClaimDef(VcxBase):
 
     def __del__(self):
         self.release()
-        self.logger.debug("Deleted {} obj: {}".format(ClaimDef, self.handle))
+        self.logger.debug("Deleted {} obj: {}".format(CredentialDef, self.handle))
 
     @property
     def name(self):
@@ -46,26 +46,26 @@ class ClaimDef(VcxBase):
         c_revocation = c_bool(revocation)
         c_params = (c_source_id, c_name, c_schema_no, c_issuer_did, c_revocation)
 
-        return await ClaimDef._create("vcx_claimdef_create",
-                                      constructor_params,
-                                      c_params)
+        return await CredentialDef._create("vcx_credentialdef_create",
+                                           constructor_params,
+                                           c_params)
 
     @staticmethod
     async def deserialize(data: dict):
         try:
-            schema_no = data['claim_def']['ref']
-            claim_def = await ClaimDef._deserialize("vcx_claimdef_deserialize",
-                                                    json.dumps(data),
-                                                    data['source_id'],
-                                                    data['name'],
-                                                    schema_no)
-            return claim_def
+            schema_no = data['credential_def']['ref']
+            credential_def = await CredentialDef._deserialize("vcx_credentialdef_deserialize",
+                                                              json.dumps(data),
+                                                              data['source_id'],
+                                                              data['name'],
+                                                              schema_no)
+            return credential_def
         except KeyError:
-            raise VcxError(ErrorCode.InvalidClaimDef, error_message(ErrorCode.InvalidClaimDef))
+            raise VcxError(ErrorCode.InvalidCredentialDef, error_message(ErrorCode.InvalidCredentialDef))
 
     async def serialize(self) -> dict:
-        return await self._serialize(ClaimDef, 'vcx_claimdef_serialize')
+        return await self._serialize(CredentialDef, 'vcx_credentialdef_serialize')
 
     def release(self) -> None:
 
-        self._release(ClaimDef, 'vcx_claimdef_release')
+        self._release(CredentialDef, 'vcx_credentialdef_release')

@@ -42,7 +42,7 @@ pub extern fn vcx_connection_create(command_handle: u32,
             Err(x) => {
                 warn!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {})",
                     //TODO remove to_error_code()
-                      command_handle, error_string(x.to_error_code()), 0);
+                      command_handle, x.to_string(), 0);
                 cb(command_handle, x.to_error_code(), 0)
             },
         };
@@ -68,7 +68,7 @@ pub extern fn vcx_connection_create(command_handle: u32,
 pub extern fn vcx_connection_create_with_invite(command_handle: u32,
                                                 source_id: *const c_char,
                                                 invite_details: *const c_char,
-                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, claim_handle: u32)>) -> u32 {
+                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, credential_handle: u32)>) -> u32 {
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
@@ -134,7 +134,7 @@ pub extern fn vcx_connection_connect(command_handle:u32,
                         let msg = CStringUtils::string_to_cstring(x);
                         cb(command_handle, error::SUCCESS.code_num, msg.as_ptr())
                     },
-                    Err(_) => {
+                    Err(e) => {
                         warn!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
                               command_handle, connection_handle, error_string(0), "null", source_id);
                         cb(command_handle, error::SUCCESS.code_num, ptr::null_mut())
@@ -206,7 +206,7 @@ pub extern fn vcx_connection_serialize(command_handle: u32,
 /// connection_data: json string representing a connection object
 /// # Examples connection_data -> {"source_id":"1","handle":2,"pw_did":"did","pw_verkey":"verkey","did_endpoint":"","state":2,"uuid":"","endpoint":"","invite_detail":{"e":"","rid":"","sakdp":"","sn":"","sD":"","lu":"","sVk":"","tn":""}}
 ///
-/// cb: Callback that provides claim handle and provides error status
+/// cb: Callback that provides credential handle and provides error status
 ///
 /// #Returns
 /// Error code as a u32
@@ -249,7 +249,7 @@ pub extern fn vcx_connection_deserialize(command_handle: u32,
 ///
 /// connection_handle: was provided during creation. Used to identify connection object
 ///
-/// cb: Callback that provides most current state of the claim and error status of request
+/// cb: Callback that provides most current state of the credential and error status of request
 ///
 /// #Returns
 /// Error code as a u32
@@ -469,13 +469,13 @@ mod tests {
         assert_eq!(rc, error::INVALID_OPTION.code_num);
     }
 
-    extern "C" fn serialize_cb(handle: u32, err: u32, claim_string: *const c_char) {
+    extern "C" fn serialize_cb(handle: u32, err: u32, credential_string: *const c_char) {
         assert_eq!(err, 0);
-        if claim_string.is_null() {
-            panic!("claim_string is empty");
+        if credential_string.is_null() {
+            panic!("credential_string is empty");
         }
-        check_useful_c_str!(claim_string, ());
-        println!("successfully called serialize_cb: {}", claim_string);
+        check_useful_c_str!(credential_string, ());
+        println!("successfully called serialize_cb: {}", credential_string);
     }
 
     #[test]
