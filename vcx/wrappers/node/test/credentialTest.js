@@ -141,7 +141,7 @@ describe('A Credential', function () {
     let connection = await Connection.create({ id: '234' })
     assert(connection)
     await connection.connect()
-    let val = await Credential.get_offers(connection)
+    let val = await Credential.getOffers(connection)
     assert(val)
   })
 
