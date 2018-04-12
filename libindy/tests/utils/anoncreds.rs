@@ -19,9 +19,9 @@ use utils::constants::*;
 
 use std::collections::{HashSet, HashMap};
 
-use utils::domain::schema::{Schema, SchemaV1};
-use utils::domain::credential_definition::{CredentialDefinition, CredentialDefinitionConfig};
-use utils::domain::revocation_registry_definition::RevocationRegistryConfig;
+use utils::domain::schema::{Schema, SchemaV1, SCHEMA_MARKER};
+use utils::domain::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CRED_DEF_MARKER};
+use utils::domain::revocation_registry_definition::{RevocationRegistryConfig};
 use utils::domain::credential::{AttributeValues, CredentialInfo};
 use utils::domain::credential_for_proof_request::CredentialsForProofRequest;
 
@@ -378,7 +378,7 @@ impl AnoncredsUtils {
     }
 
     pub fn gvt_schema_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID, "\x02", GVT_SCHEMA_NAME, SCHEMA_VERSION)
+        AnoncredsUtils::build_id(ISSUER_DID, SCHEMA_MARKER, GVT_SCHEMA_NAME, SCHEMA_VERSION)
     }
 
     pub fn gvt_schema() -> SchemaV1 {
@@ -396,7 +396,7 @@ impl AnoncredsUtils {
     }
 
     pub fn xyz_schema_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID, "\x02", XYZ_SCHEMA_NAME, SCHEMA_VERSION)
+        AnoncredsUtils::build_id(ISSUER_DID, SCHEMA_MARKER, XYZ_SCHEMA_NAME, SCHEMA_VERSION)
     }
 
     pub fn xyz_schema() -> SchemaV1 {
@@ -414,15 +414,15 @@ impl AnoncredsUtils {
     }
 
     pub fn issuer_1_gvt_cred_def_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID, "\x03", SIGNATURE_TYPE, &AnoncredsUtils::gvt_schema_id())
+        AnoncredsUtils::build_id(ISSUER_DID, CRED_DEF_MARKER, SIGNATURE_TYPE, &AnoncredsUtils::gvt_schema_id())
     }
 
     pub fn issuer_2_gvt_cred_def_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID_2, "\x03", SIGNATURE_TYPE, &AnoncredsUtils::gvt_schema_id())
+        AnoncredsUtils::build_id(ISSUER_DID_2, CRED_DEF_MARKER, SIGNATURE_TYPE, &AnoncredsUtils::gvt_schema_id())
     }
 
     pub fn issuer_1_xyz_cred_def_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID, "\x03", SIGNATURE_TYPE, &AnoncredsUtils::xyz_schema_id())
+        AnoncredsUtils::build_id(ISSUER_DID, CRED_DEF_MARKER, SIGNATURE_TYPE, &AnoncredsUtils::xyz_schema_id())
     }
 
     pub fn issuer_1_gvt_cred_offer_info() -> CredentialOfferInfo {

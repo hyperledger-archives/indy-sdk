@@ -43,11 +43,11 @@
 }
 
 - (NSString *)getGvtSchemaId {
-    return @"NcYxiDXkpYi6ov5FcYDi1e:\\u0002:gvt:1.0";
+    return @"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
 }
 
 - (NSString *)getXyzSchemaId {
-    return @"NcYxiDXkpYi6ov5FcYDi1e:\\u0002:xyz:1.0";
+    return @"NcYxiDXkpYi6ov5FcYDi1e:2:xyz:1.0";
 }
 
 - (NSString *)getGvtSchemaJson {
@@ -60,7 +60,7 @@
 }
 
 - (NSString *)getIssuer1GvtCredDefId {
-    return @"NcYxiDXkpYi6ov5FcYDi1e:\\u0003:CL:NcYxiDXkpYi6ov5FcYDi1e:\\u0002:gvt:1.0";
+    return @"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
 }
 
 - (NSString *)getGvtCredentialValuesJson {

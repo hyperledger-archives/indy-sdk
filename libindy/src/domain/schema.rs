@@ -9,7 +9,7 @@ use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use std::collections::{HashMap, HashSet};
 
-pub const SCHEMA_MARKER: &'static str = "\x02";
+pub const SCHEMA_MARKER: &'static str = "2";
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

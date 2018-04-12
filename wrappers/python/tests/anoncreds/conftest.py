@@ -159,17 +159,17 @@ def master_secret_id():
 
 @pytest.fixture(scope="session")
 def issuer_1_gvt_cred_def_id(issuer_did, gvt_schema_id):
-    return build_id(issuer_did, "\u0003", "CL", gvt_schema_id)
+    return build_id(issuer_did, "3", "CL", gvt_schema_id)
 
 
 @pytest.fixture(scope="session")
 def issuer_1_xyz_cred_def_id(issuer_did, xyz_schema_id):
-    return build_id(issuer_did, "\u0003", "CL", xyz_schema_id)
+    return build_id(issuer_did, "3", "CL", xyz_schema_id)
 
 
 @pytest.fixture(scope="session")
 def issuer_2_gvt_cred_def_id(issuer_did_2, gvt_schema_id):
-    return build_id(issuer_did_2, "\u0003", "CL", gvt_schema_id)
+    return build_id(issuer_did_2, "3", "CL", gvt_schema_id)
 
 
 @pytest.fixture(scope="session")

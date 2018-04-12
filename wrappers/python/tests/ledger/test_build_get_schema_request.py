@@ -6,7 +6,7 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_build_get_schema_requests_works_for_correct_data_json(did_trustee):
-    id_ = "identifier:1:name:1.0"
+    id_ = "identifier:2:name:1.0"
 
     expected_response = {
         "identifier": did_trustee,
