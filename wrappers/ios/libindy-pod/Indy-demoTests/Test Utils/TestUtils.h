@@ -77,4 +77,18 @@
 
 + (NSString *)unknownDid;
 
++ (NSString *)defaultType;
+
++ (NSString *)gvtSchemaName;
+
++ (NSString *)schemaVersion;
+
++ (NSString *)gvtSchemaAttrs;
+
++ (NSString *)xyzSchemaName;
+
++ (NSString *)xyzSchemaAttrs;
+
++ (NSString *)tag;
+
 @end

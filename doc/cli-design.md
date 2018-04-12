@@ -253,16 +253,16 @@ ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-v
 ledger get-schema did=<did-value> name=<name-value> version=<version-value>
 ```
 
-#### CLAIM_DEF transaction
-Send CLAIM_DEF transaction
+#### CRED_DEF transaction
+Send CRED_DEF transaction
 ```
-ledger claim-def schema_no=<schema_no-value> signature_type=<signature_type-value> primary=<primary-value> [revocation=<revocation-value>]
+ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> primary=<primary-value> [revocation=<revocation-value>]
 ```
 
-#### GET_CLAIM_DEF transaction
-Send GET_CLAIM_DEF transaction
+#### GET_CRED_DEF transaction
+Send GET_CRED_DEF transaction
 ```
-ledger get-claim-def schema_no=<schema_no-value> signature_type=<signature_type-value> origin=<origin-value>
+ledger get-cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> origin=<origin-value>
 ```
 
 #### POOL_CONFIG transaction

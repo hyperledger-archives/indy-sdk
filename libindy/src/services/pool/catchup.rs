@@ -163,10 +163,10 @@ impl CatchupHandler {
         }
 
         let active_node_cnt = self.nodes.iter().filter(|node| !node.is_blacklisted).count();
+
         if active_node_cnt == 0 { // TODO FIXME
             return Err(PoolError::Terminate);
         }
-
 
         let txns_cnt_in_cur_mt = self.merkle_tree.count();
         let cnt_to_catchup = self.target_mt_size - txns_cnt_in_cur_mt;
