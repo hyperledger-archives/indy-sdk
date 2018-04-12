@@ -55,7 +55,7 @@ public class CredDefRequestsTest extends LedgerIntegrationTest {
 	public void testBuildGetCredDefRequestWorks() throws Exception {
 		int seqNo = 1;
 		String signatureType = "CL";
-		String id = DID + ":\\u0003:" + signatureType + ":" + seqNo;
+		String id = DID + ":3:" + signatureType + ":" + seqNo;
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{" +
 				"\"type\":\"108\"," +

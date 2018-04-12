@@ -10,7 +10,7 @@ use super::DELIMITER;
 use std::collections::HashMap;
 
 pub const CL_ACCUM: &'static str = "CL_ACCUM";
-pub const REV_REG_DEG_MARKER: &'static str = "\x04";
+pub const REV_REG_DEG_MARKER: &'static str = "4";
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct RevocationRegistryConfig {

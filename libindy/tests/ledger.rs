@@ -43,7 +43,6 @@ use utils::domain::revocation_registry_definition::RevocationRegistryDefinitionV
 use utils::domain::revocation_registry::RevocationRegistryV1;
 use utils::domain::revocation_registry_delta::RevocationRegistryDeltaV1;
 
-use std::collections::HashSet;
 use std::thread;
 
 mod high_cases {
@@ -699,7 +698,7 @@ mod high_cases {
 
             let get_schema_request = LedgerUtils::build_get_schema_request(DID_MY1, &schema_id).unwrap();
             let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
-            let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
+            let (_, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
 
             let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
 

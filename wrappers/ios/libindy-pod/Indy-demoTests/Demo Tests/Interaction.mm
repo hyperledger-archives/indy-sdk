@@ -221,11 +221,11 @@
 
     // Issuer send revocation registry entry to ledger
     NSString *revocRegEntryRequestJson;
-    ret = [[LedgerUtils sharedInstance] buildRevocRegEntrtyRequestWithSubmitterDid:issuerDid
-                                                                              type:@"CL_ACCUM"
-                                                                     revocRegDefId:revocRegId
-                                                                             value:revocRegEntryJson
-                                                                        resultJson:&revocRegEntryRequestJson];
+    ret = [[LedgerUtils sharedInstance] buildRevocRegEntryRequestWithSubmitterDid:issuerDid
+                                                                             type:@"CL_ACCUM"
+                                                                    revocRegDefId:revocRegId
+                                                                            value:revocRegEntryJson
+                                                                       resultJson:&revocRegEntryRequestJson];
     XCTAssertEqual(ret.code, Success, @"buildRevocRegEntrtyRequestWithSubmitterDid() failed!");
 
     NSString *revocRegEntryResponse;
@@ -306,11 +306,11 @@
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialForCredentialRequest() failed!");
 
     // Issuer send revocation registry delta to ledger
-    ret = [[LedgerUtils sharedInstance] buildRevocRegEntrtyRequestWithSubmitterDid:issuerDid
-                                                                              type:@"CL_ACCUM"
-                                                                     revocRegDefId:revocRegId
-                                                                             value:revocRegDeltaJson
-                                                                        resultJson:&revocRegEntryRequestJson];
+    ret = [[LedgerUtils sharedInstance] buildRevocRegEntryRequestWithSubmitterDid:issuerDid
+                                                                             type:@"CL_ACCUM"
+                                                                    revocRegDefId:revocRegId
+                                                                            value:revocRegDeltaJson
+                                                                       resultJson:&revocRegEntryRequestJson];
     XCTAssertEqual(ret.code, Success, @"buildRevocRegEntrtyRequestWithSubmitterDid() failed!");
 
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
@@ -319,6 +319,8 @@
                                                                requestJson:revocRegEntryRequestJson
                                                            outResponseJson:&revocRegEntryResponse];
     XCTAssertEqual(ret.code, Success, @"signAndSubmitRequestWithPoolHandle() failed!");
+    NSDictionary *revocRegEntry = [NSDictionary fromString:revocRegEntryResponse];
+    NSNumber *entryTxnTime = revocRegEntry[@"result"][@"txnTime"];
 
     // Prover gets revocation registry definition from ledger
     NSDictionary *credential = [NSDictionary fromString:credentialJson];
@@ -381,7 +383,7 @@
     NSString *credentialReferent = credentials_for_attr_1[@"cred_info"][@"referent"];
 
     // Prover gets revocation registry delta from ledger
-    NSNumber *timestamp = @([[NSDate date] timeIntervalSince1970] + 100);
+    NSNumber *timestamp = @([entryTxnTime intValue] + 100 );
 
     NSString *getRevocRegDeltaRequest;
     ret = [[LedgerUtils sharedInstance] buildGetRevocRegDeltaRequestWithSubmitterDid:proverDid
@@ -491,11 +493,11 @@
     XCTAssertEqual(ret.code, Success, @"issuerRevokeCredentialByCredRevocId() failed!");
 
     // Issuer send revocation registry delta to ledger
-    ret = [[LedgerUtils sharedInstance] buildRevocRegEntrtyRequestWithSubmitterDid:issuerDid
-                                                                              type:@"CL_ACCUM"
-                                                                     revocRegDefId:revocRegId
-                                                                             value:revocRegDeltaJson
-                                                                        resultJson:&revocRegEntryRequestJson];
+    ret = [[LedgerUtils sharedInstance] buildRevocRegEntryRequestWithSubmitterDid:issuerDid
+                                                                             type:@"CL_ACCUM"
+                                                                    revocRegDefId:revocRegId
+                                                                            value:revocRegDeltaJson
+                                                                       resultJson:&revocRegEntryRequestJson];
     XCTAssertEqual(ret.code, Success, @"buildRevocRegEntrtyRequestWithSubmitterDid() failed!");
 
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
@@ -507,7 +509,7 @@
 
     // Prover gets revocation registry delta from ledger
     NSNumber *from = timestamp;
-    NSNumber *to = @([[NSDate date] timeIntervalSince1970] + 100);
+    NSNumber *to = @([from intValue] + 200);
 
     ret = [[LedgerUtils sharedInstance] buildGetRevocRegDeltaRequestWithSubmitterDid:proverDid
                                                                        revocRegDefId:credentials_for_attr_1[@"cred_info"][@"rev_reg_id"]
@@ -528,12 +530,13 @@
     XCTAssertEqual(ret.code, Success, @"parseGetRevocRegDeltaResponse() failed!");
 
     // Prover create Revocation State
-    ret = [[AnoncredsUtils sharedInstance] createRevocationStateForCredRevID:credentialRevId
-                                                                   timestamp:timestamp
-                                                               revRegDefJSON:revocRegDefJson
-                                                             revRegDeltaJSON:revocRegDeltaJson
-                                                     blobStorageReaderHandle:blobStorageReaderHandle
-                                                                revStateJson:&revocStateJson];
+    ret = [[AnoncredsUtils sharedInstance] updateRevocationState:revocStateJson
+                                                       credRevID:credentialRevId
+                                                       timestamp:timestamp
+                                                   revRegDefJSON:revocRegDefJson
+                                                 revRegDeltaJSON:revocRegDeltaJson
+                                         blobStorageReaderHandle:blobStorageReaderHandle
+                                             updatedRevStateJson:&revocStateJson];
     XCTAssertEqual(ret.code, Success, @"createRevocationStateForCredRevID() failed!");
 
     // Prover create Proof
@@ -591,6 +594,15 @@
     XCTAssertEqual(ret.code, Success, @"verifierVerifyProofRequest() failed!");
 
     XCTAssertFalse(isValid, @"isValid == YES");
+
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:issuerWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:closeWalletWithHandle failed");
+
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:proverWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:closeWalletWithHandle failed");
+
+    ret = [[PoolUtils sharedInstance] closeHandle:poolHandle];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::closeHandle() failed!");
 
     [TestUtils cleanupStorage];
 }

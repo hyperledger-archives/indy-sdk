@@ -133,12 +133,16 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Signs and submits request message to validator pool.
+	 * <p>
+	 * Adds submitter information to passed request json, signs it with submitter
+	 * sign key (see wallet_sign), and sends signed request message
+	 * to validator pool (see write_request).
 	 *
 	 * @param pool         A Pool.
 	 * @param wallet       A Wallet.
 	 * @param submitterDid Id of Identity stored in secured Wallet.
 	 * @param requestJson  Request data json.
-	 * @return A future resolving to a JSON request string.
+	 * @return A future resolving to a request result as json..
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> signAndSubmitRequest(
@@ -173,10 +177,12 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Publishes request message to validator pool (no signing, unlike sign_and_submit_request).
+	 * <p>
+	 * The request is sent to the validator pool as is. It's assumed that it's already prepared.
 	 *
 	 * @param pool        The Pool to publish to.
 	 * @param requestJson Request data json.
-	 * @return A future resolving to a JSON request string.
+	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> submitRequest(
@@ -204,11 +210,14 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Signs request message.
+	 * <p>
+	 * dds submitter information to passed request json, signs it with submitter
+	 * sign key (see wallet_sign).
 	 *
 	 * @param wallet       A Wallet.
 	 * @param submitterDid Id of Identity stored in secured Wallet.
 	 * @param requestJson  Request data json.
-	 * @return A future resolving to a JSON request string.
+	 * @return A future resolving to a signed request json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> signRequest(
@@ -278,7 +287,8 @@ public class Ledger extends IndyJava.API {
 	 *                     TRUSTEE
 	 *                     STEWARD
 	 *                     TRUST_ANCHOR
-	 * @return A future resolving to a JSON request string.
+	 *                     empty string to reset role
+	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildNymRequest(
@@ -316,7 +326,7 @@ public class Ledger extends IndyJava.API {
 	 * @param hash         (Optional) Hash of attribute data.
 	 * @param raw          (Optional) Json, where key is attribute name and value is attribute value.
 	 * @param enc          (Optional) Encrypted value attribute data.
-	 * @return A future resolving to a JSON request string.
+	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildAttribRequest(
@@ -389,7 +399,7 @@ public class Ledger extends IndyJava.API {
 	 *
 	 * @param submitterDid DID of the read request sender.
 	 * @param targetDid    Target DID as base58-encoded string for 16 or 32 bit DID value.
-	 * @return A future resolving to a JSON request string.
+	 * @return A future resolving to a request result as json..
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildGetNymRequest(
@@ -417,14 +427,15 @@ public class Ledger extends IndyJava.API {
 	 * Builds a SCHEMA request. Request to add Credential's schema.
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
-	 * @param data         Schema data.
+	 * @param data         Credential schema.
 	 *                     {
-	 *                     id: identifier of schema
-	 *                     attrNames: array of attribute name strings
-	 *                     name: Schema's name string
-	 *                     version: Schema's version string
+	 *                         id: identifier of schema
+	 *                         attrNames: array of attribute name strings
+	 *                         name: Schema's name string
+	 *                         version: Schema's version string,
+	 *                         ver: Version of the Schema json
 	 *                     }
-	 * @return A future resolving to a JSON request string.
+	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildSchemaRequest(
@@ -453,8 +464,7 @@ public class Ledger extends IndyJava.API {
 	 *
 	 * @param submitterDid DID of read request sender.
 	 * @param id           Schema ID in ledger
-	 *
-	 * @return A future resolving to a JSON request string.
+	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildGetSchemaRequest(
@@ -479,16 +489,16 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
-	 * Parse a GET_SCHEMA response.
+	 * Parse a GET_SCHEMA response to get Schema in the format compatible with Anoncreds API
 	 *
-	 * @param getSchemaResponse response json
+	 * @param getSchemaResponse response of GET_SCHEMA request.
 	 * @return A future resolving to a Schema Id and Schema json.
 	 * {
-	 * id: identifier of schema
-	 * attrNames: array of attribute name strings
-	 * name: Schema's name string
-	 * version: Schema's version string
-	 * ver: Version of the Schema json
+	 *     id: identifier of schema
+	 *     attrNames: array of attribute name strings
+	 *     name: Schema's name string
+	 *     version: Schema's version string
+	 *     ver: Version of the Schema json
 	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -515,18 +525,19 @@ public class Ledger extends IndyJava.API {
 	 * that Issuer creates for a particular Credential Schema.
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
-	 * @param data         Credential Definition json
-	 *                     {
-	 *                     id: string - identifier of credential definition
-	 *                     schemaId: string - identifier of stored in ledger schema
-	 *                     type: string - type of the credential definition. CL is the only supported type now.
-	 *                     tag: string - allows to distinct between credential definitions for the same issuer and schema
-	 *                     value: Dictionary with Credential Definition's data: {
-	 *                     primary: primary credential public key,
-	 *                     Optional<revocation>: revocation credential public key
-	 *                     }
-	 *                     }
-	 * @return A future resolving to a JSON request string.
+	 * @param data         Credential definition json
+	 * {
+	 *     id: string - identifier of credential definition
+	 *     schemaId: string - identifier of stored in ledger schema
+	 *     type: string - type of the credential definition. CL is the only supported type now.
+	 *     tag: string - allows to distinct between credential definitions for the same issuer and schema
+	 *     value: Dictionary with Credential Definition's data: {
+	 *         primary: primary credential public key,
+	 *         Optional<revocation>: revocation credential public key
+	 *     },
+	 *     ver: Version of the CredDef json
+	 * }
+	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildCredDefRequest(
@@ -554,9 +565,9 @@ public class Ledger extends IndyJava.API {
 	 * Builds a GET_CRED_DEF request. Request to get a credential definition (in particular, public key),
 	 * that Issuer creates for a particular Credential Schema.
 	 *
-	 * @param submitterDid  DID of read request sender.
-	 * @param id            Credential Definition ID in ledger.
-	 * @return A future resolving to a JSON request string.
+	 * @param submitterDid DID of read request sender.
+	 * @param id           Credential Definition ID in ledger.
+	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildGetCredDefRequest(
@@ -581,20 +592,20 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
-	 * Parse a GET_CRED_DEF response.
+	 * Parse a GET_CRED_DEF response to get Credential Definition in the format compatible with Anoncreds API.
 	 *
-	 * @param getCredDefResponse response json
+	 * @param getCredDefResponse response of GET_CRED_DEF request.
 	 * @return A future resolving to a Credential Definition Id and Credential Definition json.
 	 * {
-	 * id: string - identifier of credential definition
-	 * schemaId: string - identifier of stored in ledger schema
-	 * type: string - type of the credential definition. CL is the only supported type now.
-	 * tag: string - allows to distinct between credential definitions for the same issuer and schema
-	 * value: Dictionary with Credential Definition's data: {
-	 * primary: primary credential public key,
-	 * Optional<revocation>: revocation credential public key
-	 * } -
-	 * ver: Version of the Credential Definition json
+	 *     id: string - identifier of credential definition
+	 *     schemaId: string - identifier of stored in ledger schema
+	 *     type: string - type of the credential definition. CL is the only supported type now.
+	 *     tag: string - allows to distinct between credential definitions for the same issuer and schema
+	 *     value: Dictionary with Credential Definition's data: {
+	 *         primary: primary credential public key,
+	 *         Optional<revocation>: revocation credential public key
+	 *     },
+	 *     ver: Version of the Credential Definition json
 	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -620,17 +631,17 @@ public class Ledger extends IndyJava.API {
 	 * Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
-	 * @param targetDid    Target Node's DID.  It differs from submitter_did field.
+	 * @param targetDid    Target Node's DID. It differs from submitter_did field.
 	 * @param data         Data associated with the Node: {
-	 *                     alias: string - Node's alias
-	 *                     blskey: string - (Optional) BLS multi-signature key as base58-encoded string.
-	 *                     client_ip: string - (Optional) Node's client listener IP address.
-	 *                     client_port: string - (Optional) Node's client listener port.
-	 *                     node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.
-	 *                     node_port: string - (Optional) The port other Nodes use to communicate with this Node.
-	 *                     services: array<string> - (Optional) The service of the Node. VALIDATOR is the only supported one now.
-	 *                     }
-	 * @return A future resolving to a JSON request string.
+	 *     alias: string - Node's alias
+	 *     blskey: string - (Optional) BLS multi-signature key as base58-encoded string.
+	 *     client_ip: string - (Optional) Node's client listener IP address.
+	 *     client_port: string - (Optional) Node's client listener port.
+	 *     node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.
+	 *     node_port: string - (Optional) The port other Nodes use to communicate with this Node.
+	 *     services: array<string> - (Optional) The service of the Node. VALIDATOR is the only supported one now.
+	 * }
+	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildNodeRequest(
@@ -661,13 +672,13 @@ public class Ledger extends IndyJava.API {
 	 * Builds a GET_TXN request. Request to get any transaction by its seq_no.
 	 *
 	 * @param submitterDid DID of read request sender.
-	 * @param data         seq_no of transaction in ledger.
-	 * @return A future resolving to a JSON request string.
+	 * @param seqNo         seq_no of transaction in ledger.
+	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildGetTxnRequest(
 			String submitterDid,
-			int data) throws IndyException {
+			int seqNo) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 
@@ -677,7 +688,7 @@ public class Ledger extends IndyJava.API {
 		int result = LibIndy.api.indy_build_get_txn_request(
 				commandHandle,
 				submitterDid,
-				data,
+				seqNo,
 				buildRequestCb);
 
 		checkResult(result);
@@ -778,20 +789,21 @@ public class Ledger extends IndyJava.API {
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
 	 * @param data         Revocation Registry data:
-	 *                     {
-	 *                     "id": string - ID of the Revocation Registry,
-	 *                     "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
-	 *                     "tag": string - Unique descriptive ID of the Registry,
-	 *                     "credDefId": string - ID of the corresponding Credential Definition,
-	 *                     "value": Registry-specific data {
-	 *                     "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
-	 *                     "maxCredNum": number - Maximum number of credentials the Registry can serve.
-	 *                     "tailsHash": string - Hash of tails.
-	 *                     "tailsLocation": string - Location of tails file.
-	 *                     "publicKeys": <public_keys> - Registry's public key.
-	 *                     }
-	 *                     }
-	 * @return A future resolving to a JSON request string.
+	 *     {
+	 *         "id": string - ID of the Revocation Registry,
+	 *         "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+	 *         "tag": string - Unique descriptive ID of the Registry,
+	 *         "credDefId": string - ID of the corresponding CredentialDefinition,
+	 *         "value": Registry-specific data {
+	 *             "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+	 *             "maxCredNum": number - Maximum number of credentials the Registry can serve.
+	 *             "tailsHash": string - Hash of tails.
+	 *             "tailsLocation": string - Location of tails file.
+	 *             "publicKeys": <public_keys> - Registry's public key.
+	 *         },
+	 *         "ver": string - version of revocation registry definition json.
+	 *     }
+	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildRevocRegDefRequest(
@@ -819,8 +831,8 @@ public class Ledger extends IndyJava.API {
 	 * that Issuer creates for a particular Credential Definition.
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
-	 * @param id           ID of the corresponding RevocRegDef.
-	 * @return A future resolving to a JSON request string.
+	 * @param id           ID of Revocation Registry Definition in ledger.
+	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildGetRevocRegDefRequest(
@@ -845,23 +857,23 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
-	 * Parse a GET_REVOC_REG_DEF response.
+	 * Parse a GET_REVOC_REG_DEF response to get Revocation Registry Definition in the format compatible with Anoncreds API.
 	 *
-	 * @param getRevocRegDefResponse response json
+	 * @param getRevocRegDefResponse response of GET_REVOC_REG_DEF request.
 	 * @return A future resolving to a Revocation Registry Definition Id and Revocation Registry Definition json.
 	 * {
-	 * "id": string - ID of the Revocation Registry,
-	 * "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
-	 * "tag": string - Unique descriptive ID of the Registry,
-	 * "credDefId": string - ID of the corresponding Credential Definition,
-	 * "value": Registry-specific data {
-	 * "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
-	 * "maxCredNum": number - Maximum number of credentials the Registry can serve.
-	 * "tailsHash": string - Hash of tails.
-	 * "tailsLocation": string - Location of tails file.
-	 * "publicKeys": <public_keys> - Registry's public key.
-	 * },
-	 * "ver": string
+	 *     "id": string - ID of the Revocation Registry,
+	 *     "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+	 *     "tag": string - Unique descriptive ID of the Registry,
+	 *     "credDefId": string - ID of the corresponding CredentialDefinition,
+	 *     "value": Registry-specific data {
+	 *         "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+	 *         "maxCredNum": number - Maximum number of credentials the Registry can serve.
+	 *         "tailsHash": string - Hash of tails.
+	 *         "tailsLocation": string - Location of tails file.
+	 *         "publicKeys": <public_keys> - Registry's public key.
+	 *     },
+	 *     "ver": string - version of revocation registry definition json.
 	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -893,12 +905,16 @@ public class Ledger extends IndyJava.API {
 	 * @param revocRegDefId ID of the corresponding RevocRegDef.
 	 * @param revDefType    Revocation Registry type (only CL_ACCUM is supported for now).
 	 * @param value         Registry-specific data: {
-	 *                      issued: array<number> - an array of issued indices.
-	 *                      revoked: array<number> an array of revoked indices.
-	 *                      prev_accum: previous accumulator value.
-	 *                      accum: current accumulator value.
-	 *                      }
-	 * @return A future resolving to a JSON request string.
+	 *     value: {
+	 *         prevAccum: string - previous accumulator value.
+	 *         accum: string - current accumulator value.
+	 *         issued: array<number> - an array of issued indices.
+	 *         revoked: array<number> an array of revoked indices.
+	 *     },
+	 *     ver: string - version revocation registry entry json
+	 *
+	 * }
+	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildRevocRegEntryRequest(
@@ -932,9 +948,9 @@ public class Ledger extends IndyJava.API {
 	 * by ID. The state is defined by the given timestamp.
 	 *
 	 * @param submitterDid  DID of the submitter stored in secured Wallet.
-	 * @param revocRegDefId ID of the corresponding RevocRegDef.
+	 * @param revocRegDefId ID of the corresponding Revocation Registry Definition in ledger.
 	 * @param timestamp     Requested time represented as a total number of seconds from Unix Epoch
-	 * @return A future resolving to a JSON request string.
+	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildGetRevocRegRequest(
@@ -961,15 +977,15 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
-	 * Parse a GET_REVOC_REG response.
+	 * Parse a GET_REVOC_REG response to get Revocation Registry in the format compatible with Anoncreds API.
 	 *
-	 * @param getRevocRegResponse response json
+	 * @param getRevocRegResponse response of GET_REVOC_REG request.
 	 * @return A future resolving to a Revocation Registry Definition Id, Revocation Registry json and Timestamp.
 	 * {
-	 * "value": Registry-specific data {
-	 * "accum": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
-	 * },
-	 * "ver": string
+	 *     "value": Registry-specific data {
+	 *         "accum": string - current accumulator value.
+	 *     },
+	 *     "ver": string - version revocation registry json
 	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -997,10 +1013,10 @@ public class Ledger extends IndyJava.API {
 	 * If from is not specified, then the whole state till to will be returned.
 	 *
 	 * @param submitterDid  DID of the submitter stored in secured Wallet.
-	 * @param revocRegDefId ID of the corresponding RevocRegDef.
+	 * @param revocRegDefId ID of the corresponding Revocation Registry Definition in ledger.
 	 * @param from          Requested time represented as a total number of seconds from Unix Epoch
 	 * @param to            Requested time represented as a total number of seconds from Unix Epoch
-	 * @return A future resolving to a JSON request string.
+	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildGetRevocRegDeltaRequest(
@@ -1029,18 +1045,18 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
-	 * Parse a GET_REVOC_REG_DELTA response.
+	 * Parse a GET_REVOC_REG_DELTA response to get Revocation Registry Delta in the format compatible with Anoncreds API.
 	 *
-	 * @param getRevocRegDeltaResponse response json
+	 * @param getRevocRegDeltaResponse response of GET_REVOC_REG_DELTA request.
 	 * @return A future resolving to a Revocation Registry Definition Id, Revocation Registry Delta json and Timestamp.
 	 * {
-	 * "value": Registry-specific data {
-	 * prevAccum: string - previous accumulator value.
-	 * accum: string - current accumulator value.
-	 * issued: array<number> - an array of issued indices.
-	 * revoked: array<number> an array of revoked indices.
-	 * },
-	 * "ver": string
+	 *     "value": Registry-specific data {
+	 *         prevAccum: string - previous accumulator value.
+	 *         accum: string - current accumulator value.
+	 *         issued: array<number> - an array of issued indices.
+	 *         revoked: array<number> an array of revoked indices.
+	 *     },
+	 *     "ver": string
 	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */

@@ -10,7 +10,7 @@ use self::indy_crypto::cl::{CredentialPrimaryPublicKey, CredentialRevocationPubl
 use std::collections::HashMap;
 
 pub const CL_SIGNATURE_TYPE: &'static str = "CL";
-pub const CRED_DEF_MARKER: &'static str = "\x03";
+pub const CRED_DEF_MARKER: &'static str = "3";
 
 #[derive(Deserialize, Debug, Serialize, PartialEq, Clone)]
 pub enum SignatureType {

@@ -347,9 +347,6 @@ impl IssuerCommandExecutor {
         let revoc_reg_json =
             self.wallet_service.set_object(wallet_handle, &format!("revocation_registry::{}", rev_reg_id), &revoc_registry, "RevocationRegistry")?;
 
-        let revoc_tails_generator_json =
-            self.wallet_service.set_object(wallet_handle, &format!("revocation_tails_generator::{}", rev_reg_id), &revoc_tails_generator, "RevocationTailsGenerator")?;
-
         self.wallet_service.set_object(wallet_handle, &format!("revocation_key_private::{}", rev_reg_id), &revoc_key_private, "RevocationKeyPrivate")?;
 
         match issuance_type {
@@ -361,7 +358,8 @@ impl IssuerCommandExecutor {
 
         self.wallet_service.set(wallet_handle, &format!("current_credential_id::{}", rev_reg_id), "0")?;
 
-        trace!("create_and_store_revocation_registry <<< rev_reg_id: {:?}, revoc_reg_def_json: {:?}, revoc_reg_json: {:?}", rev_reg_id, revoc_reg_def_json, revoc_reg_json);
+        trace!("create_and_store_revocation_registry <<< rev_reg_id: {:?}, revoc_reg_def_json: {:?}, revoc_reg_json: {:?}",
+               rev_reg_id, revoc_reg_def_json, revoc_reg_json);
 
         Ok((rev_reg_id, revoc_reg_def_json, revoc_reg_json))
     }

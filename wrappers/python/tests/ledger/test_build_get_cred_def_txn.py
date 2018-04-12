@@ -6,7 +6,7 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_build_get_cred_def_request_works(did_trustee):
-    id_ = did_trustee + ":\u0003:CL:1"
+    id_ = did_trustee + ":3:CL:1"
 
     expected_response = {
         "identifier": did_trustee,

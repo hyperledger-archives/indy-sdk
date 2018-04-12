@@ -487,11 +487,11 @@
     return err;
 }
 
-- (NSError *)buildRevocRegEntrtyRequestWithSubmitterDid:(NSString *)submitterDid
-                                                   type:(NSString *)type
-                                          revocRegDefId:(NSString *)revocRegDefId
-                                                  value:(NSString *)value
-                                             resultJson:(NSString **)resultJson {
+- (NSError *)buildRevocRegEntryRequestWithSubmitterDid:(NSString *)submitterDid
+                                                  type:(NSString *)type
+                                         revocRegDefId:(NSString *)revocRegDefId
+                                                 value:(NSString *)value
+                                            resultJson:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;

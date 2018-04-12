@@ -137,6 +137,7 @@ extern "C" {
     ///                             TRUSTEE
     ///                             STEWARD
     ///                             TRUST_ANCHOR
+    ///                             empty string to reset role
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -243,11 +244,13 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: DID of the submitter stored in secured Wallet.
+    /// data: Credential schema.
     /// {
     ///     id: identifier of schema
-    ///     attr_names: array of attribute name strings
+    ///     attrNames: array of attribute name strings
     ///     name: Schema's name string
-    ///     version: Schema's version string
+    ///     version: Schema's version string,
+    ///     ver: Version of the Schema json
     /// }
     /// cb: Callback that takes command result as parameter.
     ///
@@ -288,18 +291,19 @@ extern "C" {
                                                                            indy_error_t  err,
                                                                            const char*   request_json)
                                                      );
-    /// Parse a GET_SCHEMA response.
+
+    /// Parse a GET_SCHEMA response to get Schema in the format compatible with Anoncreds API.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// get_schema_response: response json
+    /// get_schema_response: response of GET_SCHEMA request.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// Schema json.
+    /// Schema Id and Schema json.
     /// {
     ///     id: identifier of schema
-    ///     attr_names: array of attribute name strings
+    ///     attrNames: array of attribute name strings
     ///     name: Schema's name string
     ///     version: Schema's version string
     ///     ver: Version of the Schema json
@@ -317,7 +321,7 @@ extern "C" {
                                                                             const char*   schema_json)
                                                        );
     
-    /// Builds an CRED_DEF request. Request to add a credential definition (in particular, public key),
+    /// Builds an CRED_DEF request. Request to add a Credential Definition (in particular, public key),
     /// that Issuer creates for a particular Credential Schema.
     ///
     /// #Params
@@ -332,7 +336,8 @@ extern "C" {
     ///     value: Dictionary with Credential Definition's data: {
     ///         primary: primary credential public key,
     ///         Optional<revocation>: revocation credential public key
-    ///     }
+    ///     },
+    ///     ver: Version of the CredDef json
     /// }
     /// cb: Callback that takes command result as parameter.
     ///
@@ -351,13 +356,13 @@ extern "C" {
                                                                          const char*   request_json)
                                                     );
     
-    /// Builds a GET_CRED_DEF request. Request to get a credential definition (in particular, public key),
+    /// Builds a GET_CRED_DEF request. Request to get a Credential Definition (in particular, public key),
     /// that Issuer creates for a particular Credential Schema.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: DID of the read request sender.
-    /// id: Credential definition ID in Ledger
+    /// id: Credential Definition ID in ledger.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -375,15 +380,15 @@ extern "C" {
                                                                               const char*   request_json)
                                                          );
 
-    /// Parse a GET_CRED_DEF response.
+    /// Parse a GET_CRED_DEF response to get Credential Definition in the format compatible with Anoncreds API.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// get_cred_def_response: response json
+    /// get_cred_def_response: response of GET_CRED_DEF request.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// Credential Definition json.
+    /// Credential Definition Id and Credential Definition json.
     /// {
     ///     id: string - identifier of credential definition
     ///     schemaId: string - identifier of stored in ledger schema
@@ -392,7 +397,7 @@ extern "C" {
     ///     value: Dictionary with Credential Definition's data: {
     ///         primary: primary credential public key,
     ///         Optional<revocation>: revocation credential public key
-    ///     } -
+    ///     },
     ///     ver: Version of the Credential Definition json
     /// }
     ///
@@ -444,8 +449,8 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of read request sender.
-    /// data: seq_no of transaction in ledger.
+    /// submitter_did: DID of the request submitter.
+    /// seq_no: seq_no of transaction in ledger.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -471,7 +476,7 @@ extern "C" {
     /// writes: Whether any write requests can be processed by the pool
     ///         (if false, then pool goes to read-only state). True by default.
     /// force: Whether we should apply transaction (for example, move pool to read-only state)
-    ///        without waiting for consensus of this transaction
+    ///        without waiting for consensus of this transaction.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -543,14 +548,15 @@ extern "C" {
     ///         "id": string - ID of the Revocation Registry,
     ///         "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
     ///         "tag": string - Unique descriptive ID of the Registry,
-    ///         "credDefId": string - ID of the corresponding credential definition,
+    ///         "credDefId": string - ID of the corresponding CredentialDefinition,
     ///         "value": Registry-specific data {
     ///             "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
     ///             "maxCredNum": number - Maximum number of credentials the Registry can serve.
     ///             "tailsHash": string - Hash of tails.
     ///             "tailsLocation": string - Location of tails file.
     ///             "publicKeys": <public_keys> - Registry's public key.
-    ///         }
+    ///         },
+    ///         "ver": string - version of revocation registry definition json.
     ///     }
     /// cb: Callback that takes command result as parameter.
     ///
@@ -575,7 +581,7 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: DID of the read request sender.
-    /// id:  ID of the corresponding RevocRegDef.
+    /// id:  ID of Revocation Registry Definition in ledger.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -592,6 +598,34 @@ extern "C" {
                                                                                   indy_error_t  err,
                                                                                   const char*   request_json)
                                                             );
+
+    /// Parse a GET_REVOC_REG_DEF response to get Revocation Registry Definition in the format
+    /// compatible with Anoncreds API.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// get_revoc_reg_def_response: response of GET_REVOC_REG_DEF request.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Revocation Registry Definition Id and Revocation Registry Definition json.
+    /// {
+    ///     "id": string - ID of the Revocation Registry,
+    ///     "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+    ///     "tag": string - Unique descriptive ID of the Registry,
+    ///     "credDefId": string - ID of the corresponding CredentialDefinition,
+    ///     "value": Registry-specific data {
+    ///         "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+    ///         "maxCredNum": number - Maximum number of credentials the Registry can serve.
+    ///         "tailsHash": string - Hash of tails.
+    ///         "tailsLocation": string - Location of tails file.
+    ///         "publicKeys": <public_keys> - Registry's public key.
+    ///     },
+    ///     "ver": string - version of revocation registry definition json.
+    /// }
+    ///
+    /// #Errors
+    /// Common*
 
     extern indy_error_t indy_parse_get_revoc_reg_def_response(indy_handle_t command_handle,
                                                               const char *  get_revoc_ref_def_response,
@@ -613,10 +647,14 @@ extern "C" {
     /// revoc_reg_def_id: ID of the corresponding RevocRegDef.
     /// rev_def_type: Revocation Registry type (only CL_ACCUM is supported for now).
     /// value: Registry-specific data: {
-    ///     prevAccum: string - previous accumulator value.
-    ///     accum: string - current accumulator value.
-    ///     issued: array<number> - an array of issued indices.
-    ///     revoked: array<number> an array of revoked indices.
+    ///     value: {
+    ///         prevAccum: string - previous accumulator value.
+    ///         accum: string - current accumulator value.
+    ///         issued: array<number> - an array of issued indices.
+    ///         revoked: array<number> an array of revoked indices.
+    ///     },
+    ///     ver: string - version revocation registry entry json
+    ///
     /// }
     /// cb: Callback that takes command result as parameter.
     ///
@@ -643,7 +681,7 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: DID of the read request sender.
-    /// revoc_reg_def_id:  ID of the corresponding RevocRegDef.
+    /// revoc_reg_def_id:  ID of the corresponding Revocation Registry Definition in ledger.
     /// timestamp: Requested time represented as a total number of seconds from Unix Epoch
     /// cb: Callback that takes command result as parameter.
     ///
@@ -663,20 +701,20 @@ extern "C" {
                                                                               const char*   request_json)
                                                         );
 
-    /// Parse a GET_REVOC_REG response.
+    /// Parse a GET_REVOC_REG response to get Revocation Registry in the format compatible with Anoncreds API.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// get_revoc_reg_response: response json
+    /// get_revoc_reg_response: response of GET_REVOC_REG request.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// Revocation Registry Id, Revocation Registry json and Timestamp.
+    /// Revocation Registry Definition Id, Revocation Registry json and Timestamp.
     /// {
     ///     "value": Registry-specific data {
-    ///         "accum": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+    ///         "accum": string - current accumulator value
     ///     },
-    ///     "ver": string
+    ///     "ver": string - version revocation registry json
     /// }
     ///
     /// #Errors
@@ -699,7 +737,7 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: DID of the read request sender.
-    /// revoc_reg_def_id:  ID of the corresponding RevocRegDef.
+    /// revoc_reg_def_id:  ID of the corresponding Revocation Registry Definition in ledger.
     /// from: Requested time represented as a total number of seconds from Unix Epoch
     /// to: Requested time represented as a total number of seconds from Unix Epoch
     /// cb: Callback that takes command result as parameter.
@@ -721,15 +759,15 @@ extern "C" {
                                                                                     const char*   request_json)
                                                               );
 
-    /// Parse a GET_REVOC_REG_DELTA response.
+    /// Parse a GET_REVOC_REG_DELTA response to get Revocation Registry Delta in the format compatible with Anoncreds API.
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// get_revoc_reg_response: response json
+    /// get_revoc_reg_response: response of GET_REVOC_REG_DELTA request.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// Revocation Registry Id, Revocation Registry Delta json and Timestamp.
+    /// Revocation Registry Definition Id, Revocation Registry Delta json and Timestamp.
     /// {
     ///     "value": Registry-specific data {
     ///         prevAccum: string - previous accumulator value.
@@ -737,7 +775,7 @@ extern "C" {
     ///         issued: array<number> - an array of issued indices.
     ///         revoked: array<number> an array of revoked indices.
     ///     },
-    ///     "ver": string
+    ///     "ver": string - version revocation registry delta json
     /// }
     ///
     /// #Errors

@@ -195,6 +195,7 @@ pub extern fn indy_build_get_ddo_request(command_handle: i32,
 ///                             TRUSTEE
 ///                             STEWARD
 ///                             TRUST_ANCHOR
+///                             empty string to reset role
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -375,7 +376,7 @@ pub extern fn indy_build_get_nym_request(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: DID of the submitter stored in secured Wallet.
-/// data: Schema data.
+/// data: Credential schema.
 /// {
 ///     id: identifier of schema
 ///     attrNames: array of attribute name strings
@@ -451,11 +452,11 @@ pub extern fn indy_build_get_schema_request(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Parse a GET_SCHEMA response.
+/// Parse a GET_SCHEMA response to get Schema in the format compatible with Anoncreds API.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// get_schema_response: response json
+/// get_schema_response: response of GET_SCHEMA request.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -580,11 +581,11 @@ pub extern fn indy_build_get_cred_def_request(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Parse a GET_CRED_DEF response.
+/// Parse a GET_CRED_DEF response to get Credential Definition in the format compatible with Anoncreds API.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// get_cred_def_response: response json
+/// get_cred_def_response: response of GET_CRED_DEF request.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -597,7 +598,7 @@ pub extern fn indy_build_get_cred_def_request(command_handle: i32,
 ///     value: Dictionary with Credential Definition's data: {
 ///         primary: primary credential public key,
 ///         Optional<revocation>: revocation credential public key
-///     } -
+///     },
 ///     ver: Version of the Credential Definition json
 /// }
 ///
@@ -680,7 +681,7 @@ pub extern fn indy_build_node_request(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: DID of the request submitter.
-/// data: seq_no of transaction in ledger.
+/// seq_no: seq_no of transaction in ledger.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -691,7 +692,7 @@ pub extern fn indy_build_node_request(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_build_get_txn_request(command_handle: i32,
                                          submitter_did: *const c_char,
-                                         data: i32,
+                                         seq_no: i32,
                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                               request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
@@ -700,7 +701,7 @@ pub extern fn indy_build_get_txn_request(command_handle: i32,
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetTxnRequest(
             submitter_did,
-            data,
+            seq_no,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);
@@ -842,7 +843,8 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: i32,
 ///             "tailsHash": string - Hash of tails.
 ///             "tailsLocation": string - Location of tails file.
 ///             "publicKeys": <public_keys> - Registry's public key.
-///         }
+///         },
+///         "ver": string - version of revocation registry definition json.
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -881,7 +883,7 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: DID of the read request sender.
-/// id:  ID of the corresponding RevocRegDef.
+/// id:  ID of Revocation Registry Definition in ledger.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -913,11 +915,12 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Parse a GET_REVOC_REG_DEF response.
+/// Parse a GET_REVOC_REG_DEF response to get Revocation Registry Definition in the format
+/// compatible with Anoncreds API.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// get_revoc_reg_def_response: response json
+/// get_revoc_reg_def_response: response of GET_REVOC_REG_DEF request.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -934,7 +937,7 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: i32,
 ///         "tailsLocation": string - Location of tails file.
 ///         "publicKeys": <public_keys> - Registry's public key.
 ///     },
-///     "ver": string
+///     "ver": string - version of revocation registry definition json.
 /// }
 ///
 /// #Errors
@@ -979,7 +982,7 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: i32,
 ///         issued: array<number> - an array of issued indices.
 ///         revoked: array<number> an array of revoked indices.
 ///     },
-///     ver: revoc reg entry json version
+///     ver: string - version revocation registry entry json
 ///
 /// }
 /// cb: Callback that takes command result as parameter.
@@ -1025,7 +1028,7 @@ pub extern fn indy_build_revoc_reg_entry_request(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: DID of the read request sender.
-/// revoc_reg_def_id:  ID of the corresponding RevocRegDef.
+/// revoc_reg_def_id:  ID of the corresponding Revocation Registry Definition in ledger.
 /// timestamp: Requested time represented as a total number of seconds from Unix Epoch
 /// cb: Callback that takes command result as parameter.
 ///
@@ -1060,20 +1063,20 @@ pub extern fn indy_build_get_revoc_reg_request(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Parse a GET_REVOC_REG response.
+/// Parse a GET_REVOC_REG response to get Revocation Registry in the format compatible with Anoncreds API.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// get_revoc_reg_response: response json
+/// get_revoc_reg_response: response of GET_REVOC_REG request.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
 /// Revocation Registry Definition Id, Revocation Registry json and Timestamp.
 /// {
 ///     "value": Registry-specific data {
-///         "accum": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+///         "accum": string - current accumulator value.
 ///     },
-///     "ver": string
+///     "ver": string - version revocation registry json
 /// }
 ///
 /// #Errors
@@ -1109,7 +1112,7 @@ pub extern fn indy_parse_get_revoc_reg_response(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: DID of the read request sender.
-/// revoc_reg_def_id:  ID of the corresponding RevocRegDef.
+/// revoc_reg_def_id:  ID of the corresponding Revocation Registry Definition in ledger.
 /// from: Requested time represented as a total number of seconds from Unix Epoch
 /// to: Requested time represented as a total number of seconds from Unix Epoch
 /// cb: Callback that takes command result as parameter.
@@ -1149,11 +1152,11 @@ pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Parse a GET_REVOC_REG_DELTA response.
+/// Parse a GET_REVOC_REG_DELTA response to get Revocation Registry Delta in the format compatible with Anoncreds API.
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// get_revoc_reg_response: response json
+/// get_revoc_reg_response: response of GET_REVOC_REG_DELTA request.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -1165,7 +1168,7 @@ pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: i32,
 ///         issued: array<number> - an array of issued indices.
 ///         revoked: array<number> an array of revoked indices.
 ///     },
-///     "ver": string
+///     "ver": string - version revocation registry delta json
 /// }
 ///
 /// #Errors
