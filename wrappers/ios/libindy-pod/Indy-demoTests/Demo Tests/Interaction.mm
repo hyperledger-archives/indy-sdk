@@ -511,6 +511,8 @@
     NSNumber *from = timestamp;
     NSNumber *to = @([from intValue] + 200);
 
+    [NSThread sleepForTimeInterval:3];
+
     ret = [[LedgerUtils sharedInstance] buildGetRevocRegDeltaRequestWithSubmitterDid:proverDid
                                                                        revocRegDefId:credentials_for_attr_1[@"cred_info"][@"rev_reg_id"]
                                                                                 from:from
