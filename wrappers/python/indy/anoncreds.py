@@ -605,7 +605,7 @@ async def prover_store_credential(wallet_handle: int,
     c_cred_req_metadata_json = c_char_p(cred_req_metadata_json.encode('utf-8'))
     c_cred_json = c_char_p(cred_json.encode('utf-8'))
     c_cred_def_json = c_char_p(cred_def_json.encode('utf-8'))
-    c_rev_reg_def_json = c_char_p(rev_reg_def_json.encode('utf-8')) if rev_reg_def_json else None
+    c_rev_reg_def_json = c_char_p(rev_reg_def_json.encode('utf-8')) if rev_reg_def_json is not None else None
 
     cred_id = await do_call('indy_prover_store_credential',
                             c_wallet_handle,

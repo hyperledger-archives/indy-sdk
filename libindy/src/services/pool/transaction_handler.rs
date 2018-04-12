@@ -32,7 +32,7 @@ use self::indy_crypto::bls::Generator;
 const REQUESTS_FOR_STATE_PROOFS: [&'static str; 4] = [constants::GET_NYM, constants::GET_SCHEMA, constants::GET_CRED_DEF, constants::GET_ATTR];
 const RESENDABLE_REQUEST_TIMEOUT: i64 = 1;
 const REQUEST_TIMEOUT_ACK: i64 = 10;
-const REQUEST_TIMEOUT_REPLY: i64 = 2000;
+const REQUEST_TIMEOUT_REPLY: i64 = 100;
 
 pub struct TransactionHandler {
     gen: Generator,

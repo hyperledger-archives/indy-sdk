@@ -1,0 +1,79 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor Alice as al
+participant "Alice's\nEdge Agent" as aea
+participant "Alice's\nCloud Agent" as aca
+participant "Recovery Buddy\nCloud Agent" as rb1
+
+note over aca #f0f0e0
+Assumptions: Cloud agent automatically stores encrypted backup of Alice's edge wallets
+end note
+
+== recovery setup ==
+
+aea -> al: <i>select options for recovery?
+note right
+Edge agent recommends Alice sets up a recovery policy
+end note
+al -> aea: <i>yes
+aea -> al: options
+note right
+Offers offline and social recovery options
+end note
+al -> aea: choice
+aea -> aea: create backup encryption/decryption keypair A<sub>R</sub>
+note right
+The backup is encrypted using public key
+encryption. The public key is stored in the
+wallet and used for encryption. The private key
+is used for decryption and is sharded and distributed.
+end note
+
+aea -> aea: encrypt backup
+note right
+Will continue as background process
+end note
+aea -[#blue]> aca: encrypted backup
+alt chooses recovery buddies (minimum of 3)
+note over al, rb1 #77ccff
+Each recovery buddy completes <b>Add Recovery Buddy</b> diagram
+end note
+group Each recovery buddy
+aea -[#blue]> aca: recovery data share
+note right
+Includes backup encryption key A<sub>R</sub><sup>sk</sup>,
+claim link secret A<sub>LS</sub>, and recovery endpoint
+end note
+aca -[#blue]> rb1: forward share
+rb1 -> rb1: store share
+par2
+rb1 -[#blue]> aca: \nack
+else
+aca -[#blue]> aea: \n
+end
+end
+else chooses paper wallet backup
+aea -> aea: create paper wallet with recovery data
+note right
+Includes same recovery data as above
+end note
+aea -> al: display paper wallet
+al -> al: save paper wallet
+end
+
+@enduml

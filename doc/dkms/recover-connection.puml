@@ -1,0 +1,85 @@
+@startuml
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 15
+skinparam maxmessagesize 100
+skinparam sequence {
+	ArrowColor grey
+	LifeLineBorderColor grey
+    ParticipantBorderColor grey
+	boxbordercolor white
+	ParticipantFontSize 17
+	actorfontsize 17
+	boxfontsize 17
+	boxfontcolor grey
+	ActorBorderColor grey
+    Actorbackgroundcolor white
+}
+
+actor Alice as al
+participant "Alice's\nEdge Agent" as aea
+participant "Alice's\nCloud Agent" as aca
+participant "Bob's\nCloud Agent" as bca
+participant "Bob's\nEdge Agent" as bea
+actor Bob as bob
+note over al, bob #f0f0e0
+Assumptions: Alice no longer has valid any DID
+keys to use for her connection with Bob.
+An attacker has compromised the connection and locked out Alice.
+end note
+
+== agent recovery ==
+
+note over al, bob #f0f0e0
+Alice performs agent recovery by completing all steps in
+<b>Offline Recovery</b> diagram or <b>Social Recovery</b> diagram
+She can't complete the portion to rotate DID keys
+because she is locked out
+end note
+== reestablish relationship with Bob ==
+
+alt out of band method
+al --> bob: compromise notify
+note right
+Alice contacts Bob out of band to let him
+know that her existing connection is not her.
+Bob can authenticate Alice using the same methods
+as before when Alice and Bob connected
+end note
+
+else decry method
+note over al, bob
+After recovery, the agent knows it couldn't rotate the DID keys.
+The agent uses the key that was previously authorized to perform
+the decry method.
+end note
+par2
+aea -[#blue]> aca: add DECRY event to microledger A<sub>B</sub><sup>ml</sup>, signed by A<sub>B</sub><sup>1-sk</sup>
+else
+aca -[#blue]> bca: \n\n\n\n\nforward
+else
+bca -[#blue]> bea: \n\n\n\n\nforward
+else
+bea -> bob: \n\n\n\n\nDECRY notify
+note right
+DECRY means Bob should be use caution with his
+connection to Alice because it should no longer be trusted. Bob
+should verify that his connection is really to Alice.
+end note
+end
+end
+bob --> bob: verify Alice
+note right
+This can be different based on who Bob is.
+If Bob is Alice's brother this could be simple.
+If Bob is Alice's bank this would be more complex.
+end note
+bob -> bob: delete former connection data with Alice
+note right
+DID, keys and microledger
+end note
+note over al, bob #77ccff
+include <b>Add Connection Private DID Provisioned</b> diagram
+(with all authorizations)
+end note
+
+@enduml
