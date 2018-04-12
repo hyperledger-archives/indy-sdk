@@ -3252,7 +3252,7 @@ mod demos {
         let prover2_master_secret_id = "prover2_master_secret";
         AnoncredsUtils::prover_create_master_secret(prover2_wallet_handle, prover2_master_secret_id).unwrap();
 
-        let timestamp2 = time::get_time().sec as u64;
+        let timestamp2 = time::get_time().sec as u64 + 100;
 
         let (_, revoc_reg_delta2_json) = AnoncredsUtils::multi_steps_create_revocation_credential(
             prover2_master_secret_id,
