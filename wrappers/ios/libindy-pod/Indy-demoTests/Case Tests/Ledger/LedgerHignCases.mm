@@ -2033,11 +2033,11 @@
     NSDictionary *expectedResult = [NSDictionary fromString:extectedResultJson];
 
     NSString *revocRegEntryRequestJson;
-    NSError *ret = [[LedgerUtils sharedInstance] buildRevocRegEntrtyRequestWithSubmitterDid:identifier
-                                                                                       type:@"CL_ACCUM"
-                                                                              revocRegDefId:@"RevocRegID"
-                                                                                      value:data
-                                                                                 resultJson:&revocRegEntryRequestJson];
+    NSError *ret = [[LedgerUtils sharedInstance] buildRevocRegEntryRequestWithSubmitterDid:identifier
+                                                                                      type:@"CL_ACCUM"
+                                                                             revocRegDefId:@"RevocRegID"
+                                                                                     value:data
+                                                                                resultJson:&revocRegEntryRequestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildRevocRegEntrtyRequestWithSubmitterDid() failed");
 
     NSDictionary *revocRegEntryReques = [NSDictionary fromString:revocRegEntryRequestJson];

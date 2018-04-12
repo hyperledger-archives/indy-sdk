@@ -347,9 +347,6 @@ impl IssuerCommandExecutor {
         let revoc_reg_json =
             self.wallet_service.set_object(wallet_handle, &format!("revocation_registry::{}", rev_reg_id), &revoc_registry, "RevocationRegistry")?;
 
-        let revoc_tails_generator_json =
-            self.wallet_service.set_object(wallet_handle, &format!("revocation_tails_generator::{}", rev_reg_id), &revoc_tails_generator, "RevocationTailsGenerator")?;
-
         self.wallet_service.set_object(wallet_handle, &format!("revocation_key_private::{}", rev_reg_id), &revoc_key_private, "RevocationKeyPrivate")?;
 
         match issuance_type {
