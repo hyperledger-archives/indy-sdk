@@ -124,11 +124,11 @@
 
 
 // MARK: - Revocation registry entry request
-- (NSError *)buildRevocRegEntrtyRequestWithSubmitterDid:(NSString *)submitterDid
-                                                   type:(NSString *)type
-                                          revocRegDefId:(NSString *)revocRegDefId
-                                                  value:(NSString *)value
-                                             resultJson:(NSString **)resultJson;
+- (NSError *)buildRevocRegEntryRequestWithSubmitterDid:(NSString *)submitterDid
+                                                  type:(NSString *)type
+                                         revocRegDefId:(NSString *)revocRegDefId
+                                                 value:(NSString *)value
+                                            resultJson:(NSString **)resultJson;
 
 - (NSError *)buildGetRevocRegRequestWithSubmitterDid:(NSString *)submitterDid
                                        revocRegDefId:(NSString *)revocRegDefId
