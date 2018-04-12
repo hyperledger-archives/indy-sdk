@@ -51,7 +51,7 @@ export class DisclosedProof extends VCXBaseWithState {
     }
   }
 
-  static async get_requests (connection: Connection): Promise<IDisclosedProofRequest[]> {
+  static async getRequests (connection: Connection): Promise<IDisclosedProofRequest[]> {
     const requestsStr = await createFFICallbackPromise<string>(
       (resolve, reject, cb) => {
         const rc = rustAPI().vcx_disclosed_proof_get_requests(0, connection.handle, cb)
