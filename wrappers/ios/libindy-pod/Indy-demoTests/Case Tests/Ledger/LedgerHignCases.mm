@@ -1379,9 +1379,9 @@
     [TestUtils cleanupStorage];
 }
 
-// MARK: - Claim def request
+// MARK: - Cred def request
 
-- (void)testBuildClaimDefRequestWorksForCorrectDataJson {
+- (void)testBuildCredDefRequestWorksForCorrectDataJson {
     [TestUtils cleanupStorage];
     NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
     NSString *data = @"{"
@@ -1423,15 +1423,15 @@
     expectedResult[@"operation"][@"data"][@"type"] = @"102";
     expectedResult[@"operation"][@"data"][@"signature_type"] = @"CL";
 
-    NSString *claimDefrequestJson;
+    NSString *credDefrequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildCredDefRequestWithSubmitterDid:identifier
                                                                                 data:data
-                                                                          resultJson:&claimDefrequestJson];
-    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildClaimDefTxnWithSubmitterDid() failed");
-    XCTAssertNotNil(claimDefrequestJson, @"claimDefrequestJson is nil!");
-    NSLog(@"claimDefrequestJson: %@", claimDefrequestJson);
+                                                                          resultJson:&credDefrequestJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildCredDefRequestWithSubmitterDid() failed");
+    XCTAssertNotNil(credDefrequestJson, @"credDefrequestJson is nil!");
+    NSLog(@"credDefrequestJson: %@", credDefrequestJson);
 
-    NSDictionary *request = [NSDictionary fromString:claimDefrequestJson];
+    NSDictionary *request = [NSDictionary fromString:credDefrequestJson];
     XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");
 
     [TestUtils cleanupStorage];
@@ -1450,22 +1450,22 @@
     expectedResult[@"operation"][@"signature_type"] = @"CL";
     expectedResult[@"operation"][@"origin"] = @"NcYxiDXkpYi6ov5FcYDi1e";
 
-    NSString *getClaimDefRequestJson;
+    NSString *getCredDefRequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildGetCredDefRequestWithSubmitterDid:identifier
                                                                                      id:id
-                                                                             resultJson:&getClaimDefRequestJson];
+                                                                             resultJson:&getCredDefRequestJson];
 
-    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetClaimDefTxnWithSubmitterDid() failed");
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetCredDefRequestWithSubmitterDid() failed");
 
-    NSDictionary *request = [NSDictionary fromString:getClaimDefRequestJson];
+    NSDictionary *request = [NSDictionary fromString:getCredDefRequestJson];
     XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");
     [TestUtils cleanupStorage];
 }
 
-- (void)testClaimDefRequestWorksWithoutSignature {
+- (void)testCredDefRequestWorksWithoutSignature {
     [TestUtils cleanupStorage];
 
-    NSString *poolName = @"indy_claim_def_request_works_without_signature";
+    NSString *poolName = @"indy_cred_def_request_works_without_signature";
     NSError *ret = nil;
 
     // 1. Create and open pool ledger config, get pool handle
@@ -1580,7 +1580,7 @@
     XCTAssertNotNil(schemaId, @"schemaResponse is nil!");
     XCTAssertNotNil(schemaJson, @"schemaResponse is nil!");
 
-    // 11. Create claim definition
+    // 11. Create credential definition
     __block NSString *credentialDefId;
     __block NSString *credentialDefJSON;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateAndStoreCredentialDefForSchema:schemaJson
@@ -1595,34 +1595,34 @@
     XCTAssertTrue([credentialDefId isValid], @"invalid credentialDefId: %@", credentialDefId);
     XCTAssertTrue([credentialDefJSON isValid], @"invalid credentialDefJSON: %@", credentialDefJSON);
 
-    // 12. Build claim def request
-    NSString *claimDefRequestJson;
+    // 12. Build credential def request
+    NSString *credDefRequestJson;
     ret = [[LedgerUtils sharedInstance] buildCredDefRequestWithSubmitterDid:myDid
                                                                        data:credentialDefJSON
-                                                                 resultJson:&claimDefRequestJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::buildClaimDefTxnWithSubmitterDid() failed");
-    XCTAssertNotNil(claimDefRequestJson, @"claimDefRequestJson is nil!");
+                                                                 resultJson:&credDefRequestJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::buildCredDefRequestWithSubmitterDid() failed");
+    XCTAssertNotNil(credDefRequestJson, @"credDefRequestJson is nil!");
 
 
-    // 13. Sign and submit claim def request
+    // 13. Sign and submit cred def request
 
-    NSString *claimDefResponse;
+    NSString *credDefResponse;
     ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
-                                                        request:claimDefRequestJson
-                                                       response:&claimDefResponse];
+                                                        request:credDefRequestJson
+                                                       response:&credDefResponse];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() returned not Success");
-    XCTAssertNotNil(claimDefResponse, @"claimDefResponse is nil!");
-    NSDictionary *response = [NSDictionary fromString:claimDefResponse];
+    XCTAssertNotNil(credDefResponse, @"credDefResponse is nil!");
+    NSDictionary *response = [NSDictionary fromString:credDefResponse];
     XCTAssertTrue([response[@"op"] isEqualToString:@"REQNACK"], @"wrong response type");
 
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
 
-- (void)testClaimDefRequestsWorks {
+- (void)testCredDefRequestsWorks {
     [TestUtils cleanupStorage];
 
-    NSString *poolName = @"indy_claim_def_requests_works";
+    NSString *poolName = @"indy_cred_def_requests_works";
     NSError *ret = nil;
 
     // 1. Create and open pool ledger config, get pool handle
@@ -1737,7 +1737,7 @@
     XCTAssertNotNil(schemaId, @"schemaResponse is nil!");
     XCTAssertNotNil(schemaJson, @"schemaResponse is nil!");
 
-    // 11. Create claim definition
+    // 11. Create credential definition
     __block NSString *credentialDefId;
     __block NSString *credentialDefJSON;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateAndStoreCredentialDefForSchema:schemaJson
@@ -1752,44 +1752,44 @@
     XCTAssertTrue([credentialDefId isValid], @"invalid credentialDefId: %@", credentialDefId);
     XCTAssertTrue([credentialDefJSON isValid], @"invalid credentialDefJSON: %@", credentialDefJSON);
 
-    // 12. Build claim def request
-    NSString *claimDefRequestJson;
+    // 12. Build credential def request
+    NSString *credDefRequestJson;
     ret = [[LedgerUtils sharedInstance] buildCredDefRequestWithSubmitterDid:myDid
                                                                        data:credentialDefJSON
-                                                                 resultJson:&claimDefRequestJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::buildClaimDefTxnWithSubmitterDid() failed");
-    XCTAssertNotNil(claimDefRequestJson, @"claimDefRequestJson is nil!");
+                                                                 resultJson:&credDefRequestJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::buildCredDefRequestWithSubmitterDid() failed");
+    XCTAssertNotNil(credDefRequestJson, @"credDefRequestJson is nil!");
 
 
-    // 13. Sign and submit claim def request
+    // 13. Sign and submit credential def request
 
-    NSString *claimDefResponse;
+    NSString *credDefResponse;
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
                                                               walletHandle:walletHandle
                                                               submitterDid:myDid
-                                                               requestJson:claimDefRequestJson
-                                                           outResponseJson:&claimDefResponse];
+                                                               requestJson:credDefRequestJson
+                                                           outResponseJson:&credDefResponse];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() returned not Success");
-    XCTAssertNotNil(claimDefResponse, @"claimDefResponse is nil!");
+    XCTAssertNotNil(credDefResponse, @"credDefResponse is nil!");
 
 
-    // 14. Build get claim def request
-    NSString *getClaimDefRequest;
+    // 14. Build get credential def request
+    NSString *getCredDefRequest;
     ret = [[LedgerUtils sharedInstance] buildGetCredDefRequestWithSubmitterDid:myDid
                                                                             id:credentialDefId
-                                                                    resultJson:&getClaimDefRequest];
-    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetClaimDefTxnWithSubmitterDid() failed");
-    XCTAssertNotNil(getClaimDefRequest, @"getClaimDefRequest is nil!");
+                                                                    resultJson:&getCredDefRequest];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetCredDefRequestWithSubmitterDid() failed");
+    XCTAssertNotNil(getCredDefRequest, @"getCredDefRequest is nil!");
 
-    // 15. Send getClaimDefRequest
-    NSString *getClaimDefResponse;
+    // 15. Send getCredDefRequest
+    NSString *getCredDefResponse;
     ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
-                                                        request:getClaimDefRequest
-                                                       response:&getClaimDefResponse];
+                                                        request:getCredDefRequest
+                                                       response:&getCredDefResponse];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::sendRequestWithPoolHandle() failed");
-    XCTAssertNotNil(getClaimDefResponse, @"getClaimDefResponse is nil!");
+    XCTAssertNotNil(getCredDefResponse, @"getCredDefResponse is nil!");
 
-    ret = [[LedgerUtils sharedInstance] parseGetCredDefResponse:getClaimDefResponse
+    ret = [[LedgerUtils sharedInstance] parseGetCredDefResponse:getCredDefResponse
                                                       credDefId:&credentialDefId
                                                     credDefJson:&credentialDefJSON];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::parseGetCredDefResponse() failed");
@@ -1939,7 +1939,7 @@
 
     NSDictionary *schemaResponse = [NSDictionary fromString:schemaResponseJson];
     NSNumber *seqNo = (NSNumber *) schemaResponse[@"result"][@"seqNo"];
-    seqNo = [NSNumber numberWithInt:[seqNo intValue] + 1];
+    seqNo = [NSNumber numberWithInt:[seqNo intValue] + 10];
 
     NSString *getTxnRequest;
     ret = [[LedgerUtils sharedInstance] buildGetTxnRequestWithSubmitterDid:myDid

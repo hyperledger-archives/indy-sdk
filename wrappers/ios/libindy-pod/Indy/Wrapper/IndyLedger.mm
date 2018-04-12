@@ -270,9 +270,9 @@
     }
 }
 
-+ (void)buildGetClaimDefRequestWithSubmitterDid:(NSString *)submitterDid
-                                             id:(NSString *)id
-                                     completion:(void (^)(NSError *error, NSString *requestJSON))completion {
++ (void)buildGetCredDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                            id:(NSString *)id
+                                    completion:(void (^)(NSError *error, NSString *requestJSON))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];

@@ -165,18 +165,18 @@
     XCTAssertEqual(ret.code, Success, @"issuerCreateAndStoreCredentialDefForSchema() failed!");
 
     // Issuer send credential definition to ledger
-    NSString *claimDefRequestJson;
+    NSString *credDefRequestJson;
     ret = [[LedgerUtils sharedInstance] buildCredDefRequestWithSubmitterDid:issuerDid
                                                                        data:credentialDefJSON
-                                                                 resultJson:&claimDefRequestJson];
+                                                                 resultJson:&credDefRequestJson];
     XCTAssertEqual(ret.code, Success, @"buildCredDefRequestWithSubmitterDid() failed!");
 
-    NSString *claimDefResponse;
+    NSString *credDefResponse;
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
                                                               walletHandle:issuerWalletHandle
                                                               submitterDid:issuerDid
-                                                               requestJson:claimDefRequestJson
-                                                           outResponseJson:&claimDefResponse];
+                                                               requestJson:credDefRequestJson
+                                                           outResponseJson:&credDefResponse];
     XCTAssertEqual(ret.code, Success, @"signAndSubmitRequestWithPoolHandle() failed!");
 
     // Issuer create revocation registry
@@ -254,19 +254,19 @@
     // Prover gets credential definition from ledger
     NSDictionary *credOffer = [NSDictionary fromString:credentialOfferJson];
 
-    NSString *getClaimDefRequest;
+    NSString *getCredDefRequest;
     ret = [[LedgerUtils sharedInstance] buildGetCredDefRequestWithSubmitterDid:proverDid
                                                                             id:credOffer[@"cred_def_id"]
-                                                                    resultJson:&getClaimDefRequest];
+                                                                    resultJson:&getCredDefRequest];
     XCTAssertEqual(ret.code, Success, @"buildGetCredDefRequestWithSubmitterDid() failed!");
 
-    NSString *getClaimDefResponse;
+    NSString *getCredDefResponse;
     ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
-                                                        request:getClaimDefRequest
-                                                       response:&getClaimDefResponse];
+                                                        request:getCredDefRequest
+                                                       response:&getCredDefResponse];
     XCTAssertEqual(ret.code, Success, @"sendRequestWithPoolHandle() failed!");
 
-    ret = [[LedgerUtils sharedInstance] parseGetCredDefResponse:getClaimDefResponse
+    ret = [[LedgerUtils sharedInstance] parseGetCredDefResponse:getCredDefResponse
                                                       credDefId:&credentialDefId
                                                     credDefJson:&credentialDefJSON];
     XCTAssertEqual(ret.code, Success, @"parseGetCredDefResponse() failed!");
@@ -528,12 +528,13 @@
     XCTAssertEqual(ret.code, Success, @"parseGetRevocRegDeltaResponse() failed!");
 
     // Prover create Revocation State
-    ret = [[AnoncredsUtils sharedInstance] createRevocationStateForCredRevID:credentialRevId
-                                                                   timestamp:timestamp
-                                                               revRegDefJSON:revocRegDefJson
-                                                             revRegDeltaJSON:revocRegDeltaJson
-                                                     blobStorageReaderHandle:blobStorageReaderHandle
-                                                                revStateJson:&revocStateJson];
+    ret = [[AnoncredsUtils sharedInstance] updateRevocationState:revocStateJson
+                                                       credRevID:credentialRevId
+                                                       timestamp:timestamp
+                                                   revRegDefJSON:revocRegDefJson
+                                                 revRegDeltaJSON:revocRegDeltaJson
+                                         blobStorageReaderHandle:blobStorageReaderHandle
+                                             updatedRevStateJson:&revocStateJson];
     XCTAssertEqual(ret.code, Success, @"createRevocationStateForCredRevID() failed!");
 
     // Prover create Proof
@@ -591,6 +592,15 @@
     XCTAssertEqual(ret.code, Success, @"verifierVerifyProofRequest() failed!");
 
     XCTAssertFalse(isValid, @"isValid == YES");
+
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:issuerWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:closeWalletWithHandle failed");
+
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:proverWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:closeWalletWithHandle failed");
+
+    ret = [[PoolUtils sharedInstance] closeHandle:poolHandle];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::closeHandle() failed!");
 
     [TestUtils cleanupStorage];
 }

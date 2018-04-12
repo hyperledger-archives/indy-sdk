@@ -145,7 +145,7 @@
                                 completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 /**
- Builds a GET_SCHEMA request. Request to get Claim's Schema.
+ Builds a GET_SCHEMA request. Request to get Credential's Schema.
  
  @param submitterDid DID of the read request sender.
  @param id Schema ID in ledger
@@ -197,9 +197,9 @@
  @param id Credential Definition ID in ledger
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
-+ (void)buildGetClaimDefRequestWithSubmitterDid:(NSString *)submitterDid
-                                             id:(NSString *)id
-                                     completion:(void (^)(NSError *error, NSString *requestJSON))completion;
++ (void)buildGetCredDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                            id:(NSString *)id
+                                    completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 /**
  Parse a GET_CRED_DEF response.
@@ -377,7 +377,7 @@
  Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
  the new accumulator value and issued/revoked indices.
  This is just a delta of indices, not the whole list.
- So, it can be sent each time a new claim is issued/revoked.
+ So, it can be sent each time a new credential is issued/revoked.
 
  @param submitterDid DID of the submitter stored in secured Wallet.
  @param type Revocation Registry type (only CL_ACCUM is supported for now).

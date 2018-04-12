@@ -670,6 +670,13 @@
 
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::verifierVerifyProof() failed");
     XCTAssertTrue(isValid, @"isValid == NO");
+
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:issuerWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"closeWallet() failed!");
+
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:proverWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"closeWallet() failed!");
+
     [TestUtils cleanupStorage];
 }
 
