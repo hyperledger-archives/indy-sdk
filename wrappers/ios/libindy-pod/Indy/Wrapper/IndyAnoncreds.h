@@ -16,6 +16,10 @@
  Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
  to Indy distributed ledger.
  
+ It is IMPORTANT for current version POST Schema in Ledger and after that GET it from Ledger
+ with correct seq_no to save compatibility with Ledger.
+ After that can call indy_issuer_create_and_store_credential_def to build corresponding Credential Definition.
+ 
  @param issuerDID DID of schema issuer
  @param name a name the schema
  @param version a version of the schema
@@ -35,6 +39,8 @@
  Credential definition entity contains private and public parts. Private part will be stored in the wallet. Public part
  will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing CRED_DEF transaction
  to Indy distributed ledger.
+ 
+ It is IMPORTANT for current version GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
  
  @param issuerDID DID of the issuer signing credential_def transaction to the Ledger
  @param schemaJSON Schema as a json
@@ -95,13 +101,14 @@
  @param cred_def_id: id of stored in ledger credential definition
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter.
- Returns credentials offer json
-        {
-            "cred_def_id": string,
-            // Fields below can depend on Cred Def type
-            "nonce": string,
-            "key_correctness_proof" : <key_correctness_proof>
-        }
+ Returns credential offer json:
+  {
+      "schema_id": string,
+      "cred_def_id": string,
+      // Fields below can depend on Cred Def type
+      "nonce": string,
+      "key_correctness_proof" : <key_correctness_proof>
+  }
 */
 + (void)issuerCreateCredentialOfferForCredDefId:(NSString *)credDefID
                                    walletHandle:(IndyHandle)walletHandle
@@ -120,7 +127,7 @@
  Note that it is possible to accumulate deltas to reduce ledger load.
 
  @param  credOfferJSON: a cred offer created by issuerCreateCredentialOfferForCredDefId
- @param  credRequestJSON: a credential request created by proverCreateCredentialReqWithCredentialDef
+ @param  credRequestJSON: a credential request created by proverCreateCredentialReqForCredentialOffer
  @param  credValuesJSON: a credential containing attribute values for each of requested attribute names.
      Example:
      {
@@ -132,15 +139,16 @@
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter. 
  Return:
-     credJSON: Contains signed credential values
-     {
-         "cred_def_id": string,
-         "rev_reg_id", Optional<string>,
-         "values": <see credential_values_json above>,
-         // Fields below can depend on Cred Def type
-         "signature": <signature>,
-         "signature_correctness_proof": <signature_correctness_proof>
-     }
+     credJSON: Credential json containing signed credential values
+        {
+            "schema_id": string,
+            "cred_def_id": string,
+            "rev_reg_def_id", Optional<string>,
+            "values": <see cred_values_json above>,
+            // Fields below can depend on Cred Def type
+            "signature": <signature>,
+            "signature_correctness_proof": <signature_correctness_proof>
+        }
      credRevocID: local id for revocation info (Can be used for revocation of this cred)
      revocRegDeltaJSON: Revocation registry delta json with a newly issued credential
  */
@@ -153,7 +161,7 @@
                                         completion:(void (^)(NSError *error, NSString *credJSON, NSString *credRevocID, NSString *revocRegDeltaJSON))completion;
 
 /**
- Revoke a credential identified by a cred_revoc_id (returned by indy_issuer_create_cred).
+ Revoke a credential identified by a cred_revoc_id (returned by issuerCreateCredentialForCredentialRequest).
 
  The corresponding credential definition and revocation registry must be already
  created an stored into the wallet.
@@ -166,7 +174,7 @@
  @param credRevocId: local id for revocation info
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter. 
- Revocation registry delta json with a revoked credential
+ Returns Revocation registry delta json with a revoked credential
  */
 + (void)issuerRevokeCredentialByCredRevocId:(NSString *)credRevocId
                                    revRegId:(NSString *)revRegId
@@ -180,6 +188,15 @@
                                 walletHandle:(IndyHandle)walletHandle
                                   completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion;*/
 
+/**
+ Merge two revocation registry deltas (returned by issuerCreateCredentialForCredentialRequest or issuerRevokeCredentialByCredRevocId) to accumulate common delta.
+ Send common delta to ledger to reduce the load.
+
+ @param revRegDelta: revocation registry delta.
+ @param otherRevRegDelta: revocation registry delta for which PrevAccum value  is equal to current accum value of revRegDelta.
+ @param completion Callback that takes command result as parameter. 
+ Returns merged revocation registry delta
+ */
 + (void)issuerMergerRevocationRegistryDelta:(NSString *)revRegDelta
                                   withDelta:(NSString *)otherRevRegDelta
                                  completion:(void (^)(NSError *error, NSString *credOfferJSON))completion;
@@ -188,9 +205,9 @@
  Creates a master secret with a given name and stores it in the wallet.
  The name must be unique.
  
- @param masterSecretID A new master secret name.
+ @param masterSecretID (optional, if not present random one will be generated) new master id
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param completion Returns error code.
+ @param completion Returns error code and id of generated master secret.
  
  */
 + (void)proverCreateMasterSecret:(NSString *)masterSecretID
@@ -206,17 +223,16 @@
  The blinded master secret is a part of the credential request.
 
  @param proverDID: a DID of the prover
- @param credOfferJSON: a cred offer created by issuerCreateCredentialOfferForCredDefId
- @param credentialDefJSON: credential definition json created by issuerCreateAndStoreCredentialDefForIssuerDID
- @param masterSecretID: the name of the master secret stored in the wallet
+ @param credOfferJSON: credential offer as a json containing information about the issuer and a credential
+ @param credentialDefJSON: credential definition json
+ @param masterSecretID: the id of the master secret stored in the wallet
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter. 
  Returns 
      credReqJSON: Credential request json for creation of credential by Issuer
      {
-      "cred_def_id" : string,
-      "rev_reg_id" : Optional<string>,
       "prover_did" : string,
+      "cred_def_id" : string,
          // Fields below can depend on Cred Def type
       "blinded_ms" : <blinded_master_secret>,
       "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
@@ -235,13 +251,12 @@
  Check credential provided by Issuer for the given credential request,
  updates the credential by a master secret and stores in a secure wallet.
  
- @param credID: identifier by which credential will be stored in wallet
+ @param credID: (optional, default is a random one) identifier by which credential will be stored in the wallet
  @param credReqJSON: a credential request created by proverCreateCredentialReqForCredentialOffer
  @param credReqMetadataJSON: a credential request metadata created by proverCreateCredentialReqForCredentialOffer
- @param credJson: credential json created by issuerCreateCredentialForCredOffer
- @param credDefJSON: credential definition json created by issuerCreateSchemaForIssuerDID
+ @param credJson:  credential json received from issuer
+ @param credDefJSON: credential definition json
  @param revRegDefJSON: revocation registry definition json
- @param revStateJSON: revocation state json
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter.
  */
@@ -266,12 +281,19 @@
             "schema_name": string, (Optional)
             "schema_version": string, (Optional)
             "issuer_did": string, (Optional)
-            "issuer_did": string, (Optional)
             "cred_def_id": string, (Optional)
         }
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter. 
- Returns credentials json. See example above.
+ Returns credentials json. 
+  [{
+      "referent": string, // cred_id in the wallet
+      "values": <see credValuesJSON above>,
+      "schema_id": string,
+      "cred_def_id": string,
+      "rev_reg_id": Optional<string>,
+      "cred_rev_id": Optional<string>
+  }]
 
  */
 + (void)proverGetCredentialsForFilter:(NSString *)filterJSON
@@ -282,60 +304,73 @@
  Gets human readable credentials matching the given proof request.
  
  @param  proofReqJSON: proof request json
-     {
-         "name": string,
-         "version": string,
-         "nonce": string,
-         "requested_attrs": {
-             "requested_attr1_referent": <attr_info>,
-             "requested_attr2_referent": <attr_info>,
-             "requested_attr3_referent": <attr_info>,
+    {
+        "name": string,
+        "version": string,
+        "nonce": string,
+        "requested_attributes": { // set of requested attributes
+             "<attr_referent>": <attr_info>, // see below
+             ...,
+        },
+        "requested_predicates": { // set of requested predicates
+             "<predicate_referent>": <predicate_info>, // see below
+             ...,
          },
-         "requested_predicates": {
-             "requested_predicate_1_referent": <predicate_info>,
-             "requested_predicate_2_referent": <predicate_info>,
-         },
-         "freshness": Optional<number>
-     }
-
- where attr_info:
+        "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                       // If specified prover must proof non-revocation
+                       // for date in this interval for each attribute
+                       // (can be overridden on attribute level)
+    }
+ where 
+ attr_referent: Proof-request local identifier of requested attribute
+ attr_info: Describes requested attribute
+    {
+        "name": string, // attribute name, (case insensitive and ignore spaces)
+        "restrictions": Optional<[<attr_filter>]> // see below,
+                         // if specified, credential must satisfy to one of the given restriction.
+        "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                       // If specified prover must proof non-revocation
+                       // for date in this interval this attribute
+                       // (overrides proof level interval)
+    }
+ predicate_referent: Proof-request local identifier of requested attribute predicate
+ predicate_info: Describes requested attribute predicate
      {
          "name": attribute name, (case insensitive and ignore spaces)
-         "freshness": (Optional)
-         "restrictions": [
-             <see filter json above>
-         ]  (Optional) - if specified, credential must satisfy to one of the given restriction.
-     }
- predicate_info:
-     {
-         "attr_name": attribute name, (case insensitive and ignore spaces)
          "p_type": predicate type (Currently >= only)
-         "value": requested value of attribute
-         "freshness": (Optional)
-         "restrictions": [
-             <see filter json above>
-         ]  (Optional) - if specified, credential must satisfy to one of the given restriction.
+         "p_value": predicate value
+         "restrictions": Optional<[<attr_filter>]> // see below,
+                         // if specified, credential must satisfy to one of the given restriction.
+         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                        // If specified prover must proof non-revocation
+                        // for date in this interval this attribute
+                        // (overrides proof level interval)
      }
- @param walletHandle Wallet handler (created by IndyWallet::openWalletWithNam).
- @param completion Callback that takes command result as parameter. Returns json with credentials for the given pool request. 
- json with credentials for the given pool request.
+ non_revoc_interval: Defines non-revocation interval
      {
-         "attrs": {
-             "requested_attr1_referent": [(credential1, Optional<freshness>), (credential2, Optional<freshness>)],
-             "requested_attr2_referent": [],
-             "requested_attr3_referent": [(credential3, Optional<freshness>)]
+         "from": Optional<int>, // timestamp of interval beginning
+         "to": Optional<int>, // timestamp of interval ending
+     }
+ filter: see filterJSON above      
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithNam).
+ @param completion Callback that takes command result as parameter. Returns json with credentials for the given pool request.
+     {
+         "requested_attrs": {
+             "<attr_referent>": [{ cred_info: <credential_info>, interval: Optional<non_revoc_interval> }],
+             ...,
          },
-         "predicates": {
-             "requested_predicate_1_referent": [(credential1, Optional<freshness>), (credential3, Optional<freshness>)],
-             "requested_predicate_2_referent": [(credential2, Optional<freshness>)]
+         "requested_predicates": {
+             "requested_predicates": [{ cred_info: <credential_info>, timestamp: Optional<integer> }, { cred_info: <credential_2_info>, timestamp: Optional<integer> }],
+             "requested_predicate_2_referent": [{ cred_info: <credential_2_info>, timestamp: Optional<integer> }]
          }
      }, where credential is
      {
          "referent": <string>,
          "attrs": [{"attr_name" : "attr_raw_value"}],
-         "issuer_did": string,
+         "schema_id": string,
          "cred_def_id": string,
-         "rev_reg_id": Optional<int>
+         "rev_reg_id": Optional<int>,
+         "cred_rev_id": Optional<int>,
      }
  */
 + (void)proverGetCredentialsForProofReq:(NSString *)proofReqJSON
@@ -351,93 +386,96 @@
  The proof request also contains nonce.
  The proof contains either proof or self-attested attribute value for each requested attribute.
  
- @param proofRequestJSON: proof request json as come from the verifier
-     {
-         "name": string,
-         "version": string,
-         "nonce": string,
-         "requested_attrs": {
-             "requested_attr1_referent": <attr_info>,
-             "requested_attr2_referent": <attr_info>,
-             "requested_attr3_referent": <attr_info>,
+ @param  proofReqJSON: proof request json
+    {
+        "name": string,
+        "version": string,
+        "nonce": string,
+        "requested_attributes": { // set of requested attributes
+             "<attr_referent>": <attr_info>, // see below
+             ...,
+        },
+        "requested_predicates": { // set of requested predicates
+             "<predicate_referent>": <predicate_info>, // see below
+             ...,
          },
-         "requested_predicates": {
-             "requested_predicate_1_referent": <predicate_info>,
-             "requested_predicate_2_referent": <predicate_info>,
-         },
-         "freshness": Optional<number>
-     }
+        "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                       // If specified prover must proof non-revocation
+                       // for date in this interval for each attribute
+                       // (can be overridden on attribute level)
+    }
  @param requestedCredentialsJSON: either a credential or self-attested attribute for each requested attribute
      {
-         "requested_attr1_referent": [{"cred_id": string, "freshness": Optional<number>}, true <reveal_attr>],
-         "requested_attr2_referent": [self_attested_attribute],
-         "requested_attr3_referent": [{"cred_id": string, "freshness": Optional<number>}, false]
-         "requested_attr4_referent": [{"cred_id": string, "freshness": Optional<number>}, true]
-         "requested_predicate_1_referent": [{"cred_id": string, "freshness": Optional<number>}],
-         "requested_predicate_2_referent": [{"cred_id": string, "freshness": Optional<number>}],
-     }
- @param schemasJSON: all schema jsons participating in the proof request
-     {
-         "credential1_referent_in_wallet": <schema1>,
-         "credential2_referent_in_wallet": <schema2>,
-         "credential3_referent_in_wallet": <schema3>,
-     }
- @param masterSecretID: the name of the master secret stored in the wallet
- @param credentialDefsJSON: all credential definition jsons participating in the proof request
-     {
-         "credential1_referent_in_wallet": <credential_def1>,
-         "credential2_referent_in_wallet": <credential_def2>,
-         "credential3_referent_in_wallet": <credential_def3>,
-     }
- @param revocStatesJSON: all revocation registry jsons participating in the proof request
-     {
-         "credential1_referent_in_wallet": {
-             "freshness1": <revoc_info1>,
-             "freshness2": <revoc_info2>,
+         "self_attested_attributes": {
+             "self_attested_attribute_referent": string
          },
-         "credential2_referent_in_wallet": {
-             "freshness3": <revoc_info3>
+         "requested_attributes": {
+             "requested_attribute_referent_1": {"cred_id": string, "timestamp": Optional<number>, revealed: <bool> }},
+             "requested_attribute_referent_2": {"cred_id": string, "timestamp": Optional<number>, revealed: <bool> }}
          },
-         "credential3_referent_in_wallet": {
-             "freshness4": <revoc_info4>
+         "requested_predicates": {
+             "requested_predicates_referent_1": {"cred_id": string, "timestamp": Optional<number> }},
+         }
+     }
+ @param masterSecretID: the id of the master secret stored in the wallet
+ @param schemasJSON: all schemas json participating in the proof request
+     {
+         <schema1_id>: <schema1_json>,
+         <schema2_id>: <schema2_json>,
+         <schema3_id>: <schema3_json>,
+     }
+ @param credentialDefsJSON: all credential definitions json participating in the proof request
+     {
+         "cred_def1_id": <credential_def1_json>,
+         "cred_def2_id": <credential_def2_json>,
+         "cred_def3_id": <credential_def3_json>,
+     }
+ @param revocStatesJSON: all revocation states json participating in the proof request
+     {
+         "rev_reg_def1_id": {
+             "timestamp1": <rev_state1>,
+             "timestamp2": <rev_state2>,
+         },
+         "rev_reg_def2_id": {
+             "timestamp3": <rev_state3>
+         },
+         "rev_reg_def3_id": {
+             "timestamp4": <rev_state4>
          },
      }
  
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithNam).
  
  @param completion Callback that takes command result as parameter. 
- Proof json
- For each requested attribute either a proof (with optionally revealed attribute value) or
- self-attested attribute value is provided.
- Each proof is associated with a credential and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.
- There ais also aggregated proof part common for all credential proofs.
-     {
-         "requested": {
-             "revealed_attrs": {
-                 "requested_attr1_id": {referent: string, raw: string, encoded: string},
-                 "requested_attr4_id": {referent: string, raw: string, encoded: string},
-             },
-             "unrevealed_attrs": {
-                 "requested_attr3_id": referent
-             },
-             "self_attested_attrs": {
-                 "requested_attr2_id": self_attested_value,
-             },
-             "requested_predicates": {
-                 "requested_predicate_1_referent": [credential_proof2_referent],
-                 "requested_predicate_2_referent": [credential_proof3_referent],
-             }
-         }
-         "proof": {
-             "proofs": {
-                 "credential_proof1_referent": <credential_proof>,
-                 "credential_proof2_referent": <credential_proof>,
-                 "credential_proof3_referent": <credential_proof>
-             },
-             "aggregated_proof": <aggregated_proof>
-         }
-         "identifiers": {"credential_proof1_referent":{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}}
-     } */
+  Proof json
+  For each requested attribute either a proof (with optionally revealed attribute value) or
+  self-attested attribute value is provided.
+  Each proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.
+  There is also aggregated proof part common for all credential proofs.
+      {
+          "requested": {
+              "revealed_attrs": {
+                  "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
+                  "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+              },
+              "unrevealed_attrs": {
+                  "requested_attr3_id": {sub_proof_index: number}
+              },
+              "self_attested_attrs": {
+                  "requested_attr2_id": self_attested_value,
+              },
+              "requested_predicates": {
+                  "requested_predicate_1_referent": {sub_proof_index: int},
+                  "requested_predicate_2_referent": {sub_proof_index: int},
+              }
+          }
+          "proof": {
+              "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
+              "aggregated_proof": <aggregated_proof>
+          }
+          "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
+      }
+  */
 + (void)proverCreateProofForRequest:(NSString *)proofRequestJSON
            requestedCredentialsJSON:(NSString *)requestedCredentialsJSON
                      masterSecretID:(NSString *)masterSecretID
@@ -451,75 +489,77 @@
  Verifies a proof (of multiple credential).
  All required schemas, public keys and revocation registries must be provided.
  
- @param proofRequestJson: initial proof request as sent by the verifier
-     {
-         "name": string,
-         "version": string,
-         "nonce": string,
-         "requested_attrs": {
-             "requested_attr1_referent": <attr_info>,
-             "requested_attr2_referent": <attr_info>,
-             "requested_attr3_referent": <attr_info>,
+ @param  proofRequestJson: proof request json
+    {
+        "name": string,
+        "version": string,
+        "nonce": string,
+        "requested_attributes": { // set of requested attributes
+             "<attr_referent>": <attr_info>, // see below
+             ...,
+        },
+        "requested_predicates": { // set of requested predicates
+             "<predicate_referent>": <predicate_info>, // see below
+             ...,
          },
-         "requested_predicates": {
-             "requested_predicate_1_referent": <predicate_info>,
-             "requested_predicate_2_referent": <predicate_info>,
-         },
-         "freshness": Optional<number>
-     }
+        "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                       // If specified prover must proof non-revocation
+                       // for date in this interval for each attribute
+                       // (can be overridden on attribute level)
+    }
  @param proofJSON: proof json
- For each requested attribute either a proof (with optionally revealed attribute value) or
- self-attested attribute value is provided.
- Each proof is associated with a credential and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.
- There ais also aggregated proof part common for all credential proofs.
+      {
+          "requested": {
+              "revealed_attrs": {
+                  "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
+                  "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+              },
+              "unrevealed_attrs": {
+                  "requested_attr3_id": {sub_proof_index: number}
+              },
+              "self_attested_attrs": {
+                  "requested_attr2_id": self_attested_value,
+              },
+              "requested_predicates": {
+                  "requested_predicate_1_referent": {sub_proof_index: int},
+                  "requested_predicate_2_referent": {sub_proof_index: int},
+              }
+          }
+          "proof": {
+              "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
+              "aggregated_proof": <aggregated_proof>
+          }
+          "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
+      }
+ @param schemasJSON: all schemas json participating in the proof request
      {
-         "requested": {
-             "requested_attr1_id": [credential_proof1_referent, revealed_attr1, revealed_attr1_as_int],
-             "requested_attr2_id": [self_attested_attribute],
-             "requested_attr3_id": [credential_proof2_referent]
-             "requested_attr4_id": [credential_proof2_referent, revealed_attr4, revealed_attr4_as_int],
-             "requested_predicate_1_referent": [credential_proof2_referent],
-             "requested_predicate_2_referent": [credential_proof3_referent],
-         }
-         "proof": {
-             "proofs": {
-                 "credential_proof1_referent": <credential_proof>,
-                 "credential_proof2_referent": <credential_proof>,
-                 "credential_proof3_referent": <credential_proof>
-             },
-             "aggregated_proof": <aggregated_proof>
-         }
-         "identifiers": {"credential_proof1_referent":{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}}
+         <schema1_id>: <schema1_json>,
+         <schema2_id>: <schema2_json>,
+         <schema3_id>: <schema3_json>,
      }
- @param schemasJSON: all schemas json participating in the proof
-         {
-             "credential_proof1_referent": <schema>,
-             "credential_proof2_referent": <schema>,
-             "credential_proof3_referent": <schema>
-         }
- @param credentialDefsJSON: all credential definitions json participating in the proof
-         {
-             "credential_proof1_referent": <credential_def>,
-             "credential_proof2_referent": <credential_def>,
-             "credential_proof3_referent": <credential_def>
-         }
- @param revocRegDefsJSON: all revocation registry definitions json participating in the proof
-         {
-             "credential_proof1_referent": <rev_reg_def>,
-             "credential_proof2_referent": <rev_reg_def>,
-             "credential_proof3_referent": <rev_reg_def>
-         }
- @param revocRegsJSON: all revocation registry definitions json participating in the proof
+ @param credentialDefsJSON: all credential definitions json participating in the proof request
      {
-         "credential1_referent_in_wallet": {
-             "freshness1": <revoc_reg1>,
-             "freshness2": <revoc_reg2>,
+         "cred_def1_id": <credential_def1_json>,
+         "cred_def2_id": <credential_def2_json>,
+         "cred_def3_id": <credential_def3_json>,
+     }
+ @param revocRegDefsJSON: all revocation registry definitions json participating in the proof
+     {
+         "rev_reg_def1_id": <rev_reg_def1_json>,
+         "rev_reg_def2_id": <rev_reg_def2_json>,
+         "rev_reg_def3_id": <rev_reg_def3_json>,
+     }
+ @param revocRegsJSON: all revocation registries json participating in the proof
+     {
+         "rev_reg_def1_id": {
+             "timestamp1": <rev_reg1>,
+             "timestamp2": <rev_reg2>,
          },
-         "credential2_referent_in_wallet": {
-             "freshness3": <revoc_reg3>
+         "rev_reg_def2_id": {
+             "timestamp3": <rev_reg3>
          },
-         "credential3_referent_in_wallet": {
-             "freshness4": <revoc_reg4>
+         "rev_reg_def3_id": {
+             "timestamp4": <rev_reg4>
          },
      }
 
@@ -534,6 +574,22 @@
                      revocRegsJSON:(NSString *)revocRegsJSON
                         completion:(void (^)(NSError *error, BOOL valid))completion;
 
+/**
+ Create revocation state for a credential in the particular time moment.
+
+ @param  credRevID: user credential revocation id in revocation registry
+ @param  timestamp: time represented as a total number of seconds from Unix Epoch
+ @param  revRegDefJSON: revocation registry definition json
+ @param  revRegDeltaJSON: revocation registry definition delta json
+ @param  blobStorageReaderHandle: configuration of blob storage reader handle that will allow to read revocation tails
+ @param completion Callback that takes command result as parameter. 
+ Returns result revocation state json:
+ {
+     "rev_reg": <revocation registry>,
+     "witness": <witness>,
+     "timestamp" : integer
+ }
+ */
 + (void)createRevocationStateForCredRevID:(NSString *)credRevID
                                 timestamp:(NSNumber *)timestamp
                             revRegDefJSON:(NSString *)revRegDefJSON
@@ -541,6 +597,23 @@
                   blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
                                completion:(void (^)(NSError *error, NSString *revStateJSON))completion;
 
+/**
+ Create new revocation state for a credential based on existed state at the particular time moment (to reduce calculation time).
+
+ @param  revStateJSON: revocation registry state json
+ @param  credRevID: user credential revocation id in revocation registry
+ @param  timestamp: time represented as a total number of seconds from Unix Epoch
+ @param  revRegDefJSON: revocation registry definition json
+ @param  revRegDeltaJSON: revocation registry definition delta json
+ @param  blobStorageReaderHandle: configuration of blob storage reader handle that will allow to read revocation tails
+ @param completion Callback that takes command result as parameter.
+ Returns result revocation state json:
+ {
+     "rev_reg": <revocation registry>,
+     "witness": <witness>,
+     "timestamp" : integer
+ }
+ */
 + (void)updateRevocationState:(NSString *)revStateJSON
                     credRevID:(NSString *)credRevID
                     timestamp:(NSNumber *)timestamp

@@ -613,8 +613,8 @@ impl AnoncredsUtils {
             },
             "identifiers":[
                 {
-                    "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:\u0002:gvt:1.0",
-                    "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:\u0003:CL:NcYxiDXkpYi6ov5FcYDi1e:\u0002:gvt:1.0",
+                    "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0",
+                    "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0",
                     "rev_reg_id":null,
                     "timestamp":null
                 }

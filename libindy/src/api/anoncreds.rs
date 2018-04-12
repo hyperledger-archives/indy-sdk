@@ -18,7 +18,8 @@ use std::ptr;
 /// Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
 /// to Indy distributed ledger.
 ///
-/// It is IMPORTANT now POST Schema in Ledger and GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
+/// It is IMPORTANT for current version POST Schema in Ledger and after that GET it from Ledger
+/// with correct seq_no to save compatibility with Ledger.
 /// After that can call indy_issuer_create_and_store_credential_def to build corresponding Credential Definition.
 ///
 /// #Params
@@ -76,7 +77,7 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
 /// will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing CRED_DEF transaction
 /// to Indy distributed ledger.
 ///
-/// It is IMPORTANT now GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
+/// It is IMPORTANT for current version GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
@@ -164,7 +165,7 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
 /// tag: allows to distinct between revocation registries for the same issuer and credential definition
 /// cred_def_id: id of stored in ledger credential definition
 /// config_json: type-specific configuration of revocation registry as json:
-/// - 'CL_ACCUM':
+/// - 'CL_ACCUM': {
 ///     "issuance_type": (optional) type of issuance. Currently supported:
 ///         1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
 ///            Revocation Registry is updated only during revocation.
@@ -308,7 +309,7 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: i32,
 ///         "schema_id": string,
 ///         "cred_def_id": string,
 ///         "rev_reg_def_id", Optional<string>,
-///         "values": <see credential_values_json above>,
+///         "values": <see cred_values_json above>,
 ///         // Fields below can depend on Cred Def type
 ///         "signature": <signature>,
 ///         "signature_correctness_proof": <signature_correctness_proof>
@@ -472,16 +473,13 @@ pub extern fn indy_issuer_recover_credential(command_handle: i32,
     result_to_err_code!(result)
 }*/
 
-/// Merge two revocation registry deltas to accumulate common delta.
+/// Merge two revocation registry deltas (returned by indy_issuer_create_credential or indy_issuer_revoke_credential) to accumulate common delta.
 /// Send common delta to ledger to reduce the load.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
-/// rev_reg_delta_json: revocation registry delta received by calling
-///                     indy_issuer_create_credential or indy_issuer_revoke_credential.
-/// other_rev_reg_delta_json: revocation registry delta received by calling
-///                     indy_issuer_create_credential or indy_issuer_revoke_credential.
-///                     PrevAccum value must be equal current accum value of rev_reg_delta_json.
+/// rev_reg_delta_json: revocation registry delta.
+/// other_rev_reg_delta_json: revocation registry delta for which PrevAccum value  is equal to current accum value of rev_reg_delta_json.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -568,8 +566,8 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 /// command_handle: command handle to map callback to user context
 /// wallet_handle: wallet handler (created by open_wallet)
 /// prover_did: a DID of the prover
-/// cred_offer_json: a cred offer created by indy_issuer_create_credential_offer
-/// cred_def_json: credential definition json created by indy_issuer_create_and_store_credential_def
+/// cred_offer_json: credential offer as a json containing information about the issuer and a credential
+/// cred_def_json: credential definition json
 /// master_secret_id: the id of the master secret stored in the wallet
 /// cb: Callback that takes command result as parameter.
 ///
@@ -635,9 +633,9 @@ pub extern fn indy_prover_create_credential_req(command_handle: i32,
 /// cred_id: (optional, default is a random one) identifier by which credential will be stored in the wallet
 /// cred_req_json: a credential request created by indy_prover_create_credential_req
 /// cred_req_metadata_json: a credential request metadata created by indy_prover_create_credential_req
-/// cred_json: credential json created by indy_issuer_create_credential
-/// cred_def_json: credential definition json created by indy_issuer_create_and_store_credential_def
-/// rev_reg_def_json: revocation registry definition json created by indy_issuer_create_and_store_revoc_reg
+/// cred_json: credential json received from issuer
+/// cred_def_json: credential definition json
+/// rev_reg_def_json: revocation registry definition json
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -709,7 +707,7 @@ pub extern fn indy_prover_store_credential(command_handle: i32,
 /// credentials json
 ///     [{
 ///         "referent": string, // cred_id in the wallet
-///         "values": <see credential_values_json above>,
+///         "values": <see cred_values_json above>,
 ///         "schema_id": string,
 ///         "cred_def_id": string,
 ///         "rev_reg_id": Optional<string>,
@@ -756,7 +754,7 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 ///         "name": string,
 ///         "version": string,
 ///         "nonce": string,
-///         "requested_attrs": { // set of requested attributes
+///         "requested_attributes": { // set of requested attributes
 ///              "<attr_referent>": <attr_info>, // see below
 ///              ...,
 ///         },
@@ -777,7 +775,7 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
 ///         "restrictions": Optional<[<attr_filter>]> // see below,
-//                          // if specified, credential must satisfy to one of the given restriction.
+///                         // if specified, credential must satisfy to one of the given restriction.
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval this attribute
@@ -801,15 +799,7 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 ///         "from": Optional<int>, // timestamp of interval beginning
 ///         "to": Optional<int>, // timestamp of interval ending
 ///     }
-/// filter: filter for credentials
-///        {
-///            "schema_id": string, (Optional)
-///            "schema_issuer_did": string, (Optional)
-///            "schema_name": string, (Optional)
-///            "schema_version": string, (Optional)
-///            "issuer_did": string, (Optional)
-///            "cred_def_id": string, (Optional)
-///        }
+/// filter: see filter_json above
 ///
 /// #Returns
 /// credentials_json: json with credentials for the given pool request.
@@ -1159,7 +1149,7 @@ pub extern fn indy_verifier_verify_proof(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Create revocation state for revocation registry at the particular time moment.
+/// Create revocation state for a credential in the particular time moment.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context
@@ -1215,8 +1205,8 @@ pub extern fn indy_create_revocation_state(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Create new revocation state for revocation registry at the
-/// particular time moment based on already existed (to reduce calculation time).
+/// Create new revocation state for a credential based on existed state
+/// at the particular time moment (to reduce calculation time).
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context
