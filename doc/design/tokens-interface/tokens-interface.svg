@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="611px" preserveAspectRatio="none" style="width:777px;height:611px;" version="1.1" viewBox="0 0 777 611" width="777px" zoomAndPan="magnify"><defs><filter height="300%" id="f19e81owh52y68" width="300%" x="-1" y="-1"><feGaussianBlur result="blurOut" stdDeviation="2.0"/><feColorMatrix in="blurOut" result="blurOut2" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .4 0"/><feOffset dx="4.0" dy="4.0" in="blurOut2" result="blurOut3"/><feBlend in="SourceGraphic" in2="blurOut3" mode="normal"/></filter></defs><g><!--cluster Indy SDK--><polygon fill="#FFFFFF" filter="url(#f19e81owh52y68)" points="22,70,90,70,97,93.6094,755,93.6094,755,519,22,519,22,70" style="stroke: #000000; stroke-width: 1.5;"/><line style="stroke: #000000; stroke-width: 1.5;" x1="22" x2="97" y1="93.6094" y2="93.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="62" x="26" y="86.5332">Indy SDK</text><!--entity i_payments_api--><ellipse cx="459" cy="136" fill="#FEFECE" filter="url(#f19e81owh52y68)" rx="8" ry="8" style="stroke: #A80036; stroke-width: 2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="87" x="415.5" y="167.5332">Payments API</text><polygon fill="#FBFB77" filter="url(#f19e81owh52y68)" points="545,114.5,545,157.2031,739,157.2031,739,124.5,729,114.5,545,114.5" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#FBFB77" points="545,114.5,545,132,468.248,136,545,140,545,157.2031,739,157.2031,739,124.5,729,114.5,545,114.5" style="stroke: #A80036; stroke-width: 1.0;"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="729" x2="729" y1="114.5" y2="124.5"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="739" x2="729" y1="124.5" y2="124.5"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="173" x="551" y="132.9951">An API that allows applciation</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="130" x="551" y="149.3467">to work with payments</text><!--entity i_payment_method_api--><ellipse cx="300" cy="136" fill="#FEFECE" filter="url(#f19e81owh52y68)" rx="8" ry="8" style="stroke: #A80036; stroke-width: 2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="131" x="234.5" y="167.5332">Payment Method API</text><polygon fill="#FBFB77" filter="url(#f19e81owh52y68)" points="38.5,106.5,38.5,165.5547,191.5,165.5547,191.5,116.5,181.5,106.5,38.5,106.5" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#FBFB77" points="38.5,106.5,38.5,165.5547,191.5,165.5547,191.5,140,280.768,136,191.5,132,191.5,116.5,181.5,106.5,38.5,106.5" style="stroke: #A80036; stroke-width: 1.0;"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="181.5" x2="181.5" y1="106.5" y2="116.5"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="191.5" x2="181.5" y1="116.5" y2="116.5"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="107" x="44.5" y="124.9951">An API that allows</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="132" x="44.5" y="141.3467">registration of payment</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="50" x="44.5" y="157.6982">methods</text><!--entity indy_api--><rect fill="#FEFECE" filter="url(#f19e81owh52y68)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="81" x="306.5" y="226"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="301.5" y="231"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="301.5" y="253.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="61" x="316.5" y="250.5332">API Layer</text><!--entity payment_service--><rect fill="#FEFECE" filter="url(#f19e81owh52y68)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="126" x="284" y="334.5"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="279" y="339.5"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="279" y="362.1094"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="106" x="294" y="359.0332">Payment Service</text><polygon fill="#FBFB77" filter="url(#f19e81owh52y68)" points="445.5,324,445.5,383.0547,690.5,383.0547,690.5,334,680.5,324,445.5,324" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#FBFB77" points="445.5,324,445.5,349.5,410.02,353.5,445.5,357.5,445.5,383.0547,690.5,383.0547,690.5,334,680.5,324,445.5,324" style="stroke: #A80036; stroke-width: 1.0;"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="680.5" x2="680.5" y1="324" y2="334"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="690.5" x2="680.5" y1="334" y2="334"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="224" x="451.5" y="342.4951">Stores all registered payment methods</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="192" x="451.5" y="358.8467">and perform requests dispatching</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="194" x="451.5" y="375.1982">to corresponded payment method</text><!--entity i_payment_handler_method--><ellipse cx="347" cy="473" fill="#FEFECE" filter="url(#f19e81owh52y68)" rx="8" ry="8" style="stroke: #A80036; stroke-width: 2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="218" x="238" y="504.5332">Payment Method Handler Interface</text><!--entity application--><rect fill="#FEFECE" filter="url(#f19e81owh52y68)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="89" x="334.5" y="8"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="329.5" y="13"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="329.5" y="35.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="69" x="344.5" y="32.5332">Application</text><!--entity sovrin_payment_method--><rect fill="#FEFECE" filter="url(#f19e81owh52y68)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="170" x="157" y="563"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="152" y="568"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="152" y="590.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="150" x="167" y="587.5332">Sovrin Payment Method</text><!--entity another_payment_method--><rect fill="#FEFECE" filter="url(#f19e81owh52y68)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="180" x="362" y="563"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="357" y="568"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="357" y="590.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="160" x="372" y="587.5332">Another Payment Method</text><!--link application to i_payments_api--><path d="M392.571,46.151 C408.763,67.808 435.413,103.452 449.534,122.339 " fill="none" id="application-i_payments_api" style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 7.0,7.0;"/><polygon fill="#A80036" points="452.84,126.761,450.6537,117.1579,449.8457,122.7567,444.2469,121.9487,452.84,126.761" style="stroke: #A80036; stroke-width: 1.0;"/><!--link application to i_payment_method_api--><path d="M365.599,46.151 C349.609,67.808 323.292,103.452 309.348,122.339 " fill="none" id="application-i_payment_method_api" style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 7.0,7.0;"/><polygon fill="#A80036" points="306.083,126.761,314.6466,121.8963,309.0527,122.7385,308.2105,117.1447,306.083,126.761" style="stroke: #A80036; stroke-width: 1.0;"/><!--link i_payments_api to indy_api--><path d="M450.582,145.042 C432.776,162.053 390.91,202.05 366.2,225.657 " fill="none" id="i_payments_api-indy_api" style="stroke: #A80036; stroke-width: 1.0;"/><!--link i_payment_method_api to indy_api--><path d="M303.533,145.042 C311.005,162.053 328.573,202.05 338.943,225.657 " fill="none" id="i_payment_method_api-indy_api" style="stroke: #A80036; stroke-width: 1.0;"/><!--link indy_api to payment_service--><path d="M347,264.066 C347,282.044 347,309.705 347,329.298 " fill="none" id="indy_api-payment_service" style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 7.0,7.0;"/><polygon fill="#A80036" points="347,334.345,351,325.345,347,329.345,343,325.345,347,334.345" style="stroke: #A80036; stroke-width: 1.0;"/><!--link payment_service to i_payment_handler_method--><path d="M347,372.602 C347,396.358 347,437.505 347,458.633 " fill="none" id="payment_service-i_payment_handler_method" style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 7.0,7.0;"/><polygon fill="#A80036" points="347,463.791,351,454.791,347,458.791,343,454.791,347,463.791" style="stroke: #A80036; stroke-width: 1.0;"/><!--link i_payment_handler_method to sovrin_payment_method--><path d="M339.108,482.042 C322.415,499.053 283.166,539.0498 260,562.6574 " fill="none" id="i_payment_handler_method-sovrin_payment_method" style="stroke: #A80036; stroke-width: 1.0;"/><!--link i_payment_handler_method to another_payment_method--><path d="M354.892,482.042 C371.585,499.053 410.834,539.0498 434,562.6574 " fill="none" id="i_payment_handler_method-another_payment_method" style="stroke: #A80036; stroke-width: 1.0;"/><!--
+@startuml tokens-interface
+
+[Application] as application
+
+package "Indy SDK" {
+    () "Payments API" as i_payments_api
+    application ..> i_payments_api
+
+    note right of i_payments_api
+    An API that allows applciation
+    to work with payments
+    end note
+
+    () "Payment Method API" as i_payment_method_api
+    application  ..> i_payment_method_api
+
+    note left of i_payment_method_api
+    An API that allows
+    registration of payment
+    methods
+    end note
+   
+    [API Layer] as indy_api
+    i_payments_api - - indy_api
+    i_payment_method_api - - indy_api
+    
+    [Payment Service] as payment_service
+    indy_api ..> payment_service
+
+    note right of payment_service
+    Stores all registered payment methods
+    and perform requests dispatching
+    to corresponded payment method
+    end note
+
+    () "Payment Method Handler Interface" as i_payment_handler_method
+    payment_service ..> i_payment_handler_method    
+}
+
+[Sovrin Payment Method] as sovrin_payment_method
+i_payment_handler_method - - sovrin_payment_method
+
+[Another Payment Method] as another_payment_method
+i_payment_handler_method - - another_payment_method 
+
+@enduml 
+
+PlantUML version 1.2017.20(Mon Dec 11 19:57:05 MSK 2017)
+(GPL source distribution)
+Java Runtime: Java(TM) SE Runtime Environment
+JVM: Java HotSpot(TM) 64-Bit Server VM
+Java Version: 1.8.0_151-b12
+Operating System: Windows 10
+OS Version: 10.0
+Default Encoding: Cp1252
+Language: en
+Country: US
+--></g></svg>
