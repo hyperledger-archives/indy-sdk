@@ -225,6 +225,8 @@
     [TestUtils cleanupStorage];
 }
 
+
+/*
 - (void)testAnoncredsDemoForKeychainWallet {
     [TestUtils cleanupStorage];
     [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
@@ -428,6 +430,7 @@
     [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [TestUtils cleanupStorage];
 }
+*/
 
 
 - (void)testAnoncredsDemoForRevocationProof {

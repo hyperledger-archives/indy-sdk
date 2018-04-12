@@ -358,7 +358,8 @@ impl IssuerCommandExecutor {
 
         self.wallet_service.set(wallet_handle, &format!("current_credential_id::{}", rev_reg_id), "0")?;
 
-        trace!("create_and_store_revocation_registry <<< rev_reg_id: {:?}, revoc_reg_def_json: {:?}, revoc_reg_json: {:?}", rev_reg_id, revoc_reg_def_json, revoc_reg_json);
+        trace!("create_and_store_revocation_registry <<< rev_reg_id: {:?}, revoc_reg_def_json: {:?}, revoc_reg_json: {:?}",
+               rev_reg_id, revoc_reg_def_json, revoc_reg_json);
 
         Ok((rev_reg_id, revoc_reg_def_json, revoc_reg_json))
     }
