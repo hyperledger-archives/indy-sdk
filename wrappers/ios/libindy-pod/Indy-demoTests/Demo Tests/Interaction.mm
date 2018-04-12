@@ -528,12 +528,13 @@
     XCTAssertEqual(ret.code, Success, @"parseGetRevocRegDeltaResponse() failed!");
 
     // Prover create Revocation State
-    ret = [[AnoncredsUtils sharedInstance] createRevocationStateForCredRevID:credentialRevId
-                                                                   timestamp:timestamp
-                                                               revRegDefJSON:revocRegDefJson
-                                                             revRegDeltaJSON:revocRegDeltaJson
-                                                     blobStorageReaderHandle:blobStorageReaderHandle
-                                                                revStateJson:&revocStateJson];
+    ret = [[AnoncredsUtils sharedInstance] updateRevocationState:revocStateJson
+                                                       credRevID:credentialRevId
+                                                       timestamp:timestamp
+                                                   revRegDefJSON:revocRegDefJson
+                                                 revRegDeltaJSON:revocRegDeltaJson
+                                         blobStorageReaderHandle:blobStorageReaderHandle
+                                             updatedRevStateJson:&revocStateJson];
     XCTAssertEqual(ret.code, Success, @"createRevocationStateForCredRevID() failed!");
 
     // Prover create Proof
@@ -591,6 +592,15 @@
     XCTAssertEqual(ret.code, Success, @"verifierVerifyProofRequest() failed!");
 
     XCTAssertFalse(isValid, @"isValid == YES");
+
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:issuerWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:closeWalletWithHandle failed");
+
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:proverWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:closeWalletWithHandle failed");
+
+    ret = [[PoolUtils sharedInstance] closeHandle:poolHandle];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::closeHandle() failed!");
 
     [TestUtils cleanupStorage];
 }

@@ -107,7 +107,7 @@
                             "\"client_port\":9709," \
                             "\"alias\":\"Node5\"," \
                             "\"services\":[\"VALIDATOR\"]," \
-                            "\"blskey\": \"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\""
+                            "\"blskey\": \"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw\""
                             "}"];
     NSString *nodeRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildNodeRequestWithSubmitterDid:myDid
@@ -171,7 +171,7 @@
                           "\"client_port\":9709," \
                           "\"alias\":\"Node5\"," \
                           "\"services\":[\"VALIDATOR\"],"
-                          "\"blskey\": \"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\""
+                          "\"blskey\": \"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw\""
                           "}"];
     NSString *nodeRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildNodeRequestWithSubmitterDid:myDid
