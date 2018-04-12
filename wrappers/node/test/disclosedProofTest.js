@@ -127,7 +127,7 @@ describe('A disclosedProof', function () {
     let connection = await Connection.create({ id: '234' })
     assert(connection)
     await connection.connect()
-    let val = await DisclosedProof.get_requests(connection)
+    let val = await DisclosedProof.getRequests(connection)
     assert(val)
   })
 })
