@@ -19,9 +19,9 @@ public class IndyConstants {
 	public static final String OP_NYM = "1";
 	public static final String OP_ATTRIB = "100";
 	public static final String OP_SCHEMA = "101";
-	public static final String OP_CLAIM_DEF = "102";
+	public static final String OP_CRED_DEF = "102";
 	public static final String OP_GET_ATTR = "104";
 	public static final String OP_GET_NYM = "105";
 	public static final String OP_GET_SCHEMA = "107";
-	public static final String OP_GET_CLAIM_DEF = "108";
+	public static final String OP_GET_CRED_DEF = "108";
 }

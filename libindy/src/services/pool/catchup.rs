@@ -2,7 +2,7 @@ extern crate rmp_serde;
 extern crate time;
 
 use std::cmp;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ops::Add;
 
 use commands::{Command, CommandExecutor};
@@ -17,7 +17,7 @@ use super::{
 use super::rust_base58::{FromBase58, ToBase58};
 use super::types::*;
 
-pub const CATCHUP_ROUND_TIMEOUT: i64 = 50;
+pub const CATCHUP_ROUND_TIMEOUT: i64 = 120;
 
 enum CatchupStepResult {
     Finished,
@@ -163,10 +163,10 @@ impl CatchupHandler {
         }
 
         let active_node_cnt = self.nodes.iter().filter(|node| !node.is_blacklisted).count();
+
         if active_node_cnt == 0 { // TODO FIXME
             return Err(PoolError::Terminate);
         }
-
 
         let txns_cnt_in_cur_mt = self.merkle_tree.count();
         let cnt_to_catchup = self.target_mt_size - txns_cnt_in_cur_mt;
@@ -178,7 +178,7 @@ impl CatchupHandler {
         self.pending_catchup = Some(CatchUpProcess {
             merkle_tree: self.merkle_tree.clone(),
             pending_reps: Vec::new(),
-            resp_not_received_node_idx: (0..self.nodes.len()).collect(),
+            resp_not_received_node_idx: HashSet::new(),
         });
         self.timeout = time::now_utc().add(Duration::seconds(CATCHUP_ROUND_TIMEOUT));
 
@@ -189,11 +189,15 @@ impl CatchupHandler {
             seqNoEnd: txns_cnt_in_cur_mt + 1 + portion - 1,
             catchupTill: self.target_mt_size,
         };
-        for node in &self.nodes {
+        for idx in 0..self.nodes.len() {
+            let node = &self.nodes[idx];
             //TODO do not perform duplicate requests, update resp_not_received_node_idx
             if node.is_blacklisted {
                 continue;
             }
+            self.pending_catchup.as_mut().map(|pc| {
+                pc.resp_not_received_node_idx.insert(idx);
+            });
             node.send_msg(&Message::CatchupReq(catchup_req.clone()))?;
             catchup_req.seqNoStart += portion;
             catchup_req.seqNoEnd = cmp::min(catchup_req.seqNoStart + portion - 1,
