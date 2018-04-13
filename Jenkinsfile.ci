@@ -48,7 +48,7 @@ def windowsTesting() {
                         echo "Windows Libindy Test: Run tests"
                         withEnv([
                                 "RUST_TEST_THREADS=1",
-                                "RUST_LOG=trace",
+                                "RUST_LOG=indy::,zmq=trace",
                                 "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                         ]) {
                             bat "cargo test"
@@ -72,7 +72,7 @@ def windowsTesting() {
                         echo "Windows Indy Cli Test: Run tests"
                         withEnv([
                                 "RUST_TEST_THREADS=1",
-                                "RUST_LOG=trace",
+                                "RUST_LOG=indy::,zmq=trace",
                                 "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                         ]) {
                             bat "cargo test"
@@ -172,7 +172,7 @@ def iosTesting() {
 def ubuntuTesting() {
     node('ubuntu') {
         stage('Ubuntu Test') {
-            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", false, "pool_network")
+            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network")
         }
     }
 }
@@ -180,12 +180,12 @@ def ubuntuTesting() {
 def rhelTesting() {
     node('ubuntu') {
         stage('RedHat Test') {
-            linuxTesting("ci/amazon.dockerfile ci", "RedHat", false, "pool_network")
+            linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network")
         }
     }
 }
 
-def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
+def linuxTesting(file, env_name, network_name) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -194,19 +194,14 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
         poolInst = openPool(env_name, network_name)
 
         def testEnv
-        def featuresArgs = ''
 
         dir('libindy') {
             echo "${env_name} Libindy Test: Build docker image"
             testEnv = dockerBuild('libindy', file)
 
-            if (run_interoperability_tests) {
-                featuresArgs = '--features "interoperability_tests"'
-            }
-
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libindy Test: Build"
-                sh "cargo build $featuresArgs"
+                sh "cargo build"
             }
         }
 
@@ -225,14 +220,10 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
                             echo "${env_name} Libindy Test: Test"
 
                             echo "${env_name} Libindy Test: Build Test"
-                            sh "RUST_BACKTRACE=1 cargo test $featuresArgs --no-run"
-
-                            if (run_interoperability_tests) {
-                                sh 'chmod -R 777 /home/indy/indy-anoncreds/'
-                            }
+                            sh "RUST_BACKTRACE=1 cargo test --no-run"
 
                             echo "${env_name} Libindy Test: Run tests"
-                            sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test $featuresArgs"
+                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
                         }
                     }
                 },
@@ -275,7 +266,7 @@ def linuxJavaTesting(env_name, network_name, testEnv) {
         testEnv.inside("--network=${network_name}") {
             echo "${env_name} Libindy Test: Test java wrapper"
 
-            sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+            sh "RUST_LOG=indy::,zmq=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
         }
     }
 }
@@ -288,7 +279,7 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
 
             sh '''
                 python3.5 -m pip install --user -e .
-                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::,zmq=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
             '''
         }
     }
@@ -302,7 +293,7 @@ def linuxCLITesting(env_name, network_name, testEnv) {
             sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
 
             echo "${env_name} Indy Cli Test: Run tests"
-            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
         }
     }
 }
