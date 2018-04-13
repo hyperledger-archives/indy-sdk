@@ -1,8 +1,7 @@
 extern crate digest;
 extern crate indy_crypto;
 extern crate sha2;
-
-use base64;
+extern crate rust_base58;
 
 use errors::common::CommonError;
 
@@ -10,6 +9,7 @@ use super::{ReadableBlob, Reader, ReaderType};
 use self::indy_crypto::utils::json::JsonDecodable;
 use self::digest::{FixedOutput, Input};
 use self::sha2::Sha256;
+use self::rust_base58::ToBase58;
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
@@ -37,7 +37,7 @@ impl ReaderType for DefaultReaderType {
 impl Reader for DefaultReaderConfig {
     fn open(&self, hash: &[u8], location: &str) -> Result<Box<ReadableBlob>, CommonError> {
         let mut path = PathBuf::from(&self.base_dir);
-        path.push(base64::encode(hash));
+        path.push(hash.to_base58());
         let file = File::open(path)?;
         Ok(Box::new(DefaultReader {
             file,
