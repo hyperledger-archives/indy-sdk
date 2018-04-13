@@ -21,10 +21,7 @@ mod utils;
 pub mod api;
 mod commands;
 #[allow(dead_code)] /* FIXME */
-#[allow(unused_variables)] /* FIXME */
 mod errors;
-#[allow(dead_code)] /* FIXME */
-#[allow(unused_variables)] /* FIXME */
 mod services;
 mod domain;
 

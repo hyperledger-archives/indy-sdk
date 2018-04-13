@@ -35,8 +35,6 @@ impl LedgerService {
 
     pub fn build_nym_request(&self, identifier: &str, dest: &str, verkey: Option<&str>,
                              alias: Option<&str>, role: Option<&str>) -> Result<String, CommonError> {
-        let req_id = LedgerService::get_req_id();
-
         let mut operation: Value = Value::Object(serde_json::map::Map::new());
         operation["type"] = Value::String(NYM.to_string());
         operation["dest"] = Value::String(dest.to_string());
@@ -50,7 +48,7 @@ impl LedgerService {
         }
 
         if let Some(r) = role {
-            if r == "" {
+            if r == constants::ROLE_REMOVE {
                 operation["role"] = Value::Null
             } else {
                 operation["role"] = Value::String(match r {

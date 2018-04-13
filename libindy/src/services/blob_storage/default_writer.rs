@@ -13,6 +13,7 @@ use utils::environment::EnvironmentUtils;
 
 use self::indy_crypto::utils::json::JsonDecodable;
 
+#[allow(dead_code)]
 pub struct DefaultWriter {
     base_dir: PathBuf,
     uri_pattern: String,

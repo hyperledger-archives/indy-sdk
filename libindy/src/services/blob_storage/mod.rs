@@ -145,7 +145,7 @@ impl BlobStorageService {
             .read(size, offset)
     }
 
-    pub fn verify(&self, handle: i32) -> Result<bool, CommonError> {
+    pub fn _verify(&self, handle: i32) -> Result<bool, CommonError> {
         self.reader_blobs.try_borrow_mut()?
             .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle Blob to verify".to_owned()))?
             .verify()

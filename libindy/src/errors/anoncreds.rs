@@ -57,14 +57,14 @@ impl error::Error for AnoncredsError {
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            AnoncredsError::NotIssuedError(ref description) |
-            AnoncredsError::MasterSecretDuplicateNameError(ref description) |
-            AnoncredsError::ProofRejected(ref description) |
-            AnoncredsError::RevocationRegistryFull(ref description) |
-            AnoncredsError::InvalidUserRevocIndex(ref description) => None,
-            AnoncredsError::AccumulatorIsFull(ref description) => None,
-            AnoncredsError::CredentialRevoked(ref description) => None,
-            AnoncredsError::CredDefAlreadyExists(ref description) => None,
+            AnoncredsError::NotIssuedError(_) |
+            AnoncredsError::MasterSecretDuplicateNameError(_) |
+            AnoncredsError::ProofRejected(_) |
+            AnoncredsError::RevocationRegistryFull(_) |
+            AnoncredsError::InvalidUserRevocIndex(_) => None,
+            AnoncredsError::AccumulatorIsFull(_) => None,
+            AnoncredsError::CredentialRevoked(_) => None,
+            AnoncredsError::CredDefAlreadyExists(_) => None,
             AnoncredsError::CommonError(ref err) => Some(err)
         }
     }
@@ -73,14 +73,14 @@ impl error::Error for AnoncredsError {
 impl ToErrorCode for AnoncredsError {
     fn to_error_code(&self) -> ErrorCode {
         match *self {
-            AnoncredsError::NotIssuedError(ref description) => ErrorCode::AnoncredsNotIssuedError,
-            AnoncredsError::MasterSecretDuplicateNameError(ref description) => ErrorCode::AnoncredsMasterSecretDuplicateNameError,
-            AnoncredsError::ProofRejected(ref description) => ErrorCode::AnoncredsProofRejected,
-            AnoncredsError::RevocationRegistryFull(ref description) => ErrorCode::AnoncredsRevocationRegistryFullError,
-            AnoncredsError::InvalidUserRevocIndex(ref description) => ErrorCode::AnoncredsInvalidUserRevocIndex,
-            AnoncredsError::AccumulatorIsFull(ref description) => ErrorCode::AnoncredsAccumulatorIsFull,
-            AnoncredsError::CredentialRevoked(ref description) => ErrorCode::AnoncredsCredentialRevoked,
-            AnoncredsError::CredDefAlreadyExists(ref description) => ErrorCode::AnoncredsCredDefAlreadyExistsError,
+            AnoncredsError::NotIssuedError(_) => ErrorCode::AnoncredsNotIssuedError,
+            AnoncredsError::MasterSecretDuplicateNameError(_) => ErrorCode::AnoncredsMasterSecretDuplicateNameError,
+            AnoncredsError::ProofRejected(_) => ErrorCode::AnoncredsProofRejected,
+            AnoncredsError::RevocationRegistryFull(_) => ErrorCode::AnoncredsRevocationRegistryFullError,
+            AnoncredsError::InvalidUserRevocIndex(_) => ErrorCode::AnoncredsInvalidUserRevocIndex,
+            AnoncredsError::AccumulatorIsFull(_) => ErrorCode::AnoncredsAccumulatorIsFull,
+            AnoncredsError::CredentialRevoked(_) => ErrorCode::AnoncredsCredentialRevoked,
+            AnoncredsError::CredDefAlreadyExists(_) => ErrorCode::AnoncredsCredDefAlreadyExistsError,
             AnoncredsError::CommonError(ref err) => err.to_error_code()
         }
     }
