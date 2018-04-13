@@ -392,8 +392,8 @@
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() failed");
     
     // 8. Send schema request before applying replacing of keys
-    
-    NSString *schemaData = @"{\"name\":\"name\", \"version\":\"1.0\", \"attr_names\":[\"name\",\"male\"]}";
+
+    NSString *schemaData = @"{\"id\":\"id\", \"name\":\"name\",\"version\":\"1.0\",\"attrNames\":[\"name\"],\"ver\":\"1.0\"}";
     NSString *schemaRequest;
     
     ret = [[LedgerUtils sharedInstance] buildSchemaRequestWithSubmitterDid:myDid
@@ -504,8 +504,8 @@
     XCTAssertEqual(ret.code, Success, @"DidUtils::replaceKeysApplyForDid() failed");
     
     // 8. Send schema request before applying replacing of keys
-    
-    NSString *schemaData = @"{\"name\":\"name\", \"version\":\"1.0\", \"attr_names\":[\"name\",\"male\"]}";
+
+    NSString *schemaData = @"{\"id\":\"id\", \"name\":\"name\",\"version\":\"1.0\",\"attrNames\":[\"name\"],\"ver\":\"1.0\"}";
     NSString *schemaRequest;
     
     ret = [[LedgerUtils sharedInstance] buildSchemaRequestWithSubmitterDid:myDid

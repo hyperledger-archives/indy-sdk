@@ -51,7 +51,7 @@ public class IndyIntegrationTestWithPoolAndSingleWallet extends IndyIntegrationT
 		String myDid = myDidResult.getDid();
 		String myVerkey = myDidResult.getVerkey();
 
-		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, myVerkey, null, null).get();
+		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, myVerkey, null, "TRUSTEE").get();
 		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
 
 		return myDid;

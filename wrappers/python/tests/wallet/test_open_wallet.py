@@ -40,7 +40,7 @@ async def test_open_wallet_works_for_encrypted_wallet_with_invalid_credentials(x
 
 
 @pytest.mark.asyncio
-async def test_open_wallet_works_for_changing_credentials(pool_name, xwallet, wallet_name):
+async def test_open_wallet_works_for_changing_credentials(pool_name):
     await wallet.create_wallet(pool_name, 'works_for_changing_credentials', None, None, '{"key":"testkey"}')
     handle = await wallet.open_wallet('works_for_changing_credentials', None, '{"key":"testkey", "rekey":"newkey"}')
     await wallet.close_wallet(handle)
