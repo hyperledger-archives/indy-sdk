@@ -79,7 +79,7 @@
 3) Install libindy (https://repo.evernym.com/libindy/).
     - As of now there is no distribution channel for Android for LibIndy. You have to build it manually.
     - Copy generated `libindy.a` file to whatever location you want
-    - Set env variable `LIBINDY_DIR=<LIBINDY_DIR>` pointing to the directory containing `libindy.a`
+    - Set env variable `LIBINDY_DIR=<Directory_containing_libindy.a>`. e.g `export LIBINDY_DIR=/usr/local/aarch64-linux-android/libindy` libindy directory holds libindy.a
 4) Run `install_toolchains.sh`. You need to run this once to setup toolchains for android
 5) Run `android_build.sh aarm64` to build libvcx for aarm64 architecture.(Other architerctures will follow soon)
 6) Tests are not working on Android as of now.
