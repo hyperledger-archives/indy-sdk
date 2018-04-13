@@ -56,12 +56,21 @@ struct Contents {
 fn main() {
     let target = env::var("TARGET").unwrap();
     println!("target={}", target);
-    match target.find("-linux-") {
-        Some(..) => {
-            println!("cargo:rustc-link-lib=indy");
-            println!("cargo:rustc-link-search=native=/usr/lib");
-        }
-        None => {}
+
+    if target.contains("aarch64"){
+
+        let libindy_lib_path = env::var("LIBINDY_DIR").unwrap();
+        println!("cargo:rustc-link-search=native={}",libindy_lib_path);
+        println!("cargo:rustc-link-lib=static=indy");
+    }else if target.contains("darwin"){
+        //OSX specific logic
+        println!("cargo:rustc-link-lib=indy");
+        //OSX does not allow 3rd party libs to be installed in /usr/lib. Instead install it in /usr/local/lib
+        println!("cargo:rustc-link-search=native=/usr/local/lib");
+    }else if target.contains("-linux-"){
+        //Linux specific logic
+        println!("cargo:rustc-link-lib=indy");
+        println!("cargo:rustc-link-search=native=/usr/lib");
     }
 
     match env::var("CARGO_FEATURE_CI") {
