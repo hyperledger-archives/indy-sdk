@@ -1,11 +1,12 @@
 extern crate indy_crypto;
+extern crate rust_base58;
 
 use std::path::PathBuf;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 
-use base64;
+use self::rust_base58::ToBase58;
 
 use super::{WritableBlob, Writer, WriterType};
 use errors::common::CommonError;
@@ -74,7 +75,7 @@ impl WritableBlob for DefaultWriter {
         self.file.sync_all().map_err(map_err_trace!())?;
 
         let mut path = self.base_dir.clone();
-        path.push(base64::encode(hash));
+        path.push(hash.to_base58());
 
         fs::DirBuilder::new()
             .recursive(true)
