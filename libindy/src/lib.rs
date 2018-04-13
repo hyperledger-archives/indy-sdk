@@ -26,6 +26,7 @@ mod errors;
 #[allow(dead_code)] /* FIXME */
 #[allow(unused_variables)] /* FIXME */
 mod services;
+mod domain;
 
 #[cfg(test)]
 mod tests {

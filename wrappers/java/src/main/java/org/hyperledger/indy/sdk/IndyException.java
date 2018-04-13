@@ -110,10 +110,10 @@ public class IndyException extends Exception {
 				return new DuplicateMasterSecretNameException();
 			case AnoncredsProofRejected:
 				return new ProofRejectedException();
-			case AnoncredsClaimRevoked:
-				return new ClaimRevokedException();
-			case AnoncredsClaimDefAlreadyExistsError:
-				return new ClaimDefAlreadyExistsException();
+			case AnoncredsCredentialRevoked:
+				return new CredentialRevokedException();
+			case AnoncredsCredDefAlreadyExistsError:
+				return new CredDefAlreadyExistsException();
 			case UnknownCryptoTypeError:
 				return new UnknownCryptoException();
 			case DidAlreadyExistsError:

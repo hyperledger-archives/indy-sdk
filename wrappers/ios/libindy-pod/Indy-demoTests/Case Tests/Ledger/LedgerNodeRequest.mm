@@ -107,7 +107,7 @@
                             "\"client_port\":9709," \
                             "\"alias\":\"Node5\"," \
                             "\"services\":[\"VALIDATOR\"]," \
-                            "\"blskey\": \"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\""
+                            "\"blskey\": \"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw\""
                             "}"];
     NSString *nodeRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildNodeRequestWithSubmitterDid:myDid
@@ -171,7 +171,7 @@
                           "\"client_port\":9709," \
                           "\"alias\":\"Node5\"," \
                           "\"services\":[\"VALIDATOR\"],"
-                          "\"blskey\": \"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\""
+                          "\"blskey\": \"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw\""
                           "}"];
     NSString *nodeRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildNodeRequestWithSubmitterDid:myDid
@@ -194,31 +194,6 @@
     XCTAssertTrue([response[@"op"] isEqualToString:@"REJECT"], @"wrong response type");
 
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
-    [TestUtils cleanupStorage];
-}
-
-- (void)testBuildClaimDefRequestWorksForInvalidDataJson
-{
-    [TestUtils cleanupStorage];
-    NSString *identifier = @"some_identifier";
-    NSString *signature_type = @"CL";
-    NSNumber *schemaSeqNo = @(1);
-    NSString *data = @"{"\
-                        "\"primary\":{"\
-                            "\"n\":\"1\","\
-                            "\"s\":\"2\","\
-                            "\"rsm\":\"3\","\
-                            "\"r\":{\"name\":\"1\"}"\
-                        "}}";
-    
-    NSString *claimDefTxn;
-    NSError *ret = [[LedgerUtils sharedInstance] buildClaimDefTxnWithSubmitterDid:identifier
-                                                                             xref:schemaSeqNo
-                                                                    signatureType:signature_type
-                                                                             data:data
-                                                                       resultJson:&claimDefTxn];
-    XCTAssertEqual(ret.code, CommonInvalidStructure, @"LedgerUtils::buildClaimDefTxnWithSubmitterDid() failed");
-    
     [TestUtils cleanupStorage];
 }
 
