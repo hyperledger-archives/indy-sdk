@@ -1,6 +1,7 @@
 extern crate digest;
 extern crate indy_crypto;
 extern crate sha2;
+extern crate rust_base58;
 
 use errors::common::CommonError;
 use services::blob_storage::BlobStorageService;
@@ -10,7 +11,7 @@ use self::indy_crypto::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenera
 use self::indy_crypto::errors::IndyCryptoError;
 use self::digest::Input;
 
-use base64;
+use self::rust_base58::{ToBase58, FromBase58};
 
 use std::rc::Rc;
 
@@ -26,8 +27,8 @@ impl SDKTailsAccessor {
     pub fn new(tails_service: Rc<BlobStorageService>,
                tails_reader_handle: i32,
                rev_reg_def: &RevocationRegistryDefinitionV1) -> Result<SDKTailsAccessor, CommonError> {
-        let tails_hash = base64::decode(&rev_reg_def.value.tails_hash)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid base64 for Tails hash")))?;
+        let tails_hash = rev_reg_def.value.tails_hash.from_base58()
+            .map_err(|err| CommonError::InvalidState(format!("Invalid base58 for Tails hash")))?;
 
         let tails_reader_handle = tails_service.open_blob(tails_reader_handle,
                                                           &rev_reg_def.value.tails_location,
@@ -66,6 +67,8 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
 pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
                                   writer_handle: i32,
                                   rtg: &mut RevocationTailsGenerator) -> Result<(String, String), CommonError> {
+    trace!("store_tails_from_generator ---> start");
+
     let blob_handle = service.create_blob(writer_handle)?;
 
     let mut hasher = sha2::Sha256::default();
@@ -78,5 +81,8 @@ pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
         service.append(blob_handle, tail_bytes.as_slice())?;
     }
 
-    service.finalize(blob_handle).map(|(location, hash)| (location, base64::encode(&hash)))
+    let res = service.finalize(blob_handle).map(|(location, hash)| (location, hash.to_base58()))?;
+
+    trace!("finalize ---> end");
+    Ok(res)
 }
