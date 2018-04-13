@@ -10,6 +10,7 @@ Native bindings for [Hyperledger Indy](https://www.hyperledger.org/projects/hype
 - [API](#api)
   * [IndyError](#indyerror)
   * [anoncreds](#anoncreds)
+  * [blob_storage](#blob_storage)
   * [crypto](#crypto)
   * [did](#did)
   * [ledger](#ledger)
@@ -41,13 +42,13 @@ var indy = require('indy-sdk')
 var did = '...'
 var fullVerkey = '...'
 
-indy.abbreviate_verkey(did, fullVerkey, function(err, verkey){
+indy.abbreviateVerkey(did, fullVerkey, function(err, verkey){
   ..
 })
 
 // if you do not provide a callback, a Promise is returned
 
-var verkey = await indy.abbreviate_verkey(did, fullVerkey)
+var verkey = await indy.abbreviateVerkey(did, fullVerkey)
 ```
 
 # API
