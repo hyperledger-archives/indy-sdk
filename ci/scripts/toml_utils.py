@@ -7,6 +7,9 @@ import os
 
 SO_FILE = 'libvcx.so'
 
+def valid_line(line):
+    return ('version =' in line or 'version=' in line) and ('uuid' not in line and 'rusqlite' not in line)
+	
 # update the so file with the major minor build
 def update_so(src_dir, version):
     dest  = SO_FILE + "." + version
@@ -65,7 +68,7 @@ def get_version_from_file(filename):
     try:
         f = open(filename, 'r')
         for line in f.readlines():
-            if 'version =' in line or 'version=' in line:
+            if valid_line(line):
                 version = line[line.index('=')+1:]
                 version = version.strip('\n \'\"')
         f.close()
@@ -79,7 +82,7 @@ def extract_version_from_file(filename):
     try:
         f = open(filename, 'r')
         for line in f.readlines():
-            if 'version =' in line or 'version=' in line:
+            if valid_line(line):
                 (major, minor) = _strip_version(line)
         f.close()
         return (major, minor)
@@ -135,7 +138,7 @@ def update_major_minor_build_to_toml(filename, major, minor, build):
         o = ""
         f = open(filename, 'r')
         for line in f.readlines():
-            if 'version =' in line or 'version=' in line:
+            if valid_line(line):
                 o = o + 'version = \"%s.%s.%s\"\n' % (major, minor, build)
             else:
                 o = o + line
