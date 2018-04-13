@@ -37,207 +37,226 @@
     "c403": "AnoncredsNotIssuedError",
     "c404": "AnoncredsMasterSecretDuplicateNameError",
     "c405": "AnoncredsProofRejected",
-    "c406": "AnoncredsClaimRevoked",
-    "c407": "AnoncredsClaimDefAlreadyExistsError",
+    "c406": "AnoncredsCredentialRevoked",
+    "c407": "AnoncredsCredDefAlreadyExistsError",
     "c500": "UnknownCryptoTypeError",
     "c600": "DidAlreadyExistsError"
   },
   "functions": {
-    "indy_issuer_create_and_store_claim_def": {
-      "docs": "Create keys (both primary and revocation) for the given schema and signature type (currently only CL signature type is supported).\nStore the keys together with signature type and schema in a secure wallet as a claim definition.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nissuer_did: a DID of the issuer signing claim_def transaction to the Ledger\nschema_json: schema as a json\nsignature_type: signature type (optional). Currently only 'CL' is supported.\ncreate_non_revoc: whether to request non-revocation claim.\ncb: Callback that takes command result as parameter.\n\n#Returns\nclaim definition json containing information about signature type, schema and issuer's public key.\n\n#Errors\nCommon*\nWallet*\nAnoncreds*",
+    "indy_issuer_create_schema": {
+      "docs": "Create credential schema entity that describes credential attributes list and allows credentials\ninteroperability.\n\nSchema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction\nto Indy distributed ledger.\n\nIt is IMPORTANT for current version POST Schema in Ledger and after that GET it from Ledger\nwith correct seq_no to save compatibility with Ledger.\nAfter that can call indy_issuer_create_and_store_credential_def to build corresponding Credential Definition.\n\n#Params\ncommand_handle: command handle to map callback to user context\nissuer_did: DID of schema issuer\nname: a name the schema\nversion: a version of the schema\nattrs: a list of schema attributes descriptions\ncb: Callback that takes command result as parameter\n\n#Returns\nschema_id: identifier of created schema\nschema_json: schema as json\n\n#Errors\nCommon*\nAnoncreds*",
+      "group": "anoncreds",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "issuer_did", "type": "const char*"},
+        {"name": "name", "type": "const char*"},
+        {"name": "version", "type": "const char*"},
+        {"name": "attr_names", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "id", "type": "const char*"},
+            {"name": "schema_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_issuer_create_and_store_credential_def": {
+      "docs": "Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials\nand secrets used for credentials revocation.\n\nCredential definition entity contains private and public parts. Private part will be stored in the wallet. Public part\nwill be returned as json intended to be shared with all anoncreds workflow actors usually by publishing CRED_DEF transaction\nto Indy distributed ledger.\n\nIt is IMPORTANT for current version GET Schema from Ledger with correct seq_no to save compatibility with Ledger.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nissuer_did: a DID of the issuer signing cred_def transaction to the Ledger\nschema_json: credential schema as a json\ntag: allows to distinct between credential definitions for the same issuer and schema\ntype_: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math. Supported types are:\n- 'CL': Camenisch-Lysyanskaya credential signature type\nconfig_json: type-specific configuration of credential definition as json:\n- 'CL':\n  - support_revocation: whether to request non-revocation credential (optional, default false)\ncb: Callback that takes command result as parameter.\n\n#Returns\ncred_def_id: identifier of created credential definition\ncred_def_json: public part of created credential definition\n\n#Errors\nCommon*\nWallet*\nAnoncreds*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
         {"name": "issuer_did", "type": "const char*"},
         {"name": "schema_json", "type": "const char*", "json": true},
-        {"name": "signature_type", "type": "const char*"},
-        {"name": "create_non_revoc", "type": "indy_bool_t"},
+        {"name": "tag", "type": "const char*"},
+        {"name": "type_", "type": "const char*"},
+        {"name": "config_json", "type": "const char*", "json": true},
         {
           "name": "cb",
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "claim_def_json", "type": "const char*", "json": true}
+            {"name": "cred_def_id", "type": "const char*"},
+            {"name": "cred_def_json", "type": "const char*", "json": true}
           ]
         }
       ],
       "ret": "indy_error_t"
     },
     "indy_issuer_create_and_store_revoc_reg": {
-      "docs": "Create a new revocation registry for the given claim definition.\nStores it in a secure wallet.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nissuer_did: a DID of the issuer signing revoc_reg transaction to the Ledger\nschema_json: schema as a json\nmax_claim_num: maximum number of claims the new registry can process.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRevocation registry json\n\n#Errors\nCommon*\nWallet*\nAnoncreds*",
+      "docs": "Create a new revocation registry for the given credential definition as tuple of entities:\n- Revocation registry definition that encapsulates credentials definition reference, revocation type specific configuration and\n  secrets used for credentials revocation\n- Revocation registry state that stores the information about revoked entities in a non-disclosing way. The state can be\n  represented as ordered list of revocation registry entries were each entry represents the list of revocation or issuance operations.\n\nRevocation registry definition entity contains private and public parts. Private part will be stored in the wallet. Public part\nwill be returned as json intended to be shared with all anoncreds workflow actors usually by publishing REVOC_REG_DEF transaction\nto Indy distributed ledger.\n\nRevocation registry state is stored on the wallet and also intended to be shared as the ordered list of REVOC_REG_ENTRY transactions.\nThis call initializes the state in the wallet and returns the initial entry.\n\nSome revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked credentials in public\nrevocation registry and intended to be distributed out of leger (REVOC_REG_DEF transaction will still contain uri and hash of tails).\nThis call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nissuer_did: a DID of the issuer signing transaction to the Ledger\ntype_: revocation registry type (optional, default value depends on credential definition type). Supported types are:\n- 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type\ntag: allows to distinct between revocation registries for the same issuer and credential definition\ncred_def_id: id of stored in ledger credential definition\nconfig_json: type-specific configuration of revocation registry as json:\n- 'CL_ACCUM': {\n    \"issuance_type\": (optional) type of issuance. Currently supported:\n        1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;\n           Revocation Registry is updated only during revocation.\n        2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);\n    \"max_cred_num\": maximum number of credentials the new registry can process (optional, default 100000)\n}\ntails_writer_handle: handle of blob storage to store tails\ncb: Callback that takes command result as parameter.\n\n#Returns\nrevoc_reg_id: identifier of created revocation registry definition\nrevoc_reg_def_json: public part of revocation registry definition\nrevoc_reg_entry_json: revocation registry entry that defines initial state of revocation registry\n\n#Errors\nCommon*\nWallet*\nAnoncreds*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
         {"name": "issuer_did", "type": "const char*"},
-        {"name": "schema_json", "type": "const char*", "json": true},
-        {"name": "max_claim_num", "type": "indy_u32_t"},
+        {"name": "type_", "type": "const char*"},
+        {"name": "tag", "type": "const char*"},
+        {"name": "cred_def_id", "type": "const char*"},
+        {"name": "config_json", "type": "const char*", "json": true},
+        {"name": "tails_writer_handle", "type": "indy_handle_t"},
         {
           "name": "cb",
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "revoc_reg_json", "type": "const char*", "json": true}
+            {"name": "revoc_reg_id", "type": "const char*"},
+            {"name": "revoc_reg_def_json", "type": "const char*", "json": true},
+            {"name": "revoc_reg_entry_json", "type": "const char*", "json": true}
           ]
         }
       ],
       "ret": "indy_error_t"
     },
-    "indy_issuer_create_claim_offer": {
-      "docs": "Create claim offer in Wallet\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nschema_json: schema as a json\nissuer_did: a DID of the issuer created Claim definition\nprover_did: a DID of the target user\ncb: Callback that takes command result as parameter.\n\n#Returns\nclaim offer json:\n       {\n           \"issuer_did\": string,\n           \"schema_key\" : {name: string, version: string, did: string},\n           \"nonce\": string,\n           \"key_correctness_proof\" : <key_correctness_proof>\n       }\n\n#Errors\nCommon*\nWallet*\nAnoncreds*",
+    "indy_issuer_create_credential_offer": {
+      "docs": "Create credential offer that will be used by Prover for\ncredential request creation. Offer includes nonce and key correctness proof\nfor authentication between protocol steps and integrity checking.\n\n#Params\ncommand_handle: command handle to map callback to user context\nwallet_handle: wallet handler (created by open_wallet)\ncred_def_id: id of credential definition stored in the wallet\ncb: Callback that takes command result as parameter\n\n#Returns\ncredential offer json:\n    {\n        \"schema_id\": string,\n        \"cred_def_id\": string,\n        // Fields below can depend on Cred Def type\n        \"nonce\": string,\n        \"key_correctness_proof\" : <key_correctness_proof>\n    }\n\n#Errors\nCommon*\nWallet*\nAnoncreds*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
-        {"name": "schema_json", "type": "const char*", "json": true},
-        {"name": "issuer_did", "type": "const char*"},
-        {"name": "prover_did", "type": "const char*"},
+        {"name": "cred_def_id", "type": "const char*"},
         {
           "name": "cb",
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "claim_offer_json", "type": "const char*", "json": true}
+            {"name": "cred_offer_json", "type": "const char*", "json": true}
           ]
         }
       ],
       "ret": "indy_error_t"
     },
-    "indy_issuer_create_claim": {
-      "docs": "Signs a given claim values for the given user by a given key (claim def).\nThe corresponding claim definition and revocation registry must be already created\nan stored into the wallet.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nclaim_req_json: a claim request with a blinded secret\nfrom the user (returned by prover_create_and_store_claim_req).\nAlso contains schema_key and issuer_did\n    Example:\n    {\n     \"blinded_ms\" : <blinded_master_secret>,\n     \"schema_key\" : {name: string, version: string, did: string},\n     \"issuer_did\" : string,\n     \"prover_did\" : string,\n     \"blinded_ms_correctness_proof\" : <blinded_ms_correctness_proof>,\n     \"nonce\": string\n   }\nclaim_values_json: a claim containing attribute values for each of requested attribute names.\n    Example:\n    {\n     \"attr1\" : [\"value1\", \"value1_as_int\"],\n     \"attr2\" : [\"value2\", \"value2_as_int\"]\n    }\nuser_revoc_index: index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)\ncb: Callback that takes command result as parameter.\n\n#Returns\nRevocation registry update json with a newly issued claim\nClaim json containing signed claim values, issuer_did, schema_key, and revoc_reg_seq_no\nused for issuance\n    {\n        \"values\": <see claim_values_json above>,\n        \"signature\": <signature>,\n        \"revoc_reg_seq_no\": int,\n        \"issuer_did\", string,\n        \"schema_key\" : {name: string, version: string, did: string},\n        \"signature_correctness_proof\": <signature_correctness_proof>\n    }\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+    "indy_issuer_create_credential": {
+      "docs": "Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.\n\nCred Request must match Cred Offer. The credential definition and revocation registry definition\nreferenced in Cred Offer and Cred Request must be already created and stored into the wallet.\n\nInformation for this credential revocation will be store in the wallet as part of revocation registry under\ngenerated cred_revoc_id local for this wallet.\n\nThis call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.\nNote that it is possible to accumulate deltas to reduce ledger load.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\ncred_offer_json: a cred offer created by indy_issuer_create_credential_offer\ncred_req_json: a credential request created by indy_prover_create_credential_req\ncred_values_json: a credential containing attribute values for each of requested attribute names.\n    Example:\n    {\n     \"attr1\" : {\"raw\": \"value1\", \"encoded\": \"value1_as_int\" },\n     \"attr2\" : {\"raw\": \"value1\", \"encoded\": \"value1_as_int\" }\n    }\nrev_reg_id: id of revocation registry stored in the wallet\nblob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails\ncb: Callback that takes command result as parameter.\n\n#Returns\ncred_json: Credential json containing signed credential values\n    {\n        \"schema_id\": string,\n        \"cred_def_id\": string,\n        \"rev_reg_def_id\", Optional<string>,\n        \"values\": <see cred_values_json above>,\n        // Fields below can depend on Cred Def type\n        \"signature\": <signature>,\n        \"signature_correctness_proof\": <signature_correctness_proof>\n    }\ncred_revoc_id: local id for revocation info (Can be used for revocation of this cred)\nrevoc_reg_delta_json: Revocation registry delta json with a newly issued credential\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
-        {"name": "claim_req_json", "type": "const char*", "json": true},
-        {"name": "claim_json", "type": "const char*", "json": true},
-        {"name": "user_revoc_index", "type": "indy_i32_t"},
+        {"name": "cred_offer_json", "type": "const char*", "json": true},
+        {"name": "cred_req_json", "type": "const char*", "json": true},
+        {"name": "cred_values_json", "type": "const char*", "json": true},
+        {"name": "rev_reg_id", "type": "const char*"},
+        {"name": "blob_storage_reader_handle", "type": "indy_i32_t"},
         {
           "name": "cb",
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "revoc_reg_update_json", "type": "const char*", "json": true},
-            {"name": "xclaim_json", "type": "const char*", "json": true}
+            {"name": "cred_json", "type": "const char*", "json": true},
+            {"name": "cred_revoc_id", "type": "const char*"},
+            {"name": "revoc_reg_delta_json", "type": "const char*", "json": true}
           ]
         }
       ],
       "ret": "indy_error_t"
     },
-    "indy_issuer_revoke_claim": {
-      "docs": "Revokes a user identified by a user_revoc_index in a given revoc-registry.\nThe corresponding claim definition and revocation registry must be already\ncreated an stored into the wallet.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nissuer_did: a DID of the issuer signing claim_def transaction to the Ledger\nschema_json: schema as a json\nuser_revoc_index: index of the user in the revocation registry\ncb: Callback that takes command result as parameter.\n\n#Returns\nRevocation registry update json with a revoked claim\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+    "indy_issuer_revoke_credential": {
+      "docs": "Revoke a credential identified by a cred_revoc_id (returned by indy_issuer_create_credential).\n\nThe corresponding credential definition and revocation registry must be already\ncreated an stored into the wallet.\n\nThis call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.\nNote that it is possible to accumulate deltas to reduce ledger load.\n\n#Params\ncommand_handle: command handle to map callback to user context.\nwallet_handle: wallet handler (created by open_wallet).\nblob_storage_reader_cfg_handle: configuration of blob storage reader handle that will allow to read revocation tails\nrev_reg_id: id of revocation registry stored in wallet\ncred_revoc_id: local id for revocation info\ncb: Callback that takes command result as parameter.\n\n#Returns\nrevoc_reg_delta_json: Revocation registry delta json with a revoked credential\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
-        {"name": "issuer_did", "type": "const char*"},
-        {"name": "schema_json", "type": "const char*", "json": true},
-        {"name": "user_revoc_index", "type": "indy_u32_t"},
+        {"name": "blob_storage_reader_handle", "type": "indy_i32_t"},
+        {"name": "rev_reg_id", "type": "const char*"},
+        {"name": "cred_revoc_id", "type": "const char*"},
         {
           "name": "cb",
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "revoc_reg_update_json", "type": "const char*", "json": true}
+            {"name": "revoc_reg_delta_json", "type": "const char*", "json": true}
           ]
         }
       ],
       "ret": "indy_error_t"
     },
-    "indy_prover_store_claim_offer": {
-      "docs": "Stores a claim offer from the given issuer in a secure storage.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nclaim_offer_json: claim offer as a json containing information about the issuer and a claim:\n       {\n           \"issuer_did\": string,\n           \"schema_key\" : {name: string, version: string, did: string},\n           \"nonce\": string,\n           \"key_correctness_proof\" : <key_correctness_proof>\n       }\n#Returns\nNone.\n\n#Errors\nCommon*\nWallet*",
+    "indy_issuer_merge_revocation_registry_deltas": {
+      "docs": "Merge two revocation registry deltas (returned by indy_issuer_create_credential or indy_issuer_revoke_credential) to accumulate common delta.\nSend common delta to ledger to reduce the load.\n\n#Params\ncommand_handle: command handle to map callback to user context.\nrev_reg_delta_json: revocation registry delta.\nother_rev_reg_delta_json: revocation registry delta for which PrevAccum value  is equal to current accum value of rev_reg_delta_json.\ncb: Callback that takes command result as parameter.\n\n#Returns\nmerged_rev_reg_delta: Merged revocation registry delta\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
-        {"name": "wallet_handle", "type": "indy_handle_t"},
-        {"name": "claim_offer_json", "type": "const char*", "json": true},
-        {
-          "name": "cb",
-          "params": [
-            {"name": "xcommand_handle", "type": "indy_handle_t"},
-            {"name": "err", "type": "indy_error_t"}
-          ]
-        }
-      ],
-      "ret": "indy_error_t"
-    },
-    "indy_prover_get_claim_offers": {
-      "docs": "Gets all stored claim offers (see prover_store_claim_offer).\nA filter can be specified to get claim offers for specific Issuer, claim_def or schema only.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nfilter_json: optional filter to get claim offers for specific Issuer, claim_def or schema only only\n    Each of the filters is optional and can be combines\n       {\n           \"issuer_did\": string, (Optional)\n           \"schema_key\" : {name: string (Optional), version: string (Optional), did: string(Optional) }  (Optional)\n       }\n\n#Returns\nA json with a list of claim offers for the filter.\n       {\n           [{\n           \"issuer_did\": string,\n           \"schema_key\" : {name: string, version: string, did: string},\n           \"nonce\": string,\n           \"key_correctness_proof\" : <key_correctness_proof>\n           }]\n       }\n\n#Errors\nCommon*\nWallet*",
-      "group": "anoncreds",
-      "params": [
-        {"name": "command_handle", "type": "indy_handle_t"},
-        {"name": "wallet_handle", "type": "indy_handle_t"},
-        {"name": "filter_json", "type": "const char*", "json": true},
+        {"name": "rev_reg_delta_json", "type": "const char*", "json": true},
+        {"name": "other_rev_reg_delta_json", "type": "const char*", "json": true},
         {
           "name": "cb",
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "claim_offers_json", "type": "const char*", "json": true}
+            {"name": "merged_rev_reg_delta", "type": "const char*"}
           ]
         }
       ],
       "ret": "indy_error_t"
     },
     "indy_prover_create_master_secret": {
-      "docs": "Creates a master secret with a given name and stores it in the wallet.\nThe name must be unique.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nmaster_secret_name: a new master secret name\n\n#Returns\nNone.\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "docs": "Creates a master secret with a given id and stores it in the wallet.\nThe id must be unique.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nmaster_secret_id: (optional, if not present random one will be generated) new master id\n\n#Returns\nout_master_secret_id: Id of generated master secret\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
-        {"name": "master_secret_name", "type": "const char*"},
-        {
-          "name": "cb",
-          "params": [
-            {"name": "xcommand_handle", "type": "indy_handle_t"},
-            {"name": "err", "type": "indy_error_t"}
-          ]
-        }
-      ],
-      "ret": "indy_error_t"
-    },
-    "indy_prover_create_and_store_claim_req": {
-      "docs": "Creates a clam request json for the given claim offer and stores it in a secure wallet.\nThe claim offer contains the information about Issuer (DID, schema_seq_no),\nand the schema (schema_key).\nThe method creates a blinded master secret for a master secret identified by a provided name.\nThe master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)\nThe blinded master secret is a part of the claim request.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nprover_did: a DID of the prover\nclaim_offer_json: claim offer as a json containing information about the issuer and a claim:\n       {\n           \"issuer_did\": string,\n           \"schema_key\" : {name: string, version: string, did: string},\n           \"nonce\": string,\n           \"key_correctness_proof\" : <key_correctness_proof>\n       }\nclaim_def_json: claim definition json associated with issuer_did and schema_seq_no in the claim_offer\nmaster_secret_name: the name of the master secret stored in the wallet\ncb: Callback that takes command result as parameter.\n\n#Returns\nClaim request json.\n    {\n     \"blinded_ms\" : <blinded_master_secret>,\n     \"schema_key\" : {name: string, version: string, did: string},\n     \"issuer_did\" : string,\n     \"prover_did\" : string,\n     \"blinded_ms_correctness_proof\" : <blinded_ms_correctness_proof>,\n     \"nonce\": string\n   }\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
-      "group": "anoncreds",
-      "params": [
-        {"name": "command_handle", "type": "indy_handle_t"},
-        {"name": "wallet_handle", "type": "indy_handle_t"},
-        {"name": "prover_did", "type": "const char*"},
-        {"name": "claim_offer_json", "type": "const char*", "json": true},
-        {"name": "claim_def_json", "type": "const char*", "json": true},
-        {"name": "master_secret_name", "type": "const char*"},
+        {"name": "master_secret_id", "type": "const char*"},
         {
           "name": "cb",
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "claim_req_json", "type": "const char*", "json": true}
+            {"name": "out_master_secret_id", "type": "const char*"}
           ]
         }
       ],
       "ret": "indy_error_t"
     },
-    "indy_prover_store_claim": {
-      "docs": "Updates the claim by a master secret and stores in a secure wallet.\nThe claim contains the information about\nschema_key, issuer_did, revoc_reg_seq_no (see issuer_create_claim).\nSeq_no is a sequence number of the corresponding transaction in the ledger.\nThe method loads a blinded secret for this key from the wallet,\nupdates the claim and stores it in a wallet.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nclaims_json: claim json:\n    {\n        \"values\": <see claim_values_json above>,\n        \"signature\": <signature>,\n        \"revoc_reg_seq_no\": int,\n        \"issuer_did\", string,\n        \"schema_key\" : {name: string, version: string, did: string},\n        \"signature_correctness_proof\": <signature_correctness_proof>\n    }\nrev_reg_json: revocation registry json\ncb: Callback that takes command result as parameter.\n\n#Returns\nNone\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+    "indy_prover_create_credential_req": {
+      "docs": "Creates a credential request for the given credential offer.\n\nThe method creates a blinded master secret for a master secret identified by a provided name.\nThe master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)\nThe blinded master secret is a part of the credential request.\n\n#Params\ncommand_handle: command handle to map callback to user context\nwallet_handle: wallet handler (created by open_wallet)\nprover_did: a DID of the prover\ncred_offer_json: credential offer as a json containing information about the issuer and a credential\ncred_def_json: credential definition json\nmaster_secret_id: the id of the master secret stored in the wallet\ncb: Callback that takes command result as parameter.\n\n#Returns\ncred_req_json: Credential request json for creation of credential by Issuer\n    {\n     \"prover_did\" : string,\n     \"cred_def_id\" : string,\n        // Fields below can depend on Cred Def type\n     \"blinded_ms\" : <blinded_master_secret>,\n     \"blinded_ms_correctness_proof\" : <blinded_ms_correctness_proof>,\n     \"nonce\": string\n   }\ncred_req_metadata_json: Credential request metadata json for processing of received form Issuer credential.\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
-        {"name": "claims_json", "type": "const char*", "json": true},
-        {"name": "rev_reg_json", "type": "const char*", "json": true},
+        {"name": "prover_did", "type": "const char*"},
+        {"name": "cred_offer_json", "type": "const char*", "json": true},
+        {"name": "cred_def_json", "type": "const char*", "json": true},
+        {"name": "master_secret_id", "type": "const char*"},
         {
           "name": "cb",
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
-            {"name": "err", "type": "indy_error_t"}
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "cred_req_json", "type": "const char*", "json": true},
+            {"name": "cred_req_metadata_json", "type": "const char*", "json": true}
           ]
         }
       ],
       "ret": "indy_error_t"
     },
-    "indy_prover_get_claims": {
-      "docs": "Gets human readable claims according to the filter.\nIf filter is NULL, then all claims are returned.\nClaims can be filtered by Issuer, claim_def and/or Schema.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\nfilter_json: filter for claims\n    {\n        \"issuer_did\": string (Optional),\n        \"schema_key\" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)\n    }\ncb: Callback that takes command result as parameter.\n\n#Returns\nclaims json\n    [{\n        \"referent\": <string>,\n        \"attrs\": [{\"attr_name\" : \"attr_raw_value\"}],\n        \"schema_key\" : {name: string, version: string, did: string},\n        \"issuer_did\": string,\n        \"revoc_reg_seq_no\": int,\n    }]\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+    "indy_prover_store_credential": {
+      "docs": "Check credential provided by Issuer for the given credential request,\nupdates the credential by a master secret and stores in a secure wallet.\n\n#Params\ncommand_handle: command handle to map callback to user context.\nwallet_handle: wallet handler (created by open_wallet).\ncred_id: (optional, default is a random one) identifier by which credential will be stored in the wallet\ncred_req_json: a credential request created by indy_prover_create_credential_req\ncred_req_metadata_json: a credential request metadata created by indy_prover_create_credential_req\ncred_json: credential json received from issuer\ncred_def_json: credential definition json\nrev_reg_def_json: revocation registry definition json\ncb: Callback that takes command result as parameter.\n\n#Returns\nout_cred_id: identifier by which credential is stored in the wallet\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "group": "anoncreds",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "cred_id", "type": "const char*"},
+        {"name": "cred_req_json", "type": "const char*", "json": true},
+        {"name": "cred_req_metadata_json", "type": "const char*", "json": true},
+        {"name": "cred_json", "type": "const char*", "json": true},
+        {"name": "cred_def_json", "type": "const char*", "json": true},
+        {"name": "rev_reg_def_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "out_cred_id", "type": "const char*"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_prover_get_credentials": {
+      "docs": "Gets human readable credentials according to the filter.\nIf filter is NULL, then all credentials are returned.\nCredentials can be filtered by Issuer, credential_def and/or Schema.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\nfilter_json: filter for credentials\n       {\n           \"schema_id\": string, (Optional)\n           \"schema_issuer_did\": string, (Optional)\n           \"schema_name\": string, (Optional)\n           \"schema_version\": string, (Optional)\n           \"issuer_did\": string, (Optional)\n           \"cred_def_id\": string, (Optional)\n       }\ncb: Callback that takes command result as parameter.\n\n#Returns\ncredentials json\n    [{\n        \"referent\": string, // cred_id in the wallet\n        \"values\": <see cred_values_json above>,\n        \"schema_id\": string,\n        \"cred_def_id\": string,\n        \"rev_reg_id\": Optional<string>,\n        \"cred_rev_id\": Optional<string>\n    }]\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -248,14 +267,14 @@
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "claims_json", "type": "const char*", "json": true}
+            {"name": "credentials_json", "type": "const char*", "json": true}
           ]
         }
       ],
       "ret": "indy_error_t"
     },
-    "indy_prover_get_claims_for_proof_req": {
-      "docs": "Gets human readable claims matching the given proof request.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\nproof_request_json: proof request json\n    {\n        \"name\": string,\n        \"version\": string,\n        \"nonce\": string,\n        \"requested_attr1_referent\": <attr_info>,\n        \"requested_attr2_referent\": <attr_info>,\n        \"requested_attr3_referent\": <attr_info>,\n        \"requested_predicate_1_referent\": <predicate_info>,\n        \"requested_predicate_2_referent\": <predicate_info>,\n    }\ncb: Callback that takes command result as parameter.\n\nwhere attr_info:\n    {\n        \"name\": attribute name, (case insensitive and ignore spaces)\n        \"restrictions\": [\n            {\n                \"schema_key\" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)\n                \"issuer_did\": string (Optional)\n            }\n        ]  (Optional) - if specified, claim must be created for one of the given\n                        schema_key/issuer_did pairs, or just schema_key, or just issuer_did.\n    }\npredicate_info:\n    {\n        \"attr_name\": attribute name, (case insensitive and ignore spaces)\n        \"p_type\": predicate type (Currently >= only)\n        \"value\": requested value of attribute\n        \"restrictions\": [\n            {\n                \"schema_key\" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)\n                \"issuer_did\": string (Optional)\n            }\n        ]  (Optional) - if specified, claim must be created for one of the given\n                        schema_key/issuer_did pairs, or just schema_key, or just issuer_did.\n    }\n#Returns\njson with claims for the given pool request.\nClaim consists of referent, human-readable attributes (key-value map), schema_key, issuer_did and revoc_reg_seq_no.\n    {\n        \"requested_attr1_referent\": [claim1, claim2],\n        \"requested_attr2_referent\": [],\n        \"requested_attr3_referent\": [claim3],\n        \"requested_predicate_1_referent\": [claim1, claim3],\n        \"requested_predicate_2_referent\": [claim2],\n    }, where claim is\n    {\n        \"referent\": <string>,\n        \"attrs\": [{\"attr_name\" : \"attr_raw_value\"}],\n        \"schema_key\" : {name: string, version: string, did: string},\n        \"issuer_did\": string,\n        \"revoc_reg_seq_no\": int\n    }\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+    "indy_prover_get_credentials_for_proof_req": {
+      "docs": "Gets human readable credentials matching the given proof request.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\nproof_request_json: proof request json\n    {\n        \"name\": string,\n        \"version\": string,\n        \"nonce\": string,\n        \"requested_attributes\": { // set of requested attributes\n             \"<attr_referent>\": <attr_info>, // see below\n             ...,\n        },\n        \"requested_predicates\": { // set of requested predicates\n             \"<predicate_referent>\": <predicate_info>, // see below\n             ...,\n         },\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval for each attribute\n                       // (can be overridden on attribute level)\n    }\ncb: Callback that takes command result as parameter.\n\nwhere\nattr_referent: Proof-request local identifier of requested attribute\nattr_info: Describes requested attribute\n    {\n        \"name\": string, // attribute name, (case insensitive and ignore spaces)\n        \"restrictions\": Optional<[<attr_filter>]> // see below,\n                        // if specified, credential must satisfy to one of the given restriction.\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval this attribute\n                       // (overrides proof level interval)\n    }\npredicate_referent: Proof-request local identifier of requested attribute predicate\npredicate_info: Describes requested attribute predicate\n    {\n        \"name\": attribute name, (case insensitive and ignore spaces)\n        \"p_type\": predicate type (Currently >= only)\n        \"p_value\": predicate value\n        \"restrictions\": Optional<[<attr_filter>]> // see below,\n                        // if specified, credential must satisfy to one of the given restriction.\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval this attribute\n                       // (overrides proof level interval)\n    }\nnon_revoc_interval: Defines non-revocation interval\n    {\n        \"from\": Optional<int>, // timestamp of interval beginning\n        \"to\": Optional<int>, // timestamp of interval ending\n    }\nfilter: see filter_json above\n\n#Returns\ncredentials_json: json with credentials for the given pool request.\n    {\n        \"requested_attrs\": {\n            \"<attr_referent>\": [{ cred_info: <credential_info>, interval: Optional<non_revoc_interval> }],\n            ...,\n        },\n        \"requested_predicates\": {\n            \"requested_predicates\": [{ cred_info: <credential_info>, timestamp: Optional<integer> }, { cred_info: <credential_2_info>, timestamp: Optional<integer> }],\n            \"requested_predicate_2_referent\": [{ cred_info: <credential_2_info>, timestamp: Optional<integer> }]\n        }\n    }, where credential is\n    {\n        \"referent\": <string>,\n        \"attrs\": [{\"attr_name\" : \"attr_raw_value\"}],\n        \"schema_id\": string,\n        \"cred_def_id\": string,\n        \"rev_reg_id\": Optional<int>,\n        \"cred_rev_id\": Optional<int>,\n    }\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -266,24 +285,24 @@
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "claims_json", "type": "const char*", "json": true}
+            {"name": "credentials_json", "type": "const char*", "json": true}
           ]
         }
       ],
       "ret": "indy_error_t"
     },
     "indy_prover_create_proof": {
-      "docs": "Creates a proof according to the given proof request\nEither a corresponding claim with optionally revealed attributes or self-attested attribute must be provided\nfor each requested attribute (see indy_prover_get_claims_for_pool_req).\nA proof request may request multiple claims from different schemas and different issuers.\nAll required schemas, public keys and revocation registries must be provided.\nThe proof request also contains nonce.\nThe proof contains either proof or self-attested attribute value for each requested attribute.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nproof_req_json: proof request json as come from the verifier\n    {\n        \"nonce\": string,\n        \"requested_attr1_referent\": <attr_info>,\n        \"requested_attr2_referent\": <attr_info>,\n        \"requested_attr3_referent\": <attr_info>,\n        \"requested_predicate_1_referent\": <predicate_info>,\n        \"requested_predicate_2_referent\": <predicate_info>,\n    }\nrequested_claims_json: either a claim or self-attested attribute for each requested attribute\n    {\n        \"requested_attr1_referent\": [claim1_referent_in_wallet, true <reveal_attr>],\n        \"requested_attr2_referent\": [self_attested_attribute],\n        \"requested_attr3_referent\": [claim2_seq_no_in_wallet, false]\n        \"requested_attr4_referent\": [claim2_seq_no_in_wallet, true]\n        \"requested_predicate_1_referent\": [claim2_seq_no_in_wallet],\n        \"requested_predicate_2_referent\": [claim3_seq_no_in_wallet],\n    }\nschemas_jsons: all schema jsons participating in the proof request\n    {\n        \"claim1_referent_in_wallet\": <schema1>,\n        \"claim2_referent_in_wallet\": <schema2>,\n        \"claim3_referent_in_wallet\": <schema3>,\n    }\n\nmaster_secret_name: the name of the master secret stored in the wallet\nclaim_def_jsons: all claim definition jsons participating in the proof request\n    {\n        \"claim1_referent_in_wallet\": <claim_def1>,\n        \"claim2_referent_in_wallet\": <claim_def2>,\n        \"claim3_referent_in_wallet\": <claim_def3>,\n    }\nrevoc_regs_jsons: all revocation registry jsons participating in the proof request\n    {\n        \"claim1_referent_in_wallet\": <revoc_reg1>,\n        \"claim2_referent_in_wallet\": <revoc_reg2>,\n        \"claim3_referent_in_wallet\": <revoc_reg3>,\n    }\ncb: Callback that takes command result as parameter.\n\nwhere attr_info:\n    {\n        \"name\": attribute name, (case insensitive and ignore spaces)\n        \"restrictions\": [\n            {\n                \"schema_key\": {name (Optional), version (Optional), did (Optional)}, (Optional)\n                \"issuer_did\": string (Optional)\n            }\n        ]  (Optional)\n    }\npredicate_info:\n    {\n        \"attr_name\": attribute name, (case insensitive and ignore spaces)\n        \"p_type\": predicate type (Currently >= only)\n        \"value\": requested value of attribute\n        \"restrictions\": [\n            {\n                \"schema_key\": {name (Optional), version (Optional), did (Optional)}, (Optional)\n                \"issuer_did\": string (Optional)\n            }\n        ]  (Optional)\n    }\n\n#Returns\nProof json\nFor each requested attribute either a proof (with optionally revealed attribute value) or\nself-attested attribute value is provided.\nEach proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.\nThere ais also aggregated proof part common for all claim proofs.\n    {\n        \"requested\": {\n            \"requested_attr1_id\": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],\n            \"requested_attr2_id\": [self_attested_attribute],\n            \"requested_attr3_id\": [claim_proof2_referent]\n            \"requested_attr4_id\": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],\n            \"requested_predicate_1_referent\": [claim_proof2_referent],\n            \"requested_predicate_2_referent\": [claim_proof3_referent],\n        }\n        \"proof\": {\n            \"proofs\": {\n                \"claim_proof1_referent\": <claim_proof>,\n                \"claim_proof2_referent\": <claim_proof>,\n                \"claim_proof3_referent\": <claim_proof>\n            },\n            \"aggregated_proof\": <aggregated_proof>\n        }\n        \"identifiers\": {\"claim_proof1_referent\":{issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}}\n    }\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "docs": "Creates a proof according to the given proof request\nEither a corresponding credential with optionally revealed attributes or self-attested attribute must be provided\nfor each requested attribute (see indy_prover_get_credentials_for_pool_req).\nA proof request may request multiple credentials from different schemas and different issuers.\nAll required schemas, public keys and revocation registries must be provided.\nThe proof request also contains nonce.\nThe proof contains either proof or self-attested attribute value for each requested attribute.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nproof_request_json: proof request json\n    {\n        \"name\": string,\n        \"version\": string,\n        \"nonce\": string,\n        \"requested_attributes\": { // set of requested attributes\n             \"<attr_referent>\": <attr_info>, // see below\n             ...,\n        },\n        \"requested_predicates\": { // set of requested predicates\n             \"<predicate_referent>\": <predicate_info>, // see below\n             ...,\n         },\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval for each attribute\n                       // (can be overridden on attribute level)\n    }\nrequested_credentials_json: either a credential or self-attested attribute for each requested attribute\n    {\n        \"self_attested_attributes\": {\n            \"self_attested_attribute_referent\": string\n        },\n        \"requested_attributes\": {\n            \"requested_attribute_referent_1\": {\"cred_id\": string, \"timestamp\": Optional<number>, revealed: <bool> }},\n            \"requested_attribute_referent_2\": {\"cred_id\": string, \"timestamp\": Optional<number>, revealed: <bool> }}\n        },\n        \"requested_predicates\": {\n            \"requested_predicates_referent_1\": {\"cred_id\": string, \"timestamp\": Optional<number> }},\n        }\n    }\nmaster_secret_id: the id of the master secret stored in the wallet\nschemas_json: all schemas json participating in the proof request\n    {\n        <schema1_id>: <schema1_json>,\n        <schema2_id>: <schema2_json>,\n        <schema3_id>: <schema3_json>,\n    }\ncredential_defs_json: all credential definitions json participating in the proof request\n    {\n        \"cred_def1_id\": <credential_def1_json>,\n        \"cred_def2_id\": <credential_def2_json>,\n        \"cred_def3_id\": <credential_def3_json>,\n    }\nrev_states_json: all revocation states json participating in the proof request\n    {\n        \"rev_reg_def1_id\": {\n            \"timestamp1\": <rev_state1>,\n            \"timestamp2\": <rev_state2>,\n        },\n        \"rev_reg_def2_id\": {\n            \"timestamp3\": <rev_state3>\n        },\n        \"rev_reg_def3_id\": {\n            \"timestamp4\": <rev_state4>\n        },\n    }\ncb: Callback that takes command result as parameter.\n\nwhere\nattr_referent: Proof-request local identifier of requested attribute\nattr_info: Describes requested attribute\n    {\n        \"name\": string, // attribute name, (case insensitive and ignore spaces)\n        \"restrictions\": Optional<[<attr_filter>]> // see above,\n                         // if specified, credential must satisfy to one of the given restriction.\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval this attribute\n                       // (overrides proof level interval)\n    }\npredicate_referent: Proof-request local identifier of requested attribute predicate\npredicate_info: Describes requested attribute predicate\n    {\n        \"name\": attribute name, (case insensitive and ignore spaces)\n        \"p_type\": predicate type (Currently >= only)\n        \"p_value\": predicate value\n        \"restrictions\": Optional<[<attr_filter>]> // see above,\n                        // if specified, credential must satisfy to one of the given restriction.\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval this attribute\n                       // (overrides proof level interval)\n    }\nnon_revoc_interval: Defines non-revocation interval\n    {\n        \"from\": Optional<int>, // timestamp of interval beginning\n        \"to\": Optional<int>, // timestamp of interval ending\n    }\n\n#Returns\nProof json\nFor each requested attribute either a proof (with optionally revealed attribute value) or\nself-attested attribute value is provided.\nEach proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.\nThere is also aggregated proof part common for all credential proofs.\n    {\n        \"requested\": {\n            \"revealed_attrs\": {\n                \"requested_attr1_id\": {sub_proof_index: number, raw: string, encoded: string},\n                \"requested_attr4_id\": {sub_proof_index: number: string, encoded: string},\n            },\n            \"unrevealed_attrs\": {\n                \"requested_attr3_id\": {sub_proof_index: number}\n            },\n            \"self_attested_attrs\": {\n                \"requested_attr2_id\": self_attested_value,\n            },\n            \"requested_predicates\": {\n                \"requested_predicate_1_referent\": {sub_proof_index: int},\n                \"requested_predicate_2_referent\": {sub_proof_index: int},\n            }\n        }\n        \"proof\": {\n            \"proofs\": [ <credential_proof>, <credential_proof>, <credential_proof> ],\n            \"aggregated_proof\": <aggregated_proof>\n        }\n        \"identifiers\": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]\n    }\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
         {"name": "proof_req_json", "type": "const char*", "json": true},
-        {"name": "requested_claims_json", "type": "const char*", "json": true},
-        {"name": "schemas_json", "type": "const char*", "json": true},
+        {"name": "requested_credentials_json", "type": "const char*", "json": true},
         {"name": "master_secret_name", "type": "const char*"},
-        {"name": "claim_defs_json", "type": "const char*", "json": true},
-        {"name": "revoc_regs_json", "type": "const char*", "json": true},
+        {"name": "schemas_json", "type": "const char*", "json": true},
+        {"name": "credential_defs_json", "type": "const char*", "json": true},
+        {"name": "rev_states_json", "type": "const char*", "json": true},
         {
           "name": "cb",
           "params": [
@@ -296,21 +315,101 @@
       "ret": "indy_error_t"
     },
     "indy_verifier_verify_proof": {
-      "docs": "Verifies a proof (of multiple claim).\nAll required schemas, public keys and revocation registries must be provided.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nproof_request_json: initial proof request as sent by the verifier\n    {\n        \"nonce\": string,\n        \"requested_attr1_referent\": <attr_info>,\n        \"requested_attr2_referent\": <attr_info>,\n        \"requested_attr3_referent\": <attr_info>,\n        \"requested_predicate_1_referent\": <predicate_info>,\n        \"requested_predicate_2_referent\": <predicate_info>,\n    }\nproof_json: proof json\nFor each requested attribute either a proof (with optionally revealed attribute value) or\nself-attested attribute value is provided.\nEach proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.\nThere ais also aggregated proof part common for all claim proofs.\n    {\n        \"requested\": {\n            \"requested_attr1_id\": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],\n            \"requested_attr2_id\": [self_attested_attribute],\n            \"requested_attr3_id\": [claim_proof2_referent]\n            \"requested_attr4_id\": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],\n            \"requested_predicate_1_referent\": [claim_proof2_referent],\n            \"requested_predicate_2_referent\": [claim_proof3_referent],\n        }\n        \"proof\": {\n            \"proofs\": {\n                \"claim_proof1_referent\": <claim_proof>,\n                \"claim_proof2_referent\": <claim_proof>,\n                \"claim_proof3_referent\": <claim_proof>\n            },\n            \"aggregated_proof\": <aggregated_proof>\n        }\n        \"identifiers\": {\"claim_proof1_referent\":{issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}}\n    }\nschemas_jsons: all schema jsons participating in the proof\n        {\n            \"claim_proof1_referent\": <schema>,\n            \"claim_proof2_referent\": <schema>,\n            \"claim_proof3_referent\": <schema>\n        }\nclaim_defs_jsons: all claim definition jsons participating in the proof\n        {\n            \"claim_proof1_referent\": <claim_def>,\n            \"claim_proof2_referent\": <claim_def>,\n            \"claim_proof3_referent\": <claim_def>\n        }\nrevoc_regs_jsons: all revocation registry jsons participating in the proof\n        {\n            \"claim_proof1_referent\": <revoc_reg>,\n            \"claim_proof2_referent\": <revoc_reg>,\n            \"claim_proof3_referent\": <revoc_reg>\n        }\ncb: Callback that takes command result as parameter.\n\n#Returns\nvalid: true - if signature is valid, false - otherwise\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "docs": "Verifies a proof (of multiple credential).\nAll required schemas, public keys and revocation registries must be provided.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nproof_request_json: proof request json\n    {\n        \"name\": string,\n        \"version\": string,\n        \"nonce\": string,\n        \"requested_attributes\": { // set of requested attributes\n             \"<attr_referent>\": <attr_info>, // see below\n             ...,\n        },\n        \"requested_predicates\": { // set of requested predicates\n             \"<predicate_referent>\": <predicate_info>, // see below\n             ...,\n         },\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval for each attribute\n                       // (can be overridden on attribute level)\n    }\nproof_json: created for request proof json\n    {\n        \"requested\": {\n            \"revealed_attrs\": {\n                \"requested_attr1_id\": {sub_proof_index: number, raw: string, encoded: string},\n                \"requested_attr4_id\": {sub_proof_index: number: string, encoded: string},\n            },\n            \"unrevealed_attrs\": {\n                \"requested_attr3_id\": {sub_proof_index: number}\n            },\n            \"self_attested_attrs\": {\n                \"requested_attr2_id\": self_attested_value,\n            },\n            \"requested_predicates\": {\n                \"requested_predicate_1_referent\": {sub_proof_index: int},\n                \"requested_predicate_2_referent\": {sub_proof_index: int},\n            }\n        }\n        \"proof\": {\n            \"proofs\": [ <credential_proof>, <credential_proof>, <credential_proof> ],\n            \"aggregated_proof\": <aggregated_proof>\n        }\n        \"identifiers\": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]\n    }\nschemas_json: all schema jsons participating in the proof\n    {\n        <schema1_id>: <schema1_json>,\n        <schema2_id>: <schema2_json>,\n        <schema3_id>: <schema3_json>,\n    }\ncredential_defs_json: all credential definitions json participating in the proof\n    {\n        \"cred_def1_id\": <credential_def1_json>,\n        \"cred_def2_id\": <credential_def2_json>,\n        \"cred_def3_id\": <credential_def3_json>,\n    }\nrev_reg_defs_json: all revocation registry definitions json participating in the proof\n    {\n        \"rev_reg_def1_id\": <rev_reg_def1_json>,\n        \"rev_reg_def2_id\": <rev_reg_def2_json>,\n        \"rev_reg_def3_id\": <rev_reg_def3_json>,\n    }\nrev_regs_json: all revocation registries json participating in the proof\n    {\n        \"rev_reg_def1_id\": {\n            \"timestamp1\": <rev_reg1>,\n            \"timestamp2\": <rev_reg2>,\n        },\n        \"rev_reg_def2_id\": {\n            \"timestamp3\": <rev_reg3>\n        },\n        \"rev_reg_def3_id\": {\n            \"timestamp4\": <rev_reg4>\n        },\n    }\ncb: Callback that takes command result as parameter.\n\n#Returns\nvalid: true - if signature is valid, false - otherwise\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "proof_request_json", "type": "const char*", "json": true},
         {"name": "proof_json", "type": "const char*", "json": true},
         {"name": "schemas_json", "type": "const char*", "json": true},
-        {"name": "claim_defs_jsons", "type": "const char*", "json": true},
-        {"name": "revoc_regs_json", "type": "const char*", "json": true},
+        {"name": "credential_defs_jsons", "type": "const char*", "json": true},
+        {"name": "rev_reg_defs_json", "type": "const char*", "json": true},
+        {"name": "rev_regs_json", "type": "const char*", "json": true},
         {
           "name": "cb",
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
             {"name": "valid", "type": "indy_bool_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_create_revocation_state": {
+      "docs": "Create revocation state for a credential in the particular time moment.\n\n#Params\ncommand_handle: command handle to map callback to user context\nblob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails\nrev_reg_def_json: revocation registry definition json\nrev_reg_delta_json: revocation registry definition delta json\ntimestamp: time represented as a total number of seconds from Unix Epoch\ncred_rev_id: user credential revocation id in revocation registry\ncb: Callback that takes command result as parameter\n\n#Returns\nrevocation state json:\n    {\n        \"rev_reg\": <revocation registry>,\n        \"witness\": <witness>,\n        \"timestamp\" : integer\n    }\n\n#Errors\nCommon*\nWallet*\nAnoncreds*",
+      "group": "anoncreds",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "blob_storage_reader_handle", "type": "indy_i32_t"},
+        {"name": "rev_reg_def_json", "type": "const char*", "json": true},
+        {"name": "rev_reg_delta_json", "type": "const char*", "json": true},
+        {"name": "timestamp", "type": "indy_u64_t"},
+        {"name": "cred_rev_id", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "rev_state_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_update_revocation_state": {
+      "docs": "Create new revocation state for a credential based on existed state\nat the particular time moment (to reduce calculation time).\n\n#Params\ncommand_handle: command handle to map callback to user context\nblob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails\nrev_state_json: revocation registry state json\nrev_reg_def_json: revocation registry definition json\nrev_reg_delta_json: revocation registry definition delta json\ntimestamp: time represented as a total number of seconds from Unix Epoch\ncred_rev_id: user credential revocation id in revocation registry\ncb: Callback that takes command result as parameter\n\n#Returns\nrevocation state json:\n    {\n        \"rev_reg\": <revocation registry>,\n        \"witness\": <witness>,\n        \"timestamp\" : integer\n    }\n\n#Errors\nCommon*\nWallet*\nAnoncreds*",
+      "group": "anoncreds",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "blob_storage_reader_handle", "type": "indy_i32_t"},
+        {"name": "rev_state_json", "type": "const char*", "json": true},
+        {"name": "rev_reg_def_json", "type": "const char*", "json": true},
+        {"name": "rev_reg_delta_json", "type": "const char*", "json": true},
+        {"name": "timestamp", "type": "indy_u64_t"},
+        {"name": "cred_rev_id", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "updated_rev_state_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_open_blob_storage_reader": {
+      "docs": "",
+      "group": "blob_storage",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "type_", "type": "const char*"},
+        {"name": "config_json", "type": "const char*", "json": true},
+        {
+          "name": "fn",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "handle", "type": "indy_i32_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_open_blob_storage_writer": {
+      "docs": "",
+      "group": "blob_storage",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "type_", "type": "const char*"},
+        {"name": "config_json", "type": "const char*", "json": true},
+        {
+          "name": "fn",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "handle", "type": "indy_i32_t"}
           ]
         }
       ],
@@ -810,7 +909,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_nym_request": {
-      "docs": "Builds a NYM request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ntarget_did: Id of Identity stored in secured Wallet.\nverkey: verification key\nalias: alias\nrole: Role of a user NYM record\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a NYM request. Request to create a new NYM record for a specific user.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the submitter stored in secured Wallet.\ntarget_did: Target DID as base58-encoded string for 16 or 32 bit DID value.\nverkey: Target identity verification key as base58-encoded string.\nalias: NYM's alias.\nrole: Role of a user NYM record:\n                            null (common USER)\n                            TRUSTEE\n                            STEWARD\n                            TRUST_ANCHOR\n                            empty string to reset role\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -831,7 +930,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_attrib_request": {
-      "docs": "Builds an ATTRIB request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ntarget_did: Id of Identity stored in secured Wallet.\nhash: Hash of attribute data\nraw: represented as json, where key is attribute name and value is it's value\nenc: Encrypted attribute data\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds an ATTRIB request. Request to add attribute to a NYM record.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the submitter stored in secured Wallet.\ntarget_did: Target DID as base58-encoded string for 16 or 32 bit DID value.\nhash: (Optional) Hash of attribute data.\nraw: (Optional) Json, where key is attribute name and value is attribute value.\nenc: (Optional) Encrypted value attribute data.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -852,7 +951,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_get_attrib_request": {
-      "docs": "Builds a GET_ATTRIB request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ntarget_did: Id of Identity stored in secured Wallet.\ndata: name (attribute name)\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a GET_ATTRIB request. Request to get information about an Attribute for the specified DID.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the read request sender.\ntarget_did: Target DID as base58-encoded string for 16 or 32 bit DID value.\nraw: (Optional) Requested attribute name.\nhash: (Optional) Requested attribute hash.\nenc: (Optional) Requested attribute encrypted value.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -873,7 +972,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_get_nym_request": {
-      "docs": "Builds a GET_NYM request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ntarget_did: Id of Identity stored in secured Wallet.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a GET_NYM request. Request to get information about a DID (NYM).\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the read request sender.\ntarget_did: Target DID as base58-encoded string for 16 or 32 bit DID value.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -891,7 +990,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_schema_request": {
-      "docs": "Builds a SCHEMA request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ndata: name, version, type, attr_names (ip, port, keys)\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a SCHEMA request. Request to add Credential's schema.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the submitter stored in secured Wallet.\ndata: Credential schema.\n{\n    id: identifier of schema\n    attrNames: array of attribute name strings\n    name: Schema's name string\n    version: Schema's version string,\n    ver: Version of the Schema json\n}\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -909,12 +1008,47 @@
       "ret": "indy_error_t"
     },
     "indy_build_get_schema_request": {
-      "docs": "Builds a GET_SCHEMA request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ndest: Id of Identity stored in secured Wallet.\ndata: name, version\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a GET_SCHEMA request. Request to get Credential's Schema.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the read request sender.\nid: Schema ID in ledger\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
-        {"name": "dest", "type": "const char*"},
+        {"name": "id", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_parse_get_schema_response": {
+      "docs": "Parse a GET_SCHEMA response to get Schema in the format compatible with Anoncreds API.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nget_schema_response: response of GET_SCHEMA request.\ncb: Callback that takes command result as parameter.\n\n#Returns\nSchema Id and Schema json.\n{\n    id: identifier of schema\n    attrNames: array of attribute name strings\n    name: Schema's name string\n    version: Schema's version string\n    ver: Version of the Schema json\n}\n\n#Errors\nCommon*",
+      "group": "ledger",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "get_schema_response", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "schema_id", "type": "const char*"},
+            {"name": "schema_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_cred_def_request": {
+      "docs": "Builds an CRED_DEF request. Request to add a Credential Definition (in particular, public key),\nthat Issuer creates for a particular Credential Schema.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the submitter stored in secured Wallet.\ndata: credential definition json\n{\n    id: string - identifier of credential definition\n    schemaId: string - identifier of stored in ledger schema\n    type: string - type of the credential definition. CL is the only supported type now.\n    tag: string - allows to distinct between credential definitions for the same issuer and schema\n    value: Dictionary with Credential Definition's data: {\n        primary: primary credential public key,\n        Optional<revocation>: revocation credential public key\n    },\n    ver: Version of the CredDef json\n}\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
         {"name": "data", "type": "const char*"},
         {
           "name": "cb",
@@ -927,15 +1061,13 @@
       ],
       "ret": "indy_error_t"
     },
-    "indy_build_claim_def_txn": {
-      "docs": "Builds an CLAIM_DEF request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\nxref: Seq. number of schema\nsignature_type: signature type (only CL supported now)\ndata: components of a key in json: N, R, S, Z\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+    "indy_build_get_cred_def_request": {
+      "docs": "Builds a GET_CRED_DEF request. Request to get a Credential Definition (in particular, public key),\nthat Issuer creates for a particular Credential Schema.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the read request sender.\nid: Credential Definition ID in ledger.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
-        {"name": "xref", "type": "indy_i32_t"},
-        {"name": "signature_type", "type": "const char*"},
-        {"name": "data", "type": "const char*"},
+        {"name": "id", "type": "const char*"},
         {
           "name": "cb",
           "params": [
@@ -947,28 +1079,26 @@
       ],
       "ret": "indy_error_t"
     },
-    "indy_build_get_claim_def_txn": {
-      "docs": "Builds a GET_CLAIM_DEF request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\nxref: Seq. number of schema\nsignature_type: signature type (only CL supported now)\norigin: issuer did\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+    "indy_parse_get_cred_def_response": {
+      "docs": "Parse a GET_CRED_DEF response to get Credential Definition in the format compatible with Anoncreds API.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nget_cred_def_response: response of GET_CRED_DEF request.\ncb: Callback that takes command result as parameter.\n\n#Returns\nCredential Definition Id and Credential Definition json.\n{\n    id: string - identifier of credential definition\n    schemaId: string - identifier of stored in ledger schema\n    type: string - type of the credential definition. CL is the only supported type now.\n    tag: string - allows to distinct between credential definitions for the same issuer and schema\n    value: Dictionary with Credential Definition's data: {\n        primary: primary credential public key,\n        Optional<revocation>: revocation credential public key\n    },\n    ver: Version of the Credential Definition json\n}\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
-        {"name": "submitter_did", "type": "const char*"},
-        {"name": "xref", "type": "indy_i32_t"},
-        {"name": "signature_type", "type": "const char*"},
-        {"name": "origin", "type": "const char*"},
+        {"name": "get_cred_def_response", "type": "const char*"},
         {
           "name": "cb",
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "request_json", "type": "const char*", "json": true}
+            {"name": "cred_def_id", "type": "const char*"},
+            {"name": "cred_def_json", "type": "const char*", "json": true}
           ]
         }
       ],
       "ret": "indy_error_t"
     },
     "indy_build_node_request": {
-      "docs": "Builds a NODE request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ntarget_did: Id of Identity stored in secured Wallet.\ndata: id of a target NYM record\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the submitter stored in secured Wallet.\ntarget_did: Target Node's DID.  It differs from submitter_did field.\ndata: Data associated with the Node: {\n    alias: string - Node's alias\n    blskey: string - (Optional) BLS multi-signature key as base58-encoded string.\n    client_ip: string - (Optional) Node's client listener IP address.\n    client_port: string - (Optional) Node's client listener port.\n    node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.\n    node_port: string - (Optional) The port other Nodes use to communicate with this Node.\n    services: array<string> - (Optional) The service of the Node. VALIDATOR is the only supported one now.\n}\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -987,7 +1117,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_get_txn_request": {
-      "docs": "Builds a GET_TXN request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\ndata: seq_no of transaction in ledger\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a GET_TXN request. Request to get any transaction by its seq_no.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the request submitter.\nseq_no: seq_no of transaction in ledger.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1005,7 +1135,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_pool_config_request": {
-      "docs": "Builds a POOL_CONFIG request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\nwrites:\nforce:\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a POOL_CONFIG request. Request to change Pool's configuration.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the submitter stored in secured Wallet.\nwrites: Whether any write requests can be processed by the pool\n        (if false, then pool goes to read-only state). True by default.\nforce: Whether we should apply transaction (for example, move pool to read-only state)\n       without waiting for consensus of this transaction.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1024,7 +1154,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_pool_upgrade_request": {
-      "docs": "Builds a POOL_UPGRADE request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\nname:\naction: Either start or cancel\nsha256:\ntimeout:\nschedule:\njustification:\nreinstall:\nforce:\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).\nIt upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the submitter stored in secured Wallet.\nname: Human-readable name for the upgrade.\nversion: The version of indy-node package we perform upgrade to.\n         Must be greater than existing one (or equal if reinstall flag is True).\naction: Either start or cancel.\nsha256: sha256 hash of the package.\ntimeout: (Optional) Limits upgrade time on each Node.\nschedule: (Optional) Schedule of when to perform upgrade on each node. Map Node DIDs to upgrade time.\njustification: (Optional) justification string for this particular Upgrade.\nreinstall: Whether it's allowed to re-install the same version. False by default.\nforce: Whether we should apply transaction (schedule Upgrade) without waiting\n       for consensus of this transaction.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1044,6 +1174,157 @@
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
             {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_revoc_reg_def_request": {
+      "docs": "Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry\nto an exists credential definition.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the submitter stored in secured Wallet.\ndata: Revocation Registry data:\n    {\n        \"id\": string - ID of the Revocation Registry,\n        \"revocDefType\": string - Revocation Registry type (only CL_ACCUM is supported for now),\n        \"tag\": string - Unique descriptive ID of the Registry,\n        \"credDefId\": string - ID of the corresponding CredentialDefinition,\n        \"value\": Registry-specific data {\n            \"issuanceType\": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),\n            \"maxCredNum\": number - Maximum number of credentials the Registry can serve.\n            \"tailsHash\": string - Hash of tails.\n            \"tailsLocation\": string - Location of tails file.\n            \"publicKeys\": <public_keys> - Registry's public key.\n        },\n        \"ver\": string - version of revocation registry definition json.\n    }\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "data", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_get_revoc_reg_def_request": {
+      "docs": "Builds a GET_REVOC_REG_DEF request. Request to get a revocation registry definition,\nthat Issuer creates for a particular Credential Definition.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the read request sender.\nid:  ID of Revocation Registry Definition in ledger.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "id", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_parse_get_revoc_reg_def_response": {
+      "docs": "Parse a GET_REVOC_REG_DEF response to get Revocation Registry Definition in the format\ncompatible with Anoncreds API.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nget_revoc_reg_def_response: response of GET_REVOC_REG_DEF request.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRevocation Registry Definition Id and Revocation Registry Definition json.\n{\n    \"id\": string - ID of the Revocation Registry,\n    \"revocDefType\": string - Revocation Registry type (only CL_ACCUM is supported for now),\n    \"tag\": string - Unique descriptive ID of the Registry,\n    \"credDefId\": string - ID of the corresponding CredentialDefinition,\n    \"value\": Registry-specific data {\n        \"issuanceType\": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),\n        \"maxCredNum\": number - Maximum number of credentials the Registry can serve.\n        \"tailsHash\": string - Hash of tails.\n        \"tailsLocation\": string - Location of tails file.\n        \"publicKeys\": <public_keys> - Registry's public key.\n    },\n    \"ver\": string - version of revocation registry definition json.\n}\n\n#Errors\nCommon*",
+      "group": "ledger",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "get_revoc_ref_def_response", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "revoc_reg_def_id", "type": "const char*"},
+            {"name": "revoc_reg_def_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_revoc_reg_entry_request": {
+      "docs": "Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing\nthe new accumulator value and issued/revoked indices.\nThis is just a delta of indices, not the whole list.\nSo, it can be sent each time a new credential is issued/revoked.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the submitter stored in secured Wallet.\nrevoc_reg_def_id: ID of the corresponding RevocRegDef.\nrev_def_type: Revocation Registry type (only CL_ACCUM is supported for now).\nvalue: Registry-specific data: {\n    value: {\n        prevAccum: string - previous accumulator value.\n        accum: string - current accumulator value.\n        issued: array<number> - an array of issued indices.\n        revoked: array<number> an array of revoked indices.\n    },\n    ver: string - version revocation registry entry json\n\n}\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "revoc_reg_def_id", "type": "const char*"},
+        {"name": "rev_def_type", "type": "const char*"},
+        {"name": "value", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_get_revoc_reg_request": {
+      "docs": "Builds a GET_REVOC_REG request. Request to get the accumulated state of the Revocation Registry\nby ID. The state is defined by the given timestamp.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the read request sender.\nrevoc_reg_def_id:  ID of the corresponding Revocation Registry Definition in ledger.\ntimestamp: Requested time represented as a total number of seconds from Unix Epoch\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "revoc_reg_def_id", "type": "const char*"},
+        {"name": "timestamp", "type": "long long"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_parse_get_revoc_reg_response": {
+      "docs": "Parse a GET_REVOC_REG response to get Revocation Registry in the format compatible with Anoncreds API.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nget_revoc_reg_response: response of GET_REVOC_REG request.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRevocation Registry Definition Id, Revocation Registry json and Timestamp.\n{\n    \"value\": Registry-specific data {\n        \"accum\": string - current accumulator value.\n    },\n    \"ver\": string - version revocation registry json\n}\n\n#Errors\nCommon*",
+      "group": "ledger",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "get_revoc_reg_response", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "revoc_reg_def_id", "type": "const char*"},
+            {"name": "revoc_reg_json", "type": "const char*", "json": true},
+            {"name": "timestamp", "type": "unsigned long long"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_get_revoc_reg_delta_request": {
+      "docs": "Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.\nThe Delta is defined by from and to timestamp fields.\nIf from is not specified, then the whole state till to will be returned.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the read request sender.\nrevoc_reg_def_id:  ID of the corresponding Revocation Registry Definition in ledger.\nfrom: Requested time represented as a total number of seconds from Unix Epoch\nto: Requested time represented as a total number of seconds from Unix Epoch\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "group": "ledger",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "revoc_reg_def_id", "type": "const char*"},
+        {"name": "from", "type": "long long"},
+        {"name": "to", "type": "long long"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_parse_get_revoc_reg_delta_response": {
+      "docs": "Parse a GET_REVOC_REG_DELTA response to get Revocation Registry Delta in the format compatible with Anoncreds API.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nget_revoc_reg_response: response of GET_REVOC_REG_DELTA request.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRevocation Registry Definition Id, Revocation Registry Delta json and Timestamp.\n{\n    \"value\": Registry-specific data {\n        prevAccum: string - previous accumulator value.\n        accum: string - current accumulator value.\n        issued: array<number> - an array of issued indices.\n        revoked: array<number> an array of revoked indices.\n    },\n    \"ver\": string - version revocation registry delta json\n}\n\n#Errors\nCommon*",
+      "group": "ledger",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "get_revoc_reg_delta_response", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "revoc_reg_def_id", "type": "const char*"},
+            {"name": "revoc_reg_delta_json", "type": "const char*", "json": true},
+            {"name": "timestamp", "type": "unsigned long long"}
           ]
         }
       ],

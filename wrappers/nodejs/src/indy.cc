@@ -22,9 +22,12 @@ enum IndyCallbackType {
     CB_STRING,
     CB_BOOLEAN,
     CB_HANDLE,
+    CB_I32,
     CB_BUFFER,
     CB_STRING_BUFFER,
-    CB_STRING_STRING
+    CB_STRING_STRING,
+    CB_STRING_STRING_ULL,
+    CB_STRING_STRING_STRING
 };
 
 class IndyCallback : public Nan::AsyncResource {
@@ -39,6 +42,7 @@ class IndyCallback : public Nan::AsyncResource {
         uv_async_init(uv_default_loop(), &uvHandle, onMainLoopReentry);
         str0 = nullptr;
         str1 = nullptr;
+        str2 = nullptr;
         buffer0data = nullptr;
     }
 
@@ -46,6 +50,7 @@ class IndyCallback : public Nan::AsyncResource {
         callback.Reset();
         delete str0;
         delete str1;
+        delete str2;
         // NOTE: do not `free(buffer0data)` b/c Nan::NewBuffer assumes ownership and node's garbage collector will free it.
     }
 
@@ -70,6 +75,26 @@ class IndyCallback : public Nan::AsyncResource {
         send(xerr);
     }
 
+    void cbStringStringString(indy_error_t xerr, const char* strA, const char* strB, const char* strC){
+        if(xerr == 0){
+          type = CB_STRING_STRING_STRING;
+          str0 = copyCStr(strA);
+          str1 = copyCStr(strB);
+          str2 = copyCStr(strC);
+        }
+        send(xerr);
+    }
+
+    void cbStringStringULL(indy_error_t xerr, const char* strA, const char* strB, unsigned long long ull){
+        if(xerr == 0){
+          type = CB_STRING_STRING_ULL;
+          str0 = copyCStr(strA);
+          str1 = copyCStr(strB);
+          ull0 = ull;
+        }
+        send(xerr);
+    }
+
     void cbBoolean(indy_error_t xerr, bool b){
         if(xerr == 0){
           type = CB_BOOLEAN;
@@ -82,6 +107,14 @@ class IndyCallback : public Nan::AsyncResource {
         if(xerr == 0){
           type = CB_HANDLE;
           handle0 = h;
+        }
+        send(xerr);
+    }
+
+    void cbI32(indy_error_t xerr, indy_i32_t i){
+        if(xerr == 0){
+          type = CB_I32;
+          i32int0 = i;
         }
         send(xerr);
     }
@@ -127,8 +160,11 @@ class IndyCallback : public Nan::AsyncResource {
     indy_error_t err;
     const char* str0;
     const char* str1;
+    const char* str2;
     bool bool0;
     indy_handle_t handle0;
+    indy_i32_t i32int0;
+    unsigned long long ull0;
     char*    buffer0data;
     uint32_t buffer0len;
 
@@ -161,6 +197,9 @@ class IndyCallback : public Nan::AsyncResource {
             case CB_HANDLE:
                 argv[1] = Nan::New<v8::Number>(icb->handle0);
                 break;
+            case CB_I32:
+                argv[1] = Nan::New<v8::Number>(icb->i32int0);
+                break;
             case CB_BUFFER:
                 argv[1] = Nan::NewBuffer(icb->buffer0data, icb->buffer0len).ToLocalChecked();
                 break;
@@ -174,6 +213,20 @@ class IndyCallback : public Nan::AsyncResource {
                 tuple = Nan::New<v8::Array>();
                 tuple->Set(0, Nan::New<v8::String>(icb->str0).ToLocalChecked());
                 tuple->Set(1, Nan::New<v8::String>(icb->str1).ToLocalChecked());
+                argv[1] = tuple;
+                break;
+            case CB_STRING_STRING_ULL:
+                tuple = Nan::New<v8::Array>();
+                tuple->Set(0, Nan::New<v8::String>(icb->str0).ToLocalChecked());
+                tuple->Set(1, Nan::New<v8::String>(icb->str1).ToLocalChecked());
+                // TODO ull0
+                argv[1] = tuple;
+                break;
+            case CB_STRING_STRING_STRING:
+                tuple = Nan::New<v8::Array>();
+                tuple->Set(0, Nan::New<v8::String>(icb->str0).ToLocalChecked());
+                tuple->Set(1, Nan::New<v8::String>(icb->str1).ToLocalChecked());
+                tuple->Set(2, Nan::New<v8::String>(icb->str2).ToLocalChecked());
                 argv[1] = tuple;
                 break;
         }

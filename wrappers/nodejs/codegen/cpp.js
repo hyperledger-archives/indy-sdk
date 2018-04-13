@@ -22,7 +22,10 @@ var normalizeType = function (typeSrc) {
     case 'void':
     case 'indy_u32_t':
     case 'indy_i32_t':
-      return typeSrc
+    case 'indy_u64_t':
+    case 'longlong':
+    case 'unsignedlonglong':
+      return typeSrc.replace(/\s+/, ' ').trim()
 
     case 'Buffer':
       return 'Buffer'
@@ -62,8 +65,17 @@ apiFunctions.forEach(function (fn) {
     case 'IndyHandle':
       cpp += '    icb->cbHandle(xerr, arg0);\n'
       break
+    case 'indy_i32_t':
+      cpp += '    icb->cbI32(xerr, arg0);\n'
+      break
     case 'String+String':
       cpp += '    icb->cbStringString(xerr, arg0, arg1);\n'
+      break
+    case 'String+String+String':
+      cpp += '    icb->cbStringStringString(xerr, arg0, arg1, arg2);\n'
+      break
+    case 'String+String+unsigned long long':
+      cpp += '    icb->cbStringStringULL(xerr, arg0, arg1, arg2);\n'
       break
     case 'Buffer':
       cpp += '    icb->cbBuffer(xerr, arg0data, arg0len);\n'
@@ -72,7 +84,7 @@ apiFunctions.forEach(function (fn) {
       cpp += '    icb->cbStringBuffer(xerr, arg0, arg1data, arg1len);\n'
       break
     default:
-      throw new Error('Unhandled callback args type: ' + cbArgTypes)
+      throw new Error('Unhandled callback args type: ' + cbArgTypes + ' for ' + fn.name)
   }
   cpp += '  }\n'
   cpp += '}\n'
@@ -112,6 +124,18 @@ apiFunctions.forEach(function (fn) {
         chkType('IsInt32')
         cpp += '  indy_i32_t arg' + i + ' = info[' + i + ']->Int32Value();\n'
         break
+      case 'indy_u64_t':
+        cpp += '  long long arg' + i + ' = 0;\n'
+        // TODO
+        break
+      case 'long long':
+        cpp += '  long long arg' + i + ' = 0;\n'
+        // TODO
+        break
+      case 'unsigned long long':
+        cpp += '  unsigned long long arg' + i + ' = 0;\n'
+        // TODO
+        break
       case 'Boolean':
         chkType('IsBoolean')
         cpp += '  indy_bool_t arg' + i + ' = info[' + i + ']->IsTrue();\n'
@@ -148,6 +172,9 @@ apiFunctions.forEach(function (fn) {
       case 'IndyHandle':
       case 'indy_u32_t':
       case 'indy_i32_t':
+      case 'indy_u64_t':
+      case 'long long':
+      case 'unsigned long long':
       case 'Boolean':
         break
       default:

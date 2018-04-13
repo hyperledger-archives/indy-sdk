@@ -1,6 +1,6 @@
 /libindy.so
 /libindy.dylib
-/libindy.dll
+/indy.dll
 
 # this is the libindy header files needed for the build, must be published to npm
 /include/

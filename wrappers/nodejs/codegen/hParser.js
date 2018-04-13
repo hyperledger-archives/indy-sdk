@@ -204,7 +204,9 @@ fs.readdirSync(dir).forEach(function (file) {
     var m = /^pub *extern *fn *([a-zA-Z0-9_]+) *\(/.exec(line)
     if (m) {
       let fnName = m[1].trim()
-      api.functions[fnName].docs = docs.trim()
+      if (api.functions[fnName]) {
+        api.functions[fnName].docs = docs.trim()
+      }
       docs = ''
     }
   }

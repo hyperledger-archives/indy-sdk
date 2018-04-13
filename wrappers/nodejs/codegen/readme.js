@@ -21,9 +21,16 @@ var toHumanType = function (param) {
       return 'IndyError'
 
     case 'indy_handle_t':
+      return 'Handle (Number)'
+
     case 'indy_u32_t':
     case 'indy_i32_t':
       return 'Number'
+
+    case 'indy_u64_t':
+    case 'longlong':
+    case 'unsignedlonglong':
+      return 'BigNum'
 
     case 'Buffer':
       return 'Buffer'

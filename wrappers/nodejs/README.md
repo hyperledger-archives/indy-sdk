@@ -62,412 +62,556 @@ All the functions may yield an IndyError. The errors are based on libindy error 
 [//]: # (CODEGEN-START - don't edit by hand see `codegen/index.js`)
 ### anoncreds
 
-#### issuer\_create\_and\_store\_claim\_def \( walletHandle, issuerDid, schema, signatureType, createNonRevoc \) -&gt; claimDef
+#### issuer\_create\_schema \( issuerDid, name, version, attrNames \) -&gt; \[ id, schema \]
 
-Create keys \(both primary and revocation\) for the given schema and signature type \(currently only CL signature type is supported\).
-Store the keys together with signature type and schema in a secure wallet as a claim definition.
+Create credential schema entity that describes credential attributes list and allows credentials
+interoperability.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
-* `issuerDid`: String - a DID of the issuer signing claim\_def transaction to the Ledger
-* `schema`: Json - schema as a json
-* `signatureType`: String - signature type \(optional\). Currently only 'CL' is supported.
-* `createNonRevoc`: Boolean - whether to request non-revocation claim.
-* __->__ `claimDef`: Json - claim definition json containing information about signature type, schema and issuer's public key.
+Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
+to Indy distributed ledger.
+
+It is IMPORTANT for current version POST Schema in Ledger and after that GET it from Ledger
+with correct seq\_no to save compatibility with Ledger.
+After that can call indy\_issuer\_create\_and\_store\_credential\_def to build corresponding Credential Definition.
+
+* `issuerDid`: String - DID of schema issuer
+* `name`: String - a name the schema
+* `version`: String - a version of the schema
+* `attrNames`: String
+* __->__ [ `id`: String, `schema`: Json ] - schema\_id: identifier of created schema
+schema\_json: schema as json
+
+Errors: `Common*`, `Anoncreds*`
+
+#### issuer\_create\_and\_store\_credential\_def \( walletHandle, issuerDid, schema, tag, type\_, config \) -&gt; \[ credDefId, credDef \]
+
+Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
+and secrets used for credentials revocation.
+
+Credential definition entity contains private and public parts. Private part will be stored in the wallet. Public part
+will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing CRED\_DEF transaction
+to Indy distributed ledger.
+
+It is IMPORTANT for current version GET Schema from Ledger with correct seq\_no to save compatibility with Ledger.
+
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `issuerDid`: String - a DID of the issuer signing cred\_def transaction to the Ledger
+* `schema`: Json - credential schema as a json
+* `tag`: String - allows to distinct between credential definitions for the same issuer and schema
+* `type_`: String - credential definition type \(optional, 'CL' by default\) that defines credentials signature and revocation math. Supported types are:
+- 'CL': Camenisch-Lysyanskaya credential signature type
+* `config`: Json - type-specific configuration of credential definition as json:
+- 'CL':
+- support\_revocation: whether to request non-revocation credential \(optional, default false\)
+* __->__ [ `credDefId`: String, `credDef`: Json ] - cred\_def\_id: identifier of created credential definition
+cred\_def\_json: public part of created credential definition
 
 Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
-#### issuer\_create\_and\_store\_revoc\_reg \( walletHandle, issuerDid, schema, maxClaimNum \) -&gt; revocReg
+#### issuer\_create\_and\_store\_revoc\_reg \( walletHandle, issuerDid, type\_, tag, credDefId, config, tailsWriterHandle \) -&gt; \[ revocRegId, revocRegDef, revocRegEntry \]
 
-Create a new revocation registry for the given claim definition.
-Stores it in a secure wallet.
+Create a new revocation registry for the given credential definition as tuple of entities:
+- Revocation registry definition that encapsulates credentials definition reference, revocation type specific configuration and
+secrets used for credentials revocation
+- Revocation registry state that stores the information about revoked entities in a non-disclosing way. The state can be
+represented as ordered list of revocation registry entries were each entry represents the list of revocation or issuance operations.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
-* `issuerDid`: String - a DID of the issuer signing revoc\_reg transaction to the Ledger
-* `schema`: Json - schema as a json
-* `maxClaimNum`: Number - maximum number of claims the new registry can process.
-* __->__ `revocReg`: Json - Revocation registry json
+Revocation registry definition entity contains private and public parts. Private part will be stored in the wallet. Public part
+will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing REVOC\_REG\_DEF transaction
+to Indy distributed ledger.
+
+Revocation registry state is stored on the wallet and also intended to be shared as the ordered list of REVOC\_REG\_ENTRY transactions.
+This call initializes the state in the wallet and returns the initial entry.
+
+Some revocation registry types \(for example, 'CL\_ACCUM'\) can require generation of binary blob called tails used to hide information about revoked credentials in public
+revocation registry and intended to be distributed out of leger \(REVOC\_REG\_DEF transaction will still contain uri and hash of tails\).
+This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
+
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `issuerDid`: String - a DID of the issuer signing transaction to the Ledger
+* `type_`: String - revocation registry type \(optional, default value depends on credential definition type\). Supported types are:
+- 'CL\_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
+* `tag`: String - allows to distinct between revocation registries for the same issuer and credential definition
+* `credDefId`: String - id of stored in ledger credential definition
+* `config`: Json - type-specific configuration of revocation registry as json:
+- 'CL\_ACCUM': {
+"issuance\_type": \(optional\) type of issuance. Currently supported:
+1\) ISSUANCE\_BY\_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
+Revocation Registry is updated only during revocation.
+2\) ISSUANCE\_ON\_DEMAND: nothing is issued initially accumulator is 1 \(used by default\);
+"max\_cred\_num": maximum number of credentials the new registry can process \(optional, default 100000\)
+}
+* `tailsWriterHandle`: Handle (Number) - handle of blob storage to store tails
+* __->__ [ `revocRegId`: String, `revocRegDef`: Json, `revocRegEntry`: Json ] - revoc\_reg\_id: identifier of created revocation registry definition
+revoc\_reg\_def\_json: public part of revocation registry definition
+revoc\_reg\_entry\_json: revocation registry entry that defines initial state of revocation registry
 
 Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
-#### issuer\_create\_claim\_offer \( walletHandle, schema, issuerDid, proverDid \) -&gt; claimOffer
+#### issuer\_create\_credential\_offer \( walletHandle, credDefId \) -&gt; credOffer
 
-Create claim offer in Wallet
+Create credential offer that will be used by Prover for
+credential request creation. Offer includes nonce and key correctness proof
+for authentication between protocol steps and integrity checking.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
-* `schema`: Json - schema as a json
-* `issuerDid`: String - a DID of the issuer created Claim definition
-* `proverDid`: String - a DID of the target user
-* __->__ `claimOffer`: Json - claim offer json:
-```js
-       {
-           "issuer_did": string,
-           "schema_key" : {name: string, version: string, did: string},
-           "nonce": string,
-           "key_correctness_proof" : <key_correctness_proof>
-       }
-````
-
-Errors: `Common*`, `Wallet*`, `Anoncreds*`
-
-#### issuer\_create\_claim \( walletHandle, claimReq, claim, userRevocIndex \) -&gt; \[ revocRegUpdate, xclaim \]
-
-Signs a given claim values for the given user by a given key \(claim def\).
-The corresponding claim definition and revocation registry must be already created
-an stored into the wallet.
-
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
-* `claimReq`: Json - a claim request with a blinded secret
-from the user \(returned by prover\_create\_and\_store\_claim\_req\).
-Also contains schema\_key and issuer\_did
-* `claim`: Json
-* `userRevocIndex`: Number - index of a new user in the revocation registry \(optional, pass -1 if user\_revoc\_index is absentee; default one is used if not provided\)
-* __->__ [ `revocRegUpdate`: Json, `xclaim`: Json ] - Revocation registry update json with a newly issued claim
-Claim json containing signed claim values, issuer\_did, schema\_key, and revoc\_reg\_seq\_no
-used for issuance
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\)
+* `credDefId`: String - id of credential definition stored in the wallet
+* __->__ `credOffer`: Json - credential offer json:
 ```js
     {
-        "values": <see claim_values_json above>,
-        "signature": <signature>,
-        "revoc_reg_seq_no": int,
-        "issuer_did", string,
-        "schema_key" : {name: string, version: string, did: string},
-        "signature_correctness_proof": <signature_correctness_proof>
+        "schema_id": string,
+        "cred_def_id": string,
+        // Fields below can depend on Cred Def type
+        "nonce": string,
+        "key_correctness_proof" : <key_correctness_proof>
     }
 ````
 
-Errors: `Annoncreds*`, `Common*`, `Wallet*`
+Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
-#### issuer\_revoke\_claim \( walletHandle, issuerDid, schema, userRevocIndex \) -&gt; revocRegUpdate
+#### issuer\_create\_credential \( walletHandle, credOffer, credReq, credValues, revRegId, blobStorageReaderHandle \) -&gt; \[ cred, credRevocId, revocRegDelta \]
 
-Revokes a user identified by a user\_revoc\_index in a given revoc-registry.
-The corresponding claim definition and revocation registry must be already
-created an stored into the wallet.
+Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
-* `issuerDid`: String - a DID of the issuer signing claim\_def transaction to the Ledger
-* `schema`: Json - schema as a json
-* `userRevocIndex`: Number - index of the user in the revocation registry
-* __->__ `revocRegUpdate`: Json - Revocation registry update json with a revoked claim
+Cred Request must match Cred Offer. The credential definition and revocation registry definition
+referenced in Cred Offer and Cred Request must be already created and stored into the wallet.
 
-Errors: `Annoncreds*`, `Common*`, `Wallet*`
+Information for this credential revocation will be store in the wallet as part of revocation registry under
+generated cred\_revoc\_id local for this wallet.
 
-#### prover\_store\_claim\_offer \( walletHandle, claimOffer \) -&gt; void
+This call returns revoc registry delta as json file intended to be shared as REVOC\_REG\_ENTRY transaction.
+Note that it is possible to accumulate deltas to reduce ledger load.
 
-Stores a claim offer from the given issuer in a secure storage.
-
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
-* `claimOffer`: Json - claim offer as a json containing information about the issuer and a claim:
-```js
-       {
-           "issuer_did": string,
-           "schema_key" : {name: string, version: string, did: string},
-           "nonce": string,
-           "key_correctness_proof" : <key_correctness_proof>
-       }
-````
-* __->__ void
-
-Errors: `Common*`, `Wallet*`
-
-#### prover\_get\_claim\_offers \( walletHandle, filter \) -&gt; claimOffers
-
-Gets all stored claim offers \(see prover\_store\_claim\_offer\).
-A filter can be specified to get claim offers for specific Issuer, claim\_def or schema only.
-
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
-* `filter`: Json - optional filter to get claim offers for specific Issuer, claim\_def or schema only only
-Each of the filters is optional and can be combines
-```js
-       {
-           "issuer_did": string, (Optional)
-           "schema_key" : {name: string (Optional), version: string (Optional), did: string(Optional) }  (Optional)
-       }
-````
-* __->__ `claimOffers`: Json - A json with a list of claim offers for the filter.
-```js
-       {
-           [{
-           "issuer_did": string,
-           "schema_key" : {name: string, version: string, did: string},
-           "nonce": string,
-           "key_correctness_proof" : <key_correctness_proof>
-           }]
-       }
-````
-
-Errors: `Common*`, `Wallet*`
-
-#### prover\_create\_master\_secret \( walletHandle, masterSecretName \) -&gt; void
-
-Creates a master secret with a given name and stores it in the wallet.
-The name must be unique.
-
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
-* `masterSecretName`: String - a new master secret name
-* __->__ void
-
-Errors: `Annoncreds*`, `Common*`, `Wallet*`
-
-#### prover\_create\_and\_store\_claim\_req \( walletHandle, proverDid, claimOffer, claimDef, masterSecretName \) -&gt; claimReq
-
-Creates a clam request json for the given claim offer and stores it in a secure wallet.
-The claim offer contains the information about Issuer \(DID, schema\_seq\_no\),
-and the schema \(schema\_key\).
-The method creates a blinded master secret for a master secret identified by a provided name.
-The master secret identified by the name must be already stored in the secure wallet \(see prover\_create\_master\_secret\)
-The blinded master secret is a part of the claim request.
-
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
-* `proverDid`: String - a DID of the prover
-* `claimOffer`: Json - claim offer as a json containing information about the issuer and a claim:
-```js
-       {
-           "issuer_did": string,
-           "schema_key" : {name: string, version: string, did: string},
-           "nonce": string,
-           "key_correctness_proof" : <key_correctness_proof>
-       }
-````
-* `claimDef`: Json - claim definition json associated with issuer\_did and schema\_seq\_no in the claim\_offer
-* `masterSecretName`: String - the name of the master secret stored in the wallet
-* __->__ `claimReq`: Json - Claim request json.
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `credOffer`: Json - a cred offer created by indy\_issuer\_create\_credential\_offer
+* `credReq`: Json - a credential request created by indy\_prover\_create\_credential\_req
+* `credValues`: Json - a credential containing attribute values for each of requested attribute names.
+* `revRegId`: String - id of revocation registry stored in the wallet
+* `blobStorageReaderHandle`: Number - configuration of blob storage reader handle that will allow to read revocation tails
+* __->__ [ `cred`: Json, `credRevocId`: String, `revocRegDelta`: Json ] - cred\_json: Credential json containing signed credential values
 ```js
     {
-     "blinded_ms" : <blinded_master_secret>,
-     "schema_key" : {name: string, version: string, did: string},
-     "issuer_did" : string,
+        "schema_id": string,
+        "cred_def_id": string,
+        "rev_reg_def_id", Optional<string>,
+        "values": <see cred_values_json above>,
+        // Fields below can depend on Cred Def type
+        "signature": <signature>,
+        "signature_correctness_proof": <signature_correctness_proof>
+    }
+cred_revoc_id: local id for revocation info (Can be used for revocation of this cred)
+revoc_reg_delta_json: Revocation registry delta json with a newly issued credential
+````
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### issuer\_revoke\_credential \( walletHandle, blobStorageReaderHandle, revRegId, credRevocId \) -&gt; revocRegDelta
+
+Revoke a credential identified by a cred\_revoc\_id \(returned by indy\_issuer\_create\_credential\).
+
+The corresponding credential definition and revocation registry must be already
+created an stored into the wallet.
+
+This call returns revoc registry delta as json file intended to be shared as REVOC\_REG\_ENTRY transaction.
+Note that it is possible to accumulate deltas to reduce ledger load.
+
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `blobStorageReaderHandle`: Number
+* `revRegId`: String - id of revocation registry stored in wallet
+* `credRevocId`: String - local id for revocation info
+* __->__ `revocRegDelta`: Json - revoc\_reg\_delta\_json: Revocation registry delta json with a revoked credential
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### issuer\_merge\_revocation\_registry\_deltas \( revRegDelta, otherRevRegDelta \) -&gt; mergedRevRegDelta
+
+Merge two revocation registry deltas \(returned by indy\_issuer\_create\_credential or indy\_issuer\_revoke\_credential\) to accumulate common delta.
+Send common delta to ledger to reduce the load.
+
+* `revRegDelta`: Json - revocation registry delta.
+* `otherRevRegDelta`: Json - revocation registry delta for which PrevAccum value  is equal to current accum value of rev\_reg\_delta\_json.
+* __->__ `mergedRevRegDelta`: String - merged\_rev\_reg\_delta: Merged revocation registry delta
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### prover\_create\_master\_secret \( walletHandle, masterSecretId \) -&gt; outMasterSecretId
+
+Creates a master secret with a given id and stores it in the wallet.
+The id must be unique.
+
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `masterSecretId`: String - \(optional, if not present random one will be generated\) new master id
+* __->__ `outMasterSecretId`: String - out\_master\_secret\_id: Id of generated master secret
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### prover\_create\_credential\_req \( walletHandle, proverDid, credOffer, credDef, masterSecretId \) -&gt; \[ credReq, credReqMetadata \]
+
+Creates a credential request for the given credential offer.
+
+The method creates a blinded master secret for a master secret identified by a provided name.
+The master secret identified by the name must be already stored in the secure wallet \(see prover\_create\_master\_secret\)
+The blinded master secret is a part of the credential request.
+
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\)
+* `proverDid`: String - a DID of the prover
+* `credOffer`: Json - credential offer as a json containing information about the issuer and a credential
+* `credDef`: Json - credential definition json
+* `masterSecretId`: String - the id of the master secret stored in the wallet
+* __->__ [ `credReq`: Json, `credReqMetadata`: Json ] - cred\_req\_json: Credential request json for creation of credential by Issuer
+```js
+    {
      "prover_did" : string,
+     "cred_def_id" : string,
+        // Fields below can depend on Cred Def type
+     "blinded_ms" : <blinded_master_secret>,
      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
      "nonce": string
    }
+cred_req_metadata_json: Credential request metadata json for processing of received form Issuer credential.
 ````
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### prover\_store\_claim \( walletHandle, claims, revReg \) -&gt; void
+#### prover\_store\_credential \( walletHandle, credId, credReq, credReqMetadata, cred, credDef, revRegDef \) -&gt; outCredId
 
-Updates the claim by a master secret and stores in a secure wallet.
-The claim contains the information about
-schema\_key, issuer\_did, revoc\_reg\_seq\_no \(see issuer\_create\_claim\).
-Seq\_no is a sequence number of the corresponding transaction in the ledger.
-The method loads a blinded secret for this key from the wallet,
-updates the claim and stores it in a wallet.
+Check credential provided by Issuer for the given credential request,
+updates the credential by a master secret and stores in a secure wallet.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
-* `claims`: Json - claim json:
-```js
-    {
-        "values": <see claim_values_json above>,
-        "signature": <signature>,
-        "revoc_reg_seq_no": int,
-        "issuer_did", string,
-        "schema_key" : {name: string, version: string, did: string},
-        "signature_correctness_proof": <signature_correctness_proof>
-    }
-````
-* `revReg`: Json - revocation registry json
-* __->__ void
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `credId`: String - \(optional, default is a random one\) identifier by which credential will be stored in the wallet
+* `credReq`: Json - a credential request created by indy\_prover\_create\_credential\_req
+* `credReqMetadata`: Json - a credential request metadata created by indy\_prover\_create\_credential\_req
+* `cred`: Json - credential json received from issuer
+* `credDef`: Json - credential definition json
+* `revRegDef`: Json - revocation registry definition json
+* __->__ `outCredId`: String - out\_cred\_id: identifier by which credential is stored in the wallet
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### prover\_get\_claims \( walletHandle, filter \) -&gt; claims
+#### prover\_get\_credentials \( walletHandle, filter \) -&gt; credentials
 
-Gets human readable claims according to the filter.
-If filter is NULL, then all claims are returned.
-Claims can be filtered by Issuer, claim\_def and\/or Schema.
+Gets human readable credentials according to the filter.
+If filter is NULL, then all credentials are returned.
+Credentials can be filtered by Issuer, credential\_def and\/or Schema.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
-* `filter`: Json - filter for claims
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `filter`: Json - filter for credentials
 ```js
-    {
-        "issuer_did": string (Optional),
-        "schema_key" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)
-    }
+       {
+           "schema_id": string, (Optional)
+           "schema_issuer_did": string, (Optional)
+           "schema_name": string, (Optional)
+           "schema_version": string, (Optional)
+           "issuer_did": string, (Optional)
+           "cred_def_id": string, (Optional)
+       }
 ````
-* __->__ `claims`: Json - claims json
+* __->__ `credentials`: Json - credentials json
 ```js
     [{
-        "referent": <string>,
-        "attrs": [{"attr_name" : "attr_raw_value"}],
-        "schema_key" : {name: string, version: string, did: string},
-        "issuer_did": string,
-        "revoc_reg_seq_no": int,
+        "referent": string, // cred_id in the wallet
+        "values": <see cred_values_json above>,
+        "schema_id": string,
+        "cred_def_id": string,
+        "rev_reg_id": Optional<string>,
+        "cred_rev_id": Optional<string>
     }]
 ````
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### prover\_get\_claims\_for\_proof\_req \( walletHandle, proofRequest \) -&gt; claims
+#### prover\_get\_credentials\_for\_proof\_req \( walletHandle, proofRequest \) -&gt; credentials
 
-Gets human readable claims matching the given proof request.
+Gets human readable credentials matching the given proof request.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
 * `proofRequest`: Json - proof request json
 ```js
     {
         "name": string,
         "version": string,
         "nonce": string,
-        "requested_attr1_referent": <attr_info>,
-        "requested_attr2_referent": <attr_info>,
-        "requested_attr3_referent": <attr_info>,
-        "requested_predicate_1_referent": <predicate_info>,
-        "requested_predicate_2_referent": <predicate_info>,
+        "requested_attributes": { // set of requested attributes
+             "<attr_referent>": <attr_info>, // see below
+             ...,
+        },
+        "requested_predicates": { // set of requested predicates
+             "<predicate_referent>": <predicate_info>, // see below
+             ...,
+         },
+        "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                       // If specified prover must proof non-revocation
+                       // for date in this interval for each attribute
+                       // (can be overridden on attribute level)
     }
-where attr_info:
-    {
-        "name": attribute name, (case insensitive and ignore spaces)
-        "restrictions": [
-            {
-                "schema_key" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)
-                "issuer_did": string (Optional)
-            }
-        ]  (Optional) - if specified, claim must be created for one of the given
-                        schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
-    }
+where
 ````
-* __->__ `claims`: Json - json with claims for the given pool request.
-Claim consists of referent, human-readable attributes \(key-value map\), schema\_key, issuer\_did and revoc\_reg\_seq\_no.
+* __->__ `credentials`: Json - credentials\_json: json with credentials for the given pool request.
 ```js
     {
-        "requested_attr1_referent": [claim1, claim2],
-        "requested_attr2_referent": [],
-        "requested_attr3_referent": [claim3],
-        "requested_predicate_1_referent": [claim1, claim3],
-        "requested_predicate_2_referent": [claim2],
-    }, where claim is
+        "requested_attrs": {
+            "<attr_referent>": [{ cred_info: <credential_info>, interval: Optional<non_revoc_interval> }],
+            ...,
+        },
+        "requested_predicates": {
+            "requested_predicates": [{ cred_info: <credential_info>, timestamp: Optional<integer> }, { cred_info: <credential_2_info>, timestamp: Optional<integer> }],
+            "requested_predicate_2_referent": [{ cred_info: <credential_2_info>, timestamp: Optional<integer> }]
+        }
+    }, where credential is
     {
         "referent": <string>,
         "attrs": [{"attr_name" : "attr_raw_value"}],
-        "schema_key" : {name: string, version: string, did: string},
-        "issuer_did": string,
-        "revoc_reg_seq_no": int
+        "schema_id": string,
+        "cred_def_id": string,
+        "rev_reg_id": Optional<int>,
+        "cred_rev_id": Optional<int>,
     }
 ````
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### prover\_create\_proof \( walletHandle, proofReq, requestedClaims, schemas, masterSecretName, claimDefs, revocRegs \) -&gt; proof
+#### prover\_create\_proof \( walletHandle, proofReq, requestedCredentials, masterSecretName, schemas, credentialDefs, revStates \) -&gt; proof
 
 Creates a proof according to the given proof request
-Either a corresponding claim with optionally revealed attributes or self-attested attribute must be provided
-for each requested attribute \(see indy\_prover\_get\_claims\_for\_pool\_req\).
-A proof request may request multiple claims from different schemas and different issuers.
+Either a corresponding credential with optionally revealed attributes or self-attested attribute must be provided
+for each requested attribute \(see indy\_prover\_get\_credentials\_for\_pool\_req\).
+A proof request may request multiple credentials from different schemas and different issuers.
 All required schemas, public keys and revocation registries must be provided.
 The proof request also contains nonce.
 The proof contains either proof or self-attested attribute value for each requested attribute.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
-* `proofReq`: Json - proof request json as come from the verifier
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `proofReq`: Json
+* `requestedCredentials`: Json - either a credential or self-attested attribute for each requested attribute
 ```js
     {
-        "nonce": string,
-        "requested_attr1_referent": <attr_info>,
-        "requested_attr2_referent": <attr_info>,
-        "requested_attr3_referent": <attr_info>,
-        "requested_predicate_1_referent": <predicate_info>,
-        "requested_predicate_2_referent": <predicate_info>,
+        "self_attested_attributes": {
+            "self_attested_attribute_referent": string
+        },
+        "requested_attributes": {
+            "requested_attribute_referent_1": {"cred_id": string, "timestamp": Optional<number>, revealed: <bool> }},
+            "requested_attribute_referent_2": {"cred_id": string, "timestamp": Optional<number>, revealed: <bool> }}
+        },
+        "requested_predicates": {
+            "requested_predicates_referent_1": {"cred_id": string, "timestamp": Optional<number> }},
+        }
     }
 ````
-* `requestedClaims`: Json - either a claim or self-attested attribute for each requested attribute
+* `masterSecretName`: String
+* `schemas`: Json - all schemas json participating in the proof request
 ```js
     {
-        "requested_attr1_referent": [claim1_referent_in_wallet, true <reveal_attr>],
-        "requested_attr2_referent": [self_attested_attribute],
-        "requested_attr3_referent": [claim2_seq_no_in_wallet, false]
-        "requested_attr4_referent": [claim2_seq_no_in_wallet, true]
-        "requested_predicate_1_referent": [claim2_seq_no_in_wallet],
-        "requested_predicate_2_referent": [claim3_seq_no_in_wallet],
+        <schema1_id>: <schema1_json>,
+        <schema2_id>: <schema2_json>,
+        <schema3_id>: <schema3_json>,
     }
 ````
-* `schemas`: Json
-* `masterSecretName`: String - the name of the master secret stored in the wallet
-* `claimDefs`: Json
-* `revocRegs`: Json
+* `credentialDefs`: Json - all credential definitions json participating in the proof request
+```js
+    {
+        "cred_def1_id": <credential_def1_json>,
+        "cred_def2_id": <credential_def2_json>,
+        "cred_def3_id": <credential_def3_json>,
+    }
+````
+* `revStates`: Json - all revocation states json participating in the proof request
+```js
+    {
+        "rev_reg_def1_id": {
+            "timestamp1": <rev_state1>,
+            "timestamp2": <rev_state2>,
+        },
+        "rev_reg_def2_id": {
+            "timestamp3": <rev_state3>
+        },
+        "rev_reg_def3_id": {
+            "timestamp4": <rev_state4>
+        },
+    }
+where
+````
 * __->__ `proof`: Json - Proof json
 For each requested attribute either a proof \(with optionally revealed attribute value\) or
 self-attested attribute value is provided.
-Each proof is associated with a claim and corresponding schema\_seq\_no, issuer\_did and revoc\_reg\_seq\_no.
-There ais also aggregated proof part common for all claim proofs.
+Each proof is associated with a credential and corresponding schema\_id, cred\_def\_id, rev\_reg\_id and timestamp.
+There is also aggregated proof part common for all credential proofs.
 ```js
     {
         "requested": {
-            "requested_attr1_id": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
-            "requested_attr2_id": [self_attested_attribute],
-            "requested_attr3_id": [claim_proof2_referent]
-            "requested_attr4_id": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
-            "requested_predicate_1_referent": [claim_proof2_referent],
-            "requested_predicate_2_referent": [claim_proof3_referent],
+            "revealed_attrs": {
+                "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
+                "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+            },
+            "unrevealed_attrs": {
+                "requested_attr3_id": {sub_proof_index: number}
+            },
+            "self_attested_attrs": {
+                "requested_attr2_id": self_attested_value,
+            },
+            "requested_predicates": {
+                "requested_predicate_1_referent": {sub_proof_index: int},
+                "requested_predicate_2_referent": {sub_proof_index: int},
+            }
         }
         "proof": {
-            "proofs": {
-                "claim_proof1_referent": <claim_proof>,
-                "claim_proof2_referent": <claim_proof>,
-                "claim_proof3_referent": <claim_proof>
-            },
+            "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
             "aggregated_proof": <aggregated_proof>
         }
-        "identifiers": {"claim_proof1_referent":{issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}}
+        "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
     }
 ````
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### verifier\_verify\_proof \( proofRequest, proof, schemas, claimDefsJsons, revocRegs \) -&gt; valid
+#### verifier\_verify\_proof \( proofRequest, proof, schemas, credentialDefsJsons, revRegDefs, revRegs \) -&gt; valid
 
-Verifies a proof \(of multiple claim\).
+Verifies a proof \(of multiple credential\).
 All required schemas, public keys and revocation registries must be provided.
 
-* `proofRequest`: Json - initial proof request as sent by the verifier
+* `proofRequest`: Json - proof request json
 ```js
     {
+        "name": string,
+        "version": string,
         "nonce": string,
-        "requested_attr1_referent": <attr_info>,
-        "requested_attr2_referent": <attr_info>,
-        "requested_attr3_referent": <attr_info>,
-        "requested_predicate_1_referent": <predicate_info>,
-        "requested_predicate_2_referent": <predicate_info>,
+        "requested_attributes": { // set of requested attributes
+             "<attr_referent>": <attr_info>, // see below
+             ...,
+        },
+        "requested_predicates": { // set of requested predicates
+             "<predicate_referent>": <predicate_info>, // see below
+             ...,
+         },
+        "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                       // If specified prover must proof non-revocation
+                       // for date in this interval for each attribute
+                       // (can be overridden on attribute level)
     }
 ````
-* `proof`: Json - proof json
-For each requested attribute either a proof \(with optionally revealed attribute value\) or
-self-attested attribute value is provided.
-Each proof is associated with a claim and corresponding schema\_seq\_no, issuer\_did and revoc\_reg\_seq\_no.
-There ais also aggregated proof part common for all claim proofs.
+* `proof`: Json - created for request proof json
 ```js
     {
         "requested": {
-            "requested_attr1_id": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
-            "requested_attr2_id": [self_attested_attribute],
-            "requested_attr3_id": [claim_proof2_referent]
-            "requested_attr4_id": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
-            "requested_predicate_1_referent": [claim_proof2_referent],
-            "requested_predicate_2_referent": [claim_proof3_referent],
+            "revealed_attrs": {
+                "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
+                "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+            },
+            "unrevealed_attrs": {
+                "requested_attr3_id": {sub_proof_index: number}
+            },
+            "self_attested_attrs": {
+                "requested_attr2_id": self_attested_value,
+            },
+            "requested_predicates": {
+                "requested_predicate_1_referent": {sub_proof_index: int},
+                "requested_predicate_2_referent": {sub_proof_index: int},
+            }
         }
         "proof": {
-            "proofs": {
-                "claim_proof1_referent": <claim_proof>,
-                "claim_proof2_referent": <claim_proof>,
-                "claim_proof3_referent": <claim_proof>
-            },
+            "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
             "aggregated_proof": <aggregated_proof>
         }
-        "identifiers": {"claim_proof1_referent":{issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}}
+        "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
     }
 ````
-* `schemas`: Json
-* `claimDefsJsons`: Json - all claim definition jsons participating in the proof
+* `schemas`: Json - all schema jsons participating in the proof
 ```js
-        {
-            "claim_proof1_referent": <claim_def>,
-            "claim_proof2_referent": <claim_def>,
-            "claim_proof3_referent": <claim_def>
-        }
+    {
+        <schema1_id>: <schema1_json>,
+        <schema2_id>: <schema2_json>,
+        <schema3_id>: <schema3_json>,
+    }
 ````
-* `revocRegs`: Json
+* `credentialDefsJsons`: Json
+* `revRegDefs`: Json - all revocation registry definitions json participating in the proof
+```js
+    {
+        "rev_reg_def1_id": <rev_reg_def1_json>,
+        "rev_reg_def2_id": <rev_reg_def2_json>,
+        "rev_reg_def3_id": <rev_reg_def3_json>,
+    }
+````
+* `revRegs`: Json - all revocation registries json participating in the proof
+```js
+    {
+        "rev_reg_def1_id": {
+            "timestamp1": <rev_reg1>,
+            "timestamp2": <rev_reg2>,
+        },
+        "rev_reg_def2_id": {
+            "timestamp3": <rev_reg3>
+        },
+        "rev_reg_def3_id": {
+            "timestamp4": <rev_reg4>
+        },
+    }
+````
 * __->__ `valid`: Boolean - valid: true - if signature is valid, false - otherwise
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### create\_revocation\_state \( blobStorageReaderHandle, revRegDef, revRegDelta, timestamp, credRevId \) -&gt; revState
+
+Create revocation state for a credential in the particular time moment.
+
+* `blobStorageReaderHandle`: Number - configuration of blob storage reader handle that will allow to read revocation tails
+* `revRegDef`: Json - revocation registry definition json
+* `revRegDelta`: Json - revocation registry definition delta json
+* `timestamp`: BigNum - time represented as a total number of seconds from Unix Epoch
+* `credRevId`: String - user credential revocation id in revocation registry
+* __->__ `revState`: Json - revocation state json:
+```js
+    {
+        "rev_reg": <revocation registry>,
+        "witness": <witness>,
+        "timestamp" : integer
+    }
+````
+
+Errors: `Common*`, `Wallet*`, `Anoncreds*`
+
+#### update\_revocation\_state \( blobStorageReaderHandle, revState, revRegDef, revRegDelta, timestamp, credRevId \) -&gt; updatedRevState
+
+Create new revocation state for a credential based on existed state
+at the particular time moment \(to reduce calculation time\).
+
+* `blobStorageReaderHandle`: Number - configuration of blob storage reader handle that will allow to read revocation tails
+* `revState`: Json - revocation registry state json
+* `revRegDef`: Json - revocation registry definition json
+* `revRegDelta`: Json - revocation registry definition delta json
+* `timestamp`: BigNum - time represented as a total number of seconds from Unix Epoch
+* `credRevId`: String - user credential revocation id in revocation registry
+* __->__ `updatedRevState`: Json - revocation state json:
+```js
+    {
+        "rev_reg": <revocation registry>,
+        "witness": <witness>,
+        "timestamp" : integer
+    }
+````
+
+Errors: `Common*`, `Wallet*`, `Anoncreds*`
+
+### blob_storage
+
+#### open\_blob\_storage\_reader \( type\_, config \) -&gt; handle
+
+
+
+* `type_`: String
+* `config`: Json
+* __->__ `handle`: Number
+
+
+#### open\_blob\_storage\_writer \( type\_, config \) -&gt; handle
+
+
+
+* `type_`: String
+* `config`: Json
+* __->__ `handle`: Number
+
 
 ### crypto
 
@@ -475,7 +619,7 @@ Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
 Creates keys pair and stores in the wallet.
 
-* `walletHandle`: Number - Wallet handle \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
 * `key`: Json - Key information as json. Example:
 ```js
 {
@@ -491,7 +635,7 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 Saves\/replaces the meta information for the giving key in the wallet.
 
-* `walletHandle`: Number - Wallet handle \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
 verkey - the key \(verkey, key id\) to store metadata.
 metadata - the meta information that will be store with the key.
 * `verkey`: String
@@ -504,7 +648,7 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 Retrieves the meta information for the giving key in the wallet.
 
-* `walletHandle`: Number - Wallet handle \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
 verkey - The key \(verkey, key id\) to retrieve metadata.
 * `verkey`: String
 * __->__ `metadata`: String - The meta information stored with the key; Can be null if no metadata was saved for this key.
@@ -518,7 +662,7 @@ Signs a message with a key.
 Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
 for specific DID.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
 * `myVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
 * `messageRaw`: Buffer - a pointer to first byte of message to be signed
 * __->__ `signatureRaw`: Buffer - a signature string
@@ -552,7 +696,7 @@ before eventually decrypting it.
 Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
 for specific DID.
 
-* `walletHandle`: Number - wallet handle \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - wallet handle \(created by open\_wallet\).
 * `myVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
 * `theirVk`: String - id \(verkey\) of their key
 * `messageRaw`: Buffer - a pointer to first byte of message that to be encrypted
@@ -573,7 +717,7 @@ before eventually decrypting it.
 Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
 for specific DID.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
 * `myVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
 * `encryptedMsgRaw`: Buffer - a pointer to first byte of message that to be decrypted
 * __->__ [ `theirVk`: String, `decryptedMsgRaw`: Buffer ] - sender verkey and decrypted message
@@ -608,7 +752,7 @@ While the Recipient can verify the integrity of the message, it cannot verify th
 Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
 for specific DID.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
 * `myVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
 * `encryptedMsg`: Buffer
 * __->__ `decryptedMsgRaw`: Buffer - decrypted message
@@ -625,7 +769,7 @@ Identity's DID must be either explicitly provided, or taken as the first 16 bit 
 Saves the Identity DID with keys in a secured Wallet, so that it can be used to sign
 and encrypt transactions.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
 * `did`: Json - Identity information as json. Example:
 ```js
 {
@@ -648,7 +792,7 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 Generated temporary keys \(signing and encryption keys\) for an existing
 DID \(owned by the caller of the library\).
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
 * `did`: String
 * `identity`: Json - Identity information as json. Example:
 ```js
@@ -666,7 +810,7 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 Apply temporary keys as main for an existing DID \(owned by the caller of the library\).
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
 * `did`: String
 * __->__ void
 
@@ -677,7 +821,7 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 Saves their DID for a pairwise connection in a secured Wallet,
 so that it can be used to verify transaction.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
 * `identity`: Json - Identity information as json. Example:
 ```js
     {
@@ -704,8 +848,8 @@ freshness checking.
 Note that "indy\_create\_and\_store\_my\_did" makes similar wallet record as "indy\_create\_key".
 As result we can use returned ver key in all generic crypto and messaging functions.
 
-* `poolHandle`: Number
-* `walletHandle`: Number - Wallet handle \(created by open\_wallet\).
+* `poolHandle`: Handle (Number)
+* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
 did - The DID to resolve key.
 * `did`: String
 * __->__ `key`: String - The DIDs ver key \(key id\).
@@ -725,7 +869,7 @@ instead.
 Note that "indy\_create\_and\_store\_my\_did" makes similar wallet record as "indy\_create\_key".
 As result we can use returned ver key in all generic crypto and messaging functions.
 
-* `walletHandle`: Number - Wallet handle \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
 did - The DID to resolve key.
 * `did`: String
 * __->__ `key`: String - The DIDs ver key \(key id\).
@@ -736,7 +880,7 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 Returns endpoint information for the given DID.
 
-* `walletHandle`: Number - Wallet handle \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
 did - The DID to resolve endpoint.
 * `did`: String
 * `address`: String
@@ -749,8 +893,8 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 
 
-* `walletHandle`: Number
-* `poolHandle`: Number
+* `walletHandle`: Handle (Number)
+* `poolHandle`: Handle (Number)
 * `did`: String
 * __->__ [ `address`: String, `transportVk`: String ]
 
@@ -759,7 +903,7 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 Saves\/replaces the meta information for the giving DID in the wallet.
 
-* `walletHandle`: Number - Wallet handle \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
 did - the DID to store metadata.
 metadata - the meta information that will be store with the DID.
 * `did`: String
@@ -772,7 +916,7 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 Retrieves the meta information for the giving DID in the wallet.
 
-* `walletHandle`: Number - Wallet handle \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
 did - The DID to retrieve metadata.
 * `did`: String
 * __->__ `metadata`: String - The meta information stored with the DID; Can be null if no metadata was saved for this DID.
@@ -783,7 +927,7 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 Get info about My DID in format: DID, verkey, metadata
 
-* `walletHandle`: Number
+* `walletHandle`: Handle (Number)
 * `myDid`: String
 * __->__ `didWithMeta`: String
 
@@ -792,7 +936,7 @@ Get info about My DID in format: DID, verkey, metadata
 
 Lists created DIDs with metadata as JSON array with each DID in format: DID, verkey, metadata
 
-* `walletHandle`: Number
+* `walletHandle`: Handle (Number)
 * __->__ `dids`: String
 
 
@@ -815,8 +959,8 @@ Adds submitter information to passed request json, signs it with submitter
 sign key \(see wallet\_sign\), and sends signed request message
 to validator pool \(see write\_request\).
 
-* `poolHandle`: Number - pool handle \(created by open\_pool\_ledger\).
-* `walletHandle`: Number - wallet handle \(created by open\_wallet\).
+* `poolHandle`: Handle (Number) - pool handle \(created by open\_pool\_ledger\).
+* `walletHandle`: Handle (Number) - wallet handle \(created by open\_wallet\).
 * `submitterDid`: String - Id of Identity stored in secured Wallet.
 * `request`: Json - Request data json.
 * __->__ `requestResult`: Json
@@ -829,7 +973,7 @@ Publishes request message to validator pool \(no signing, unlike sign\_and\_subm
 
 The request is sent to the validator pool as is. It's assumed that it's already prepared.
 
-* `poolHandle`: Number - pool handle \(created by open\_pool\_ledger\).
+* `poolHandle`: Handle (Number) - pool handle \(created by open\_pool\_ledger\).
 * `request`: Json - Request data json.
 * __->__ `requestResult`: Json
 
@@ -842,7 +986,7 @@ Signs request message.
 Adds submitter information to passed request json, signs it with submitter
 sign key \(see wallet\_sign\).
 
-* `walletHandle`: Number - wallet handle \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - wallet handle \(created by open\_wallet\).
 * `submitterDid`: String - Id of Identity stored in secured Wallet.
 * `request`: Json - Request data json.
 * __->__ `signedRequest`: Json - Signed request json.
@@ -861,145 +1005,344 @@ Errors: `Common*`
 
 #### build\_nym\_request \( submitterDid, targetDid, verkey, alias, role \) -&gt; request
 
-Builds a NYM request.
+Builds a NYM request. Request to create a new NYM record for a specific user.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
-* `targetDid`: String - Id of Identity stored in secured Wallet.
-* `verkey`: String - verification key
-* `alias`: String - alias
-* `role`: String - Role of a user NYM record
+* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
+* `verkey`: String - Target identity verification key as base58-encoded string.
+* `alias`: String - NYM's alias.
+* `role`: String - Role of a user NYM record:
+null \(common USER\)
+TRUSTEE
+STEWARD
+TRUST\_ANCHOR
+empty string to reset role
 * __->__ `request`: Json
 
 Errors: `Common*`
 
 #### build\_attrib\_request \( submitterDid, targetDid, hash, raw, enc \) -&gt; request
 
-Builds an ATTRIB request.
+Builds an ATTRIB request. Request to add attribute to a NYM record.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
-* `targetDid`: String - Id of Identity stored in secured Wallet.
-* `hash`: String - Hash of attribute data
-* `raw`: String - represented as json, where key is attribute name and value is it's value
-* `enc`: String - Encrypted attribute data
+* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
+* `hash`: String - \(Optional\) Hash of attribute data.
+* `raw`: String - \(Optional\) Json, where key is attribute name and value is attribute value.
+* `enc`: String - \(Optional\) Encrypted value attribute data.
 * __->__ `request`: Json
 
 Errors: `Common*`
 
 #### build\_get\_attrib\_request \( submitterDid, targetDid, hash, raw, enc \) -&gt; request
 
-Builds a GET\_ATTRIB request.
+Builds a GET\_ATTRIB request. Request to get information about an Attribute for the specified DID.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
-* `targetDid`: String - Id of Identity stored in secured Wallet.
-* `hash`: String
-* `raw`: String
-* `enc`: String
+* `submitterDid`: String - DID of the read request sender.
+* `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
+* `hash`: String - \(Optional\) Requested attribute hash.
+* `raw`: String - \(Optional\) Requested attribute name.
+* `enc`: String - \(Optional\) Requested attribute encrypted value.
 * __->__ `request`: Json
 
 Errors: `Common*`
 
 #### build\_get\_nym\_request \( submitterDid, targetDid \) -&gt; request
 
-Builds a GET\_NYM request.
+Builds a GET\_NYM request. Request to get information about a DID \(NYM\).
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
-* `targetDid`: String - Id of Identity stored in secured Wallet.
+* `submitterDid`: String - DID of the read request sender.
+* `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * __->__ `request`: Json
 
 Errors: `Common*`
 
 #### build\_schema\_request \( submitterDid, data \) -&gt; request
 
-Builds a SCHEMA request.
+Builds a SCHEMA request. Request to add Credential's schema.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
-* `data`: String - name, version, type, attr\_names \(ip, port, keys\)
+* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `data`: String - Credential schema.
+```js
+{
+````
 * __->__ `request`: Json
 
 Errors: `Common*`
 
-#### build\_get\_schema\_request \( submitterDid, dest, data \) -&gt; request
+#### build\_get\_schema\_request \( submitterDid, id \) -&gt; request
 
-Builds a GET\_SCHEMA request.
+Builds a GET\_SCHEMA request. Request to get Credential's Schema.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
-* `dest`: String - Id of Identity stored in secured Wallet.
-* `data`: String - name, version
+* `submitterDid`: String - DID of the read request sender.
+* `id`: String - Schema ID in ledger
 * __->__ `request`: Json
 
 Errors: `Common*`
 
-#### build\_claim\_def\_txn \( submitterDid, xref, signatureType, data \) -&gt; request
+#### parse\_get\_schema\_response \( getSchemaResponse \) -&gt; \[ schemaId, schema \]
 
-Builds an CLAIM\_DEF request.
+Parse a GET\_SCHEMA response to get Schema in the format compatible with Anoncreds API.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
-* `xref`: Number - Seq. number of schema
-* `signatureType`: String - signature type \(only CL supported now\)
-* `data`: String - components of a key in json: N, R, S, Z
+* `getSchemaResponse`: String - response of GET\_SCHEMA request.
+* __->__ [ `schemaId`: String, `schema`: Json ] - Schema Id and Schema json.
+```js
+{
+    id: identifier of schema
+    attrNames: array of attribute name strings
+    name: Schema's name string
+    version: Schema's version string
+    ver: Version of the Schema json
+}
+````
+
+Errors: `Common*`
+
+#### build\_cred\_def\_request \( submitterDid, data \) -&gt; request
+
+Builds an CRED\_DEF request. Request to add a Credential Definition \(in particular, public key\),
+that Issuer creates for a particular Credential Schema.
+
+* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `data`: String - credential definition json
+```js
+{
+````
 * __->__ `request`: Json
 
 Errors: `Common*`
 
-#### build\_get\_claim\_def\_txn \( submitterDid, xref, signatureType, origin \) -&gt; request
+#### build\_get\_cred\_def\_request \( submitterDid, id \) -&gt; request
 
-Builds a GET\_CLAIM\_DEF request.
+Builds a GET\_CRED\_DEF request. Request to get a Credential Definition \(in particular, public key\),
+that Issuer creates for a particular Credential Schema.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
-* `xref`: Number - Seq. number of schema
-* `signatureType`: String - signature type \(only CL supported now\)
-* `origin`: String - issuer did
+* `submitterDid`: String - DID of the read request sender.
+* `id`: String - Credential Definition ID in ledger.
 * __->__ `request`: Json
+
+Errors: `Common*`
+
+#### parse\_get\_cred\_def\_response \( getCredDefResponse \) -&gt; \[ credDefId, credDef \]
+
+Parse a GET\_CRED\_DEF response to get Credential Definition in the format compatible with Anoncreds API.
+
+* `getCredDefResponse`: String - response of GET\_CRED\_DEF request.
+* __->__ [ `credDefId`: String, `credDef`: Json ] - Credential Definition Id and Credential Definition json.
+```js
+{
+    id: string - identifier of credential definition
+    schemaId: string - identifier of stored in ledger schema
+    type: string - type of the credential definition. CL is the only supported type now.
+    tag: string - allows to distinct between credential definitions for the same issuer and schema
+    value: Dictionary with Credential Definition's data: {
+        primary: primary credential public key,
+        Optional<revocation>: revocation credential public key
+    },
+    ver: Version of the Credential Definition json
+}
+````
 
 Errors: `Common*`
 
 #### build\_node\_request \( submitterDid, targetDid, data \) -&gt; request
 
-Builds a NODE request.
+Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
-* `targetDid`: String - Id of Identity stored in secured Wallet.
-* `data`: String - id of a target NYM record
+* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `targetDid`: String - Target Node's DID.  It differs from submitter\_did field.
+* `data`: String - Data associated with the Node: {
 * __->__ `request`: Json
 
 Errors: `Common*`
 
 #### build\_get\_txn\_request \( submitterDid, data \) -&gt; request
 
-Builds a GET\_TXN request.
+Builds a GET\_TXN request. Request to get any transaction by its seq\_no.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
-* `data`: Number - seq\_no of transaction in ledger
+* `submitterDid`: String - DID of the request submitter.
+* `data`: Number
 * __->__ `request`: Json
 
 Errors: `Common*`
 
 #### build\_pool\_config\_request \( submitterDid, writes, force \) -&gt; request
 
-Builds a POOL\_CONFIG request.
+Builds a POOL\_CONFIG request. Request to change Pool's configuration.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
-* `writes`: Boolean
-* `force`: Boolean
+* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `writes`: Boolean - Whether any write requests can be processed by the pool
+\(if false, then pool goes to read-only state\). True by default.
+* `force`: Boolean - Whether we should apply transaction \(for example, move pool to read-only state\)
+without waiting for consensus of this transaction.
 * __->__ `request`: Json
 
 Errors: `Common*`
 
 #### build\_pool\_upgrade\_request \( submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force \) -&gt; request
 
-Builds a POOL\_UPGRADE request.
+Builds a POOL\_UPGRADE request. Request to upgrade the Pool \(sent by Trustee\).
+It upgrades the specified Nodes \(either all nodes in the Pool, or some specific ones\).
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
-* `name`: String
-* `version`: String
-* `action`: String - Either start or cancel
-* `sha256`: String
-* `timeout`: Number
-* `schedule`: String
-* `justification`: String
-* `reinstall`: Boolean
-* `force`: Boolean
+* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `name`: String - Human-readable name for the upgrade.
+* `version`: String - The version of indy-node package we perform upgrade to.
+Must be greater than existing one \(or equal if reinstall flag is True\).
+* `action`: String - Either start or cancel.
+* `sha256`: String - sha256 hash of the package.
+* `timeout`: Number - \(Optional\) Limits upgrade time on each Node.
+* `schedule`: String - \(Optional\) Schedule of when to perform upgrade on each node. Map Node DIDs to upgrade time.
+* `justification`: String - \(Optional\) justification string for this particular Upgrade.
+* `reinstall`: Boolean - Whether it's allowed to re-install the same version. False by default.
+* `force`: Boolean - Whether we should apply transaction \(schedule Upgrade\) without waiting
+for consensus of this transaction.
 * __->__ `request`: Json
+
+Errors: `Common*`
+
+#### build\_revoc\_reg\_def\_request \( submitterDid, data \) -&gt; request
+
+Builds a REVOC\_REG\_DEF request. Request to add the definition of revocation registry
+to an exists credential definition.
+
+* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `data`: String - Revocation Registry data:
+```js
+    {
+        "id": string - ID of the Revocation Registry,
+        "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+        "tag": string - Unique descriptive ID of the Registry,
+        "credDefId": string - ID of the corresponding CredentialDefinition,
+        "value": Registry-specific data {
+            "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+            "maxCredNum": number - Maximum number of credentials the Registry can serve.
+            "tailsHash": string - Hash of tails.
+            "tailsLocation": string - Location of tails file.
+            "publicKeys": <public_keys> - Registry's public key.
+        },
+        "ver": string - version of revocation registry definition json.
+    }
+````
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### build\_get\_revoc\_reg\_def\_request \( submitterDid, id \) -&gt; request
+
+Builds a GET\_REVOC\_REG\_DEF request. Request to get a revocation registry definition,
+that Issuer creates for a particular Credential Definition.
+
+* `submitterDid`: String - DID of the read request sender.
+* `id`: String - ID of Revocation Registry Definition in ledger.
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### parse\_get\_revoc\_reg\_def\_response \( getRevocRefDefResponse \) -&gt; \[ revocRegDefId, revocRegDef \]
+
+Parse a GET\_REVOC\_REG\_DEF response to get Revocation Registry Definition in the format
+compatible with Anoncreds API.
+
+* `getRevocRefDefResponse`: String
+* __->__ [ `revocRegDefId`: String, `revocRegDef`: Json ] - Revocation Registry Definition Id and Revocation Registry Definition json.
+```js
+{
+    "id": string - ID of the Revocation Registry,
+    "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+    "tag": string - Unique descriptive ID of the Registry,
+    "credDefId": string - ID of the corresponding CredentialDefinition,
+    "value": Registry-specific data {
+        "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+        "maxCredNum": number - Maximum number of credentials the Registry can serve.
+        "tailsHash": string - Hash of tails.
+        "tailsLocation": string - Location of tails file.
+        "publicKeys": <public_keys> - Registry's public key.
+    },
+    "ver": string - version of revocation registry definition json.
+}
+````
+
+Errors: `Common*`
+
+#### build\_revoc\_reg\_entry\_request \( submitterDid, revocRegDefId, revDefType, value \) -&gt; request
+
+Builds a REVOC\_REG\_ENTRY request.  Request to add the RevocReg entry containing
+the new accumulator value and issued\/revoked indices.
+This is just a delta of indices, not the whole list.
+So, it can be sent each time a new credential is issued\/revoked.
+
+* `submitterDid`: String - DID of the submitter stored in secured Wallet.
+* `revocRegDefId`: String - ID of the corresponding RevocRegDef.
+* `revDefType`: String - Revocation Registry type \(only CL\_ACCUM is supported for now\).
+* `value`: String - Registry-specific data: {
+
+```js
+ {
+````
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### build\_get\_revoc\_reg\_request \( submitterDid, revocRegDefId, timestamp \) -&gt; request
+
+Builds a GET\_REVOC\_REG request. Request to get the accumulated state of the Revocation Registry
+by ID. The state is defined by the given timestamp.
+
+* `submitterDid`: String - DID of the read request sender.
+* `revocRegDefId`: String - ID of the corresponding Revocation Registry Definition in ledger.
+* `timestamp`: BigNum - Requested time represented as a total number of seconds from Unix Epoch
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### parse\_get\_revoc\_reg\_response \( getRevocRegResponse \) -&gt; \[ revocRegDefId, revocReg, timestamp \]
+
+Parse a GET\_REVOC\_REG response to get Revocation Registry in the format compatible with Anoncreds API.
+
+* `getRevocRegResponse`: String - response of GET\_REVOC\_REG request.
+* __->__ [ `revocRegDefId`: String, `revocReg`: Json, `timestamp`: BigNum ] - Revocation Registry Definition Id, Revocation Registry json and Timestamp.
+```js
+{
+    "value": Registry-specific data {
+        "accum": string - current accumulator value.
+    },
+    "ver": string - version revocation registry json
+}
+````
+
+Errors: `Common*`
+
+#### build\_get\_revoc\_reg\_delta\_request \( submitterDid, revocRegDefId, from, to \) -&gt; request
+
+Builds a GET\_REVOC\_REG\_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
+The Delta is defined by from and to timestamp fields.
+If from is not specified, then the whole state till to will be returned.
+
+* `submitterDid`: String - DID of the read request sender.
+* `revocRegDefId`: String - ID of the corresponding Revocation Registry Definition in ledger.
+* `from`: BigNum - Requested time represented as a total number of seconds from Unix Epoch
+* `to`: BigNum - Requested time represented as a total number of seconds from Unix Epoch
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### parse\_get\_revoc\_reg\_delta\_response \( getRevocRegDeltaResponse \) -&gt; \[ revocRegDefId, revocRegDelta, timestamp \]
+
+Parse a GET\_REVOC\_REG\_DELTA response to get Revocation Registry Delta in the format compatible with Anoncreds API.
+
+* `getRevocRegDeltaResponse`: String
+* __->__ [ `revocRegDefId`: String, `revocRegDelta`: Json, `timestamp`: BigNum ] - Revocation Registry Definition Id, Revocation Registry Delta json and Timestamp.
+```js
+{
+    "value": Registry-specific data {
+        prevAccum: string - previous accumulator value.
+        accum: string - current accumulator value.
+        issued: array<number> - an array of issued indices.
+        revoked: array<number> an array of revoked indices.
+    },
+    "ver": string - version revocation registry delta json
+}
+````
 
 Errors: `Common*`
 
@@ -1009,7 +1352,7 @@ Errors: `Common*`
 
 Check if pairwise is exists.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
 * `theirDid`: String - encrypted DID
 * __->__ `exists`: Boolean - exists: true - if pairwise is exists, false - otherwise
 
@@ -1019,7 +1362,7 @@ Errors: `Common*`, `Wallet*`
 
 Creates pairwise.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
 * `theirDid`: String - encrypted DID
 * `myDid`: String - encrypted DID
 metadata Optional: extra information for pairwise
@@ -1032,7 +1375,7 @@ Errors: `Common*`, `Wallet*`
 
 Get list of saved pairwise.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
 * __->__ `listPairwise`: String - list\_pairwise: list of saved pairwise
 
 Errors: `Common*`, `Wallet*`
@@ -1041,7 +1384,7 @@ Errors: `Common*`, `Wallet*`
 
 Gets pairwise information for specific their\_did.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
 * `theirDid`: String - encoded Did
 * __->__ `pairwiseInfo`: Json - pairwise\_info\_json: did info associated with their did
 
@@ -1051,7 +1394,7 @@ Errors: `Common*`, `Wallet*`
 
 Save some data in the Wallet for pairwise associated with Did.
 
-* `walletHandle`: Number - wallet handler \(created by open\_wallet\).
+* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
 * `theirDid`: String - encoded Did
 * `metadata`: String - some extra information for pairwise
 * __->__ void
@@ -1100,7 +1443,7 @@ if NULL, then default config will be used. Example:
 
 * `configName`: String
 * `config`: String
-* __->__ `poolHandle`: Number - Handle to opened pool to use in methods that require pool connection.
+* __->__ `poolHandle`: Handle (Number) - Handle to opened pool to use in methods that require pool connection.
 
 Errors: `Common*`, `Ledger*`
 
@@ -1108,7 +1451,7 @@ Errors: `Common*`, `Ledger*`
 
 Refreshes a local copy of a pool ledger and updates pool nodes connections.
 
-* `handle`: Number - pool handle returned by indy\_open\_pool\_ledger
+* `handle`: Handle (Number) - pool handle returned by indy\_open\_pool\_ledger
 * __->__ void
 
 Errors: `Common*`, `Ledger*`
@@ -1124,7 +1467,7 @@ Lists names of created pool ledgers
 
 Closes opened pool ledger, opened nodes connections and frees allocated resources.
 
-* `handle`: Number - pool handle returned by indy\_open\_pool\_ledger.
+* `handle`: Handle (Number) - pool handle returned by indy\_open\_pool\_ledger.
 * __->__ void
 
 Errors: `Common*`, `Ledger*`
@@ -1173,7 +1516,7 @@ It is impossible to open wallet with the same name more than once.
 ````
 * `credentials`: String? - Wallet credentials json. List of supported keys are defined by wallet type.
 if NULL, then default credentials will be used.
-* __->__ `handle`: Number - Handle to opened wallet to use in methods that require wallet access.
+* __->__ `handle`: Handle (Number) - Handle to opened wallet to use in methods that require wallet access.
 
 Errors: `Common*`, `Wallet*`
 
@@ -1188,7 +1531,7 @@ Lists created wallets as JSON array with each wallet metadata: name, type, name 
 
 Closes opened wallet and frees allocated resources.
 
-* `handle`: Number - wallet handle returned by indy\_open\_wallet.
+* `handle`: Handle (Number) - wallet handle returned by indy\_open\_wallet.
 * __->__ void
 
 Errors: `Common*`, `Wallet*`

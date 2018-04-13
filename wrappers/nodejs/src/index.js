@@ -16,87 +16,111 @@ function jsonify (val) {
 
 var indy = {}
 
-indy.issuer_create_and_store_claim_def = function issuer_create_and_store_claim_def (walletHandle, issuerDid, schema, signatureType, createNonRevoc, cb) {
-  cb = wrapIndyCallback(cb, true)
-  capi.issuer_create_and_store_claim_def(walletHandle, issuerDid, jsonify(schema), signatureType, createNonRevoc, cb)
-  return cb.promise
-}
-
-indy.issuer_create_and_store_revoc_reg = function issuer_create_and_store_revoc_reg (walletHandle, issuerDid, schema, maxClaimNum, cb) {
-  cb = wrapIndyCallback(cb, true)
-  capi.issuer_create_and_store_revoc_reg(walletHandle, issuerDid, jsonify(schema), maxClaimNum, cb)
-  return cb.promise
-}
-
-indy.issuer_create_claim_offer = function issuer_create_claim_offer (walletHandle, schema, issuerDid, proverDid, cb) {
-  cb = wrapIndyCallback(cb, true)
-  capi.issuer_create_claim_offer(walletHandle, jsonify(schema), issuerDid, proverDid, cb)
-  return cb.promise
-}
-
-indy.issuer_create_claim = function issuer_create_claim (walletHandle, claimReq, claim, userRevocIndex, cb) {
+indy.issuer_create_schema = function issuer_create_schema (issuerDid, name, version, attrNames, cb) {
   cb = wrapIndyCallback(cb)
-  capi.issuer_create_claim(walletHandle, jsonify(claimReq), jsonify(claim), userRevocIndex, cb)
+  capi.issuer_create_schema(issuerDid, name, version, attrNames, cb)
   return cb.promise
 }
 
-indy.issuer_revoke_claim = function issuer_revoke_claim (walletHandle, issuerDid, schema, userRevocIndex, cb) {
-  cb = wrapIndyCallback(cb, true)
-  capi.issuer_revoke_claim(walletHandle, issuerDid, jsonify(schema), userRevocIndex, cb)
-  return cb.promise
-}
-
-indy.prover_store_claim_offer = function prover_store_claim_offer (walletHandle, claimOffer, cb) {
+indy.issuer_create_and_store_credential_def = function issuer_create_and_store_credential_def (walletHandle, issuerDid, schema, tag, type_, config, cb) {
   cb = wrapIndyCallback(cb)
-  capi.prover_store_claim_offer(walletHandle, jsonify(claimOffer), cb)
+  capi.issuer_create_and_store_credential_def(walletHandle, issuerDid, jsonify(schema), tag, type_, jsonify(config), cb)
   return cb.promise
 }
 
-indy.prover_get_claim_offers = function prover_get_claim_offers (walletHandle, filter, cb) {
-  cb = wrapIndyCallback(cb, true)
-  capi.prover_get_claim_offers(walletHandle, jsonify(filter), cb)
-  return cb.promise
-}
-
-indy.prover_create_master_secret = function prover_create_master_secret (walletHandle, masterSecretName, cb) {
+indy.issuer_create_and_store_revoc_reg = function issuer_create_and_store_revoc_reg (walletHandle, issuerDid, type_, tag, credDefId, config, tailsWriterHandle, cb) {
   cb = wrapIndyCallback(cb)
-  capi.prover_create_master_secret(walletHandle, masterSecretName, cb)
+  capi.issuer_create_and_store_revoc_reg(walletHandle, issuerDid, type_, tag, credDefId, jsonify(config), tailsWriterHandle, cb)
   return cb.promise
 }
 
-indy.prover_create_and_store_claim_req = function prover_create_and_store_claim_req (walletHandle, proverDid, claimOffer, claimDef, masterSecretName, cb) {
+indy.issuer_create_credential_offer = function issuer_create_credential_offer (walletHandle, credDefId, cb) {
   cb = wrapIndyCallback(cb, true)
-  capi.prover_create_and_store_claim_req(walletHandle, proverDid, jsonify(claimOffer), jsonify(claimDef), masterSecretName, cb)
+  capi.issuer_create_credential_offer(walletHandle, credDefId, cb)
   return cb.promise
 }
 
-indy.prover_store_claim = function prover_store_claim (walletHandle, claims, revReg, cb) {
+indy.issuer_create_credential = function issuer_create_credential (walletHandle, credOffer, credReq, credValues, revRegId, blobStorageReaderHandle, cb) {
   cb = wrapIndyCallback(cb)
-  capi.prover_store_claim(walletHandle, jsonify(claims), jsonify(revReg), cb)
+  capi.issuer_create_credential(walletHandle, jsonify(credOffer), jsonify(credReq), jsonify(credValues), revRegId, blobStorageReaderHandle, cb)
   return cb.promise
 }
 
-indy.prover_get_claims = function prover_get_claims (walletHandle, filter, cb) {
+indy.issuer_revoke_credential = function issuer_revoke_credential (walletHandle, blobStorageReaderHandle, revRegId, credRevocId, cb) {
   cb = wrapIndyCallback(cb, true)
-  capi.prover_get_claims(walletHandle, jsonify(filter), cb)
+  capi.issuer_revoke_credential(walletHandle, blobStorageReaderHandle, revRegId, credRevocId, cb)
   return cb.promise
 }
 
-indy.prover_get_claims_for_proof_req = function prover_get_claims_for_proof_req (walletHandle, proofRequest, cb) {
-  cb = wrapIndyCallback(cb, true)
-  capi.prover_get_claims_for_proof_req(walletHandle, jsonify(proofRequest), cb)
-  return cb.promise
-}
-
-indy.prover_create_proof = function prover_create_proof (walletHandle, proofReq, requestedClaims, schemas, masterSecretName, claimDefs, revocRegs, cb) {
-  cb = wrapIndyCallback(cb, true)
-  capi.prover_create_proof(walletHandle, jsonify(proofReq), jsonify(requestedClaims), jsonify(schemas), masterSecretName, jsonify(claimDefs), jsonify(revocRegs), cb)
-  return cb.promise
-}
-
-indy.verifier_verify_proof = function verifier_verify_proof (proofRequest, proof, schemas, claimDefsJsons, revocRegs, cb) {
+indy.issuer_merge_revocation_registry_deltas = function issuer_merge_revocation_registry_deltas (revRegDelta, otherRevRegDelta, cb) {
   cb = wrapIndyCallback(cb)
-  capi.verifier_verify_proof(jsonify(proofRequest), jsonify(proof), jsonify(schemas), jsonify(claimDefsJsons), jsonify(revocRegs), cb)
+  capi.issuer_merge_revocation_registry_deltas(jsonify(revRegDelta), jsonify(otherRevRegDelta), cb)
+  return cb.promise
+}
+
+indy.prover_create_master_secret = function prover_create_master_secret (walletHandle, masterSecretId, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.prover_create_master_secret(walletHandle, masterSecretId, cb)
+  return cb.promise
+}
+
+indy.prover_create_credential_req = function prover_create_credential_req (walletHandle, proverDid, credOffer, credDef, masterSecretId, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.prover_create_credential_req(walletHandle, proverDid, jsonify(credOffer), jsonify(credDef), masterSecretId, cb)
+  return cb.promise
+}
+
+indy.prover_store_credential = function prover_store_credential (walletHandle, credId, credReq, credReqMetadata, cred, credDef, revRegDef, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.prover_store_credential(walletHandle, credId, jsonify(credReq), jsonify(credReqMetadata), jsonify(cred), jsonify(credDef), jsonify(revRegDef), cb)
+  return cb.promise
+}
+
+indy.prover_get_credentials = function prover_get_credentials (walletHandle, filter, cb) {
+  cb = wrapIndyCallback(cb, true)
+  capi.prover_get_credentials(walletHandle, jsonify(filter), cb)
+  return cb.promise
+}
+
+indy.prover_get_credentials_for_proof_req = function prover_get_credentials_for_proof_req (walletHandle, proofRequest, cb) {
+  cb = wrapIndyCallback(cb, true)
+  capi.prover_get_credentials_for_proof_req(walletHandle, jsonify(proofRequest), cb)
+  return cb.promise
+}
+
+indy.prover_create_proof = function prover_create_proof (walletHandle, proofReq, requestedCredentials, masterSecretName, schemas, credentialDefs, revStates, cb) {
+  cb = wrapIndyCallback(cb, true)
+  capi.prover_create_proof(walletHandle, jsonify(proofReq), jsonify(requestedCredentials), masterSecretName, jsonify(schemas), jsonify(credentialDefs), jsonify(revStates), cb)
+  return cb.promise
+}
+
+indy.verifier_verify_proof = function verifier_verify_proof (proofRequest, proof, schemas, credentialDefsJsons, revRegDefs, revRegs, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.verifier_verify_proof(jsonify(proofRequest), jsonify(proof), jsonify(schemas), jsonify(credentialDefsJsons), jsonify(revRegDefs), jsonify(revRegs), cb)
+  return cb.promise
+}
+
+indy.create_revocation_state = function create_revocation_state (blobStorageReaderHandle, revRegDef, revRegDelta, timestamp, credRevId, cb) {
+  cb = wrapIndyCallback(cb, true)
+  capi.create_revocation_state(blobStorageReaderHandle, jsonify(revRegDef), jsonify(revRegDelta), timestamp, credRevId, cb)
+  return cb.promise
+}
+
+indy.update_revocation_state = function update_revocation_state (blobStorageReaderHandle, revState, revRegDef, revRegDelta, timestamp, credRevId, cb) {
+  cb = wrapIndyCallback(cb, true)
+  capi.update_revocation_state(blobStorageReaderHandle, jsonify(revState), jsonify(revRegDef), jsonify(revRegDelta), timestamp, credRevId, cb)
+  return cb.promise
+}
+
+indy.open_blob_storage_reader = function open_blob_storage_reader (type_, config, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.open_blob_storage_reader(type_, jsonify(config), cb)
+  return cb.promise
+}
+
+indy.open_blob_storage_writer = function open_blob_storage_writer (type_, config, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.open_blob_storage_writer(type_, jsonify(config), cb)
   return cb.promise
 }
 
@@ -286,21 +310,33 @@ indy.build_schema_request = function build_schema_request (submitterDid, data, c
   return cb.promise
 }
 
-indy.build_get_schema_request = function build_get_schema_request (submitterDid, dest, data, cb) {
+indy.build_get_schema_request = function build_get_schema_request (submitterDid, id, cb) {
   cb = wrapIndyCallback(cb, true)
-  capi.build_get_schema_request(submitterDid, dest, data, cb)
+  capi.build_get_schema_request(submitterDid, id, cb)
   return cb.promise
 }
 
-indy.build_claim_def_txn = function build_claim_def_txn (submitterDid, xref, signatureType, data, cb) {
-  cb = wrapIndyCallback(cb, true)
-  capi.build_claim_def_txn(submitterDid, xref, signatureType, data, cb)
+indy.parse_get_schema_response = function parse_get_schema_response (getSchemaResponse, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.parse_get_schema_response(getSchemaResponse, cb)
   return cb.promise
 }
 
-indy.build_get_claim_def_txn = function build_get_claim_def_txn (submitterDid, xref, signatureType, origin, cb) {
+indy.build_cred_def_request = function build_cred_def_request (submitterDid, data, cb) {
   cb = wrapIndyCallback(cb, true)
-  capi.build_get_claim_def_txn(submitterDid, xref, signatureType, origin, cb)
+  capi.build_cred_def_request(submitterDid, data, cb)
+  return cb.promise
+}
+
+indy.build_get_cred_def_request = function build_get_cred_def_request (submitterDid, id, cb) {
+  cb = wrapIndyCallback(cb, true)
+  capi.build_get_cred_def_request(submitterDid, id, cb)
+  return cb.promise
+}
+
+indy.parse_get_cred_def_response = function parse_get_cred_def_response (getCredDefResponse, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.parse_get_cred_def_response(getCredDefResponse, cb)
   return cb.promise
 }
 
@@ -325,6 +361,54 @@ indy.build_pool_config_request = function build_pool_config_request (submitterDi
 indy.build_pool_upgrade_request = function build_pool_upgrade_request (submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb) {
   cb = wrapIndyCallback(cb, true)
   capi.build_pool_upgrade_request(submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb)
+  return cb.promise
+}
+
+indy.build_revoc_reg_def_request = function build_revoc_reg_def_request (submitterDid, data, cb) {
+  cb = wrapIndyCallback(cb, true)
+  capi.build_revoc_reg_def_request(submitterDid, data, cb)
+  return cb.promise
+}
+
+indy.build_get_revoc_reg_def_request = function build_get_revoc_reg_def_request (submitterDid, id, cb) {
+  cb = wrapIndyCallback(cb, true)
+  capi.build_get_revoc_reg_def_request(submitterDid, id, cb)
+  return cb.promise
+}
+
+indy.parse_get_revoc_reg_def_response = function parse_get_revoc_reg_def_response (getRevocRefDefResponse, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.parse_get_revoc_reg_def_response(getRevocRefDefResponse, cb)
+  return cb.promise
+}
+
+indy.build_revoc_reg_entry_request = function build_revoc_reg_entry_request (submitterDid, revocRegDefId, revDefType, value, cb) {
+  cb = wrapIndyCallback(cb, true)
+  capi.build_revoc_reg_entry_request(submitterDid, revocRegDefId, revDefType, value, cb)
+  return cb.promise
+}
+
+indy.build_get_revoc_reg_request = function build_get_revoc_reg_request (submitterDid, revocRegDefId, timestamp, cb) {
+  cb = wrapIndyCallback(cb, true)
+  capi.build_get_revoc_reg_request(submitterDid, revocRegDefId, timestamp, cb)
+  return cb.promise
+}
+
+indy.parse_get_revoc_reg_response = function parse_get_revoc_reg_response (getRevocRegResponse, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.parse_get_revoc_reg_response(getRevocRegResponse, cb)
+  return cb.promise
+}
+
+indy.build_get_revoc_reg_delta_request = function build_get_revoc_reg_delta_request (submitterDid, revocRegDefId, from, to, cb) {
+  cb = wrapIndyCallback(cb, true)
+  capi.build_get_revoc_reg_delta_request(submitterDid, revocRegDefId, from, to, cb)
+  return cb.promise
+}
+
+indy.parse_get_revoc_reg_delta_response = function parse_get_revoc_reg_delta_response (getRevocRegDeltaResponse, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.parse_get_revoc_reg_delta_response(getRevocRegDeltaResponse, cb)
   return cb.promise
 }
 
