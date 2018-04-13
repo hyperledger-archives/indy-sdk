@@ -441,7 +441,6 @@ pub fn from_string(proof_data: &str) -> Result<u32, ProofError> {
     {
         let mut m = PROOF_MAP.lock().unwrap();
         debug!("inserting handle {} with source_id {:?} into proof table", new_handle, source_id);
-        println!("INSERTED INTO MAP, new_handle: {}", new_handle);
         m.insert(new_handle, proof);
     }
     Ok(new_handle)
