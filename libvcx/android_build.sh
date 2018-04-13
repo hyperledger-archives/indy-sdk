@@ -1,5 +1,6 @@
-
+#!/usr/bin/env bash
 if [ -d "${HOME}/.NDK_TOOLCHAINS" ]; then
+
     export NDK_TOOLCHAIN_DIR=${HOME}/.NDK_TOOLCHAINS
 fi
 
@@ -12,8 +13,14 @@ fi
 
 if [ "$1" == "aarm64" ]; then
     echo "Building for aarch64-linux-android"
-    # Link to static libindy library
-    export LD_LIBRARY_PATH=/Users/abdussami/Work/binaries/libindy/aarm64/release
+    # Search for libindy in the preferred location.
+    if [ -d "/usr/local/aarch64-linux-android/libindy" ]; then
+        export LIBINDY_DIR=/usr/local/aarch64-linux-android/libindy
+    fi
+    if [[ -z "${LIBINDY_DIR}"  ]]; then
+        echo "LIBINDY_DIR is not set. It is needed for building LibVCX "
+        exit 1
+    fi
     
     export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2l
     export AR=${NDK_TOOLCHAIN_DIR}/arm64/bin/aarch64-linux-android-ar

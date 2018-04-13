@@ -58,16 +58,16 @@ fn main() {
     println!("target={}", target);
 
     if target.contains("aarch64"){
-        
-        let ld_library_path = env::var("LD_LIBRARY_PATH").unwrap();
-        println!("cargo:rustc-link-search=native={}",ld_library_path);
+
+        let libindy_lib_path = env::var("LIBINDY_DIR").unwrap();
+        println!("cargo:rustc-link-search=native={}",libindy_lib_path);
         println!("cargo:rustc-link-lib=static=indy");
     }else if target.contains("darwin"){
         //OSX specific logic
         println!("cargo:rustc-link-lib=indy");
         //OSX does not allow 3rd party libs to be installed in /usr/lib. Instead install it in /usr/local/lib
         println!("cargo:rustc-link-search=native=/usr/local/lib");
-    }else if target.contains("linux"){
+    }else if target.contains("-linux-"){
         //Linux specific logic
         println!("cargo:rustc-link-lib=indy");
         println!("cargo:rustc-link-search=native=/usr/lib");
