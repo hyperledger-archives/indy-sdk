@@ -8,19 +8,19 @@ test('crypto', async function (t) {
 
   var wName = 'wallet-' + cuid()
 
-  await indy.create_wallet(pool.name, wName, 'default', null, null)
-  var wHandle = await indy.open_wallet(wName, null, null)
+  await indy.createWallet(pool.name, wName, 'default', null, null)
+  var wHandle = await indy.openWallet(wName, null, null)
 
   var seed1 = '00000000000000000000000000000My1'
-  var verkey = await indy.create_key(wHandle, {'seed': seed1})
+  var verkey = await indy.createKey(wHandle, {'seed': seed1})
 
   var message = Buffer.from('{"reqId":1496822211362017764}', 'utf8')
 
-  var signed = await indy.crypto_sign(wHandle, verkey, message)
+  var signed = await indy.cryptoSign(wHandle, verkey, message)
   t.truthy(Buffer.isBuffer(signed))
   t.is(signed.toString('base64'), 'qdcI4QdrbgnBosrWokLu0z/RDMQI0zcbeF7MkzVoZz08+e1/Zy7c3wpfSzX10vGXvykwHgkQTvydztKRfYVtCw==')
 
-  await indy.close_wallet(wHandle)
-  await indy.delete_wallet(wName, null)
+  await indy.closeWallet(wHandle)
+  await indy.deleteWallet(wName, null)
   pool.cleanup()
 })

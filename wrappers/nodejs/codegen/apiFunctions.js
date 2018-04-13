@@ -27,6 +27,7 @@ var toJsName = function (name) {
     .replace(/_(\w)/g, function (matches, letter) {
       return letter.toUpperCase()
     })
+    .replace(/^type_$/, 'type')
 }
 
 var toJsParams = function (params) {
@@ -47,7 +48,11 @@ Object.keys(api.functions).forEach(function (name) {
 
   var fn = Object.assign({}, api.functions[name], {
     name: name,
-    jsName: name.replace(/^indy_/, ''),
+    jsName: name
+      .replace(/^indy_/, '')
+      .replace(/_(\w)/g, function (matches, letter) {
+        return letter.toUpperCase()
+      }),
     jsParams: [],
     jsCbParams: []
   })

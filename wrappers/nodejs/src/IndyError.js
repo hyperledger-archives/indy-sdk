@@ -50,8 +50,8 @@ function IndyError (err) {
   this.name = this.constructor.name
   if (errors.hasOwnProperty(err)) {
     this.message = errors[err]
-    this.indy_code = err
-    this.indy_name = errors[err]
+    this.indyCode = err
+    this.indyName = errors[err]
   } else {
     this.message = (err + '')
   }
