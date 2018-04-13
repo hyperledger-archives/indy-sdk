@@ -14,13 +14,11 @@ extern crate lazy_static;
 extern crate openssl;
 
 // Note that to use macroses from util inside of other modules it must me loaded first!
-#[allow(dead_code)] /* FIXME */
 #[macro_use]
 mod utils;
 
 pub mod api;
 mod commands;
-#[allow(dead_code)] /* FIXME */
 mod errors;
 mod services;
 mod domain;

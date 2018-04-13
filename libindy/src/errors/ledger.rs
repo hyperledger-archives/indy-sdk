@@ -10,6 +10,7 @@ use errors::ToErrorCode;
 
 #[derive(Debug)]
 pub enum LedgerError {
+    #[allow(dead_code)]
     NoConsensus(String),
     InvalidTransaction(String),
     CommonError(CommonError)

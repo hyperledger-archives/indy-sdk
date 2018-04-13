@@ -365,11 +365,16 @@ impl PoolWorker {
         p.push(pool_name);
         p.set_extension("txn");
 
+        if !p.exists(){
+            return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)))
+        }
+
         PoolWorker::_restore_merkle_tree(&p)
     }
 
     fn _restore_merkle_tree(file_mame: &PathBuf) -> Result<MerkleTree, PoolError> {
         let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
+
         let f = fs::File::open(file_mame).map_err(map_err_trace!())?;
 
         let reader = io::BufReader::new(&f);
@@ -407,11 +412,11 @@ impl Pool {
         let mut pool_worker: PoolWorker = PoolWorker {
             cmd_sock: recv_cmd_sock,
             open_cmd_id: cmd_id,
-            pool_id: pool_id,
+            pool_id,
             name: name.to_string(),
             handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
                 initiate_cmd_id: cmd_id,
-                pool_id: pool_id,
+                pool_id,
                 ..Default::default()
             }),
         };
@@ -894,7 +899,7 @@ mod tests {
         let mut pw: PoolWorker = Default::default();
         let (gt, handle) = nodes_emulator::start();
         let mut merkle_tree: MerkleTree = MerkleTree::from_vec(Vec::new()).unwrap();
-        merkle_tree.append(rmp_serde::to_vec_named(&gt).unwrap() ).unwrap();
+        merkle_tree.append(rmp_serde::to_vec_named(&gt).unwrap()).unwrap();
 
         pw.connect_to_known_nodes(Some(&merkle_tree)).unwrap();
 

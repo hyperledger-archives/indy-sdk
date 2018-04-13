@@ -47,6 +47,7 @@ impl EnvironmentUtils {
         path
     }
 
+    #[cfg(test)]
     pub fn test_pool_ip() -> String {
         env::var("TEST_POOL_IP").unwrap_or("127.0.0.1".to_string())
     }

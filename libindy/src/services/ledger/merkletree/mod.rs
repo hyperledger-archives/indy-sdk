@@ -204,15 +204,6 @@ mod tests {
     use super::*;
     use self::rust_base58::FromBase58;
     use self::serde_json;
-    use utils::crypto::hash::HASH_OUTPUT_LEN;
-
-    fn hash_hex(rh: &Vec<u8>) -> String {
-        let mut ret: String = String::with_capacity(HASH_OUTPUT_LEN * 2);
-        for i in rh {
-            ret.push_str(&format!("{:02x}", i));
-        }
-        return ret;
-    }
 
     #[test]
     fn append_works() {
