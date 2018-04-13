@@ -57,39 +57,40 @@ impl Writer for DefaultWriterConfig {
 }
 
 impl WritableBlob for DefaultWriter {
-    fn append(&mut self, bytes: &[u8]) -> Result<usize, CommonError>
-    {
-        trace!("append ---> start");
+    fn append(&mut self, bytes: &[u8]) -> Result<usize, CommonError> {
+        trace!("append >>>");
 
-        let res = self.file.write(bytes)?;
-        trace!("append ---> end");
+        let res = self.file.write(bytes)
+            .map_err(map_err_trace!())?;
 
+        trace!("append <<< {}", res);
         Ok(res)
     }
 
     fn finalize(&mut self, hash: &[u8]) -> Result<String, CommonError> {
-        trace!("finalize ---> start");
-        self.file.flush()?;
-        trace!("finalize ---> flush");
+        trace!("finalize >>>");
+
+        self.file.flush().map_err(map_err_trace!())?;
+        self.file.sync_all().map_err(map_err_trace!())?;
 
         let mut path = self.base_dir.clone();
         path.push(base64::encode(hash));
-        trace!("finalize ---> push");
 
         fs::DirBuilder::new()
             .recursive(true)
-            .create(path.parent().unwrap())?;
-        trace!("finalize ---> create");
+            .create(path.parent().unwrap())
+            .map_err(map_err_trace!(format!("path: {:?}", path)))?;
 
-        fs::copy(&tmp_storage_file(self.id), &path)?; //FIXME
-        trace!("finalize ---> copy");
+        fs::copy(&tmp_storage_file(self.id), &path)
+            .map_err(map_err_trace!())?; //FIXME
 
-        fs::remove_file(&tmp_storage_file(self.id))?;
-        trace!("finalize ---> remove_file");
+        fs::remove_file(&tmp_storage_file(self.id))
+            .map_err(map_err_trace!())?;
 
-        trace!("finalize ---> end");
+        let res = path.to_str().unwrap().to_owned();
 
-        Ok(path.to_str().unwrap().to_owned())
+        trace!("finalize <<< {}", res);
+        Ok(res)
     }
 }
 
