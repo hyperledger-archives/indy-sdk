@@ -9,6 +9,9 @@ var toHumanType = function (param) {
   if (param.json) {
     return 'Json'
   }
+  if (param.timestamp) {
+    return 'Timestamp (Number)'
+  }
   switch (param.type.replace(/[^a-z0-9_*]/ig, '')) {
     case 'constchar*':
     case 'constchar*const':
@@ -26,11 +29,6 @@ var toHumanType = function (param) {
     case 'indy_u32_t':
     case 'indy_i32_t':
       return 'Number'
-
-    case 'indy_u64_t':
-    case 'longlong':
-    case 'unsignedlonglong':
-      return 'BigNum'
 
     case 'Buffer':
       return 'Buffer'

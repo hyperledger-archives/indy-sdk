@@ -4,8 +4,11 @@ var apiFunctions = require('./apiFunctions')
 
 var OUT_FILE = path.resolve(__dirname, '../src/indy_codegen.h')
 
-var normalizeType = function (typeSrc) {
-  switch (typeSrc.replace(/[^a-z0-9_*]/ig, '')) {
+var normalizeType = function (param) {
+  if (param.timestamp) {
+    return 'Timestamp'
+  }
+  switch (param.type.replace(/[^a-z0-9_*]/ig, '')) {
     case 'constchar*':
     case 'constchar*const':
       return 'String'
@@ -22,15 +25,12 @@ var normalizeType = function (typeSrc) {
     case 'void':
     case 'indy_u32_t':
     case 'indy_i32_t':
-    case 'indy_u64_t':
-    case 'longlong':
-    case 'unsignedlonglong':
-      return typeSrc.replace(/\s+/, ' ').trim()
+      return param.type
 
     case 'Buffer':
       return 'Buffer'
   }
-  throw new Error('normalizeType doesn\'t handle: ' + typeSrc)
+  throw new Error('normalizeType doesn\'t handle: ' + param.type + ' ' + JSON.stringify(param))
 }
 
 var cpp = ''
@@ -51,7 +51,7 @@ apiFunctions.forEach(function (fn) {
   cpp += ') {\n'
   cpp += '  IndyCallback* icb = IndyCallback::getCallback(handle);\n'
   cpp += '  if(icb != nullptr){\n'
-  var cbArgTypes = fn.jsCbParams.map(arg => normalizeType(arg.type)).join('+')
+  var cbArgTypes = fn.jsCbParams.map(arg => normalizeType(arg)).join('+')
   switch (cbArgTypes) {
     case '':
       cpp += '    icb->cbNone(xerr);\n'
@@ -74,8 +74,8 @@ apiFunctions.forEach(function (fn) {
     case 'String+String+String':
       cpp += '    icb->cbStringStringString(xerr, arg0, arg1, arg2);\n'
       break
-    case 'String+String+unsigned long long':
-      cpp += '    icb->cbStringStringULL(xerr, arg0, arg1, arg2);\n'
+    case 'String+String+Timestamp':
+      cpp += '    icb->cbStringStringTimestamp(xerr, arg0, arg1, arg2);\n'
       break
     case 'Buffer':
       cpp += '    icb->cbBuffer(xerr, arg0data, arg0len);\n'
@@ -93,7 +93,7 @@ apiFunctions.forEach(function (fn) {
   cpp += cppReturnThrow('Expected ' + (fn.jsParams.length + 1) + ' arguments')
   cpp += '  }\n'
   fn.jsParams.forEach(function (arg, i) {
-    var type = normalizeType(arg.type)
+    var type = normalizeType(arg)
 
     var chkType = function (isfn) {
       cpp += '  if(!info[' + i + ']->' + isfn + '()){\n'
@@ -124,17 +124,9 @@ apiFunctions.forEach(function (fn) {
         chkType('IsInt32')
         cpp += '  indy_i32_t arg' + i + ' = info[' + i + ']->Int32Value();\n'
         break
-      case 'indy_u64_t':
-        cpp += '  long long arg' + i + ' = 0;\n'
-        // TODO
-        break
-      case 'long long':
-        cpp += '  long long arg' + i + ' = 0;\n'
-        // TODO
-        break
-      case 'unsigned long long':
-        cpp += '  unsigned long long arg' + i + ' = 0;\n'
-        // TODO
+      case 'Timestamp':
+        chkType('IsUint32')
+        cpp += '  long long arg' + i + ' = info[' + i + ']->Uint32Value();\n'
         break
       case 'Boolean':
         chkType('IsBoolean')
@@ -163,7 +155,7 @@ apiFunctions.forEach(function (fn) {
   cpp += ', ' + fn.jsName + '_cb));\n'
 
   fn.jsParams.forEach(function (arg, i) {
-    var type = normalizeType(arg.type)
+    var type = normalizeType(arg)
     switch (type) {
       case 'String':
         cpp += '  delete arg' + i + 'UTF;\n'
@@ -172,9 +164,7 @@ apiFunctions.forEach(function (fn) {
       case 'IndyHandle':
       case 'indy_u32_t':
       case 'indy_i32_t':
-      case 'indy_u64_t':
-      case 'long long':
-      case 'unsigned long long':
+      case 'Timestamp':
       case 'Boolean':
         break
       default:

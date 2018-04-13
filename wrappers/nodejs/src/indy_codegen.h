@@ -754,7 +754,10 @@ NAN_METHOD(createRevocationState) {
   } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
     return Nan::ThrowError(Nan::New("Expected String or null for rev_reg_delta_json: createRevocationState(blob_storage_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id, cb(err, revState))").ToLocalChecked());
   }
-  long long arg3 = 0;
+  if(!info[3]->IsUint32()){
+    return Nan::ThrowError(Nan::New("Expected Timestamp for timestamp: createRevocationState(blob_storage_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id, cb(err, revState))").ToLocalChecked());
+  }
+  long long arg3 = info[3]->Uint32Value();
   Nan::Utf8String* arg4UTF = nullptr;
   const char* arg4 = nullptr;
   if(info[4]->IsString()){
@@ -811,7 +814,10 @@ NAN_METHOD(updateRevocationState) {
   } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
     return Nan::ThrowError(Nan::New("Expected String or null for rev_reg_delta_json: updateRevocationState(blob_storage_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id, cb(err, updatedRevState))").ToLocalChecked());
   }
-  long long arg4 = 0;
+  if(!info[4]->IsUint32()){
+    return Nan::ThrowError(Nan::New("Expected Timestamp for timestamp: updateRevocationState(blob_storage_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id, cb(err, updatedRevState))").ToLocalChecked());
+  }
+  long long arg4 = info[4]->Uint32Value();
   Nan::Utf8String* arg5UTF = nullptr;
   const char* arg5 = nullptr;
   if(info[5]->IsString()){
@@ -2581,7 +2587,10 @@ NAN_METHOD(buildGetRevocRegRequest) {
   } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
     return Nan::ThrowError(Nan::New("Expected String or null for revoc_reg_def_id: buildGetRevocRegRequest(submitter_did, revoc_reg_def_id, timestamp, cb(err, request))").ToLocalChecked());
   }
-  long long arg2 = 0;
+  if(!info[2]->IsUint32()){
+    return Nan::ThrowError(Nan::New("Expected Timestamp for timestamp: buildGetRevocRegRequest(submitter_did, revoc_reg_def_id, timestamp, cb(err, request))").ToLocalChecked());
+  }
+  long long arg2 = info[2]->Uint32Value();
   if(!info[3]->IsFunction()) {
     return Nan::ThrowError(Nan::New("buildGetRevocRegRequest arg 3 expected callback Function").ToLocalChecked());
   }
@@ -2594,7 +2603,7 @@ NAN_METHOD(buildGetRevocRegRequest) {
 void parseGetRevocRegResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, const char* arg1, unsigned long long arg2) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
-    icb->cbStringStringULL(xerr, arg0, arg1, arg2);
+    icb->cbStringStringTimestamp(xerr, arg0, arg1, arg2);
   }
 }
 NAN_METHOD(parseGetRevocRegResponse) {
@@ -2643,8 +2652,14 @@ NAN_METHOD(buildGetRevocRegDeltaRequest) {
   } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
     return Nan::ThrowError(Nan::New("Expected String or null for revoc_reg_def_id: buildGetRevocRegDeltaRequest(submitter_did, revoc_reg_def_id, from, to, cb(err, request))").ToLocalChecked());
   }
-  long long arg2 = 0;
-  long long arg3 = 0;
+  if(!info[2]->IsUint32()){
+    return Nan::ThrowError(Nan::New("Expected Timestamp for from: buildGetRevocRegDeltaRequest(submitter_did, revoc_reg_def_id, from, to, cb(err, request))").ToLocalChecked());
+  }
+  long long arg2 = info[2]->Uint32Value();
+  if(!info[3]->IsUint32()){
+    return Nan::ThrowError(Nan::New("Expected Timestamp for to: buildGetRevocRegDeltaRequest(submitter_did, revoc_reg_def_id, from, to, cb(err, request))").ToLocalChecked());
+  }
+  long long arg3 = info[3]->Uint32Value();
   if(!info[4]->IsFunction()) {
     return Nan::ThrowError(Nan::New("buildGetRevocRegDeltaRequest arg 4 expected callback Function").ToLocalChecked());
   }
@@ -2657,7 +2672,7 @@ NAN_METHOD(buildGetRevocRegDeltaRequest) {
 void parseGetRevocRegDeltaResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, const char* arg1, unsigned long long arg2) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
-    icb->cbStringStringULL(xerr, arg0, arg1, arg2);
+    icb->cbStringStringTimestamp(xerr, arg0, arg1, arg2);
   }
 }
 NAN_METHOD(parseGetRevocRegDeltaResponse) {

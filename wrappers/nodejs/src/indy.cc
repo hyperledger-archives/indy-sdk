@@ -26,7 +26,7 @@ enum IndyCallbackType {
     CB_BUFFER,
     CB_STRING_BUFFER,
     CB_STRING_STRING,
-    CB_STRING_STRING_ULL,
+    CB_STRING_STRING_TIMESTAMP,
     CB_STRING_STRING_STRING
 };
 
@@ -85,12 +85,12 @@ class IndyCallback : public Nan::AsyncResource {
         send(xerr);
     }
 
-    void cbStringStringULL(indy_error_t xerr, const char* strA, const char* strB, unsigned long long ull){
+    void cbStringStringTimestamp(indy_error_t xerr, const char* strA, const char* strB, unsigned long long timestamp){
         if(xerr == 0){
-          type = CB_STRING_STRING_ULL;
+          type = CB_STRING_STRING_TIMESTAMP;
           str0 = copyCStr(strA);
           str1 = copyCStr(strB);
-          ull0 = ull;
+          timestamp0 = timestamp;
         }
         send(xerr);
     }
@@ -164,7 +164,7 @@ class IndyCallback : public Nan::AsyncResource {
     bool bool0;
     indy_handle_t handle0;
     indy_i32_t i32int0;
-    unsigned long long ull0;
+    unsigned long long timestamp0;
     char*    buffer0data;
     uint32_t buffer0len;
 
@@ -215,11 +215,11 @@ class IndyCallback : public Nan::AsyncResource {
                 tuple->Set(1, Nan::New<v8::String>(icb->str1).ToLocalChecked());
                 argv[1] = tuple;
                 break;
-            case CB_STRING_STRING_ULL:
+            case CB_STRING_STRING_TIMESTAMP:
                 tuple = Nan::New<v8::Array>();
                 tuple->Set(0, Nan::New<v8::String>(icb->str0).ToLocalChecked());
                 tuple->Set(1, Nan::New<v8::String>(icb->str1).ToLocalChecked());
-                // TODO ull0
+                tuple->Set(2, Nan::New<v8::Number>(icb->timestamp0));
                 argv[1] = tuple;
                 break;
             case CB_STRING_STRING_STRING:

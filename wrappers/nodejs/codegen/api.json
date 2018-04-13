@@ -344,7 +344,7 @@
         {"name": "blob_storage_reader_handle", "type": "indy_i32_t"},
         {"name": "rev_reg_def_json", "type": "const char*", "json": true},
         {"name": "rev_reg_delta_json", "type": "const char*", "json": true},
-        {"name": "timestamp", "type": "indy_u64_t"},
+        {"name": "timestamp", "type": "indy_u64_t", "timestamp": true},
         {"name": "cred_rev_id", "type": "const char*"},
         {
           "name": "cb",
@@ -366,7 +366,7 @@
         {"name": "rev_state_json", "type": "const char*", "json": true},
         {"name": "rev_reg_def_json", "type": "const char*", "json": true},
         {"name": "rev_reg_delta_json", "type": "const char*", "json": true},
-        {"name": "timestamp", "type": "indy_u64_t"},
+        {"name": "timestamp", "type": "indy_u64_t", "timestamp": true},
         {"name": "cred_rev_id", "type": "const char*"},
         {
           "name": "cb",
@@ -1260,7 +1260,7 @@
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
         {"name": "revoc_reg_def_id", "type": "const char*"},
-        {"name": "timestamp", "type": "long long"},
+        {"name": "timestamp", "type": "long long", "timestamp": true},
         {
           "name": "cb",
           "params": [
@@ -1285,7 +1285,7 @@
             {"name": "err", "type": "indy_error_t"},
             {"name": "revoc_reg_def_id", "type": "const char*"},
             {"name": "revoc_reg_json", "type": "const char*", "json": true},
-            {"name": "timestamp", "type": "unsigned long long"}
+            {"name": "timestamp", "type": "unsigned long long", "timestamp": true}
           ]
         }
       ],
@@ -1298,8 +1298,8 @@
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
         {"name": "revoc_reg_def_id", "type": "const char*"},
-        {"name": "from", "type": "long long"},
-        {"name": "to", "type": "long long"},
+        {"name": "from", "type": "long long", "timestamp": true},
+        {"name": "to", "type": "long long", "timestamp": true},
         {
           "name": "cb",
           "params": [
@@ -1324,7 +1324,7 @@
             {"name": "err", "type": "indy_error_t"},
             {"name": "revoc_reg_def_id", "type": "const char*"},
             {"name": "revoc_reg_delta_json", "type": "const char*", "json": true},
-            {"name": "timestamp", "type": "unsigned long long"}
+            {"name": "timestamp", "type": "unsigned long long", "timestamp": true}
           ]
         }
       ],

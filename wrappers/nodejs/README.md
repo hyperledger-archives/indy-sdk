@@ -558,7 +558,7 @@ Create revocation state for a credential in the particular time moment.
 * `blobStorageReaderHandle`: Number - configuration of blob storage reader handle that will allow to read revocation tails
 * `revRegDef`: Json - revocation registry definition json
 * `revRegDelta`: Json - revocation registry definition delta json
-* `timestamp`: BigNum - time represented as a total number of seconds from Unix Epoch
+* `timestamp`: Timestamp (Number) - time represented as a total number of seconds from Unix Epoch
 * `credRevId`: String - user credential revocation id in revocation registry
 * __->__ `revState`: Json - revocation state json:
 ```js
@@ -580,7 +580,7 @@ at the particular time moment \(to reduce calculation time\).
 * `revState`: Json - revocation registry state json
 * `revRegDef`: Json - revocation registry definition json
 * `revRegDelta`: Json - revocation registry definition delta json
-* `timestamp`: BigNum - time represented as a total number of seconds from Unix Epoch
+* `timestamp`: Timestamp (Number) - time represented as a total number of seconds from Unix Epoch
 * `credRevId`: String - user credential revocation id in revocation registry
 * __->__ `updatedRevState`: Json - revocation state json:
 ```js
@@ -1290,7 +1290,7 @@ by ID. The state is defined by the given timestamp.
 
 * `submitterDid`: String - DID of the read request sender.
 * `revocRegDefId`: String - ID of the corresponding Revocation Registry Definition in ledger.
-* `timestamp`: BigNum - Requested time represented as a total number of seconds from Unix Epoch
+* `timestamp`: Timestamp (Number) - Requested time represented as a total number of seconds from Unix Epoch
 * __->__ `request`: Json
 
 Errors: `Common*`
@@ -1300,7 +1300,7 @@ Errors: `Common*`
 Parse a GET\_REVOC\_REG response to get Revocation Registry in the format compatible with Anoncreds API.
 
 * `getRevocRegResponse`: String - response of GET\_REVOC\_REG request.
-* __->__ [ `revocRegDefId`: String, `revocReg`: Json, `timestamp`: BigNum ] - Revocation Registry Definition Id, Revocation Registry json and Timestamp.
+* __->__ [ `revocRegDefId`: String, `revocReg`: Json, `timestamp`: Timestamp (Number) ] - Revocation Registry Definition Id, Revocation Registry json and Timestamp.
 ```js
 {
     "value": Registry-specific data {
@@ -1320,8 +1320,8 @@ If from is not specified, then the whole state till to will be returned.
 
 * `submitterDid`: String - DID of the read request sender.
 * `revocRegDefId`: String - ID of the corresponding Revocation Registry Definition in ledger.
-* `from`: BigNum - Requested time represented as a total number of seconds from Unix Epoch
-* `to`: BigNum - Requested time represented as a total number of seconds from Unix Epoch
+* `from`: Timestamp (Number) - Requested time represented as a total number of seconds from Unix Epoch
+* `to`: Timestamp (Number) - Requested time represented as a total number of seconds from Unix Epoch
 * __->__ `request`: Json
 
 Errors: `Common*`
@@ -1331,7 +1331,7 @@ Errors: `Common*`
 Parse a GET\_REVOC\_REG\_DELTA response to get Revocation Registry Delta in the format compatible with Anoncreds API.
 
 * `getRevocRegDeltaResponse`: String
-* __->__ [ `revocRegDefId`: String, `revocRegDelta`: Json, `timestamp`: BigNum ] - Revocation Registry Definition Id, Revocation Registry Delta json and Timestamp.
+* __->__ [ `revocRegDefId`: String, `revocRegDelta`: Json, `timestamp`: Timestamp (Number) ] - Revocation Registry Definition Id, Revocation Registry Delta json and Timestamp.
 ```js
 {
     "value": Registry-specific data {
