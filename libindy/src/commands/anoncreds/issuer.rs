@@ -1,4 +1,3 @@
-extern crate base64;
 extern crate serde_json;
 extern crate indy_crypto;
 

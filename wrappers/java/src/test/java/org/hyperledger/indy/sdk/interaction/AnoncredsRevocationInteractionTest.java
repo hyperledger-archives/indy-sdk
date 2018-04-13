@@ -13,9 +13,7 @@ import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONObject;
 import org.json.JSONArray;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.Timeout;
 
 import java.util.concurrent.TimeUnit;
@@ -27,31 +25,41 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 	@Rule
 	public Timeout globalTimeout = new Timeout(3, TimeUnit.MINUTES);
+	private Wallet proverWallet;
+	private String proverWalletName = "proverWallet";
+
+	@Before
+	public void createProverWallet() throws Exception {
+		Wallet.createWallet(POOL, proverWalletName, TYPE, null, null).get();
+		proverWallet = Wallet.openWallet(proverWalletName, null, null).get();
+	}
+
+	@After
+	public void deleteWalletWallet() throws Exception {
+		proverWallet.closeWallet().get();
+		Wallet.deleteWallet(proverWalletName, null).get();
+	}
 
 	@Test
 	public void testAnoncredsRevocationInteractionIssuanceByDemand() throws Exception {
 		// Issuer create DID
 		DidResults.CreateAndStoreMyDidResult trusteeDidInfo = Did.createAndStoreMyDid(this.wallet, new JSONObject().put("seed", TRUSTEE_SEED).toString()).get();
 		DidResults.CreateAndStoreMyDidResult issuerDidInfo = Did.createAndStoreMyDid(this.wallet, "{}").get();
-		String nymRequest = Ledger.buildNymRequest(trusteeDidInfo.getDid(), issuerDidInfo.getDid(), issuerDidInfo.getVerkey(), null, "TRUSTEE").get();
-		Ledger.signAndSubmitRequest(pool, wallet, trusteeDidInfo.getDid(), nymRequest);
+		String nymRequest = Ledger.buildNymRequest(trusteeDidInfo.getDid(), issuerDidInfo.getDid(),
+				issuerDidInfo.getVerkey(), null, "TRUSTEE").get();
+		Ledger.signAndSubmitRequest(pool, wallet, trusteeDidInfo.getDid(), nymRequest).get();
 
 		String issuerDid = issuerDidInfo.getDid();
-		// Prover creates wallet, gets wallet handle
-		String proverWalletName = "proverWallet";
-		Wallet.createWallet(POOL, proverWalletName, TYPE, null, null).get();
-		Wallet proverWalletHandle = Wallet.openWallet(proverWalletName, null, null).get();
 
 		// Prover create DID
-		DidResults.CreateAndStoreMyDidResult proverDidInfo = Did.createAndStoreMyDid(proverWalletHandle,
-				"{}").get();
+		DidResults.CreateAndStoreMyDidResult proverDidInfo = Did.createAndStoreMyDid(proverWallet,"{}").get();
 
 		String proverDid = proverDidInfo.getDid();
 		String proverVerkey = proverDidInfo.getVerkey();
 
 		// Issuer publish Prover DID
 		nymRequest = Ledger.buildNymRequest(issuerDid, proverDid, proverVerkey, null, null).get();
-		Ledger.signAndSubmitRequest(pool, wallet, issuerDid, nymRequest);
+		Ledger.signAndSubmitRequest(pool, wallet, issuerDid, nymRequest).get();
 
 		// ISSUER post to Ledger Schema, CredentialDefinition, RevocationRegistry
 
@@ -120,7 +128,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		// Issuance Credential for Prover
 
 		// Prover creates Master Secret
-		Anoncreds.proverCreateMasterSecret(proverWalletHandle, COMMON_MASTER_SECRET).get();
+		Anoncreds.proverCreateMasterSecret(proverWallet, COMMON_MASTER_SECRET).get();
 
 		// Issuer creates Credential Offer
 		String credOfferJson = Anoncreds.issuerCreateCredentialOffer(wallet, credDefId).get();
@@ -137,7 +145,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Prover creates Credential Request
 		AnoncredsResults.ProverCreateCredentialRequestResult credReqInfo =
-				Anoncreds.proverCreateCredentialReq(proverWalletHandle, proverDid, credOfferJson,
+				Anoncreds.proverCreateCredentialReq(proverWallet, proverDid, credOfferJson,
 						credDefJson, COMMON_MASTER_SECRET).get();
 
 		String credReqJson = credReqInfo.getCredentialRequestJson();
@@ -158,7 +166,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Issuer posts RevocationRegistryDelta to Ledger
 		revRegEntryRequest = Ledger.buildRevocRegEntryRequest(issuerDid, revRegId, REVOC_REG_TYPE, revocRegDeltaJson).get();
-		Ledger.signAndSubmitRequest(pool, wallet, issuerDid, revRegEntryRequest);
+		Ledger.signAndSubmitRequest(pool, wallet, issuerDid, revRegEntryRequest).get();
 
 		// Prover gets RevocationRegistryDefinition
 		JSONObject credential = new JSONObject(credJson);
@@ -169,9 +177,8 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		String revocRegDefJson = revRegInfo1.getObjectJson();
 
 		// Prover store received Credential
-		Anoncreds.proverStoreCredential(proverWalletHandle, "credential1_id", credReqJson,
-				credReqMetadataJson, credJson, credDefJson,
-				revocRegDefJson);
+		Anoncreds.proverStoreCredential(proverWallet, "credential1_id", credReqJson,
+				credReqMetadataJson, credJson, credDefJson, revocRegDefJson).get();
 
 		// Verifying Prover Credential
 		Thread.sleep(3000);
@@ -192,7 +199,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 
 		// Prover gets Claims for Proof Request
-		String credsJson = Anoncreds.proverGetCredentialsForProofReq(proverWalletHandle, proofRequest).get();
+		String credsJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequest).get();
 
 		JSONObject credentials = new JSONObject(credsJson);
 		JSONArray credsForReferent = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
@@ -239,7 +246,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		String revStatesJson = new JSONObject().put(revRegId, new JSONObject().
 				put(String.valueOf(timestamp), new JSONObject(revStateJson))).toString();
 
-		String proofJson = Anoncreds.proverCreateProof(proverWalletHandle, proofRequest,
+		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequest,
 				requestedCredentialsJson, COMMON_MASTER_SECRET,
 				schemasJson, credDefsJson, revStatesJson).get();
 
@@ -301,10 +308,9 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 				revRegId, credRevId).get();
 
 		// Issuer post RevocationRegistryDelta to Ledger
-		revRegEntryRequest = Ledger.buildRevocRegEntryRequest(issuerDid, revRegId,
-				REVOC_REG_TYPE, revRegDeltaJson).get();
+		revRegEntryRequest = Ledger.buildRevocRegEntryRequest(issuerDid, revRegId, REVOC_REG_TYPE, revRegDeltaJson).get();
 
-		Ledger.signAndSubmitRequest(pool, wallet, issuerDid, revRegEntryRequest);
+		Ledger.signAndSubmitRequest(pool, wallet, issuerDid, revRegEntryRequest).get();
 
 		// Verifying Prover Credential after Revocation
 		Thread.sleep(3000);
@@ -342,7 +348,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		revStatesJson = new JSONObject().put(revRegId, new JSONObject().
 				put(String.valueOf(timestamp), new JSONObject(revStateJson))).toString();
 
-		proofJson = Anoncreds.proverCreateProof(proverWalletHandle,
+		proofJson = Anoncreds.proverCreateProof(proverWallet,
 				proofRequest,
 				requestedCredentialsJson,
 				COMMON_MASTER_SECRET,
@@ -372,9 +378,6 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 				revRegDefsJson,
 				revRegsJson).get();
 		Assert.assertFalse(valid);
-
-		proverWalletHandle.close();
-		Wallet.deleteWallet(proverWalletName, null).get();
 	}
 
 	@Test
@@ -382,26 +385,23 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Issuer create DID
 		DidResults.CreateAndStoreMyDidResult trusteeDidInfo = Did.createAndStoreMyDid(this.wallet, new JSONObject().put("seed", TRUSTEE_SEED).toString()).get();
+
 		DidResults.CreateAndStoreMyDidResult issuerDidInfo = Did.createAndStoreMyDid(this.wallet, "{}").get();
-		String nymRequest = Ledger.buildNymRequest(trusteeDidInfo.getDid(), issuerDidInfo.getDid(), issuerDidInfo.getVerkey(), null, "TRUSTEE").get();
-		Ledger.signAndSubmitRequest(pool, wallet, trusteeDidInfo.getDid(), nymRequest);
+		String nymRequest = Ledger.buildNymRequest(trusteeDidInfo.getDid(), issuerDidInfo.getDid(),
+				issuerDidInfo.getVerkey(), null, "TRUSTEE").get();
+		Ledger.signAndSubmitRequest(pool, wallet, trusteeDidInfo.getDid(), nymRequest).get();
 
 		String issuerDid = issuerDidInfo.getDid();
-		// Prover creates wallet, gets wallet handle
-		String proverWalletName = "proverWallet";
-		Wallet.createWallet(POOL, proverWalletName, TYPE, null, null).get();
-		Wallet proverWalletHandle = Wallet.openWallet(proverWalletName, null, null).get();
 
 		// Prover create DID
-		DidResults.CreateAndStoreMyDidResult proverDidInfo = Did.createAndStoreMyDid(proverWalletHandle,
-				"{}").get();
+		DidResults.CreateAndStoreMyDidResult proverDidInfo = Did.createAndStoreMyDid(proverWallet, "{}").get();
 
 		String proverDid = proverDidInfo.getDid();
 		String proverVerkey = proverDidInfo.getVerkey();
 
 		// Issuer publish Prover DID
 		nymRequest = Ledger.buildNymRequest(issuerDid, proverDid, proverVerkey, null, null).get();
-		Ledger.signAndSubmitRequest(pool, wallet, issuerDid, nymRequest);
+		Ledger.signAndSubmitRequest(pool, wallet, issuerDid, nymRequest).get();
 
 		// ISSUER post to Ledger Schema, CredentialDefinition, RevocationRegistry
 
@@ -414,8 +414,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Issuer posts Schema to Ledger
 		String schemaRequest = Ledger.buildSchemaRequest(issuerDid, schemaJson).get();
-		Ledger.signAndSubmitRequest(pool, wallet, issuerDid,
-				schemaRequest).get();
+		Ledger.signAndSubmitRequest(pool, wallet, issuerDid, schemaRequest).get();
 
 		// Issuer get Schema from Ledger
 		String getSchemaRequest = Ledger.buildGetSchemaRequest(issuerDid, schemaInfo.getSchemaId()).get();
@@ -440,7 +439,6 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		String credDefId = credDefInfo.getCredDefId();
 		String credDefJson = credDefInfo.getCredDefJson();
 
-
 		// Issuer post CredentialDefinition to Ledger
 		String credDefRequest = Ledger.buildCredDefRequest(issuerDid, credDefJson).get();
 		Ledger.signAndSubmitRequest(pool, wallet, issuerDid, credDefRequest).get();
@@ -462,20 +460,17 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		String revRegEntryJson = revRegInfo.getRevRegEntryJson();
 
 		// Issuer posts RevocationRegistryDefinition to Ledger
-
-
 		String revRegDefRequest = Ledger.buildRevocRegDefRequest(issuerDid, revRegDefJson).get();
 		Ledger.signAndSubmitRequest(pool, wallet, issuerDid, revRegDefRequest).get();
 
 		// Issuer posts RevocationRegistryEntry to Ledger
-		String revRegEntryRequest = Ledger.buildRevocRegEntryRequest(issuerDid, revRegId,
-				REVOC_REG_TYPE, revRegEntryJson).get();
+		String revRegEntryRequest = Ledger.buildRevocRegEntryRequest(issuerDid, revRegId, REVOC_REG_TYPE, revRegEntryJson).get();
 		Ledger.signAndSubmitRequest(pool, wallet, issuerDid, revRegEntryRequest).get();
 
 		// Issuance Credential for Prover
 
 		// Prover creates Master Secret
-		Anoncreds.proverCreateMasterSecret(proverWalletHandle, COMMON_MASTER_SECRET).get();
+		Anoncreds.proverCreateMasterSecret(proverWallet, COMMON_MASTER_SECRET).get();
 
 		// Issuer creates Credential Offer
 		String credOfferJson = Anoncreds.issuerCreateCredentialOffer(wallet, credDefId).get();
@@ -491,7 +486,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Prover creates Credential Request
 		AnoncredsResults.ProverCreateCredentialRequestResult credReqInfo =
-				Anoncreds.proverCreateCredentialReq(proverWalletHandle, proverDid, credOfferJson,
+				Anoncreds.proverCreateCredentialReq(proverWallet, proverDid, credOfferJson,
 						credDefJson, COMMON_MASTER_SECRET).get();
 
 		String credReqJson = credReqInfo.getCredentialRequestJson();
@@ -522,9 +517,9 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Prover store received Credential
 
-		Anoncreds.proverStoreCredential(proverWalletHandle, "credential1_id", credReqJson,
+		Anoncreds.proverStoreCredential(proverWallet, "credential1_id", credReqJson,
 				credReqMetadataJson, credJson, credDefJson,
-				revocRegDefJson);
+				revocRegDefJson).get();
 
 		// Verifying Prover Credential
 		Thread.sleep(3000);
@@ -546,7 +541,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Prover gets Claims for Proof Request
 
-		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(proverWalletHandle, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequest).get();
 
 		JSONObject credentials = new JSONObject(credentialsJson);
 		JSONArray credentialsForReferent = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
@@ -595,7 +590,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		String revStatesJson = new JSONObject().put(revRegId, new JSONObject().
 				put(String.valueOf(timestamp), new JSONObject(revStateJson))).toString();
 
-		String proofJson = Anoncreds.proverCreateProof(proverWalletHandle, proofRequest,
+		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequest,
 				requestedCredentialsJson, COMMON_MASTER_SECRET,
 				schemasJson, credDefsJson, revStatesJson).get();
 
@@ -636,10 +631,8 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 				revRegId, credRevId).get();
 
 		// Issuer post RevocationRegistryDelta to Ledger
-		revRegEntryRequest = Ledger.buildRevocRegEntryRequest(issuerDid, revRegId,
-				REVOC_REG_TYPE, revRegDeltaJson).get();
-
-		Ledger.signAndSubmitRequest(pool, wallet, issuerDid, revRegEntryRequest);
+		revRegEntryRequest = Ledger.buildRevocRegEntryRequest(issuerDid, revRegId, REVOC_REG_TYPE, revRegDeltaJson).get();
+		Ledger.signAndSubmitRequest(pool, wallet, issuerDid, revRegEntryRequest).get();
 
 		// Verifying Prover Credential after Revocation
 		Thread.sleep(3000);
@@ -677,7 +670,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		revStatesJson = new JSONObject().put(revRegId, new JSONObject().
 				put(String.valueOf(timestamp), new JSONObject(revStateJson))).toString();
 
-		proofJson = Anoncreds.proverCreateProof(proverWalletHandle,
+		proofJson = Anoncreds.proverCreateProof(proverWallet,
 				proofRequest,
 				requestedCredentialsJson,
 				COMMON_MASTER_SECRET,
@@ -704,8 +697,5 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 				revRegDefsJson,
 				revRegsJson).get();
 		Assert.assertFalse(valid);
-
-		proverWalletHandle.close();
-		Wallet.deleteWallet(proverWalletName, null).get();
 	}
 }
