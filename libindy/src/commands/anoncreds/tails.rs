@@ -66,6 +66,8 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
 pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
                                   writer_handle: i32,
                                   rtg: &mut RevocationTailsGenerator) -> Result<(String, String), CommonError> {
+    trace!("store_tails_from_generator ---> start");
+
     let blob_handle = service.create_blob(writer_handle)?;
 
     let mut hasher = sha2::Sha256::default();
@@ -78,5 +80,8 @@ pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
         service.append(blob_handle, tail_bytes.as_slice())?;
     }
 
-    service.finalize(blob_handle).map(|(location, hash)| (location, base64::encode(&hash)))
+    let res = service.finalize(blob_handle).map(|(location, hash)| (location, base64::encode(&hash)))?;
+
+    trace!("finalize ---> end");
+    Ok(res)
 }

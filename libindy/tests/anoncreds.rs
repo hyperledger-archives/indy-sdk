@@ -1972,6 +1972,7 @@ mod demos {
 
     #[test]
     fn anoncreds_works_for_custom_wallet() {
+        TestUtils::cleanup_storage();
         InmemWallet::cleanup();
 
         //1. Registers new wallet type

@@ -57,21 +57,37 @@ impl Writer for DefaultWriterConfig {
 }
 
 impl WritableBlob for DefaultWriter {
-    fn append(&mut self, bytes: &[u8]) -> Result<usize, CommonError> {
-        Ok(self.file.write(bytes)?)
+    fn append(&mut self, bytes: &[u8]) -> Result<usize, CommonError>
+    {
+        trace!("append ---> start");
+
+        let res = self.file.write(bytes)?;
+        trace!("append ---> end");
+
+        Ok(res)
     }
 
     fn finalize(&mut self, hash: &[u8]) -> Result<String, CommonError> {
+        trace!("finalize ---> start");
         self.file.flush()?;
+        trace!("finalize ---> flush");
+
         let mut path = self.base_dir.clone();
         path.push(base64::encode(hash));
+        trace!("finalize ---> push");
 
         fs::DirBuilder::new()
             .recursive(true)
             .create(path.parent().unwrap())?;
+        trace!("finalize ---> create");
 
         fs::copy(&tmp_storage_file(self.id), &path)?; //FIXME
+        trace!("finalize ---> copy");
+
         fs::remove_file(&tmp_storage_file(self.id))?;
+        trace!("finalize ---> remove_file");
+
+        trace!("finalize ---> end");
 
         Ok(path.to_str().unwrap().to_owned())
     }
