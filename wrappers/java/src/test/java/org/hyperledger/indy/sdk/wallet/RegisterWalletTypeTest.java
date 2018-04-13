@@ -44,45 +44,44 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
 		String walletName = "inmemWorkoutWallet";
 
-		// 1. Creates and opens wallet
+		//  Creates and opens wallet
 		Wallet.createWallet(POOL, walletName, type, null, null).get();
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 
-		// 2. Issuer creates Claim Definition
-		String gvtSchemaJson = String.format(SCHEMA_TEMPLATE, 1, DID, "gvt", "[\"age\",\"sex\",\"height\",\"name\"]");
-		String claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, DID, gvtSchemaJson, null, false).get();
+		//  Issuer creates Schema
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(DID, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String gvtSchemaJson = createSchemaResult.getSchemaJson();
 
-		// 3. Issuer creates Claim Offer
-		String claimOffer = Anoncreds.issuerCreateClaimOffer(wallet, gvtSchemaJson, DID, DID_MY1).get();
+		//  Issuer creates Credential Definition
+		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredentialDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(wallet, DID, gvtSchemaJson, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		String credentialDefId = createCredentialDefResult.getCredDefId();
+		String credentialDef = createCredentialDefResult.getCredDefJson();
 
-		// 4. Issuer stores Claim Offer
-		Anoncreds.proverStoreClaimOffer(wallet, claimOffer).get();
+		//  Issuer creates Credential Offer
+		String credentialOffer = Anoncreds.issuerCreateCredentialOffer(wallet, credentialDefId).get();
 
-		// 5. Issuer creates Master Secret
-		String masterSecretName = "master_secret_name";
-		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
+		//  Issuer creates Master Secret
+		String masterSecretId = "master_secret";
+		Anoncreds.proverCreateMasterSecret(wallet, masterSecretId).get();
 
-		// 6. Prover creates Claim Request
-		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, DID_MY1, claimOffer, claimDef, masterSecretName).get();
+		//  Prover creates Credential Request
+		AnoncredsResults.ProverCreateCredentialRequestResult createCredReqResult = Anoncreds.proverCreateCredentialReq(wallet, DID_MY1, credentialOffer, credentialDef, masterSecretId).get();
+		String credentialRequest = createCredReqResult.getCredentialRequestJson();
+		String credentialRequestMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
-		// 7. Issuer creates Claim
-		String claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
-				"                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
-				"                 \"height\":[\"175\",\"175\"],\n" +
-				"                 \"age\":[\"28\",\"28\"]\n" +
-				"        }";
+		//  Issuer creates Credential
+		AnoncredsResults.IssuerCreateCredentialResult createCredentialResult =
+				Anoncreds.issuerCreateCredential(wallet, credentialOffer, credentialRequest, GVT_CRED_VALUES, null,  - 1).get();
+		String credential = createCredentialResult.getCredentialJson();
 
-		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
-		String claimJson = createClaimResult.getClaimJson();
+		//  Prover stores Credential
+		Anoncreds.proverStoreCredential(wallet, "id1", credentialRequest, credentialRequestMetadata, credential, credentialDef, null).get();
 
-		// 8. Prover stores Claim
-		Anoncreds.proverStoreClaim(wallet, claimJson, null).get();
+		//  Prover gets Credential
+		String credentials = Anoncreds.proverGetCredentials(wallet, String.format("{\"issuer_did\":\"%s\"}", DID)).get();
 
-		// 9. Prover gets Claim
-		String claims = Anoncreds.proverGetClaims(wallet, String.format("{\"issuer_did\":\"%s\"}", DID)).get();
+		JSONArray credentialsArray = new JSONArray(credentials);
 
-		JSONArray claimsArray = new JSONArray(claims);
-
-		assertEquals(1, claimsArray.length());
+		assertEquals(1, credentialsArray.length());
 	}
 }

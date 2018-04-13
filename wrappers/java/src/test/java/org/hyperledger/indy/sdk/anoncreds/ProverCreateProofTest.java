@@ -2,10 +2,8 @@ package org.hyperledger.indy.sdk.anoncreds;
 
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.junit.Test;
-
+import org.json.JSONObject;
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
@@ -13,90 +11,55 @@ import static org.junit.Assert.assertNotNull;
 
 public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
+	private String requestedCredentialsJson = String.format("{" +
+			"\"self_attested_attributes\":{}," +
+			"\"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true}}," +
+			"\"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\"}}" +
+			"}", credentialId1, credentialId1);
+
 	@Test
 	public void testProverCreateProofWorks() throws Exception {
 
-		initCommonWallet();
+		String schemasJson = new JSONObject().put(gvtSchemaId, new JSONObject(gvtSchema)).toString();
+		String credentialDefsJson = new JSONObject().put(issuer1gvtCredDefId, new JSONObject(issuer1gvtCredDef)).toString();
+		String revocStatesJson = new JSONObject().toString();
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
-
-		JSONObject claims = new JSONObject(claimsJson);
-
-		JSONObject claimForAttribute = claims.getJSONObject("attrs").getJSONArray("attr1_referent").getJSONObject(0);
-
-		String claimUuid = claimForAttribute.getString("referent");
-
-		String requestedClaimsJson = String.format(requestedClaimsJsonTemplate, claimUuid, claimUuid);
-
-		String schemasJson = String.format("{\"%s\":%s}", claimUuid, gvtSchemaJson);
-		String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDef);
-		String revocRegsJson = "{}";
-
-		String proofJson = Anoncreds.proverCreateProof(wallet, proofRequest, requestedClaimsJson, schemasJson,
-				masterSecretName, claimDefsJson, revocRegsJson).get();
+		String proofJson = Anoncreds.proverCreateProof(wallet, proofRequest, new JSONObject(requestedCredentialsJson).toString(),
+				masterSecretId, schemasJson, credentialDefsJson, revocStatesJson).get();
 		assertNotNull(proofJson);
 	}
 
 	@Test
-	public void testProverCreateProofWorksForUsingNotSatisfyClaim() throws Exception {
+	public void testProverCreateProofWorksForUsingNotSatisfyCredential() throws Exception {
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		initCommonWallet();
-
-		String claimsJson = Anoncreds.proverGetClaims(wallet, "{}").get();
-
-		JSONArray claims = new JSONArray(claimsJson);
-
-		String claimUuid = claims.getJSONObject(0).getString("referent");
-
-		String proofRequest = "{\n" +
-		"                           \"nonce\":\"123432421212\",\n" +
-		"                           \"name\":\"proof_req_1\",\n" +
-		"                           \"version\":\"0.1\", " +
-		"                           \"requested_attrs\":{" +
-		"                               \"attr1_referent\":{\"name\":\"some_attr\"}" +
-		"                           },\n" +
-		"                           \"requested_predicates\":{}" +
-		"                      }";
-
-		String requestedClaimsJson = String.format("{\"self_attested_attributes\":{},\n" +
-				"                                    \"requested_attrs\":{\"attr1_referent\":[\"%s\", true]},\n" +
+		String requestedCredentialsJson = String.format("{\"self_attested_attributes\":{},\n" +
+				"                                    \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true}},\n" +
 				"                                    \"requested_predicates\":{}\n" +
-				"                                   }", claimUuid);
+				"                                   }", credentialId2);
 
-		String schemasJson = String.format("{\"%s\":%s}", claimUuid, gvtSchemaJson);
-		String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDef);
-		String revocRegsJson = "{}";
+		String schemasJson = new JSONObject().put(xyzSchemaId, xyzSchema).toString();
+		String credentialDefsJson = new JSONObject().put(issuer1xyzCredDef, issuer1xyzCredDef).toString();
+		String revocStatesJson = new JSONObject().toString();
 
-		Anoncreds.proverCreateProof(wallet, proofRequest, requestedClaimsJson, schemasJson,
-				masterSecretName, claimDefsJson, revocRegsJson).get();
+		Anoncreds.proverCreateProof(wallet, proofRequest, new JSONObject(requestedCredentialsJson).toString(),
+				masterSecretId, schemasJson, credentialDefsJson, revocStatesJson).get();
 	}
 
 	@Test
 	public void testProverCreateProofWorksForInvalidMasterSecret() throws Exception {
 
+		String schemasJson = new JSONObject().put(gvtSchemaId, new JSONObject(gvtSchema)).toString();
+		String credentialDefsJson = new JSONObject().put(issuer1gvtCredDefId, new JSONObject(issuer1gvtCredDef)).toString();
+		String revocStatesJson = new JSONObject().toString();
+
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		initCommonWallet();
-
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
-
-		JSONObject claims = new JSONObject(claimsJson);
-
-		JSONObject claimForAttribute = claims.getJSONObject("attrs").getJSONArray("attr1_referent").getJSONObject(0);
-
-		String claimUuid = claimForAttribute.getString("referent");
-
-		String requestedClaimsJson = String.format(requestedClaimsJsonTemplate, claimUuid, claimUuid);
-
-		String schemasJson = String.format("{\"%s\":%s}", claimUuid, gvtSchemaJson);
-		String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDef);
-		String revocRegsJson = "{}";
-
-		Anoncreds.proverCreateProof(wallet, proofRequest, requestedClaimsJson, schemasJson, "wrong_master_secret", claimDefsJson, revocRegsJson).get();
+		Anoncreds.proverCreateProof(wallet, proofRequest, new JSONObject(requestedCredentialsJson).toString(),
+				"wrong_master_secret", schemasJson, credentialDefsJson, revocStatesJson).get();
 	}
 
 	@Test
@@ -105,48 +68,31 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		initCommonWallet();
+		String schemasJson = new JSONObject().toString();;
+		String credentialDefsJson = new JSONObject().put(issuer1gvtCredDefId, issuer1gvtCredDef).toString();
+		String revocStatesJson = new JSONObject().toString();
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
-
-		JSONObject claims = new JSONObject(claimsJson);
-
-		JSONObject claimForAttribute = claims.getJSONObject("attrs").getJSONArray("attr1_referent").getJSONObject(0);
-
-		String claimUuid = claimForAttribute.getString("referent");
-
-		String requestedClaimsJson = String.format(requestedClaimsJsonTemplate, claimUuid, claimUuid);
-		String schemasJson = "{}";
-		String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDef);
-		String revocRegsJson = "{}";
-
-		Anoncreds.proverCreateProof(wallet, proofRequest, requestedClaimsJson, schemasJson, masterSecretName, claimDefsJson, revocRegsJson).get();
+		Anoncreds.proverCreateProof(wallet, proofRequest, new JSONObject(requestedCredentialsJson).toString(),
+				masterSecretId, schemasJson, credentialDefsJson, revocStatesJson).get();
 	}
 
 	@Test
-	public void testProverCreateProofWorksForInvalidRequestedClaimsJson() throws Exception {
+	public void testProverCreateProofWorksForInvalidRequestedCredentialsJson() throws Exception {
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		initCommonWallet();
+		String schemasJson = new JSONObject().put(gvtSchemaId, gvtSchema).toString();
+		String credentialDefsJson = new JSONObject().put(issuer1gvtCredDefId, issuer1gvtCredDef).toString();
+		String revocStatesJson = new JSONObject().toString();
+		String requestedCredentialsJson = new JSONObject().put("self_attested_attributes", new JSONObject()).
+														   put("requested_predicates", new JSONObject()).toString();
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
-
-		JSONObject claimForAttribute = claims.getJSONObject("attrs").getJSONArray("attr1_referent").getJSONObject(0);
-
-		String claimUuid = claimForAttribute.getString("referent");
-
-		String requestedClaimsJson = "{\"self_attested_attributes\":{},\n" +
+		/*String requestedCredentialsJson = "{\"self_attested_attributes\":{},\n" +
 				"                      \"requested_predicates\":{}\n" +
-				"                    }";
+				"                    }";*/
 
-		String schemasJson = String.format("{\"%s\":%s}", claimUuid, gvtSchemaJson);
-		String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDef);
-		String revocRegsJson = "{}";
-
-		Anoncreds.proverCreateProof(wallet, proofRequest, requestedClaimsJson, schemasJson, masterSecretName, claimDefsJson, revocRegsJson).get();
+		Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, masterSecretId, schemasJson, credentialDefsJson, revocStatesJson).get();
 	}
 }
