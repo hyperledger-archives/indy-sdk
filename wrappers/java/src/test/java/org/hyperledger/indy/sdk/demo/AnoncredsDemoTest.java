@@ -4,6 +4,11 @@ import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.anoncreds.Anoncreds;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults;
+import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreCredentialDefResult;
+import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateCredentialResult;
+import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.ProverCreateCredentialRequestResult;
+import org.hyperledger.indy.sdk.blob_storage.BlobStorageReader;
+import org.hyperledger.indy.sdk.blob_storage.BlobStorageWriter;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
@@ -20,6 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.isA;
+import static org.hyperledger.indy.sdk.utils.EnvironmentUtils.getIndyHomePath;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
@@ -33,38 +39,30 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 	private Wallet issuerWallet;
 	private Wallet proverWallet;
 	private String poolName;
-	private String masterSecret = "masterSecretName";
+	private String masterSecretId = "masterSecretId";
+	private String credentialId1 = "id1";
+	private String credentialId2 = "id2";
 	private String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
-	private String issuerDid2 = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 	private String proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-	private String gvtSchemaKey = String.format(SCHEMA_KEY_TEMPLATE, "gvt", issuerDid);
-	private String xyzSchemaKey = String.format(SCHEMA_KEY_TEMPLATE, "xyz", issuerDid2);
-	private String gvtSchemaJson = String.format(SCHEMA_TEMPLATE, 1, issuerDid, "gvt", "[\"age\",\"sex\",\"height\",\"name\"]");
-	private String xyzSchemaJson = String.format(SCHEMA_TEMPLATE, 2, issuerDid2, "xyz", "[\"status\",\"period\"]");
-	private String gvtClaimValuesJson = "{\n" +
-			"               \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
-			"               \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
-			"               \"height\":[\"175\",\"175\"],\n" +
-			"               \"age\":[\"28\",\"28\"]\n" +
-			"        }";
-	private String xyzClaimValuesJson = "{\n" +
-			"               \"status\":[\"partial\",\"51792877103171595686471452153480627530895\"],\n" +
-			"               \"period\":[\"8\",\"8\"]\n" +
-			"        }";
+	private String gvtCredentialValues = GVT_CRED_VALUES;
+	private String xyzCredentialValues = new JSONObject("{\n" +
+			"        \"status\":{\"raw\":\"partial\", \"encoded\":\"51792877103171595686471452153480627530895\"},\n" +
+			"        \"period\":{\"raw\":\"8\", \"encoded\":\"8\"}\n" +
+			"    }").toString();
 
 	@Before
 	public void createWallet() throws Exception {
-		//1. Create and Open Pool
+		// Create and Open Pool
 		poolName = PoolUtils.createPoolLedgerConfig();
 
 		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null, null);
 		pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
-		//2. Issuer Create and Open Wallet
+		// Issuer Create and Open Wallet
 		Wallet.createWallet(poolName, "issuerWallet", TYPE, null, null).get();
 		issuerWallet = Wallet.openWallet("issuerWallet", null, null).get();
 
-		//3. Prover Create and Open Wallet
+		// Prover Create and Open Wallet
 		Wallet.createWallet(poolName, "proverWallet", TYPE, null, null).get();
 		proverWallet = Wallet.openWallet("proverWallet", null, null).get();
 	}
@@ -83,317 +81,450 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 	@Test
 	public void testAnoncredsDemo() throws Exception {
 
-		//4. Issuer create ClaimDef
-		String claimDef = Anoncreds.issuerCreateAndStoreClaimDef(issuerWallet, issuerDid, gvtSchemaJson, null, false).get();
-		assertNotNull(claimDef);
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String gvtSchemaId = createSchemaResult.getSchemaId();
+		String gvtSchema = createSchemaResult.getSchemaJson();
 
-		//5. Prover create Master Secret
-		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecret).get();
+		// Issuer create CredentialDef
+		IssuerCreateAndStoreCredentialDefResult createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, gvtSchema, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		String credDefId = createCredDefResult.getCredDefId();
+		String credDef = createCredDefResult.getCredDefJson();
 
-		//6. Issuer create Claim Offer
-		String claimOffer = Anoncreds.issuerCreateClaimOffer(issuerWallet, gvtSchemaJson, issuerDid, proverDid).get();
+		// Prover create Master Secret
+		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecretId).get();
 
-		//7. Prover store Claim Offer
-		Anoncreds.proverStoreClaimOffer(proverWallet, claimOffer).get();
+		// Issuer create Credential Offer
+		String credOffer = Anoncreds.issuerCreateCredentialOffer(issuerWallet, credDefId).get();
 
-		//8. Prover get Claim Offers
-		String claimOfferFilter = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
-		String claimOffersJson = Anoncreds.proverGetClaimOffers(proverWallet, claimOfferFilter).get();
+		// Prover create CredentialReq
+		ProverCreateCredentialRequestResult createCredReqResult = Anoncreds.proverCreateCredentialReq(proverWallet, proverDid, credOffer, credDef, masterSecretId).get();
+		String credReq = createCredReqResult.getCredentialRequestJson();
+		String credReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
-		JSONArray claimOffersObject = new JSONArray(claimOffersJson);
-		assertEquals(claimOffersObject.length(), 1);
+		// Issuer create Credential
+		IssuerCreateCredentialResult createCredentialResult =
+				Anoncreds.issuerCreateCredential(issuerWallet, credOffer, credReq, gvtCredentialValues, null, - 1).get();
+		String credential = createCredentialResult.getCredentialJson();
 
-		JSONObject claimOfferObject = claimOffersObject.getJSONObject(0);
-		String claimOfferJson = claimOfferObject.toString();
+		// Prover store Credential
+		Anoncreds.proverStoreCredential(proverWallet, credentialId1, credReq, credReqMetadata, credential, credDef, null).get();
 
-		//9. Prover create ClaimReq
-		String claimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, claimOfferJson, claimDef, masterSecret).get();
-		assertNotNull(claimReq);
-
-		//10. Issuer create Claim
-		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, claimReq, gvtClaimValuesJson, - 1).get();
-		assertNotNull(createClaimResult);
-		String claimJson = createClaimResult.getClaimJson();
-
-		//11. Prover store Claim
-		Anoncreds.proverStoreClaim(proverWallet, claimJson, null).get();
-
-		//12. Prover gets Claims for Proof Request
-		String proofRequestJson = "{" +
+		// Prover gets Credentials for Proof Request
+		String proofRequestJson = new JSONObject("{" +
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
-				"                    \"requested_attrs\": {" +
+				"                    \"requested_attributes\": {" +
 				"                          \"attr1_referent\":{\"name\":\"name\"}," +
 				"                          \"attr2_referent\":{\"name\":\"sex\"}," +
 				"                          \"attr3_referent\":{\"name\":\"phone\"}" +
 				"                     }," +
 				"                    \"requested_predicates\":{" +
-				"                         \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}" +
+				"                         \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
 				"                    }" +
-				"                  }";
+				"                  }").toString();
 
-		String claimsForProofJson = Anoncreds.proverGetClaimsForProofReq(proverWallet, proofRequestJson).get();
-		assertNotNull(claimsForProofJson);
+		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson).get();
 
-		JSONObject claimsForProof = new JSONObject(claimsForProofJson);
-		JSONArray claimsForAttribute1 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
-		JSONArray claimsForAttribute2 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
-		JSONArray claimsForPredicate = claimsForProof.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		JSONObject credentialsForProof = new JSONObject(credentialsForProofJson);
+		JSONArray credentialsForAttribute1 = credentialsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
+		JSONArray credentialsForAttribute2 = credentialsForProof.getJSONObject("attrs").getJSONArray("attr2_referent");
+		JSONArray credentialsForAttribute3 = credentialsForProof.getJSONObject("attrs").getJSONArray("attr3_referent");
+		JSONArray credentialsForPredicate = credentialsForProof.getJSONObject("predicates").getJSONArray("predicate1_referent");
 
-		assertEquals(claimsForAttribute1.length(), 1);
-		assertEquals(claimsForAttribute2.length(), 1);
-		assertEquals(claimsForPredicate.length(), 1);
+		assertEquals(credentialsForAttribute1.length(), 1);
+		assertEquals(credentialsForAttribute2.length(), 1);
+		assertEquals(credentialsForAttribute3.length(), 0);
+		assertEquals(credentialsForPredicate.length(), 1);
 
-		String claimUuid = claimsForAttribute1.getJSONObject(0).getString("referent");
+		String credentialUuid = credentialsForAttribute1.getJSONObject(0).getJSONObject("cred_info").getString("referent");
 
-		//13. Prover create Proof
+		// Prover create Proof
 		String selfAttestedValue = "8-800-300";
-		String requestedClaimsJson = String.format("{\n" +
+		String requestedCredentialsJson = new JSONObject(String.format("{\n" +
 				"                                          \"self_attested_attributes\":{\"attr3_referent\":\"%s\"},\n" +
-				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true],\n" +
-				"                                                               \"attr2_referent\":[\"%s\", false]},\n" +
-				"                                          \"requested_predicates\":{\"predicate1_referent\":\"%s\"}\n" +
-				"                                        }", selfAttestedValue, claimUuid, claimUuid, claimUuid);
+				"                                          \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true},\n" +
+				"                                                                    \"attr2_referent\":{\"cred_id\":\"%s\", \"revealed\":false}},\n" +
+				"                                          \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\"}}\n" +
+				"                                        }", selfAttestedValue, credentialUuid, credentialUuid, credentialUuid)).toString();
 
-		String schemasJson = String.format("{\"%s\":%s}", claimUuid, gvtSchemaJson);
-		String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDef);
-		String revocRegsJson = "{}";
+		String schemas = new JSONObject(String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema)).toString();
+		String credentialDefs = new JSONObject(String.format("{\"%s\":%s}", credDefId, credDef)).toString();
+		String revocStates = new JSONObject("{}").toString();
 
-		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequestJson, requestedClaimsJson, schemasJson,
-				masterSecret, claimDefsJson, revocRegsJson).get();
-		assertNotNull(proofJson);
-
+		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequestJson, requestedCredentialsJson,
+				masterSecretId, schemas, credentialDefs, revocStates).get();
 		JSONObject proof = new JSONObject(proofJson);
 
-		//14. Verifier verify Proof
-		assertEquals("Alex",
-				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr1_referent").getString(1));
+		// Verifier verify Proof
+		JSONObject revealedAttr1 = proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONObject("attr1_referent");
+		assertEquals("Alex", revealedAttr1.getString("raw"));
 
-		assertNotNull(proof.getJSONObject("requested_proof").getJSONObject("unrevealed_attrs").getString("attr2_referent"));
+		assertNotNull(proof.getJSONObject("requested_proof").getJSONObject("unrevealed_attrs").getJSONObject("attr2_referent").getInt("sub_proof_index"));
 
 		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("attr3_referent"));
 
-		Boolean valid = Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).get();
+		String revocRegDefs = new JSONObject("{}").toString();
+		String revocRegs = new JSONObject("{}").toString();
+
+		Boolean valid = Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemas, credentialDefs, revocRegDefs, revocRegs).get();
 		assertTrue(valid);
 	}
 
 	@Test
-	public void testAnoncredsWorksForMultiplyIssuerSingleProver() throws Exception {
+	public void testAnoncredsWorksForMultipleIssuerSingleProver() throws Exception {
 
 		Wallet issuerGvtWallet = issuerWallet;
 
-		//1. Issuer2 Create and Open Wallet
+		// Issuer2 Create and Open Wallet
 		Wallet.createWallet(poolName, "issuer2Wallet", "default", null, null).get();
 		Wallet issuerXyzWallet = Wallet.openWallet("issuer2Wallet", null, null).get();
 
-		//2. Issuer create ClaimDef
-		String gvtClaimDef = Anoncreds.issuerCreateAndStoreClaimDef(issuerGvtWallet, issuerDid, gvtSchemaJson, null, false).get();
+		// Issuer1 create GVT Schema
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String gvtSchemaId = createSchemaResult.getSchemaId();
+		String gvtSchema = createSchemaResult.getSchemaJson();
 
-		//3. Issuer create ClaimDef
-		String xyzClaimDef = Anoncreds.issuerCreateAndStoreClaimDef(issuerXyzWallet, issuerDid2, xyzSchemaJson, null, false).get();
+		// Issuer1 create CredentialDef
+		IssuerCreateAndStoreCredentialDefResult createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerGvtWallet, issuerDid, gvtSchema, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		String gvtCredDefId = createCredDefResult.getCredDefId();
+		String gvtCredDef = createCredDefResult.getCredDefJson();
 
-		//4. Prover create Master Secret
-		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecret).get();
+		// Issuer2 create XYZ Schema
+		String issuerDid2 = "VsKV7grR1BUE29mG2Fm2kX";
 
-		//5. Issuer1 create Claim Offer
-		String gvtClaimOffer = Anoncreds.issuerCreateClaimOffer(issuerGvtWallet, gvtSchemaJson, issuerDid, proverDid).get();
+		// Issuer2 create XYZ Schema
+		createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid2, XYZ_SCHEMA_NAME, SCHEMA_VERSION, XYZ_SCHEMA_ATTRIBUTES).get();
+		String xyzSchemaId = createSchemaResult.getSchemaId();
+		String xyzSchema = createSchemaResult.getSchemaJson();
 
-		//6. Prover store Claim Offer received from Issuer1
-		Anoncreds.proverStoreClaimOffer(proverWallet, gvtClaimOffer).get();
+		//5. Issuer create CredentialDef
+		createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerXyzWallet, issuerDid2, xyzSchema, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		String xyzCredDefId = createCredDefResult.getCredDefId();
+		String xyzCredDef = createCredDefResult.getCredDefJson();
 
-		//7. Issuer2 create Claim Offer
-		String xyzClaimOffer = Anoncreds.issuerCreateClaimOffer(issuerXyzWallet, xyzSchemaJson, issuerDid2, proverDid).get();
+		// Prover create Master Secret
+		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecretId).get();
 
-		//8. Prover store Claim Offer received from Issuer2
-		Anoncreds.proverStoreClaimOffer(proverWallet, xyzClaimOffer).get();
+		// Issuer1 create Credential Offer
+		String gvtCredOffer = Anoncreds.issuerCreateCredentialOffer(issuerGvtWallet, gvtCredDefId).get();
 
-		//9. Prover create ClaimReq for GVT Claim Offer
-		String gvtClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, gvtClaimOffer, gvtClaimDef, masterSecret).get();
+		// Issuer2 create Credential Offer
+		String xyzCredOffer = Anoncreds.issuerCreateCredentialOffer(issuerXyzWallet, xyzCredDefId).get();
 
-		//10. Issuer create Claim
-		AnoncredsResults.IssuerCreateClaimResult gvtCreateClaimResult = Anoncreds.issuerCreateClaim(issuerGvtWallet, gvtClaimReq, gvtClaimValuesJson, - 1).get();
-		String gvtClaimJson = gvtCreateClaimResult.getClaimJson();
+		// Prover create Credential Request for GVT Credential Offer
+		ProverCreateCredentialRequestResult createCredReqResult = Anoncreds.proverCreateCredentialReq(proverWallet, proverDid, gvtCredOffer, gvtCredDef, masterSecretId).get();
+		String gvtCredReq = createCredReqResult.getCredentialRequestJson();
+		String gvtCredReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
-		//11. Prover store Claim
-		Anoncreds.proverStoreClaim(proverWallet, gvtClaimJson, null).get();
+		// Issuer create Credential
+		IssuerCreateCredentialResult gvtCreateCredentialResult =
+				Anoncreds.issuerCreateCredential(issuerGvtWallet, gvtCredOffer, gvtCredReq, gvtCredentialValues, null, - 1).get();
+		String gvtCredential = gvtCreateCredentialResult.getCredentialJson();
 
-		//12. Prover create ClaimReq for GVT Claim Offer
-		String xyzClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, masterSecret).get();
+		// Prover store Credential
+		Anoncreds.proverStoreCredential(proverWallet, credentialId1, gvtCredReq, gvtCredReqMetadata, gvtCredential, gvtCredDef, null).get();
 
-		//13. Issuer create Claim
-		AnoncredsResults.IssuerCreateClaimResult xyzCreateClaimResult = Anoncreds.issuerCreateClaim(issuerXyzWallet, xyzClaimReq, xyzClaimValuesJson, - 1).get();
-		String xyzClaimJson = xyzCreateClaimResult.getClaimJson();
+		// Prover create CredentialReq for GVT Credential Offer
+		createCredReqResult = Anoncreds.proverCreateCredentialReq(proverWallet, proverDid, xyzCredOffer, xyzCredDef, masterSecretId).get();
+		String xyzCredReq = createCredReqResult.getCredentialRequestJson();
+		String xyzCredReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
-		//14. Prover store Claim
-		Anoncreds.proverStoreClaim(proverWallet, xyzClaimJson, null).get();
+		// Issuer create Credential
+		IssuerCreateCredentialResult xyzCreateCredentialResult = Anoncreds.issuerCreateCredential(issuerXyzWallet, xyzCredOffer, xyzCredReq, xyzCredentialValues, null, - 1).get();
+		String xyzCredential = xyzCreateCredentialResult.getCredentialJson();
 
-		//15. Prover gets Claims for Proof Request
-		String proofRequestJson = "{" +
+		// Prover store Credential
+		Anoncreds.proverStoreCredential(proverWallet, credentialId2, xyzCredReq, xyzCredReqMetadata, xyzCredential, xyzCredDef, null).get();
+
+		// Prover gets Credentials for Proof Request
+		String proofRequestJson = new JSONObject("{" +
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
-				"                    \"requested_attrs\": {" +
+				"                    \"requested_attributes\": {" +
 				"                          \"attr1_referent\":{ \"name\":\"name\"}," +
 				"                          \"attr2_referent\":{ \"name\":\"status\"}" +
 				"                     }," +
 				"                    \"requested_predicates\":{" +
-				"                         \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}," +
-				"                          \"predicate2_referent\":{\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}" +
+				"                         \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}," +
+				"                          \"predicate2_referent\":{\"name\":\"period\",\"p_type\":\">=\",\"p_value\":5}" +
 				"                    }" +
-				"                  }";
+				"                  }").toString();
 
-		String claimsForProofJson = Anoncreds.proverGetClaimsForProofReq(proverWallet, proofRequestJson).get();
-		assertNotNull(claimsForProofJson);
+		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson).get();
+		assertNotNull(credentialsForProofJson);
 
-		JSONObject claimsForProof = new JSONObject(claimsForProofJson);
-		JSONArray claimsForAttribute1 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
-		JSONArray claimsForAttribute2 = claimsForProof.getJSONObject("attrs").getJSONArray("attr2_referent");
-		JSONArray claimsForPredicate1 = claimsForProof.getJSONObject("predicates").getJSONArray("predicate1_referent");
-		JSONArray claimsForPredicate2 = claimsForProof.getJSONObject("predicates").getJSONArray("predicate2_referent");
+		JSONObject credentialsForProof = new JSONObject(credentialsForProofJson);
+		JSONArray credentialsForAttribute1 = credentialsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
+		JSONArray credentialsForAttribute2 = credentialsForProof.getJSONObject("attrs").getJSONArray("attr2_referent");
+		JSONArray credentialsForPredicate1 = credentialsForProof.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		JSONArray credentialsForPredicate2 = credentialsForProof.getJSONObject("predicates").getJSONArray("predicate2_referent");
 
-		assertEquals(claimsForAttribute1.length(), 1);
-		assertEquals(claimsForAttribute2.length(), 1);
-		assertEquals(claimsForPredicate1.length(), 1);
-		assertEquals(claimsForPredicate2.length(), 1);
+		assertEquals(credentialsForAttribute1.length(), 1);
+		assertEquals(credentialsForAttribute2.length(), 1);
+		assertEquals(credentialsForPredicate1.length(), 1);
+		assertEquals(credentialsForPredicate2.length(), 1);
 
-		String claimUuidForAttr1 = claimsForAttribute1.getJSONObject(0).getString("referent");
-		String claimUuidForAttr2 = claimsForAttribute2.getJSONObject(0).getString("referent");
-		String claimUuidForPredicate1 = claimsForPredicate1.getJSONObject(0).getString("referent");
-		String claimUuidForPredicate2 = claimsForPredicate2.getJSONObject(0).getString("referent");
+		String credentialUuidForAttr1 = credentialsForAttribute1.getJSONObject(0).getJSONObject("cred_info").getString("referent");
+		String credentialUuidForAttr2 = credentialsForAttribute2.getJSONObject(0).getJSONObject("cred_info").getString("referent");
+		String credentialUuidForPredicate1 = credentialsForPredicate1.getJSONObject(0).getJSONObject("cred_info").getString("referent");
+		String credentialUuidForPredicate2 = credentialsForPredicate2.getJSONObject(0).getJSONObject("cred_info").getString("referent");
 
-		//16. Prover create Proof
-		String requestedClaimsJson = String.format("{\n" +
+		// Prover create Proof
+		String requestedCredentialsJson = new JSONObject(String.format("{\n" +
 				"                                          \"self_attested_attributes\":{},\n" +
-				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true],\n" +
-				"                                                               \"attr2_referent\":[\"%s\", true]},\n" +
-				"                                          \"requested_predicates\":{\"predicate1_referent\":\"%s\"," +
-				"                                                                    \"predicate2_referent\":\"%s\"}\n" +
-				"                                        }", claimUuidForAttr1, claimUuidForAttr2, claimUuidForPredicate1, claimUuidForPredicate2);
+				"                                          \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true},\n" +
+				"                                                                    \"attr2_referent\":{\"cred_id\":\"%s\", \"revealed\":true}},\n" +
+				"                                          \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\"}," +
+				"                                                                    \"predicate2_referent\":{\"cred_id\":\"%s\"}}\n" +
+				"                                        }", credentialUuidForAttr1, credentialUuidForAttr2, credentialUuidForPredicate1, credentialUuidForPredicate2)).toString();
 
-		String schemasJson = String.format("{\"%s\":%s, \"%s\":%s}", claimUuidForAttr1, gvtSchemaJson, claimUuidForAttr2, xyzSchemaJson);
-		String claimDefsJson = String.format("{\"%s\":%s, \"%s\":%s}", claimUuidForAttr1, gvtClaimDef, claimUuidForAttr2, xyzClaimDef);
-		String revocRegsJson = "{}";
+		String schemas = new JSONObject(String.format("{\"%s\":%s, \"%s\":%s}", gvtSchemaId, gvtSchema, xyzSchemaId, xyzSchema)).toString();
+		String credentialDefs = new JSONObject(String.format("{\"%s\":%s, \"%s\":%s}", gvtCredDefId, gvtCredDef, xyzCredDefId, xyzCredDef)).toString();
+		String revocStates = new JSONObject("{}").toString();
 
-		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequestJson, requestedClaimsJson, schemasJson,
-				masterSecret, claimDefsJson, revocRegsJson).get();
-		assertNotNull(proofJson);
-
+		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequestJson, requestedCredentialsJson,
+				masterSecretId, schemas, credentialDefs, revocStates).get();
 		JSONObject proof = new JSONObject(proofJson);
 
-		//17. Verifier verify Proof
-		assertEquals("Alex",
-				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr1_referent").getString(1));
+		// Verifier verify Proof
+		JSONObject revealedAttr1 = proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONObject("attr1_referent");
+		assertEquals("Alex", revealedAttr1.getString("raw"));
 
-		assertEquals("partial",
-				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr2_referent").getString(1));
+		JSONObject revealedAttr2 = proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONObject("attr2_referent");
+		assertEquals("partial", revealedAttr2.getString("raw"));
 
-		Boolean valid = Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).get();
+		String revocRegDefs = new JSONObject("{}").toString();
+		String revocRegs = new JSONObject("{}").toString();
+
+		Boolean valid = Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemas, credentialDefs, revocRegDefs, revocRegs).get();
 		assertTrue(valid);
 
-		//18. Close and delete Issuer2 Wallet
+		// Close and delete Issuer2 Wallet
 		issuerXyzWallet.closeWallet().get();
 		Wallet.deleteWallet("issuer2Wallet", null).get();
 	}
 
 	@Test
-	public void testAnoncredsWorksForSingleIssuerSingleProverMultiplyClaims() throws Exception {
+	public void testAnoncredsWorksForSingleIssuerSingleProverMultipleCredentials() throws Exception {
+		// Issuer create GVT Schema
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String gvtSchemaId = createSchemaResult.getSchemaId();
+		String gvtSchema = createSchemaResult.getSchemaJson();
 
-		//1. Issuer create ClaimDef
-		String gvtClaimDef = Anoncreds.issuerCreateAndStoreClaimDef(issuerWallet, issuerDid, gvtSchemaJson, null, false).get();
+		// Issuer create CredentialDef
+		IssuerCreateAndStoreCredentialDefResult createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, gvtSchema, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		String gvtCredDefId = createCredDefResult.getCredDefId();
+		String gvtCredDef = createCredDefResult.getCredDefJson();
 
-		//2. Issuer create ClaimDef
-		String xyzSchemaJson = String.format(SCHEMA_TEMPLATE, 2, issuerDid, "xyz", "[\"status\",\"period\"]");
-		String xyzClaimDef = Anoncreds.issuerCreateAndStoreClaimDef(issuerWallet, issuerDid, xyzSchemaJson, null, false).get();
+		// Issuer create XYZ Schema
+		createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, XYZ_SCHEMA_NAME, SCHEMA_VERSION, XYZ_SCHEMA_ATTRIBUTES).get();
+		String xyzSchemaId = createSchemaResult.getSchemaId();
+		String xyzSchema = createSchemaResult.getSchemaJson();
 
-		//3. Prover create Master Secret
-		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecret).get();
+		// Issuer create CredentialDef
+		createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, xyzSchema, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		String xyzCredDefId = createCredDefResult.getCredDefId();
+		String xyzCredDef = createCredDefResult.getCredDefJson();
 
-		//4. Issuer create GVT Claim Offer
-		String gvtClaimOffer = Anoncreds.issuerCreateClaimOffer(issuerWallet, gvtSchemaJson, issuerDid, proverDid).get();
+		// Prover create Master Secret
+		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecretId).get();
 
-		//5. Prover store Claim Offer received from Issuer
-		Anoncreds.proverStoreClaimOffer(proverWallet, gvtClaimOffer).get();
+		// Issuer create GVT Credential Offer
+		String gvtCredOffer = Anoncreds.issuerCreateCredentialOffer(issuerWallet, gvtCredDefId).get();
 
-		//6. Issuer create GVT Claim Offer
-		String xyzClaimOffer = Anoncreds.issuerCreateClaimOffer(issuerWallet, xyzSchemaJson, issuerDid, proverDid).get();
+		// Issuer create XYZ Credential Offer
+		String xyzCredOffer = Anoncreds.issuerCreateCredentialOffer(issuerWallet, xyzCredDefId).get();
 
-		//7. Prover store Claim Offer received from Issuer
-		Anoncreds.proverStoreClaimOffer(proverWallet, xyzClaimOffer).get();
+		// Prover create CredentialReq for GVT Credential Offer
+		ProverCreateCredentialRequestResult createCredReqResult =
+				Anoncreds.proverCreateCredentialReq(proverWallet, proverDid, gvtCredOffer, gvtCredDef, masterSecretId).get();
+		String gvtCredReq = createCredReqResult.getCredentialRequestJson();
+		String gvtCredReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
-		//8. Prover create ClaimReq for GVT Claim Offer
-		String gvtClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, gvtClaimOffer, gvtClaimDef, masterSecret).get();
+		// Issuer create GVT Credential
+		IssuerCreateCredentialResult gvtCreateCredentialResult =
+				Anoncreds.issuerCreateCredential(issuerWallet, gvtCredOffer, gvtCredReq, gvtCredentialValues, null, - 1).get();
+		String gvtCredential = gvtCreateCredentialResult.getCredentialJson();
 
-		//9. Issuer create Claim
-		AnoncredsResults.IssuerCreateClaimResult gvtCreateClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, gvtClaimReq, gvtClaimValuesJson, - 1).get();
-		String gvtClaimJson = gvtCreateClaimResult.getClaimJson();
+		// Prover store GVT Credential
+		Anoncreds.proverStoreCredential(proverWallet, credentialId1, gvtCredReq, gvtCredReqMetadata, gvtCredential, gvtCredDef, null).get();
 
-		//10. Prover store Claim
-		Anoncreds.proverStoreClaim(proverWallet, gvtClaimJson, null).get();
+		// Prover create CredentialReq for XYZ Credential Offer
+		createCredReqResult = Anoncreds.proverCreateCredentialReq(proverWallet, proverDid, xyzCredOffer, xyzCredDef, masterSecretId).get();
+		String xyzCredReq = createCredReqResult.getCredentialRequestJson();
+		String xyzCredReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
-		//11. Prover create ClaimReq for GVT Claim Offer
-		String xyzClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, masterSecret).get();
+		// Issuer create XYZ Credential
+		IssuerCreateCredentialResult xyzCreateCredentialResult =
+				Anoncreds.issuerCreateCredential(issuerWallet, xyzCredOffer, xyzCredReq, xyzCredentialValues, null, - 1).get();
+		String xyzCredential = xyzCreateCredentialResult.getCredentialJson();
 
-		//12. Issuer create Claim
-		AnoncredsResults.IssuerCreateClaimResult xyzCreateClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, xyzClaimReq, xyzClaimValuesJson, - 1).get();
-		String xyzClaimJson = xyzCreateClaimResult.getClaimJson();
+		// Prover store XYZ Credential
+		Anoncreds.proverStoreCredential(proverWallet, credentialId2, xyzCredReq, xyzCredReqMetadata, xyzCredential, xyzCredDef, null).get();
 
-		//13. Prover store Claim
-		Anoncreds.proverStoreClaim(proverWallet, xyzClaimJson, null).get();
-
-		//14. Prover gets Claims for Proof Request
-		String proofRequestJson = String.format("{" +
+		// Prover gets Credentials for Proof Request
+		String proofRequestJson = new JSONObject("{" +
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
-				"                    \"requested_attrs\": {" +
-				"                          \"attr1_referent\":{ \"name\":\"name\", \"restrictions\":[{\"schema_key\":%s}]}" +
+				"                    \"requested_attributes\": {" +
+				"                          \"attr1_referent\":{ \"name\":\"name\"}," +
+				"                          \"attr2_referent\":{ \"name\":\"status\"}" +
 				"                     }," +
 				"                    \"requested_predicates\":{" +
-				"                         \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}," +
-				"                          \"predicate2_referent\":{\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}" +
+				"                         \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}," +
+				"                          \"predicate2_referent\":{\"name\":\"period\",\"p_type\":\">=\",\"p_value\":5}" +
 				"                    }" +
-				"                  }", gvtSchemaKey);
+				"                  }").toString();
 
-		String claimsForProofJson = Anoncreds.proverGetClaimsForProofReq(proverWallet, proofRequestJson).get();
-		assertNotNull(claimsForProofJson);
+		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson).get();
+		assertNotNull(credentialsForProofJson);
 
-		JSONObject claimsForProof = new JSONObject(claimsForProofJson);
-		JSONArray claimsForAttribute1 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
-		JSONArray claimsForPredicate1 = claimsForProof.getJSONObject("predicates").getJSONArray("predicate1_referent");
-		JSONArray claimsForPredicate2 = claimsForProof.getJSONObject("predicates").getJSONArray("predicate2_referent");
+		JSONObject credentialsForProof = new JSONObject(credentialsForProofJson);
+		JSONArray credentialsForAttribute1 = credentialsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
+		JSONArray credentialsForAttribute2 = credentialsForProof.getJSONObject("attrs").getJSONArray("attr2_referent");
+		JSONArray credentialsForPredicate1 = credentialsForProof.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		JSONArray credentialsForPredicate2 = credentialsForProof.getJSONObject("predicates").getJSONArray("predicate2_referent");
 
-		assertEquals(claimsForAttribute1.length(), 1);
-		assertEquals(claimsForPredicate1.length(), 1);
-		assertEquals(claimsForPredicate2.length(), 1);
+		assertEquals(credentialsForAttribute1.length(), 1);
+		assertEquals(credentialsForAttribute2.length(), 1);
+		assertEquals(credentialsForPredicate1.length(), 1);
+		assertEquals(credentialsForPredicate2.length(), 1);
 
-		String claimUuidForAttr1 = claimsForAttribute1.getJSONObject(0).getString("referent");
-		String claimUuidForPredicate1 = claimsForPredicate1.getJSONObject(0).getString("referent");
-		String claimUuidForPredicate2 = claimsForPredicate2.getJSONObject(0).getString("referent");
+		String credentialUuidForAttr1 = credentialsForAttribute1.getJSONObject(0).getJSONObject("cred_info").getString("referent");
+		String credentialUuidForAttr2 = credentialsForAttribute2.getJSONObject(0).getJSONObject("cred_info").getString("referent");
+		String credentialUuidForPredicate1 = credentialsForPredicate1.getJSONObject(0).getJSONObject("cred_info").getString("referent");
+		String credentialUuidForPredicate2 = credentialsForPredicate2.getJSONObject(0).getJSONObject("cred_info").getString("referent");
 
-		//15. Prover create Proof
-		String requestedClaimsJson = String.format("{\n" +
+		// Prover create Proof
+		String requestedCredentialsJson = String.format("{\n" +
 				"                                          \"self_attested_attributes\":{},\n" +
-				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true]},\n" +
-				"                                          \"requested_predicates\":{\"predicate1_referent\":\"%s\"," +
-				"                                                                    \"predicate2_referent\":\"%s\"}\n" +
-				"                                        }", claimUuidForAttr1, claimUuidForPredicate1, claimUuidForPredicate2);
+				"                                          \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true},\n" +
+				"                                                                    \"attr2_referent\":{\"cred_id\":\"%s\", \"revealed\":true}},\n" +
+				"                                          \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\"}," +
+				"                                                                    \"predicate2_referent\":{\"cred_id\":\"%s\"}}\n" +
+				"                                        }", credentialUuidForAttr1, credentialUuidForAttr2, credentialUuidForPredicate1, credentialUuidForPredicate2);
 
-		String schemasJson = String.format("{\"%s\":%s, \"%s\":%s}", claimUuidForAttr1, gvtSchemaJson, claimUuidForPredicate2, xyzSchemaJson);
-		String claimDefsJson = String.format("{\"%s\":%s, \"%s\":%s}", claimUuidForAttr1, gvtClaimDef, claimUuidForPredicate2, xyzClaimDef);
-		String revocRegsJson = "{}";
+		String schemas = new JSONObject(String.format("{\"%s\":%s, \"%s\":%s}", gvtSchemaId, gvtSchema, xyzSchemaId, xyzSchema)).toString();
+		String credentialDefs = new JSONObject(String.format("{\"%s\":%s, \"%s\":%s}", gvtCredDefId, gvtCredDef, xyzCredDefId, xyzCredDef)).toString();
+		String revocStates = new JSONObject("{}").toString();
 
-		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequestJson, requestedClaimsJson, schemasJson,
-				masterSecret, claimDefsJson, revocRegsJson).get();
-		assertNotNull(proofJson);
-
+		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequestJson, requestedCredentialsJson,
+				masterSecretId, schemas, credentialDefs, revocStates).get();
 		JSONObject proof = new JSONObject(proofJson);
 
-		//16. Verifier verify Proof
-		assertEquals("Alex",
-				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr1_referent").getString(1));
+		// Verifier verify Proof
+		JSONObject revealedAttr1 = proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONObject("attr1_referent");
+		assertEquals("Alex", revealedAttr1.getString("raw"));
 
-		Boolean valid = Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).get();
+		JSONObject revealedAttr2 = proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONObject("attr2_referent");
+		assertEquals("partial", revealedAttr2.getString("raw"));
+
+		String revocRegDefs = new JSONObject("{}").toString();
+		String revocRegs = new JSONObject("{}").toString();
+
+		Boolean valid = Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemas, credentialDefs, revocRegDefs, revocRegs).get();
+		assertTrue(valid);
+	}
+
+	@Test
+	public void testAnoncredsWorksForRevocationProof() throws Exception {
+
+		// Issuer create Schema
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String gvtSchemaId = createSchemaResult.getSchemaId();
+		String schemaJson = createSchemaResult.getSchemaJson();
+
+		// Issuer create credential definition
+		String revocationCredentialDefConfig = "{\"support_revocation\":true}";
+		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredentialDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, schemaJson, TAG, null, revocationCredentialDefConfig).get();
+		String credDefId = createCredentialDefResult.getCredDefId();
+		String credDef = createCredentialDefResult.getCredDefJson();
+
+		// Issuer create revocation registry
+		String revRegConfig = new JSONObject("{\"issuance_type\":null,\"max_cred_num\":5}").toString();
+		String tailsWriterConfig = new JSONObject(String.format("{\"base_dir\":\"%s\", \"uri_pattern\":\"\"}", getIndyHomePath("tails")).replace('\\', '/')).toString();
+		BlobStorageWriter tailsWriter = BlobStorageWriter.openWriter("default", tailsWriterConfig).get();
+
+		AnoncredsResults.IssuerCreateAndStoreRevocRegResult createRevRegResult = Anoncreds.issuerCreateAndStoreRevocReg(issuerWallet, issuerDid, null, TAG, credDefId, revRegConfig, tailsWriter).get();
+		String revRegId = createRevRegResult.getRevRegId();
+		String revRegDef = createRevRegResult.getRevRegDefJson();
+
+		// Prover create Master Secret
+		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecretId).get();
+
+		// Issuer create Credential Offer
+		String credOffer = Anoncreds.issuerCreateCredentialOffer(issuerWallet, credDefId).get();
+
+		// Prover create Credential Request
+		ProverCreateCredentialRequestResult createCredReqResult =
+				Anoncreds.proverCreateCredentialReq(proverWallet, proverDid, credOffer, credDef, masterSecretId).get();
+		String credReq = createCredReqResult.getCredentialRequestJson();
+		String credReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
+
+		// Issuer open TailsReader
+		BlobStorageReader blobStorageReaderCfg = BlobStorageReader.openReader("default", tailsWriterConfig).get();
+		int blobStorageReaderHandleCfg = blobStorageReaderCfg.getBlobStorageReaderHandle();
+
+		// Issuer create Credential
+		IssuerCreateCredentialResult createCredentialResult =
+				Anoncreds.issuerCreateCredential(issuerWallet, credOffer, credReq, gvtCredentialValues, revRegId, blobStorageReaderHandleCfg).get();
+		String credential = createCredentialResult.getCredentialJson();
+		String revRegDelta = createCredentialResult.getRevocRegDeltaJson();
+		String credRevId = createCredentialResult.getRevocId();
+
+		// Prover store received Credential
+		Anoncreds.proverStoreCredential(proverWallet, credentialId1, credReq, credReqMetadata, credential, credDef, revRegDef).get();
+
+		// Prover gets Credentials for Proof Request
+		String proofRequest = new JSONObject("{\n" +
+				"                   \"nonce\":\"123432421212\",\n" +
+				"                   \"name\":\"proof_req_1\",\n" +
+				"                   \"version\":\"0.1\", " +
+				"                   \"requested_attributes\":{" +
+				"                          \"attr1_referent\":{\"name\":\"name\"}" +
+				"                    },\n" +
+				"                    \"requested_predicates\":{" +
+				"                          \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
+				"                    }" +
+				"               }").toString();
+
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequest).get();
+		JSONObject credentials = new JSONObject(credentialsJson);
+		JSONArray credentialsForAttr1 = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
+
+		String credentialUuid = credentialsForAttr1.getJSONObject(0).getJSONObject("cred_info").getString("referent");
+
+		// Prover create RevocationState
+		int timestamp = 100;
+		String revStateJson = Anoncreds.createRevocationState(blobStorageReaderHandleCfg, revRegDef, revRegDelta, timestamp, credRevId).get();
+
+
+		// Prover create Proof
+		String requestedCredentialsJson = new JSONObject(String.format("{" +
+				"\"self_attested_attributes\":{}," +
+				"\"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true, \"timestamp\":%d }}," +
+				"\"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\", \"timestamp\":%d}}" +
+				"}", credentialUuid, timestamp, credentialUuid, timestamp)).toString();
+
+		String schemas = new JSONObject(String.format("{\"%s\":%s}", gvtSchemaId, schemaJson)).toString();
+		String credentialDefs = new JSONObject(String.format("{\"%s\":%s}", credDefId, credDef)).toString();
+		String revStates = new JSONObject(String.format("{\"%s\": { \"%s\":%s }}", revRegId, timestamp, revStateJson)).toString();
+
+		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequest, requestedCredentialsJson, masterSecretId, schemas,
+				credentialDefs, revStates).get();
+		JSONObject proof = new JSONObject(proofJson);
+
+		// Verifier verify proof
+		JSONObject revealedAttr1 = proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONObject("attr1_referent");
+		assertEquals("Alex", revealedAttr1.getString("raw"));
+
+		String revRegDefs = new JSONObject(String.format("{\"%s\":%s}", revRegId, revRegDef)).toString();
+		String revRegs = new JSONObject(String.format("{\"%s\": { \"%s\":%s }}", revRegId, timestamp, revRegDelta)).toString();
+
+		boolean valid = Anoncreds.verifierVerifyProof(proofRequest, proofJson, schemas, credentialDefs, revRegDefs, revRegs).get();
 		assertTrue(valid);
 	}
 
@@ -403,90 +534,96 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		//1. Issuer create ClaimDef
-		String claimDef = Anoncreds.issuerCreateAndStoreClaimDef(issuerWallet, issuerDid, gvtSchemaJson, null, false).get();
-		assertNotNull(claimDef);
+		// Issuer create Schema
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String gvtSchemaId = createSchemaResult.getSchemaId();
+		String gvtSchema = createSchemaResult.getSchemaJson();
 
-		//2. Prover create Master Secret
-		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecret).get();
+		// Issuer create CredentialDef
+		IssuerCreateAndStoreCredentialDefResult createCredDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(issuerWallet, issuerDid, gvtSchema, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		String credDefId = createCredDefResult.getCredDefId();
+		String credDef = createCredDefResult.getCredDefJson();
 
-		//3. Issuer create Claim Offer
-		String claimOfferJson = Anoncreds.issuerCreateClaimOffer(issuerWallet, gvtSchemaJson, issuerDid, proverDid).get();
+		// Prover create Master Secret
+		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecretId).get();
 
-		//4. Prover store Claim Offer
-		Anoncreds.proverStoreClaimOffer(proverWallet, claimOfferJson).get();
+		// Issuer create Credential Offer
+		String credOffer = Anoncreds.issuerCreateCredentialOffer(issuerWallet, credDefId).get();
 
-		//5. Prover create ClaimReq
-		String claimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, claimOfferJson, claimDef, masterSecret).get();
-		assertNotNull(claimReq);
+		// Prover create CredentialReq
+		ProverCreateCredentialRequestResult createCredReqResult =
+				Anoncreds.proverCreateCredentialReq(proverWallet, proverDid, credOffer, credDef, masterSecretId).get();
+		String credReq = createCredReqResult.getCredentialRequestJson();
+		String credReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
-		//6. Issuer create Claim
-		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, claimReq, gvtClaimValuesJson, - 1).get();
-		assertNotNull(createClaimResult);
-		String claimJson = createClaimResult.getClaimJson();
+		// Issuer create Credential
+		IssuerCreateCredentialResult createCredentialResult =
+				Anoncreds.issuerCreateCredential(issuerWallet, credOffer, credReq, gvtCredentialValues, null, - 1).get();
+		String credential = createCredentialResult.getCredentialJson();
 
-		//7. Prover store Claim
-		Anoncreds.proverStoreClaim(proverWallet, claimJson, null).get();
+		// Prover store Credential
+		Anoncreds.proverStoreCredential(proverWallet, credentialId1, credReq, credReqMetadata, credential, credDef, null).get();
 
-		//8. Prover gets Claims for Proof Request
-		String proofRequestJson = String.format("{" +
+		// Prover gets Credentials for Proof Request
+		String proofRequestJson = new JSONObject(String.format("{" +
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
 				"                    \"requested_attrs\": {" +
-				"                          \"attr1_referent\":{ \"name\":\"name\", \"restrictions\":[{\"schema_key\":%s}]}," +
+				"                          \"attr1_referent\":{ \"name\":\"name\", \"restrictions\":[{\"schema_id\":\"%s\"}]}," +
 				"                          \"attr2_referent\":{ \"name\":\"phone\"}" +
 				"                     }," +
 				"                    \"requested_predicates\":{}" +
-				"                  }", gvtSchemaKey);
+				"                  }", gvtSchemaId)).toString();
 
-		String claimsForProofJson = Anoncreds.proverGetClaimsForProofReq(proverWallet, proofRequestJson).get();
-		assertNotNull(claimsForProofJson);
+		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson).get();
+		assertNotNull(credentialsForProofJson);
 
-		JSONObject claimsForProof = new JSONObject(claimsForProofJson);
-		JSONArray claimsForAttribute1 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
+		JSONObject credentialsForProof = new JSONObject(credentialsForProofJson);
+		JSONArray credentialsForAttribute1 = credentialsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
 
-		assertEquals(claimsForAttribute1.length(), 1);
+		assertEquals(credentialsForAttribute1.length(), 1);
 
-		String claimUuid = claimsForAttribute1.getJSONObject(0).getString("referent");
+		String credentialUuid = credentialsForAttribute1.getJSONObject(0).getJSONObject("cred_info").getString("referent");
 
-		//9. Prover create Proof
+		// Prover create Proof
 		String selfAttestedValue = "8-800-300";
-		String requestedClaimsJson = String.format("{\n" +
+		String requestedCredentialsJson = new JSONObject(String.format("{\n" +
 				"                                          \"self_attested_attributes\":{\"attr2_referent\":\"%s\"},\n" +
 				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true]},\n" +
 				"                                          \"requested_predicates\":{}\n" +
-				"                                        }", selfAttestedValue, claimUuid);
+				"                                        }", selfAttestedValue, credentialUuid)).toString();
 
-		String schemasJson = String.format("{\"%s\":%s}", claimUuid, gvtSchemaJson);
-		String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDef);
-		String revocRegsJson = "{}";
+		String schemas = new JSONObject(String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema)).toString();
+		String credentialDefs = new JSONObject(String.format("{\"%s\":%s}", credDefId, credDef)).toString();
+		String revocInfos = new JSONObject("{}").toString();
 
-		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequestJson, requestedClaimsJson, schemasJson,
-				masterSecret, claimDefsJson, revocRegsJson).get();
-		assertNotNull(proofJson);
-
+		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequestJson, requestedCredentialsJson,
+				masterSecretId, schemas, credentialDefs, revocInfos).get();
 		JSONObject proof = new JSONObject(proofJson);
 
-		//10. Verifier verify Proof
-		assertEquals("Alex",
-				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr1_referent").getString(1));
+		// Verifier verify Proof
+		JSONObject revealedAttr1 = proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONObject("attr1_referent");
+		assertEquals("Alex", revealedAttr1.getString("raw"));
 
-		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("attr2_referent"));
+		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("attr3_referent"));
 
+		String revocRegDefs = new JSONObject("{}").toString();
+		String revocRegs = new JSONObject("{}").toString();
 
-		proofRequestJson = String.format("{" +
+		proofRequestJson = new JSONObject(String.format("{" +
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
-				"                    \"requested_attrs\": {" +
-				"                          \"attr1_referent\":{ \"name\":\"name\", \"restrictions\":[{\"schema_key\":%s}]}" +
+				"                    \"requested_attributes\": {" +
+				"                          \"attr1_referent\":{ \"name\":\"name\", \"restrictions\":[{\"schema_id\":%s}]}" +
 				"                     }," +
 				"                    \"requested_predicates\":{" +
-				"                          \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}" +
+				"                          \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
 				"                    }" +
-				"                  }", gvtSchemaKey);
+				"                  }", gvtSchemaId)).toString();
 
-		Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).get();
+
+		Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemas, credentialDefs, revocRegDefs, revocRegs).get();
 	}
 }

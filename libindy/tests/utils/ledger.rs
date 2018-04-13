@@ -1,13 +1,27 @@
 extern crate time;
+extern crate serde_json;
 
 use indy::api::ErrorCode;
 use indy::api::ledger::*;
 
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
+use utils::anoncreds::AnoncredsUtils;
+use utils::blob_storage::BlobStorageUtils;
+use utils::did::DidUtils;
+use utils::wallet::WalletUtils;
+use utils::pool::PoolUtils;
+use utils::constants::*;
 
 use std::ffi::CString;
 use std::ptr::null;
+use std::sync::{Once, ONCE_INIT};
+use std::mem;
+
+pub static mut SCHEMA_ID: &'static str = "";
+pub static mut CRED_DEF_ID: &'static str = "";
+pub static mut REV_REG_DEF_ID: &'static str = "";
+pub const SCHEMA_DATA: &'static str = r#"{"id":"id","name":"gvt","version":"1.0","attr_names":["name", "age", "sex", "height"]}"#;
 
 pub struct LedgerUtils {}
 
@@ -186,55 +200,47 @@ impl LedgerUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_schema_request(submitter_did: &str, dest: &str, data: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_schema_request(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
-        let dest = CString::new(dest).unwrap();
-        let data = CString::new(data).unwrap();
+        let id = CString::new(id).unwrap();
 
         let err =
             indy_build_get_schema_request(command_handle,
                                           submitter_did.as_ptr(),
-                                          dest.as_ptr(),
-                                          data.as_ptr(),
+                                          id.as_ptr(),
                                           cb);
 
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_claim_def_txn(submitter_did: &str, xref: i32, signature_type: &str, data: &str) -> Result<String, ErrorCode> {
+    pub fn build_cred_def_txn(submitter_did: &str, cred_def_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
-        let signature_type = CString::new(signature_type).unwrap();
-        let data = CString::new(data).unwrap();
+        let cred_def_json = CString::new(cred_def_json).unwrap();
 
         let err =
-            indy_build_claim_def_txn(command_handle,
-                                     submitter_did.as_ptr(),
-                                     xref,
-                                     signature_type.as_ptr(),
-                                     data.as_ptr(),
-                                     cb);
+            indy_build_cred_def_request(command_handle,
+                                        submitter_did.as_ptr(),
+                                        cred_def_json.as_ptr(),
+                                        cb);
 
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_claim_def_txn(submitter_did: &str, xref: i32, signature_type: &str, origin: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_cred_def_txn(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
-        let signature_type = CString::new(signature_type).unwrap();
-        let origin = CString::new(origin).unwrap();
+        let id = CString::new(id).unwrap();
 
         let err =
-            indy_build_get_claim_def_txn(command_handle,
-                                         submitter_did.as_ptr(),
-                                         xref,
-                                         signature_type.as_ptr(),
-                                         origin.as_ptr(),
-                                         cb);
+            indy_build_get_cred_def_request(command_handle,
+                                            submitter_did.as_ptr(),
+                                            id.as_ptr(),
+                                            cb);
 
         super::results::result_to_string(err, receiver)
     }
@@ -305,5 +311,225 @@ impl LedgerUtils {
                                             cb);
 
         super::results::result_to_string(err, receiver)
+    }
+
+    pub fn build_revoc_reg_def_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let data = CString::new(data).unwrap();
+
+        let err =
+            indy_build_revoc_reg_def_request(command_handle,
+                                             submitter_did.as_ptr(),
+                                             data.as_ptr(),
+                                             cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn build_revoc_reg_entry_request(submitter_did: &str, rev_reg_def_id: &str, rev_reg_type: &str, value: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let rev_reg_def_id = CString::new(rev_reg_def_id).unwrap();
+        let rev_reg_type = CString::new(rev_reg_type).unwrap();
+        let value = CString::new(value).unwrap();
+
+        let err =
+            indy_build_revoc_reg_entry_request(command_handle,
+                                               submitter_did.as_ptr(),
+                                               rev_reg_def_id.as_ptr(),
+                                               rev_reg_type.as_ptr(),
+                                               value.as_ptr(),
+                                               cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn build_get_revoc_reg_def_request(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let id = CString::new(id).unwrap();
+
+        let err =
+            indy_build_get_revoc_reg_def_request(command_handle,
+                                                 submitter_did.as_ptr(),
+                                                 id.as_ptr(),
+                                                 cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn build_get_revoc_reg_request(submitter_did: &str, rev_reg_def_id: &str, timestamp: u64) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let rev_reg_def_id = CString::new(rev_reg_def_id).unwrap();
+
+        let err =
+            indy_build_get_revoc_reg_request(command_handle,
+                                             submitter_did.as_ptr(),
+                                             rev_reg_def_id.as_ptr(),
+                                             timestamp as i64,
+                                             cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn build_get_revoc_reg_delta_request(submitter_did: &str, rev_reg_def_id: &str, from: Option<u64>, to: u64) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let rev_reg_def_id = CString::new(rev_reg_def_id).unwrap();
+
+        let from = if from.is_some() { from.unwrap() as i64 } else { -1 };
+
+        let err =
+            indy_build_get_revoc_reg_delta_request(command_handle,
+                                                   submitter_did.as_ptr(),
+                                                   rev_reg_def_id.as_ptr(),
+                                                   from,
+                                                   to as i64,
+                                                   cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn parse_get_schema_response(get_schema_response: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
+
+        let get_schema_response = CString::new(get_schema_response).unwrap();
+
+        let err =
+            indy_parse_get_schema_response(command_handle,
+                                           get_schema_response.as_ptr(),
+                                           cb);
+
+        super::results::result_to_string_string(err, receiver)
+    }
+
+    pub fn parse_get_cred_def_response(get_cred_def_response: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
+
+        let get_cred_def_response = CString::new(get_cred_def_response).unwrap();
+
+        let err =
+            indy_parse_get_cred_def_response(command_handle,
+                                             get_cred_def_response.as_ptr(),
+                                             cb);
+
+        super::results::result_to_string_string(err, receiver)
+    }
+
+    pub fn parse_get_revoc_reg_def_response(get_revoc_reg_def_response: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
+
+        let get_revoc_reg_def_response = CString::new(get_revoc_reg_def_response).unwrap();
+
+        let err =
+            indy_parse_get_revoc_reg_def_response(command_handle,
+                                                  get_revoc_reg_def_response.as_ptr(),
+                                                  cb);
+
+        super::results::result_to_string_string(err, receiver)
+    }
+
+    pub fn parse_get_revoc_reg_response(get_revoc_reg_response: &str) -> Result<(String, String, u64), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string_u64();
+
+        let get_revoc_reg_response = CString::new(get_revoc_reg_response).unwrap();
+
+        let err =
+            indy_parse_get_revoc_reg_response(command_handle,
+                                              get_revoc_reg_response.as_ptr(),
+                                              cb);
+
+        super::results::result_to_string_string_u64(err, receiver)
+    }
+
+    pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) -> Result<(String, String, u64), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string_u64();
+
+        let get_revoc_reg_delta_response = CString::new(get_revoc_reg_delta_response).unwrap();
+
+        let err =
+            indy_parse_get_revoc_reg_delta_response(command_handle,
+                                                    get_revoc_reg_delta_response.as_ptr(),
+                                                    cb);
+
+        super::results::result_to_string_string_u64(err, receiver)
+    }
+
+    pub fn post_entities() -> (&'static str, &'static str, &'static str) {
+        lazy_static! {
+                    static ref COMMON_ENTITIES_INIT: Once = ONCE_INIT;
+
+                }
+
+        unsafe {
+            COMMON_ENTITIES_INIT.call_once(|| {
+                let pool_name = "COMMON_ENTITIES_POOL";
+                let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
+
+                let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
+
+                let (issuer_did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
+
+                let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(&issuer_did,
+                                                                                    GVT_SCHEMA_NAME,
+                                                                                    SCHEMA_VERSION,
+                                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
+
+                let schema_request = LedgerUtils::build_schema_request(&issuer_did, &schema_json).unwrap();
+                let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &schema_request).unwrap();
+
+                let get_schema_request = LedgerUtils::build_get_schema_request(&issuer_did, &schema_id).unwrap();
+                let get_schema_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
+                let (schema_id, schema_json) = LedgerUtils::parse_get_schema_response(&get_schema_response).unwrap();
+
+                let (cred_def_id, cred_def_json) = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
+                                                                                                       &issuer_did,
+                                                                                                       &schema_json,
+                                                                                                       TAG_1,
+                                                                                                       None,
+                                                                                                       &AnoncredsUtils::revocation_cred_def_config()).unwrap();
+                let cred_def_request = LedgerUtils::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
+                LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
+
+                let tails_writer_config = AnoncredsUtils::tails_writer_config();
+                let tails_writer_handle = BlobStorageUtils::open_writer("default", &tails_writer_config).unwrap();
+
+                let (rev_reg_id, revoc_reg_def_json, rev_reg_entry_json) =
+                    AnoncredsUtils::indy_issuer_create_and_store_revoc_reg(wallet_handle,
+                                                                           &issuer_did,
+                                                                           None,
+                                                                           TAG_1,
+                                                                           &cred_def_id,
+                                                                           &AnoncredsUtils::issuance_on_demand_rev_reg_config(),
+                                                                           tails_writer_handle).unwrap();
+
+                let rev_reg_def_request = LedgerUtils::build_revoc_reg_def_request(&issuer_did, &revoc_reg_def_json).unwrap();
+                LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &rev_reg_def_request).unwrap();
+
+                let rev_reg_entry_request = LedgerUtils::build_revoc_reg_entry_request(&issuer_did, &rev_reg_id, REVOC_REG_TYPE, &rev_reg_entry_json).unwrap();
+                LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &rev_reg_entry_request).unwrap();
+
+                let res = mem::transmute(&schema_id as &str);
+                mem::forget(schema_id);
+                SCHEMA_ID = res;
+
+                let res = mem::transmute(&cred_def_id as &str);
+                mem::forget(cred_def_id);
+                CRED_DEF_ID = res;
+
+                let res = mem::transmute(&rev_reg_id as &str);
+                mem::forget(rev_reg_id);
+                REV_REG_DEF_ID = res;
+            });
+
+            (SCHEMA_ID, CRED_DEF_ID, REV_REG_DEF_ID)
+        }
     }
 }

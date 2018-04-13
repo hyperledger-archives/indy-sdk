@@ -39,7 +39,7 @@ pub fn get_opt_empty_str_param<'a>(key: &'a str, params: &'a CommandParams) -> R
     Ok(params.get(key).map(|v| v.as_str()))
 }
 
-pub fn get_int_param<T>(name: &str, params: &CommandParams) -> Result<T, ()>
+pub fn _get_int_param<T>(name: &str, params: &CommandParams) -> Result<T, ()>
     where T: std::str::FromStr, <T as std::str::FromStr>::Err: std::fmt::Display {
     match params.get(name) {
         Some(v) => {
