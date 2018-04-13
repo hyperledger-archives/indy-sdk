@@ -7,6 +7,7 @@ use std::sync::RwLock;
 use utils::error;
 use std::path::Path;
 use url::Url;
+use messages::validation;
 
 
 pub static CONFIG_POOL_NAME: &'static str = "pool_name";
@@ -87,7 +88,7 @@ pub fn set_to_defaults() -> u32 {
     error::SUCCESS.code_num
 }
 
-fn is_valid(value: &str) -> bool {
+fn is_valid_pool_name(value: &str) -> bool {
     for c in value.chars() {
         if !c.is_alphanumeric() && c != '_' { return false;}
     }
@@ -102,9 +103,7 @@ pub fn validate_config() -> Result<u32, String> {
 
     for setting in config.iter() {
         let mut valid = true;
-        if setting.0 == CONFIG_POOL_NAME && !is_valid(setting.1) {
-            valid = false;
-        } else if setting.0 == CONFIG_WALLET_NAME && !is_valid(setting.1) {
+        if setting.0 == CONFIG_POOL_NAME && !is_valid_pool_name(setting.1) {
             valid = false;
         } else if setting.0 == CONFIG_AGENCY_ENDPOINT {
             match Url::parse(setting.1) {
@@ -113,15 +112,20 @@ pub fn validate_config() -> Result<u32, String> {
             }
         } else if setting.0 == CONFIG_LOG_CONFIG {
             info!("log_config set to {}", setting.1);
-        } else if setting.0 == CONFIG_INSTITUTION_DID && !is_valid(setting.1) {
+        } else if setting.0 == CONFIG_INSTITUTION_DID
+            && validation::validate_did(setting.1).is_err() {
             valid = false;
-        } else if setting.0 == CONFIG_AGENCY_VERKEY && !is_valid(setting.1) {
+        } else if setting.0 == CONFIG_AGENCY_VERKEY
+            && validation::validate_verkey(setting.1).is_err() {
             valid = false;
-        } else if setting.0 == CONFIG_REMOTE_TO_SDK_VERKEY && !is_valid(setting.1) {
+        } else if setting.0 == CONFIG_REMOTE_TO_SDK_VERKEY
+            && validation::validate_verkey(setting.1).is_err() {
             valid = false;
-        } else if setting.0 == CONFIG_AGENCY_DID && !is_valid(setting.1) {
+        } else if setting.0 == CONFIG_AGENCY_DID
+            && validation::validate_did(setting.1).is_err() {
             valid = false;
-        } else if setting.0 == CONFIG_REMOTE_TO_SDK_DID && !is_valid(setting.1) {
+        } else if setting.0 == CONFIG_REMOTE_TO_SDK_DID
+            && validation::validate_did(setting.1).is_err() {
             valid = false;
         } else if setting.0 == CONFIG_INSTITUTION_NAME {
             valid = true;
@@ -130,7 +134,7 @@ pub fn validate_config() -> Result<u32, String> {
                 Err(x) => valid = false,
                 Ok(_) => valid = true,
             }
-        } else if setting.0 == CONFIG_GENESIS_PATH && !is_valid(setting.1){
+        } else if setting.0 == CONFIG_GENESIS_PATH {
             // test that the file actually exists (do not worry about the contents of the file)
             if Path::new(setting.1).exists() {
                 valid = true;
@@ -251,7 +255,7 @@ pub mod tests {
         assert_eq!(get_config_value(CONFIG_GENESIS_PATH).unwrap(), DEFAULT_GENESIS_PATH);
 
         // validate the default config.
-        // should error with error::INVALID_GENEISIS string message
+        // should error with error::INVALID_GENESIS string message
         // should error because genesis file should not exist
         match validate_config() {
             Ok(_) => { error!("Validating config should fail");
@@ -384,6 +388,39 @@ pub mod tests {
         match process_config_file(&config_path) {
             Err(_) => println!("expected invalid setting"),
             Ok(v) => assert_eq!(v, error::SUCCESS.code_num), //fail if we get here
+        }
+    }
+
+    #[test]
+    fn test_validate_config_invalid_values() {
+        let mut invalid_data_map: HashMap<String, String> = HashMap::new();
+        invalid_data_map.insert(String::from(CONFIG_POOL_NAME), String::from("invalid-pool-name"));
+        invalid_data_map.insert(String::from(CONFIG_AGENCY_ENDPOINT), String::from("http//127.0.0.1:8080"));
+        invalid_data_map.insert(String::from(CONFIG_INSTITUTION_DID), String::from("123456789012345"));
+        invalid_data_map.insert(String::from(CONFIG_AGENCY_VERKEY), String::from("1234567890123456789012345678901"));
+        invalid_data_map.insert(String::from(CONFIG_REMOTE_TO_SDK_VERKEY), String::from("1234567890123456789012345678901"));
+        invalid_data_map.insert(String::from(CONFIG_AGENCY_DID), String::from("123456789012345"));
+        invalid_data_map.insert(String::from(CONFIG_REMOTE_TO_SDK_DID), String::from("123456789012345"));
+        invalid_data_map.insert(String::from(CONFIG_INSTITUTION_LOGO_URL), String::from("http//bad.url.com"));
+        invalid_data_map.insert(String::from(CONFIG_GENESIS_PATH), String::from(""));
+
+        for (key, value) in &invalid_data_map {
+            println!("Checking an invalid {}. Value: {}", key, value);
+            // set defaults
+            set_defaults();
+            set_to_defaults();
+            create_default_genesis_file();
+
+            // Overwrite the default with an invalid value
+            set_config_value(key, value);
+
+            // validate the default config.
+            // should error with error string message
+            match validate_config() {
+               Ok(_) => { error!("Validating config should fail");
+                          panic!("Validating config should fail");},
+               Err(e) => assert_eq!(e, format!("{}{}{}", key, " has invalid setting: ", value)),
+            }
         }
     }
 }
