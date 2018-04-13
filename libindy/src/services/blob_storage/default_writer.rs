@@ -1,11 +1,12 @@
 extern crate indy_crypto;
+extern crate rust_base58;
 
 use std::path::PathBuf;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 
-use base64;
+use self::rust_base58::ToBase58;
 
 use super::{WritableBlob, Writer, WriterType};
 use errors::common::CommonError;
@@ -59,22 +60,39 @@ impl Writer for DefaultWriterConfig {
 
 impl WritableBlob for DefaultWriter {
     fn append(&mut self, bytes: &[u8]) -> Result<usize, CommonError> {
-        Ok(self.file.write(bytes)?)
+        trace!("append >>>");
+
+        let res = self.file.write(bytes)
+            .map_err(map_err_trace!())?;
+
+        trace!("append <<< {}", res);
+        Ok(res)
     }
 
     fn finalize(&mut self, hash: &[u8]) -> Result<String, CommonError> {
-        self.file.flush()?;
+        trace!("finalize >>>");
+
+        self.file.flush().map_err(map_err_trace!())?;
+        self.file.sync_all().map_err(map_err_trace!())?;
+
         let mut path = self.base_dir.clone();
-        path.push(base64::encode(hash));
+        path.push(hash.to_base58());
 
         fs::DirBuilder::new()
             .recursive(true)
-            .create(path.parent().unwrap())?;
+            .create(path.parent().unwrap())
+            .map_err(map_err_trace!(format!("path: {:?}", path)))?;
 
-        fs::copy(&tmp_storage_file(self.id), &path)?; //FIXME
-        fs::remove_file(&tmp_storage_file(self.id))?;
+        fs::copy(&tmp_storage_file(self.id), &path)
+            .map_err(map_err_trace!())?; //FIXME
 
-        Ok(path.to_str().unwrap().to_owned())
+        fs::remove_file(&tmp_storage_file(self.id))
+            .map_err(map_err_trace!())?;
+
+        let res = path.to_str().unwrap().to_owned();
+
+        trace!("finalize <<< {}", res);
+        Ok(res)
     }
 }
 
