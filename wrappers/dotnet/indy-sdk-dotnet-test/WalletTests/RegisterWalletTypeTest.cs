@@ -43,11 +43,11 @@ namespace Hyperledger.Indy.Test.WalletTests
 
             var claimOfferTemplate = "{{\"issuer_did\":\"{0}\",\"schema_seq_no\":{1}}}";
 
-            await AnonCreds.ProverStoreClaimOfferAsync(wallet, string.Format(claimOfferTemplate, DID1, 1));
-            await AnonCreds.ProverStoreClaimOfferAsync(wallet, string.Format(claimOfferTemplate, DID1, 2));
+            await AnonCreds.ProverStoreCredentialOfferAsync(wallet, string.Format(claimOfferTemplate, DID1, 1));
+            await AnonCreds.ProverStoreCredentialOfferAsync(wallet, string.Format(claimOfferTemplate, DID1, 2));
 
             var issuerDid2 = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-            await AnonCreds.ProverStoreClaimOfferAsync(wallet, string.Format(claimOfferTemplate, issuerDid2, 2));
+            await AnonCreds.ProverStoreCredentialOfferAsync(wallet, string.Format(claimOfferTemplate, issuerDid2, 2));
 
             string masterSecretName = "master_secret_name";
             await AnonCreds.ProverCreateMasterSecretAsync(wallet, masterSecretName);
@@ -69,7 +69,7 @@ namespace Hyperledger.Indy.Test.WalletTests
 
             var filter = string.Format("{{\"issuer_did\":\"{0}\"}}", DID1);
 
-            var claims = await AnonCreds.ProverGetClaimsAsync(wallet, filter);
+            var claims = await AnonCreds.ProverGetCredentialsAsync(wallet, filter);
 
             var claimsArray = JArray.Parse(claims);
 

@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Indy.AnonCredsApi;
+using Hyperledger.Indy.BlobStorageApi;
 using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.Samples.Utils;
 using Hyperledger.Indy.WalletApi;
@@ -13,8 +14,13 @@ namespace Hyperledger.Indy.Samples
     {
         public static async Task Execute()
         {
+            Console.WriteLine("Anoncreds sample -> started");
+
             var issuerWalletName = "issuerWallet";
             var proverWalletName = "proverWallet";
+
+            var issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
+            var proverDid = "VsKV7grR1BUE29mG2Fm2kX";
 
             try
             {
@@ -22,117 +28,118 @@ namespace Hyperledger.Indy.Samples
                 await PoolUtils.CreatePoolLedgerConfig();
 
                 //2. Issuer Create and Open Wallet
-                await WalletUtils.CreateWalleatAsync(PoolUtils.DEFAULT_POOL_NAME, issuerWalletName, "default", null, null);
+                await WalletUtils.CreateWalletAsync(PoolUtils.DEFAULT_POOL_NAME, issuerWalletName, "default", null, null);
 
                 //3. Prover Create and Open Wallet
-                await WalletUtils.CreateWalleatAsync(PoolUtils.DEFAULT_POOL_NAME, proverWalletName, "default", null, null);
+                await WalletUtils.CreateWalletAsync(PoolUtils.DEFAULT_POOL_NAME, proverWalletName, "default", null, null);
 
-                //4. Open pool and wallets in using statements to ensure they are closed when finished.
+                // Open pool and wallets in using statements to ensure they are closed when finished.
                 using (var pool = await Pool.OpenPoolLedgerAsync(PoolUtils.DEFAULT_POOL_NAME, "{}"))
                 using (var issuerWallet = await Wallet.OpenWalletAsync(issuerWalletName, null, null))
                 using (var proverWallet = await Wallet.OpenWalletAsync(proverWalletName, null, null))
                 {
-                    //5. Issuer create ClaimDef
-                    var schemaJson = "{\n" +
-                            "   \"seqNo\":1,\n" +
-                            "   \"data\": {\n" +
-                            "       \"name\":\"gvt\",\n" +
-                            "       \"version\":\"1.0\",\n" +
-                            "       \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
-                            "   }\n" +
-                            "}";
-                    var issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
+                    //4. Issuer Creates Credential Schema
+                    var schemaName = "gvt";
+                    var schemaVersion = "1.0";
+                    var schemaAttributes = "[\"name\", \"age\", \"sex\", \"height\"]";
+                    var createSchemaResult = await AnonCreds.IssuerCreateSchemaAsync(issuerDid, schemaName, schemaVersion, schemaAttributes);
+                    var schemaId = createSchemaResult.SchemaId;
+                    var schemaJson = createSchemaResult.SchemaJson;
 
-                    var claimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(issuerWallet, issuerDid, schemaJson, null, false);
+                    //5. Issuer create Credential Definition
+                    var credDefTag = "Tag1";
+                    var credDefConfigJson = "{\"support_revocation\":false}";
+                    var createCredDefResult = await AnonCreds.IssuerCreateAndStoreCredentialDefAsync(issuerWallet, issuerDid, schemaJson, credDefTag, null, credDefConfigJson);
+                    var credDefId = createCredDefResult.CredDefId;
+                    var credDefJson = createCredDefResult.CredDefJson;
 
                     //6. Prover create Master Secret
-                    var masterSecret = "masterSecretName";
-                    await AnonCreds.ProverCreateMasterSecretAsync(proverWallet, masterSecret);
+                    var masterSecretId = await AnonCreds.ProverCreateMasterSecretAsync(proverWallet, null);
 
-                    //7. Prover store Claim Offer
-                    var claimOffer = string.Format("{{\"issuer_did\":\"{0}\", \"schema_seq_no\":{1}}}", issuerDid, 1);
-                    await AnonCreds.ProverStoreClaimOfferAsync(proverWallet, claimOffer);
+                    //7. Issuer Creates Credential Offer
+                    var credOffer = await AnonCreds.IssuerCreateCredentialOfferAsync(issuerWallet, credDefId);
 
-                    //8. Prover get Claim Offers
-                    var claimOfferFilter = string.Format("{{\"issuer_did\":\"{0}\"}}", issuerDid);
-                    var claimOffersJson = await AnonCreds.ProverGetClaimOffersAsync(proverWallet, claimOfferFilter);
+                    //8. Prover Creates Credential Request
+                    var createCredReqResult = await AnonCreds.ProverCreateCredentialReqAsync(proverWallet, proverDid, credOffer, credDefJson, masterSecretId);
+                    var credReqJson = createCredReqResult.CredentialRequestJson;
+                    var credReqMetadataJson = createCredReqResult.CredentialRequestMetadataJson;
 
-                    var claimOffersObject = JArray.Parse(claimOffersJson);
-                    Debug.Assert(claimOffersObject.Count == 1);
+                    //9. Issuer create Credential
+                    var credValuesJson = "{\n" +
+                            "        \"sex\": {\"raw\": \"male\", \"encoded\": \"594465709955896723921094925839488742869205008160769251991705001\"},\n" +
+                            "        \"name\": {\"raw\": \"Alex\", \"encoded\": \"1139481716457488690172217916278103335\"},\n" +
+                            "        \"height\": {\"raw\": \"175\", \"encoded\": \"175\"},\n" +
+                            "        \"age\": {\"raw\": \"28\", \"encoded\": \"28\"}\n" +
+                            "    }";
 
-                    var claimOfferObject = (JObject)claimOffersObject[0];
-                    var claimOfferJson = claimOfferObject.ToString();
+                    var createCredentialResult = await AnonCreds.IssuerCreateCredentialAsync(issuerWallet, credOffer, credReqJson, credValuesJson, null, null);
+                    var credential = createCredentialResult.CredentialJson;
 
-                    //9. Prover create ClaimReq
-                    var proverDid = "BzfFCYk";
-                    var claimReq = await AnonCreds.ProverCreateAndStoreClaimReqAsync(proverWallet, proverDid, claimOfferJson, claimDef, masterSecret);
-                    Debug.Assert(claimReq != null);
+                    //10. Prover Stores Credential
+                    await AnonCreds.ProverStoreCredentialAsync(proverWallet, null, credReqJson, credReqMetadataJson, credential, credDefJson, null);
 
-                    //10. Issuer create Claim
-                    var claimAttributesJson = "{\n" +
-                            "   \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
-                            "   \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
-                            "   \"height\":[\"175\",\"175\"],\n" +
-                            "   \"age\":[\"28\",\"28\"]\n" +
-                            "}";
+                    //11. Prover Gets Credentials for Proof Request
+                    var proofRequestJson = "{" +
+                            "                    \"nonce\":\"123432421212\",\n" +
+                            "                    \"name\":\"proof_req_1\",\n" +
+                            "                    \"version\":\"0.1\", " +
+                            "                    \"requested_attributes\": {" +
+                            "                          \"attr1_referent\":{\"name\":\"name\"}," +
+                            "                          \"attr2_referent\":{\"name\":\"sex\"}," +
+                            "                          \"attr3_referent\":{\"name\":\"phone\"}" +
+                            "                     }," +
+                            "                    \"requested_predicates\":{" +
+                            "                         \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
+                            "                    }" +
+                            "                  }";
 
-                    var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(issuerWallet, claimReq, claimAttributesJson, -1);
-                    var claimJson = createClaimResult.ClaimJson;
+                    var credentialsForProofJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(proverWallet, proofRequestJson);
 
-                    //11. Prover store Claim
-                    await AnonCreds.ProverStoreClaimAsync(proverWallet, claimJson);
+                    var credentialsForProof = JObject.Parse(credentialsForProofJson);
+                    var credentialsForAttribute1 = (JArray)credentialsForProof["attrs"]["attr1_referent"];
+                    var credentialsForAttribute2 = (JArray)credentialsForProof["attrs"]["attr2_referent"];
+                    var credentialsForAttribute3 = (JArray)credentialsForProof["attrs"]["attr3_referent"];
+                    var credentialsForPredicate = (JArray)credentialsForProof["predicates"]["predicate1_referent"];
 
-                    //12. Prover gets Claims for Proof Request
-                    var proofRequestJson = "{\n" +
-                            "   \"nonce\":\"123432421212\",\n" +
-                            "   \"name\":\"proof_req_1\",\n" +
-                            "   \"version\":\"0.1\",\n" +
-                            "   \"requested_attrs\":{\"attr1_referent\":{\"schema_seq_no\":[1],\"name\":\"name\"},\n" +
-                            "       \"attr2_referent\":{\"schema_seq_no\":[1],\"name\":\"sex\"}},\n" +
-                            "   \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
-                            "   }";
+                    Debug.Assert(credentialsForAttribute1.Count == 1);
+                    Debug.Assert(credentialsForAttribute2.Count == 1);
+                    Debug.Assert(credentialsForAttribute3.Count == 0);
+                    Debug.Assert(credentialsForPredicate.Count == 1);
 
-                    var claimsForProofJson = await AnonCreds.ProverGetClaimsForProofReqAsync(proverWallet, proofRequestJson);
+                    var credentialId = credentialsForAttribute1[0]["cred_info"]["referent"].ToObject<string>();
 
-                    var claimsForProof = JObject.Parse(claimsForProofJson);
-                    var claimsForAttribute1 = (JArray)claimsForProof["attrs"]["attr1_referent"];
-                    var claimsForAttribute2 = (JArray)claimsForProof["attrs"]["attr1_referent"];
-                    var claimsForPredicate = (JArray)claimsForProof["predicates"]["predicate1_referent"];
+                    //12. Prover Creates Proof
+                    var selfAttestedValue = "8-800-300";
+                    var requestedCredentialsJson = string.Format(
+                        "{{\n" +
+                        "                                          \"self_attested_attributes\":{{\"attr3_referent\":\"{0}\"}},\n" +
+                        "                                          \"requested_attributes\":{{\"attr1_referent\":{{\"cred_id\":\"{1}\", \"revealed\":true}},\n" +
+                        "                                                                    \"attr2_referent\":{{\"cred_id\":\"{2}\", \"revealed\":false}}}},\n" +
+                        "                                          \"requested_predicates\":{{\"predicate1_referent\":{{\"cred_id\":\"{3}\"}}}}\n" +
+                        "                                        }}", selfAttestedValue, credentialId, credentialId, credentialId);
 
-                    Debug.Assert(claimsForAttribute1.Count == 1);
-                    Debug.Assert(claimsForAttribute2.Count == 1);
-                    Debug.Assert(claimsForPredicate.Count == 1);
+                    var schemas = string.Format("{{\"{0}\":{1}}}", schemaId, schemaJson);
+                    var credentialDefs = string.Format("{{\"{0}\":{1}}}", credDefId, credDefJson);
+                    var revocStates = "{}";
 
-                    var claimUuid = claimsForAttribute1[0].Value<string>("referent");
-
-                    //13. Prover create Proof
-                    var selfAttestedValue = "yes";
-                    var requestedClaimsJson = string.Format("{{\n" +
-                            "   \"self_attested_attributes\":{{\"self1\":\"{0}\"}},\n" +
-                            "   \"requested_attrs\":{{\"attr1_referent\":[\"{1}\", true],\n" +
-                            "   \"attr2_referent\":[\"{2}\", false]}},\n" +
-                            "   \"requested_predicates\":{{\"predicate1_referent\":\"{3}\"}}\n" +
-                            "}}", selfAttestedValue, claimUuid, claimUuid, claimUuid);
-
-                    var schemasJson = string.Format("{{\"{0}\":{1}}}", claimUuid, schemaJson);
-                    var claimDefsJson = string.Format("{{\"{0}\":{1}}}", claimUuid, claimDef);
-                    var revocRegsJson = "{}";
-
-
-                    var proofJson = await AnonCreds.ProverCreateProofAsync(proverWallet, proofRequestJson, requestedClaimsJson, schemasJson,
-                            masterSecret, claimDefsJson, revocRegsJson);
-
+                    var proofJson = await AnonCreds.ProverCreateProofAsync(proverWallet, proofRequestJson, requestedCredentialsJson, masterSecretId, schemas, credentialDefs, revocStates);
                     var proof = JObject.Parse(proofJson);
 
-                    //14. Verifier verify Proof
-                    Debug.Assert(string.Equals("Alex", proof["requested_proof"]["revealed_attrs"]["attr1_referent"][1].ToString()));
-                    Debug.Assert(proof["requested_proof"]["unrevealed_attrs"].Value<string>("attr2_referent") != null);
-                    Debug.Assert(string.Equals(selfAttestedValue, proof["requested_proof"]["self_attested_attrs"].Value<string>("self1")));
+                    //13. Verifier verify Proof
+                    var revealedAttr1 = proof["requested_proof"]["revealed_attrs"]["attr1_referent"];
+                    Debug.Assert("Alex" == revealedAttr1["raw"].ToObject<string>());
 
-                    var valid = await AnonCreds.VerifierVerifyProofAsync(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson);
-                    Debug.Assert(valid == true);
+                    Debug.Assert(null != proof["requested_proof"]["unrevealed_attrs"]["attr2_referent"]["sub_proof_index"]);
 
-                    //15. Close wallets and pool
+                    Debug.Assert(selfAttestedValue == proof["requested_proof"]["self_attested_attrs"]["attr3_referent"].ToObject<string>());
+
+                    var revocRegDefs = "{}";
+                    var revocRegs = "{}";
+
+                    var valid = await AnonCreds.VerifierVerifyProofAsync(proofRequestJson, proofJson, schemas, credentialDefs, revocRegDefs, revocRegs);
+                    Debug.Assert(valid);
+
+                    //14. Close wallets and pool
                     await issuerWallet.CloseAsync();
                     await proverWallet.CloseAsync();
                     await pool.CloseAsync();
@@ -140,11 +147,10 @@ namespace Hyperledger.Indy.Samples
             }
             finally
             {
-                //16. Delete wallets and Pool ledger config
+                //15. Delete wallets and Pool ledger config
                 await WalletUtils.DeleteWalletAsync(issuerWalletName, null);
                 await WalletUtils.DeleteWalletAsync(proverWalletName, null);
                 await PoolUtils.DeletePoolLedgerConfigAsync(PoolUtils.DEFAULT_POOL_NAME);
-
             }
 
             Console.WriteLine("Anoncreds sample -> completed");
