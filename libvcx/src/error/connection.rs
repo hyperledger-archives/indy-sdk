@@ -6,6 +6,7 @@ use utils::error::{INVALID_CONNECTION_HANDLE, CONNECTION_ERROR, NOT_READY, INVAL
 
 #[derive(Debug)]
 pub enum ConnectionError {
+    CreateError(u32),
     GeneralConnectionError(),
     ConnectionNotReady(),
     InviteDetailError(),
@@ -22,6 +23,7 @@ impl fmt::Display for ConnectionError {
             ConnectionError::InvalidHandle() => write!(f, "{}", INVALID_CONNECTION_HANDLE.message),
             ConnectionError::GeneralConnectionError() => write!(f, "{}", CONNECTION_ERROR.message),
             ConnectionError::InviteDetailError() => write!(f, "{}", INVALID_INVITE_DETAILS.message),
+            ConnectionError::CreateError(key) => write!(f, "Could not create connection with key: {}", key),
             ConnectionError::ConnectionNotReady() => write!(f, "{}", NOT_READY.message),
             ConnectionError::InvalidMessagePack() => write!(f, "{}", INVALID_MSGPACK.message),
             ConnectionError::InvalidWalletSetup() => write!(f, "Invalid wallet keys...have you provisioned correctly?"),
@@ -42,6 +44,7 @@ impl Error for ConnectionError {
     fn cause(&self) -> Option<&Error> {
         match *self {
             ConnectionError::InvalidHandle() => None,
+            ConnectionError::CreateError(ref key) => None,
             ConnectionError::GeneralConnectionError() => None,
             ConnectionError::ConnectionNotReady() => None,
             ConnectionError::InviteDetailError() => None,
@@ -54,6 +57,7 @@ impl Error for ConnectionError {
     // TODO: Either implement this correctly or remove.
     fn description(&self) -> &str {
         match *self {
+            ConnectionError::CreateError(ref key) =>  "Could not create connection with key",
             ConnectionError::InvalidMessagePack() => INVALID_MSGPACK.message,
             ConnectionError::InvalidHandle() => INVALID_CONNECTION_HANDLE.message,
             ConnectionError::GeneralConnectionError() => CONNECTION_ERROR.message,
@@ -68,6 +72,7 @@ impl Error for ConnectionError {
 impl ToErrorCode for ConnectionError {
    fn to_error_code(&self) -> u32 {
        match *self {
+           ConnectionError::CreateError(key) => 9998,
            ConnectionError::InvalidHandle() => INVALID_CONNECTION_HANDLE.code_num,
            ConnectionError::GeneralConnectionError() => CONNECTION_ERROR.code_num,
            ConnectionError::ConnectionNotReady() => NOT_READY.code_num,
