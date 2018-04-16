@@ -92,25 +92,21 @@ T->TW: Create and store "Thrift" DID
 T->S: Send authcrypted "Thrift" DID Info
 S->L: Send Nym for "Thrift" DID with Trust Anchor Role
 
-=== Claim Schemas Setup ==
-G->GW: Create and store "Government Schema Issuer" DID
-G->L: Send Nym for "Government Schema Issuer" DID
+=== Credential Schemas Setup ==
+G->GW: Create "Job-Certificate" Schema
 G->L: Send Schema for "Job-Certificate" Schema
+G->GW: Create "Transcript" Schema
 G->L: Send Schema for "Transcript" Schema
 
-=== Faber Claim Definition Setup ==
-F->FW: Create and store "Faber Claim Issuer" DID
-F->L: Send Nym for "Faber Claim Issuer" DID
+=== Faber Credential Definition Setup ==
 F->L: Send GetSchema for "Transcript" Schema
-F->FW: Create and store "Faber Transcript" Claim Definition
-F->L: Send ClaimDef for "Faber Transcript" Claim Defition
+F->FW: Create and store "Faber Transcript" Credential Definition
+F->L: Send CredDef for "Faber Transcript" Credential Definition
 
-=== Acme Claim Definition Setup ==
-AC->ACW: Create and store "Acme Claim Issuer" DID
-AC->L: Send Nym for "Acme Claim Issuer" DID
+=== Acme Credential Definition Setup ==
 AC->L: Send GetSchema for "Job-Certificate" Schema
-AC->ACW: Create and store "Acme Job-Certificate" Claim Definition
-AC->L: Send ClaimDef for "Acme Job-Certificate" Claim Definition
+AC->ACW: Create and store "Acme Job-Certificate" Credential Definition
+AC->L: Send CredDef for "Acme Job-Certificate" Credential Definition
 
 === Getting Transcript with Faber ==
 == Getting Transcript with Faber - Onboarding ==
@@ -122,17 +118,16 @@ A->AW: Create and store "Alice Faber Pairwise" DID
 A->F: Anoncrypted connection response with "Alice Faber Pairwise" DID, verkey and nonce
 F->L: Send Nym for "Alice Faber Pairwise" DID
 
-== Getting Transcript with Faber - Getting Transcript Claim ==
-F->A: Send authcrypted "Alice Faber Transcript" Claim Offer
-A->AW: Store "Alice Faber Transcript" Claim Offer
+== Getting Transcript with Faber - Getting Transcript Credential ==
+F->A: Send authcrypted "Alice Faber Transcript" Credential Offer
 A->AW: Create and store "Alice" Master Secret
 A->L: Send GetSchema for "Transcript" Schema
-A->L: Send GetClaimDef for "Faber Transcript" Claim Definition
-A->AW: Create and store "Alice Faber Transcript" Claim Request
-A->F: Send authcrypted "Alice Faber Transcript" Claim Request
-F->F: Create "Alice Faber Transcript" Claim
-F->A: Send authcrypted "Alice Faber Transcript" Claim
-A->AW: Store "Alice Faber Transcript" Claim
+A->L: Send GetCredDef for "Faber Transcript" Credential Definition
+A->AW: Create "Alice Faber Transcript" Credential Request
+A->F: Send authcrypted "Alice Faber Transcript" Credential Request
+F->F: Create "Alice Faber Transcript" Credential
+F->A: Send authcrypted "Alice Faber Transcript" Credential
+A->AW: Store "Alice Faber Transcript" Credential
 
 === Apply for the job with Acme ==
 == Apply for the job with Acme - Onboarding ==
@@ -145,26 +140,25 @@ AC->L: Send Nym for "Alice Acme Pairwise" DID
 
 == Apply for the job with Acme - Job-Application proving ==
 AC->A: Send authcrypted "Job-Application" Proof Request
-A->AW: Get claims for "Job-Application" Proof Request
-AW->A: "Alice Faber Transcript" Claim
+A->AW: Get credentials for "Job-Application" Proof Request
+AW->A: "Alice Faber Transcript" Credential
 A->L: Send GetSchema for "Transcript" Schema
-A->L: Send GetClaimDef for "Faber Transcript" Claim Definition
+A->L: Send GetCredDef for "Faber Transcript" Credential Definition
 A->A: Create "Alice Job-Application" Proof
 A->AC: Send authcrypted "Alice Job-Application" Proof
 AC->L: Send GetSchema for "Transcript" Schema
-AC->L: Send GetClaimDef for "Faber Transcript" Claim Definition
+AC->L: Send GetCredDef for "Faber Transcript" Credential Definition
 AC->AC: Verify "Alice Job-Application" Proof
 
-== Apply for the job with Acme - Getting Job-Certificate Claim ==
-AC->A: Send authcrypted "Alice Acme Job-Certificate" Claim Offer
-A->AW: Store "Alice Acme Job-Certificate" Claim Offer
+== Apply for the job with Acme - Getting Job-Certificate Credential ==
+AC->A: Send authcrypted "Alice Acme Job-Certificate" Credential Offer
 A->L: Send GetSchema for "Job-Certificate" Schema
-A->L: Send GetClaimDef for "Acme Job-Certificate" Claim Definition
-A->AW: Create and store "Alice Acme Job-Certificate" Claim Request
-A->AC: Send authcrypted "Alice Acme Job-Certificate" Claim Request
-AC->AC: Create "Alice Acme Job-Certificate" Claim
-F->A: Send authcrypted "Alice Acme Job-Certificate" Claim
-A->AW: Store "Alice Acme Job-Certificate" Claim
+A->L: Send GetCredDef for "Acme Job-Certificate" Credential Definition
+A->AW: Create "Alice Acme Job-Certificate" Credential Request
+A->AC: Send authcrypted "Alice Acme Job-Certificate" Credential Request
+AC->AC: Create "Alice Acme Job-Certificate" Credential
+F->A: Send authcrypted "Alice Acme Job-Certificate" Credential
+A->AW: Store "Alice Acme Job-Certificate" Credential
 
 === Apply for the loan with Thrift ==
 == Apply for the loan with Thrift - Onboarding ==
@@ -177,30 +171,30 @@ T->L: Send Nym for "Alice Thrift Pairwise" DID
 
 == Apply for the loan with Thrift - Employment History proving  ==
 T->A: Send authcrypted "Loan-Application-Basic" Proof Request
-A->AW: Get claims for "Loan-Application-Basic" Proof Request
-AW->A: "Alice Acme Job-Certificate" Claim
+A->AW: Get credentials for "Loan-Application-Basic" Proof Request
+AW->A: "Alice Acme Job-Certificate" Credential
 A->L: Send GetSchema for "Job-Certificate" Schema
-A->L: Send GetClaimDef for "Acme Job-Certificate" Claim Definition
+A->L: Send GetCredDef for "Acme Job-Certificate" Credential Definition
 A->A: Create "Loan-Application-Basic" Proof
 A->T: Send "Loan-Application-Basic" Proof
 T->L: Send GetSchema for "Job-Certificate" Schema
-T->L: Send GetClaimDef for "Acme Job-Certificate" Claim Definition
+T->L: Send GetCredDef for "Acme Job-Certificate" Credential Definition
 T->T: Verify "Loan-Application-Basic" Proof
 
 == Apply for the loan with Thrift - Loan-Application-KYC proving  ==
 T->A: Send authcrypted "Loan-Application-KYC" Proof Request
-A->AW: Get claims for "Loan-Application-KYC" Proof Request
-AW->A: "Alice Faber Transcript and Alice Acme ob-Certificate" Claim
+A->AW: Get credentials for "Loan-Application-KYC" Proof Request
+AW->A: "Alice Faber Transcript and Alice Acme Job-Certificate" Credential
 A->L: Send GetSchema for "Transcript" Schema
-A->L: Send GetClaimDef for "Faber Transcript" Claim Definition
+A->L: Send GetCredDef for "Faber Transcript" Credential Definition
 A->L: Send GetSchema for "Job-Certificate" Schema
-A->L: Send GetClaimDef for "Acme Job-Certificate" Claim Definition
+A->L: Send GetCredDef for "Acme Job-Certificate" Credential Definition
 A->A: Create "Loan-Application-KYC" Proof
 A->T: Send "Loan-Application-KYC" Proof
 T->L: Send GetSchema for "Transcript" Schema
-T->L: Send GetClaimDef for "Faber Transcript" Claim Definition
+T->L: Send GetCredDef for "Faber Transcript" Credential Definition
 T->L: Send GetSchema for "Job-Certificate" Schema
-T->L: Send GetClaimDef for "Acme Job-Certificate" Claim Definition
+T->L: Send GetCredDef for "Acme Job-Certificate" Credential Definition
 T->T: Verify "Loan-Application-KYC" Proof
 
 @enduml
