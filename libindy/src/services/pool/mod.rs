@@ -1,8 +1,6 @@
 mod types;
 mod catchup;
 mod transaction_handler;
-#[warn(dead_code)]
-#[warn(unused_variables)]
 mod state_proof;
 
 extern crate byteorder;

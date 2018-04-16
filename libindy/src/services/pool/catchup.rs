@@ -17,7 +17,7 @@ use super::{
 use super::rust_base58::{FromBase58, ToBase58};
 use super::types::*;
 
-pub const CATCHUP_ROUND_TIMEOUT: i64 = 120;
+pub const CATCHUP_ROUND_TIMEOUT: i64 = 50;
 
 enum CatchupStepResult {
     Finished,
