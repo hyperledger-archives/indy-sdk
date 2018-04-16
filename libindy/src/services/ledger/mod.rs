@@ -193,11 +193,6 @@ impl LedgerService {
     }
 
     pub fn build_pool_restart(&self, identifier: &str, action: &str, datetime: Option<&str>) -> Result<String, CommonError> {
-        let datetime = match datetime{
-            Some(_) => datetime.map(|result| result.to_string()),
-            None => None
-        };
-
         if action != "start" && action != "cancel" {
             return Err(CommonError::InvalidStructure(format!("Invalid action: {}", action)));
         }
@@ -207,9 +202,9 @@ impl LedgerService {
         }
 
 
-        let operation = PoolRestartOperation::new(action, datetime);
+        let operation = PoolRestartOperation::new(action, datetime.map(String::from));
 
-        Request::build_request(identifier.to_string(), operation)
+        Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("Invalid pool_restart request json: {:?}", err)))
     }
 
