@@ -519,7 +519,7 @@ mod tests {
                                         "Name".to_owned()).unwrap();
         assert!(handle > 0);
         let connection_handle = connection::build_connection("test_send_proof_request").unwrap();
-        connection::set_pw_did(connection_handle, "XXFh7yBzrpJQmNyZzgoTqB");
+        connection::set_pw_did(connection_handle, "XXFh7yBzrpJQmNyZzgoTqB").unwrap();
 
         thread::sleep(Duration::from_millis(300));
         let rc = vcx_get_proof(0, handle, connection_handle, Some(no_proof_cb));
@@ -532,7 +532,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let connection_handle = connection::build_connection("test_send_proof_request").unwrap();
-        connection::set_pw_did(connection_handle, "XXFh7yBzrpJQmNyZzgoTqB");
+        connection::set_pw_did(connection_handle, "XXFh7yBzrpJQmNyZzgoTqB").unwrap();
         thread::sleep(Duration::from_millis(300));
 
         let proof_handle = proof::from_string(PROOF_WITH_INVALID_STATE).unwrap();
