@@ -344,7 +344,6 @@
     // Prover store received Credential
     ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:credentialJson
                                                           credID:[[AnoncredsUtils sharedInstance] credentialId1]
-                                                     credReqJSON:credentialReq
                                              credReqMetadataJSON:credentialReqMetadata
                                                      credDefJSON:credentialDefJSON
                                                    revRegDefJSON:revocRegDefJson
