@@ -44,7 +44,6 @@ pub enum ProverCommand {
     StoreCredential(
         i32, // wallet handle
         Option<String>, // credential id
-        String, // credential request json
         String, // credential request metadata json
         String, // credentials json
         String, // credential definition json
@@ -116,10 +115,10 @@ impl ProverCommandExecutor {
                 cb(self.create_credential_request(wallet_handle, &prover_did, &credential_offer_json,
                                                   &credential_def_json, &master_secret_name));
             }
-            ProverCommand::StoreCredential(wallet_handle, cred_id, cred_req_json, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb) => {
+            ProverCommand::StoreCredential(wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb) => {
                 trace!(target: "prover_command_executor", "StoreCredential command received");
                 cb(self.store_credential(wallet_handle, cred_id.as_ref().map(String::as_str),
-                                         &cred_req_json, &cred_req_metadata_json, &cred_json, &cred_def_json,
+                                         &cred_req_metadata_json, &cred_json, &cred_def_json,
                                          rev_reg_def_json.as_ref().map(String::as_str)));
             }
             ProverCommand::GetCredentials(wallet_handle, filter_json, cb) => {
@@ -226,16 +225,12 @@ impl ProverCommandExecutor {
     fn store_credential(&self,
                         wallet_handle: i32,
                         cred_id: Option<&str>,
-                        cred_req_json: &str,
                         cred_req_metadata_json: &str,
                         cred_json: &str,
                         cred_def_json: &str,
                         rev_reg_def_json: Option<&str>) -> Result<String, IndyError> {
-        trace!("store_credential >>> wallet_handle: {:?}, cred_id: {:?}, cred_req_json: {:?}, cred_req_metadata_json: {:?}, cred_json: {:?}, cred_def_json: {:?}, \
-        rev_reg_def_json: {:?}", wallet_handle, cred_id, cred_req_json, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json);
-
-        let cred_request: CredentialRequest = CredentialRequest::from_json(&cred_req_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialRequest: {:?}", err)))?;
+        trace!("store_credential >>> wallet_handle: {:?}, cred_id: {:?}, cred_req_metadata_json: {:?}, cred_json: {:?}, cred_def_json: {:?}, \
+        rev_reg_def_json: {:?}", wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json);
 
         let cred_request_metadata: CredentialRequestMetadata = CredentialRequestMetadata::from_json(&cred_req_metadata_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialRequestMetadata: {:?}", err)))?;
