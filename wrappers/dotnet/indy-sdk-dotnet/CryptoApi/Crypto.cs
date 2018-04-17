@@ -1,4 +1,4 @@
-﻿using Hyperledger.Indy.SignusApi;
+﻿using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
 using System.Runtime.InteropServices;
@@ -8,7 +8,7 @@ using static Hyperledger.Indy.CryptoApi.NativeMethods;
 namespace Hyperledger.Indy.CryptoApi
 {
     /// <summary>
-    /// Provides methods for performing .
+    /// Provides methods for pure cryptographic functions.
     /// </summary>
     public static class Crypto
     {
@@ -68,70 +68,52 @@ namespace Hyperledger.Indy.CryptoApi
         };
 
         /// <summary>
-        /// Gets the callback to use when the indy_crypto_box command has completed.
+        /// Gets the callback to use when indy_crypto_auth_crypt or indy_crypto_anon_crypt has completed
         /// </summary>
-        private static BoxCompletedDelegate _cryptoBoxCompletedCallback = (xcommand_handle, err, encrypted_msg_raw, encrypted_msg_len, nonce_raw, nonce_len) =>
+        private static EncryptCompletedDelegate _cryptoEncryptCompletedCallback = (xcommand_handle, err, encrypted_msg, encrypted_len) =>
         {
-            var taskCompletionSource = PendingCommands.Remove<BoxResult>(xcommand_handle);
+            var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            var encryptedMsgBytes = new byte[encrypted_msg_len];
-            Marshal.Copy(encrypted_msg_raw, encryptedMsgBytes, 0, encrypted_msg_len);
+            var messageBytes = new byte[encrypted_len];
+            Marshal.Copy(encrypted_msg, messageBytes, 0, encrypted_len);
 
-            var nonceBytes = new byte[nonce_len];
-            Marshal.Copy(nonce_raw, nonceBytes, 0, nonce_len);
+            taskCompletionSource.SetResult(messageBytes);
+        };
 
-            var result = new BoxResult(encryptedMsgBytes, nonceBytes);
+        /// <summary>
+        /// Gets the callback to use when indy_crypto_auth_decrypt has completed
+        /// </summary>
+        private static AuthDecryptCompletedDelegate _cryptoAuthDecryptCompletedCallback = (command_handle, err, their_vk, msg_data, msg_len) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<AuthDecryptResult>(command_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            var messageBytes = new byte[msg_len];
+            Marshal.Copy(msg_data, messageBytes, 0, msg_len);
+
+            var result = new AuthDecryptResult(their_vk, messageBytes);
 
             taskCompletionSource.SetResult(result);
         };
 
-        /// <summary>
-        /// Gets the callback to use when the indy_crypto_box_open command has completed.
-        /// </summary>
-        private static BoxOpenCompletedDelegate _cryptoBoxOpenCompletedCallback = (xcommand_handle, err, decrypted_msg_raw, decrypted_msg_len) =>
-        {
-            var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
-
-            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
-                return;
-
-            var decryptedMsgBytes = new byte[decrypted_msg_len];
-            Marshal.Copy(decrypted_msg_raw, decryptedMsgBytes, 0, decrypted_msg_len);
-
-            taskCompletionSource.SetResult(decryptedMsgBytes);
-        };
-
-        /// <summary>
-        /// Gets the callback to use when the indy_crypto_box_seal command has completed.
-        /// </summary>
-        private static BoxSealCompletedDelegate _cryptoBoxSealCompletedCallback = (xcommand_handle, err, encrypted_msg_raw, encrypted_msg_len) =>
-        {
-            var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
-
-            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
-                return;
-
-            var encryptedMsgBytes = new byte[encrypted_msg_len];
-            Marshal.Copy(encrypted_msg_raw, encryptedMsgBytes, 0, encrypted_msg_len);
-
-            taskCompletionSource.SetResult(encryptedMsgBytes);
-        };
 
         /// <summary>
         /// Gets the callback to use when the indy_crypto_box_seal_open command has completed.
         /// </summary>
-        private static BoxSealOpenCompletedDelegate _cryptoBoxSealOpenCompletedCallback = (xcommand_handle, err, decrypted_msg_raw, decrypted_msg_len) =>
+        private static AnonDecryptCompletedDelegate _cryptoAnonDecryptCompletedCallback = (command_handle, err, msg_data, msg_len) =>
         {
-            var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
+            var taskCompletionSource = PendingCommands.Remove<byte[]>(command_handle);
 
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            var decryptedMsgBytes = new byte[decrypted_msg_len];
-            Marshal.Copy(decrypted_msg_raw, decryptedMsgBytes, 0, decrypted_msg_len);
+            var decryptedMsgBytes = new byte[msg_len];
+            Marshal.Copy(msg_data, decryptedMsgBytes, 0, msg_len);
 
             taskCompletionSource.SetResult(decryptedMsgBytes);
         };
@@ -242,9 +224,9 @@ namespace Hyperledger.Indy.CryptoApi
         /// </summary>
         /// <remarks>
         /// The key provided as the <paramref name="myVk"/> parameter must have previously been stored in the <paramref name="wallet"/> using
-        /// the <see cref="CreateKeyAsync(Wallet, string)"/> method or the <see cref="Signus.CreateAndStoreMyDidAsync(Wallet, string)"/> method.
+        /// the <see cref="CreateKeyAsync(Wallet, string)"/> method or the <see cref="Did.CreateAndStoreMyDidAsync(Wallet, string)"/> method.
         /// <note type="note">
-        /// To use DID keys with this method call the <see cref="Signus.KeyForDidAsync(PoolApi.Pool, Wallet, string)"/> with the desired DID to get 
+        /// To use DID keys with this method call the <see cref="Did.KeyForDidAsync(PoolApi.Pool, Wallet, string)"/> with the desired DID to get 
         /// its verification key which can be used as the <paramref name="myVk"/> parameter when calling this method.
         /// </note>
         /// </remarks>
@@ -280,7 +262,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// Verifies a message signature with a verification key.
         /// </summary>
         /// <note type="note">
-        /// To use DID keys with this method call the <see cref="Signus.KeyForDidAsync(PoolApi.Pool, Wallet, string)"/> with the desired DID to get 
+        /// To use DID keys with this method call the <see cref="Did.KeyForDidAsync(PoolApi.Pool, Wallet, string)"/> with the desired DID to get 
         /// its verification key which can be used as the <paramref name="theirVk"/> parameter when calling this method.
         /// </note>
         /// <param name="theirVk">The verification key belonging to the party that signed the message.</param>
@@ -312,52 +294,40 @@ namespace Hyperledger.Indy.CryptoApi
         }
 
         /// <summary>
-        /// Encrypts a message using an authenticated-encryption scheme.
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// A <c>sender</c> can use their public key to encrypt a confidential message specifically for a <c>recipient</c>.
-        /// Using the recipient's public key, the sender can compute a shared secret key.
-        /// The recipient, using the sender's public key and his own secret key, can compute the exact same shared secret key.
-        /// That shared secret key can then be used to verify that the encrypted message was not tampered with,
+        /// Encrypt a message by authenticated-encryption scheme.
+        /// 
+        /// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
+        /// Using Recipient's public key, Sender can compute a shared secret key.
+        /// Using Sender's public key and his secret key, Recipient can compute the exact same shared secret key.
+        /// That shared secret key can be used to verify that the encrypted message was not tampered with,
         /// before eventually decrypting it.
-        /// </para>
-        /// <para>
-        /// The recipient only needs the sender's public key, the nonce and the ciphertext to decrypt the message.
-        /// The nonce doesn't have to be confidential.
-        /// </para>
-        /// <para>
-        /// Messages encrypted using this method can be decrypted using the <see cref="BoxOpenAsync(Wallet, string, string, byte[], byte[])"/> method.
-        /// </para>
-        /// <note type="note">
-        /// To use DID keys with this method call the <see cref="Signus.KeyForDidAsync(PoolApi.Pool, Wallet, string)"/> with the desired DID to get 
-        /// its verification key which can be used as the <paramref name="myVk"/> and/or <paramref name="theirVk"/> parameter when calling this method.
-        /// </note>
+        /// </summary>
+        /// <remarks>Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
+        /// for specific DID.
         /// </remarks>
-        /// <param name="wallet">The wallet containing the keys.</param>
-        /// <param name="myVk">The verification key of the party encrypting the message.</param>
-        /// <param name="theirVk">The verification key of the party that is the intended recipient of the message.</param>
-        /// <param name="message">The message to encrypt.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="BoxResult"/> when the operation completes.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if <paramref name="myVk"/> is not in the <paramref name="wallet"/>.</exception>
-        public static Task<BoxResult> BoxAsync(Wallet wallet, string myVk, string theirVk, byte[] message)
+        /// <returns>The crypt async.</returns>
+        /// <param name="wallet">The wallet containing the key-pair to sign with.</param>
+        /// <param name="myVk"> id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did</param>
+        /// <param name="theirVk">id (verkey) of their key</param>
+        /// <param name="message">message data to be encrypted</param>
+        public static Task<byte[]> AuthCryptAsync(Wallet wallet, string myVk, string theirVk, byte[] message)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(myVk, "myVk");
+            ParamGuard.NotNullOrWhiteSpace(theirVk, "myVk");
             ParamGuard.NotNullOrWhiteSpace(theirVk, "theirVk");
             ParamGuard.NotNull(message, "message");
 
-            var taskCompletionSource = new TaskCompletionSource<BoxResult>();
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = NativeMethods.indy_crypto_box(
+            var commandResult = NativeMethods.indy_crypto_auth_crypt(
                 commandHandle,
                 wallet.Handle,
                 myVk,
                 theirVk,
                 message,
                 message.Length,
-                _cryptoBoxCompletedCallback
+                _cryptoEncryptCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -366,58 +336,38 @@ namespace Hyperledger.Indy.CryptoApi
         }
 
         /// <summary>
-        /// Decrypts a message encrypted using an authenticated-encryption scheme.
+        /// Decrypt a message by authenticated-encryption scheme.
+        ///
+        /// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
+        /// Using Recipient's public key, Sender can compute a shared secret key.
+        /// Using Sender's public key and his secret key, Recipient can compute the exact same shared secret key.
+        /// That shared secret key can be used to verify that the encrypted message was not tampered with,
+        /// before eventually decrypting it.
         /// </summary>
         /// <remarks>
-        /// <para>
-        /// A <c>sender</c> can use their public key to encrypt a confidential message specifically for a <c>recipient</c>.
-        /// Using the recipient's public key, the sender can compute a shared secret key.
-        /// The recipient, using the sender's public key and his own secret key, can compute the exact same shared secret key.
-        /// That shared secret key can then be used to verify that the encrypted message was not tampered with,
-        /// before eventually decrypting it.
-        /// </para>
-        /// <para>
-        /// The recipient only needs the sender's public key, the nonce and the ciphertext to decrypt the message.
-        /// The nonce doesn't have to be confidential.
-        /// </para>
-        /// <para>
-        /// The <see cref="BoxAsync(Wallet, string, string, byte[])"/> method can be used to encrypt messages suitable for decryption using this method.
-        /// </para>
-        /// <note type="note">
-        /// To use DID keys with this method call the <see cref="Signus.KeyForDidAsync(PoolApi.Pool, Wallet, string)"/> with the desired DID to get 
-        /// its verification key which can be used as the <paramref name="myVk"/> and/or <paramref name="theirVk"/> parameters when calling this method.
-        /// </note>
+        /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
+        /// for specific DID.
         /// </remarks>
-        /// <param name="wallet">The wallet containing the t.</param>
-        /// <param name="myVk">The verification key of recipient of an encrypted message.</param>
-        /// <param name="theirVk">The verification key of the party that encrypted the message.</param>
-        /// <param name="encryptedMessage">The encrypted message.</param>
-        /// <param name="nonce">The nonce used for encrypting the message.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the decrypted message.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if the <paramref name="theirVk"/> is not present in the <paramref name="wallet"/>.</exception>
-        /// <exception cref="InvalidStructureException">Thrown if <paramref name="myVk"/> is not in the <paramref name="wallet"/> or the <paramref name="nonce"/>
-        /// does not match the <paramref name="encryptedMessage"/>.</exception>
-        public static Task<byte[]> BoxOpenAsync(Wallet wallet, string myVk, string theirVk, byte[] encryptedMessage, byte[] nonce)
+        /// <returns>sender verkey and decrypted message</returns>
+        /// <param name="wallet">The wallet containing the key-pair to sign with.</param>
+        /// <param name="myVk">id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did</param>
+        /// <param name="message">The message data to be decrypted.</param>
+        public static Task<AuthDecryptResult> AuthDecryptAsync(Wallet wallet, string myVk, byte[] message)
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(myVk, "myVk");
-            ParamGuard.NotNullOrWhiteSpace(theirVk, "theirVk");
-            ParamGuard.NotNull(encryptedMessage, "encryptedMessage");
-            ParamGuard.NotNull(nonce, "nonce");
+            ParamGuard.NotNull(message, "message");
 
-            var taskCompletionSource = new TaskCompletionSource<byte[]>();
+            var taskCompletionSource = new TaskCompletionSource<AuthDecryptResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = NativeMethods.indy_crypto_box_open(
+            var commandResult = NativeMethods.indy_crypto_auth_decrypt(
                 commandHandle,
                 wallet.Handle,
                 myVk,
-                theirVk,
-                encryptedMessage,
-                encryptedMessage.Length,
-                nonce,
-                nonce.Length,
-                _cryptoBoxOpenCompletedCallback
+                message,
+                message.Length,
+                _cryptoAuthDecryptCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -426,27 +376,19 @@ namespace Hyperledger.Indy.CryptoApi
         }
 
         /// <summary>
-        /// Encrypts a message using an anonymous-encryption scheme.
+        /// Encrypts a message by anonymous-encryption scheme.
+        ///
+        /// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
+        /// Only the Recipient can decrypt these messages, using its private key.
+        /// While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
+        ///
+        /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
+        /// for specific DID.
         /// </summary>
-        /// <remarks>
-        /// <para>
-        /// Sealed boxes are designed to a <c>sender</c> to anonymously send messages to a <c>recipient</c> using the
-        /// recipient's public key.
-        /// Only the recipient can decrypt these messages, using their private key.
-        /// While the recipient can verify the integrity of the message, they cannot verify the identity of the sender.
-        /// </para>
-        /// <para>
-        /// The <see cref="BoxSealOpenAsync(Wallet, string, byte[])"/> method can be used to decrypt messages encrypted using this method.
-        /// </para>
-        /// <note type="note">
-        /// To use DID keys with this method call the <see cref="Signus.KeyForDidAsync(PoolApi.Pool, Wallet, string)"/> with the desired DID to get 
-        /// its verification key which can be used as the <paramref name="theirVk"/> parameter when calling this method.
-        /// </note>
-        /// </remarks>
-        /// <param name="theirVk">The verification key of the intended recipient of the encrypted message.</param>
-        /// <param name="message">The message to encrypt.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the encrypted message.</returns>
-        public static Task<byte[]> BoxSealAsync(string theirVk, byte[] message)
+        /// <returns>The crypt async.</returns>
+        /// <param name="theirVk">id (verkey) of their key</param>
+        /// <param name="message">Message to be encrypted</param>
+        public static Task<byte[]> AnonCryptAsync(string theirVk, byte[] message)
         {
             ParamGuard.NotNullOrWhiteSpace(theirVk, "theirVk");
             ParamGuard.NotNull(message, "message");
@@ -454,17 +396,17 @@ namespace Hyperledger.Indy.CryptoApi
             var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = NativeMethods.indy_crypto_box_seal(
+            var commandResult = NativeMethods.indy_crypto_anon_crypt(
                 commandHandle,
                 theirVk,
                 message,
                 message.Length,
-                _cryptoBoxSealCompletedCallback
+                _cryptoEncryptCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
 
-            return taskCompletionSource.Task;
+            return taskCompletionSource.Task; 
         }
 
         /// <summary>
@@ -477,11 +419,8 @@ namespace Hyperledger.Indy.CryptoApi
         /// Only the recipient can decrypt these messages, using their private key.
         /// While the recipient can verify the integrity of the message, they cannot verify the identity of the sender.
         /// </para>
-        /// <para>
-        /// The <see cref="BoxSealAsync(string, byte[])"/> method can be used to encrypt messages suitable for decryption using this method.
-        /// </para>
         /// <note type="note">
-        /// To use DID keys with this method call the <see cref="Signus.KeyForDidAsync(PoolApi.Pool, Wallet, string)"/> with the desired DID to get 
+        /// To use DID keys with this method call the <see cref="Did.KeyForDidAsync(PoolApi.Pool, Wallet, string)"/> with the desired DID to get 
         /// its verification key which can be used as the <paramref name="myVk"/> parameter when calling this method.
         /// </note>
         /// </remarks>
@@ -491,7 +430,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the decrypted message.</returns>
         /// <exception cref="WalletValueNotFoundException">Thrown if <paramref name="myVk"/> is not present in the <paramref name="wallet"/>.</exception>
         /// <exception cref="InvalidStructureException">Thrown if <paramref name="myVk"/> was not used to encrypt <paramref name="encryptedMessage"/>.</exception>
-        public static Task<byte[]> BoxSealOpenAsync(Wallet wallet, string myVk, byte[] encryptedMessage)
+        public static Task<byte[]> AnonDecryptAsync(Wallet wallet, string myVk, byte[] encryptedMessage)
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(myVk, "myVk");
@@ -500,13 +439,13 @@ namespace Hyperledger.Indy.CryptoApi
             var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = NativeMethods.indy_crypto_box_seal_open(
+            var commandResult = NativeMethods.indy_crypto_anon_decrypt(
                 commandHandle,
                 wallet.Handle,
                 myVk,
                 encryptedMessage,
                 encryptedMessage.Length,
-                _cryptoBoxSealOpenCompletedCallback
+                _cryptoAnonDecryptCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);

@@ -48,7 +48,7 @@ git clone https://github.com/hyperledger/indy-sdk.git
 ### Source deps
 
 - http://www.sqlite.org/2017/sqlite-amalgamation-3180000.zip
-- https://github.com/evernym/libzmq-pw
+- https://github.com/zeromq/libzmq
 
 ### Build sqlite
 
@@ -57,14 +57,16 @@ Download http://www.sqlite.org/2017/sqlite-amalgamation-3180000.zip
 Create empty static library project and add sqlite.c file and 2 headers from exctraced
 archive. Then just build it.
 
-### Build libzmq-pw
+### Build libzmq
 
-Checkout https://github.com/evernym/libzmq-pw repository.
-- open builds/msvc/vs2017/libzmq.sln
-- switch "draft API" and "libsodium" options on
-- change "output file name" to $(TargetName)-pw
-- build (it may print errors while
-  building tests which can be ignored)
+Follow to https://http://zeromq.org/intro.
+- Download sources from last stable release for Windows. 
+- launch zeromq-x.x.x/builds/msvc/vs2015/libzmq.sln.
+- if necessary change solution platforms on x64(if you are working on x64 arch).
+- on main menu bar choose build->build libzmq.
+- if build project was succeed, in path zeromq-x.x.x/bin/x64/Debug/vXXX/dynamic has appeared
+    two files libzmq.dll and libzmq.lib.
+- rename libzmq.lib to zmq.lib.
 
 ## Build
 
@@ -83,7 +85,7 @@ Checkout https://github.com/evernym/libzmq-pw repository.
 - Point path to this directory using environment variables:
   - set INDY_PREBUILT_DEPS_DIR=C:\BIN\x64
   - set MILAGRO_DIR=C:\BIN\x64
-  - set ZMQPW_DIR=C:\BIN\x64
+  - set LIBZMQ_PREFIX=C:\BIN\x64
   - set SODIUM_LIB_DIR=C:\BIN\x64
   - set OPENSSL_DIR=C:\BIN\x64
 - set PATH to find .dlls:

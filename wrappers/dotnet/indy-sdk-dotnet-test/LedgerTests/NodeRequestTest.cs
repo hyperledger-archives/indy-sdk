@@ -1,5 +1,5 @@
 ﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.DidApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
@@ -37,7 +37,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestSendNodeRequestWorksWithoutSignature()
         {
-            var didResult = await Signus.CreateAndStoreMyDidAsync(wallet, _stewardDidJson);
+            var didResult = await Did.CreateAndStoreMyDidAsync(wallet, _stewardDidJson);
             var did = didResult.Did;
 
             var nodeRequest = await Ledger.BuildNodeRequestAsync(did, did, _data);
@@ -80,7 +80,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestSendNodeRequestWorksForWrongRole()
         {
-            var didResult = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var didResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var did = didResult.Did;
 
             var data = "{\"node_ip\":\"10.0.0.100\"," +
@@ -102,10 +102,10 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [Ignore]
         public async Task TestSendNodeRequestWorksForNewSteward()
         {
-            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var trusteeDid = trusteeDidResult.Did;
 
-            var myDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
+            var myDidResult = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
             var myDid = myDidResult.Did;
             var myVerkey = myDidResult.VerKey;
 
