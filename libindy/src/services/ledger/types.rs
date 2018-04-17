@@ -463,6 +463,27 @@ impl PoolConfigOperation {
 impl JsonEncodable for PoolConfigOperation {}
 
 #[derive(Serialize, PartialEq, Debug)]
+pub struct PoolRestartOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub action: String, //start, cancel
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub datetime: Option<String>,
+}
+
+impl PoolRestartOperation {
+    pub fn new(action: &str, datetime: Option<String>) -> PoolRestartOperation {
+        PoolRestartOperation {
+            _type: POOL_RESTART.to_string(),
+            action: action.to_string(),
+            datetime,
+        }
+    }
+}
+
+impl JsonEncodable for PoolRestartOperation {}
+
+#[derive(Serialize, PartialEq, Debug)]
 pub struct PoolUpgradeOperation {
     #[serde(rename = "type")]
     pub _type: String,

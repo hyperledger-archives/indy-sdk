@@ -495,6 +495,30 @@ extern "C" {
                                                                             const char*   request_json)
                                                        );
 
+    /// Builds a POOL_RESTART request.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: Id of Identity stored in secured Wallet.
+    /// action: Either start or cancel
+    /// datetime:
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+
+    extern indy_error_t indy_build_pool_restart_request(indy_handle_t command_handle,
+                                                        const char *  submitter_did,
+                                                        const char *  action,
+                                                        const char *  datetime,
+                                                        void           (*cb)(indy_handle_t xcommand_handle,
+                                                                             indy_error_t  err,
+                                                                             const char*   request_json)
+                                                        );
+
     /// Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
     /// It upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).
     ///
