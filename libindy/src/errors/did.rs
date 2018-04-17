@@ -34,7 +34,7 @@ impl error::Error for DidError {
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            DidError::AlreadyExistsError(ref description) => None,
+            DidError::AlreadyExistsError(_) => None,
             DidError::CommonError(ref err) => Some(err)
         }
     }
@@ -43,7 +43,7 @@ impl error::Error for DidError {
 impl ToErrorCode for DidError {
     fn to_error_code(&self) -> ErrorCode {
         match *self {
-            DidError::AlreadyExistsError(ref description) => ErrorCode::DidAlreadyExistsError,
+            DidError::AlreadyExistsError(_) => ErrorCode::DidAlreadyExistsError,
             DidError::CommonError(ref err) => err.to_error_code()
         }
     }

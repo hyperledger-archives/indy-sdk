@@ -160,7 +160,7 @@ impl ProverCommandExecutor {
         };
 
         let master_secret = self.anoncreds_service.prover.new_master_secret()?;
-        let master_secret_json = self.wallet_service.set_object(wallet_handle, &format!("master_secret::{}", master_secret_id), &master_secret, "MasterSecret")?;
+        self.wallet_service.set_object(wallet_handle, &format!("master_secret::{}", master_secret_id), &master_secret, "MasterSecret")?;
 
         trace!("create_master_secret <<< master_secret_id: {:?}", master_secret_id);
 
@@ -233,9 +233,6 @@ impl ProverCommandExecutor {
                         rev_reg_def_json: Option<&str>) -> Result<String, IndyError> {
         trace!("store_credential >>> wallet_handle: {:?}, cred_id: {:?}, cred_req_json: {:?}, cred_req_metadata_json: {:?}, cred_json: {:?}, cred_def_json: {:?}, \
         rev_reg_def_json: {:?}", wallet_handle, cred_id, cred_req_json, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json);
-
-        let cred_request: CredentialRequest = CredentialRequest::from_json(&cred_req_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialRequest: {:?}", err)))?;
 
         let cred_request_metadata: CredentialRequestMetadata = CredentialRequestMetadata::from_json(&cred_req_metadata_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialRequestMetadata: {:?}", err)))?;

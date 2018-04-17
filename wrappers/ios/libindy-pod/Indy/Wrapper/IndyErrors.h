@@ -99,12 +99,10 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
     
-    AnoncredsInvalidUserRevocIndex = 401,
+    AnoncredsInvalidUserRevocId = 401,
     
     AnoncredsAccumulatorIsFull = 402,
-    
-    AnoncredsNotIssuedError = 403,
-    
+
     // Attempt to generate master secret with dupplicated name
     AnoncredsMasterSecretDuplicateNameError = 404,
     

@@ -100,12 +100,8 @@ public class IndyException extends Exception {
 				return new TimeoutException();
 			case AnoncredsRevocationRegistryFullError:
 				return new RevocationRegistryFullException();
-			case AnoncredsInvalidUserRevocIndex:
-				return new InvalidUserRevocIndexException();
-			case AnoncredsAccumulatorIsFull:
-				return new AccumulatorFullException();
-			case AnoncredsNotIssuedError:
-				return new NotIssuedException();
+			case AnoncredsInvalidUserRevocId:
+				return new AnoncredsInvalidUserRevocId();
 			case AnoncredsMasterSecretDuplicateNameError:
 				return new DuplicateMasterSecretNameException();
 			case AnoncredsProofRejected:

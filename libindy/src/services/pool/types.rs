@@ -67,10 +67,6 @@ impl JsonEncodable for NodeTransaction {}
 impl<'a> JsonDecodable<'a> for NodeTransaction {}
 
 impl NodeTransaction {
-    pub fn to_msg_pack(&self) -> Result<Vec<u8>, rmp_serde::encode::Error> {
-        rmp_serde::to_vec_named(self)
-    }
-
     pub fn update(&mut self, other: &mut NodeTransaction) -> Result<(), CommonError> {
         assert_eq!(self.dest, other.dest);
         assert_eq!(self.data.alias, other.data.alias);
@@ -263,7 +259,7 @@ impl MinValue for Vec<(CatchupRep, usize)> {
         for (index, &(ref catchup_rep, _)) in self.iter().enumerate() {
             match res {
                 None => { res = Some((catchup_rep, index)); }
-                Some((min_rep, i)) => if catchup_rep.min_tx()? < min_rep.min_tx()? {
+                Some((min_rep, _)) => if catchup_rep.min_tx()? < min_rep.min_tx()? {
                     res = Some((catchup_rep, index));
                 }
             }
