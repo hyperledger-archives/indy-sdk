@@ -106,8 +106,8 @@ impl CallbackUtils {
         let (sender, receiver) = channel();
 
         lazy_static! {
-        static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
-    }
+            static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
 
         let closure = Box::new(move |err, val| {
             sender.send((err, val)).unwrap();
