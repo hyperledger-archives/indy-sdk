@@ -6,6 +6,7 @@ from vcx.api.connection import Connection
 
 phone_number = '8019119191'
 source_id = '1'
+msg_id = '1'
 request = {
     "@topic": {
         "mid": 9,
@@ -90,6 +91,16 @@ async def test_create_disclosed_proof():
     assert disclosed_proof.handle > 0
     assert await disclosed_proof.get_state() == State.RequestReceived
 
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_create_disclosed_proof_with_msgid():
+    connection = await Connection.create(source_id)
+    await connection.connect(phone_number)
+
+    disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
+    assert disclosed_proof.source_id == source_id
+    assert disclosed_proof.handle > 0
+    assert await disclosed_proof.get_state() == State.RequestReceived
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')

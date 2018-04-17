@@ -6,6 +6,7 @@ from vcx.api.connection import Connection
 
 phone_number = '8019119191'
 source_id = '1'
+msg_id = '1'
 offer = {
     'msg_type': 'CLAIM_OFFER',
     'version': '0.1',
@@ -62,6 +63,16 @@ async def test_create_credential():
     assert credential.handle > 0
     assert await credential.get_state() == State.RequestReceived
 
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_create_credential_with_msgid():
+    connection = await Connection.create(source_id)
+    await connection.connect(phone_number)
+
+    credential = await Credential.create_with_msgid(source_id, connection, msg_id)
+    assert credential.source_id == source_id
+    assert credential.handle > 0
+    assert await credential.get_state() == State.RequestReceived
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')

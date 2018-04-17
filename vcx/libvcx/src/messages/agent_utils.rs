@@ -6,6 +6,8 @@ use self::rmp_serde::encode;
 use self::rmp_serde::Deserializer;
 use serde::Deserialize;
 use settings;
+use utils::constants::*;
+use utils::error;
 use utils::libindy::wallet;
 use utils::libindy::signus::SignusUtils;
 use utils::httpclient;
@@ -44,6 +46,22 @@ struct RegisterResponse {
     msg_type: MsgType,
 }
 
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
+struct UpdateAgentMsg {
+    #[serde(rename = "@type")]
+    msg_type: MsgType,
+    #[serde(rename = "comMethod")]
+    com_method: ComMethod,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
+struct ComMethod {
+    id: String,
+    #[serde(rename = "type")]
+    e_type: i32,
+    value: String,
+}
+
 pub fn connect_register_provision(endpoint: &str,
                                   agency_did: &str,
                                   agency_vk: &str,
@@ -51,8 +69,6 @@ pub fn connect_register_provision(endpoint: &str,
                                   seed: Option<String>,
                                   issuer_seed: Option<String>,
                                   wallet_key: Option<String>) -> Result<String,u32> {
-
-    ::utils::logger::LoggerUtils::init();
 
     let (wallet_name_string, wallet_name) = match wallet_name {
         Some(x) => (format!("\"wallet_name\":\"{}\",", x), x),
@@ -74,7 +90,7 @@ pub fn connect_register_provision(endpoint: &str,
         None => (),
     };
 
-    wallet::init_wallet(&wallet_name).unwrap();
+    wallet::init_wallet(&wallet_name)?;
 
     let seed = match seed {
         Some(x) => x,
@@ -82,7 +98,7 @@ pub fn connect_register_provision(endpoint: &str,
     };
 
     let seed_opt = if seed.len() > 0 {Some(seed.as_ref())} else {None};
-    let (my_did, my_vk) = SignusUtils::create_and_store_my_did(wallet::get_wallet_handle(), seed_opt).unwrap();
+    let (my_did, my_vk) = SignusUtils::create_and_store_my_did(wallet::get_wallet_handle(), seed_opt)?;
 
     let issuer_seed = match issuer_seed {
         Some(x) => x,
@@ -90,10 +106,16 @@ pub fn connect_register_provision(endpoint: &str,
     };
 
     let issuer_seed_opt = if issuer_seed.len() > 0 {Some(issuer_seed.as_ref())} else {None};
-    let (issuer_did, issuer_vk) = SignusUtils::create_and_store_my_did(wallet::get_wallet_handle(), issuer_seed_opt).unwrap();
+    let (issuer_did, issuer_vk) = SignusUtils::create_and_store_my_did(wallet::get_wallet_handle(), issuer_seed_opt)?;
 
     settings::set_config_value(settings::CONFIG_INSTITUTION_DID,&my_did);
     settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY,&my_vk);
+
+    if settings::test_agency_mode_enabled() {
+        httpclient::set_next_u8_response(PROVISION_RESPONSE.to_vec());
+        httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec());
+        httpclient::set_next_u8_response(PROVISION_RESPONSE.to_vec());
+    }
 
     /* STEP 1 - CONNECT */
 
@@ -104,13 +126,14 @@ pub fn connect_register_provision(endpoint: &str,
         from_did: my_did.to_string(),
         from_vk: my_vk.to_string(),
     };
-    let data = Bundled::create(encode::to_vec_named(&payload).unwrap()).encode().unwrap();
-    let data = bundle_for_agency(data, &agency_did).unwrap();
-    let data = unbundle_from_agency(httpclient::post_u8(&data,&url).unwrap()).unwrap();
+    let data = Bundled::create(encode::to_vec_named(&payload).unwrap()).encode()?;
+    let data = bundle_for_agency(data, &agency_did)?;
+    let data = unbundle_from_agency(httpclient::post_u8(&data,&url).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num).unwrap())?;
 
     trace!("deserializing connect response: {:?}", data);
     let mut de = Deserializer::new(&data[0][..]);
-    let response: ConnectResponseMsg = Deserialize::deserialize(&mut de).unwrap();
+    let response: ConnectResponseMsg = Deserialize::deserialize(&mut de).map_err(|ec| {error::INVALID_OPTION.code_num}).unwrap();
+    //self.my_vk = Some(connection::get_pw_verkey(connection_handle).map_err(|ec| CredentialError::CommonError(ec.to_error_code()))?);
     let agency_pw_vk = response.from_vk.to_owned();
     let agency_pw_did = response.from_did.to_owned();
 
@@ -124,12 +147,12 @@ pub fn connect_register_provision(endpoint: &str,
 
     let data = encode::to_vec_named(&payload).unwrap();
     let data = Bundled::create(data).encode().unwrap();
-    let data = bundle_for_agency(data, &agency_pw_did).unwrap();
-    let data = unbundle_from_agency(httpclient::post_u8(&data,&url).unwrap()).unwrap();
+    let data = bundle_for_agency(data, &agency_pw_did)?;
+    let data = unbundle_from_agency(httpclient::post_u8(&data,&url).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num).unwrap())?;
 
     trace!("deserializing register response: {:?}", data);
     let mut de = Deserializer::new(&data[0][..]);
-    let response: RegisterResponse = Deserialize::deserialize(&mut de).unwrap();
+    let response: RegisterResponse = Deserialize::deserialize(&mut de).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num).unwrap();
 
     /* STEP 3 - CREATE AGENT */
     let payload = GenericMsg {
@@ -138,12 +161,12 @@ pub fn connect_register_provision(endpoint: &str,
 
     let data = encode::to_vec_named(&payload).unwrap();
     let data = Bundled::create(data).encode().unwrap();
-    let data = bundle_for_agency(data, &agency_pw_did).unwrap();
-    let data = unbundle_from_agency(httpclient::post_u8(&data,&url).unwrap()).unwrap();
+    let data = bundle_for_agency(data, &agency_pw_did)?;
+    let data = unbundle_from_agency(httpclient::post_u8(&data,&url).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num).unwrap())?;
 
     trace!("deserializing provision response: {:?}", data);
     let mut de = Deserializer::new(&data[0][..]);
-    let response: ConnectResponseMsg = Deserialize::deserialize(&mut de).unwrap();
+    let response: ConnectResponseMsg = Deserialize::deserialize(&mut de).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num).unwrap();
     let agent_did = response.from_did;
     let agent_vk = response.from_vk;
 
@@ -178,12 +201,33 @@ pub fn connect_register_provision(endpoint: &str,
     Ok(final_config.to_owned())
 }
 
+pub fn update_agent_info(id: &str, value: &str) -> Result<(), u32> {
+    let new_config = UpdateAgentMsg {
+        msg_type: MsgType { name: "UPDATE_COM_METHOD".to_string(), ver: "1.0".to_string(), },
+        com_method: ComMethod { id: id.to_string(), e_type: 1, value: value.to_string(), },
+    };
+
+    if settings::test_agency_mode_enabled() {
+        httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec());
+    }
+
+    let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
+    let endpoint = settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT)?;
+    let url = format!("{}/agency/msg", endpoint);
+
+    let data = encode::to_vec_named(&new_config).unwrap();
+    let data = Bundled::create(data).encode().unwrap();
+    let data = bundle_for_agency(data, &to_did)?;
+    let data = unbundle_from_agency(httpclient::post_u8(&data,&url).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num).unwrap())?;
+
+    Ok(())
+}
 
 #[cfg(test)]
 mod tests {
 
     use super::*;
-    use utils::constants::{DEMO_ISSUER_PW_SEED, REGISTER_RESPONSE, PROVISION_RESPONSE};
+    use utils::constants::{DEMO_ISSUER_PW_SEED};
 
     #[test]
     fn test_connect_register_provision() {
@@ -194,10 +238,6 @@ mod tests {
         let agency_vk = "5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf";
         let host = "http://www.whocares.org";
         let wallet_key = Some("test_key".to_string());
-
-        httpclient::set_next_u8_response(PROVISION_RESPONSE.to_vec());
-        httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec());
-        httpclient::set_next_u8_response(PROVISION_RESPONSE.to_vec());
 
         let result = connect_register_provision(&host, &agency_did, &agency_vk, None, wallet_key, None, None).unwrap();
         assert!(result.len() > 0);
@@ -221,5 +261,17 @@ mod tests {
         println!("result: {}", result);
 
         wallet::delete_wallet(&wallet_name).unwrap();
+    }
+
+    #[test]
+    fn test_update_agent_info() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+
+        match update_agent_info("123", "value") {
+            Ok(_) => assert_eq!(0,0),
+            Err(x) => assert_eq!(x, 0), // should fail here
+        };
+
     }
 }

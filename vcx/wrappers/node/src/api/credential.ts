@@ -42,6 +42,23 @@ export class Credential extends VCXBaseWithState {
     }
   }
 
+  static async createWithMsgId (connection: Connection, sourceId, msgId): Promise<Credential> {
+    const credential = new Credential(sourceId)
+    try {
+      await credential._create((cb) => rustAPI().vcx_credential_create_with_msgid(
+        0,
+        sourceId,
+        connection.handle,
+        msgId,
+        cb
+        )
+      )
+      return credential
+    } catch (err) {
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_credential_create_with_msgid`)
+    }
+  }
+
   static async deserialize (credentialData: ICredentialStructData) {
     try {
       const credential = await super._deserialize<Credential, {}>(Credential, credentialData)

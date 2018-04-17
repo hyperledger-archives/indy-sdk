@@ -299,11 +299,47 @@ pub fn send_credential_request(handle: u32, connection_handle: u32) -> Result<u3
     }).map_err(handle_err)
 }
 
+pub fn get_credential_offer(connection_handle: u32, msg_id: &str) -> Result<String, CredentialError> {
+    let my_did = connection::get_pw_did(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
+    let my_vk = connection::get_pw_verkey(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
+    let agent_did = connection::get_agent_did(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
+    let agent_vk = connection::get_agent_verkey(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
+
+    if settings::test_agency_mode_enabled() { ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec()); }
+
+    let message = messages::get_message::get_matching_message(msg_id,
+                                                              &my_did,
+                                                              &my_vk,
+                                                              &agent_did,
+                                                              &agent_vk).map_err(|ec| CredentialError::CommonError(ec))?;
+
+    if message.msg_type.eq("claimOffer") {
+        let msg_data = match message.payload {
+            Some(ref data) => {
+                let data = to_u8(data);
+                crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, data.as_slice()).map_err(|ec| CredentialError::CommonError(ec))?
+            },
+            None => return Err(CredentialError::CommonError(error::INVALID_MESSAGES.code_num))
+        };
+
+        let offer = extract_json_payload(&msg_data).map_err(|ec| CredentialError::CommonError(ec))?;
+        let mut offer: CredentialOffer = serde_json::from_str(&offer)
+           .or(Err(CredentialError::InvalidCredentialJson()))?;
+
+        offer.msg_ref_id = Some(message.uid.to_owned());
+        Ok(serde_json::to_string_pretty(&offer).unwrap())
+    } else {
+        Err(CredentialError::CommonError(error::INVALID_MESSAGES.code_num))
+    }
+}
+
 pub fn get_credential_offer_messages(connection_handle: u32, match_name: Option<&str>) -> Result<String, CredentialError> {
     let my_did = connection::get_pw_did(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
     let my_vk = connection::get_pw_verkey(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
     let agent_did = connection::get_agent_did(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
     let agent_vk = connection::get_agent_verkey(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
+
+    if settings::test_agency_mode_enabled() { ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec()); }
 
     let payload = messages::get_message::get_all_message(&my_did,
                                                      &my_vk,
@@ -419,8 +455,6 @@ mod tests {
 
         let connection_h = connection::build_connection("test_send_credential_offer").unwrap();
 
-        httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
-
         let offers = get_credential_offer_messages(connection_h, None).unwrap();
         println!("{}", offers);
         let offers:Value = serde_json::from_str(&offers).unwrap();
@@ -439,5 +473,17 @@ mod tests {
         assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(c_h).unwrap());
 
         wallet::delete_wallet("full_credential_test").unwrap();
+    }
+
+    #[test]
+    fn test_get_credential_offer() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        wallet::init_wallet("test_get_credential_offer").unwrap();
+
+        let connection_h = connection::build_connection("test_get_credential_offer").unwrap();
+
+        let offer = get_credential_offer(connection_h, "123").unwrap();
+        assert!(offer.len() > 50);
     }
 }

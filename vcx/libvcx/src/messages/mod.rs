@@ -8,7 +8,7 @@ pub mod get_message;
 pub mod send_message;
 pub mod update_profile;
 pub mod proofs;
-pub mod register;
+pub mod agent_utils;
 
 use std::u8;
 use settings;

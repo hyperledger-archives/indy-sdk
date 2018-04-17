@@ -54,7 +54,10 @@ typedef struct {
  */
 
 vcx_error_t vcx_init(vcx_command_handle_t handle, const char *config_path,void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
-vcx_error_t vcx_error_message(vcx_command_handle_t handle, vcx_error_t error_code, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *error_msg));
+vcx_error_t vcx_create_agent(vcx_command_handle_t handle, const char *config, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *xconfig));
+vcx_error_t vcx_update_agent_info(vcx_command_handle_t handle, const char *info, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
+
+const char *vcx_error_c_message(int);
 
 
 /**
@@ -220,8 +223,11 @@ vcx_error_t vcx_proof_release(vcx_proof_handle_t proof_handle);
  * Used for sending a disclosed_proof to an identity owner.
  */
 
-/** Creates a disclosed_proof object.  Populates a handle to the new disclosed_proof. */
-vcx_error_t vcx_disclosed_proof_create(vcx_command_handle_t command_handle, const char *source_id, const char *requested_attrs, const char *requested_predicates, const char *name, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_proof_handle_t proof_handle));
+/** Creates a disclosed_proof object from a proof request.  Populates a handle to the new disclosed_proof. */
+vcx_error_t vcx_disclosed_proof_create_with_request(vcx_command_handle_t command_handle, const char *source_id, const char *proof_req, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_proof_handle_t proof_handle));
+
+/** Creates a disclosed_proof object from a msgid.  Populates a handle to the new disclosed_proof. */
+vcx_error_t vcx_disclosed_proof_create_with_msgid(vcx_command_handle_t command_handle, const char *source_id, vcx_connection_handle_t connection, const char *msg_id, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_proof_handle_t proof_handle));
 
 /** Asynchronously send a proof to the connection. */
 vcx_error_t vcx_disclosed_proof_send_proof(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
@@ -253,6 +259,9 @@ vcx_error_t vcx_disclosed_proof_release(vcx_proof_handle_t proof_handle);
 /** Creates a credential object from the specified credentialdef handle. Populates a handle the new credential. */
 vcx_error_t vcx_credential_create_with_offer(vcx_command_handle_t command_handle, const char *source_id, const char *credential_offer,void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle));
 
+/** Creates a credential object from the connection and msg id. Populates a handle the new credential. */
+vcx_error_t vcx_credential_create_with_msgid(vcx_command_handle_t command_handle, const char *source_id, vcx_connection_handle_t connection, const char *msg_id,void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle));
+
 /** Asynchronously sends the credential request to the connection. */
 vcx_error_t vcx_credential_send_request(vcx_command_handle_t command_handle, vcx_credential_handle_t credential_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
 
@@ -274,6 +283,7 @@ vcx_error_t vcx_credential_deserialize(vcx_command_handle_t, const char *seriali
 /** Releases the credential from memory. */
 vcx_error_t vcx_credential_release(vcx_credential_handle_t credential_handle);
 
+/** For testing purposes only */
 void vcx_set_next_agency_response(int);
 #ifdef __cplusplus
 }
