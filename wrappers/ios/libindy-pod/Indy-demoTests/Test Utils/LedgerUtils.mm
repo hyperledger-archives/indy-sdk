@@ -44,7 +44,7 @@
                               [completionExpectation fulfill];
                           }];
 
-    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
     if (responseJson) {*responseJson = outJson;}
 
@@ -204,16 +204,14 @@
 }
 
 - (NSError *)buildGetSchemaRequestWithSubmitterDid:(NSString *)submitterDid
-                                              dest:(NSString *)dest
-                                              data:(NSString *)data
+                                                id:(NSString *)id
                                         resultJson:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
 
     [IndyLedger buildGetSchemaRequestWithSubmitterDid:submitterDid
-                                                 dest:dest
-                                                 data:data
+                                                   id:id
                                            completion:^(NSError *error, NSString *request) {
                                                err = error;
                                                result = request;
@@ -223,6 +221,29 @@
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
     if (resultJson) {*resultJson = result;}
+    return err;
+}
+
+- (NSError *)parseGetSchemaResponse:(NSString *)getSchemaResponse
+                           schemaId:(NSString **)schemaId
+                         schemaJson:(NSString **)schemaJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outSchemaId = nil;
+    __block NSString *outSchemaJson = nil;
+
+    [IndyLedger parseGetSchemaResponse:getSchemaResponse
+                            completion:^(NSError *error, NSString *id, NSString *json) {
+                                err = error;
+                                outSchemaId = id;
+                                outSchemaJson = json;
+                                [completionExpectation fulfill];
+                            }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (schemaId) {*schemaId = outSchemaId;}
+    if (schemaJson) {*schemaJson = outSchemaJson;}
     return err;
 }
 
@@ -251,46 +272,17 @@
     return err;
 }
 
-// MARK: Build claim definition txn
+// MARK: Build cred definition request
 
-- (NSError *)buildClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                         xref:(NSNumber *)xref
-                                signatureType:(NSString *)signatureType
-                                         data:(NSString *)data
-                                   resultJson:(NSString **)resultJson {
-    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
-    __block NSError *err = nil;
-    __block NSString *result = nil;
-
-    [IndyLedger buildClaimDefTxnWithSubmitterDid:submitterDid
-                                            xref:xref
-                                   signatureType:signatureType
-                                            data:data
-                                      completion:^(NSError *error, NSString *request) {
-                                          err = error;
-                                          result = request;
-                                          [completionExpectation fulfill];
-                                      }];
-
-    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
-
-    if (resultJson) {*resultJson = result;}
-    return err;
-}
-
-- (NSError *)buildGetClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                            xref:(NSNumber *)xref
-                                   signatureType:(NSString *)signatureType
-                                          origin:(NSString *)origin
+- (NSError *)buildCredDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                            data:(NSString *)data
                                       resultJson:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
 
-    [IndyLedger buildGetClaimDefTxnWithSubmitterDid:submitterDid
-                                               xref:xref
-                                      signatureType:signatureType
-                                             origin:origin
+    [IndyLedger buildCredDefRequestWithSubmitterDid:submitterDid
+                                               data:data
                                          completion:^(NSError *error, NSString *request) {
                                              err = error;
                                              result = request;
@@ -302,6 +294,52 @@
     if (resultJson) {*resultJson = result;}
     return err;
 }
+
+- (NSError *)buildGetCredDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                                 id:(NSString *)id
+                                         resultJson:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+
+    [IndyLedger buildGetCredDefRequestWithSubmitterDid:submitterDid
+                                                    id:id
+                                            completion:^(NSError *error, NSString *request) {
+                                                err = error;
+                                                result = request;
+                                                [completionExpectation fulfill];
+                                            }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = result;}
+    return err;
+}
+
+- (NSError *)parseGetCredDefResponse:(NSString *)getCredDefResponse
+                           credDefId:(NSString **)credDefId
+                         credDefJson:(NSString **)credDefJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outId = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger parseGetCredDefResponse:(NSString *) getCredDefResponse
+                             completion:^(NSError *error, NSString *id, NSString *json) {
+                                 err = error;
+                                 outId = id;
+                                 outJson = json;
+                                 [completionExpectation fulfill];
+                             }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (credDefId) {*credDefId = outId;}
+    if (credDefJson) {*credDefJson = outJson;}
+    return err;
+}
+
+// MARK: Buildget txn request
 
 - (NSError *)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
                                            data:(NSNumber *)data
@@ -347,6 +385,30 @@
     return err;
 }
 
+- (NSError *)buildPoolRestartRequestWithSubmitterDid:(NSString *)submitterDid
+                                              action:(NSString *)action
+                                            datetime:(NSString *)datetime
+                                          resultJson:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+    
+    [IndyLedger buildPoolRestartRequestWithSubmitterDid:submitterDid
+                                                 action:action
+                                               datetime:datetime
+                                             completion:^(NSError *error, NSString *request) {
+                                                 err = error;
+                                                 result = request;
+                                                 [completionExpectation fulfill];
+                                             }];
+    
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    if (resultJson) {*resultJson = result;}
+    return err;
+}
+
+
 - (NSError *)buildPoolUpgradeRequestWithSubmitterDid:(NSString *)submitterDid
                                                 name:(NSString *)name
                                              version:(NSString *)version
@@ -381,6 +443,198 @@
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
     if (resultJson) {*resultJson = result;}
+    return err;
+}
+
+- (NSError *)buildRevocRegDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                                data:(NSString *)data
+                                          resultJson:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+
+    [IndyLedger buildRevocRegDefRequestWithSubmitterDid:submitterDid
+                                                   data:(NSString *) data
+                                             completion:^(NSError *error, NSString *request) {
+                                                 err = error;
+                                                 result = request;
+                                                 [completionExpectation fulfill];
+                                             }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = result;}
+    return err;
+}
+
+- (NSError *)buildGetRevocRegDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                                     id:(NSString *)id
+                                             resultJson:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+
+    [IndyLedger buildGetRevocRegDefRequestWithSubmitterDid:submitterDid
+                                                        id:id
+                                                completion:^(NSError *error, NSString *request) {
+                                                    err = error;
+                                                    result = request;
+                                                    [completionExpectation fulfill];
+                                                }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = result;}
+    return err;
+}
+
+- (NSError *)parseGetRevocRegDefResponse:(NSString *)getRevocRegDefResponse
+                           revocRegDefId:(NSString **)revocRegDefId
+                         revocRegDefJson:(NSString **)revocRegDefJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outId = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger parseGetRevocRegDefResponse:(NSString *) getRevocRegDefResponse
+                                 completion:^(NSError *error, NSString *id, NSString *json) {
+                                     err = error;
+                                     outId = id;
+                                     outJson = json;
+                                     [completionExpectation fulfill];
+                                 }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (revocRegDefId) {*revocRegDefId = outId;}
+    if (revocRegDefJson) {*revocRegDefJson = outJson;}
+    return err;
+}
+
+- (NSError *)buildRevocRegEntryRequestWithSubmitterDid:(NSString *)submitterDid
+                                                  type:(NSString *)type
+                                         revocRegDefId:(NSString *)revocRegDefId
+                                                 value:(NSString *)value
+                                            resultJson:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+
+    [IndyLedger buildRevocRegEntryRequestWithSubmitterDid:submitterDid
+                                                     type:(NSString *) type
+                                            revocRegDefId:(NSString *) revocRegDefId
+                                                    value:(NSString *) value
+                                               completion:^(NSError *error, NSString *request) {
+                                                   err = error;
+                                                   result = request;
+                                                   [completionExpectation fulfill];
+                                               }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = result;}
+    return err;
+}
+
+- (NSError *)buildGetRevocRegRequestWithSubmitterDid:(NSString *)submitterDid
+                                       revocRegDefId:(NSString *)revocRegDefId
+                                           timestamp:(NSNumber *)timestamp
+                                          resultJson:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+
+    [IndyLedger buildGetRevocRegRequestWithSubmitterDid:submitterDid
+                                          revocRegDefId:revocRegDefId
+                                              timestamp:timestamp
+                                             completion:^(NSError *error, NSString *request) {
+                                                 err = error;
+                                                 result = request;
+                                                 [completionExpectation fulfill];
+                                             }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = result;}
+    return err;
+}
+
+- (NSError *)parseGetRevocRegResponse:(NSString *)getRevocRegResponse
+                        revocRegDefId:(NSString **)revocRegDefId
+                         revocRegJson:(NSString **)revocRegJson
+                            timestamp:(NSNumber **)timestamp {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outId = nil;
+    __block NSString *outJson = nil;
+    __block NSNumber *outTimestamp = nil;
+
+    [IndyLedger parseGetRevocRegResponse:(NSString *) getRevocRegResponse
+                              completion:^(NSError *error, NSString *id, NSString *json, NSNumber *oTimestamp) {
+                                  err = error;
+                                  outId = id;
+                                  outJson = json;
+                                  outTimestamp = oTimestamp;
+                                  [completionExpectation fulfill];
+                              }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (revocRegDefId) {*revocRegDefId = outId;}
+    if (revocRegJson) {*revocRegJson = outJson;}
+    if (timestamp) {*timestamp = outTimestamp;}
+    return err;
+}
+
+- (NSError *)buildGetRevocRegDeltaRequestWithSubmitterDid:(NSString *)submitterDid
+                                            revocRegDefId:(NSString *)revocRegDefId
+                                                     from:(NSNumber *)from
+                                                       to:(NSNumber *)to
+                                               resultJson:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+
+    [IndyLedger buildGetRevocRegDeltaRequestWithSubmitterDid:submitterDid
+                                               revocRegDefId:revocRegDefId
+                                                        from:from
+                                                          to:to
+                                                  completion:^(NSError *error, NSString *request) {
+                                                      err = error;
+                                                      result = request;
+                                                      [completionExpectation fulfill];
+                                                  }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = result;}
+    return err;
+}
+
+- (NSError *)parseGetRevocRegDeltaResponse:(NSString *)getRevocRegDeltaResponse
+                             revocRegDefId:(NSString **)revocRegDefId
+                         revocRegDeltaJson:(NSString **)revocRegDeltaJson
+                                 timestamp:(NSNumber **)timestamp {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outId = nil;
+    __block NSString *outJson = nil;
+    __block NSNumber *outTimestamp = nil;
+
+    [IndyLedger parseGetRevocRegDeltaResponse:(NSString *) getRevocRegDeltaResponse
+                                   completion:^(NSError *error, NSString *id, NSString *json, NSNumber *oTimestamp) {
+                                       err = error;
+                                       outId = id;
+                                       outJson = json;
+                                       outTimestamp = oTimestamp;
+                                       [completionExpectation fulfill];
+                                   }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (revocRegDefId) {*revocRegDefId = outId;}
+    if (revocRegDeltaJson) {*revocRegDeltaJson = outJson;}
+    if (timestamp) {*timestamp = outTimestamp;}
     return err;
 }
 

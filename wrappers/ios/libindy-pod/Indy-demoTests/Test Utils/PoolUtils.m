@@ -439,7 +439,7 @@
          [completionExpectation fulfill];
      }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if (response){ *response = outResponse; }
     return err;

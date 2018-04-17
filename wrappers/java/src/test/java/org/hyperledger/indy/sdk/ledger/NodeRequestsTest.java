@@ -21,7 +21,7 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 			"\"client_port\":911," +
 			"\"alias\":\"some\"," +
 			"\"services\":[\"VALIDATOR\"]," +
-			"\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
+			"\"blskey\":\"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba\"}";
 
 	private DidJSONParameters.CreateAndStoreMyDidJSONParameter stewardDidJson =
 			new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Steward1", null, null);
@@ -61,7 +61,7 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 				"\"client_port\":911," +
 				"\"alias\":\"some\"," +
 				"\"services\":[\"SERVICE\"]" +
-				"\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
+				"\"blskey\":\"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba\"}";
 
 		Ledger.buildNodeRequest(DID, dest, data).get();
 	}

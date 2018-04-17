@@ -16,6 +16,13 @@ use utils::table::print_table;
 use self::regex::Regex;
 use self::chrono::prelude::*;
 
+pub const DELIMITER: &'static str = ":";
+pub const SCHEMA_MARKER: &'static str = "\x02";
+
+pub fn build_id(did: &str, name: &str, version: &str) -> String {
+    format!("{}{}{}{}{}{}{}", did, DELIMITER, SCHEMA_MARKER, DELIMITER, name, DELIMITER, version)
+}
+
 pub mod group {
     use super::*;
 
@@ -270,11 +277,15 @@ pub mod schema_command {
         let version = get_str_param("version", params).map_err(error_err!())?;
         let attr_names = get_str_array_param("attr_names", params).map_err(error_err!())?;
 
+        let id = build_id(&submitter_did, name, version);
+
         let schema_data = {
             let mut json = JSONMap::new();
+            json.insert("ver".to_string(), JSONValue::from("1.0"));
+            json.insert("id".to_string(), JSONValue::from(id));
             json.insert("name".to_string(), JSONValue::from(name));
             json.insert("version".to_string(), JSONValue::from(version));
-            json.insert("attr_names".to_string(), JSONValue::from(attr_names));
+            json.insert("attrNames".to_string(), JSONValue::from(attr_names));
             JSONValue::from(json).to_string()
         };
 
@@ -326,14 +337,9 @@ pub mod get_schema_command {
         let name = get_str_param("name", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
 
-        let schema_data = {
-            let mut json = JSONMap::new();
-            json.insert("name".to_string(), JSONValue::from(name));
-            json.insert("version".to_string(), JSONValue::from(version));
-            JSONValue::from(json).to_string()
-        };
+        let id = build_id(target_did, name, version);
 
-        let res = Ledger::build_get_schema_request(&submitter_did, target_did, &schema_data)
+        let res = Ledger::build_get_schema_request(&submitter_did, &id)
             .and_then(|request| Ledger::submit_request(pool_handle, &request));
 
         let response = match res {
@@ -367,15 +373,15 @@ pub mod get_schema_command {
     }
 }
 
-pub mod claim_def_command {
+pub mod cred_def_command {
     use super::*;
 
-    command!(CommandMetadata::build("claim-def", "Send Claim Def transaction to the Ledger.")
-                .add_required_param("schema_no", "Sequence number of schema")
+    command!(CommandMetadata::build("cred-def", "Send Cred Def transaction to the Ledger.")
+                .add_required_param("schema_id", "Sequence number of schema")
                 .add_required_param("signature_type", "Signature type (only CL supported now)")
                 .add_required_param("primary", "Primary key in json format")
                 .add_optional_param("revocation", "Revocation key in json format")
-                .add_example(r#"ledger claim-def schema_no=1 signature_type=CL primary={"n":"1","s":"2","rms":"3","r":{"age":"4","name":"5"},"rctxt":"6","z":"7"}"#)
+                .add_example(r#"ledger cred-def schema_id=1 signature_type=CL primary={"n":"1","s":"2","rms":"3","r":{"age":"4","name":"5"},"rctxt":"6","z":"7"}"#)
                 .finalize()
     );
 
@@ -386,19 +392,32 @@ pub mod claim_def_command {
         let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
-        let xref = get_int_param::<i32>("schema_no", params).map_err(error_err!())?;
+        let schema_id = get_str_param("schema_id", params).map_err(error_err!())?;
         let signature_type = get_str_param("signature_type", params).map_err(error_err!())?;
         let primary = get_object_param("primary", params).map_err(error_err!())?;
         let revocation = get_opt_str_param("revocation", params).map_err(error_err!())?;
 
-        let claim_def_data = {
+        let id = build_id(&submitter_did, schema_id, signature_type);
+
+        let cred_def_value = {
             let mut json = JSONMap::new();
             json.insert("primary".to_string(), primary);
             update_json_map_opt_key!(json, "revocation", revocation);
+            JSONValue::from(json)
+        };
+
+        let cred_def_data = {
+            let mut json = JSONMap::new();
+            json.insert("ver".to_string(), JSONValue::from("1.0"));
+            json.insert("id".to_string(), JSONValue::from(id));
+            json.insert("schemaId".to_string(), JSONValue::from(schema_id));
+            json.insert("type".to_string(), JSONValue::from(signature_type));
+            json.insert("tag".to_string(), JSONValue::from(String::new()));
+            json.insert("value".to_string(), JSONValue::from(cred_def_value));
             JSONValue::from(json).to_string()
         };
 
-        let response = Ledger::build_claim_def_txn(&submitter_did, xref, signature_type, &claim_def_data)
+        let response = Ledger::build_cred_def_request(&submitter_did, &cred_def_data)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
         let response = match response {
@@ -424,14 +443,14 @@ pub mod claim_def_command {
     }
 }
 
-pub mod get_claim_def_command {
+pub mod get_cred_def_command {
     use super::*;
 
-    command!(CommandMetadata::build("get-claim-def", "Get Claim Definition from Ledger.")
-                .add_required_param("schema_no", "Sequence number of schema")
+    command!(CommandMetadata::build("get-cred-def", "Get Cred Definition from Ledger.")
+                .add_required_param("schema_id", "Sequence number of schema")
                 .add_required_param("signature_type", "Signature type (only CL supported now)")
-                .add_required_param("origin", "Claim definition owner DID")
-                .add_example("ledger get-claim-def schema_no=1 signature_type=CL origin=VsKV7grR1BUE29mG2Fm2kX")
+                .add_required_param("origin", "Credential definition owner DID")
+                .add_example("ledger get-cred-def schema_id=1 signature_type=CL origin=VsKV7grR1BUE29mG2Fm2kX")
                 .finalize()
     );
 
@@ -441,11 +460,13 @@ pub mod get_claim_def_command {
         let submitter_did = ensure_active_did(&ctx)?;
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
 
-        let xref = get_int_param::<i32>("schema_no", params).map_err(error_err!())?;
+        let schema_id = get_str_param("schema_id", params).map_err(error_err!())?;
         let signature_type = get_str_param("signature_type", params).map_err(error_err!())?;
         let origin = get_str_param("origin", params).map_err(error_err!())?;
 
-        let res = Ledger::build_get_claim_def_txn(&submitter_did, xref, signature_type, origin)
+        let id = build_id(origin, signature_type, schema_id);
+
+        let res = Ledger::build_get_cred_def_request(&submitter_did, &id)
             .and_then(|request| Ledger::submit_request(pool_handle, &request));
 
         let response = match res {
@@ -465,7 +486,7 @@ pub mod get_claim_def_command {
 
         let res = handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
-                                                     "Following Claim Definition has been received.",
+                                                     "Following Credential Definition has been received.",
                                                      &[("identifier", "Identifier"),
                                                          ("seqNo", "Sequence Number"),
                                                          ("reqId", "Request ID"),
@@ -603,6 +624,55 @@ pub mod pool_config_command {
     }
 }
 
+pub mod pool_restart_command {
+    use super::*;
+
+    command!(CommandMetadata::build("pool-restart", "Send instructions to nodes to update themselves.")
+                .add_required_param("action", "Restart type. Either start or cancel.")
+                .add_optional_param("datetime", "Node restart datetime. Datetime is mandatory for action=start.")
+                .add_example(r#"ledger pool-restart action=start datetime=2020-01-25T12:49:05.258870+00:00"#)
+                .add_example(r#"ledger pool-restart action=cancel"#)
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let submitter_did = ensure_active_did(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
+
+        let action = get_str_param("action", params).map_err(error_err!())?;
+        let datetime = get_str_param("datetime", params).map_err(error_err!())?;
+
+        let response = Ledger::indy_build_pool_restart_request(&submitter_did, action, datetime)
+            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
+
+        let response = match response {
+            Ok(response) => Ok(response),
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
+        }?;
+
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Restart pool request has been sent to Ledger.",
+                                                     &[
+                                                         ("identifier", "Identifier"),
+                                                         ("reqId", "Request ID")],
+                                                     None,
+                                                     &[
+                                                         ("isSuccess", "IsSuccess"),
+                                                         ("msg", "Message"),
+                                                         ("action", "Action"),
+                                                         ("datetime", "Datetime")]));
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
 pub mod pool_upgrade_command {
     use super::*;
 
@@ -690,7 +760,6 @@ pub mod pool_upgrade_command {
             println_succ!("Schedule:");
             println!("{}", s);
         }
-
         trace!("execute << {:?}", res);
         res
     }
@@ -854,12 +923,6 @@ pub struct SchemaData {
     pub attr_names: HashSet<String>,
     pub name: String,
     pub version: String
-}
-
-#[derive(Deserialize, Debug)]
-pub struct ClaimDefData {
-    pub primary: serde_json::Value,
-    pub revocation: Option<serde_json::Value>,
 }
 
 #[cfg(test)]
@@ -1456,8 +1519,7 @@ pub mod tests {
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
 
-            new_did(&ctx, SEED_TRUSTEE);
-            use_did(&ctx, DID_TRUSTEE);
+            let did = crate_send_and_use_new_nym(&ctx);
             {
                 let cmd = schema_command::new();
                 let mut params = CommandParams::new();
@@ -1467,11 +1529,11 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap();
             }
             //TODO avoid assumption aboout previous one test schema::schema successfully passed
-            _ensure_schema_added(&ctx, DID_TRUSTEE);
+            _ensure_schema_added(&ctx, &did);
             {
                 let cmd = get_schema_command::new();
                 let mut params = CommandParams::new();
-                params.insert("did", DID_TRUSTEE.to_string());
+                params.insert("did", did);
                 params.insert("name", "gvt".to_string());
                 params.insert("version", "1.0".to_string());
                 cmd.execute(&ctx, &params).unwrap();
@@ -1541,32 +1603,32 @@ pub mod tests {
         }
     }
 
-    mod claim_def {
+    mod cred_def {
         use super::*;
 
         #[test]
-        pub fn claim_def_works() {
+        pub fn cred_def_works() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
-
+            let schema_id = send_schema(&ctx);
             let did = crate_send_and_use_new_nym(&ctx);
             {
-                let cmd = claim_def_command::new();
+                let cmd = cred_def_command::new();
                 let mut params = CommandParams::new();
-                params.insert("schema_no", "1".to_string());
+                params.insert("schema_id", schema_id.clone());
                 params.insert("signature_type", "CL".to_string());
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_claim_def_added(&ctx, &did);
+            _ensure_cred_def_added(&ctx, &did, &schema_id);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
 
         #[test]
-        pub fn claim_def_works_for_missed_required_params() {
+        pub fn cred_def_works_for_missed_required_params() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -1575,9 +1637,9 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
             {
-                let cmd = claim_def_command::new();
+                let cmd = cred_def_command::new();
                 let mut params = CommandParams::new();
-                params.insert("schema_no", "1".to_string());
+                params.insert("schema_id", "1".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
@@ -1585,7 +1647,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn claim_def_works_for_unknown_submitter() {
+        pub fn cred_def_works_for_unknown_submitter() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -1594,9 +1656,9 @@ pub mod tests {
             new_did(&ctx, SEED_MY3);
             use_did(&ctx, DID_MY3);
             {
-                let cmd = claim_def_command::new();
+                let cmd = cred_def_command::new();
                 let mut params = CommandParams::new();
-                params.insert("schema_no", "1".to_string());
+                params.insert("schema_id", "1".to_string());
                 params.insert("signature_type", "CL".to_string());
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -1606,15 +1668,15 @@ pub mod tests {
         }
 
         #[test]
-        pub fn claim_def_works_for_no_active_did() {
+        pub fn cred_def_works_for_no_active_did() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
             {
-                let cmd = claim_def_command::new();
+                let cmd = cred_def_command::new();
                 let mut params = CommandParams::new();
-                params.insert("schema_no", "1".to_string());
+                params.insert("schema_id", "1".to_string());
                 params.insert("signature_type", "CL".to_string());
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -1624,31 +1686,33 @@ pub mod tests {
         }
     }
 
-    mod get_claim_def {
+    mod get_cred_def {
         use super::*;
 
         #[test]
-        pub fn get_claim_def_works() {
+        pub fn get_cred_def_works() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
 
+            let schema_id = send_schema(&ctx);
+
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
             {
-                let cmd = claim_def_command::new();
+                let cmd = cred_def_command::new();
                 let mut params = CommandParams::new();
-                params.insert("schema_no", "1".to_string());
+                params.insert("schema_id", schema_id.clone());
                 params.insert("signature_type", "CL".to_string());
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_claim_def_added(&ctx, DID_TRUSTEE);
+            _ensure_cred_def_added(&ctx, DID_TRUSTEE, &schema_id);
             {
-                let cmd = get_claim_def_command::new();
+                let cmd = get_cred_def_command::new();
                 let mut params = CommandParams::new();
-                params.insert("schema_no", "1".to_string());
+                params.insert("schema_id", schema_id);
                 params.insert("signature_type", "CL".to_string());
                 params.insert("origin", DID_TRUSTEE.to_string());
                 cmd.execute(&ctx, &params).unwrap();
@@ -1658,7 +1722,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_claim_def_works_for_unknown_claim_def() {
+        pub fn get_cred_def_works_for_unknown_cred_def() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -1667,9 +1731,9 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
             {
-                let cmd = get_claim_def_command::new();
+                let cmd = get_cred_def_command::new();
                 let mut params = CommandParams::new();
-                params.insert("schema_no", "2".to_string());
+                params.insert("schema_id", "2".to_string());
                 params.insert("signature_type", "CL".to_string());
                 params.insert("origin", DID_MY3.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -1679,15 +1743,15 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_claim_def_works_for_no_active_did() {
+        pub fn get_cred_def_works_for_no_active_did() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
             {
-                let cmd = get_claim_def_command::new();
+                let cmd = get_cred_def_command::new();
                 let mut params = CommandParams::new();
-                params.insert("schema_no", "1".to_string());
+                params.insert("schema_id", "1".to_string());
                 params.insert("signature_type", "CL".to_string());
                 params.insert("origin", DID_TRUSTEE.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -1756,6 +1820,33 @@ pub mod tests {
                 let cmd = pool_config_command::new();
                 let mut params = CommandParams::new();
                 params.insert("writes", "true".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+    }
+
+    mod pool_restart {
+        use super::*;
+
+        #[test]
+        #[ignore]
+        pub fn pool_restart_works() {
+            let datetime = r#"2020-01-25T12:49:05.258870+00:00"#;
+
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = pool_restart_command::new();
+                let mut params = CommandParams::new();
+                params.insert("action", "start".to_string());
+                params.insert("datetime", datetime.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);
@@ -1987,12 +2078,24 @@ pub mod tests {
         });
     }
 
+    pub fn send_schema(ctx: &CommandContext) -> String {
+        let (pool_handle, _) = get_connected_pool(ctx).unwrap();
+        let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
+        let did = crate_send_and_use_new_nym(ctx);
+        let schema_data = r#"{"id":"id", "name":"cli_gvt","version":"1.0","attrNames":["name"],"ver":"1.0"}"#;
+        let schema_request = Ledger::build_schema_request(&did, schema_data).unwrap();
+        let schema_response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
+        let schema: serde_json::Value = serde_json::from_str(&schema_response).unwrap();
+        let seq_no = schema["result"]["seqNo"].as_i64().unwrap();
+        seq_no.to_string()
+    }
+
     pub fn crate_send_and_use_new_nym(ctx: &CommandContext) -> String {
         let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
         new_did(&ctx, SEED_TRUSTEE);
         use_did(&ctx, DID_TRUSTEE);
         let (did, verkey) = Did::new(wallet_handle, "{}").unwrap();
-        send_nym(ctx, &did, &verkey, None);
+        send_nym(ctx, &did, &verkey, Some("TRUST_ANCHOR"));
         use_did(&ctx, &did);
         did
     }
@@ -2030,17 +2133,20 @@ pub mod tests {
     }
 
     fn _ensure_schema_added(ctx: &CommandContext, did: &str) {
-        let data = r#"{"name":"gvt", "version":"1.0"}"#;
-        let request = Ledger::build_get_schema_request(DID_TRUSTEE, did, data).unwrap();
+        let id = build_id(did, "gvt", "1.0");
+        let request = Ledger::build_get_schema_request(DID_TRUSTEE, &id).unwrap();
         _submit_retry(ctx, &request, |response| {
-            serde_json::from_str::<Response<ReplyResult<SchemaData>>>(&response)
+            let schema: serde_json::Value = serde_json::from_str(&response).unwrap();
+            schema["result"]["seqNo"].as_i64().ok_or(())
         }).unwrap();
     }
 
-    fn _ensure_claim_def_added(ctx: &CommandContext, did: &str) {
-        let request = Ledger::build_get_claim_def_txn(DID_TRUSTEE, 1, "CL", did).unwrap();
+    fn _ensure_cred_def_added(ctx: &CommandContext, did: &str, schema_id: &str) {
+        let id = build_id(did, "CL", schema_id);
+        let request = Ledger::build_get_cred_def_request(DID_TRUSTEE, &id).unwrap();
         _submit_retry(ctx, &request, |response| {
-            serde_json::from_str::<Response<ReplyResult<ClaimDefData>>>(response)
+            let cred_def: serde_json::Value = serde_json::from_str(&response).unwrap();
+            cred_def["result"]["seqNo"].as_i64().ok_or(())
         }).unwrap();
     }
 

@@ -141,57 +141,49 @@ impl Ledger {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_schema_request(submitter_did: &str, dest: &str, data: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_schema_request(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
-        let dest = CString::new(dest).unwrap();
-        let data = CString::new(data).unwrap();
+        let id = CString::new(id).unwrap();
 
         let err = unsafe {
             indy_build_get_schema_request(command_handle,
                                           submitter_did.as_ptr(),
-                                          dest.as_ptr(),
-                                          data.as_ptr(),
+                                          id.as_ptr(),
                                           cb)
         };
 
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_claim_def_txn(submitter_did: &str, xref: i32, signature_type: &str, data: &str) -> Result<String, ErrorCode> {
+    pub fn build_cred_def_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
-        let signature_type = CString::new(signature_type).unwrap();
         let data = CString::new(data).unwrap();
 
         let err = unsafe {
-            indy_build_claim_def_txn(command_handle,
-                                     submitter_did.as_ptr(),
-                                     xref,
-                                     signature_type.as_ptr(),
-                                     data.as_ptr(),
-                                     cb)
+            indy_build_cred_def_request(command_handle,
+                                        submitter_did.as_ptr(),
+                                        data.as_ptr(),
+                                        cb)
         };
 
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_claim_def_txn(submitter_did: &str, xref: i32, signature_type: &str, origin: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_cred_def_request(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
-        let signature_type = CString::new(signature_type).unwrap();
-        let origin = CString::new(origin).unwrap();
+        let id = CString::new(id).unwrap();
 
         let err = unsafe {
-            indy_build_get_claim_def_txn(command_handle,
-                                         submitter_did.as_ptr(),
-                                         xref,
-                                         signature_type.as_ptr(),
-                                         origin.as_ptr(),
-                                         cb)
+            indy_build_get_cred_def_request(command_handle,
+                                            submitter_did.as_ptr(),
+                                            id.as_ptr(),
+                                            cb)
         };
 
         super::results::result_to_string(err, receiver)
@@ -228,6 +220,23 @@ impl Ledger {
                                            cb)
         };
 
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn indy_build_pool_restart_request(submitter_did: &str, action: &str, datetime: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let action = CString::new(action).unwrap();
+        let datetime = CString::new(datetime).unwrap();
+
+        let err = unsafe {
+            indy_build_pool_restart_request(command_handle,
+                                            submitter_did.as_ptr(),
+                                            action.as_ptr(),
+                                            datetime.as_ptr(),
+                                            cb)
+        };
         super::results::result_to_string(err, receiver)
     }
 
@@ -322,25 +331,20 @@ extern {
     #[no_mangle]
     fn indy_build_get_schema_request(command_handle: i32,
                                      submitter_did: *const c_char,
-                                     dest: *const c_char,
-                                     data: *const c_char,
+                                     id: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
-    fn indy_build_claim_def_txn(command_handle: i32,
-                                submitter_did: *const c_char,
-                                xref: i32,
-                                signature_type: *const c_char,
-                                data: *const c_char,
-                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
+    fn indy_build_cred_def_request(command_handle: i32,
+                                   submitter_did: *const c_char,
+                                   data: *const c_char,
+                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
-    fn indy_build_get_claim_def_txn(command_handle: i32,
-                                    submitter_did: *const c_char,
-                                    xref: i32,
-                                    signature_type: *const c_char,
-                                    origin: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
+    fn indy_build_get_cred_def_request(command_handle: i32,
+                                       submitter_did: *const c_char,
+                                       id: *const c_char,
+                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
     fn indy_build_node_request(command_handle: i32,
@@ -355,6 +359,13 @@ extern {
                                       writes: bool,
                                       force: bool,
                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
+
+    #[no_mangle]
+    fn indy_build_pool_restart_request(command_handle: i32,
+                                       submitter_did: *const c_char,
+                                       action: *const c_char,
+                                       datetime: *const c_char,
+                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
     fn indy_build_pool_upgrade_request(command_handle: i32,
