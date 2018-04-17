@@ -1,4 +1,4 @@
-# Tokens Interface
+# Payment Interface
 
 This design proposes to make libindy aware about payments and tokens that can be implemented with Indy infrastructure.
 
@@ -33,7 +33,7 @@ This design proposes to make libindy aware about payments and tokens that can be
   handlers.
 * Payments interface must be interoperable as possible between different payment methods.
 
-![Tokens Interface](./payment-interface.svg)
+![Payment Interface](./payment-interface.svg)
 
 ## Payment Method API and Payment Method Handler Interface
 
