@@ -98,7 +98,7 @@ impl From<indy_crypto::errors::IndyCryptoError> for AnoncredsError {
             IndyCryptoError::AnoncredsRevocationAccumulatorIsFull(err) => AnoncredsError::AccumulatorIsFull(err),
             IndyCryptoError::AnoncredsProofRejected(err) => AnoncredsError::ProofRejected(err),
             IndyCryptoError::AnoncredsInvalidRevocationAccumulatorIndex(err) => AnoncredsError::InvalidUserRevocIndex(err),
-            IndyCryptoError::AnoncredsClaimRevoked(err) => AnoncredsError::CredentialRevoked(err),
+            IndyCryptoError::AnoncredsCredentialRevoked(err) => AnoncredsError::CredentialRevoked(err),
             _ => AnoncredsError::CommonError(CommonError::InvalidStructure("Invalid error code".to_string()))
         }
     }

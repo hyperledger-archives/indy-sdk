@@ -126,7 +126,8 @@ public class Ledger extends IndyJava.API {
 			future.complete(result);
 		}
 	};
-	
+
+
 	/*
 	 * STATIC METHODS
 	 */
@@ -730,6 +731,36 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
+	 * Builds a POOL_RESTART request.
+	 *
+	 * param submitter_did: Id of Identity that sender transaction
+	 * param action       : Action that pool has to do after received transaction.
+	 * 						Can be "start" or "cancel"
+	 * schedule           : Time when pool must be restarted.
+	 */
+	public static CompletableFuture<String> buildPoolRestartRequest(
+			String submitterDid,
+			String action,
+			String datetime) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_pool_restart_request(
+				commandHandle,
+				submitterDid,
+				action,
+				datetime,
+				buildRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
 	 * Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
 	 * It upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).
 	 *
@@ -1078,4 +1109,3 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 }
-
