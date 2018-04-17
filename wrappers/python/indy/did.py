@@ -70,7 +70,7 @@ async def replace_keys_start(wallet_handle: int,
             "crypto_type": string, (optional; if not set then ed25519 curve is used;
                       currently only 'ed25519' value is supported for this field)
         }
-    :return: verkey (for verification of signature) and public_key (for decryption)
+    :return: verkey
     """
 
     logger = logging.getLogger(__name__)
@@ -105,7 +105,7 @@ async def replace_keys_apply(wallet_handle: int,
     Apply temporary keys as main for an existing DID (owned by the caller of the library).
 
     :param wallet_handle: wallet handler (created by open_wallet).
-    :param did: DID
+    :param did: The DID to resolve key.
     :return: Error code
     """
 
@@ -284,7 +284,7 @@ async def key_for_did(pool_handle: int,
     that is used for checking the freshness of cached pool value.
 
     Note if you don't want to resolve their DID info from the ledger you can use
-    "indy_key_for_local_did" call instead that will look only to local wallet and skip
+    "key_for_local_did" call instead that will look only to local wallet and skip
     freshness checking.
 
     Note that "create_and_store_my_did" makes similar wallet record as "create_key".
@@ -292,8 +292,8 @@ async def key_for_did(pool_handle: int,
 
     :param pool_handle: Pool handle (created by open_pool).
     :param wallet_handle: Wallet handle (created by open_wallet).
-    :param did:
-    :return: key:
+    :param did: The DID to resolve key.
+    :return: key:   The DIDs ver key (key id).
     """
 
     logger = logging.getLogger(__name__)
@@ -336,8 +336,8 @@ async def key_for_local_did(wallet_handle: int,
     As result we can use returned ver key in all generic crypto and messaging functions.
 
     :param wallet_handle: Wallet handle (created by open_wallet).
-    :param did:
-    :return: key:
+    :param did: The DID to resolve key.
+    :return: key: The DIDs ver key (key id).
     """
 
     logger = logging.getLogger(__name__)
@@ -368,12 +368,12 @@ async def set_endpoint_for_did(wallet_handle: int,
                                address: str,
                                transport_key: str) -> None:
     """
-    Creates keys pair and stores in the wallet.
+    Set/replaces endpoint information for the given DID.
 
     :param wallet_handle: Wallet handle (created by open_wallet).
-    :param did: encrypted DID.
-    :param address:
-    :param transport_key:
+    :param did: The DID to resolve endpoint.
+    :param address: The DIDs endpoint address.
+    :param transport_key: The DIDs transport key (ver key, key id).
     :return: Error code
     """
 
@@ -407,10 +407,11 @@ async def get_endpoint_for_did(wallet_handle: int,
                                pool_handle: int,
                                did: str) -> (str, Optional[str]):
     """
+    Returns endpoint information for the given DID.
 
     :param wallet_handle: Wallet handle (created by open_wallet).
     :param pool_handle: Pool handle (created by open_pool).
-    :param did:
+    :param did: The DID to resolve endpoint.
     :return: (endpoint, transport_vk)
     """
 
@@ -576,7 +577,7 @@ async def abbreviate_verkey(did: str,
     Retrieves abbreviated verkey if it is possible otherwise return full verkey.
 
     :param did: The DID.
-    :param full_verkey: The Verkey.
+    :param full_verkey: The DIDs verification key,
     :return: metadata: Either abbreviated or full verkey.
     """
 
