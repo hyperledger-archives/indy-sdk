@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 async def demo():
-    logger.info("Anoncreds sample -> started")
+    logger.info("Anoncreds Revocation sample -> started")
 
     pool_name = 'pool1'
     issuer_wallet_name = 'issuer_wallet'
@@ -148,7 +148,7 @@ async def demo():
     await wallet.close_wallet(prover_wallet)
     await wallet.delete_wallet(prover_wallet_name, None)
 
-    logger.info("Anoncreds sample -> completed")
+    logger.info("Anoncreds Revocation sample -> completed")
 
 
 if __name__ == '__main__':
