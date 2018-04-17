@@ -51,6 +51,7 @@ public abstract class LibIndy {
 		public int indy_build_claim_def_txn(int command_handle, String submitter_did, int xref, String signature_type, String data, Callback cb);
 		public int indy_build_get_claim_def_txn(int command_handle, String submitter_did, int xref, String signature_type, String origin, Callback cb);
 		public int indy_build_node_request(int command_handle, String submitter_did, String target_did, String data, Callback cb);
+		public int indy_build_get_validator_info_request(int command_handle, String submitter_did, Callback cb);
 		public int indy_build_get_txn_request(int command_handle, String submitter_did, int data, Callback cb);
 		public int indy_build_pool_config_request(int command_handle, String submitter_did, boolean writes, boolean force, Callback cb);
 		public int indy_build_pool_restart_request(int command_handle, String submitter_did, String action, String datetime, Callback cb);

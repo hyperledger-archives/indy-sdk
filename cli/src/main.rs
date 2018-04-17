@@ -85,6 +85,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::schema_command::new())
         .add_command(ledger::get_schema_command::new())
         .add_command(ledger::claim_def_command::new())
+        .add_command(ledger::get_validator_info_command::new())
         .add_command(ledger::get_claim_def_command::new())
         .add_command(ledger::node_command::new())
         .add_command(ledger::pool_config_command::new())

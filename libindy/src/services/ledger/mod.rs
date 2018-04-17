@@ -149,6 +149,12 @@ impl LedgerService {
             .map_err(|err| CommonError::InvalidState(format!("Invalid node request json: {:?}", err)))
     }
 
+    pub fn build_get_validator_info_request(&self, identifier: &str) -> Result<String, CommonError> {
+        let operation = GetValidatorInfoOperation::new();
+        Request::build_request(identifier.to_string(), operation)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid get validator info request json: {:?}", err)))
+    }
+
     pub fn build_get_txn_request(&self, identifier: &str, data: i32) -> Result<String, CommonError> {
         let operation = GetTxnOperation::new(data);
         Request::build_request(identifier.to_string(), operation)

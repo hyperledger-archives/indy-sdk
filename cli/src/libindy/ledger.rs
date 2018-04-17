@@ -178,6 +178,20 @@ impl Ledger {
         super::results::result_to_string(err, receiver)
     }
 
+    pub fn build_get_validator_info_request(submitter_did: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+
+        let err = unsafe {
+            indy_build_get_validator_info_request(command_handle,
+                                         submitter_did.as_ptr(),
+                                         cb)
+        };
+
+        super::results::result_to_string(err, receiver)
+    }
+
     pub fn build_get_claim_def_txn(submitter_did: &str, xref: i32, signature_type: &str, origin: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
@@ -342,6 +356,11 @@ extern {
                                      dest: *const c_char,
                                      data: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
+
+    #[no_mangle]
+    fn indy_build_get_validator_info_request(command_handle: i32,
+                                            submitter_did: *const c_char,
+                                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
     fn indy_build_claim_def_txn(command_handle: i32,

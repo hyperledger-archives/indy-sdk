@@ -305,6 +305,7 @@ impl PoolWorker {
                 }
             }
         }
+
         if poll_items[0].is_readable() {
             let cmd = self.cmd_sock.recv_multipart(zmq::DONTWAIT)?;
             trace!("cmd {:?}", cmd);

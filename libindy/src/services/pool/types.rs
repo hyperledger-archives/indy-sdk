@@ -273,6 +273,20 @@ impl MinValue for Vec<(CatchupRep, usize)> {
 }
 
 #[derive(Debug)]
+pub struct EqValue {
+    pub inner: serde_json::Value
+}
+
+impl Eq for EqValue {}
+
+impl PartialEq for EqValue {
+    fn eq(&self, other: &EqValue) -> bool {
+        self.inner.to_string() == other.inner.to_string()
+    }
+}
+
+
+#[derive(Debug)]
 pub struct HashableValue {
     pub inner: serde_json::Value
 }
@@ -304,6 +318,7 @@ pub struct ResendableRequest {
 pub struct CommandProcess {
     pub nack_cnt: usize,
     pub replies: HashMap<HashableValue, usize>,
+    pub accum_replies : EqValue,
     pub parent_cmd_ids: Vec<i32>,
     pub resendable_request: Option<ResendableRequest>,
     pub full_cmd_timeout: Option<time::Tm>,

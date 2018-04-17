@@ -305,6 +305,45 @@ pub mod schema_command {
     }
 }
 
+pub mod get_validator_info_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-validator-info", "Get Validator info from Ledger.")
+                .add_example("ledger get-validator-info")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let submitter_did = ensure_active_did(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+
+        let res = Ledger::build_get_validator_info_request(&submitter_did)
+            .and_then(|request| Ledger::submit_request(pool_handle, &request));
+
+        let response = match res {
+            Ok(response) => Ok(response),
+            Err(err) => handle_transaction_error(err, None, None, None),
+        }?;
+
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        // TODO write valid handle transaction response
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Following Validator info has been received.",
+                                                     &[("reqId", "Request ID")],
+                                                     Some("data"),
+                                                     &[("name", "Name"),
+                                                         ("version", "Version"),
+                                                         ("attr_names", "Attributes")]));
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
 pub mod get_schema_command {
     use super::*;
 
@@ -1492,6 +1531,13 @@ pub mod tests {
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
+    }
+
+    mod get_validator_info {
+        use super::*;
+
+        #[test]
+        #[ignore]
     }
 
     mod get_schema {

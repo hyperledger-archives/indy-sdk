@@ -858,6 +858,41 @@ mod high_cases {
         }
     }
 
+    mod get_validator_info {
+        use super::*;
+
+        #[test]
+        #[ignore] /* FIXME It isn't structure form json */
+        fn indy_build_get_validator_info_request() {
+            let expected_result = String("Some result");
+
+            let get_validator_info_request = LedgerUtils::build_get_validator_info_request(IDENTIFIER).unwrap();
+            assert!(get_validator_info_request.contains(&expected_result));
+        }
+
+        #[test]
+        #[ignore] /* FIXME It isn't structure form json */
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_validator_info_request_works() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
+
+            let get_validator_info_request = LedgerUtils::build_get_validator_info_request(&did).unwrap();
+            let get_validator_info_response = LedgerUtils::submit_request(pool_handle, &get_validator_info_request).unwrap();
+
+            let get_validator_info_response: Reply<GetValidatorInfoResult> = serde_json::from_str(&get_validator_info_response).unwrap();
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
     mod get_txn_requests {
         use super::*;
 
