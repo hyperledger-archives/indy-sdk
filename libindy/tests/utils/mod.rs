@@ -22,7 +22,6 @@ pub mod results;
 #[path = "../../src/utils/test.rs"]
 pub mod test;
 
-#[path = "../../src/utils/timeout.rs"]
 pub mod timeout;
 
 #[path = "../../src/utils/sequence.rs"]

@@ -69,7 +69,7 @@ impl Default for CatchupHandler {
 }
 
 impl CatchupHandler {
-    pub fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
+    pub fn process_msg(&mut self, msg: Message, _raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         let catchup_status: CatchupProgress = match msg {
             Message::Pong => {
                 //sending ledger status
@@ -164,7 +164,8 @@ impl CatchupHandler {
 
         let active_node_cnt = self.nodes.iter().filter(|node| !node.is_blacklisted).count();
 
-        if active_node_cnt == 0 { // TODO FIXME
+        if active_node_cnt == 0 {
+            // TODO FIXME
             return Err(PoolError::Terminate);
         }
 
@@ -307,7 +308,7 @@ impl CatchupHandler {
             .send(Command::Pool(cmd))
             .map_err(|err|
                 PoolError::CommonError(
-                    CommonError::InvalidState("Can't send ACK cmd".to_string())))
+                    CommonError::InvalidState(format!("Can't send ACK cmd: {:?}", err))))
     }
 
     pub fn get_upcoming_timeout(&self) -> Option<time::Tm> {

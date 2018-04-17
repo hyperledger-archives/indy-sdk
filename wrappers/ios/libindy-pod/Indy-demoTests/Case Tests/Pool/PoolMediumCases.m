@@ -76,7 +76,7 @@
     NSError *ret = [[PoolUtils sharedInstance] openPoolLedger:poolName
                                                        config:nil
                                                   poolHandler:nil];
-    XCTAssertEqual(ret.code, CommonIOError, @"PoolUtils::openPoolLedger returned wrong code");
+    XCTAssertEqual(ret.code, PoolLedgerNotCreatedError, @"PoolUtils::openPoolLedger returned wrong code");
     [TestUtils cleanupStorage];
 }
 
