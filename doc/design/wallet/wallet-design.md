@@ -55,10 +55,15 @@ This API shouldn't have an access to secrets stored by Secret Entities API.
 /// value: the value of record
 /// tags_json: the record tags used for search and storing meta information as json:
 ///   {
-///     "tagName1": "tag value 1", // string value
-///     "tagName2": 123, // numeric value
+///     "tagName1": <str>, // string tag (will be stored encrypted)
+///     "tagName2": <int>, // int tag (will be stored encrypted)
+///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
+///     "~tagName4": <int>, // int tag (will be stored un-encrypted)
 ///   }
 ///   Note that null means no tags
+///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
+///   usage of this tag in complex search queries (comparison, predicates)
+///   Encrypted tags can be searched only for exact matching
 extern pub fn indy_add_wallet_record(command_handle: i32,
                                      wallet_handle: i32,
                                      type_: *const c_char,
@@ -89,12 +94,17 @@ extern pub fn indy_update_wallet_record_value(command_handle: i32,
 /// wallet_handle: wallet handle (created by open_wallet)
 /// type_: allows to separate different record types collections
 /// id: the id of record
-/// tags_json: the new record tags used for search and storing meta information as json:
+/// tags_json: the record tags used for search and storing meta information as json:
 ///   {
-///     "tagName1": "tag value 1", // string value
-///     "tagName2": 123, // numeric value
+///     "tagName1": <str>, // string tag (will be stored encrypted)
+///     "tagName2": <int>, // int tag (will be stored encrypted)
+///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
+///     "~tagName4": <int>, // int tag (will be stored un-encrypted)
 ///   }
 ///   Note that null means no tags
+///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
+///   usage of this tag in complex search queries (comparison, predicates)
+///   Encrypted tags can be searched only for exact matching
 extern pub fn indy_update_wallet_record_tags(command_handle: i32,
                                              wallet_handle: i32,
                                              type_: *const c_char,
@@ -109,13 +119,17 @@ extern pub fn indy_update_wallet_record_tags(command_handle: i32,
 /// wallet_handle: wallet handle (created by open_wallet)
 /// type_: allows to separate different record types collections
 /// id: the id of record
-/// tags_json: the additional record tags as json:
+/// tags_json: the record tags used for search and storing meta information as json:
 ///   {
-///     "tagName1": "tag value 1", // string value
-///     "tagName2": 123, // numeric value,
-///     ...
+///     "tagName1": <str>, // string tag (will be stored encrypted)
+///     "tagName2": <int>, // int tag (will be stored encrypted)
+///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
+///     "~tagName4": <int>, // int tag (will be stored un-encrypted)
 ///   }
 ///   Note that null means no tags
+///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
+///   usage of this tag in complex search queries (comparison, predicates)
+///   Encrypted tags can be searched only for exact matching
 ///   Note if some from provided tags already assigned to the record than
 ///     corresponding tags values will be replaced
 extern pub fn indy_add_wallet_record_tags(command_handle: i32,
@@ -182,10 +196,14 @@ extern pub fn indy_get_wallet_record(command_handle: u32,
                                      cb: Option<extern fn(command_handle_: i32, err: ErrorCode,
                                                           record_json: *const c_char)>) -> ErrorCode {}
 
-/// Search for wallet records
+/// Search for wallet records.
+///
+/// Note instead of immediately returning of fetched records
+/// this call returns wallet_search_handle that can be used later
+/// to fetch records by small batches (with indy_fetch_wallet_search_next_records).
 ///
 /// #Params
-/// storage_handle: opened storage handle (See open handler)
+/// wallet_handle: wallet handle (created by open_wallet)
 /// type_: allows to separate different record types collections
 /// query_json: MongoDB style query to wallet record tags:
 ///  {
@@ -197,13 +215,32 @@ extern pub fn indy_get_wallet_record(command_handle: u32,
 ///  }
 /// options_json: //TODO: FIXME: Think about replacing by bitmaks
 ///  {
-///    skip: (optional, 0 by default) Skip first "skip" wallet records,
-///    limit: (optional, 100 by default) limit amount of records to retrieve,
 ///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
-///    retrieveTotalCount: (optional, false by default) Calculate total count (without skip/limit apply),
+///    retrieveTotalCount: (optional, false by default) Calculate total count,
 ///    retrieveValue: (optional, true by default) Retrieve record value,
 ///    retrieveTags: (optional, true by default) Retrieve record tags,
 ///  }
+/// #Returns
+/// wallet_search_handle: Wallet search handle that can be used later
+///   to fetch records by small batches (with indy_fetch_wallet_search_next_records)
+extern pub fn indy_open_wallet_search(command_handle: u32,
+                                      wallet_handle: i32,
+                                      type_: *const c_char,
+                                      query_json: *const c_char,
+                                      options_json: *const c_char,
+                                      cb: Option<extern fn(command_handle_: i32, err: ErrorCode,
+                                                           wallet_search_handle_p: *mut i32)>) -> ErrorCode {}
+
+
+/// Fetch next records for wallet search.
+///
+/// Not if there are no records this call returns WalletNoRecords error.
+///
+/// #Params
+/// wallet_handle: wallet handle (created by open_wallet)
+/// wallet_search_handle: wallet wallet handle (created by indy_open_wallet_search)
+/// count: Count of records to fetch
+///
 /// #Returns
 /// wallet records json:
 /// {
@@ -214,14 +251,12 @@ extern pub fn indy_get_wallet_record(command_handle: u32,
 ///       tags: <tags json>, // present only if retrieveTags set to true
 ///   }],
 /// }
-extern pub fn indy_search_wallet_records(command_handle: u32,
-                                         wallet_handle: i32,
-                                         type_: *const c_char,
-                                         query_json: *const c_char,
-                                         options_json: *const c_char,
-                                         cb: Option<extern fn(command_handle_: i32, err: ErrorCode,
-                                                              records_json: *const c_char)>) -> ErrorCode {}
-
+extern pub fn indy_fetch_wallet_search_next_records(command_handle: u32,
+                                                    wallet_handle: i32,
+                                                    wallet_search_handle: i32,
+                                                    count: u32,
+                                                    cb: Option<extern fn(command_handle_: i32, err: ErrorCode,
+                                                                         records_json: *const c_char)>) -> ErrorCode {}
 ```
 
 ## Wallet API and Storage Interface
@@ -310,7 +345,8 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                            /// storage_handle: opened storage handle (See open handler)
                                            /// type_: allows to separate different record types collections
                                            /// id: the id of record
-                                           /// value: the value of record
+                                           /// value: the value of record (pointer to buffer)
+                                           /// value_len: the value of record (buffer size)
                                            /// tags_json: the record tags used for search and storing meta information as json:
                                            ///   {
                                            ///     "tagName1": "tag value 1", // string value
@@ -320,7 +356,8 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                            add_record: Option<extern fn(storage_handle: i32,
                                                                         type_: *const c_char,
                                                                         id: *const c_char,
-                                                                        value: *const c_char,
+                                                                        value: *const u8,
+                                                                        value_len: usize,
                                                                         tags_json: *const c_char) -> ErrorCode>,
 
                                            /// Update a record value
@@ -329,11 +366,13 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                            /// storage_handle: opened storage handle (See open handler)
                                            /// type_: allows to separate different record types collections
                                            /// id: the id of record
-                                           /// value: the new value of record
+                                           /// value: the value of record (pointer to buffer)
+                                           /// value_len: the value of record (buffer size)
                                            update_record_value: Option<extern fn(storage_handle: i32,
                                                                                  type_: *const c_char,
                                                                                  id: *const c_char,
-                                                                                 value: *const c_char) -> ErrorCode>,
+                                                                                 value: *const c_char,
+                                                                                 value_len: usize) -> ErrorCode>,
 
                                            /// Update a record tags
                                            ///
@@ -424,7 +463,8 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                           ///          Note that pointer lifetime the same as retrieved record lifetime
                                           ///            (until record_free called)
                                           get_record_id: Option<extern fn(storage_handle: u32,
-                                                                          record_handle: u32) -> *const c_char>,
+                                                                          record_handle: u32,
+                                                                          record_id_p: *mut *const c_char) -> ErrorCode>,
 
                                           /// Get an value for retrieved wallet storage record
                                           ///
@@ -437,7 +477,9 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                           ///            (until record_free called)
                                           ///          Note that null be returned if no value retrieved
                                           get_record_value: Option<extern fn(storage_handle: u32,
-                                                                             record_handle: u32) -> *const c_char>,
+                                                                             record_handle: u32,
+                                                                             record_value_p: *mut *const u8,
+                                                                             record_value_len_p: *mut i32) -> ErrorCode>,
 
                                           /// Get an tags for retrieved wallet record
                                           ///
@@ -450,7 +492,8 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                           ///            (until record_free called)
                                           ///          Note that null be returned if no tags retrieved
                                           get_record_tags: Option<extern fn(storage_handle: u32,
-                                                                            record_handle: u32) -> *const c_char>,
+                                                                            record_handle: u32,
+                                                                            record_tags_p: *mut *const c_char) -> ErrorCode>,
 
                                           /// Free retrieved wallet record (make retrieved record handle invalid)
                                           ///
@@ -475,10 +518,8 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                           ///  }
                                           /// options_json: //TODO: FIXME: Think about replacing by bitmaks
                                           ///  {
-                                          ///    skip: (optional, 0 by default) Skip first "skip" wallet records,
-                                          ///    limit: (optional, 100 by default) limit amount of records to retrieve,
                                           ///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
-                                          ///    retrieveTotalCount: (optional, false by default) Calculate total count (without skip/limit apply),
+                                          ///    retrieveTotalCount: (optional, false by default) Calculate total count,
                                           ///    retrieveValue: (optional, true by default) Retrieve record value,
                                           ///    retrieveTags: (optional, true by default) Retrieve record tags,
                                           ///  }
@@ -498,17 +539,8 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                           /// returns: total count of records that corresponds to wallet storage search query
                                           ///          Note -1 will be returned if retrieveTotalCount set to false for search_records
                                           get_search_total_count: Option<extern fn(storage_handle: u32,
-                                                                                   search_handle: u32) -> u32>,
-
-                                          /// Get count of records that were actually retrieved
-                                          ///
-                                          /// #Params
-                                          /// storage_handle: opened storage handle (See open handler)
-                                          /// search_handle: wallet search handle (See search_records handler)
-                                          ///
-                                          /// returns: count of records that were actually retrieved
-                                          get_search_count: Option<extern fn(storage_handle: u32,
-                                                                             search_handle: u32) -> u32>,
+                                                                                   search_handle: u32,
+                                                                                   total_count_p: *mut u32) -> ErrorCode>,
 
                                           /// Get the next wallet storage record handle retrieved by this wallet search.
                                           ///
@@ -517,9 +549,10 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                           /// search_handle: wallet search handle (See search_records handler)
                                           ///
                                           /// returns: record handle (the same as for get_record handler)
-                                          ///          Note if no more records -1 will be returned
-                                          get_search_next_record: Option<extern fn(storage_handle: u32,
-                                                                                   search_handle: u32) -> u32>,
+                                          ///          Note if no more records WalletNoRecords error will be returned
+                                          fetch_search_next_record: Option<extern fn(storage_handle: u32,
+                                                                                     search_handle: u32,
+                                                                                     record_handle_p: *mut i32) -> ErrorCode>,
 
                                           /// Free wallet search (make search handle invalid)
                                           ///
@@ -588,11 +621,15 @@ impl WalletService {
                                                        options_json: *const c_char,
                                                        record_handle_p: *mut u32) -> ErrorCode,
                                  get_record_id: extern fn(storage_handle: u32,
-                                                          record_handle: u32) -> *const c_char,
+                                                          record_handle: u32,
+                                                          record_id_p: *mut *const c_char) -> ErrorCode,
                                  get_record_value: extern fn(storage_handle: u32,
-                                                             record_handle: u32) -> *const c_char,
+                                                             record_handle: u32,
+                                                             record_value_p: *mut *const u8,
+                                                             record_value_len_p: *mut usize) -> ErrorCode,
                                  get_record_tags: extern fn(storage_handle: u32,
-                                                            record_handle: u32) -> *const c_char,
+                                                            record_handle: u32,
+                                                            record_tags_p: *mut *const c_char) -> ErrorCode,
                                  free_record: extern fn(storage_handle: u32,
                                                         record_handle: u32) -> ErrorCode,
                                  search_records: extern fn(storage_handle: u32,
@@ -601,10 +638,11 @@ impl WalletService {
                                                            options_json: *const c_char,
                                                            search_handle_p: *mut u32) -> ErrorCode,
                                  get_search_total_count: extern fn(storage_handle: u32,
-                                                                   search_handle: u32) -> u32,
-                                 get_search_count: extern fn(storage_handle: u32,
-                                 get_search_next_record: Option<extern fn(storage_handle: u32,
-                                                                          search_handle: u32) -> u32,
+                                                                   search_handle: u32,
+                                                                   total_count_p: *mut u32) -> ErrorCode,
+                                 fetch_search_next_record: Option<extern fn(storage_handle: u32,
+                                                                            search_handle: u32,
+                                                                            record_handle_p: *mut i32) -> ErrorCode,
                                  free_search: extern fn(storage_handle: u32,
                                                         search_handle: u32) -> ErrorCode>) -> Result<(), WalletError> {}
 
@@ -662,10 +700,10 @@ impl WalletService {
                      id: &str,
                      options_json: &str) -> Result<WalletRecord, WalletError> {}
 
-  pub fn search_records(storage_handle: u32,
-                        type_: &str,
-                        query_json: &str,
-                        options_json: &str) -> Result<WalletSearch, WalletError> {}
+    pub fn search_records(storage_handle: u32,
+                          type_: &str,
+                          query_json: &str,
+                          options_json: &str) -> Result<WalletSearch, WalletError> {}
 }
 
 impl WalletRecord {
@@ -679,9 +717,9 @@ impl WalletRecord {
 
 impl WalletSearch {
 
-  pub fn get_total_count() -> Option<i32> {}
+  pub fn get_total_count() -> Result<Option<i32>, WalletError> {}
 
-  pub fn get_records() -> &[WalletRecord] {}
+  pub fn fetch_next_record() -> Result<Option<WalletRecord>, WalletError> {}
 }
 
 ```
@@ -718,7 +756,7 @@ The idea is the following:
 
 The idea is the following:
 
-* libindy will use specific prefix for all internal record tags like "~lbindyTag"
+* libindy will use specific prefix for all internal record tags like "~libindyTag"
 * For all user interfaces it will be impossible to modify tags with this prefix
 * If user passes tag with this prefix to any function that modifies tags libindy will return validation error
 * Note that it will be possible for user application to read libindy defined tags and use these tags for searching
