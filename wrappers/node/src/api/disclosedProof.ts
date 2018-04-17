@@ -42,6 +42,23 @@ export class DisclosedProof extends VCXBaseWithState {
     }
   }
 
+  static async createWithMsgId (connection: Connection, sourceId, msgId): Promise<DisclosedProof> {
+    const newObj = new DisclosedProof(sourceId)
+    try {
+      await newObj._create((cb) => rustAPI().vcx_disclosed_proof_create_with_msgid(
+        0,
+        sourceId,
+        connection.handle,
+        msgId,
+        cb
+        )
+      )
+      return newObj
+    } catch (err) {
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_disclosed_proof_create_with_msgid`)
+    }
+  }
+
   static async deserialize (data: IDisclosedProofData) {
     try {
       const newObj = await super._deserialize<DisclosedProof, {}>(DisclosedProof, data)

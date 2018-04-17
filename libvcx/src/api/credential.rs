@@ -59,6 +59,60 @@ pub extern fn vcx_credential_create_with_offer(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Create a Credential object that requests and receives a credential for an institution
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: Institution's personal identification for the credential, should be unique.
+///
+/// connection: connection to query for credential offer
+///
+/// msg_id: msg_id that contains the credential offer
+///
+/// cb: Callback that provides credential handle or error status
+///
+/// #Returns
+/// Error code as a u32
+
+#[no_mangle]
+#[allow(unused_variables, unused_mut)]
+pub extern fn vcx_credential_create_with_msgid(command_handle: u32,
+                                    source_id: *const c_char,
+                                    connection_handle: u32,
+                                    msg_id: *const c_char,
+                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, credential_handle: u32)>) -> u32 {
+
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(msg_id, error::INVALID_OPTION.code_num);
+
+    info!("vcx_credential_create_with_msgid(command_handle: {}, source_id: {}, connection_handle: {}, msg_id: {})",
+          command_handle, source_id, connection_handle, msg_id);
+
+    thread::spawn(move|| {
+        match credential::get_credential_offer(connection_handle, &msg_id) {
+            Ok(offer) => {
+                match credential::credential_create_with_offer(&source_id, &offer) {
+                    Ok(handle) => {
+                        info!("vcx_credential_create_with_offer_cb(command_handle: {}, source_id: {}, rc: {}, handle: {})",
+                              command_handle, source_id, error_string(0), handle);
+                        cb(command_handle, error::SUCCESS.code_num, handle)
+                    },
+                    Err(e) => {
+                        warn!("vcx_credential_create_with_offer_cb(command_handle: {}, source_id: {}, rc: {}, handle: {})",
+                              command_handle, source_id, error_string(e), 0);
+                        cb(command_handle, e, 0);
+                    },
+                };
+            },
+            Err(e) => cb(command_handle, e.to_error_code(), 0),
+        };
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Send a credential request to the connection, called after having received a credential offer
 ///
 /// #params
@@ -375,7 +429,7 @@ mod tests {
     }
 
     extern "C" fn bad_create_cb(command_handle: u32, err: u32, credential_handle: u32) {
-        assert_eq!(err, error::INVALID_JSON.code_num);
+        assert!(err > 0);
         assert_eq!(credential_handle, 0);
         println!("successfully called bad_create_cb")
     }
@@ -480,11 +534,23 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let cxn = ::connection::build_connection("test_get_new_offers").unwrap();
-        ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
         assert_eq!(error::SUCCESS.code_num as u32, vcx_credential_get_offers(0,
                                            cxn,
                                            Some(get_offers_cb)));
         thread::sleep(Duration::from_millis(300));
+    }
+
+    #[test]
+    fn test_vcx_credential_create() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let cxn = ::connection::build_connection("test_vcx_credential_create").unwrap();
+        assert_eq!(vcx_credential_create_with_msgid(0,
+                                         CString::new("test_vcx_credential_create").unwrap().into_raw(),
+                                         cxn,
+                                         CString::new("123").unwrap().into_raw(),
+                                         Some(create_cb)), error::SUCCESS.code_num);
+        thread::sleep(Duration::from_millis(200));
     }
 
     extern "C" fn get_state_cb(command_handle: u32, err: u32, state: u32) {

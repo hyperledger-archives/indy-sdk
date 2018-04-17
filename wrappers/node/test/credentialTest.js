@@ -64,6 +64,15 @@ describe('A Credential', function () {
     assert(obj)
   })
 
+  it(' can be created with a msgid.', async () => {
+    let connection = await Connection.create({ id: '234' })
+    assert(connection)
+    await connection.connect()
+
+    const obj = await Credential.createWithMsgId(connection, 'Test', 'id')
+    assert(obj)
+  })
+
   // create tests
 
   it(' a call to create with no sourceId returns an error', async () => {

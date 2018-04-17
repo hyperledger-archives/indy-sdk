@@ -51,6 +51,15 @@ describe('A disclosedProof', function () {
     assert(obj)
   })
 
+  it(' can be created with a msgid.', async () => {
+    let connection = await Connection.create({ id: '234' })
+    assert(connection)
+    await connection.connect()
+
+    const obj = await DisclosedProof.createWithMsgId(connection, 'Test', 'id')
+    assert(obj)
+  })
+
   it(' a call to create with no sourceId returns an error', async () => {
     try {
       await DisclosedProof.create({request: PROOF_REQ})

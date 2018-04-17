@@ -192,7 +192,7 @@ fn parse_get_messages_response(response: Vec<u8>) -> Result<Vec<Message>, u32> {
     Ok(response.msgs.to_owned())
 }
 
-fn get_matching_message(msg_uid:&str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<get_message::Message, u32> {
+pub fn get_matching_message(msg_uid:&str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<get_message::Message, u32> {
 
     match get_messages()
         .to(&pw_did)

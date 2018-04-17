@@ -43,6 +43,8 @@ export type rust_connection_handle = rust_object_handle
 export interface IFFIEntryPoint {
   vcx_init: (commandId: number, configPath: string, cb: any) => number,
   vcx_error_c_message: (errorCode: number) => string,
+  vcx_agent_provision_async: (commandId: number, config: string, cb: any) => number,
+  vcx_agent_update_info: (commandId: number, config: string, cb: any) => number,
   // connection
   vcx_connection_connect: (commandId: number, handle: string, data: string, cb: any) => number,
   vcx_connection_create: (commandId: number, data: string, cb: any) => number,
@@ -79,6 +81,8 @@ export interface IFFIEntryPoint {
 
   // disclosed proof
   vcx_disclosed_proof_create_with_request: (commandId: number, sourceId: string, req: string, cb: any) => number,
+  vcx_disclosed_proof_create_with_msgid: (commandId: number, sourceId: string, connectionHandle: string,
+                                          msgId: string, cb: any) => number,
   vcx_disclosed_proof_release: (handle: string) => number,
   vcx_disclosed_proof_send_proof: (commandId: number, proofHandle: string, connectionHandle: string, cb: any) => number,
   vcx_disclosed_proof_serialize: (commandId: number, handle: string, cb: any) => number,
@@ -89,6 +93,8 @@ export interface IFFIEntryPoint {
 
   // credential
   vcx_credential_create_with_offer: (commandId: number, sourceId: string, offer: string, cb: any) => number,
+  vcx_credential_create_with_msgid: (commandId: number, sourceId: string, connectionHandle: string,
+                                     msgId: string, cb: any) => number,
   vcx_credential_release: (handle: string) => number,
   vcx_credential_send_request: (commandId: number, handle: string, connectionHandle: string, cb: any) => number,
   vcx_credential_serialize: (commandId: number, handle: string, cb: any) => number,
@@ -122,6 +128,8 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
 
   vcx_init: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONFIG_PATH, FFI_CALLBACK_PTR]],
   vcx_error_c_message: [FFI_STRING, [FFI_ERROR_CODE]],
+  vcx_agent_provision_async: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_agent_update_info: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
 
   // connection
   vcx_connection_connect: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CONNECTION_DATA,
@@ -166,6 +174,8 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   // disclosed proof
   vcx_disclosed_proof_create_with_request: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA,
     FFI_CALLBACK_PTR]],
+  vcx_disclosed_proof_create_with_msgid: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_CONNECTION_HANDLE,
+    FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_disclosed_proof_release: [FFI_ERROR_CODE, [FFI_PROOF_HANDLE]],
   vcx_disclosed_proof_send_proof: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CONNECTION_HANDLE,
     FFI_CALLBACK_PTR]],
@@ -178,6 +188,8 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   // credential
   vcx_credential_create_with_offer: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA,
     FFI_CALLBACK_PTR]],
+  vcx_credential_create_with_msgid: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_CONNECTION_HANDLE,
+    FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_credential_release: [FFI_ERROR_CODE, [FFI_CREDENTIAL_HANDLE]],
   vcx_credential_send_request: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CONNECTION_HANDLE,
     FFI_CALLBACK_PTR]],

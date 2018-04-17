@@ -58,6 +58,62 @@ pub extern fn vcx_disclosed_proof_create_with_request(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+
+/// Create a proof for fulfilling a corresponding proof request
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: Institution's personal identification for the proof, should be unique.
+///
+/// connection: connection to query for proof request
+///
+/// msg_id: msg_id that contains the proof request
+///
+/// cb: Callback that provides proof handle or error status
+///
+/// #Returns
+/// Error code as a u32
+
+#[no_mangle]
+#[allow(unused_variables, unused_mut)]
+pub extern fn vcx_disclosed_proof_create_with_msgid(command_handle: u32,
+                                                    source_id: *const c_char,
+                                                    connection_handle: u32,
+                                                    msg_id: *const c_char,
+                                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, credential_handle: u32)>) -> u32 {
+
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(msg_id, error::INVALID_OPTION.code_num);
+
+    info!("vcx_disclosed_proof_create_with_msgid(command_handle: {}, source_id: {}, connection_handle: {}, msg_id: {})",
+          command_handle, source_id, connection_handle, msg_id);
+
+    thread::spawn(move|| {
+
+        match disclosed_proof::get_proof_request(connection_handle, &msg_id) {
+            Ok(request) => {
+                match disclosed_proof::create_proof(source_id, request) {
+                    Ok(handle) => {
+                        info!("vcx_disclosed_proof_create_with_msgid_cb(command_handle: {}, rc: {}, handle: {})",
+                              command_handle, error_string(0), handle);
+                        cb(command_handle, error::SUCCESS.code_num, handle)
+                    },
+                    Err(e) => {
+                        warn!("vcx_disclosed_proof_create_with_msgid_cb(command_handle: {}, rc: {}, handle: {})",
+                              command_handle, e.to_string(), 0);
+                        cb(command_handle, e.to_error_code(), 0);
+                    },
+                };
+            },
+            Err(e) => cb(command_handle, e.to_error_code(), 0),
+        };
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Send a proof to the connection, called after having received a proof request
 ///
 /// #params
@@ -353,7 +409,7 @@ mod tests {
     }
 
     extern "C" fn bad_create_cb(command_handle: u32, err: u32, proof_handle: u32) {
-        assert_eq!(err, error::INVALID_JSON.code_num);
+        assert!(err > 0);
         assert_eq!(proof_handle, 0);
         println!("successfully called bad_create_cb")
     }
@@ -387,6 +443,20 @@ mod tests {
             CString::new("test_create").unwrap().into_raw(),
             CString::new(BAD_PROOF_REQUEST).unwrap().into_raw(),
             Some(bad_create_cb)),error::SUCCESS.code_num);
+        thread::sleep(Duration::from_millis(200));
+    }
+
+    #[test]
+    fn test_create_with_msgid() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let cxn = ::connection::build_connection("test_create_with_msgid").unwrap();
+        ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
+        assert_eq!(vcx_disclosed_proof_create_with_msgid(0,
+                                                         CString::new("test_create_with_msgid").unwrap().into_raw(),
+                                                         cxn,
+                                                         CString::new("123").unwrap().into_raw(),
+                                                         Some(create_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 
