@@ -1,4 +1,4 @@
-# Libindy migration Guide
+# Libindy migration Guide from v.1.3.0 to 1.4.0
 
 ## A Developer Guide for Libindy migration
 
