@@ -35,7 +35,7 @@ impl ReaderType for DefaultReaderType {
 }
 
 impl Reader for DefaultReaderConfig {
-    fn open(&self, hash: &[u8], location: &str) -> Result<Box<ReadableBlob>, CommonError> {
+    fn open(&self, hash: &[u8], _location: &str) -> Result<Box<ReadableBlob>, CommonError> {
         let mut path = PathBuf::from(&self.base_dir);
         path.push(hash.to_base58());
         let file = File::open(path)?;

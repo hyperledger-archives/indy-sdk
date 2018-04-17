@@ -42,7 +42,7 @@ pub struct TransactionHandler {
 }
 
 impl TransactionHandler {
-    pub fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
+    pub fn process_msg(&mut self, msg: Message, raw_msg: &String, _src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         match msg {
             Message::Reply(reply) => {
                 self.process_reply(reply.result.req_id, raw_msg);
@@ -233,7 +233,7 @@ impl TransactionHandler {
                     CommonError::InvalidState(
                         "Can't flash all transaction requests with common success status".to_string())));
             }
-            Err(err) => {
+            Err(_) => {
                 for (_, pending_cmd) in &mut self.pending_commands {
                     pending_cmd.terminate_parent_cmds(false)?
                 }
@@ -535,7 +535,7 @@ impl CommandProcess {
                 .send(Command::Ledger(LedgerCommand::SubmitAck(
                     *cmd_id,
                     Err(if is_timeout { PoolError::Timeout } else { PoolError::Terminate }))))
-                .map_err(|err| CommonError::InvalidState("Can't send ACK cmd".to_string()))?;
+                .map_err(|err| CommonError::InvalidState(format!("Can't send ACK cmd: {:?}", err)))?;
         }
         self.parent_cmd_ids.clear();
         Ok(())

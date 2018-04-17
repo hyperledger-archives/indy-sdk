@@ -3766,7 +3766,7 @@ mod demos {
                                                            &AnoncredsUtils::gvt_credential_values_json(),
                                                            Some(&rev_reg_id),
                                                            Some(blob_storage_reader_handle));
-        assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsAccumulatorIsFull);
+        assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsRevocationRegistryFullError);
 
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_1_wallet_handle).unwrap();
@@ -3853,7 +3853,7 @@ mod demos {
                                                            &AnoncredsUtils::gvt_credential_values_json(),
                                                            Some(&rev_reg_id),
                                                            Some(blob_storage_reader_handle));
-        assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsAccumulatorIsFull);
+        assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsRevocationRegistryFullError);
 
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_1_wallet_handle).unwrap();
@@ -3903,7 +3903,7 @@ mod demos {
         //5. Issuer revokes Credential by not issued id
         let cred_rev_id = "100";
         let res = AnoncredsUtils::issuer_revoke_credential(issuer_wallet_handle, blob_storage_reader_handle, &rev_reg_id, cred_rev_id);
-        assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsInvalidUserRevocIndex);
+        assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsInvalidUserRevocId);
 
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
 
@@ -3931,7 +3931,7 @@ mod demos {
         //3. Issuer revokes Credential by not issued id
         let cred_rev_id = 10.to_string();
         let res = AnoncredsUtils::issuer_revoke_credential(issuer_wallet_handle, blob_storage_reader_handle, &rev_reg_id, &cred_rev_id);
-        assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsInvalidUserRevocIndex);
+        assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsInvalidUserRevocId);
 
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
 
