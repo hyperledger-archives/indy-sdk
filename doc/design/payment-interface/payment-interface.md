@@ -33,7 +33,7 @@ This design proposes to make libindy aware about payments and tokens that can be
   handlers.
 * Payments interface must be interoperable as possible between different payment methods.
 
-![Tokens Interface](./tokens-interface.svg)
+![Tokens Interface](./payment-interface.svg)
 
 ## Payment Method API and Payment Method Handler Interface
 
