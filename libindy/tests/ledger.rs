@@ -862,16 +862,15 @@ mod high_cases {
         use super::*;
 
         #[test]
-        #[ignore] /* FIXME It isn't structure form json */
         fn indy_build_get_validator_info_request() {
-            let expected_result = String("Some result");
-
+            let expected_result = r#""operation":{"type":"119"}"#;
             let get_validator_info_request = LedgerUtils::build_get_validator_info_request(IDENTIFIER).unwrap();
+            println!("Build get validator info {} ", get_validator_info_request);
             assert!(get_validator_info_request.contains(&expected_result));
         }
 
         #[test]
-        #[ignore] /* FIXME It isn't structure form json */
+        #[ignore]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_validator_info_request_works() {
             TestUtils::cleanup_storage();

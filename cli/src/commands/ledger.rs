@@ -308,8 +308,8 @@ pub mod schema_command {
 pub mod get_validator_info_command {
     use super::*;
 
-    command!(CommandMetadata::build("get-validator-info", "Get Validator info from Ledger.")
-                .add_example("ledger get-validator-info")
+    command!(CommandMetadata::build("get-validator-info", "Get validator info from all nodes.")
+                .add_example(r#"ledger get-validator-info"#)
                 .finalize()
     );
 
@@ -317,7 +317,8 @@ pub mod get_validator_info_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let res = Ledger::build_get_validator_info_request(&submitter_did)
             .and_then(|request| Ledger::submit_request(pool_handle, &request));
@@ -330,15 +331,24 @@ pub mod get_validator_info_command {
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        // TODO write valid handle transaction response
+        let validator_info_data = response.result.clone();
+
         let res = handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
-                                                     "Following Validator info has been received.",
-                                                     &[("reqId", "Request ID")],
-                                                     Some("data"),
-                                                     &[("name", "Name"),
-                                                         ("version", "Version"),
-                                                         ("attr_names", "Attributes")]));
+                                                     "Following get validator info has been received.",
+                                                     &[
+                                                         ("identifier", "Identifier"),
+                                                         ("reqId", "Request ID")],
+                                                     None,
+                                                     &[
+                                                         ("isSuccess", "IsSuccess"),
+                                                         ("msg", "Message")]));
+
+        if let Some(data) = validator_info_data {
+            println_succ!("Get validator info data:");
+            println!("{}", data);
+        }
+
         trace!("execute << {:?}", res);
         res
     }
@@ -1537,7 +1547,22 @@ pub mod tests {
         use super::*;
 
         #[test]
-        #[ignore]
+        pub fn get_validator_info_works() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = get_validator_info::new();
+                let mut params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
     }
 
     mod get_schema {
