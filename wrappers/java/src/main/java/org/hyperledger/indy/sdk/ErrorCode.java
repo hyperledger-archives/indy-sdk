@@ -179,18 +179,8 @@ public enum ErrorCode {
 	/**
 	 * ???
 	 */
-	AnoncredsInvalidUserRevocIndex(401),
+	AnoncredsInvalidUserRevocId(401),
 
-	/**
-	 * ???
-	 */
-	AnoncredsAccumulatorIsFull(402),
-
-	/**
-	 * ???
-	 */
-	AnoncredsNotIssuedError(403),
- 
 	/**
 	 * Attempt to generate master secret with dupplicated name
 	 */

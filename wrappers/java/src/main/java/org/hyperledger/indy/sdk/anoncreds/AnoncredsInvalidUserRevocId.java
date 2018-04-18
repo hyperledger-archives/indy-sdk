@@ -6,16 +6,16 @@ import org.hyperledger.indy.sdk.IndyException;
 /**
  * Exception thrown when a invalid user revocation index is used.
  */
-public class InvalidUserRevocIndexException extends IndyException
+public class AnoncredsInvalidUserRevocId extends IndyException
 {
 	private static final long serialVersionUID = 4969718227042210813L;
 	private final static String message = "The user revocation registry index specified is invalid.";
 
 	/**
-	 * Initializes a new InvalidUserRevocIndexException.
+	 * Initializes a new AnoncredsInvalidUserRevocId.
 	 */
-	public InvalidUserRevocIndexException() 
+	public AnoncredsInvalidUserRevocId()
     {
-    	super(message, ErrorCode.AnoncredsInvalidUserRevocIndex.value());
+    	super(message, ErrorCode.AnoncredsInvalidUserRevocId.value());
     }
 }

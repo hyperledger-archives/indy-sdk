@@ -9,15 +9,6 @@ pub struct KeyInfo {
     pub crypto_type: Option<String>
 }
 
-impl KeyInfo {
-    pub fn new(seed: Option<String>, crypto_type: Option<String>) -> KeyInfo {
-        KeyInfo {
-            seed,
-            crypto_type
-        }
-    }
-}
-
 impl JsonEncodable for KeyInfo {}
 
 impl<'a> JsonDecodable<'a> for KeyInfo {}
@@ -29,20 +20,6 @@ pub struct MyDidInfo {
     pub crypto_type: Option<String>,
     pub cid: Option<bool>
 }
-
-impl MyDidInfo {
-    pub fn new(did: Option<String>, seed: Option<String>,
-               crypto_type: Option<String>, cid: Option<bool>) -> MyDidInfo {
-        MyDidInfo {
-            did,
-            seed,
-            crypto_type,
-            cid
-        }
-    }
-}
-
-impl JsonEncodable for MyDidInfo {}
 
 impl<'a> JsonDecodable<'a> for MyDidInfo {}
 

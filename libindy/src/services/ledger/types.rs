@@ -4,12 +4,7 @@ extern crate indy_crypto;
 
 use services::ledger::constants::*;
 
-use self::indy_crypto::cl::{
-    CredentialPrimaryPublicKey,
-    CredentialRevocationPublicKey,
-    RevocationRegistry,
-    RevocationRegistryDelta
-};
+use self::indy_crypto::cl::{RevocationRegistry, RevocationRegistryDelta};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use domain::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1, SignatureType};
@@ -47,33 +42,6 @@ impl<T: serde::Serialize> Request<T> {
 }
 
 impl<T: JsonEncodable> JsonEncodable for Request<T> {}
-
-#[derive(Serialize, PartialEq, Debug)]
-pub struct NymOperation {
-    #[serde(rename = "type")]
-    pub _type: String,
-    pub dest: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub verkey: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub alias: Option<String>,
-    pub role: Option<String>
-}
-
-impl NymOperation {
-    pub fn new(dest: String, verkey: Option<String>,
-               alias: Option<String>, role: Option<String>) -> NymOperation {
-        NymOperation {
-            _type: NYM.to_string(),
-            dest,
-            verkey,
-            alias,
-            role
-        }
-    }
-}
-
-impl JsonEncodable for NymOperation {}
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct GetNymOperation {
@@ -249,26 +217,6 @@ impl CredDefOperation {
 }
 
 impl JsonEncodable for CredDefOperation {}
-
-#[derive(Serialize, PartialEq, Debug, Deserialize)]
-pub struct CredDefOperationData {
-    pub primary: CredentialPrimaryPublicKey,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub revocation: Option<CredentialRevocationPublicKey>
-}
-
-impl CredDefOperationData {
-    pub fn new(primary: CredentialPrimaryPublicKey, revocation: Option<CredentialRevocationPublicKey>) -> CredDefOperationData {
-        CredDefOperationData {
-            primary,
-            revocation
-        }
-    }
-}
-
-impl JsonEncodable for CredDefOperationData {}
-
-impl<'a> JsonDecodable<'a> for CredDefOperationData {}
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct GetCredDefOperation {
