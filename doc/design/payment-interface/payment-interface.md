@@ -63,10 +63,15 @@ pub extern fn indy_register_payment_method(command_handle: i32,
 
                                            create_payment_address: Option<CreatePaymentAddressCB>,
                                            add_request_fees: Option<AddRequestFeesCB>,
+                                           parse_response_with_fees: Option<ParseResponseWithFeesCB>,
                                            build_get_utxo_request: Option<BuildGetUTXORequestCB>,
                                            parse_get_utxo_response: Option<ParseGetUTXOResponseCB>,
                                            build_payment_req: Option<BuildPaymentReqCB>,
+                                           parse_payment_response: Option<ParsePaymentResponseCB>,
                                            build_mint_req: Option<BuildMintReqCB>,
+                                           build_set_txn_fees_req: Option<BuildSetTxnFeesReqCB>,
+                                           build_get_txn_fees_req: Option<BuildGetTxnFeesReqCB>,
+                                           parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
 
                                            cb: Option<extern fn(command_handle_: i32,
                                                                 err: ErrorCode) -> ErrorCode>) -> ErrorCode {}
@@ -128,12 +133,33 @@ type CreatePaymentAddressCB = extern fn(command_handle: i32,
 ///
 /// #Returns
 /// req_with_fees_json - modified Indy request with added fees info
-type AddRequestFeesCB = extern fn(req_json: *const c_char,
+type AddRequestFeesCB = extern fn(command_handle: i32,
+                                  req_json: *const c_char,
                                   inputs_json: *const c_char,
                                   outputs_json: *const c_char,
                                   cb: Option<extern fn(command_handle_: i32,
                                                        err: ErrorCode,
                                                        req_with_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+
+/// Parses response for Indy request with fees.
+///
+/// #Params
+/// command_handle
+/// resp_json: response for Indy request with fees
+///   Note: this param will be used to determine payment_method
+///
+/// #Returns
+/// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
+///   [{
+///      input: <str>, // UTXO input
+///      amount: <int>, // amount of tokens in this input
+///      extra: <str>, // optional data from payment transaction
+///   }]
+type ParseResponseWithFeesCB = extern fn(command_handle: i32,
+                                         resp_json: *const c_char,
+                                         cb: Option<extern fn(command_handle_: i32,
+                                                              err: ErrorCode,
+                                                              utxo_json: *const c_char) -> ErrorCode>) -> ErrorCode;
                                                        
 /// Builds Indy request for getting UTXO list for payment address
 /// according to this payment method.
@@ -143,7 +169,8 @@ type AddRequestFeesCB = extern fn(req_json: *const c_char,
 ///
 /// #Returns
 /// get_utxo_txn_json - Indy request for getting UTXO list for payment address
-type BuildGetUTXORequestCB = extern fn(payment_address: *const c_char,
+type BuildGetUTXORequestCB = extern fn(command_handle: i32,
+                                       payment_address: *const c_char,
                                        cb: Option<extern fn(command_handle_: i32,
                                                             err: ErrorCode,
                                                             get_utxo_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
@@ -160,7 +187,8 @@ type BuildGetUTXORequestCB = extern fn(payment_address: *const c_char,
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
-type ParseGetUTXOResponseCB = extern fn(resp_json: *const c_char,
+type ParseGetUTXOResponseCB = extern fn(command_handle: i32,
+                                        resp_json: *const c_char,
                                         cb: Option<extern fn(command_handle_: i32,
                                                              err: ErrorCode,
                                                              utxo_json: *const c_char) -> ErrorCode>) -> ErrorCode;
@@ -186,12 +214,32 @@ type ParseGetUTXOResponseCB = extern fn(resp_json: *const c_char,
 ///
 /// #Returns
 /// payment_req_json - Indy request for doing tokens payment
-type BuildPaymentReqCB = extern fn(req_json: *const c_char,
+type BuildPaymentReqCB = extern fn(command_handle: i32,
                                    inputs_json: *const c_char,
                                    outputs_json: *const c_char,
                                    cb: Option<extern fn(command_handle_: i32,
                                                         err: ErrorCode,
                                                         payment_req_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+
+/// Parses response for Indy request for payment txn.
+///
+/// #Params
+/// command_handle
+/// resp_json: response for Indy request for payment txn
+///   Note: this param will be used to determine payment_method
+///
+/// #Returns
+/// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
+///   [{
+///      input: <str>, // UTXO input
+///      amount: <int>, // amount of tokens in this input
+///      extra: <str>, // optional data from payment transaction
+///   }]
+type ParsePaymentResponseCB = extern fn(command_handle: i32,
+                                        resp_json: *const c_char,
+                                        cb: Option<extern fn(command_handle_: i32,
+                                                             err: ErrorCode,
+                                                             utxo_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
 /// Builds Indy request for doing tokens minting
 /// according to this payment method.
@@ -206,19 +254,73 @@ type BuildPaymentReqCB = extern fn(req_json: *const c_char,
 ///
 /// #Returns
 /// mint_req_json - Indy request for doing tokens minting
-type BuildMintReqCB = extern fn(req_json: *const c_char,
+type BuildMintReqCB = extern fn(command_handle: i32,
                                 outputs_json: *const c_char,
                                 cb: Option<extern fn(command_handle_: i32,
                                                      err: ErrorCode,
-                                                     mint_req_json: *const c_char) -> ErrorCode>) -> ErrorCode;                                                       
+                                                     mint_req_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+
+/// Builds Indy request for setting fees for transactions in the ledger
+/// 
+/// # Params
+/// command_handle
+/// fees_json {
+///   txnType1: amount1,
+///   txnType2: amount2,
+///   .................
+///   txnTypeN: amountN,
+/// }
+///
+/// # Return
+/// set_txn_fees_json - Indy request for setting fees for transactions in the ledger
+type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
+                                      fees_json: *const c_char,
+                                      cb: Option<extern fn(command_handle_: i32,
+                                                           err: ErroCode,
+                                                           set_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+
+/// Builds Indy get request for getting fees for transactions in the ledger
+/// 
+/// # Params
+/// command_handle
+/// 
+/// # Return
+/// get_txn_fees_json - Indy request for getting fees for transactions in the ledger
+type BuildGetTxnFeesReqCB = extern fn(command_handle: i32,
+                                      cb: Option<extern fn(command_handle_: i32,
+                                                           err: ErroCode,
+                                                           get_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+
+/// Parses response for Indy request for getting fees
+///
+/// # Params
+/// command_handle
+/// payment_method
+/// resp_json: response for Indy request for getting fees
+/// 
+/// # Return
+/// fees_json {
+///   txnType1: amount1,
+///   txnType2: amount2,
+///   .................
+///   txnTypeN: amountN,
+/// }                                           
+type ParseGetTxnFeesResponseCB = extern fn(command_handle: i32,
+                                           resp_json: *const c_char,
+                                           cb: Option<extern fn(command_handle_: i32,
+                                                                err: ErrorCode,
+                                                                fees_json: *const c_char) -> ErrorCode>) -> ErrorCode;                                                       
 
 ```
 
 ## Payment API
 
+Some API calls have dedicated parameter to determine payment_method.
+Another part of calls use assumptions about input parameters format to determine payment_method
+
 ```Rust
 /// Create the payment address for specified payment method
- //
+///
 ///
 /// This method generates private part of payment address
 /// and stores it in a secure place. Ideally it should be
@@ -242,7 +344,7 @@ pub fn indy_create_payment_address(command_handle: i32,
                                    config: *const c_char,
                                    cb: Option<extern fn(command_handle_: i32,
                                                         err: ErrorCode,
-                                                        payment_address: *const c_char)>) -> ErrorCode {}
+                                                        payment_address: *const c_char) -> ErrorCode>) -> ErrorCode {}
 
 /// Modifies Indy request by adding information how to pay fees for this transaction
 /// according to selected payment method.
@@ -261,7 +363,9 @@ pub fn indy_create_payment_address(command_handle: i32,
 /// req_json: initial transaction request as json
 /// inputs_json: The list of UTXO inputs as json array:
 ///   ["input1", ...]
-///   Note that each input should reference paymentAddress
+///   Notes:
+///     - each input should reference paymentAddress
+///     - this param will be used to determine payment_method
 /// outputs_json: The list of UTXO outputs as json array:
 ///   [{
 ///     paymentAddress: <str>, // payment address used as output
@@ -271,12 +375,37 @@ pub fn indy_create_payment_address(command_handle: i32,
 ///
 /// #Returns
 /// req_with_fees_json - modified Indy request with added fees info
-pub fn indy_add_request_fees(req_json: *const c_char,
+/// payment_method
+pub fn indy_add_request_fees(command_handle: i32,
+                             req_json: *const c_char,
                              inputs_json: *const c_char,
                              outputs_json: *const c_char,
                              cb: Option<extern fn(command_handle_: i32,
                                                   err: ErrorCode,
-                                                  req_with_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
+                                                  req_with_fees_json: *const c_char,
+                                                  payment_method: *const c_char) -> ErrorCode>) -> ErrorCode {}
+
+/// Parses response for Indy request with fees.
+///
+/// #Params
+/// command_handle
+/// payment_method
+/// resp_json: response for Indy request with fees
+///   Note: this param will be used to determine payment_method
+///
+/// #Returns
+/// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
+///   [{
+///      input: <str>, // UTXO input
+///      amount: <int>, // amount of tokens in this input
+///      extra: <str>, // optional data from payment transaction
+///   }]
+pub fn indy_parse_response_with_fees(command_handle: i32,
+                                     payment_method: *const c_char,
+                                     resp_json: *const c_char,
+                                     cb: Option<extern fn(command_handle_: i32,
+                                                          err: ErrorCode,
+                                                          utxo_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
 
 /// Builds Indy request for getting UTXO list for payment address
 /// according to this payment method.
@@ -286,15 +415,19 @@ pub fn indy_add_request_fees(req_json: *const c_char,
 ///
 /// #Returns
 /// get_utxo_txn_json - Indy request for getting UTXO list for payment address
-pub fn indy_build_get_utxo_request(payment_address: *const c_char,
+/// payment_method
+pub fn indy_build_get_utxo_request(command_handle: i32,
+                                   payment_address: *const c_char,
                                    cb: Option<extern fn(command_handle_: i32,
                                                         err: ErrorCode,
-                                                        get_utxo_txn_json: *const c_char)>) -> ErrorCode {}
+                                                        get_utxo_txn_json: *const c_char,
+                                                        payment_method: *const c_char) -> ErrorCode>) -> ErrorCode {}
 
 /// Parses response for Indy request for getting UTXO list.
 ///
 /// #Params
 /// resp_json: response for Indy request for getting UTXO list
+///   Note: this param will be used to determine payment_method
 ///
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
@@ -303,10 +436,12 @@ pub fn indy_build_get_utxo_request(payment_address: *const c_char,
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
-pub fn indy_parse_get_utxo_response(resp_json: *const c_char,
+pub fn indy_parse_get_utxo_response(command_handle: i32,
+                                    payment_method: *const c_char,
+                                    resp_json: *const c_char,
                                     cb: Option<extern fn(command_handle_: i32,
                                                          err: ErrorCode,
-                                                         utxo_json: *const c_char)>) -> ErrorCode {}
+                                                         utxo_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
 
 /// Builds Indy request for doing tokens payment
 /// according to this payment method.
@@ -329,12 +464,34 @@ pub fn indy_parse_get_utxo_response(resp_json: *const c_char,
 ///
 /// #Returns
 /// payment_req_json - Indy request for doing tokens payment
-pub fn indy_build_payment_req(req_json: *const c_char,
+pub fn indy_build_payment_req(command_handle: i32,
                               inputs_json: *const c_char,
                               outputs_json: *const c_char,
                               cb: Option<extern fn(command_handle_: i32,
                                                    err: ErrorCode,
-                                                   payment_req_json: *const c_char)>) -> ErrorCode {}
+                                                   payment_req_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
+
+/// Parses response for Indy request for payment txn.
+///
+/// #Params
+/// command_handle
+/// payment_method
+/// resp_json: response for Indy request for payment txn
+///   Note: this param will be used to determine payment_method
+///
+/// #Returns
+/// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
+///   [{
+///      input: <str>, // UTXO input
+///      amount: <int>, // amount of tokens in this input
+///      extra: <str>, // optional data from payment transaction
+///   }]
+pub fn indy_parse_payment_response(command_handle: i32,
+                                   payment_method: *const c_char,
+                                   resp_json: *const c_char,
+                                   cb: Option<extern fn(command_handle_: i32,
+                                                        err: ErrorCode,
+                                                        utxo_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
 
 /// Builds Indy request for doing tokens minting
 /// according to this payment method.
@@ -349,9 +506,65 @@ pub fn indy_build_payment_req(req_json: *const c_char,
 ///
 /// #Returns
 /// mint_req_json - Indy request for doing tokens minting
-pub fn indy_build_mint_req(req_json: *const c_char,
+pub fn indy_build_mint_req(command_handle: i32,
                            outputs_json: *const c_char,
                            cb: Option<extern fn(command_handle_: i32,
                                                 err: ErrorCode,
-                                                mint_req_json: *const c_char)>) -> ErrorCode {}
+                                                mint_req_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
+
+/// Builds Indy request for setting fees for transactions in the ledger
+/// 
+/// # Params
+/// command_handle
+/// payment_method
+/// fees_json {
+///   txnType1: amount1,
+///   txnType2: amount2,
+///   .................
+///   txnTypeN: amountN,
+/// }
+/// # Return
+/// set_txn_fees_json - Indy request for setting fees for transactions in the ledger
+pub fn indy_build_set_txn_fees_req(command_handle: i32,
+                                   payment_method: *const c_char,
+                                   fees_json: *const c_char,
+                                   cb: Option<extern fn(command_handle_: i32,
+                                                        err: ErroCode,
+                                                        set_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
+
+/// Builds Indy get request for getting fees for transactions in the ledger
+/// 
+/// # Params
+/// command_handle
+/// payment_method
+///
+/// # Return
+/// get_txn_fees_json - Indy request for getting fees for transactions in the ledger
+pub fn indy_build_get_txn_fees_req(command_handle: i32,
+                                   payment_method: *const c_char,
+                                   cb: Option<extern fn(command_handle_: i32,
+                                                        err: ErroCode,
+                                                        get_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
+
+/// Parses response for Indy request for getting fees
+///
+/// # Params
+/// command_handle
+/// payment_method
+/// resp_json: response for Indy request for getting fees
+///
+/// # Return
+/// fees_json {
+///   txnType1: amount1,
+///   txnType2: amount2,
+///   .................
+///   txnTypeN: amountN,
+/// }
+pub fn indy_parse_get_txn_fees_response(command_handle: i32,
+                                        payment_method: *const c_char,
+                                        resp_json: *const c_char,
+                                        cb: Option<extern fn(command_handle_: i32,
+                                                             err: ErrorCode,
+                                                             fees_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
+
 ```
