@@ -533,7 +533,7 @@ pub fn indy_build_set_txn_fees_req(command_handle: i32,
                                    payment_method: *const c_char,
                                    fees_json: *const c_char,
                                    cb: Option<extern fn(command_handle_: i32,
-                                                        err: ErroCode,
+                                                        err: ErrorCode,
                                                         set_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
 
 /// Builds Indy get request for getting fees for transactions in the ledger
@@ -547,7 +547,7 @@ pub fn indy_build_set_txn_fees_req(command_handle: i32,
 pub fn indy_build_get_txn_fees_req(command_handle: i32,
                                    payment_method: *const c_char,
                                    cb: Option<extern fn(command_handle_: i32,
-                                                        err: ErroCode,
+                                                        err: ErrorCode,
                                                         get_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
 
 /// Parses response for Indy request for getting fees
