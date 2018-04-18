@@ -8,7 +8,7 @@ This design proposes to make libindy aware about payments and tokens that can be
   * The idea of payments in general. Transactions might need to be paid for, transactions
     can be used for money/tokens transfer.
   * Concept of different Payment Methods that can be plugged to libindy
-    (like Sovrin tokens, Bitcoins tokens and etc...). A payment method in libindy might be
+    (like Sovrin tokens, Bitcoin tokens and etc...). A payment method in libindy might be
     identified by prefix: “pay:sov” could be the prefix for the Sovrin token payment method,
     and “pay:xyz” could be the prefix for a different payment method.
   * Concept of Payment Address that is common for supported Payment Methods. Different
@@ -35,7 +35,7 @@ This design proposes to make libindy aware about payments and tokens that can be
 
 ![Payment Interface](./payment-interface.svg)
 
-## Payment Method API and Payment Method Handler Interface
+## Payment Method API
 
 Payment Method API will allow to register custom payment method implementation
 by calling ```indy_register_payment_method``` call:
@@ -70,7 +70,15 @@ pub extern fn indy_register_payment_method(command_handle: i32,
 
                                            cb: Option<extern fn(command_handle_: i32,
                                                                 err: ErrorCode) -> ErrorCode>) -> ErrorCode {}
+```
 
+### Payment Method Handler Interface
+
+Registered functions will be called by libindy as part of processing libindy API calls.
+Libindy will pass its own callback to the functions to retrieve result of the 3rd party function implementation.
+The list below is type description for registered calls.
+
+```Rust
 /// Create the payment address for this payment method.
 ///
 /// This method generates private part of payment address
