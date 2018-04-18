@@ -9,10 +9,6 @@ use utils::byte_array::_clone_into_array;
 pub struct Sealbox {}
 
 impl Sealbox {
-    pub fn new() -> Sealbox {
-        Sealbox {}
-    }
-
     pub fn encrypt(pk: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError> {
         Ok(sealedbox::seal(doc,
                            &box_::PublicKey(_clone_into_array(pk))))

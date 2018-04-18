@@ -1,7 +1,6 @@
 #[macro_use]
 mod utils;
 
-#[allow(unused_variables)] /* FIXME */
 pub mod anoncreds;
 pub mod blob_storage;
 pub mod crypto;
@@ -156,17 +155,15 @@ mod tests {
     use super::*;
 
     #[test]
-    #[allow(unused_variables)]
     fn command_executor_can_be_created() {
-        let command_executor = CommandExecutor::new();
+        let _command_executor = CommandExecutor::new();
         assert!(true, "No crashes on CommandExecutor::new");
     }
 
     #[test]
     fn command_executor_can_be_dropped() {
-        #[allow(unused_variables)]
         fn drop_test() {
-            let command_executor = CommandExecutor::new();
+            let _command_executor = CommandExecutor::new();
         }
 
         drop_test();
@@ -174,9 +171,8 @@ mod tests {
     }
 
     #[test]
-    #[allow(unused_variables)]
     fn command_executor_can_get_instance() {
-        let ref command_executor: CommandExecutor = *CommandExecutor::instance();
+        let ref _command_executor: CommandExecutor = *CommandExecutor::instance();
         // Deadlock if another one instance will be requested (try to uncomment the next line)
         // let ref other_ce: CommandExecutor = *CommandExecutor::instance();
     }

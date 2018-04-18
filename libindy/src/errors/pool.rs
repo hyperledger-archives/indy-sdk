@@ -46,10 +46,9 @@ impl error::Error for PoolError {
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            PoolError::NotCreated(ref description) |
-            PoolError::InvalidHandle(ref description) => None,
+            PoolError::NotCreated(_) | PoolError::InvalidHandle(_) => None,
             PoolError::Terminate | PoolError::Timeout => None,
-            PoolError::AlreadyExists(ref description) => None,
+            PoolError::AlreadyExists(_) => None,
             PoolError::CommonError(ref err) => Some(err)
         }
     }
@@ -77,11 +76,11 @@ impl From<zmq::Error> for PoolError {
 impl ToErrorCode for PoolError {
     fn to_error_code(&self) -> ErrorCode {
         match *self {
-            PoolError::NotCreated(ref description) => ErrorCode::PoolLedgerNotCreatedError,
-            PoolError::InvalidHandle(ref description) => ErrorCode::PoolLedgerInvalidPoolHandle,
+            PoolError::NotCreated(_) => ErrorCode::PoolLedgerNotCreatedError,
+            PoolError::InvalidHandle(_) => ErrorCode::PoolLedgerInvalidPoolHandle,
             PoolError::Terminate => ErrorCode::PoolLedgerTerminated,
             PoolError::Timeout => ErrorCode::PoolLedgerTimeout,
-            PoolError::AlreadyExists(ref description) => ErrorCode::PoolLedgerConfigAlreadyExistsError,
+            PoolError::AlreadyExists(_) => ErrorCode::PoolLedgerConfigAlreadyExistsError,
             PoolError::CommonError(ref err) => err.to_error_code()
         }
     }

@@ -369,7 +369,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let res = PoolUtils::open_pool_ledger(POOL, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerNotCreatedError);
 
             TestUtils::cleanup_storage();
         }
@@ -380,7 +380,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let res = PoolUtils::open_pool_ledger(POOL, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerNotCreatedError);
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 

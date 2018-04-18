@@ -567,7 +567,6 @@
 
 - (NSError *)proverStoreCredential:(NSString *)credJson
                             credID:(NSString *)credID
-                       credReqJSON:(NSString *)credReqJSON
                credReqMetadataJSON:(NSString *)credReqMetadataJSON
                        credDefJSON:(NSString *)credDefJSON
                      revRegDefJSON:(NSString *)revRegDefJSON
@@ -579,7 +578,6 @@
 
     [IndyAnoncreds proverStoreCredential:credJson
                                   credID:credID
-                             credReqJSON:credReqJSON
                      credReqMetadataJSON:credReqMetadataJSON
                              credDefJSON:credDefJSON
                            revRegDefJSON:revRegDefJSON
@@ -948,7 +946,6 @@
     //13. Prover store GVT credential from issuer1
     ret = [self proverStoreCredential:issuer1GvtCredential
                                credID:[self credentialId1]
-                          credReqJSON:issuer1GvtCredentialRequest
                   credReqMetadataJSON:issuer1GvtCredentialRequestMetadata
                           credDefJSON:issuer1GvtCredentialDefJson
                         revRegDefJSON:nil
@@ -989,7 +986,6 @@
     //16. Prover store XYZ credential from Issuer1
     ret = [self proverStoreCredential:issuer1XyzCredential
                                credID:[self credentialId2]
-                          credReqJSON:issuer1XyzCredentialRequest
                   credReqMetadataJSON:issuer1XyzCredentialRequestMetadata
                           credDefJSON:issuer1XyzCredentialDefJson
                         revRegDefJSON:nil
@@ -1031,7 +1027,6 @@
     //18. Prover store GVT credential from Issuer2
     ret = [self proverStoreCredential:issuer2GvtCredential
                                credID:@"credentialID3"
-                          credReqJSON:issuer2GvtCredentialRequest
                   credReqMetadataJSON:issuer2GvtCredentialRequestMetadata
                           credDefJSON:issuer2GvtCredentialDefJson
                         revRegDefJSON:nil

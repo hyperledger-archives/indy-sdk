@@ -10,6 +10,7 @@ use errors::ToErrorCode;
 
 #[derive(Debug)]
 pub enum LedgerError {
+    #[allow(dead_code)]
     NoConsensus(String),
     InvalidTransaction(String),
     CommonError(CommonError)
@@ -36,8 +37,8 @@ impl error::Error for LedgerError {
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            LedgerError::NoConsensus(ref description) => None,
-            LedgerError::InvalidTransaction(ref description) => None,
+            LedgerError::NoConsensus(_) => None,
+            LedgerError::InvalidTransaction(_) => None,
             LedgerError::CommonError(ref err) => Some(err)
         }
     }
@@ -52,8 +53,8 @@ impl From<CommonError> for LedgerError {
 impl ToErrorCode for LedgerError {
     fn to_error_code(&self) -> ErrorCode {
         match *self {
-            LedgerError::NoConsensus(ref description) => ErrorCode::LedgerNoConsensusError,
-            LedgerError::InvalidTransaction(ref description) => ErrorCode::LedgerInvalidTransaction,
+            LedgerError::NoConsensus(_) => ErrorCode::LedgerNoConsensusError,
+            LedgerError::InvalidTransaction(_) => ErrorCode::LedgerInvalidTransaction,
             LedgerError::CommonError(ref err) => err.to_error_code()
         }
     }

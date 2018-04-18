@@ -159,7 +159,7 @@ impl ProverCommandExecutor {
         };
 
         let master_secret = self.anoncreds_service.prover.new_master_secret()?;
-        let master_secret_json = self.wallet_service.set_object(wallet_handle, &format!("master_secret::{}", master_secret_id), &master_secret, "MasterSecret")?;
+        self.wallet_service.set_object(wallet_handle, &format!("master_secret::{}", master_secret_id), &master_secret, "MasterSecret")?;
 
         trace!("create_master_secret <<< master_secret_id: {:?}", master_secret_id);
 
