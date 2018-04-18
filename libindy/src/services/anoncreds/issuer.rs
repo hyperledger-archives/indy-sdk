@@ -163,6 +163,7 @@ impl Issuer {
         Ok(rev_reg_delta)
     }
 
+    #[allow(dead_code)]
     pub fn recovery<RTA>(&self,
                          rev_reg: &mut RevocationRegistry,
                          max_cred_num: u32,
