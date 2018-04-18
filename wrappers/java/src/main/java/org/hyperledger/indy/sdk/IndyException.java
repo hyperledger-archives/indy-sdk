@@ -100,20 +100,16 @@ public class IndyException extends Exception {
 				return new TimeoutException();
 			case AnoncredsRevocationRegistryFullError:
 				return new RevocationRegistryFullException();
-			case AnoncredsInvalidUserRevocIndex:
-				return new InvalidUserRevocIndexException();
-			case AnoncredsAccumulatorIsFull:
-				return new AccumulatorFullException();
-			case AnoncredsNotIssuedError:
-				return new NotIssuedException();
+			case AnoncredsInvalidUserRevocId:
+				return new AnoncredsInvalidUserRevocId();
 			case AnoncredsMasterSecretDuplicateNameError:
 				return new DuplicateMasterSecretNameException();
 			case AnoncredsProofRejected:
 				return new ProofRejectedException();
-			case AnoncredsClaimRevoked:
-				return new ClaimRevokedException();
-			case AnoncredsClaimDefAlreadyExistsError:
-				return new ClaimDefAlreadyExistsException();
+			case AnoncredsCredentialRevoked:
+				return new CredentialRevokedException();
+			case AnoncredsCredDefAlreadyExistsError:
+				return new CredDefAlreadyExistsException();
 			case UnknownCryptoTypeError:
 				return new UnknownCryptoException();
 			case DidAlreadyExistsError:

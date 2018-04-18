@@ -4,6 +4,10 @@ from pathlib import Path
 from tempfile import gettempdir
 
 
+def path_home() -> Path:
+    return Path.home().joinpath(".indy_client")
+
+
 def get_pool_genesis_txn_path(pool_name):
     path_temp = Path(gettempdir()).joinpath("indy")
     path = path_temp.joinpath("{}.txn".format(pool_name))

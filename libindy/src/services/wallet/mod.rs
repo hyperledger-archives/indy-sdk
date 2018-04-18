@@ -8,7 +8,9 @@ use self::default::DefaultWalletType;
 use self::plugged::PluggedWalletType;
 
 use api::ErrorCode;
+use errors::indy::IndyError;
 use errors::wallet::WalletError;
+use errors::common::CommonError;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
 
@@ -287,11 +289,35 @@ impl WalletService {
         }
     }
 
+    pub fn set_object<T>(&self, handle: i32, key: &str, object: &T, _type: &str) -> Result<String, IndyError> where T: JsonEncodable {
+        match self.wallets.borrow().get(&handle) {
+            Some(wallet) => {
+                let object_json = object.to_json()
+                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize {:?}: {:?}", _type, err)))?;
+                wallet.set(key, &object_json)?;
+                Ok(object_json)
+            }
+            None => Err(IndyError::WalletError(WalletError::InvalidHandle(handle.to_string())))
+        }
+    }
+
     pub fn get(&self, handle: i32, key: &str) -> Result<String, WalletError> {
         match self.wallets.borrow().get(&handle) {
             Some(wallet) => wallet.get(key),
             None => Err(WalletError::InvalidHandle(handle.to_string()))
         }
+    }
+
+    // Dirty hack. json must live longer then result T
+    pub fn get_object<'a, T>(&self, handle: i32, key: &str, _type: &str, json: &'a mut String) -> Result<T, IndyError> where T: JsonDecodable<'a> {
+        *json = match self.wallets.borrow().get(&handle) {
+            Some(wallet) => wallet.get(key),
+            None => Err(WalletError::InvalidHandle(handle.to_string()))
+        }?;
+
+        T::from_json(json)
+            .map_err(|err|
+                IndyError::CommonError(CommonError::InvalidState(format!("Cannot deserialize {:?}: {:?}", _type, err))))
     }
 
     pub fn list(&self, handle: i32, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError> {

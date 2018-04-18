@@ -203,7 +203,7 @@ impl WalletType for DefaultWalletType {
         Ok(fs::remove_file(_db_path(name)).map_err(map_err_trace!())?)
     }
 
-    fn open(&self, name: &str, pool_name: &str, config: Option<&str>, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError> {
+    fn open(&self, name: &str, pool_name: &str, _config: Option<&str>, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError> {
         let runtime_config = match runtime_config {
             Some(config) => DefaultWalletRuntimeConfig::from_json(config)?,
             None => DefaultWalletRuntimeConfig::default()
@@ -269,10 +269,10 @@ fn _export_encrypted_to_unencrypted(conn: Connection, name: &str) -> Result<Conn
     path.push("plaintext.db");
 
     conn.execute(&format!("ATTACH DATABASE {:?} AS plaintext KEY ''", path), &[])?;
-    conn.query_row(&"SELECT sqlcipher_export('plaintext')", &[], |row| {})?;
+    conn.query_row(&"SELECT sqlcipher_export('plaintext')", &[], |_| {})?;
     conn.execute(&"DETACH DATABASE plaintext", &[])?;
     let r = conn.close();
-    if let Err((c, w)) = r {
+    if let Err((_, w)) = r {
         Err(WalletError::from(w))
     } else {
         let wallet = _db_path(name);
@@ -289,10 +289,10 @@ fn _export_unencrypted_to_encrypted(conn: Connection, name: &str, key: &str) -> 
 
     let sql = format!("ATTACH DATABASE {:?} AS encrypted KEY '{}'", path, key);
     conn.execute(&sql, &[])?;
-    conn.query_row(&"SELECT sqlcipher_export('encrypted')", &[], |row| {})?;
+    conn.query_row(&"SELECT sqlcipher_export('encrypted')", &[], |_| {})?;
     conn.execute(&"DETACH DATABASE encrypted", &[])?;
     let r = conn.close();
-    if let Err((c, w)) = r {
+    if let Err((_, w)) = r {
         Err(WalletError::from(w))
     } else {
         let wallet = _db_path(name);

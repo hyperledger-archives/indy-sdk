@@ -209,8 +209,7 @@
 }
 
 + (void)buildGetSchemaRequestWithSubmitterDid:(NSString *)submitterDid
-                                         dest:(NSString *)dest
-                                         data:(NSString *)data
+                                           id:(NSString *)id
                                    completion:(void (^)(NSError *error, NSString *requestJSON))completion {
     indy_error_t ret;
 
@@ -219,7 +218,47 @@
 
     ret = indy_build_get_schema_request(handle,
             [submitterDid UTF8String],
-            [dest UTF8String],
+            [id UTF8String],
+            IndyWrapperCommon3PSCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)parseGetSchemaResponse:(NSString *)getSchemaResponse
+                    completion:(void (^)(NSError *error, NSString *schemaId, NSString *schemaJson))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+
+    ret = indy_parse_get_schema_response(handle,
+            [getSchemaResponse UTF8String],
+            IndyWrapperCommon4PCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil, nil);
+        });
+    }
+}
+
+// MARK: - CredDefRequest request
+
++ (void)buildCredDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                       data:(NSString *)data
+                                 completion:(void (^)(NSError *error, NSString *requestJSON))completion; {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_cred_def_request(handle,
+            [submitterDid UTF8String],
             [data UTF8String],
             IndyWrapperCommon3PSCallback);
     if (ret != Success) {
@@ -231,22 +270,16 @@
     }
 }
 
-// MARK: - ClaimDefTxn request
-
-+ (void)buildClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                    xref:(NSNumber *)xref
-                           signatureType:(NSString *)signatureType
-                                    data:(NSString *)data
-                              completion:(void (^)(NSError *error, NSString *requestJSON))completion; {
++ (void)buildGetCredDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                            id:(NSString *)id
+                                    completion:(void (^)(NSError *error, NSString *requestJSON))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_build_claim_def_txn(handle,
+    ret = indy_build_get_cred_def_request(handle,
             [submitterDid UTF8String],
-            [xref intValue],
-            [signatureType UTF8String],
-            [data UTF8String],
+            [id UTF8String],
             IndyWrapperCommon3PSCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -257,27 +290,21 @@
     }
 }
 
-
-+ (void)buildGetClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                       xref:(NSNumber *)xref
-                              signatureType:(NSString *)signatureType
-                                     origin:(NSString *)origin
-                                 completion:(void (^)(NSError *error, NSString *requestJSON))completion {
++ (void)parseGetCredDefResponse:(NSString *)getCredDefResponse
+                     completion:(void (^)(NSError *error, NSString *credDefId, NSString *credDefJson))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_build_get_claim_def_txn(handle,
-            [submitterDid UTF8String],
-            [xref intValue],
-            [signatureType UTF8String],
-            [origin UTF8String],
-            IndyWrapperCommon3PSCallback);
+
+    ret = indy_parse_get_cred_def_response(handle,
+            [getCredDefResponse UTF8String],
+            IndyWrapperCommon4PCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError:ret], nil);
+            completion([NSError errorFromIndyError:ret], nil, nil);
         });
     }
 }
@@ -375,6 +402,30 @@
     }
 }
 
+// MARK: - Pool restart request
+
++ (void)buildPoolRestartRequestWithSubmitterDid:(NSString *)submitterDid
+                                         action:(NSString *)action
+                                       datetime:(NSString *)datetime
+                                     completion:(void (^)(NSError *error, NSString *requestJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_pool_restart_request(handle,
+            [submitterDid UTF8String],
+            [action UTF8String],
+            [datetime UTF8String],
+            IndyWrapperCommon3PSCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 // MARK: - Pool upgrade request
 
 + (void)buildPoolUpgradeRequestWithSubmitterDid:(NSString *)submitterDid
@@ -409,6 +460,175 @@
 
         dispatch_async(dispatch_get_main_queue(), ^{
             completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
+// MARK: - Revocation registry definition request
+
++ (void)buildRevocRegDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                           data:(NSString *)data
+                                     completion:(void (^)(NSError *error, NSString *requestJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_revoc_reg_def_request(handle,
+            [submitterDid UTF8String],
+            [data UTF8String],
+            IndyWrapperCommon3PSCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)buildGetRevocRegDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                                id:(NSString *)id
+                                        completion:(void (^)(NSError *error, NSString *requestJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_get_revoc_reg_def_request(handle,
+            [submitterDid UTF8String],
+            [id UTF8String],
+            IndyWrapperCommon3PSCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)parseGetRevocRegDefResponse:(NSString *)getRevocRegDefResponse
+                         completion:(void (^)(NSError *error, NSString *revocRegDefId, NSString *revocRegDefJson))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+
+    ret = indy_parse_get_revoc_reg_def_response(handle,
+            [getRevocRegDefResponse UTF8String],
+            IndyWrapperCommon4PCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil, nil);
+        });
+    }
+}
+
+// MARK: - Revocation registry entry request
+
++ (void)buildRevocRegEntryRequestWithSubmitterDid:(NSString *)submitterDid
+                                             type:(NSString *)type
+                                    revocRegDefId:(NSString *)revocRegDefId
+                                            value:(NSString *)value
+                                       completion:(void (^)(NSError *error, NSString *requestJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_revoc_reg_entry_request(handle,
+            [submitterDid UTF8String],
+            [revocRegDefId UTF8String],
+            [type UTF8String],
+            [value UTF8String],
+            IndyWrapperCommon3PSCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)buildGetRevocRegRequestWithSubmitterDid:(NSString *)submitterDid
+                                  revocRegDefId:(NSString *)revocRegDefId
+                                      timestamp:(NSNumber *)timestamp
+                                     completion:(void (^)(NSError *error, NSString *requestJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_get_revoc_reg_request(handle,
+            [submitterDid UTF8String],
+            [revocRegDefId UTF8String],
+            [timestamp intValue],
+            IndyWrapperCommon3PSCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)parseGetRevocRegResponse:(NSString *)getRevocRegResponse
+                      completion:(void (^)(NSError *error, NSString *revocRegDefId, NSString *revocRegJson, NSNumber *timestamp))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_parse_get_revoc_reg_response(handle,
+            [getRevocRegResponse UTF8String],
+            IndyWrapperCommon5SSUCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil, nil, nil);
+        });
+    }
+}
+
++ (void)buildGetRevocRegDeltaRequestWithSubmitterDid:(NSString *)submitterDid
+                                       revocRegDefId:(NSString *)revocRegDefId
+                                                from:(NSNumber *)from
+                                                  to:(NSNumber *)to
+                                          completion:(void (^)(NSError *error, NSString *requestJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_get_revoc_reg_delta_request(handle,
+            [submitterDid UTF8String],
+            [revocRegDefId UTF8String],
+            [from intValue],
+            [to intValue],
+            IndyWrapperCommon3PSCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)parseGetRevocRegDeltaResponse:(NSString *)getRevocRegDeltaResponse
+                           completion:(void (^)(NSError *error, NSString *revocRegDefId, NSString *revocRegDeltaJson, NSNumber *timestamp))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_parse_get_revoc_reg_delta_response(handle,
+            [getRevocRegDeltaResponse UTF8String],
+            IndyWrapperCommon5SSUCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil, nil, nil);
         });
     }
 }

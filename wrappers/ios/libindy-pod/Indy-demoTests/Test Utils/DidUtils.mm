@@ -268,7 +268,7 @@
                                                               targetDid:myDid
                                                                  verkey:myVerKey
                                                                   alias:nil
-                                                                   role:nil
+                                                                   role:@"TRUSTEE"
                                                              outRequest:&nymRequest];
 
     NSString *nymResponse = nil;
