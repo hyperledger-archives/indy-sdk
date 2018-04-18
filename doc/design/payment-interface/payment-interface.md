@@ -276,7 +276,7 @@ type BuildMintReqCB = extern fn(command_handle: i32,
 type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
                                       fees_json: *const c_char,
                                       cb: Option<extern fn(command_handle_: i32,
-                                                           err: ErroCode,
+                                                           err: ErrorCode,
                                                            set_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
 /// Builds Indy get request for getting fees for transactions in the ledger
@@ -288,7 +288,7 @@ type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
 /// get_txn_fees_json - Indy request for getting fees for transactions in the ledger
 type BuildGetTxnFeesReqCB = extern fn(command_handle: i32,
                                       cb: Option<extern fn(command_handle_: i32,
-                                                           err: ErroCode,
+                                                           err: ErrorCode,
                                                            get_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
 /// Parses response for Indy request for getting fees
