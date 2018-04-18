@@ -464,12 +464,14 @@ pub fn indy_parse_get_utxo_response(command_handle: i32,
 ///
 /// #Returns
 /// payment_req_json - Indy request for doing tokens payment
+/// payment_method
 pub fn indy_build_payment_req(command_handle: i32,
                               inputs_json: *const c_char,
                               outputs_json: *const c_char,
                               cb: Option<extern fn(command_handle_: i32,
                                                    err: ErrorCode,
-                                                   payment_req_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
+                                                   payment_req_json: *const c_char,
+                                                   payment_method: *const c_char) -> ErrorCode>) -> ErrorCode {}
 
 /// Parses response for Indy request for payment txn.
 ///
@@ -506,11 +508,13 @@ pub fn indy_parse_payment_response(command_handle: i32,
 ///
 /// #Returns
 /// mint_req_json - Indy request for doing tokens minting
+/// payment_method
 pub fn indy_build_mint_req(command_handle: i32,
                            outputs_json: *const c_char,
                            cb: Option<extern fn(command_handle_: i32,
                                                 err: ErrorCode,
-                                                mint_req_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
+                                                mint_req_json: *const c_char,
+                                                payment_method: *const c_char) -> ErrorCode>) -> ErrorCode {}
 
 /// Builds Indy request for setting fees for transactions in the ledger
 /// 
