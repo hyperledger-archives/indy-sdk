@@ -6,37 +6,31 @@ use errors::indy::IndyError;
 use errors::common::CommonError;
 use errors::wallet::WalletError;
 use services::wallet::WalletService;
+use services::wallet::callbacks::*;
 use std::rc::Rc;
 
 use self::libc::c_char;
 
 pub enum WalletCommand {
     RegisterWalletType(String, // xtype
-                       extern fn(name: *const c_char,
-                                 config: *const c_char,
-                                 credentials: *const c_char) -> ErrorCode, // create
-                       extern fn(name: *const c_char,
-                                 config: *const c_char,
-                                 runtime_config: *const c_char,
-                                 credentials: *const c_char,
-                                 handle: *mut i32) -> ErrorCode, // open
-                       extern fn(handle: i32,
-                                 key: *const c_char,
-                                 value: *const c_char) -> ErrorCode, // set
-                       extern fn(handle: i32,
-                                 key: *const c_char,
-                                 value_ptr: *mut *const c_char) -> ErrorCode, // get
-                       extern fn(handle: i32,
-                                 key: *const c_char,
-                                 value_ptr: *mut *const c_char) -> ErrorCode, // get_not_expired
-                       extern fn(handle: i32,
-                                 key_prefix: *const c_char,
-                                 values_json_ptr: *mut *const c_char) -> ErrorCode, // list
-                       extern fn(handle: i32) -> ErrorCode, // close
-                       extern fn(name: *const c_char,
-                                 config: *const c_char,
-                                 credentials: *const c_char) -> ErrorCode, // delete
-                       extern fn(wallet_handle: i32, str: *const c_char) -> ErrorCode, // free
+                       WalletCreate, // create
+                       WalletOpen, // open
+                       WalletClose, // close
+                       WalletDelete, // delete
+                       WalletAddRecord, // add record
+                       WalletUpdateRecordValue, // update record value
+                       WalletAddRecordTags, // add record tags
+                       WalletDeleteRecordTags, // delete record tags
+                       WalletDeleteRecord, // delete record
+                       WalletGetRecord, // get record
+                       WalletGetRecordId, // get record id
+                       WalletGetRecordValue, // get record value
+                       WalletGetRecordTags, // get record tags
+                       WalletFreeRecord, // free record
+                       WalletSearchRecords, // search records
+                       WalletGetSearchTotalCount, // get search total count
+                       WalletFetchSearchNextRecord, // fetch search next record
+                       WalletFreeSearch, // free search
                        Box<Fn(Result<(), IndyError>) + Send>),
     Create(String, // pool name
            String, // wallet name
@@ -63,17 +57,25 @@ pub struct WalletCommandExecutor {
 impl WalletCommandExecutor {
     pub fn new(wallet_service: Rc<WalletService>) -> WalletCommandExecutor {
         WalletCommandExecutor {
-            wallet_service: wallet_service
+            wallet_service
         }
     }
 
     pub fn execute(&self, command: WalletCommand) {
         match command {
-            WalletCommand::RegisterWalletType(xtype, create, open, set, get,
-                                              get_not_expired, list, close, delete, free, cb) => {
+            WalletCommand::RegisterWalletType(xtype, create, open, close, delete, add_record,
+                                              update_record_value, update_record_tags, add_record_tags,
+                                              delete_record_tags, delete_record, get_record, get_record_id,
+                                              get_record_value, get_record_tags, free_record,
+                                              search_records, get_search_total_count, fetch_search_next_record,
+                                              free_search, cb) => {
                 info!(target: "wallet_command_executor", "RegisterWalletType command received");
-                self.register_type(&xtype, create, open, set,
-                                   get, get_not_expired, list, close, delete, free, cb);
+                cb(self.register_type(&xtype, create, open, close, delete, add_record,
+                                      update_record_value, update_record_tags, add_record_tags,
+                                      delete_record_tags, delete_record, get_record, get_record_id,
+                                      get_record_value, get_record_tags, free_record,
+                                      search_records, get_search_total_count, fetch_search_next_record,
+                                      free_search));
             }
             WalletCommand::Create(pool_name, name, xtype, config, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Create command received");
@@ -103,40 +105,33 @@ impl WalletCommandExecutor {
 
     fn register_type(&self,
                      xtype: &str,
-                     create: extern fn(name: *const c_char,
-                                       config: *const c_char,
-                                       credentials: *const c_char) -> ErrorCode,
-                     open: extern fn(name: *const c_char,
-                                     config: *const c_char,
-                                     runtime_config: *const c_char,
-                                     credentials: *const c_char,
-                                     handle: *mut i32) -> ErrorCode,
-                     set: extern fn(handle: i32,
-                                    key: *const c_char,
-                                    value: *const c_char) -> ErrorCode,
-                     get: extern fn(handle: i32,
-                                    key: *const c_char,
-                                    value_ptr: *mut *const c_char) -> ErrorCode,
-                     get_not_expired: extern fn(handle: i32,
-                                                key: *const c_char,
-                                                value_ptr: *mut *const c_char) -> ErrorCode,
-                     list: extern fn(handle: i32,
-                                     key_prefix: *const c_char,
-                                     values_json_ptr: *mut *const c_char) -> ErrorCode,
-                     close: extern fn(handle: i32) -> ErrorCode,
-                     delete: extern fn(name: *const c_char,
-                                       config: *const c_char,
-                                       credentials: *const c_char) -> ErrorCode,
-                     free: extern fn(wallet_handle: i32,
-                                     value: *const c_char) -> ErrorCode,
-                     cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self
+                     create: WalletCreate,
+                     open: WalletOpen,
+                     close: WalletClose,
+                     delete: WalletDelete,
+                     add_record: WalletAddRecord,
+                     update_record_value: WalletUpdateRecordValue,
+                     update_record_tags: WalletUpdateRecordTags,
+                     add_record_tags: WalletAddRecordTags,
+                     delete_record_tags: WalletDeleteRecordTags,
+                     delete_record: WalletDeleteRecord,
+                     get_record: WalletGetRecord,
+                     get_record_id: WalletGetRecordId,
+                     get_record_value: WalletGetRecordValue,
+                     get_record_tags: WalletGetRecordTags,
+                     free_record: WalletFreeRecord,
+                     search_records: WalletSearchRecords,
+                     get_search_total_count: WalletGetSearchTotalCount,
+                     fetch_search_next_record: WalletFetchSearchNextRecord,
+                     free_search: WalletFreeSearch) {
+        self
             .wallet_service
-            .register_type(
-                xtype, create, open, set,
-                get, get_not_expired,
-                list, close, delete, free)
-            .map_err(IndyError::from));
+            .register_wallet_storage(
+                xtype, create, open, close, delete, add_record, update_record_value, update_record_tags,
+                add_record_tags, delete_record_tags, delete_record, get_record, get_record_id,
+                get_record_value, get_record_tags, free_record, search_records, get_search_total_count,
+                fetch_search_next_record, free_search)
+            .map_err(IndyError::from);
     }
 
     fn create(&self,

@@ -3,9 +3,11 @@ extern crate indy_crypto;
 
 mod default;
 mod plugged;
+mod callbacks;
 
 use self::default::DefaultWalletType;
 use self::plugged::PluggedWalletType;
+use self::callbacks::*;
 
 use api::ErrorCode;
 use errors::indy::IndyError;
@@ -24,20 +26,24 @@ use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use self::libc::c_char;
 
-pub trait Wallet {
-    fn set(&self, key: &str, value: &str) -> Result<(), WalletError>;
-    fn get(&self, key: &str) -> Result<String, WalletError>;
-    fn list(&self, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError>;
-    fn get_not_expired(&self, key: &str) -> Result<String, WalletError>;
+pub trait WalletStorage {
+    fn add_record(&self, type_: &str, id: &str, value: &str, tags_json: &str) -> Result<(), WalletError>;
+    fn update_record_value(&self, type_: &str, id: &str, value: &str) -> Result<(), WalletError>;
+    fn update_record_tags(&self, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletError>;
+    fn add_record_tags(&self, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletError>;
+    fn delete_record_tags(&self, type_: &str, id: &str, tag_names_json: &str) -> Result<(), WalletError>;
+    fn delete_record(&self, type_: &str, id: &str) -> Result<(), WalletError>;
+    fn get_record(&self, type_: &str, id: &str, options_json: &str) -> Result<WalletRecord, WalletError>;
+    fn search_records(&self, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError>;
     fn close(&self) -> Result<(), WalletError>;
     fn get_pool_name(&self) -> String;
     fn get_name(&self) -> String;
 }
 
-trait WalletType {
+trait WalletStorageType {
     fn create(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError>;
     fn delete(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError>;
-    fn open(&self, name: &str, pool_name: &str, config: Option<&str>, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError>;
+    fn open(&self, name: &str, pool_name: &str, config: Option<&str>, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<Box<WalletStorage>, WalletError>;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -61,36 +67,14 @@ impl JsonEncodable for WalletDescriptor {}
 
 impl<'a> JsonDecodable<'a> for WalletDescriptor {}
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct WalletMetadata {
-    name: String,
-    #[serde(rename = "type")]
-    type_: String,
-    associated_pool_name: String,
-}
-
-impl From<WalletDescriptor> for WalletMetadata {
-    fn from(internal: WalletDescriptor) -> Self {
-        WalletMetadata {
-            name: internal.name,
-            type_: internal.xtype,
-            associated_pool_name: internal.pool_name,
-        }
-    }
-}
-
-impl JsonEncodable for WalletMetadata {}
-
-impl<'a> JsonDecodable<'a> for WalletMetadata {}
-
 pub struct WalletService {
-    types: RefCell<HashMap<String, Box<WalletType>>>,
-    wallets: RefCell<HashMap<i32, Box<Wallet>>>
+    types: RefCell<HashMap<String, Box<WalletStorageType>>>,
+    wallets: RefCell<HashMap<i32, Box<WalletStorage>>>
 }
 
 impl WalletService {
     pub fn new() -> WalletService {
-        let mut types: HashMap<String, Box<WalletType>> = HashMap::new();
+        let mut types: HashMap<String, Box<WalletStorageType>> = HashMap::new();
         types.insert("default".to_string(), Box::new(DefaultWalletType::new()));
 
         WalletService {
@@ -99,34 +83,27 @@ impl WalletService {
         }
     }
 
-    pub fn register_type(&self,
-                         xtype: &str,
-                         create: extern fn(name: *const c_char,
-                                           config: *const c_char,
-                                           credentials: *const c_char) -> ErrorCode,
-                         open: extern fn(name: *const c_char,
-                                         config: *const c_char,
-                                         runtime_config: *const c_char,
-                                         credentials: *const c_char,
-                                         handle: *mut i32) -> ErrorCode,
-                         set: extern fn(handle: i32,
-                                        key: *const c_char,
-                                        value: *const c_char) -> ErrorCode,
-                         get: extern fn(handle: i32,
-                                        key: *const c_char,
-                                        value_ptr: *mut *const c_char) -> ErrorCode,
-                         get_not_expired: extern fn(handle: i32,
-                                                    key: *const c_char,
-                                                    value_ptr: *mut *const c_char) -> ErrorCode,
-                         list: extern fn(handle: i32,
-                                         key_prefix: *const c_char,
-                                         values_json_ptr: *mut *const c_char) -> ErrorCode,
-                         close: extern fn(handle: i32) -> ErrorCode,
-                         delete: extern fn(name: *const c_char,
-                                           config: *const c_char,
-                                           credentials: *const c_char) -> ErrorCode,
-                         free: extern fn(wallet_handle: i32,
-                                         value: *const c_char) -> ErrorCode) -> Result<(), WalletError> {
+    pub fn register_wallet_storage(&self,
+                                   xtype: *const c_char,
+                                   create: WalletCreate,
+                                   open: WalletOpen,
+                                   close: WalletClose,
+                                   delete: WalletDelete,
+                                   add_record: WalletAddRecord,
+                                   update_record_value: WalletUpdateRecordValue,
+                                   update_record_tags: WalletUpdateRecordTags,
+                                   add_record_tags: WalletAddRecordTags,
+                                   delete_record_tags: WalletDeleteRecordTags,
+                                   delete_record: WalletDeleteRecord,
+                                   get_record: WalletGetRecord,
+                                   get_record_id: WalletGetRecordId,
+                                   get_record_value: WalletGetRecordValue,
+                                   get_record_tags: WalletGetRecordTags,
+                                   free_record: WalletFreeRecord,
+                                   search_records: WalletSearchRecords,
+                                   get_search_total_count: WalletGetSearchTotalCount,
+                                   fetch_search_next_record: WalletFetchSearchNextRecord,
+                                   free_search: WalletFreeSearch) -> Result<(), WalletError> {
         let mut wallet_types = self.types.borrow_mut();
 
         if wallet_types.contains_key(xtype) {
@@ -140,9 +117,13 @@ impl WalletService {
         Ok(())
     }
 
-    pub fn create(&self, pool_name: &str, xtype: Option<&str>, name: &str, config: Option<&str>,
-                  credentials: Option<&str>) -> Result<(), WalletError> {
-        let xtype = xtype.unwrap_or("default");
+    pub fn create_wallet(&self,
+                         pool_name: &str,
+                         name: &str, config: Option<&str>,
+                         storage_type: Option<&str>,
+                         storage_config: Option<&str>,
+                         credentials: Option<&str>) -> Result<(), WalletError> {
+        let xtype = storage_type.unwrap_or("default");
 
         let wallet_types = self.types.borrow();
         if !wallet_types.contains_key(xtype) {
@@ -257,7 +238,7 @@ impl WalletService {
         Ok(wallet_handle)
     }
 
-    pub fn list_wallets(&self) -> Result<Vec<WalletMetadata>, WalletError> {
+    pub fn list_wallets(&self) -> Result<Vec<WalletDescriptor>, WalletError> {
         let mut descriptors = Vec::new();
         let wallet_home_path = EnvironmentUtils::wallet_home_path();
 
@@ -267,8 +248,7 @@ impl WalletService {
                 let mut descriptor_json = String::new();
                 File::open(_wallet_descriptor_path(wallet_name)).ok()
                     .and_then(|mut f| f.read_to_string(&mut descriptor_json).ok())
-                    .and_then(|_| WalletDescriptor::from_json(descriptor_json.as_str()).ok())
-                    .map(|descriptor| descriptors.push(descriptor.into()));
+                    .and_then(|_| WalletDescriptor::from_json(descriptor_json.as_str()).ok());
             }
         }
 
@@ -282,56 +262,83 @@ impl WalletService {
         }
     }
 
-    pub fn set(&self, handle: i32, key: &str, value: &str) -> Result<(), WalletError> {
-        match self.wallets.borrow().get(&handle) {
-            Some(wallet) => wallet.set(key, value),
-            None => Err(WalletError::InvalidHandle(handle.to_string()))
+    pub fn add_record(&self, storage_handle: i32, type_: &str, id: &str, value: &str, tags_json: &str) -> Result<(), WalletError> {
+        match self.wallets.borrow().get(&storage_handle) {
+            Some(wallet) => wallet.add_record(type_, id, value, tags_json),
+            None => Err(WalletError::InvalidHandle(storage_handle.to_string()))
         }
     }
 
-    pub fn set_object<T>(&self, handle: i32, key: &str, object: &T, _type: &str) -> Result<String, IndyError> where T: JsonEncodable {
-        match self.wallets.borrow().get(&handle) {
+    pub fn update_record_value(&self, storage_handle: i32, type_: &str, id: &str, value: &str) -> Result<(), WalletError> {
+        match self.wallets.borrow().get(&storage_handle) {
+            Some(wallet) => wallet.update_record_value(type_, id, value),
+            None => Err(WalletError::InvalidHandle(storage_handle.to_string()))
+        }
+    }
+
+    pub fn add_record_tags(&self, storage_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletError> {
+        match self.wallets.borrow().get(&storage_handle) {
+            Some(wallet) => wallet.update_record_value(type_, id, value),
+            None => Err(WalletError::InvalidHandle(storage_handle.to_string()))
+        }
+    }
+
+    pub fn update_record_tags(&self, storage_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletError> {
+        match self.wallets.borrow().get(&storage_handle) {
+            Some(wallet) => wallet.update_record_tags(type_, id, tags_json),
+            None => Err(WalletError::InvalidHandle(storage_handle.to_string()))
+        }
+    }
+
+    pub fn delete_record_tags(&self, storage_handle: i32, type_: &str, id: &str, tag_names_json: &str) -> Result<(), WalletError> {
+        match self.wallets.borrow().get(&storage_handle) {
+            Some(wallet) => wallet.delete_record_tags(type_, id, tag_names_json),
+            None => Err(WalletError::InvalidHandle(storage_handle.to_string()))
+        }
+    }
+
+    pub fn delete_record(&self, storage_handle: i32, type_: &str, id: &str) -> Result<(), WalletError> {
+        match self.wallets.borrow().get(&storage_handle) {
+            Some(wallet) => wallet.delete_record(type_, id),
+            None => Err(WalletError::InvalidHandle(storage_handle.to_string()))
+        }
+    }
+
+    pub fn set_object<T>(&self, storage_handle: i32, _type: &str, id: &str, object: &T, tags_json: &str) -> Result<String, IndyError> where T: JsonEncodable {
+        match self.wallets.borrow().get(&storage_handle) {
             Some(wallet) => {
                 let object_json = object.to_json()
+                    .map_err(map_err_trace!())
                     .map_err(|err| CommonError::InvalidState(format!("Cannot serialize {:?}: {:?}", _type, err)))?;
-                wallet.set(key, &object_json)?;
+                wallet.add_record(_type, id, &object_json, tags_json)?;
                 Ok(object_json)
             }
-            None => Err(IndyError::WalletError(WalletError::InvalidHandle(handle.to_string())))
+            None => Err(IndyError::WalletError(WalletError::InvalidHandle(storage_handle.to_string())))
         }
     }
 
-    pub fn get(&self, handle: i32, key: &str) -> Result<String, WalletError> {
-        match self.wallets.borrow().get(&handle) {
-            Some(wallet) => wallet.get(key),
-            None => Err(WalletError::InvalidHandle(handle.to_string()))
+    pub fn get_record(&self, storage_handle: i32, type_: &str, id: &str, options_json: &str) -> Result<WalletRecord, WalletError> {
+        match self.wallets.borrow().get(&storage_handle) {
+            Some(wallet) => wallet.get_record(type_, id, options_json),
+            None => Err(WalletError::InvalidHandle(storage_handle.to_string()))
         }
     }
 
     // Dirty hack. json must live longer then result T
-    pub fn get_object<'a, T>(&self, handle: i32, key: &str, _type: &str, json: &'a mut String) -> Result<T, IndyError> where T: JsonDecodable<'a> {
-        *json = match self.wallets.borrow().get(&handle) {
-            Some(wallet) => wallet.get(key),
+    pub fn get_object<'a, T>(&self, handle: i32, type_: &str, id: &str, options_json: &str, json: &'a mut String) -> Result<T, IndyError> where T: JsonDecodable<'a> {
+        let record: WalletRecord = match self.wallets.borrow().get(&handle) {
+            Some(wallet) => wallet.get_record(type_, id, options_json),
             None => Err(WalletError::InvalidHandle(handle.to_string()))
         }?;
 
-        T::from_json(json)
+        T::from_json(record.get_value()?)
+            .map_err(map_err_trace!())
             .map_err(|err|
                 IndyError::CommonError(CommonError::InvalidState(format!("Cannot deserialize {:?}: {:?}", _type, err))))
     }
 
-    pub fn list(&self, handle: i32, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError> {
-        match self.wallets.borrow().get(&handle) {
-            Some(wallet) => wallet.list(key_prefix),
-            None => Err(WalletError::InvalidHandle(handle.to_string()))
-        }
-    }
-
-    pub fn get_not_expired(&self, handle: i32, key: &str) -> Result<String, WalletError> {
-        match self.wallets.borrow().get(&handle) {
-            Some(wallet) => wallet.get_not_expired(key),
-            None => Err(WalletError::InvalidHandle(handle.to_string()))
-        }
+    pub fn search_records(&self, storage_handle: i32, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> {
+        unimplemented!()
     }
 
     pub fn get_pool_name(&self, handle: i32) -> Result<String, WalletError> {
@@ -339,6 +346,51 @@ impl WalletService {
             Some(wallet) => Ok(wallet.get_pool_name()),
             None => Err(WalletError::InvalidHandle(handle.to_string()))
         }
+    }
+}
+
+pub struct WalletRecord {
+    id: String,
+    value: String,
+    tags: String
+}
+
+impl WalletRecord {
+    pub fn get_id(&self) -> Result<&str, WalletError> {
+        self.id
+    }
+
+    pub fn get_value(&self) -> Result<&str, WalletError> {
+        self.value
+    }
+
+    pub fn get_tags(&self) -> Result<&str, WalletError> {
+        self.tags
+    }
+}
+
+pub struct WalletRecordRetrieveOptions {}
+
+impl WalletRecordRetrieveOptions {
+    pub const RETRIEVE_ID: &'static str = r#"{"retrieveValue": false, "retrieveTags":false}"#;
+    pub const RETRIEVE_ID_VALUE: &'static str = r#"{"retrieveTags":false}"#;
+    pub const RETRIEVE_ID_TAGS: &'static str = r#"{"retrieveValue":false}"#;
+    pub const RETRIEVE_ID_VALUE_TAGS: &'static str = r#"{}"#;
+}
+
+
+pub struct WalletSearch {
+    // TODO
+    total_count: Option<i32>
+}
+
+impl WalletSearch {
+    fn get_total_count(&self) -> Result<Option<i32>, WalletError> {
+        self.total_count
+    }
+
+    fn fetch_next_record(&self) -> Result<Option<WalletRecord>, WalletError> {
+        unimplemented!()
     }
 }
 
@@ -384,7 +436,6 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -420,7 +471,6 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -494,7 +544,6 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -535,7 +584,6 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -563,27 +611,26 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
                 InmemWallet::free
             )
             .unwrap();
-        let w1_meta = WalletMetadata {
+        let w1_meta = WalletDescriptor {
             name: "w1".to_string(),
-            associated_pool_name: "p1".to_string(),
-            type_: "default".to_string(),
+            pool_name: "p1".to_string(),
+            xtype: "default".to_string(),
         };
-        let w2_meta = WalletMetadata {
+        let w2_meta = WalletDescriptor {
             name: "w2".to_string(),
-            associated_pool_name: "p2".to_string(),
-            type_: "inmem".to_string(),
+            pool_name: "p2".to_string(),
+            xtype: "inmem".to_string(),
         };
-        let w3_meta = WalletMetadata {
+        let w3_meta = WalletDescriptor {
             name: "w3".to_string(),
-            associated_pool_name: "p1".to_string(),
-            type_: "default".to_string(),
+            pool_name: "p1".to_string(),
+            xtype: "default".to_string(),
         };
         wallet_service.create(&w1_meta.associated_pool_name,
                               Some(&w1_meta.type_),
@@ -634,7 +681,6 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -679,7 +725,6 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -744,7 +789,6 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -775,7 +819,6 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -813,109 +856,6 @@ mod tests {
         wallet_service.set(wallet_handle, "key1", "value2").unwrap();
         let value = wallet_service.get(wallet_handle, "key1").unwrap();
         assert_eq!("value2", value);
-
-        TestUtils::cleanup_indy_home();
-        InmemWallet::cleanup();
-    }
-
-    #[test]
-    fn wallet_service_set_get_not_expired_works() {
-        TestUtils::cleanup_indy_home();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create("pool1", None, "wallet1", None, None).unwrap();
-        let wallet_handle = wallet_service.open("wallet1", Some("{\"freshness_time\": 10}"), None).unwrap();
-        wallet_service.set(wallet_handle, "key1", "value1").unwrap();
-
-
-        let value = wallet_service.get_not_expired(wallet_handle, "key1").unwrap();
-        assert_eq!("value1", value);
-
-        TestUtils::cleanup_indy_home();
-    }
-
-    #[test]
-    fn wallet_service_set_get_not_expired_works_for_expired() {
-        TestUtils::cleanup_indy_home();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create("pool1", None, "wallet1", None, None).unwrap();
-        let wallet_handle = wallet_service.open("wallet1", Some("{\"freshness_time\": 1}"), None).unwrap();
-        wallet_service.set(wallet_handle, "key1", "value1").unwrap();
-
-        // Wait until value expires
-        thread::sleep(Duration::new(2, 0));
-
-        let res = wallet_service.get_not_expired(wallet_handle, "key1");
-        assert_match!(Err(WalletError::NotFound(_)), res);
-
-        TestUtils::cleanup_indy_home();
-    }
-
-    #[test]
-    fn wallet_service_set_get_not_expired_works_for_plugged() {
-        TestUtils::cleanup_indy_home();
-        InmemWallet::cleanup();
-
-        let wallet_service = WalletService::new();
-
-        wallet_service
-            .register_type(
-                "inmem",
-                InmemWallet::create,
-                InmemWallet::open,
-                InmemWallet::set,
-                InmemWallet::get,
-                InmemWallet::get_not_expired,
-                InmemWallet::list,
-                InmemWallet::close,
-                InmemWallet::delete,
-                InmemWallet::free
-            )
-            .unwrap();
-
-        wallet_service.create("pool1", Some("inmem"), "wallet1", None, None).unwrap();
-        let wallet_handle = wallet_service.open("wallet1", Some("{\"freshness_time\": 10}"), None).unwrap();
-        wallet_service.set(wallet_handle, "key1", "value1").unwrap();
-
-        let value = wallet_service.get_not_expired(wallet_handle, "key1").unwrap();
-        assert_eq!("value1", value);
-
-        TestUtils::cleanup_indy_home();
-        InmemWallet::cleanup();
-    }
-
-    #[test]
-    fn wallet_service_set_get_not_expired_works_for_plugged_and_expired() {
-        TestUtils::cleanup_indy_home();
-        InmemWallet::cleanup();
-
-        let wallet_service = WalletService::new();
-
-        wallet_service
-            .register_type(
-                "inmem",
-                InmemWallet::create,
-                InmemWallet::open,
-                InmemWallet::set,
-                InmemWallet::get,
-                InmemWallet::get_not_expired,
-                InmemWallet::list,
-                InmemWallet::close,
-                InmemWallet::delete,
-                InmemWallet::free
-            )
-            .unwrap();
-
-        wallet_service.create("pool1", Some("inmem"), "wallet1", None, None).unwrap();
-        let wallet_handle = wallet_service.open("wallet1", Some("{\"freshness_time\": 1}"), None).unwrap();
-        wallet_service.set(wallet_handle, "key1", "value1").unwrap();
-
-        // Wait until value expires
-        thread::sleep(Duration::new(2, 0));
-
-        let res = wallet_service.get_not_expired(wallet_handle, "key1");
-        assert_match!(Err(WalletError::PluggedWallerError(ErrorCode::WalletNotFoundError)), res);
 
         TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
@@ -961,7 +901,6 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -1020,7 +959,6 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
