@@ -756,7 +756,13 @@ The idea is the following:
 
 The idea is the following:
 
-* libindy will use specific prefix for all internal record tags like "~libindyTag"
+* libindy will use specific prefix for all internal record tags like "indy:tagName"
 * For all user interfaces it will be impossible to modify tags with this prefix
 * If user passes tag with this prefix to any function that modifies tags libindy will return validation error
 * Note that it will be possible for user application to read libindy defined tags and use these tags for searching
+
+## Wallet Encryption
+
+Encryption schema is the following:
+
+![Encryption Schema](./wallet-encryption.svg)
