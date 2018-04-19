@@ -1562,6 +1562,7 @@ pub mod tests {
         use super::*;
 
         #[test]
+        #[ignore]
         pub fn get_validator_info_works() {
             let ctx = CommandContext::new();
 
