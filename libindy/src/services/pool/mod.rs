@@ -1,8 +1,6 @@
 mod types;
 mod catchup;
 mod transaction_handler;
-#[warn(dead_code)]
-#[warn(unused_variables)]
 mod state_proof;
 
 extern crate byteorder;
@@ -78,7 +76,7 @@ impl PoolWorkerHandler {
     fn process_msg(&mut self, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         let msg = Message::from_raw_str(raw_msg)
             .map_err(map_err_trace!())
-            .map_err(|err|
+            .map_err(|_|
                 CommonError::IOError(
                     io::Error::from(io::ErrorKind::InvalidData)))?;
         match self {
@@ -89,7 +87,7 @@ impl PoolWorkerHandler {
 
     fn send_request(&mut self, cmd: &str, cmd_id: i32) -> Result<(), PoolError> {
         match self {
-            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => {
+            &mut PoolWorkerHandler::CatchupHandler(_) => {
                 Err(PoolError::CommonError(
                     CommonError::InvalidState("Try send request while CatchUp.".to_string())))
             }
@@ -272,7 +270,7 @@ impl PoolWorker {
                         CommandExecutor::instance()
                             .send(Command::Ledger(LedgerCommand::SubmitAck(req.id, Err(err))))
                             .map_err(|err| {
-                                CommonError::InvalidState("Can't send ACK cmd".to_string())
+                                CommonError::InvalidState(format!("Can't send ACK cmd: {:?}", err))
                             })
                     })?;
                 }
@@ -311,7 +309,7 @@ impl PoolWorker {
             trace!("cmd {:?}", cmd);
             let cmd_s = String::from_utf8(cmd[0].clone())
                 .map_err(|err|
-                    CommonError::InvalidState("Invalid command received".to_string()))?;
+                    CommonError::InvalidState(format!("Invalid command received: {:?}", err)))?;
             let id = cmd.get(1).map(|cmd: &Vec<u8>| LittleEndian::read_i32(cmd.as_slice()))
                 .unwrap_or(-1);
             if "exit".eq(cmd_s.as_str()) {
@@ -362,16 +360,20 @@ impl PoolWorker {
 
     fn _restore_merkle_tree_from_pool_name(pool_name: &str) -> Result<MerkleTree, PoolError> {
         let mut p = EnvironmentUtils::pool_path(pool_name);
-        let mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
         //TODO firstly try to deserialize merkle tree
         p.push(pool_name);
         p.set_extension("txn");
+
+        if !p.exists(){
+            return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)))
+        }
 
         PoolWorker::_restore_merkle_tree(&p)
     }
 
     fn _restore_merkle_tree(file_mame: &PathBuf) -> Result<MerkleTree, PoolError> {
         let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
+
         let f = fs::File::open(file_mame).map_err(map_err_trace!())?;
 
         let reader = io::BufReader::new(&f);
@@ -409,11 +411,11 @@ impl Pool {
         let mut pool_worker: PoolWorker = PoolWorker {
             cmd_sock: recv_cmd_sock,
             open_cmd_id: cmd_id,
-            pool_id: pool_id,
+            pool_id,
             name: name.to_string(),
             handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
                 initiate_cmd_id: cmd_id,
-                pool_id: pool_id,
+                pool_id,
                 ..Default::default()
             }),
         };
@@ -477,7 +479,7 @@ impl Debug for RemoteNode {
 impl RemoteNode {
     fn new(txn: &NodeTransaction) -> Result<RemoteNode, PoolError> {
         let node_verkey = txn.dest.as_str().from_base58()
-            .map_err(|e| { CommonError::InvalidStructure("Invalid field dest in genesis transaction".to_string()) })?;
+            .map_err(|err| { CommonError::InvalidStructure(format!("Invalid field dest in genesis transaction: {:?}", err)) })?;
 
         if txn.data.services.is_none() || !txn.data.services.as_ref().unwrap().contains(&"VALIDATOR".to_string()) {
             return Err(PoolError::CommonError(CommonError::InvalidState("Node is not a Validator".to_string())));
@@ -491,9 +493,9 @@ impl RemoteNode {
         let blskey = match txn.data.blskey {
             Some(ref blskey) => {
                 let key = blskey.as_str().from_base58()
-                    .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?;
+                    .map_err(|err| { CommonError::InvalidStructure(format!("Invalid field blskey in genesis transaction: {:?}", err)) })?;
                 Some(VerKey::from_bytes(key.as_slice())
-                    .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?)
+                    .map_err(|err| { CommonError::InvalidStructure(format!("Invalid field blskey in genesis transaction: {:?}", err)) })?)
             }
             None => None
         };
@@ -515,7 +517,7 @@ impl RemoteNode {
         s.set_curve_publickey(&key_pair.public_key)?;
         s.set_curve_serverkey(
             zmq::z85_encode(self.public_key.as_slice())
-                .map_err(|err| { CommonError::InvalidStructure("Can't encode server key as z85".to_string()) })?
+                .map_err(|err| { CommonError::InvalidStructure(format!("Can't encode server key as z85: {:?}", err)) })?
                 .as_str())?;
         s.set_linger(0)?; //TODO set correct timeout
         s.connect(&self.zaddr)?;
@@ -625,7 +627,7 @@ impl PoolService {
         fs::remove_dir_all(path).map_err(PoolError::from)
     }
 
-    pub fn open(&self, name: &str, config: Option<&str>) -> Result<i32, PoolError> {
+    pub fn open(&self, name: &str, _config: Option<&str>) -> Result<i32, PoolError> {
         for pool in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
             if name.eq(pool.name.as_str()) {
                 //TODO change error
@@ -707,14 +709,14 @@ mod tests {
 
         #[test]
         fn pool_service_new_works() {
-            let pool_service = PoolService::new();
+            PoolService::new();
             assert!(true, "No crashes on PoolService::new");
         }
 
         #[test]
         fn pool_service_drop_works() {
             fn drop_test() {
-                let pool_service = PoolService::new();
+                PoolService::new();
             }
 
             drop_test();
@@ -896,7 +898,7 @@ mod tests {
         let mut pw: PoolWorker = Default::default();
         let (gt, handle) = nodes_emulator::start();
         let mut merkle_tree: MerkleTree = MerkleTree::from_vec(Vec::new()).unwrap();
-        merkle_tree.append(gt.to_msg_pack().unwrap()).unwrap();
+        merkle_tree.append(rmp_serde::to_vec_named(&gt).unwrap()).unwrap();
 
         pw.connect_to_known_nodes(Some(&merkle_tree)).unwrap();
 
@@ -986,7 +988,7 @@ mod tests {
     fn catchup_handler_start_catchup_works() {
         let mut ch: CatchupHandler = Default::default();
         let (gt, handle) = nodes_emulator::start();
-        ch.merkle_tree.append(gt.to_msg_pack().unwrap()).unwrap();
+        ch.merkle_tree.append(rmp_serde::to_vec_named(&gt).unwrap()).unwrap();
         let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
         rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap()).unwrap();
         ch.nodes.push(rn);

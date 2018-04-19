@@ -44,6 +44,7 @@ def seed_my2():
 def did_my1():
     return "VsKV7grR1BUE29mG2Fm2kX"
 
+
 @pytest.fixture
 def did_my2():
     return "2PRyVHmkXQnQzJQKxHxnXC"
@@ -448,7 +449,7 @@ async def identity_my(wallet_handle, pool_handle, identity_trustee1, seed_my1, )
 
     (my_did, my_verkey) = await did.create_and_store_my_did(wallet_handle, "{}")
 
-    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, None)
+    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, 'TRUSTEE')
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
     return my_did, my_verkey

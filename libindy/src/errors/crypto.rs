@@ -34,7 +34,7 @@ impl error::Error for CryptoError {
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            CryptoError::UnknownCryptoError(ref description) => None,
+            CryptoError::UnknownCryptoError(_) => None,
             CryptoError::CommonError(ref err) => Some(err)
         }
     }
@@ -43,7 +43,7 @@ impl error::Error for CryptoError {
 impl ToErrorCode for CryptoError {
     fn to_error_code(&self) -> ErrorCode {
         match *self {
-            CryptoError::UnknownCryptoError(ref description) => ErrorCode::UnknownCryptoTypeError,
+            CryptoError::UnknownCryptoError(_) => ErrorCode::UnknownCryptoTypeError,
             CryptoError::CommonError(ref err) => err.to_error_code()
         }
     }

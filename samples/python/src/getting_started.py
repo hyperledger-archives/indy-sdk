@@ -108,82 +108,55 @@ async def run():
                                    "Thrift", thrift_wallet, thrift_steward_did, thrift_steward_key, 'TRUST_ANCHOR')
 
     logger.info("==============================")
-    logger.info("=== Claim Schemas Setup ==")
+    logger.info("=== Credential Schemas Setup ==")
     logger.info("------------------------------")
 
-    logger.info("\"Government\" -> Create and store in Wallet \"Government Issuer\" DID")
-    (government_issuer_did, government_issuer_key) = await did.create_and_store_my_did(government_wallet, "{}")
+    logger.info("\"Government\" -> Create \"Job-Certificate\" Schema")
+    (job_certificate_schema_id, job_certificate_schema) = \
+        await anoncreds.issuer_create_schema(government_did, 'Job-Certificate', '0.2',
+                                             json.dumps(['first_name', 'last_name', 'salary', 'employee_status',
+                                                         'experience']))
 
-    logger.info("\"Government\" -> Send Nym to Ledger for \"Government Issuer\" DID")
-    await send_nym(pool_handle, government_wallet, government_did, government_issuer_did, government_issuer_key, None)
+    logger.info("\"Government\" -> Send \"Job-Certificate\" Schema to Ledger")
+    await send_schema(pool_handle, government_wallet, government_did, job_certificate_schema)
 
-    logger.info("\"Government\" -> Send to Ledger \"Job-Certificate\" Schema")
-    job_certificate_schema = {
-        'name': 'Job-Certificate',
-        'version': '0.2',
-        'attr_names': ['first_name', 'last_name', 'salary', 'employee_status', 'experience']
-    }
-    job_certificate_schema_key = {
-        'name': job_certificate_schema['name'],
-        'version': job_certificate_schema['version'],
-        'did': government_issuer_did
-    }
-    await send_schema(pool_handle, government_wallet, government_issuer_did, job_certificate_schema)
-
-    logger.info("\"Government\" -> Send to Ledger \"Transcript\" Schema")
-    transcript_schema = {
-        'name': 'Transcript',
-        'version': '1.2',
-        'attr_names': ['first_name', 'last_name', 'degree', 'status', 'year', 'average', 'ssn']
-    }
-    transcript_schema_key = {
-        'name': transcript_schema['name'],
-        'version': transcript_schema['version'],
-        'did': government_issuer_did
-    }
-    await send_schema(pool_handle, government_wallet, government_issuer_did, transcript_schema)
+    logger.info("\"Government\" -> Create \"Transcript\" Schema")
+    (transcript_schema_id, transcript_schema) = \
+        await anoncreds.issuer_create_schema(government_did, 'Transcript', '1.2',
+                                             json.dumps(['first_name', 'last_name', 'degree', 'status',
+                                                         'year', 'average', 'ssn']))
+    logger.info("\"Government\" -> Send \"Transcript\" Schema to Ledger")
+    await send_schema(pool_handle, government_wallet, government_did, transcript_schema)
 
     logger.info("==============================")
-    logger.info("=== Faber Claim Definition Setup ==")
+    logger.info("=== Faber Credential Definition Setup ==")
     logger.info("------------------------------")
-
-    logger.info("\"Faber\" -> Create and store in Wallet \"Faber Issuer\" DID")
-    (faber_issuer_did, faber_issuer_key) = await did.create_and_store_my_did(faber_wallet, "{}")
-
-    logger.info("\"Faber\" -> Send Nym to Ledger for \"Faber Issuer\" DID")
-    await send_nym(pool_handle, faber_wallet, faber_did, faber_issuer_did, faber_issuer_key, None)
 
     logger.info("\"Faber\" -> Get \"Transcript\" Schema from Ledger")
-    transcript_schema = await get_schema(pool_handle, faber_issuer_did, transcript_schema_key)
+    (_, transcript_schema) = await get_schema(pool_handle, faber_did, transcript_schema_id)
 
-    logger.info("\"Faber\" -> Create and store in Wallet \"Faber Transcript\" Claim Definition")
-    faber_transcript_claim_def_json = \
-        await anoncreds.issuer_create_and_store_claim_def(faber_wallet, faber_issuer_did,
-                                                          json.dumps(transcript_schema), 'CL', False)
+    logger.info("\"Faber\" -> Create and store in Wallet \"Faber Transcript\" Credential Definition")
+    (faber_transcript_cred_def_id, faber_transcript_cred_def_json) = \
+        await anoncreds.issuer_create_and_store_credential_def(faber_wallet, faber_did, transcript_schema,
+                                                               'TAG1', 'CL', '{"support_revocation": false}')
 
-    logger.info("\"Faber\" -> Send ClaimDef to Ledger for \"Faber Transcript\" Claim Definition")
-    await send_claim_def(pool_handle, faber_wallet, faber_issuer_did, faber_transcript_claim_def_json)
+    logger.info("\"Faber\" -> Send  \"Faber Transcript\" Credential Definition to Ledger")
+    await send_cred_def(pool_handle, faber_wallet, faber_did, faber_transcript_cred_def_json)
 
     logger.info("==============================")
-    logger.info("=== Acme Claim Definition Setup ==")
+    logger.info("=== Acme Credential Definition Setup ==")
     logger.info("------------------------------")
 
-    logger.info("\"Acme\" -> Create and store in Wallet \"Acme Issuer\" DID")
-    (acme_issuer_did, acme_issuer_key) = await did.create_and_store_my_did(acme_wallet, "{}")
-
-    logger.info("\"Acme\" -> Send Nym to Ledger for \"Acme Issuer\" DID")
-    await send_nym(pool_handle, acme_wallet, acme_did, acme_issuer_did, acme_issuer_key, None)
-
     logger.info("\"Acme\" ->  Get from Ledger \"Job-Certificate\" Schema")
-    job_certificate_schema = await get_schema(pool_handle, acme_issuer_did, job_certificate_schema_key)
+    (_, job_certificate_schema) = await get_schema(pool_handle, acme_did, job_certificate_schema_id)
 
-    logger.info("\"Acme\" -> Create and store in Wallet \"Acme Job-Certificate\" Claim Definition")
-    acme_job_certificate_claim_def_json = \
-        await anoncreds.issuer_create_and_store_claim_def(acme_wallet, acme_issuer_did,
-                                                          json.dumps(job_certificate_schema), 'CL', False)
+    logger.info("\"Acme\" -> Create and store in Wallet \"Acme Job-Certificate\" Credential Definition")
+    (acme_job_certificate_cred_def_id, acme_job_certificate_cred_def_json) = \
+        await anoncreds.issuer_create_and_store_credential_def(acme_wallet, acme_did, job_certificate_schema,
+                                                               'TAG1', 'CL', '{"support_revocation": false}')
 
-    logger.info("\"Acme\" -> Send ClaimDef to Ledger for \"Acme Job-Certificate\" Claim Definition")
-    await send_claim_def(pool_handle, acme_wallet, acme_issuer_did, acme_job_certificate_claim_def_json)
+    logger.info("\"Acme\" -> Send \"Acme Job-Certificate\" Credential Definition to Ledger")
+    await send_cred_def(pool_handle, acme_wallet, acme_did, acme_job_certificate_cred_def_json)
 
     logger.info("==============================")
     logger.info("=== Getting Transcript with Faber ==")
@@ -195,86 +168,79 @@ async def run():
         = await onboarding(pool_handle, pool_name, "Faber", faber_wallet, faber_did, "Alice", None, ' alice_wallet')
 
     logger.info("==============================")
-    logger.info("== Getting Transcript with Faber - Getting Transcript Claim ==")
+    logger.info("== Getting Transcript with Faber - Getting Transcript Credential ==")
     logger.info("------------------------------")
 
-    logger.info("\"Faber\" -> Create \"Transcript\" Claim Offer for Alice")
-    transcript_claim_offer_json = \
-        await anoncreds.issuer_create_claim_offer(faber_wallet, json.dumps(transcript_schema),
-                                                  faber_issuer_did, alice_faber_did)
+    logger.info("\"Faber\" -> Create \"Transcript\" Credential Offer for Alice")
+    transcript_cred_offer_json = \
+        await anoncreds.issuer_create_credential_offer(faber_wallet, faber_transcript_cred_def_id)
 
     logger.info("\"Faber\" -> Get key for Alice did")
     alice_faber_verkey = await did.key_for_did(pool_handle, acme_wallet, faber_alice_connection_response['did'])
 
-    logger.info("\"Faber\" -> Authcrypt \"Transcript\" Claim Offer for Alice")
-    authcrypted_transcript_claim_offer = await crypto.auth_crypt(faber_wallet, faber_alice_key, alice_faber_verkey,
-                                                                 transcript_claim_offer_json.encode('utf-8'))
+    logger.info("\"Faber\" -> Authcrypt \"Transcript\" Credential Offer for Alice")
+    authcrypted_transcript_cred_offer = await crypto.auth_crypt(faber_wallet, faber_alice_key, alice_faber_verkey,
+                                                                transcript_cred_offer_json.encode('utf-8'))
 
-    logger.info("\"Faber\" -> Send authcrypted \"Transcript\" Claim Offer to Alice")
+    logger.info("\"Faber\" -> Send authcrypted \"Transcript\" Credential Offer to Alice")
 
-    logger.info("\"Alice\" -> Authdecrypted \"Transcript\" Claim Offer from Faber")
-    faber_alice_verkey, authdecrypted_transcript_claim_offer_json, authdecrypted_transcript_claim_offer = \
-        await auth_decrypt(alice_wallet, alice_faber_key, authcrypted_transcript_claim_offer)
-
-    logger.info("\"Alice\" -> Store \"Transcript\" Claim Offer in Wallet from Faber")
-    await anoncreds.prover_store_claim_offer(alice_wallet, authdecrypted_transcript_claim_offer_json)
+    logger.info("\"Alice\" -> Authdecrypted \"Transcript\" Credential Offer from Faber")
+    faber_alice_verkey, authdecrypted_transcript_cred_offer_json, authdecrypted_transcript_cred_offer = \
+        await auth_decrypt(alice_wallet, alice_faber_key, authcrypted_transcript_cred_offer)
 
     logger.info("\"Alice\" -> Create and store \"Alice\" Master Secret in Wallet")
-    alice_master_secret_name = 'alice_master_secret'
-    await anoncreds.prover_create_master_secret(alice_wallet, alice_master_secret_name)
+    alice_master_secret_id = await anoncreds.prover_create_master_secret(alice_wallet, None)
 
-    logger.info("\"Alice\" -> Get \"Transcript\" Schema from Ledger")
-    transcript_schema = await get_schema(pool_handle, alice_faber_did,
-                                         authdecrypted_transcript_claim_offer['schema_key'])
+    logger.info("\"Alice\" -> Get \"Faber Transcript\" Credential Definition from Ledger")
+    (faber_transcript_cred_def_id, faber_transcript_cred_def) = \
+        await get_cred_def(pool_handle, alice_faber_did, authdecrypted_transcript_cred_offer['cred_def_id'])
 
-    logger.info("\"Alice\" -> Get \"Faber Transcript\" Claim Definition from Ledger")
-    faber_transcript_claim_def = await get_claim_def(pool_handle, alice_faber_did, transcript_schema,
-                                                     authdecrypted_transcript_claim_offer['issuer_did'])
+    logger.info("\"Alice\" -> Create \"Transcript\" Credential Request for Faber")
+    (transcript_cred_request_json, transcript_cred_request_metadata_json) = \
+        await anoncreds.prover_create_credential_req(alice_wallet, alice_faber_did,
+                                                     authdecrypted_transcript_cred_offer_json,
+                                                     faber_transcript_cred_def, alice_master_secret_id)
 
-    logger.info("\"Alice\" -> Create and store in Wallet \"Transcript\" Claim Request for Faber")
-    transcript_claim_request_json = \
-        await anoncreds.prover_create_and_store_claim_req(alice_wallet, alice_faber_did,
-                                                          authdecrypted_transcript_claim_offer_json,
-                                                          json.dumps(faber_transcript_claim_def),
-                                                          alice_master_secret_name)
+    logger.info("\"Alice\" -> Authcrypt \"Transcript\" Credential Request for Faber")
+    authcrypted_transcript_cred_request = await crypto.auth_crypt(alice_wallet, alice_faber_key, faber_alice_verkey,
+                                                                  transcript_cred_request_json.encode('utf-8'))
 
-    logger.info("\"Alice\" -> Authcrypt \"Transcript\" Claim Request for Faber")
-    authcrypted_transcript_claim_request = await crypto.auth_crypt(alice_wallet, alice_faber_key, faber_alice_verkey,
-                                                                   transcript_claim_request_json.encode('utf-8'))
+    logger.info("\"Alice\" -> Send authcrypted \"Transcript\" Credential Request to Faber")
 
-    logger.info("\"Alice\" -> Send authcrypted \"Transcript\" Claim Request to Faber")
+    logger.info("\"Faber\" -> Authdecrypt \"Transcript\" Credential Request from Alice")
+    alice_faber_verkey, authdecrypted_transcript_cred_request_json, _ = \
+        await auth_decrypt(faber_wallet, faber_alice_key, authcrypted_transcript_cred_request)
 
-    logger.info("\"Faber\" -> Authdecrypt \"Transcript\" Claim Request from Alice")
-    alice_faber_verkey, authdecrypted_transcript_claim_request_json, _ = \
-        await auth_decrypt(faber_wallet, faber_alice_key, authcrypted_transcript_claim_request)
-
-    logger.info("\"Faber\" -> Create \"Transcript\" Claim for Alice")
-    transcript_claim_values = json.dumps({
-        'first_name': ['Alice', '1139481716457488690172217916278103335'],
-        'last_name': ['Garcia', '5321642780241790123587902456789123452'],
-        'degree': ['Bachelor of Science, Marketing', '12434523576212321'],
-        'status': ['graduated', '2213454313412354'],
-        'ssn': ['123-45-6789', '3124141231422543541'],
-        'year': ['2015', '2015'],
-        'average': ['5', '5']
+    logger.info("\"Faber\" -> Create \"Transcript\" Credential for Alice")
+    transcript_cred_values = json.dumps({
+        "first_name": {"raw": "Alice", "encoded": "1139481716457488690172217916278103335"},
+        "last_name": {"raw": "Garcia", "encoded": "5321642780241790123587902456789123452"},
+        "degree": {"raw": "Bachelor of Science, Marketing", "encoded": "12434523576212321"},
+        "status": {"raw": "graduated", "encoded": "2213454313412354"},
+        "ssn": {"raw": "123-45-6789", "encoded": "3124141231422543541"},
+        "year": {"raw": "2015", "encoded": "2015"},
+        "average": {"raw": "5", "encoded": "5"}
     })
 
-    _, transcript_claim_json = \
-        await anoncreds.issuer_create_claim(faber_wallet, authdecrypted_transcript_claim_request_json,
-                                            transcript_claim_values, -1)
+    transcript_cred_json, _, _ = \
+        await anoncreds.issuer_create_credential(faber_wallet, transcript_cred_offer_json,
+                                                 authdecrypted_transcript_cred_request_json,
+                                                 transcript_cred_values, None, None)
 
-    logger.info("\"Faber\" -> Authcrypt \"Transcript\" Claim for Alice")
-    authcrypted_transcript_claim_json = await crypto.auth_crypt(faber_wallet, faber_alice_key, alice_faber_verkey,
-                                                                transcript_claim_json.encode('utf-8'))
+    logger.info("\"Faber\" -> Authcrypt \"Transcript\" Credential for Alice")
+    authcrypted_transcript_cred_json = await crypto.auth_crypt(faber_wallet, faber_alice_key, alice_faber_verkey,
+                                                               transcript_cred_json.encode('utf-8'))
 
-    logger.info("\"Faber\" -> Send authcrypted \"Transcript\" Claim to Alice")
+    logger.info("\"Faber\" -> Send authcrypted \"Transcript\" Credential to Alice")
 
-    logger.info("\"Alice\" -> Authdecrypted \"Transcript\" Claim from Faber")
-    _, authdecrypted_transcript_claim_json, _ = \
-        await auth_decrypt(alice_wallet, alice_faber_key, authcrypted_transcript_claim_json)
+    logger.info("\"Alice\" -> Authdecrypted \"Transcript\" Credential from Faber")
+    _, authdecrypted_transcript_cred_json, _ = \
+        await auth_decrypt(alice_wallet, alice_faber_key, authcrypted_transcript_cred_json)
 
-    logger.info("\"Alice\" -> Store \"Transcript\" Claim from Faber")
-    await anoncreds.prover_store_claim(alice_wallet, authdecrypted_transcript_claim_json, None)
+    logger.info("\"Alice\" -> Store \"Transcript\" Credential from Faber")
+    await anoncreds.prover_store_credential(alice_wallet, None, transcript_cred_request_json,
+                                            transcript_cred_request_metadata_json, authdecrypted_transcript_cred_json,
+                                            faber_transcript_cred_def, None)
 
     logger.info("==============================")
     logger.info("=== Apply for the job with Acme ==")
@@ -294,7 +260,7 @@ async def run():
         'nonce': '1432422343242122312411212',
         'name': 'Job-Application',
         'version': '0.1',
-        'requested_attrs': {
+        'requested_attributes': {
             'attr1_referent': {
                 'name': 'first_name'
             },
@@ -303,15 +269,15 @@ async def run():
             },
             'attr3_referent': {
                 'name': 'degree',
-                'restrictions': [{'issuer_did': faber_issuer_did, 'schema_key': transcript_schema_key}]
+                'restrictions': [{'cred_def_id': faber_transcript_cred_def_id}]
             },
             'attr4_referent': {
                 'name': 'status',
-                'restrictions': [{'issuer_did': faber_issuer_did, 'schema_key': transcript_schema_key}]
+                'restrictions': [{'cred_def_id': faber_transcript_cred_def_id}]
             },
             'attr5_referent': {
                 'name': 'ssn',
-                'restrictions': [{'issuer_did': faber_issuer_did, 'schema_key': transcript_schema_key}]
+                'restrictions': [{'cred_def_id': faber_transcript_cred_def_id}]
             },
             'attr6_referent': {
                 'name': 'phone_number'
@@ -319,10 +285,10 @@ async def run():
         },
         'requested_predicates': {
             'predicate1_referent': {
-                'attr_name': 'average',
+                'name': 'average',
                 'p_type': '>=',
-                'value': 4,
-                'restrictions': [{'issuer_did': faber_issuer_did, 'schema_key': transcript_schema_key}]
+                'p_value': 4,
+                'restrictions': [{'cred_def_id': faber_transcript_cred_def_id}]
             }
         }
     })
@@ -341,46 +307,48 @@ async def run():
     acme_alice_verkey, authdecrypted_job_application_proof_request_json, _ = \
         await auth_decrypt(alice_wallet, alice_acme_key, authcrypted_job_application_proof_request_json)
 
-    logger.info("\"Alice\" -> Get claims for \"Job-Application\" Proof Request")
-    claims_for_job_application_proof_request = json.loads(
-        await anoncreds.prover_get_claims_for_proof_req(alice_wallet, authdecrypted_job_application_proof_request_json))
+    logger.info("\"Alice\" -> Get credentials for \"Job-Application\" Proof Request")
+    creds_for_job_application_proof_request = json.loads(
+        await anoncreds.prover_get_credentials_for_proof_req(alice_wallet,
+                                                             authdecrypted_job_application_proof_request_json))
+    print(creds_for_job_application_proof_request)
 
-    claim_for_attr1 = claims_for_job_application_proof_request['attrs']['attr1_referent'][0]
-    claim_for_attr2 = claims_for_job_application_proof_request['attrs']['attr2_referent'][0]
-    claim_for_attr3 = claims_for_job_application_proof_request['attrs']['attr3_referent'][0]
-    claim_for_attr4 = claims_for_job_application_proof_request['attrs']['attr4_referent'][0]
-    claim_for_attr5 = claims_for_job_application_proof_request['attrs']['attr5_referent'][0]
-    claim_for_predicate1 = claims_for_job_application_proof_request['predicates']['predicate1_referent'][0]
+    cred_for_attr1 = creds_for_job_application_proof_request['attrs']['attr1_referent'][0]['cred_info']
+    cred_for_attr2 = creds_for_job_application_proof_request['attrs']['attr2_referent'][0]['cred_info']
+    cred_for_attr3 = creds_for_job_application_proof_request['attrs']['attr3_referent'][0]['cred_info']
+    cred_for_attr4 = creds_for_job_application_proof_request['attrs']['attr4_referent'][0]['cred_info']
+    cred_for_attr5 = creds_for_job_application_proof_request['attrs']['attr5_referent'][0]['cred_info']
+    cred_for_predicate1 = creds_for_job_application_proof_request['predicates']['predicate1_referent'][0]['cred_info']
 
-    claims_for_job_application_proof = {claim_for_attr1['referent']: claim_for_attr1,
-                                        claim_for_attr2['referent']: claim_for_attr2,
-                                        claim_for_attr3['referent']: claim_for_attr3,
-                                        claim_for_attr4['referent']: claim_for_attr4,
-                                        claim_for_attr5['referent']: claim_for_attr5,
-                                        claim_for_predicate1['referent']: claim_for_predicate1}
+    creds_for_job_application_proof = {cred_for_attr1['referent']: cred_for_attr1,
+                                       cred_for_attr2['referent']: cred_for_attr2,
+                                       cred_for_attr3['referent']: cred_for_attr3,
+                                       cred_for_attr4['referent']: cred_for_attr4,
+                                       cred_for_attr5['referent']: cred_for_attr5,
+                                       cred_for_predicate1['referent']: cred_for_predicate1}
 
-    schemas_json, claim_defs_json, revoc_regs_json = \
-        await get_entities_from_ledger(pool_handle, alice_faber_did, claims_for_job_application_proof, 'Alice')
+    schemas_json, cred_defs_json, revoc_states_json = \
+        await prover_get_entities_from_ledger(pool_handle, alice_faber_did, creds_for_job_application_proof, 'Alice')
 
     logger.info("\"Alice\" -> Create \"Job-Application\" Proof")
-    job_application_requested_claims_json = json.dumps({
+    job_application_requested_creds_json = json.dumps({
         'self_attested_attributes': {
             'attr1_referent': 'Alice',
             'attr2_referent': 'Garcia',
             'attr6_referent': '123-45-6789'
         },
-        'requested_attrs': {
-            'attr3_referent': [claim_for_attr3['referent'], True],
-            'attr4_referent': [claim_for_attr4['referent'], True],
-            'attr5_referent': [claim_for_attr5['referent'], True],
+        'requested_attributes': {
+            'attr3_referent': {'cred_id': cred_for_attr3['referent'], 'revealed': True},
+            'attr4_referent': {'cred_id': cred_for_attr4['referent'], 'revealed': True},
+            'attr5_referent': {'cred_id': cred_for_attr5['referent'], 'revealed': True},
         },
-        'requested_predicates': {'predicate1_referent': claim_for_predicate1['referent']}
+        'requested_predicates': {'predicate1_referent': {'cred_id': cred_for_predicate1['referent']}}
     })
 
     job_application_proof_json = \
         await anoncreds.prover_create_proof(alice_wallet, authdecrypted_job_application_proof_request_json,
-                                            job_application_requested_claims_json, schemas_json,
-                                            alice_master_secret_name, claim_defs_json, revoc_regs_json)
+                                            job_application_requested_creds_json, alice_master_secret_id,
+                                            schemas_json, cred_defs_json, revoc_states_json)
 
     logger.info("\"Alice\" -> Authcrypt \"Job-Application\" Proof for Acme")
     authcrypted_job_application_proof_json = await crypto.auth_crypt(alice_wallet, alice_acme_key, acme_alice_verkey,
@@ -392,16 +360,17 @@ async def run():
     _, decrypted_job_application_proof_json, decrypted_job_application_proof = \
         await auth_decrypt(acme_wallet, acme_alice_key, authcrypted_job_application_proof_json)
 
-    schemas_json, claim_defs_json, revoc_regs_json = \
-        await get_entities_from_ledger(pool_handle, acme_did, decrypted_job_application_proof['identifiers'], 'Acme')
+    schemas_json, cred_defs_json, revoc_ref_defs_json, revoc_regs_json = \
+        await verifier_get_entities_from_ledger(pool_handle, acme_did,
+                                                decrypted_job_application_proof['identifiers'], 'Acme')
 
     logger.info("\"Acme\" -> Verify \"Job-Application\" Proof from Alice")
     assert 'Bachelor of Science, Marketing' == \
-           decrypted_job_application_proof['requested_proof']['revealed_attrs']['attr3_referent'][1]
+           decrypted_job_application_proof['requested_proof']['revealed_attrs']['attr3_referent']['raw']
     assert 'graduated' == \
-           decrypted_job_application_proof['requested_proof']['revealed_attrs']['attr4_referent'][1]
+           decrypted_job_application_proof['requested_proof']['revealed_attrs']['attr4_referent']['raw']
     assert '123-45-6789' == \
-           decrypted_job_application_proof['requested_proof']['revealed_attrs']['attr5_referent'][1]
+           decrypted_job_application_proof['requested_proof']['revealed_attrs']['attr5_referent']['raw']
 
     assert 'Alice' == decrypted_job_application_proof['requested_proof']['self_attested_attrs']['attr1_referent']
     assert 'Garcia' == decrypted_job_application_proof['requested_proof']['self_attested_attrs']['attr2_referent']
@@ -409,85 +378,80 @@ async def run():
 
     assert await anoncreds.verifier_verify_proof(job_application_proof_request_json,
                                                  decrypted_job_application_proof_json,
-                                                 schemas_json, claim_defs_json, revoc_regs_json)
+                                                 schemas_json, cred_defs_json, revoc_ref_defs_json, revoc_regs_json)
 
     logger.info("==============================")
-    logger.info("== Apply for the job with Acme - Getting Job-Certificate Claim ==")
+    logger.info("== Apply for the job with Acme - Getting Job-Certificate Credential ==")
     logger.info("------------------------------")
 
-    logger.info("\"Acme\" -> Create \"Job-Certificate\" Claim Offer for Alice")
-    job_certificate_claim_offer_json = \
-        await anoncreds.issuer_create_claim_offer(acme_wallet, json.dumps(job_certificate_schema),
-                                                  acme_issuer_did, alice_acme_did)
+    logger.info("\"Acme\" -> Create \"Job-Certificate\" Credential Offer for Alice")
+    job_certificate_cred_offer_json = \
+        await anoncreds.issuer_create_credential_offer(acme_wallet, acme_job_certificate_cred_def_id)
 
     logger.info("\"Acme\" -> Get key for Alice did")
     alice_acme_verkey = await did.key_for_did(pool_handle, acme_wallet, acme_alice_connection_response['did'])
 
-    logger.info("\"Acme\" -> Authcrypt \"Job-Certificate\" Claim Offer for Alice")
-    authcrypted_job_certificate_claim_offer = await crypto.auth_crypt(acme_wallet, acme_alice_key, alice_acme_verkey,
-                                                                      job_certificate_claim_offer_json.encode('utf-8'))
+    logger.info("\"Acme\" -> Authcrypt \"Job-Certificate\" Credential Offer for Alice")
+    authcrypted_job_certificate_cred_offer = await crypto.auth_crypt(acme_wallet, acme_alice_key, alice_acme_verkey,
+                                                                     job_certificate_cred_offer_json.encode('utf-8'))
 
-    logger.info("\"Acme\" -> Send authcrypted \"Job-Certificate\" Claim Offer to Alice")
+    logger.info("\"Acme\" -> Send authcrypted \"Job-Certificate\" Credential Offer to Alice")
 
-    logger.info("\"Alice\" -> Authdecrypted \"Job-Certificate\" Claim Offer from Acme")
-    acme_alice_verkey, authdecrypted_job_certificate_claim_offer_json, authdecrypted_job_certificate_claim_offer = \
-        await auth_decrypt(alice_wallet, alice_acme_key, authcrypted_job_certificate_claim_offer)
+    logger.info("\"Alice\" -> Authdecrypted \"Job-Certificate\" Credential Offer from Acme")
+    acme_alice_verkey, authdecrypted_job_certificate_cred_offer_json, authdecrypted_job_certificate_cred_offer = \
+        await auth_decrypt(alice_wallet, alice_acme_key, authcrypted_job_certificate_cred_offer)
 
-    logger.info("\"Alice\" -> Store \"Job-Certificate\" Claim Offer in Wallet")
-    await anoncreds.prover_store_claim_offer(alice_wallet, authdecrypted_job_certificate_claim_offer_json)
+    logger.info("\"Alice\" -> Get \"Acme Job-Certificate\" Credential Definition from Ledger")
+    (_, acme_job_certificate_cred_def) = \
+        await get_cred_def(pool_handle, alice_acme_did, authdecrypted_job_certificate_cred_offer['cred_def_id'])
 
-    logger.info("\"Alice\" -> Get \"Job-Certificate\" Schema from Ledger")
-    job_certificate_schema = \
-        await get_schema(pool_handle, alice_acme_did, authdecrypted_job_certificate_claim_offer['schema_key'])
+    logger.info("\"Alice\" -> Create and store in Wallet \"Job-Certificate\" Credential Request for Acme")
+    (job_certificate_cred_request_json, job_certificate_cred_request_metadata_json) = \
+        await anoncreds.prover_create_credential_req(alice_wallet, alice_acme_did,
+                                                     authdecrypted_job_certificate_cred_offer_json,
+                                                     acme_job_certificate_cred_def, alice_master_secret_id)
 
-    logger.info("\"Alice\" -> Get \"Acme Job-Certificate\" Claim Definition from Ledger")
-    acme_job_certificate_claim_def = await get_claim_def(pool_handle, alice_acme_did, job_certificate_schema,
-                                                         authdecrypted_job_certificate_claim_offer['issuer_did'])
-
-    logger.info("\"Alice\" -> Create and store in Wallet \"Job-Certificate\" Claim Request for Acme")
-    job_certificate_claim_request_json = \
-        await anoncreds.prover_create_and_store_claim_req(alice_wallet, alice_acme_did,
-                                                          authdecrypted_job_certificate_claim_offer_json,
-                                                          json.dumps(acme_job_certificate_claim_def),
-                                                          alice_master_secret_name)
-
-    logger.info("\"Alice\" -> Authcrypt \"Job-Certificate\" Claim Request for Acme")
-    authcrypted_job_certificate_claim_request_json = \
+    logger.info("\"Alice\" -> Authcrypt \"Job-Certificate\" Credential Request for Acme")
+    authcrypted_job_certificate_cred_request_json = \
         await crypto.auth_crypt(alice_wallet, alice_acme_key, acme_alice_verkey,
-                                job_certificate_claim_request_json.encode('utf-8'))
+                                job_certificate_cred_request_json.encode('utf-8'))
 
-    logger.info("\"Alice\" -> Send authcrypted \"Job-Certificate\" Claim Request to Acme")
+    logger.info("\"Alice\" -> Send authcrypted \"Job-Certificate\" Credential Request to Acme")
 
-    logger.info("\"Acme\" -> Authdecrypt \"Job-Certificate\" Claim Request from Alice")
-    alice_acme_verkey, authdecrypted_job_certificate_claim_request_json, _ = \
-        await auth_decrypt(acme_wallet, acme_alice_key, authcrypted_job_certificate_claim_request_json)
+    logger.info("\"Acme\" -> Authdecrypt \"Job-Certificate\" Credential Request from Alice")
+    alice_acme_verkey, authdecrypted_job_certificate_cred_request_json, _ = \
+        await auth_decrypt(acme_wallet, acme_alice_key, authcrypted_job_certificate_cred_request_json)
 
-    logger.info("\"Acme\" -> Create \"Job-Certificate\" Claim for Alice")
-    alice_job_certificate_claim_values_json = json.dumps({
-        'first_name': ['Alice', '245712572474217942457235975012103335'],
-        'last_name': ['Garcia', '312643218496194691632153761283356127'],
-        'employee_status': ['Permanent', '2143135425425143112321314321'],
-        'salary': ['2400', '2400'],
-        'experience': ['10', '10']
+    logger.info("\"Acme\" -> Create \"Job-Certificate\" Credential for Alice")
+    alice_job_certificate_cred_values_json = json.dumps({
+        "first_name": {"raw": "Alice", "encoded": "245712572474217942457235975012103335"},
+        "last_name": {"raw": "Garcia", "encoded": "312643218496194691632153761283356127"},
+        "employee_status": {"raw": "Permanent", "encoded": "2143135425425143112321314321"},
+        "salary": {"raw": "2400", "encoded": "2400"},
+        "experience": {"raw": "10", "encoded": "10"}
     })
 
-    _, job_certificate_claim_json = \
-        await anoncreds.issuer_create_claim(acme_wallet, authdecrypted_job_certificate_claim_request_json,
-                                            alice_job_certificate_claim_values_json, -1)
+    job_certificate_cred_json, _, _ = \
+        await anoncreds.issuer_create_credential(acme_wallet, job_certificate_cred_offer_json,
+                                                 authdecrypted_job_certificate_cred_request_json,
+                                                 alice_job_certificate_cred_values_json, None, None)
 
-    logger.info("\"Acme\" ->  Authcrypt \"Job-Certificate\" Claim for Alice")
-    authcrypted_job_certificate_claim_json = \
-        await crypto.auth_crypt(acme_wallet, acme_issuer_key, alice_acme_verkey,
-                                job_certificate_claim_json.encode('utf-8'))
+    logger.info("\"Acme\" ->  Authcrypt \"Job-Certificate\" Credential for Alice")
+    authcrypted_job_certificate_cred_json = \
+        await crypto.auth_crypt(acme_wallet, acme_alice_key, alice_acme_verkey,
+                                job_certificate_cred_json.encode('utf-8'))
 
-    logger.info("\"Acme\" ->  Send authcrypted \"Job-Certificate\" Claim to Alice")
+    logger.info("\"Acme\" ->  Send authcrypted \"Job-Certificate\" Credential to Alice")
 
-    logger.info("\"Alice\" -> Authdecrypted \"Job-Certificate\" Claim from Acme")
-    _, authdecrypted_job_certificate_claim_json, _ = \
-        await auth_decrypt(alice_wallet, alice_acme_key, authcrypted_job_certificate_claim_json)
+    logger.info("\"Alice\" -> Authdecrypted \"Job-Certificate\" Credential from Acme")
+    _, authdecrypted_job_certificate_cred_json, _ = \
+        await auth_decrypt(alice_wallet, alice_acme_key, authcrypted_job_certificate_cred_json)
 
-    logger.info("\"Alice\" -> Store \"Job-Certificate\" Claim")
-    await anoncreds.prover_store_claim(alice_wallet, authdecrypted_job_certificate_claim_json, None)
+    logger.info("\"Alice\" -> Store \"Job-Certificate\" Credential")
+    await anoncreds.prover_store_credential(alice_wallet, None, job_certificate_cred_request_json,
+                                            job_certificate_cred_request_metadata_json,
+                                            authdecrypted_job_certificate_cred_json,
+                                            acme_job_certificate_cred_def_json, None)
 
     logger.info("==============================")
     logger.info("=== Apply for the loan with Thrift ==")
@@ -508,24 +472,24 @@ async def run():
         'nonce': '123432421212',
         'name': 'Loan-Application-Basic',
         'version': '0.1',
-        'requested_attrs': {
+        'requested_attributes': {
             'attr1_referent': {
                 'name': 'employee_status',
-                'restrictions': [{'issuer_did': acme_issuer_did, 'schema_key': job_certificate_schema_key}]
+                'restrictions': [{'cred_def_id': acme_job_certificate_cred_def_id}]
             }
         },
         'requested_predicates': {
             'predicate1_referent': {
-                'attr_name': 'salary',
+                'name': 'salary',
                 'p_type': '>=',
-                'value': 2000,
-                'restrictions': [{'issuer_did': acme_issuer_did, 'schema_key': job_certificate_schema_key}]
+                'p_value': 2000,
+                'restrictions': [{'cred_def_id': acme_job_certificate_cred_def_id}]
             },
             'predicate2_referent': {
-                'attr_name': 'experience',
+                'name': 'experience',
                 'p_type': '>=',
-                'value': 1,
-                'restrictions': [{'issuer_did': acme_issuer_did, 'schema_key': job_certificate_schema_key}]
+                'p_value': 1,
+                'restrictions': [{'cred_def_id': acme_job_certificate_cred_def_id}]
             }
         }
     })
@@ -544,37 +508,37 @@ async def run():
     thrift_alice_verkey, authdecrypted_apply_loan_proof_request_json, _ = \
         await auth_decrypt(alice_wallet, alice_thrift_key, authcrypted_apply_loan_proof_request_json)
 
-    logger.info("\"Alice\" -> Get claims for \"Loan-Application-Basic\" Proof Request")
-    claims_json_for_apply_loan_proof_request = \
-        await anoncreds.prover_get_claims_for_proof_req(alice_wallet, authdecrypted_apply_loan_proof_request_json)
-    claims_for_apply_loan_proof_request = json.loads(claims_json_for_apply_loan_proof_request)
+    logger.info("\"Alice\" -> Get credentials for \"Loan-Application-Basic\" Proof Request")
+    creds_json_for_apply_loan_proof_request = \
+        await anoncreds.prover_get_credentials_for_proof_req(alice_wallet, authdecrypted_apply_loan_proof_request_json)
+    creds_for_apply_loan_proof_request = json.loads(creds_json_for_apply_loan_proof_request)
 
-    claim_for_attr1 = claims_for_apply_loan_proof_request['attrs']['attr1_referent'][0]
-    claim_for_predicate1 = claims_for_apply_loan_proof_request['predicates']['predicate1_referent'][0]
-    claim_for_predicate2 = claims_for_apply_loan_proof_request['predicates']['predicate2_referent'][0]
+    cred_for_attr1 = creds_for_apply_loan_proof_request['attrs']['attr1_referent'][0]['cred_info']
+    cred_for_predicate1 = creds_for_apply_loan_proof_request['predicates']['predicate1_referent'][0]['cred_info']
+    cred_for_predicate2 = creds_for_apply_loan_proof_request['predicates']['predicate2_referent'][0]['cred_info']
 
-    claims_for_apply_loan_proof = {claim_for_attr1['referent']: claim_for_attr1,
-                                   claim_for_predicate1['referent']: claim_for_predicate1,
-                                   claim_for_predicate2['referent']: claim_for_predicate2}
+    creds_for_apply_loan_proof = {cred_for_attr1['referent']: cred_for_attr1,
+                                  cred_for_predicate1['referent']: cred_for_predicate1,
+                                  cred_for_predicate2['referent']: cred_for_predicate2}
 
-    schemas_json, claim_defs_json, revoc_regs_json = \
-        await get_entities_from_ledger(pool_handle, alice_thrift_did, claims_for_apply_loan_proof, 'Alice')
+    schemas_json, cred_defs_json, revoc_states_json = \
+        await prover_get_entities_from_ledger(pool_handle, alice_thrift_did, creds_for_apply_loan_proof, 'Alice')
 
     logger.info("\"Alice\" -> Create \"Loan-Application-Basic\" Proof")
-    apply_loan_requested_claims_json = json.dumps({
+    apply_loan_requested_creds_json = json.dumps({
         'self_attested_attributes': {},
-        'requested_attrs': {
-            'attr1_referent': [claim_for_attr1['referent'], True]
+        'requested_attributes': {
+            'attr1_referent': {'cred_id': cred_for_attr1['referent'], 'revealed': True}
         },
         'requested_predicates': {
-            'predicate1_referent': claim_for_predicate1['referent'],
-            'predicate2_referent': claim_for_predicate2['referent']
+            'predicate1_referent': {'cred_id': cred_for_predicate1['referent']},
+            'predicate2_referent': {'cred_id': cred_for_predicate2['referent']}
         }
     })
     alice_apply_loan_proof_json = \
         await anoncreds.prover_create_proof(alice_wallet, authdecrypted_apply_loan_proof_request_json,
-                                            apply_loan_requested_claims_json, schemas_json, alice_master_secret_name,
-                                            claim_defs_json, revoc_regs_json)
+                                            apply_loan_requested_creds_json, alice_master_secret_id, schemas_json,
+                                            cred_defs_json, revoc_states_json)
 
     logger.info("\"Alice\" -> Authcrypt \"Loan-Application-Basic\" Proof for Thrift")
     authcrypted_alice_apply_loan_proof_json = \
@@ -587,19 +551,20 @@ async def run():
     _, authdecrypted_alice_apply_loan_proof_json, authdecrypted_alice_apply_loan_proof = \
         await auth_decrypt(thrift_wallet, thrift_alice_key, authcrypted_alice_apply_loan_proof_json)
 
-    logger.info("\"Thrift\" -> Get Schemas, Claim Definitions and Revocation Registries from Ledger"
+    logger.info("\"Thrift\" -> Get Schemas, Credential Definitions and Revocation Registries from Ledger"
                 " required for Proof verifying")
 
-    schemas_json, claim_defs_json, revoc_regs_json = \
-        await get_entities_from_ledger(pool_handle, thrift_did,
-                                       authdecrypted_alice_apply_loan_proof['identifiers'], 'Thrift')
+    schemas_json, cred_defs_json, revoc_defs_json, revoc_regs_json = \
+        await verifier_get_entities_from_ledger(pool_handle, thrift_did,
+                                                authdecrypted_alice_apply_loan_proof['identifiers'], 'Thrift')
 
     logger.info("\"Thrift\" -> Verify \"Loan-Application-Basic\" Proof from Alice")
-    assert 'Permanent' == authdecrypted_alice_apply_loan_proof['requested_proof']['revealed_attrs']['attr1_referent'][1]
+    assert 'Permanent' == \
+           authdecrypted_alice_apply_loan_proof['requested_proof']['revealed_attrs']['attr1_referent']['raw']
 
     assert await anoncreds.verifier_verify_proof(apply_loan_proof_request_json,
                                                  authdecrypted_alice_apply_loan_proof_json,
-                                                 schemas_json, claim_defs_json, revoc_regs_json)
+                                                 schemas_json, cred_defs_json, revoc_defs_json, revoc_regs_json)
 
     logger.info("==============================")
 
@@ -612,7 +577,7 @@ async def run():
         'nonce': '123432421212',
         'name': 'Loan-Application-KYC',
         'version': '0.1',
-        'requested_attrs': {
+        'requested_attributes': {
             'attr1_referent': {'name': 'first_name'},
             'attr2_referent': {'name': 'last_name'},
             'attr3_referent': {'name': 'ssn'}
@@ -634,38 +599,39 @@ async def run():
     thrift_alice_verkey, authdecrypted_apply_loan_kyc_proof_request_json, _ = \
         await auth_decrypt(alice_wallet, alice_thrift_key, authcrypted_apply_loan_kyc_proof_request_json)
 
-    logger.info("\"Alice\" -> Get claims for \"Loan-Application-KYC\" Proof Request")
-    claims_json_for_apply_loan_kyc_proof_request = \
-        await anoncreds.prover_get_claims_for_proof_req(alice_wallet, authdecrypted_apply_loan_kyc_proof_request_json)
-    claims_for_apply_loan_kyc_proof_request = json.loads(claims_json_for_apply_loan_kyc_proof_request)
+    logger.info("\"Alice\" -> Get credentials for \"Loan-Application-KYC\" Proof Request")
+    creds_json_for_apply_loan_kyc_proof_request = \
+        await anoncreds.prover_get_credentials_for_proof_req(alice_wallet,
+                                                             authdecrypted_apply_loan_kyc_proof_request_json)
+    creds_for_apply_loan_kyc_proof_request = json.loads(creds_json_for_apply_loan_kyc_proof_request)
 
-    claim_for_attr1 = claims_for_apply_loan_kyc_proof_request['attrs']['attr1_referent'][0]
-    claim_for_attr2 = claims_for_apply_loan_kyc_proof_request['attrs']['attr2_referent'][0]
-    claim_for_attr3 = claims_for_apply_loan_kyc_proof_request['attrs']['attr3_referent'][0]
+    cred_for_attr1 = creds_for_apply_loan_kyc_proof_request['attrs']['attr1_referent'][0]['cred_info']
+    cred_for_attr2 = creds_for_apply_loan_kyc_proof_request['attrs']['attr2_referent'][0]['cred_info']
+    cred_for_attr3 = creds_for_apply_loan_kyc_proof_request['attrs']['attr3_referent'][0]['cred_info']
 
-    claims_for_apply_loan_kyc_proof = {claim_for_attr1['referent']: claim_for_attr1,
-                                       claim_for_attr2['referent']: claim_for_attr2,
-                                       claim_for_attr3['referent']: claim_for_attr3}
+    creds_for_apply_loan_kyc_proof = {cred_for_attr1['referent']: cred_for_attr1,
+                                      cred_for_attr2['referent']: cred_for_attr2,
+                                      cred_for_attr3['referent']: cred_for_attr3}
 
-    schemas_json, claim_defs_json, revoc_regs_json = \
-        await get_entities_from_ledger(pool_handle, alice_thrift_did, claims_for_apply_loan_kyc_proof, 'Alice')
+    schemas_json, cred_defs_json, revoc_states_json = \
+        await prover_get_entities_from_ledger(pool_handle, alice_thrift_did, creds_for_apply_loan_kyc_proof, 'Alice')
 
     logger.info("\"Alice\" -> Create \"Loan-Application-KYC\" Proof")
 
-    apply_loan_kyc_requested_claims_json = json.dumps({
+    apply_loan_kyc_requested_creds_json = json.dumps({
         'self_attested_attributes': {},
-        'requested_attrs': {
-            'attr1_referent': [claim_for_attr1['referent'], True],
-            'attr2_referent': [claim_for_attr2['referent'], True],
-            'attr3_referent': [claim_for_attr3['referent'], True]
+        'requested_attributes': {
+            'attr1_referent': {'cred_id': cred_for_attr1['referent'], 'revealed': True},
+            'attr2_referent': {'cred_id': cred_for_attr2['referent'], 'revealed': True},
+            'attr3_referent': {'cred_id': cred_for_attr3['referent'], 'revealed': True}
         },
         'requested_predicates': {}
     })
 
     alice_apply_loan_kyc_proof_json = \
         await anoncreds.prover_create_proof(alice_wallet, authdecrypted_apply_loan_kyc_proof_request_json,
-                                            apply_loan_kyc_requested_claims_json, schemas_json,
-                                            alice_master_secret_name, claim_defs_json, revoc_regs_json)
+                                            apply_loan_kyc_requested_creds_json, alice_master_secret_id,
+                                            schemas_json, cred_defs_json, revoc_states_json)
 
     logger.info("\"Alice\" -> Authcrypt \"Loan-Application-KYC\" Proof for Thrift")
     authcrypted_alice_apply_loan_kyc_proof_json = \
@@ -678,23 +644,24 @@ async def run():
     _, authdecrypted_alice_apply_loan_kyc_proof_json, authdecrypted_alice_apply_loan_kyc_proof = \
         await auth_decrypt(thrift_wallet, thrift_alice_key, authcrypted_alice_apply_loan_kyc_proof_json)
 
-    logger.info("\"Thrift\" -> Get Schemas, Claim Definitions and Revocation Registries from Ledger"
+    logger.info("\"Thrift\" -> Get Schemas, Credential Definitions and Revocation Registries from Ledger"
                 " required for Proof verifying")
 
-    schemas_json, claim_defs_json, revoc_regs_json = \
-        await get_entities_from_ledger(pool_handle, thrift_did,
-                                       authdecrypted_alice_apply_loan_kyc_proof['identifiers'], 'Thrift')
+    schemas_json, cred_defs_json, revoc_defs_json, revoc_regs_json = \
+        await verifier_get_entities_from_ledger(pool_handle, thrift_did,
+                                                authdecrypted_alice_apply_loan_kyc_proof['identifiers'], 'Thrift')
 
     logger.info("\"Thrift\" -> Verify \"Loan-Application-KYC\" Proof from Alice")
-    assert 'Alice' == authdecrypted_alice_apply_loan_kyc_proof['requested_proof']['revealed_attrs']['attr1_referent'][1]
+    assert 'Alice' == \
+           authdecrypted_alice_apply_loan_kyc_proof['requested_proof']['revealed_attrs']['attr1_referent']['raw']
     assert 'Garcia' == \
-           authdecrypted_alice_apply_loan_kyc_proof['requested_proof']['revealed_attrs']['attr2_referent'][1]
+           authdecrypted_alice_apply_loan_kyc_proof['requested_proof']['revealed_attrs']['attr2_referent']['raw']
     assert '123-45-6789' == \
-           authdecrypted_alice_apply_loan_kyc_proof['requested_proof']['revealed_attrs']['attr3_referent'][1]
+           authdecrypted_alice_apply_loan_kyc_proof['requested_proof']['revealed_attrs']['attr3_referent']['raw']
 
     assert await anoncreds.verifier_verify_proof(apply_loan_kyc_proof_request_json,
                                                  authdecrypted_alice_apply_loan_kyc_proof_json,
-                                                 schemas_json, claim_defs_json, revoc_regs_json)
+                                                 schemas_json, cred_defs_json, revoc_defs_json, revoc_regs_json)
 
     logger.info("==============================")
 
@@ -820,50 +787,64 @@ async def send_nym(pool_handle, wallet_handle, _did, new_did, new_key, role):
 
 
 async def send_schema(pool_handle, wallet_handle, _did, schema):
-    schema_request = await ledger.build_schema_request(_did, json.dumps(schema))
+    schema_request = await ledger.build_schema_request(_did, schema)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, _did, schema_request)
 
 
-async def send_claim_def(pool_handle, wallet_handle, _did, claim_def_json):
-    claim_def = json.loads(claim_def_json)
-    claim_def_request = await ledger.build_claim_def_txn(_did, claim_def['ref'], claim_def['signature_type'],
-                                                         json.dumps(claim_def['data']))
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, _did, claim_def_request)
+async def send_cred_def(pool_handle, wallet_handle, _did, cred_def_json):
+    cred_def_request = await ledger.build_cred_def_request(_did, cred_def_json)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, _did, cred_def_request)
 
 
-async def get_schema(pool_handle, _did, schema_key):
-    get_schema_data = json.dumps({
-        'name': schema_key['name'],
-        'version': schema_key['version']
-    })
-    get_schema_request = await ledger.build_get_schema_request(_did, schema_key['did'], get_schema_data)
+async def get_schema(pool_handle, _did, schema_id):
+    get_schema_request = await ledger.build_get_schema_request(_did, schema_id)
     get_schema_response = await ledger.submit_request(pool_handle, get_schema_request)
-    return json.loads(get_schema_response)['result']
+    return await ledger.parse_get_schema_response(get_schema_response)
 
 
-async def get_claim_def(pool_handle, _did, schema, issuer_did):
-    get_claim_def_request = await ledger.build_get_claim_def_txn(_did, schema['seqNo'], 'CL', issuer_did)
-    get_claim_def_response = await ledger.submit_request(pool_handle, get_claim_def_request)
-    return json.loads(get_claim_def_response)['result']
+async def get_cred_def(pool_handle, _did, schema_id):
+    get_cred_def_request = await ledger.build_get_cred_def_request(_did, schema_id)
+    get_cred_def_response = await ledger.submit_request(pool_handle, get_cred_def_request)
+    return await ledger.parse_get_cred_def_response(get_cred_def_response)
 
 
-async def get_entities_from_ledger(pool_handle, _did, identifiers, actor):
+async def prover_get_entities_from_ledger(pool_handle, _did, identifiers, actor):
     schemas = {}
-    claim_defs = {}
-    rev_regs = {}
-    for referent, item in identifiers.items():
+    cred_defs = {}
+    rev_states = {}
+    for item in identifiers.values():
         logger.info("\"{}\" -> Get Schema from Ledger".format(actor))
-        received_schema = await get_schema(pool_handle, _did, item['schema_key'])
-        schemas[referent] = received_schema
+        (received_schema_id, received_schema) = await get_schema(pool_handle, _did, item['schema_id'])
+        schemas[received_schema_id] = json.loads(received_schema)
 
         logger.info("\"{}\" -> Get Claim Definition from Ledger".format(actor))
-        claim_defs[referent] = \
-            await get_claim_def(pool_handle, _did, received_schema, item['issuer_did'])
+        (received_cred_def_id, received_cred_def) = await get_cred_def(pool_handle, _did, item['cred_def_id'])
+        cred_defs[received_cred_def_id] = json.loads(received_cred_def)
 
         if 'rev_reg_seq_no' in item:
-            pass  # TODO Get Revocation registries
+            pass  # TODO Create Revocation States
 
-    return json.dumps(schemas), json.dumps(claim_defs), json.dumps(rev_regs)
+    return json.dumps(schemas), json.dumps(cred_defs), json.dumps(rev_states)
+
+
+async def verifier_get_entities_from_ledger(pool_handle, _did, identifiers, actor):
+    schemas = {}
+    cred_defs = {}
+    rev_reg_defs = {}
+    rev_regs = {}
+    for item in identifiers:
+        logger.info("\"{}\" -> Get Schema from Ledger".format(actor))
+        (received_schema_id, received_schema) = await get_schema(pool_handle, _did, item['schema_id'])
+        schemas[received_schema_id] = json.loads(received_schema)
+
+        logger.info("\"{}\" -> Get Claim Definition from Ledger".format(actor))
+        (received_cred_def_id, received_cred_def) = await get_cred_def(pool_handle, _did, item['cred_def_id'])
+        cred_defs[received_cred_def_id] = json.loads(received_cred_def)
+
+        if 'rev_reg_seq_no' in item:
+            pass  # TODO Get Revocation Definitions and Revocation Registries
+
+    return json.dumps(schemas), json.dumps(cred_defs), json.dumps(rev_reg_defs), json.dumps(rev_regs)
 
 
 async def auth_decrypt(wallet_handle, key, message):

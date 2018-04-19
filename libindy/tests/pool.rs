@@ -5,6 +5,7 @@ use indy::api as api;
 
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
@@ -368,7 +369,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let res = PoolUtils::open_pool_ledger(POOL, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerNotCreatedError);
 
             TestUtils::cleanup_storage();
         }
@@ -379,7 +380,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let res = PoolUtils::open_pool_ledger(POOL, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerNotCreatedError);
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
