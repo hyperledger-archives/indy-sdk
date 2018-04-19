@@ -62,7 +62,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
                                                  issuer_did: str,
                                                  schema_json: str,
                                                  tag: str,
-                                                 type_: Optional[str],
+                                                 signature_type: Optional[str],
                                                  config_json: str) -> (str, str):
     """
     Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for
@@ -78,7 +78,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
     :param issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
     :param schema_json: credential schema as a json
     :param tag: allows to distinct between credential definitions for the same issuer and schema
-    :param type_: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
+    :param signature_type: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
     Supported types are:
         - 'CL': Camenisch-Lysyanskaya credential signature type
     :param  config_json: type-specific configuration of credential definition as json:
@@ -91,12 +91,12 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
 
     logger = logging.getLogger(__name__)
     logger.debug("issuer_create_and_store_credential_def: >>> wallet_handle: %r, issuer_did: %r, schema_json: %r,"
-                 " tag: %r, type_: %r, config_json: %r",
+                 " tag: %r, signature_type: %r, config_json: %r",
                  wallet_handle,
                  issuer_did,
                  schema_json,
                  tag,
-                 type_,
+                 signature_type,
                  config_json)
 
     if not hasattr(issuer_create_and_store_credential_def, "cb"):
@@ -107,7 +107,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
     c_issuer_did = c_char_p(issuer_did.encode('utf-8'))
     c_schema_json = c_char_p(schema_json.encode('utf-8'))
     c_tag = c_char_p(tag.encode('utf-8'))
-    c_type = c_char_p(type_.encode('utf-8')) if type_ is not None else None
+    c_signature_type = c_char_p(signature_type.encode('utf-8')) if signature_type is not None else None
     c_config_json = c_char_p(config_json.encode('utf-8'))
 
     (credential_def_id, credential_def_json) = await do_call('indy_issuer_create_and_store_credential_def',
@@ -115,7 +115,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
                                                              c_issuer_did,
                                                              c_schema_json,
                                                              c_tag,
-                                                             c_type,
+                                                             c_signature_type,
                                                              c_config_json,
                                                              issuer_create_and_store_credential_def.cb)
 
@@ -126,7 +126,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
 
 async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                                             issuer_did: str,
-                                            type_: Optional[str],
+                                            revoc_def_type: Optional[str],
                                             tag: str,
                                             cred_def_id: str,
                                             config_json: str,
@@ -151,7 +151,7 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param issuer_did: a DID of the issuer signing transaction to the Ledger
-    :param type_: type_: revocation registry type (optional, default value depends on credential definition type). Supported types are:
+    :param revoc_def_type: revocation registry type (optional, default value depends on credential definition type). Supported types are:
         - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
     :param tag: allows to distinct between revocation registries for the same issuer and credential definition
     :param cred_def_id: id of stored in ledger credential definition
@@ -171,11 +171,11 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("issuer_create_and_store_revoc_reg: >>> wallet_handle: %r, issuer_did: %r, type_: %r,"
+    logger.debug("issuer_create_and_store_revoc_reg: >>> wallet_handle: %r, issuer_did: %r, revoc_def_type: %r,"
                  " tag: %r, cred_def_id: %r, config_json: %r, tails_writer_handle: %r",
                  wallet_handle,
                  issuer_did,
-                 type_,
+                 revoc_def_type,
                  tag,
                  cred_def_id,
                  config_json,
@@ -188,7 +188,7 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_issuer_did = c_char_p(issuer_did.encode('utf-8'))
-    c_type = c_char_p(type_.encode('utf-8')) if type_ is not None else None
+    c_revoc_def_type = c_char_p(revoc_def_type.encode('utf-8')) if revoc_def_type is not None else None
     c_tag = c_char_p(tag.encode('utf-8'))
     c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
     c_config_json = c_char_p(config_json.encode('utf-8'))
@@ -197,7 +197,7 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     (rev_reg_id, rev_reg_def_json, rev_reg_entry_json) = await do_call('indy_issuer_create_and_store_revoc_reg',
                                                                        c_wallet_handle,
                                                                        c_issuer_did,
-                                                                       c_type,
+                                                                       c_revoc_def_type,
                                                                        c_tag,
                                                                        c_cred_def_id,
                                                                        c_config_json,
@@ -565,7 +565,6 @@ async def prover_create_credential_req(wallet_handle: int,
 
 async def prover_store_credential(wallet_handle: int,
                                   cred_id: Optional[str],
-                                  cred_req_json: str,
                                   cred_req_metadata_json: str,
                                   cred_json: str,
                                   cred_def_json: str,
@@ -576,7 +575,6 @@ async def prover_store_credential(wallet_handle: int,
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param cred_id: (optional, default is a random one) identifier by which credential will be stored in the wallet
-    :param cred_req_json: a credential request created by prover_create_credential_req
     :param cred_req_metadata_json: a credential request metadata created by prover_create_credential_req
     :param cred_json: credential json received from issuer
     :param cred_def_json: credential definition json
@@ -585,11 +583,10 @@ async def prover_store_credential(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("prover_store_credential: >>> wallet_handle: %r, cred_id: %r, cred_req_json: %r, "
+    logger.debug("prover_store_credential: >>> wallet_handle: %r, cred_id: %r, "
                  "cred_req_metadata_json: %r, cred_json: %r, cred_def_json: %r, rev_reg_def_json: %r",
                  wallet_handle,
                  cred_id,
-                 cred_req_json,
                  cred_req_metadata_json,
                  cred_json,
                  cred_def_json,
@@ -601,7 +598,6 @@ async def prover_store_credential(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_cred_id = c_char_p(cred_id.encode('utf-8'))if cred_id else None
-    c_cred_req_json = c_char_p(cred_req_json.encode('utf-8'))
     c_cred_req_metadata_json = c_char_p(cred_req_metadata_json.encode('utf-8'))
     c_cred_json = c_char_p(cred_json.encode('utf-8'))
     c_cred_def_json = c_char_p(cred_def_json.encode('utf-8'))
@@ -610,7 +606,6 @@ async def prover_store_credential(wallet_handle: int,
     cred_id = await do_call('indy_prover_store_credential',
                             c_wallet_handle,
                             c_cred_id,
-                            c_cred_req_json,
                             c_cred_req_metadata_json,
                             c_cred_json,
                             c_cred_def_json,

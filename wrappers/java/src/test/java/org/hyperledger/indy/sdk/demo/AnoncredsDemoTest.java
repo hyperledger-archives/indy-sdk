@@ -107,7 +107,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String credential = createCredentialResult.getCredentialJson();
 
 		// Prover store Credential
-		Anoncreds.proverStoreCredential(proverWallet, credentialId1, credReq, credReqMetadata, credential, credDef, null).get();
+		Anoncreds.proverStoreCredential(proverWallet, credentialId1, credReqMetadata, credential, credDef, null).get();
 
 		// Prover gets Credentials for Proof Request
 		String proofRequestJson = new JSONObject("{" +
@@ -223,7 +223,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String gvtCredential = gvtCreateCredentialResult.getCredentialJson();
 
 		// Prover store Credential
-		Anoncreds.proverStoreCredential(proverWallet, credentialId1, gvtCredReq, gvtCredReqMetadata, gvtCredential, gvtCredDef, null).get();
+		Anoncreds.proverStoreCredential(proverWallet, credentialId1, gvtCredReqMetadata, gvtCredential, gvtCredDef, null).get();
 
 		// Prover create CredentialReq for GVT Credential Offer
 		createCredReqResult = Anoncreds.proverCreateCredentialReq(proverWallet, proverDid, xyzCredOffer, xyzCredDef, masterSecretId).get();
@@ -235,7 +235,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String xyzCredential = xyzCreateCredentialResult.getCredentialJson();
 
 		// Prover store Credential
-		Anoncreds.proverStoreCredential(proverWallet, credentialId2, xyzCredReq, xyzCredReqMetadata, xyzCredential, xyzCredDef, null).get();
+		Anoncreds.proverStoreCredential(proverWallet, credentialId2, xyzCredReqMetadata, xyzCredential, xyzCredDef, null).get();
 
 		// Prover gets Credentials for Proof Request
 		String proofRequestJson = new JSONObject("{" +
@@ -349,7 +349,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String gvtCredential = gvtCreateCredentialResult.getCredentialJson();
 
 		// Prover store GVT Credential
-		Anoncreds.proverStoreCredential(proverWallet, credentialId1, gvtCredReq, gvtCredReqMetadata, gvtCredential, gvtCredDef, null).get();
+		Anoncreds.proverStoreCredential(proverWallet, credentialId1, gvtCredReqMetadata, gvtCredential, gvtCredDef, null).get();
 
 		// Prover create CredentialReq for XYZ Credential Offer
 		createCredReqResult = Anoncreds.proverCreateCredentialReq(proverWallet, proverDid, xyzCredOffer, xyzCredDef, masterSecretId).get();
@@ -362,7 +362,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String xyzCredential = xyzCreateCredentialResult.getCredentialJson();
 
 		// Prover store XYZ Credential
-		Anoncreds.proverStoreCredential(proverWallet, credentialId2, xyzCredReq, xyzCredReqMetadata, xyzCredential, xyzCredDef, null).get();
+		Anoncreds.proverStoreCredential(proverWallet, credentialId2, xyzCredReqMetadata, xyzCredential, xyzCredDef, null).get();
 
 		// Prover gets Credentials for Proof Request
 		String proofRequestJson = new JSONObject("{" +
@@ -476,7 +476,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String credRevId = createCredentialResult.getRevocId();
 
 		// Prover store received Credential
-		Anoncreds.proverStoreCredential(proverWallet, credentialId1, credReq, credReqMetadata, credential, credDef, revRegDef).get();
+		Anoncreds.proverStoreCredential(proverWallet, credentialId1, credReqMetadata, credential, credDef, revRegDef).get();
 
 		// Prover gets Credentials for Proof Request
 		String proofRequest = new JSONObject("{\n" +
@@ -562,7 +562,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String credential = createCredentialResult.getCredentialJson();
 
 		// Prover store Credential
-		Anoncreds.proverStoreCredential(proverWallet, credentialId1, credReq, credReqMetadata, credential, credDef, null).get();
+		Anoncreds.proverStoreCredential(proverWallet, credentialId1, credReqMetadata, credential, credDef, null).get();
 
 		// Prover gets Credentials for Proof Request
 		String proofRequestJson = new JSONObject(String.format("{" +

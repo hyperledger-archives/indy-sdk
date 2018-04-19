@@ -95,8 +95,8 @@ public abstract class LibIndy {
 		// anoncreds.rs
 
 		public int indy_issuer_create_schema(int command_handle, String issuer_did, String name, String version, String attr_names, Callback cb);
-		public int indy_issuer_create_and_store_credential_def(int command_handle, int wallet_handle, String issuer_did, String schema_json, String tag, String type_, String config_json, Callback cb);
-		public int indy_issuer_create_and_store_revoc_reg(int command_handle, int wallet_handle, String issuer_did, String type_, String tag, String cred_def_id, String config_json, int blob_storage_writer_handle, Callback cb);
+		public int indy_issuer_create_and_store_credential_def(int command_handle, int wallet_handle, String issuer_did, String schema_json, String tag, String signature_type, String config_json, Callback cb);
+		public int indy_issuer_create_and_store_revoc_reg(int command_handle, int wallet_handle, String issuer_did, String revoc_def_type, String tag, String cred_def_id, String config_json, int blob_storage_writer_handle, Callback cb);
 		public int indy_issuer_create_credential_offer(int command_handle, int wallet_handle, String cred_def_id, Callback cb);
 		public int indy_issuer_create_credential(int command_handle, int wallet_handle, String cred_offer_json, String cred_req_json, String cred_values_json, String rev_reg_id, int blob_storage_reader_handle, Callback cb);
 		public int indy_issuer_revoke_credential(int command_handle, int wallet_handle, int blob_storage_reader_handle, String rev_reg_id, String cred_revoc_id, Callback cb);
@@ -104,7 +104,7 @@ public abstract class LibIndy {
 		public int indy_issuer_merge_revocation_registry_deltas(int command_handle, String rev_reg_delta_json, String other_rev_reg_delta_json, Callback cb);
 		public int indy_prover_create_master_secret(int command_handle, int wallet_handle, String master_secret_id, Callback cb);
 		public int indy_prover_create_credential_req(int command_handle, int wallet_handle, String prover_did, String cred_offer_json, String cred_def_json, String master_secret_id, Callback cb);
-		public int indy_prover_store_credential(int command_handle, int wallet_handle, String cred_id, String cred_req_json, String cred_req_metadata_json, String cred_json, String cred_def_json, String rev_reg_def_json, Callback cb);
+		public int indy_prover_store_credential(int command_handle, int wallet_handle, String cred_id, String cred_req_metadata_json, String cred_json, String cred_def_json, String rev_reg_def_json, Callback cb);
 		public int indy_prover_get_credentials(int command_handle, int wallet_handle, String filter_json, Callback cb);
 		public int indy_prover_get_credentials_for_proof_req(int command_handle, int wallet_handle, String proof_request_json, Callback cb);
 		public int indy_prover_create_proof(int command_handle, int wallet_handle, String proof_req_json, String requested_credentials_json, String master_secret_name, String schemas_json, String credential_defs_json, String rev_infos_json, Callback cb);

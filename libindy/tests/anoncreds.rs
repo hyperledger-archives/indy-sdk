@@ -243,7 +243,6 @@ mod high_cases {
 
             AnoncredsUtils::prover_store_credential(prover_wallet_handle,
                                                     CREDENTIAL1_ID,
-                                                    &credential_req,
                                                     &credential_req_meta,
                                                     &credential_json,
                                                     &credential_def_json,
@@ -273,7 +272,6 @@ mod high_cases {
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_store_credential(invalid_wallet_handle,
                                                               CREDENTIAL1_ID,
-                                                              &credential_req,
                                                               &credential_req_meta,
                                                               &credential_json,
                                                               &credential_def_json,
@@ -1644,7 +1642,7 @@ mod medium_cases {
         fn prover_store_credential_works_for_invalid_credential_json() {
             let (wallet_handle, credential_def_json, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
-            let (cred_req, cred_req_metadata) = AnoncredsUtils::prover_create_credential_req(wallet_handle,
+            let (_, cred_req_metadata) = AnoncredsUtils::prover_create_credential_req(wallet_handle,
                                                                                              DID_MY1,
                                                                                              &credential_offer,
                                                                                              &credential_def_json,
@@ -1658,7 +1656,6 @@ mod medium_cases {
 
             let res = AnoncredsUtils::prover_store_credential(wallet_handle,
                                                               CREDENTIAL1_ID,
-                                                              &cred_req,
                                                               &cred_req_metadata,
                                                               &credential_json,
                                                               &credential_def_json,
