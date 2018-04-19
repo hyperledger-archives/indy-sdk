@@ -82,6 +82,10 @@
                                           origin:(NSString *)origin
                                       resultJson:(NSString **)resultJson;
 
+// MARK: - Get Validator info request
+- (NSError *)buildGetValidatorInfo:(NSString *)submitterDid
+                                    resultJson:(NSString **)resultJson;
+
 // MARK: - Get Txn request
 - (NSError *)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
                                            data:(NSNumber *)data

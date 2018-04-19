@@ -57,6 +57,9 @@
                   Identifier = "AnoncredsHignCases/testAnoncreds">
                </Test>
                <Test
+                  Identifier = "LedgerGetValidatorInfo/testGetValidatorInfoWorks">
+               </Test>
+               <Test
                   Identifier = "LedgerHignCases/testGetTxnRequestWorks">
                </Test>
                <Test

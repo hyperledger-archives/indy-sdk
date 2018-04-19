@@ -57,6 +57,7 @@
 		ADF5FEFC9E28F7FBBC11828B /* LedgerPoolUpgradeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FF3A492118F1F40C2D4C /* LedgerPoolUpgradeRequest.mm */; };
 		C1BA94778E40060E56814C61 /* libPods-Indy-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 49682051B863F7784F1A8CAE /* libPods-Indy-demo.a */; };
 		DD287A642068F6A1003EF9A7 /* LedgerPoolRestartRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = DD287A632068F6A1003EF9A7 /* LedgerPoolRestartRequest.mm */; };
+		DDB05F9B2087948600DF4BE5 /* LedgerGetValidatorInfo.mm in Sources */ = {isa = PBXBuildFile; fileRef = DDB05F9A2087948600DF4BE5 /* LedgerGetValidatorInfo.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -166,6 +167,7 @@
 		B87BB39216A2B13E57165BF9 /* libPods-libindy-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DACC1FF866C0BAFAF74DC73B /* Pods-libindy-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.debug.xcconfig"; sourceTree = "<group>"; };
 		DD287A632068F6A1003EF9A7 /* LedgerPoolRestartRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerPoolRestartRequest.mm; sourceTree = "<group>"; };
+		DDB05F9A2087948600DF4BE5 /* LedgerGetValidatorInfo.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerGetValidatorInfo.mm; sourceTree = "<group>"; };
 		ED81D70B4C1CD531B86E9E9F /* Pods-libindy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
 		EE41F07D6A899FDD613605CE /* Pods-Indy-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demo/Pods-Indy-demo.release.xcconfig"; sourceTree = "<group>"; };
 		F54627AA7BB604ED15A77C6E /* Pods-Indy-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demo/Pods-Indy-demo.debug.xcconfig"; sourceTree = "<group>"; };
@@ -294,6 +296,7 @@
 				5DB57B241F712A5200EB4C90 /* LedgerSchemaRequest.mm */,
 				ADF5FC55674BDCE214933132 /* LedgerPoolConfigRequest.mm */,
 				ADF5FF3A492118F1F40C2D4C /* LedgerPoolUpgradeRequest.mm */,
+				DDB05F9A2087948600DF4BE5 /* LedgerGetValidatorInfo.mm */,
 			);
 			path = Ledger;
 			sourceTree = "<group>";
@@ -644,6 +647,7 @@
 				5DB57B721F712A5200EB4C90 /* SequenceUtils.m in Sources */,
 				5DB57B5A1F712A5200EB4C90 /* AnoncredsMediumCases.m in Sources */,
 				5DB57B501F712A5200EB4C90 /* Base58Test.m in Sources */,
+				DDB05F9B2087948600DF4BE5 /* LedgerGetValidatorInfo.mm in Sources */,
 				5DB57B6A1F712A5200EB4C90 /* CryptoDemo.mm in Sources */,
 				5DB57B761F712A5200EB4C90 /* NSArray+JSON.m in Sources */,
 				5DB57B5D1F712A5200EB4C90 /* LedgerHignCases.mm in Sources */,

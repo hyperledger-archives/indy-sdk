@@ -210,7 +210,7 @@
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
-
+    
     [IndyLedger buildGetSchemaRequestWithSubmitterDid:submitterDid
                                                  dest:dest
                                                  data:data
@@ -219,6 +219,25 @@
                                                result = request;
                                                [completionExpectation fulfill];
                                            }];
+    
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    if (resultJson) {*resultJson = result;}
+    return err;
+}
+
+- (NSError *)buildGetValidatorInfo:(NSString *)submitterDid
+                        resultJson:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+
+    [IndyLedger buildGetValidatorInfo:submitterDid
+                           completion:^(NSError *error, NSString *request) {
+                               err = error;
+                               result = request;
+                               [completionExpectation fulfill];
+                           }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 

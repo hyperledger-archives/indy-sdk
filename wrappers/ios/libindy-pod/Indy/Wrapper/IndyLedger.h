@@ -120,6 +120,17 @@
                                           enc:(NSString *)enc
                                    completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
+// MARK: - Get Validator Info request
+
+/**
+ Builds GET_VALIDATOR_INFO request.
+ 
+ @param submitterDid Id of Identity stored in secured Wallet.
+ @param completion Callback that takes command result as parameter. Request result as json.
+ */
++ (void)buildGetValidatorInfo:(NSString *)submitterDid
+                    completion:(void (^)(NSError *error, NSString *requestJSON))completion;
+
 // MARK: - Schema request
 
 /**
