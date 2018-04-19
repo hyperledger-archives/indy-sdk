@@ -865,8 +865,8 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore]
         #[cfg(feature = "local_nodes_pool")]
+        #[ignore]
         fn indy_get_validator_info_request_works() {
             TestUtils::cleanup_storage();
 
