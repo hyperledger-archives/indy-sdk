@@ -180,7 +180,7 @@ impl LedgerService {
 
     pub fn build_get_validator_info_request(&self, identifier: &str) -> Result<String, CommonError> {
         let operation = GetValidatorInfoOperation::new();
-        Request::build_request(identifier.to_string(), operation)
+        Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("Invalid get validator info request json: {:?}", err)))
     }
 

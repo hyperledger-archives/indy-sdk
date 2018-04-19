@@ -45,7 +45,7 @@ impl TransactionHandler {
     pub fn process_msg(&mut self, msg: Message, raw_msg: &String, _src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         match msg {
             Message::Reply(reply) => {
-                self.process_reply(reply.result.req_id, raw_msg, src_ind);
+                self.process_reply(reply.result.req_id, raw_msg, _src_ind);
             }
             Message::Reject(response) | Message::ReqNACK(response) => {
                 self.process_reject(&response, raw_msg);
