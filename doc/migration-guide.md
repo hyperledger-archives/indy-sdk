@@ -30,7 +30,8 @@ Functions from version 1.3.0 are listed in the left column, and the equivalent 1
 * If some function had been changed, the current format would be placed in the right column.
 * If some function had not been changed, the symbol '=' would be placed in the right column.
 * To get more details about current format of a function click on the description above it.
-
+* Bellow are signatures of functions in Libindy C API.
+ The params of <b>cb</b> (except command_handle and err) will be result values of the similar function in any Libindy wrapper.
 
 ### Anoncreds API mapping
 Anoncreds API is the most affected part of Libindy. 
