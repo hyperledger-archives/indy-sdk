@@ -985,6 +985,23 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn indy_store_their_did_works_twice() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}"}}"#, DID);
+            DidUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let res = DidUtils::store_their_did(wallet_handle, &identity_json);
+            assert_eq!(ErrorCode::CommonInvalidState, res.unwrap_err()); // TODO Change Error
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod replace_keys {

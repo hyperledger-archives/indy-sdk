@@ -45,6 +45,11 @@ impl Default for DefaultWalletCredentials {
     }
 }
 
+const TABLES: &'static [&str; 19] =
+    &["CredentialDefinition", "CredentialPrivateKey", "CredentialPrivateKey", "CredentialKeyCorrectnessProof", "SchemaId",
+        "RevocationRegistryDefinition", "RevocationRegistry", "RevocationKeyPrivate", "RevocationRegistryInfo", "MasterSecret", "Credential",
+        "Key", "KeyMetadata", "Did", "TheirDid", "MyTemporaryDid", "Endpoint", "DidMetadata", "Pairwise"];
+
 struct DefaultWalletRecord {
     key: String,
     value: String,
@@ -78,34 +83,13 @@ impl WalletStorage for DefaultWallet {
             return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
         }
 
-//        _open_connection(self.name, &self.runtime_auth).map_err(map_err_trace!())?
-//            .execute(&format!("CREATE TABLE IF NOT EXISTS {} (id TEXT CONSTRAINT constraint_name PRIMARY KEY, value TEXT NOT NULL, tags_json TEXT)", type_), &[])
-//            .map_err(map_err_trace!())?;
-
         _open_connection(self.name.as_str(), &self.credentials)?
             .execute(
-                &format!("INSERT INTO {} (id., value, tags_json) VALUES (?1, ?2, ?3)", type_),
+                &format!("INSERT INTO {} (id, value, tags) VALUES (?1, ?2, ?3)", type_),
                 &[&id.to_string(), &value.to_string(), &tags_json.to_string()])?;
+
         Ok(())
     }
-
-    //    fn get(&self, key: &str) -> Result<String, WalletError> {
-    //        if self.credentials.rekey.is_some() {
-    //            return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
-    //        }
-    //
-    //        let record = _open_connection(self.name.as_str(), &self.credentials)?
-    //            .query_row(
-    //                "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
-    //                &[&key.to_string()], |row| {
-    //                    DefaultWalletRecord {
-    //                        key: row.get(0),
-    //                        value: row.get(1),
-    //                        time_created: row.get(2)
-    //                    }
-    //                })?;
-    //        Ok(record.value)
-    //    }
 
     fn close(&self) -> Result<(), WalletError> { Ok(()) }
 
@@ -116,12 +100,21 @@ impl WalletStorage for DefaultWallet {
     fn get_name(&self) -> String {
         self.name.clone()
     }
+
     fn update_record_value(&self, type_: &str, id: &str, value: &str) -> Result<(), WalletError> {
-        unimplemented!()
+        _open_connection(self.name.as_str(), &self.credentials)?
+            .execute(
+                &format!("UPDATE {} SET value = ?1 WHERE id = ?2", type_),
+                &[&value.to_string(), &id.to_string()])?;
+        Ok(())
     }
 
     fn update_record_tags(&self, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletError> {
-        unimplemented!()
+        _open_connection(self.name.as_str(), &self.credentials)?
+            .execute(
+                &format!("UPDATE {} SET tags = ?1 WHERE id = ?2", type_),
+                &[&tags_json.to_string(), &id.to_string()])?;
+        Ok(())
     }
 
     fn add_record_tags(&self, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletError> {
@@ -129,19 +122,58 @@ impl WalletStorage for DefaultWallet {
     }
 
     fn delete_record_tags(&self, type_: &str, id: &str, tag_names_json: &str) -> Result<(), WalletError> {
-        unimplemented!()
+        _open_connection(self.name.as_str(), &self.credentials)?
+            .execute(
+                &format!("UPDATE {} SET tags = null WHERE id = ?1", type_),
+                &[&id.to_string()])?;
+        Ok(())
     }
 
     fn delete_record(&self, type_: &str, id: &str) -> Result<(), WalletError> {
-        unimplemented!()
+        _open_connection(self.name.as_str(), &self.credentials)?
+            .execute(
+                &format!("DELETE FROM {} WHERE id = ?1", type_),
+                &[&id.to_string()])?;
+        Ok(())
     }
 
     fn get_record(&self, type_: &str, id: &str, options_json: &str) -> Result<WalletRecord, WalletError> {
-        unimplemented!()
+        let record = _open_connection(self.name.as_str(), &self.credentials)?
+            .query_row(
+                &format!("SELECT id, value, tags FROM {} WHERE id = ?1 LIMIT 1", type_),
+                &[&id.to_string()], |row| {
+                    WalletRecord {
+                        id: row.get(0),
+                        value: row.get(1),
+                        tags: row.get(2)
+                    }
+                })?;
+        Ok(record)
     }
 
     fn search_records(&self, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> {
-        unimplemented!()
+        let connection = _open_connection(self.name.as_str(), &self.credentials)?;
+        let mut stmt = connection.prepare(&format!("SELECT id, value, tags FROM {}", type_))?;
+        let records = stmt.query_map(&[], |row| {
+            WalletRecord {
+                id: row.get(0),
+                value: row.get(1),
+                tags: row.get(2)
+            }
+        })?;
+
+        let mut wallet_records: Vec<WalletRecord> = Vec::new();
+
+        for record in records {
+            wallet_records.push(record?);
+        }
+
+        let wallet_search = WalletSearch {
+            total_count: wallet_records.len(),
+            iter: Box::new(wallet_records.into_iter()),
+        };
+
+        Ok(wallet_search)
     }
 }
 
@@ -171,9 +203,12 @@ impl WalletStorageType for DefaultWalletType {
             return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
         }
 
-        _open_connection(name, &runtime_auth).map_err(map_err_trace!())?
-            .execute("CREATE TABLE wallet (key TEXT CONSTRAINT constraint_name PRIMARY KEY, value TEXT NOT NULL, time_created TEXT NOT_NULL)", &[])
-            .map_err(map_err_trace!())?;
+        for table in TABLES {
+            _open_connection(name, &DefaultWalletCredentials::default()).map_err(map_err_trace!())?
+                .execute(&format!("CREATE TABLE IF NOT EXISTS {} (id TEXT CONSTRAINT constraint_name PRIMARY KEY, value TEXT NOT NULL, tags TEXT)", table), &[])
+                .map_err(map_err_trace!())?;
+        }
+
         trace!("DefaultWalletType.create <<");
         Ok(())
     }

@@ -2,7 +2,6 @@ extern crate libc;
 extern crate indy_crypto;
 
 use super::{WalletStorage, WalletStorageType, WalletRecord, WalletSearch};
-use super::callbacks::*;
 
 use api::ErrorCode;
 use errors::common::CommonError;
@@ -16,6 +15,7 @@ use std::ptr;
 use std::str::Utf8Error;
 
 use self::indy_crypto::utils::json::JsonDecodable;
+use api::wallet::*;
 
 #[derive(Debug, Deserialize)]
 pub struct PluggedWalletJSONValue {
@@ -300,8 +300,10 @@ impl WalletStorage for PluggedWallet {
             return Err(WalletError::PluggedWallerError(err));
         }
 
+        let records: Vec<WalletRecord> = Vec::new();
         let result = WalletSearch {
-            total_count: None
+            total_count: 0,
+            iter: Box::new(records.into_iter()),
         };
 
         let err = (self.free_search_handler)(self.handle, search_handle_p);

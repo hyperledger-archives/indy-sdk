@@ -5,7 +5,7 @@ use errors::indy::IndyError;
 use errors::common::CommonError;
 use errors::wallet::WalletError;
 use services::wallet::WalletService;
-use services::wallet::callbacks::*;
+use api::wallet::*;
 use std::rc::Rc;
 
 pub enum WalletCommand {

@@ -105,7 +105,7 @@ impl PairwiseCommandExecutor {
                      wallet_handle: i32) -> Result<String, IndyError> {
         let mut list_pairwise: Vec<String> = Vec::new();
 
-        let pairwise_search = self._wallet_pairwise_search(wallet_handle, "{}")?;
+        let mut pairwise_search = self._wallet_pairwise_search(wallet_handle, "{}")?;
 
         while let Some(pairwise_record) = pairwise_search.fetch_next_record()? {
             let pairwise_value = pairwise_record.get_value()?;

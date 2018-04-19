@@ -3,11 +3,9 @@ extern crate indy_crypto;
 
 mod default;
 mod plugged;
-pub mod callbacks;
 
 use self::default::DefaultWalletType;
 use self::plugged::PluggedWalletType;
-use self::callbacks::*;
 
 use errors::indy::IndyError;
 use errors::wallet::WalletError;
@@ -22,6 +20,7 @@ use std::fs::{File, DirBuilder};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use api::wallet::*;
 
 
 pub trait WalletStorage {
@@ -113,7 +112,7 @@ impl WalletService {
                                 PluggedWalletType::new(create, open, close, delete,
                                                        add_record, update_record_value,
                                                        update_record_tags, add_record_tags, delete_record_tags,
-                                                       delete_record, get_record,get_record_id, get_record_value,
+                                                       delete_record, get_record, get_record_id, get_record_value,
                                                        get_record_tags, free_record, search_records,
                                                        get_search_total_count, fetch_search_next_record, free_search)));
         Ok(())
@@ -355,7 +354,10 @@ impl WalletService {
     }
 
     pub fn search_records(&self, storage_handle: i32, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> {
-        unimplemented!()
+        match self.wallets.borrow().get(&storage_handle) {
+            Some(wallet) => wallet.search_records(type_, query_json, options_json),
+            None => Err(WalletError::InvalidHandle(storage_handle.to_string()))
+        }
     }
 
     pub fn get_pool_name(&self, handle: i32) -> Result<String, WalletError> {
@@ -366,6 +368,7 @@ impl WalletService {
     }
 }
 
+#[derive(Clone)]
 pub struct WalletRecord {
     pub id: String,
     pub value: String,
@@ -395,19 +398,19 @@ impl WalletRecordRetrieveOptions {
     pub const RETRIEVE_ID_VALUE_TAGS: &'static str = r#"{}"#;
 }
 
-
 pub struct WalletSearch {
     // TODO
-    pub total_count: Option<i32>
+    total_count: usize,
+    iter: Box<Iterator<Item=WalletRecord>>,
 }
 
 impl WalletSearch {
-    pub fn get_total_count(&self) -> Result<Option<i32>, WalletError> {
-        Ok(self.total_count)
+    pub fn get_total_count(&self) -> Result<Option<usize>, WalletError> {
+        Ok(Some(self.total_count))
     }
 
-    pub fn fetch_next_record(&self) -> Result<Option<WalletRecord>, WalletError> {
-        unimplemented!()
+    pub fn fetch_next_record(&mut self) -> Result<Option<WalletRecord>, WalletError> {
+        Ok(self.iter.next())
     }
 }
 
@@ -879,7 +882,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore]//TODO: recover it
+    #[ignore] //TODO: recover it
     fn wallet_service_list_works() {
         TestUtils::cleanup_indy_home();
 
@@ -906,7 +909,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore]//TODO: recover it
+    #[ignore] //TODO: recover it
     fn wallet_service_list_works_for_plugged() {
         TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();

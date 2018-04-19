@@ -495,8 +495,8 @@ impl IssuerCommandExecutor {
         if let (Some(r_reg), Some(r_reg_id), Some(r_reg_info)) = (credential.rev_reg, rev_reg_id, rev_reg_info.clone()) {
             let revoc_reg = RevocationRegistry::RevocationRegistryV1(RevocationRegistryV1 { value: r_reg });
 
-            self._wallet_set_rev_reg(wallet_handle, &r_reg_id, &revoc_reg)?;
-            self._wallet_set_rev_reg_info(wallet_handle, &r_reg_id, &r_reg_info)?;
+            self._wallet_update_rev_reg(wallet_handle, &r_reg_id, &revoc_reg)?;
+            self._wallet_update_rev_reg_info(wallet_handle, &r_reg_id, &r_reg_info)?;
         };
 
         let cred_rev_id = rev_reg_info.map(|r_reg_info| r_reg_info.curr_id.to_string());
@@ -556,8 +556,8 @@ impl IssuerCommandExecutor {
 
         let rev_reg = RevocationRegistry::RevocationRegistryV1(rev_reg);
 
-        self._wallet_set_rev_reg_info(wallet_handle, &rev_reg_id, &rev_reg_info)?;
-        self._wallet_set_rev_reg(wallet_handle, &rev_reg_id, &rev_reg)?;
+        self._wallet_update_rev_reg_info(wallet_handle, &rev_reg_id, &rev_reg_info)?;
+        self._wallet_update_rev_reg(wallet_handle, &rev_reg_id, &rev_reg)?;
 
         trace!("revoke_credential <<< rev_reg_delta_json: {:?}", rev_reg_delta_json);
 
@@ -615,8 +615,8 @@ impl IssuerCommandExecutor {
 
         let rev_reg = RevocationRegistry::RevocationRegistryV1(rev_reg);
 
-        self._wallet_set_rev_reg_info(wallet_handle, &rev_reg_id, &rev_reg_info)?;
-        self._wallet_set_rev_reg(wallet_handle, &rev_reg_id, &rev_reg)?;
+        self._wallet_update_rev_reg_info(wallet_handle, &rev_reg_id, &rev_reg_info)?;
+        self._wallet_update_rev_reg(wallet_handle, &rev_reg_id, &rev_reg)?;
 
         trace!("recovery_credential <<< rev_reg_delta_json: {:?}", rev_reg_delta_json);
 
@@ -702,6 +702,10 @@ impl IssuerCommandExecutor {
         self.wallet_service.set_object(wallet_handle, "RevocationRegistry", id, rev_reg, "{}")
     }
 
+    fn _wallet_update_rev_reg(&self, wallet_handle: i32, id: &str, rev_reg: &RevocationRegistry) -> Result<String, IndyError> {
+        self.wallet_service.update_object(wallet_handle, "RevocationRegistry", id, rev_reg)
+    }
+
     fn _wallet_get_rev_reg(&self, wallet_handle: i32, key: &str) -> Result<RevocationRegistry, IndyError> {
         self.wallet_service.get_object::<RevocationRegistry>(wallet_handle, "RevocationRegistry", &key,
                                                              WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE, &mut String::new())
@@ -718,6 +722,10 @@ impl IssuerCommandExecutor {
 
     fn _wallet_set_rev_reg_info(&self, wallet_handle: i32, id: &str, rev_reg_info: &RevocationRegistryInfo) -> Result<String, IndyError> {
         self.wallet_service.set_object(wallet_handle, "RevocationRegistryInfo", id, rev_reg_info, "{}")
+    }
+
+    fn _wallet_update_rev_reg_info(&self, wallet_handle: i32, id: &str, rev_reg_info: &RevocationRegistryInfo) -> Result<String, IndyError> {
+        self.wallet_service.update_object(wallet_handle, "RevocationRegistryInfo", id, rev_reg_info)
     }
 
     fn _wallet_get_rev_reg_info(&self, wallet_handle: i32, key: &str) -> Result<RevocationRegistryInfo, IndyError> {

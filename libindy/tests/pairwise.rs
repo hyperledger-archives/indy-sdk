@@ -110,6 +110,26 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn indy_create_pairwise_works_for_twice() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (my_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            DidUtils::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
+
+            PairwiseUtils::create_pairwise(wallet_handle, DID_TRUSTEE, &my_did, Some(METADATA)).unwrap();
+
+            let res = PairwiseUtils::create_pairwise(wallet_handle, DID_TRUSTEE, &my_did, None);
+            assert_eq!(ErrorCode::CommonInvalidState, res.unwrap_err()); // TODO: Replace Error
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod list_pairwise {

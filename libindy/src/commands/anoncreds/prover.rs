@@ -297,12 +297,12 @@ impl ProverCommandExecutor {
                             wallet_handle: i32) -> Result<Vec<CredentialInfo>, IndyError> {
         trace!("get_credentials_info >>> wallet_handle: {:?}", wallet_handle);
 
-        let credentials_search = self._wallet_credentials_search(wallet_handle, "{}")?;
+        let mut credentials_search = self._wallet_credentials_search(wallet_handle, "{}")?;
 
         let mut credentials_info: Vec<CredentialInfo> = Vec::new();
 
         while let Some(credential_record) = credentials_search.fetch_next_record()? {
-            let referent = credential_record.get_value().map_err(|err| IndyError::from(err))?;
+            let referent = credential_record.get_id().map_err(|err| IndyError::from(err))?;
             let value = credential_record.get_value().map_err(|err| IndyError::from(err))?;
 
             let credential: Credential = Credential::from_json(value)

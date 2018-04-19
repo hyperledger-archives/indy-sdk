@@ -255,7 +255,14 @@ impl CryptoCommandExecutor {
         info!("set_key_metadata >>> wallet_handle: {:?}, verkey: {:?}, metadata: {:?}", wallet_handle, verkey, metadata);
 
         self.crypto_service.validate_key(&verkey)?;
-        let res = self._wallet_set_key_metadata(wallet_handle, &verkey, &metadata)?;
+
+        let key_meta_exists = self._wallet_get_key_metadata(wallet_handle, &verkey, WalletRecordRetrieveOptions::RETRIEVE_ID).is_ok();
+
+        let res = if key_meta_exists {
+            self._wallet_update_key_metadata(wallet_handle, &verkey, &metadata)?
+        } else {
+            self._wallet_set_key_metadata(wallet_handle, &verkey, &metadata)?
+        };
 
         info!("set_key_metadata <<< res: {:?}", res);
 
@@ -268,7 +275,7 @@ impl CryptoCommandExecutor {
         info!("get_key_metadata >>> wallet_handle: {:?}, verkey: {:?}", wallet_handle, verkey);
 
         self.crypto_service.validate_key(&verkey)?;
-        let res = self._wallet_get_key_metadata(wallet_handle, &verkey)?;
+        let res = self._wallet_get_key_metadata(wallet_handle, &verkey, WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE)?;
 
         info!("get_key_metadata <<< res: {:?}", res);
 
@@ -283,14 +290,19 @@ impl CryptoCommandExecutor {
         self.wallet_service.get_object::<Key>(wallet_handle, "Key", &key, WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE, &mut String::new())
     }
 
-    fn _wallet_set_key_metadata(&self, wallet_handle: i32, verkey: &str, metadata: &str) -> Result<(), IndyError> {
-        self.wallet_service.add_record(wallet_handle, "KeyMetadata", &verkey, &metadata, "{}")
+    fn _wallet_set_key_metadata(&self, wallet_handle: i32, id: &str, value: &str) -> Result<(), IndyError> {
+        self.wallet_service.add_record(wallet_handle, "KeyMetadata", &id, &value, "{}")
             .map_err(|err| IndyError::from(err))
     }
 
-    fn _wallet_get_key_metadata(&self, wallet_handle: i32, verkey: &str) -> Result<String, IndyError> {
+    fn _wallet_update_key_metadata(&self, wallet_handle: i32, id: &str, value: &str) -> Result<(), IndyError> {
+        self.wallet_service.update_record_value(wallet_handle, "KeyMetadata", &id, &value)
+            .map_err(|err| IndyError::from(err))
+    }
+
+    fn _wallet_get_key_metadata(&self, wallet_handle: i32, id: &str, options: &str) -> Result<String, IndyError> {
         let key_metadata_record = self.wallet_service.get_record(wallet_handle, "KeyMetadata",
-                                                                 verkey, WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE)?;
+                                                                 id, options)?;
         let key_metadata = key_metadata_record.get_value()?;
 
         Ok(key_metadata.to_string())
