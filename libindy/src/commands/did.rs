@@ -1,6 +1,6 @@
 extern crate indy_crypto;
 
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use self::indy_crypto::utils::json::JsonDecodable;
 use errors::common::CommonError;
 use errors::did::DidError;
 use errors::wallet::WalletError;
@@ -8,7 +8,7 @@ use errors::indy::IndyError;
 use services::crypto::types::{KeyInfo, MyDidInfo, TheirDidInfo, Did, Key};
 use services::ledger::types::{Reply, GetNymResultData, GetNymReplyResult, GetAttribReplyResult, Endpoint, AttribData};
 use services::pool::PoolService;
-use services::wallet::WalletService;
+use services::wallet::{WalletService, WalletRecordRetrieveOptions, WalletSearch};
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 
@@ -204,10 +204,10 @@ impl DidCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::InvalidStructure(
-                    format!("Invalid MyDidInfo json: {}", err.description())))?;
+                    format!("Invalid MyDidInfo json: {:?}", err)))?;
 
         if let Some(ref did) = my_did_info.did.as_ref() {
-            if self.wallet_service.get(wallet_handle, &format!("my_did::{}", did)).is_ok() {
+            if self.wallet_service.get_record(wallet_handle, "Did", &did, WalletRecordRetrieveOptions::RETRIEVE_ID).is_ok() {
                 return Err(IndyError::DidError(DidError::AlreadyExistsError(format!("Did already exists"))));
             };
         }
@@ -253,6 +253,7 @@ impl DidCommandExecutor {
         let my_temporary_did = self._wallet_get_my_temporary_did(wallet_handle, &my_did.did)?;
 
         self._wallet_set_my_did(wallet_handle, &my_temporary_did)?;
+        self.wallet_service.delete_record(wallet_handle, "MyTemporaryDid", &my_did.did)?;
 
         Ok(())
     }
@@ -283,18 +284,25 @@ impl DidCommandExecutor {
     }
 
     fn list_my_dids_with_meta(&self, wallet_handle: i32) -> Result<String, IndyError> {
-        let dids: Vec<::serde_json::Value> = self.wallet_service
-            .list(wallet_handle, "my_did::").map_err(IndyError::from)?
-            .iter().flat_map(|&(_, ref did_json)| {
-            Did::from_json(&did_json).ok()
-        }).map(|did| {
+        let did_search = self._wallet_get_did_search(wallet_handle, "{}")?;
+
+        let mut dids: Vec<::serde_json::Value> = Vec::new();
+
+        while let Some(did_record) = did_search.fetch_next_record()? {
+            let did_value = did_record.get_value().map_err(|err| IndyError::from(err))?;
+            let did = Did::from_json(did_value)
+                .map_err(|err|
+                    IndyError::CommonError(
+                        CommonError::InvalidStructure(format!("Can't deserialize Did: {:?}", err))))?;
+
             let meta: Option<String> = self._wallet_get_did_metadata(wallet_handle, &did.did).ok();
-            json!({
-                "did": did.did,
-                "verkey": did.verkey,
-                "metadata": meta,
-            })
-        }).collect();
+
+            dids.push(json!({
+                        "did": did.did,
+                        "verkey": did.verkey,
+                        "metadata": meta,
+                    }));
+        }
 
         ::serde_json::to_string(&dids)
             .map_err(|err|
@@ -345,7 +353,7 @@ impl DidCommandExecutor {
         };
 
         // look to their did
-        let their_did = self._wallet_get_local_their_did(wallet_handle, &did)?;
+        let their_did = self._wallet_get_their_did(wallet_handle, &did)?;
 
         let res = their_did.verkey;
         Ok(res)
@@ -444,13 +452,7 @@ impl DidCommandExecutor {
 
         let their_did = self.crypto_service.create_their_did(&their_did_info)?;
 
-        let their_did_json = their_did.to_json()
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't serialize Did: {}", err.description())))?;
-
-        self.wallet_service.set(wallet_handle, &format!("their_did::{}", their_did.did), &their_did_json)?;
+        self._wallet_set_their_did(wallet_handle, &their_did)?;
         Ok(())
     }
 
@@ -580,134 +582,63 @@ impl DidCommandExecutor {
             ))).unwrap();
     }
 
-    fn _wallet_set_my_did(&self, wallet_handle: i32, my_did: &Did) -> Result<(), IndyError> {
-        let my_did_json = Did::to_json(my_did)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't serialize my Did: {}", err.description())))?;
-
-        self.wallet_service.set(wallet_handle, &format!("my_did::{}", my_did.did), &my_did_json)?;
-        Ok(())
+    fn _wallet_set_my_did(&self, wallet_handle: i32, my_did: &Did) -> Result<String, IndyError> {
+        self.wallet_service.set_object(wallet_handle, "Did", &my_did.did, my_did, "{}")
     }
 
     fn _wallet_get_my_did(&self, wallet_handle: i32, my_did: &str) -> Result<Did, IndyError> {
-        let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did))?;
-
-        let res = Did::from_json(&my_did_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't deserialize my Did: {}", err.description())))?;
-        Ok(res)
+        self.wallet_service.get_object::<Did>(wallet_handle, "Did", &my_did,
+                                              WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE, &mut String::new())
     }
 
-    fn _wallet_set_their_did(&self, wallet_handle: i32, their_did: &Did) -> Result<(), IndyError> {
-        let their_did_json = Did::to_json(their_did)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't serialize their Did: {}", err.description())))?;
+    fn _wallet_get_did_search(&self, wallet_handle: i32, query: &str) -> Result<WalletSearch, WalletError> {
+        self.wallet_service.search_records(wallet_handle, "Did",
+                                           query, WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE)
+    }
 
-        self.wallet_service.set(wallet_handle, &format!("their_did::{}", their_did.did), &their_did_json)?;
-        Ok(())
+    fn _wallet_set_their_did(&self, wallet_handle: i32, their_did: &Did) -> Result<String, IndyError> {
+        self.wallet_service.set_object(wallet_handle, "TheirDid", &their_did.did, their_did, "{}")
     }
 
     fn _wallet_get_their_did(&self, wallet_handle: i32, their_did: &str) -> Result<Did, IndyError> {
-        let their_did_json = self.wallet_service.get_not_expired(wallet_handle, &format!("their_did::{}", their_did))?;
-
-        let res = Did::from_json(&their_did_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't deserialize their Did: {}", err.description())))?;
-        Ok(res)
+        self.wallet_service.get_object::<Did>(wallet_handle, "TheirDid", &their_did,
+                                              WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE, &mut String::new())
     }
 
-    fn _wallet_get_local_their_did(&self, wallet_handle: i32, their_did: &str) -> Result<Did, IndyError> {
-        let their_did_json = self.wallet_service.get(wallet_handle, &format!("their_did::{}", their_did))?;
-
-        let res = Did::from_json(&their_did_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't deserialize their Did: {}", err.description())))?;
-        Ok(res)
-    }
-
-    fn _wallet_set_my_temporary_did(&self, wallet_handle: i32, my_temporary_did: &Did) -> Result<(), IndyError> {
-        let my_temporary_did_json = Did::to_json(my_temporary_did)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't serialize my temporary Did: {}", err.description())))?;
-
-        self.wallet_service.set(wallet_handle, &format!("my_temporary_did::{}", my_temporary_did.did), &my_temporary_did_json)?;
-        Ok(())
+    fn _wallet_set_my_temporary_did(&self, wallet_handle: i32, my_temporary_did: &Did) -> Result<String, IndyError> {
+        self.wallet_service.set_object(wallet_handle, "MyTemporaryDid",
+                                       &my_temporary_did.did, my_temporary_did, "{}")
     }
 
     fn _wallet_get_my_temporary_did(&self, wallet_handle: i32, my_temporary_did: &str) -> Result<Did, IndyError> {
-        let my_temporary_did_json = self.wallet_service.get(wallet_handle, &format!("my_temporary_did::{}", my_temporary_did))?;
-
-        let res = Did::from_json(&my_temporary_did_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't deserialize my temporary Did: {}", err.description())))?;
-        Ok(res)
+        self.wallet_service.get_object::<Did>(wallet_handle, "MyTemporaryDid", &my_temporary_did,
+                                              WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE, &mut String::new())
     }
 
-    fn _wallet_set_key(&self, wallet_handle: i32, key: &Key) -> Result<(), IndyError> {
-        let key_json = Key::to_json(&key)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't serialize Key: {}", err.description())))?;
-
-        self.wallet_service.set(wallet_handle, &format!("key::{}", key.verkey), &key_json)?;
-        Ok(())
+    fn _wallet_set_key(&self, wallet_handle: i32, key: &Key) -> Result<String, IndyError> {
+        self.wallet_service.set_object(wallet_handle, "Key", &key.verkey, key, "{}")
     }
 
     fn _wallet_get_key(&self, wallet_handle: i32, key: &str) -> Result<Key, IndyError> {
-        let key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", key))?;
-
-        let res = Key::from_json(&key_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't deserialize Key: {}", err.description())))?;
-        Ok(res)
+        self.wallet_service.get_object::<Key>(wallet_handle, "Key", &key,
+                                              WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE, &mut String::new())
     }
 
-    fn _wallet_set_did_endpoint(&self, wallet_handle: i32, did: &str, endpoint: &Endpoint) -> Result<(), IndyError> {
-        let endpoint_json = Endpoint::to_json(&endpoint)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't serialize Endpoint: {}", err.description())))?;
-
-        self.wallet_service.set(wallet_handle, &format!("did::{}::endpoint", did), &endpoint_json)?;
-        Ok(())
+    fn _wallet_set_did_endpoint(&self, wallet_handle: i32, did: &str, endpoint: &Endpoint) -> Result<String, IndyError> {
+        self.wallet_service.set_object(wallet_handle, "Endpoint", &did, endpoint, "{}")
     }
 
     fn _wallet_get_did_endpoint(&self, wallet_handle: i32, did: &str) -> Result<Endpoint, IndyError> {
-        let endpoint_json = self.wallet_service.get(wallet_handle, &format!("did::{}::endpoint", did))?;
-
-        let res = Endpoint::from_json(&endpoint_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't deserialize Endpoint: {}", err.description())))?;
-        Ok(res)
+        self.wallet_service.get_object::<Endpoint>(wallet_handle, "Endpoint", &did,
+                                                   WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE, &mut String::new())
     }
 
-    fn _wallet_set_did_metadata(&self, wallet_handle: i32, did: &str, metadata: &str) -> Result<(), IndyError> {
-        self.wallet_service.set(wallet_handle, &format!("did::{}::metadata", did), metadata)?;
-        Ok(())
+    fn _wallet_set_did_metadata(&self, wallet_handle: i32, did: &str, metadata: &str) -> Result<(), WalletError> {
+        self.wallet_service.add_record(wallet_handle, "DidMetadata", &did, &metadata, "{}")
     }
 
     fn _wallet_get_did_metadata(&self, wallet_handle: i32, did: &str) -> Result<String, IndyError> {
-        let res = self.wallet_service.get(wallet_handle, &format!("did::{}::metadata", did))?;
-        Ok(res)
+        Ok(self.wallet_service.get_record(wallet_handle, "DidMetadata",
+                                          did, WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE)?.get_value()?.to_string())
     }
 }

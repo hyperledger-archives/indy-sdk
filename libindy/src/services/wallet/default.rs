@@ -2,7 +2,7 @@ extern crate rusqlcipher;
 extern crate time;
 extern crate indy_crypto;
 
-use super::{Wallet, WalletType};
+use super::{WalletStorage, WalletStorageType, WalletRecord, WalletSearch};
 
 use errors::common::CommonError;
 use errors::wallet::WalletError;
@@ -14,7 +14,6 @@ use self::time::Timespec;
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
-use std::ops::Sub;
 
 
 use self::indy_crypto::utils::json::JsonDecodable;
@@ -67,91 +66,46 @@ impl DefaultWallet {
         DefaultWallet {
             name: name.to_string(),
             pool_name: pool_name.to_string(),
-            config: config,
-            credentials: credentials
+            config,
+            credentials
         }
     }
 }
 
-impl Wallet for DefaultWallet {
-    fn set(&self, key: &str, value: &str) -> Result<(), WalletError> {
+impl WalletStorage for DefaultWallet {
+    fn add_record(&self, type_: &str, id: &str, value: &str, tags_json: &str) -> Result<(), WalletError> {
         if self.credentials.rekey.is_some() {
             return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
         }
-        
+
+//        _open_connection(self.name, &self.runtime_auth).map_err(map_err_trace!())?
+//            .execute(&format!("CREATE TABLE IF NOT EXISTS {} (id TEXT CONSTRAINT constraint_name PRIMARY KEY, value TEXT NOT NULL, tags_json TEXT)", type_), &[])
+//            .map_err(map_err_trace!())?;
+
         _open_connection(self.name.as_str(), &self.credentials)?
             .execute(
-                "INSERT OR REPLACE INTO wallet (key, value, time_created) VALUES (?1, ?2, ?3)",
-                &[&key.to_string(), &value.to_string(), &time::get_time()])?;
+                &format!("INSERT INTO {} (id., value, tags_json) VALUES (?1, ?2, ?3)", type_),
+                &[&id.to_string(), &value.to_string(), &tags_json.to_string()])?;
         Ok(())
     }
 
-    fn get(&self, key: &str) -> Result<String, WalletError> {
-        if self.credentials.rekey.is_some() {
-            return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
-        }
-
-        let record = _open_connection(self.name.as_str(), &self.credentials)?
-            .query_row(
-                "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
-                &[&key.to_string()], |row| {
-                    DefaultWalletRecord {
-                        key: row.get(0),
-                        value: row.get(1),
-                        time_created: row.get(2)
-                    }
-                })?;
-        Ok(record.value)
-    }
-
-    fn list(&self, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError> {
-        if self.credentials.rekey.is_some() {
-            return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
-        }
-
-        let connection = _open_connection(self.name.as_str(), &self.credentials)?;
-        let mut stmt = connection.prepare("SELECT key, value, time_created FROM wallet WHERE key like ?1 order by key")?;
-        let records = stmt.query_map(&[&format!("{}%", key_prefix)], |row| {
-            DefaultWalletRecord {
-                key: row.get(0),
-                value: row.get(1),
-                time_created: row.get(2)
-            }
-        })?;
-
-        let mut key_values = Vec::new();
-
-        for record in records {
-            let key_value = record?;
-            key_values.push((key_value.key, key_value.value));
-        }
-
-        Ok(key_values)
-    }
-
-    fn get_not_expired(&self, key: &str) -> Result<String, WalletError> {
-        if self.credentials.rekey.is_some() {
-            return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
-        }
-
-        let record = _open_connection(self.name.as_str(), &self.credentials)?
-            .query_row(
-                "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
-                &[&key.to_string()], |row| {
-                    DefaultWalletRecord {
-                        key: row.get(0),
-                        value: row.get(1),
-                        time_created: row.get(2)
-                    }
-                })?;
-
-        if self.config.freshness_time != 0
-            && time::get_time().sub(record.time_created).num_seconds() > self.config.freshness_time {
-            return Err(WalletError::NotFound(key.to_string()));
-        }
-
-        return Ok(record.value);
-    }
+    //    fn get(&self, key: &str) -> Result<String, WalletError> {
+    //        if self.credentials.rekey.is_some() {
+    //            return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
+    //        }
+    //
+    //        let record = _open_connection(self.name.as_str(), &self.credentials)?
+    //            .query_row(
+    //                "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
+    //                &[&key.to_string()], |row| {
+    //                    DefaultWalletRecord {
+    //                        key: row.get(0),
+    //                        value: row.get(1),
+    //                        time_created: row.get(2)
+    //                    }
+    //                })?;
+    //        Ok(record.value)
+    //    }
 
     fn close(&self) -> Result<(), WalletError> { Ok(()) }
 
@@ -161,6 +115,33 @@ impl Wallet for DefaultWallet {
 
     fn get_name(&self) -> String {
         self.name.clone()
+    }
+    fn update_record_value(&self, type_: &str, id: &str, value: &str) -> Result<(), WalletError> {
+        unimplemented!()
+    }
+
+    fn update_record_tags(&self, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletError> {
+        unimplemented!()
+    }
+
+    fn add_record_tags(&self, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletError> {
+        unimplemented!()
+    }
+
+    fn delete_record_tags(&self, type_: &str, id: &str, tag_names_json: &str) -> Result<(), WalletError> {
+        unimplemented!()
+    }
+
+    fn delete_record(&self, type_: &str, id: &str) -> Result<(), WalletError> {
+        unimplemented!()
+    }
+
+    fn get_record(&self, type_: &str, id: &str, options_json: &str) -> Result<WalletRecord, WalletError> {
+        unimplemented!()
+    }
+
+    fn search_records(&self, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> {
+        unimplemented!()
     }
 }
 
@@ -172,7 +153,7 @@ impl DefaultWalletType {
     }
 }
 
-impl WalletType for DefaultWalletType {
+impl WalletStorageType for DefaultWalletType {
     fn create(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError> {
         trace!("DefaultWalletType.create >> {}, with config {:?} and credentials {:?}", name, config, credentials);
         let path = _db_path(name);
@@ -203,7 +184,7 @@ impl WalletType for DefaultWalletType {
         Ok(fs::remove_file(_db_path(name)).map_err(map_err_trace!())?)
     }
 
-    fn open(&self, name: &str, pool_name: &str, _config: Option<&str>, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<Box<Wallet>, WalletError> {
+    fn open(&self, name: &str, pool_name: &str, _config: Option<&str>, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<Box<WalletStorage>, WalletError> {
         let runtime_config = match runtime_config {
             Some(config) => DefaultWalletRuntimeConfig::from_json(config)?,
             None => DefaultWalletRuntimeConfig::default()

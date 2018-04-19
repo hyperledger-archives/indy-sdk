@@ -1,7 +1,6 @@
 extern crate libc;
 extern crate serde_json;
 
-use api::ErrorCode;
 use errors::indy::IndyError;
 use errors::common::CommonError;
 use errors::wallet::WalletError;
@@ -9,16 +8,15 @@ use services::wallet::WalletService;
 use services::wallet::callbacks::*;
 use std::rc::Rc;
 
-use self::libc::c_char;
-
 pub enum WalletCommand {
-    RegisterWalletType(String, // xtype
+    RegisterWalletType(String, // type_
                        WalletCreate, // create
                        WalletOpen, // open
                        WalletClose, // close
                        WalletDelete, // delete
                        WalletAddRecord, // add record
                        WalletUpdateRecordValue, // update record value
+                       WalletUpdateRecordTags, // update record value
                        WalletAddRecordTags, // add record tags
                        WalletDeleteRecordTags, // delete record tags
                        WalletDeleteRecord, // delete record
@@ -63,14 +61,14 @@ impl WalletCommandExecutor {
 
     pub fn execute(&self, command: WalletCommand) {
         match command {
-            WalletCommand::RegisterWalletType(xtype, create, open, close, delete, add_record,
+            WalletCommand::RegisterWalletType(type_, create, open, close, delete, add_record,
                                               update_record_value, update_record_tags, add_record_tags,
                                               delete_record_tags, delete_record, get_record, get_record_id,
                                               get_record_value, get_record_tags, free_record,
                                               search_records, get_search_total_count, fetch_search_next_record,
                                               free_search, cb) => {
                 info!(target: "wallet_command_executor", "RegisterWalletType command received");
-                cb(self.register_type(&xtype, create, open, close, delete, add_record,
+                cb(self.register_type(&type_, create, open, close, delete, add_record,
                                       update_record_value, update_record_tags, add_record_tags,
                                       delete_record_tags, delete_record, get_record, get_record_id,
                                       get_record_value, get_record_tags, free_record,
@@ -79,32 +77,32 @@ impl WalletCommandExecutor {
             }
             WalletCommand::Create(pool_name, name, xtype, config, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Create command received");
-                self.create(&pool_name, &name, xtype.as_ref().map(String::as_str),
-                            config.as_ref().map(String::as_str),
-                            credentials.as_ref().map(String::as_str), cb);
+                cb(self.create(&pool_name, &name, xtype.as_ref().map(String::as_str),
+                               config.as_ref().map(String::as_str),
+                               credentials.as_ref().map(String::as_str)));
             }
             WalletCommand::Open(name, runtime_config, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Open command received");
-                self.open(&name, runtime_config.as_ref().map(String::as_str),
-                          credentials.as_ref().map(String::as_str), cb);
+                cb(self.open(&name, runtime_config.as_ref().map(String::as_str),
+                             credentials.as_ref().map(String::as_str)));
             }
             WalletCommand::Close(handle, cb) => {
                 info!(target: "wallet_command_executor", "Close command received");
-                self.close(handle, cb);
+                cb(self.close(handle));
             }
             WalletCommand::ListWallets(cb) => {
                 info!(target: "wallet_command_executor", "ListWallets command received");
-                self.list_wallets(cb);
+                cb(self.list_wallets());
             }
             WalletCommand::Delete(name, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Delete command received");
-                self.delete(&name, credentials.as_ref().map(String::as_str), cb);
+                cb(self.delete(&name, credentials.as_ref().map(String::as_str)));
             }
         };
     }
 
     fn register_type(&self,
-                     xtype: &str,
+                     type_: &str,
                      create: WalletCreate,
                      open: WalletOpen,
                      close: WalletClose,
@@ -123,15 +121,15 @@ impl WalletCommandExecutor {
                      search_records: WalletSearchRecords,
                      get_search_total_count: WalletGetSearchTotalCount,
                      fetch_search_next_record: WalletFetchSearchNextRecord,
-                     free_search: WalletFreeSearch) {
+                     free_search: WalletFreeSearch) -> Result<(), IndyError> {
         self
             .wallet_service
             .register_wallet_storage(
-                xtype, create, open, close, delete, add_record, update_record_value, update_record_tags,
+                type_, create, open, close, delete, add_record, update_record_value, update_record_tags,
                 add_record_tags, delete_record_tags, delete_record, get_record, get_record_id,
                 get_record_value, get_record_tags, free_record, search_records, get_search_total_count,
                 fetch_search_next_record, free_search)
-            .map_err(IndyError::from);
+            .map_err(IndyError::from)
     }
 
     fn create(&self,
@@ -139,43 +137,38 @@ impl WalletCommandExecutor {
               name: &str,
               xtype: Option<&str>,
               config: Option<&str>,
-              credentials: Option<&str>,
-              cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self.wallet_service.create(pool_name, xtype, name, config, credentials)
-            .map_err(|err| IndyError::WalletError(err)));
+              credentials: Option<&str>) -> Result<(), IndyError> {
+        self.wallet_service.create(pool_name, name, xtype, config, credentials)
+            .map_err(|err| IndyError::WalletError(err))
     }
 
     fn open(&self,
             name: &str,
             runtime_config: Option<&str>,
-            credentials: Option<&str>,
-            cb: Box<Fn(Result<i32, IndyError>) + Send>) {
-        cb(self.wallet_service.open(name, runtime_config, credentials)
-            .map_err(|err| IndyError::WalletError(err)));
+            credentials: Option<&str>) -> Result<i32, IndyError> {
+        self.wallet_service.open(name, runtime_config, credentials)
+            .map_err(|err| IndyError::WalletError(err))
     }
 
     fn close(&self,
-             handle: i32,
-             cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self.wallet_service.close(handle)
-            .map_err(|err| IndyError::WalletError(err)));
+             handle: i32) -> Result<(), IndyError> {
+        self.wallet_service.close(handle)
+            .map_err(|err| IndyError::WalletError(err))
     }
 
-    fn list_wallets(&self, cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let result = self.wallet_service.list_wallets()
+    fn list_wallets(&self) -> Result<String, IndyError> {
+        self.wallet_service.list_wallets()
             .and_then(|wallets|
                 serde_json::to_string(&wallets)
                     .map_err(|err|
                         WalletError::CommonError(CommonError::InvalidState(format!("Can't serialize wallets list {}", err)))))
-            .map_err(IndyError::from);
-        cb(result)
+            .map_err(IndyError::from)
     }
 
     fn delete(&self,
               handle: &str,
-              credentials: Option<&str>,
-              cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self.wallet_service.delete(handle, credentials)
-            .map_err(|err| IndyError::WalletError(err)));
+              credentials: Option<&str>) -> Result<(), IndyError> {
+        self.wallet_service.delete(handle, credentials)
+            .map_err(|err| IndyError::WalletError(err))
     }
 }

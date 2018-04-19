@@ -1,3 +1,9 @@
+extern crate libc;
+
+use self::libc::c_char;
+
+use api::ErrorCode;
+
 pub type WalletCreate = extern fn(name: *const c_char,
                                   config: *const c_char,
                                   credentials: *const c_char) -> ErrorCode;
@@ -17,13 +23,15 @@ pub type WalletDelete = extern fn(name: *const c_char,
 pub type WalletAddRecord = extern fn(storage_handle: i32,
                                      type_: *const c_char,
                                      id: *const c_char,
-                                     value: *const c_char,
+                                     value: *const u8,
+                                     value_len: usize,
                                      tags_json: *const c_char) -> ErrorCode;
 
 pub type WalletUpdateRecordValue = extern fn(storage_handle: i32,
                                              type_: *const c_char,
                                              id: *const c_char,
-                                             value: *const c_char) -> ErrorCode;
+                                             value: *const u8,
+                                             value_len: usize,) -> ErrorCode;
 
 pub type WalletUpdateRecordTags = extern fn(storage_handle: i32,
                                             type_: *const c_char,
@@ -47,7 +55,6 @@ pub type WalletDeleteRecord = extern fn(storage_handle: i32,
 pub type WalletGetRecord = extern fn(storage_handle: i32,
                                      type_: *const c_char,
                                      id: *const c_char,
-                                     key: *const c_char,
                                      options_json: *const c_char,
                                      record_handle_p: *mut u32) -> ErrorCode;
 

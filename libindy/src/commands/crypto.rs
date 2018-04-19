@@ -1,10 +1,10 @@
 extern crate indy_crypto;
 
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use self::indy_crypto::utils::json::JsonDecodable;
 use errors::common::CommonError;
 use errors::indy::IndyError;
 use services::crypto::types::{KeyInfo, Key, ComboBox};
-use services::wallet::WalletService;
+use services::wallet::{WalletService, WalletRecordRetrieveOptions};
 use services::crypto::CryptoService;
 
 use std::error::Error;
@@ -275,55 +275,24 @@ impl CryptoCommandExecutor {
         Ok(res)
     }
 
-    fn _wallet_set_key(&self, wallet_handle: i32, key: &Key) -> Result<(), IndyError> {
-        info!("_wallet_set_key >>> wallet_handle: {:?}, key: {:?}", wallet_handle, key);
-
-        let key_json = Key::to_json(&key)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't serialize Key: {}", err.description())))?;
-
-        let res = self.wallet_service.set(wallet_handle, &format!("key::{}", key.verkey), &key_json)?;
-
-        info!("_wallet_set_key <<< res: {:?}", res);
-
-        Ok(res)
+    fn _wallet_set_key(&self, wallet_handle: i32, key: &Key) -> Result<String, IndyError> {
+        self.wallet_service.set_object(wallet_handle, "Key", &key.verkey, key, "{}")
     }
 
     fn _wallet_get_key(&self, wallet_handle: i32, key: &str) -> Result<Key, IndyError> {
-        info!("_wallet_get_key >>> wallet_handle: {:?}, key: {:?}", wallet_handle, key);
-
-        let key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", key))?;
-
-        let res = Key::from_json(&key_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't deserialize Key: {}", err.description())))?;
-
-        info!("_wallet_get_key <<< res: {:?}", res);
-
-        Ok(res)
+        self.wallet_service.get_object::<Key>(wallet_handle, "Key", &key, WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE, &mut String::new())
     }
 
     fn _wallet_set_key_metadata(&self, wallet_handle: i32, verkey: &str, metadata: &str) -> Result<(), IndyError> {
-        info!("_wallet_set_key_metadata >>> wallet_handle: {:?}, verkey: {:?}, metadata: {:?}", wallet_handle, verkey, metadata);
-
-        let res = self.wallet_service.set(wallet_handle, &format!("key::{}::metadata", verkey), metadata)?;
-
-        info!("_wallet_set_key_metadata <<< res: {:?}", res);
-
-        Ok(res)
+        self.wallet_service.add_record(wallet_handle, "KeyMetadata", &verkey, &metadata, "{}")
+            .map_err(|err| IndyError::from(err))
     }
 
     fn _wallet_get_key_metadata(&self, wallet_handle: i32, verkey: &str) -> Result<String, IndyError> {
-        info!("_wallet_get_key_metadata >>> wallet_handle: {:?}, verkey: {:?}", wallet_handle, verkey);
+        let key_metadata_record = self.wallet_service.get_record(wallet_handle, "KeyMetadata",
+                                                                 verkey, WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE)?;
+        let key_metadata = key_metadata_record.get_value()?;
 
-        let res = self.wallet_service.get(wallet_handle, &format!("key::{}::metadata", verkey))?;
-
-        info!("_wallet_get_key_metadata <<< res: {:?}", res);
-
-        Ok(res)
+        Ok(key_metadata.to_string())
     }
 }

@@ -4,6 +4,7 @@ use api::ErrorCode;
 use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::wallet::WalletCommand;
+use services::wallet::callbacks::*;
 use utils::cstring::CStringUtils;
 
 use self::libc::c_char;
@@ -14,7 +15,7 @@ use self::libc::c_char;
 ///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
-/// xtype: Wallet type name.
+/// type_: Wallet type name.
 /// create: WalletType create operation handler
 /// open: WalletType open operation handler
 /// set: Wallet set operation handler
@@ -29,64 +30,78 @@ use self::libc::c_char;
 /// Error code
 #[no_mangle]
 pub extern fn indy_register_wallet_type(command_handle: i32,
-                                        xtype: *const c_char,
-                                        create: Option<extern fn(name: *const c_char,
-                                                                 config: *const c_char,
-                                                                 credentials: *const c_char) -> ErrorCode>,
-                                        open: Option<extern fn(name: *const c_char,
-                                                               config: *const c_char,
-                                                               runtime_config: *const c_char,
-                                                               credentials: *const c_char,
-                                                               handle: *mut i32) -> ErrorCode>,
-                                        set: Option<extern fn(handle: i32,
-                                                              key: *const c_char,
-                                                              value: *const c_char) -> ErrorCode>,
-                                        get: Option<extern fn(handle: i32,
-                                                              key: *const c_char,
-                                                              value_ptr: *mut *const c_char) -> ErrorCode>,
-                                        get_not_expired: Option<extern fn(handle: i32,
-                                                                          key: *const c_char,
-                                                                          value_ptr: *mut *const c_char) -> ErrorCode>,
-                                        list: Option<extern fn(handle: i32,
-                                                               key_prefix: *const c_char,
-                                                               values_json_ptr: *mut *const c_char) -> ErrorCode>,
-                                        close: Option<extern fn(handle: i32) -> ErrorCode>,
-                                        delete: Option<extern fn(name: *const c_char,
-                                                                 config: *const c_char,
-                                                                 credentials: *const c_char) -> ErrorCode>,
-                                        free: Option<extern fn(wallet_handle: i32,
-                                                               value: *const c_char) -> ErrorCode>,
+                                        type_: *const c_char,
+                                        create: Option<WalletCreate>,
+                                        open: Option<WalletOpen>,
+                                        close: Option<WalletClose>,
+                                        delete: Option<WalletDelete>,
+                                        add_record: Option<WalletAddRecord>,
+                                        update_record_value: Option<WalletUpdateRecordValue>,
+                                        update_record_tags: Option<WalletUpdateRecordTags>,
+                                        add_record_tags: Option<WalletAddRecordTags>,
+                                        delete_record_tags: Option<WalletDeleteRecordTags>,
+                                        delete_record: Option<WalletDeleteRecord>,
+                                        get_record: Option<WalletGetRecord>,
+                                        get_record_id: Option<WalletGetRecordId>,
+                                        get_record_value: Option<WalletGetRecordValue>,
+                                        get_record_tags: Option<WalletGetRecordTags>,
+                                        free_record: Option<WalletFreeRecord>,
+                                        search_records: Option<WalletSearchRecords>,
+                                        get_search_total_count: Option<WalletGetSearchTotalCount>,
+                                        fetch_search_next_record: Option<WalletFetchSearchNextRecord>,
+                                        free_search: Option<WalletFreeSearch>,
                                         cb: Option<extern fn(xcommand_handle: i32,
                                                              err: ErrorCode)>) -> ErrorCode {
-    check_useful_c_str!(xtype, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(type_, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(create, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(open, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(set, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(get, ErrorCode::CommonInvalidParam6);
-    check_useful_c_callback!(get_not_expired, ErrorCode::CommonInvalidParam7);
-    check_useful_c_callback!(list, ErrorCode::CommonInvalidParam8);
-    check_useful_c_callback!(close, ErrorCode::CommonInvalidParam9);
-    check_useful_c_callback!(delete, ErrorCode::CommonInvalidParam10);
-    check_useful_c_callback!(free, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(close, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(delete, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(add_record, ErrorCode::CommonInvalidParam7);
+    check_useful_c_callback!(update_record_value, ErrorCode::CommonInvalidParam8);
+    check_useful_c_callback!(update_record_tags, ErrorCode::CommonInvalidParam9);
+    check_useful_c_callback!(add_record_tags, ErrorCode::CommonInvalidParam10);
+    check_useful_c_callback!(delete_record_tags, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(delete_record, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(get_record, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(get_record_id, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(get_record_value, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(get_record_tags, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(free_record, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(search_records, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(get_search_total_count, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(fetch_search_next_record, ErrorCode::CommonInvalidParam11); // TODO: CommonInvalidParam.......
+    check_useful_c_callback!(free_search, ErrorCode::CommonInvalidParam11); // TODO: CommonInvalidParam.......
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam12);
 
     let result = CommandExecutor::instance()
-        .send(Command::Wallet(WalletCommand::RegisterWalletType(
-            xtype,
-            create,
-            open,
-            set,
-            get,
-            get_not_expired,
-            list,
-            close,
-            delete,
-            free,
-            Box::new(move |result| {
-                let err = result_to_err_code!(result);
-                cb(command_handle, err)
-            })
-        )));
+        .send(Command::Wallet(
+            WalletCommand::RegisterWalletType(
+                type_,
+                create,
+                open,
+                close,
+                delete,
+                add_record,
+                update_record_value,
+                update_record_tags,
+                add_record_tags,
+                delete_record_tags,
+                delete_record,
+                get_record,
+                get_record_id,
+                get_record_value,
+                get_record_tags,
+                free_record,
+                search_records,
+                get_search_total_count,
+                fetch_search_next_record,
+                free_search,
+                Box::new(move |result| {
+                    let err = result_to_err_code!(result);
+                    cb(command_handle, err)
+                })
+            )));
 
     result_to_err_code!(result)
 }
