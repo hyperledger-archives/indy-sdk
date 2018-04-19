@@ -265,7 +265,6 @@
 
 + (void)proverStoreCredential:(NSString *)credJson
                        credID:(NSString *)credID
-                  credReqJSON:(NSString *)credReqJSON
           credReqMetadataJSON:(NSString *)credReqMetadataJSON
                   credDefJSON:(NSString *)credDefJSON
                 revRegDefJSON:(NSString *)revRegDefJSON
@@ -278,7 +277,6 @@
     ret = indy_prover_store_credential(handle,
             walletHandle,
             [credID UTF8String],
-            [credReqJSON UTF8String],
             [credReqMetadataJSON UTF8String],
             [credJson UTF8String],
             [credDefJSON UTF8String],

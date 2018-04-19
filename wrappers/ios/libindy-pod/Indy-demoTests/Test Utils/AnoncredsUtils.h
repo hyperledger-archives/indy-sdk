@@ -109,7 +109,6 @@
 
 - (NSError *)proverStoreCredential:(NSString *)credJson
                             credID:(NSString *)credID
-                       credReqJSON:(NSString *)credReqJSON
                credReqMetadataJSON:(NSString *)credReqMetadataJSON
                        credDefJSON:(NSString *)credDefJSON
                      revRegDefJSON:(NSString *)revRegDefJSON

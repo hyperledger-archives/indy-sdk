@@ -48,7 +48,7 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home):
 
     # 7. Prover process and store credential
     cred_id = 'cred_id_1'
-    await anoncreds.prover_store_credential(wallet_handle, cred_id, cred_req_json, cred_req_metadata_json,
+    await anoncreds.prover_store_credential(wallet_handle, cred_id, cred_req_metadata_json,
                                             cred_json, cred_def_json, None)
 
     # 8. Prover gets credentials for Proof Request
@@ -153,7 +153,7 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name,
 
     # 9. Prover process and store credential
     cred_id = 'cred_1_id'
-    await anoncreds.prover_store_credential(wallet_handle, cred_id, cred_req_json, cred_req_metadata_json,
+    await anoncreds.prover_store_credential(wallet_handle, cred_id, cred_req_metadata_json,
                                             cred_json, cred_def_json, rev_reg_def_json)
 
     # 10. Prover gets credentials for Proof Request

@@ -8,6 +8,7 @@ pub mod pool;
 pub mod did;
 pub mod wallet;
 pub mod blob_storage;
+pub mod payments;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
@@ -115,11 +116,7 @@ pub enum ErrorCode
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 
-    AnoncredsInvalidUserRevocIndex = 401,
-
-    AnoncredsAccumulatorIsFull = 402,
-
-    AnoncredsNotIssuedError = 403,
+    AnoncredsInvalidUserRevocId = 401,
 
     // Attempt to generate master secret with duplicated name
     AnoncredsMasterSecretDuplicateNameError = 404,

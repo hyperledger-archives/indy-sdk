@@ -624,6 +624,55 @@ pub mod pool_config_command {
     }
 }
 
+pub mod pool_restart_command {
+    use super::*;
+
+    command!(CommandMetadata::build("pool-restart", "Send instructions to nodes to update themselves.")
+                .add_required_param("action", "Restart type. Either start or cancel.")
+                .add_optional_param("datetime", "Node restart datetime. Datetime is mandatory for action=start.")
+                .add_example(r#"ledger pool-restart action=start datetime=2020-01-25T12:49:05.258870+00:00"#)
+                .add_example(r#"ledger pool-restart action=cancel"#)
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let submitter_did = ensure_active_did(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
+
+        let action = get_str_param("action", params).map_err(error_err!())?;
+        let datetime = get_str_param("datetime", params).map_err(error_err!())?;
+
+        let response = Ledger::indy_build_pool_restart_request(&submitter_did, action, datetime)
+            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
+
+        let response = match response {
+            Ok(response) => Ok(response),
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
+        }?;
+
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Restart pool request has been sent to Ledger.",
+                                                     &[
+                                                         ("identifier", "Identifier"),
+                                                         ("reqId", "Request ID")],
+                                                     None,
+                                                     &[
+                                                         ("isSuccess", "IsSuccess"),
+                                                         ("msg", "Message"),
+                                                         ("action", "Action"),
+                                                         ("datetime", "Datetime")]));
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
 pub mod pool_upgrade_command {
     use super::*;
 
@@ -711,7 +760,6 @@ pub mod pool_upgrade_command {
             println_succ!("Schedule:");
             println!("{}", s);
         }
-
         trace!("execute << {:?}", res);
         res
     }
@@ -1772,6 +1820,33 @@ pub mod tests {
                 let cmd = pool_config_command::new();
                 let mut params = CommandParams::new();
                 params.insert("writes", "true".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+    }
+
+    mod pool_restart {
+        use super::*;
+
+        #[test]
+        #[ignore]
+        pub fn pool_restart_works() {
+            let datetime = r#"2020-01-25T12:49:05.258870+00:00"#;
+
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = pool_restart_command::new();
+                let mut params = CommandParams::new();
+                params.insert("action", "start".to_string());
+                params.insert("datetime", datetime.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);

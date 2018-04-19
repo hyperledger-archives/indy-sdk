@@ -92,7 +92,7 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
 /// issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
 /// schema_json: credential schema as a json
 /// tag: allows to distinct between credential definitions for the same issuer and schema
-/// type_: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math. Supported types are:
+/// signature_type: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math. Supported types are:
 /// - 'CL': Camenisch-Lysyanskaya credential signature type
 /// config_json: type-specific configuration of credential definition as json:
 /// - 'CL':
@@ -113,7 +113,7 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
                                                           issuer_did: *const c_char,
                                                           schema_json: *const c_char,
                                                           tag: *const c_char,
-                                                          type_: *const c_char,
+                                                          signature_type: *const c_char,
                                                           config_json: *const c_char,
                                                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                                cred_def_id: *const c_char,
@@ -142,7 +142,7 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing transaction to the Ledger
-/// type_: revocation registry type (optional, default value depends on credential definition type). Supported types are:
+/// revoc_def_type: revocation registry type (optional, default value depends on credential definition type). Supported types are:
 /// - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
 /// tag: allows to distinct between revocation registries for the same issuer and credential definition
 /// cred_def_id: id of stored in ledger credential definition
@@ -172,7 +172,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                                                      blob_storage_writer_handle: i32,
                                                      cred_def_id:  *const c_char,
                                                      tag: *const c_char,
-                                                     type_: *const c_char,
+                                                     revoc_def_type: *const c_char,
                                                      config_json: *const c_char,
                                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                           revoc_reg_def_id: *const c_char,
@@ -407,7 +407,6 @@ pub extern fn indy_prover_create_credential_req(command_handle: i32,
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handler (created by open_wallet).
 /// cred_id: (optional, default is a random one) identifier by which credential will be stored in the wallet
-/// cred_req_json: a credential request created by indy_prover_create_credential_req
 /// cred_req_metadata_json: a credential request metadata created by indy_prover_create_credential_req
 /// cred_json: credential json received from issuer
 /// cred_def_json: credential definition json
@@ -422,16 +421,15 @@ pub extern fn indy_prover_create_credential_req(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
-pub extern fn indy_prover_store_cred(command_handle: i32,
-                                     wallet_handle: i32,
-                                     cred_id: *const c_char,
-                                     cred_req_json: *const c_char,
-                                     cred_json: *const c_char,
-                                     cred_schema_json: *const c_char,
-                                     cred_def_json: *const c_char,
-                                     rev_reg_def_json: *const c_char,
-                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                          out_cred_id: *const c_char)>) -> ErrorCode
+pub extern fn indy_prover_store_credential(command_handle: i32,
+                                           wallet_handle: i32,
+                                           cred_id: *const c_char,
+                                           cred_req_metadata_json: *const c_char,
+                                           cred_json: *const c_char,
+                                           cred_def_json: *const c_char,
+                                           rev_reg_def_json: *const c_char,
+                                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                out_cred_id: *const c_char)>) -> ErrorCode
 ```
 
 ```Rust

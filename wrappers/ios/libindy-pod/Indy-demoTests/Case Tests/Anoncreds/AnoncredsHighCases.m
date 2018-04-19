@@ -344,7 +344,6 @@
     // 5. store credential
     ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:credentialJson
                                                           credID:[[AnoncredsUtils sharedInstance] credentialId1]
-                                                     credReqJSON:credentialRequest
                                              credReqMetadataJSON:credentialRequestMetadata
                                                      credDefJSON:credentialDefJson
                                                    revRegDefJSON:nil
@@ -401,7 +400,6 @@
 
     ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:credentialJson
                                                           credID:[[AnoncredsUtils sharedInstance] credentialId1]
-                                                     credReqJSON:credentialRequest
                                              credReqMetadataJSON:credentialRequestMetadata
                                                      credDefJSON:credentialDefJson
                                                    revRegDefJSON:nil

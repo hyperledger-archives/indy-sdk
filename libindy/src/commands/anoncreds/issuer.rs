@@ -327,7 +327,7 @@ impl IssuerCommandExecutor {
             RevocationRegistryDefinition::RevocationRegistryDefinitionV1(
                 RevocationRegistryDefinitionV1 {
                     id: rev_reg_id.clone(),
-                    type_: rev_reg_type,
+                    revoc_def_type: rev_reg_type,
                     tag: tag.to_string(),
                     cred_def_id: cred_def_id.to_string(),
                     value: revoc_reg_def_value
@@ -437,7 +437,7 @@ impl IssuerCommandExecutor {
                 let cred_rev_id = 1 + parse_cred_rev_id(&current_id)?;
 
                 if cred_rev_id > rev_reg_def.value.max_cred_num {
-                    return Err(IndyError::AnoncredsError(AnoncredsError::AccumulatorIsFull(format!("RevocationRegistryAccumulator is full"))));
+                    return Err(IndyError::AnoncredsError(AnoncredsError::RevocationRegistryFull(format!("RevocationRegistryAccumulator is full"))));
                 }
 
                 let blob_storage_reader_handle = blob_storage_reader_handle
@@ -564,7 +564,7 @@ impl IssuerCommandExecutor {
                                                        &revocation_registry_definition)?;
 
         if cred_revoc_id > revocation_registry_definition.value.max_cred_num + 1 {
-            return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+            return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocId(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
         }
 
         let indexes = match revocation_registry_definition.value.issuance_type {
@@ -572,7 +572,7 @@ impl IssuerCommandExecutor {
                 let mut issued = self.get_indexes_list(wallet_handle, &format!("issued_credential_ids::{}", rev_reg_id))?;
 
                 if !issued.remove(&cred_revoc_id) {
-                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocId(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
                 };
 
                 serde_json::to_string(&issued)
@@ -582,7 +582,7 @@ impl IssuerCommandExecutor {
                 let mut revoked = self.get_indexes_list(wallet_handle, &format!("revoked_credential_ids::{}", rev_reg_id))?;
 
                 if !revoked.insert(cred_revoc_id) {
-                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocId(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
                 }
 
                 serde_json::to_string(&revoked)
@@ -639,7 +639,7 @@ impl IssuerCommandExecutor {
                                                        &revocation_registry_definition)?;
 
         if cred_revoc_id > revocation_registry_definition.value.max_cred_num + 1 {
-            return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+            return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocId(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
         }
 
         let indexes = match revocation_registry_definition.value.issuance_type {
@@ -647,7 +647,7 @@ impl IssuerCommandExecutor {
                 let mut issued = self.get_indexes_list(wallet_handle, &format!("issued_credential_ids::{}", rev_reg_id))?;
 
                 if !issued.insert(cred_revoc_id) {
-                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocId(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
                 }
 
                 serde_json::to_string(&issued)
@@ -657,7 +657,7 @@ impl IssuerCommandExecutor {
                 let mut revoked = self.get_indexes_list(wallet_handle, &format!("revoked_credential_ids::{}", rev_reg_id))?;
 
                 if !revoked.remove(&cred_revoc_id) {
-                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocIndex(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocId(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
                 }
 
                 serde_json::to_string(&revoked)

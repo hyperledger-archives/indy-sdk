@@ -494,7 +494,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn indy_prep_anonymous_msg_works() {
+        fn indy_anon_crypt_works() {
             TestUtils::cleanup_storage();
 
             CryptoUtils::anon_crypt(VERKEY_MY2, &MESSAGE.as_bytes()).unwrap();
@@ -503,7 +503,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_prep_anonymous_msg_works_for_invalid_their_vk() {
+        fn indy_anon_crypt_works_for_invalid_their_vk() {
             TestUtils::cleanup_storage();
 
             let res = CryptoUtils::anon_crypt(INVALID_VERKEY_LENGTH, &MESSAGE.as_bytes());
