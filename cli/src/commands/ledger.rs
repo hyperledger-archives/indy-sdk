@@ -1571,7 +1571,7 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
             {
-                let cmd = get_validator_info::new();
+                let cmd = get_validator_info_command::new();
                 let mut params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
