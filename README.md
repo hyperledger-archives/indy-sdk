@@ -79,17 +79,18 @@ If the library in your application does include any directory name, then dynamic
 linker will search for the library in `DYLD_LIBRARY_PATH` (not `LD_LIBRARY_PATH`)
 so we recommend you set both variables to be safe.
 
-### Install for RHEL based distro (Amazon Linux 2017.03)
-Now we haven't prebuild library in some shared place. You can build
-library yourself. Please refer to How-to-build section.
+### RHEL-based distributions (Amazon Linux 2017.03)
+Pre-built libraries are not provided for RHEL-based distributions. Please look [here](doc/rhel-build.md)
+for details on building from source for RHEL-based distributions.
 
-After build add to LD_LIBRARY_PATH environment variable path to builded library.
-It's necessary for dynamic linkage your application with libindy.
+After successfully compiling `libindy`, you will need to add the path containing `libindy.so` to the
+`LD_LIBRARY_PATH` environment variable. This is required for your application to link to
+`libindy`.
 
 ## How to build
 
-* [Ubuntu based distro (Ubuntu 16.04)](doc/ubuntu-build.md)
-* [RHEL based distro (Amazon Linux 2017.03)](doc/rhel-build.md)
+* [Ubuntu based distributions (Ubuntu 16.04)](doc/ubuntu-build.md)
+* [RHEL based distributions (Amazon Linux 2017.03)](doc/rhel-build.md)
 * [Windows](doc/windows-build.md)
 * [MacOS](doc/mac-build.md)
 
