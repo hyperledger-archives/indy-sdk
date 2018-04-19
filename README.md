@@ -68,7 +68,7 @@ See [wrapper iOS install documentation](wrappers/ios/README.md "How to install")
 
 ### MacOS
 
-Pre-built libraries are not provided for MacOS. Please look [here](blob/master/doc/mac-build.md)
+Pre-built libraries are not provided for MacOS. Please look [here](doc/mac-build.md)
 for details on building from source for MacOS.
 
 After building `libindy`, add the path containing the library the `LD_LIBRARY_PATH` and
