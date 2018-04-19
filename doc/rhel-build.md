@@ -72,6 +72,7 @@ git checkout https://github.com/hyperledger/indy-sdk.git
 cd ./indy-sdk/libindy
 cargo build
 ```
+
 ## Building `indy-cli`
 `indy-cli` is dependent on `libindy` and must be built before `indy-cli`.
 
@@ -82,9 +83,13 @@ RUSTFLAGS="-L ../libindy/target/{BUILD_TYPE}" cargo build
 ```
 In the above command, substitute `{BUILD_TYPE}` with `release` or `debug` as appropriate.
 
-In some instances, when `cargo` calls `rustc`, the linker can have difficult finding `libindy.so`
-even after specifying the directory containing it in `LD_LIBRARY_PATH`. Specifying `RUSTFLAGS` in
-the command above will tell `rustc` to also check `../libindy/target/{BUILD_TYPE}` for libraries.
+If you have installed `libindy.so` to a system-wide location and subsequently run `ldconfig`, you do not need
+to specify the `RUSTFLAGS` environment variable as `rustc` should be able to find `libindy.so` without additional
+help.
+
+If not, however, `indy-cli` needs help to be able to find `libindy.so` while being built. Setting `LD_LIBRARY_PATH`
+is only referenced at runtime and not at build time and is not helpful in this case. Specifying `RUSTFLAGS` in the
+command above will tell `rustc` to also check `../libindy/target/{BUILD_TYPE}` for libraries.
 
 ## Running integration tests
 ### Starting up
