@@ -50,7 +50,7 @@ impl error::Error for WalletError {
             WalletError::AlreadyExists(ref description) => description,
             WalletError::NotFound(ref description) => description,
             WalletError::IncorrectPool(ref description) => description,
-            WalletError::PluggedWallerError(ref err_code) => "Plugged wallet error",
+            WalletError::PluggedWallerError(_) => "Plugged wallet error",
             WalletError::AlreadyOpened(ref description) => description,
             WalletError::AccessFailed(ref description) => description,
             WalletError::CommonError(ref err) => err.description()
@@ -59,15 +59,15 @@ impl error::Error for WalletError {
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            WalletError::InvalidHandle(ref description) => None,
-            WalletError::UnknownType(ref description) => None,
-            WalletError::TypeAlreadyRegistered(ref description) => None,
-            WalletError::AlreadyExists(ref description) => None,
-            WalletError::NotFound(ref description) => None,
-            WalletError::IncorrectPool(ref description) => None,
-            WalletError::PluggedWallerError(ref err_code) => None,
-            WalletError::AlreadyOpened(ref description) => None,
-            WalletError::AccessFailed(ref description) => None,
+            WalletError::InvalidHandle(_) => None,
+            WalletError::UnknownType(_) => None,
+            WalletError::TypeAlreadyRegistered(_) => None,
+            WalletError::AlreadyExists(_) => None,
+            WalletError::NotFound(_) => None,
+            WalletError::IncorrectPool(_) => None,
+            WalletError::PluggedWallerError(_) => None,
+            WalletError::AlreadyOpened(_) => None,
+            WalletError::AccessFailed(_) => None,
             WalletError::CommonError(ref err) => Some(err)
         }
     }
@@ -76,15 +76,15 @@ impl error::Error for WalletError {
 impl ToErrorCode for WalletError {
     fn to_error_code(&self) -> ErrorCode {
         match *self {
-            WalletError::InvalidHandle(ref description) => ErrorCode::WalletInvalidHandle,
-            WalletError::UnknownType(ref description) => ErrorCode::WalletUnknownTypeError,
-            WalletError::TypeAlreadyRegistered(ref description) => ErrorCode::WalletTypeAlreadyRegisteredError,
-            WalletError::AlreadyExists(ref description) => ErrorCode::WalletAlreadyExistsError,
-            WalletError::NotFound(ref err) => ErrorCode::WalletNotFoundError,
-            WalletError::IncorrectPool(ref err) => ErrorCode::WalletIncompatiblePoolError,
+            WalletError::InvalidHandle(_) => ErrorCode::WalletInvalidHandle,
+            WalletError::UnknownType(_) => ErrorCode::WalletUnknownTypeError,
+            WalletError::TypeAlreadyRegistered(_) => ErrorCode::WalletTypeAlreadyRegisteredError,
+            WalletError::AlreadyExists(_) => ErrorCode::WalletAlreadyExistsError,
+            WalletError::NotFound(_) => ErrorCode::WalletNotFoundError,
+            WalletError::IncorrectPool(_) => ErrorCode::WalletIncompatiblePoolError,
             WalletError::PluggedWallerError(err_code) => err_code,
-            WalletError::AlreadyOpened(ref err) => ErrorCode::WalletAlreadyOpenedError,
-            WalletError::AccessFailed(ref err) => ErrorCode::WalletAccessFailed,
+            WalletError::AlreadyOpened(_) => ErrorCode::WalletAlreadyOpenedError,
+            WalletError::AccessFailed(_) => ErrorCode::WalletAccessFailed,
             WalletError::CommonError(ref err) => err.to_error_code()
         }
     }

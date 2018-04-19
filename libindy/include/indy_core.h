@@ -11,5 +11,6 @@
 #include "indy_pool.h"
 #include "indy_did.h"
 #include "indy_wallet.h"
+#include "indy_blob_storage.h"
 
 #endif

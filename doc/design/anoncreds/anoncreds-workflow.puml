@@ -1,0 +1,152 @@
+@startuml
+skinparam ParticipantPadding 20
+skinparam BoxPadding 20
+
+title Libindy anoncreds
+scale 0.9
+
+
+box "Issuer" #LightBlue
+participant "Walleted Issuer" as IW
+actor Issuer as I
+endbox
+
+box "Prover"
+actor Prover as P
+participant "Walleted Prover" as PW
+endbox
+
+actor Verifier as V
+
+participant "Ledger" as L
+
+
+note over IW, L #white
+    dashed arrows: a value from Ledger
+    <b>bold text</b>: anoncreds libindy API call
+    <font color=red>red:</font> internal communication with walleted entity
+    <font color=green>green:</font> submit/get to/from secure wallet
+    <font color=blue>blue:</font> submit/get to/from Ledger
+    black: communication between Issuer/Prover/Verifier
+
+endnote
+
+
+=== Create Credential Schema ==
+I -> IW: <b>1. indy_issuer_create_schema
+IW -> I: <schema_id>, <schema_json>
+
+I-[#blue]>L: send SCHEMA txn
+
+=== Create Credential Definition ==
+P -[#blue]-> L: send GET_SCHEMA req
+L -[#blue]-> P: <schema>
+I -> IW: <b>1. indy_issuer_create_and_store_credential_def
+IW -[#green]> IW: store public/private keys and correctness proof
+IW -> I: <cred_def_id>, <cred_def_json>
+
+I-[#blue]>L: send CRED_DEF txn
+
+=== Create Revocation Registry ==
+
+I -> IW: <b>3. indy_issuer_create_and_store_revoc_reg
+IW -[#green]> IW: get keys
+IW -[#green]> IW: store revoc_reg_def, revoc_reg_accum, \npriv_key, tails_generator
+IW -> I: <revoc_reg_id>, <revoc_reg_def_json>, \n<revoc_reg_entry_json>
+
+I-[#blue]>L: send REVOC_REG_DEF txn
+I-[#blue]>L: send REVOC_REG_ENTRY txn
+
+=== Create Master secret ==
+
+P -> PW: <b>5.indy_prover_create_master_secret
+PW -[#green]> PW: store master secret
+IW -> I: <master_secret_id>
+
+=== Create Credential Offer ==
+
+I -> IW: <b>1. indy_issuer_create_credential_offer
+IW -[#green]> IW: get cred def correctness proof
+IW -> I: <cred_offer_json>
+
+I -[#black]> P: send credential offer
+
+=== Request and Issue Credentials ==
+P -[#blue]-> L: send GET_CRED_DEF req
+L -[#blue]-> P: <cred_def>
+
+P -> PW: <b>8.indy_prover_create_credential_req
+PW -[#green]> PW: get master secret
+PW -> P: <cred_req_json>, <cred_req_metadata_json>
+
+P -[#black]> I: send credential request
+
+IW -[#green]> IW: get keys
+IW -[#green]> IW: get revoc reg
+I -> IW: <b>9. indy_issuer_create_credential
+IW -> I: <cred_json>, <cred_revoc_id>, \n<revoc_reg_delta_json>
+
+I -[#blue]> L: send REVOC_REG_ENTRY txn
+I -[#black]> P: send credential
+
+P -[#blue]-> L: send GET_REVOC_REG_DEF req
+L -[#blue]-> P: <revoc_reg_def>
+
+P -> PW: <b>10.indy_prover_store_credential
+PW -[#green]> PW: get master secret
+PW -[#green]> PW: store credential
+PW -> P: <cred_id>
+
+=== Show Credentials on UI ==
+P -> PW: <b>11. indy_prover_get_credentials
+PW -[#green]> PW: get credentials
+PW -> P: <credentials>
+P -> P: show on UI
+
+=== Present Credential to 3d Party (proof request)==
+
+V -[#black]> P: send proof request
+|||
+P -> PW: <b>12.indy_prover_get_credentials_for_proof_req
+PW -> P: <credentials for proof request>
+P -> P: show on UI
+P -> P: select credentials for the proof
+|||
+P -[#blue]-> L: send GET_REVOC_REG_DEF req
+L -[#blue]-> P: <revoc_reg_def>
+P -[#blue]-> L: send GET_REVOC_REG_DELTA req
+L -[#blue]-> P: <revoc_reg_delta>
+|||
+P -> PW: <b>13.indy_create_revocation_state
+PW -> P: <revoc state>
+|||
+P -[#blue]-> L: send GET_SCHEMA req
+L -[#blue]-> P: <schema>
+P -[#blue]-> L: send GET_CRED_DEF req
+L -[#blue]-> P: <cred_def>
+|||
+P -> PW: <b>14.indy_prover_create_proof
+PW -[#green]> PW: get credential
+PW -> P: <proof>
+|||
+P -[#black]> V: send proof
+|||
+V -[#blue]-> L: send GET_SCHEMA req
+L -[#blue]-> V: <schema>
+V -[#blue]-> L: send GET_CRED_DEF req
+L -[#blue]-> V: <cred_def>
+V -[#blue]-> L: send GET_REVOC_REG_DEF req
+L -[#blue]-> V: <revoc_reg_def>
+V -[#blue]-> L: send GET_REVOC_REG req
+L -[#blue]-> V: <revoc_reg>
+|||
+V -> V: <b>14. indy_verifier_verify_proof
+
+=== Revoke Credentials ==
+I -> IW: <b>15. indy_issuer_revoke_credential
+IW -[#green]> IW: get keys
+IW -[#green]> IW: get revoc reg
+IW -> I: <revoc reg delta>
+I -[#blue]> L: send REVOC_REG_ENTRY txn
+
+@enduml

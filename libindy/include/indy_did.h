@@ -16,16 +16,24 @@ extern "C" {
     /// command_handle: command handle to map callback to user context.
     /// did_json: Identity information as json. Example:
     /// {
-    ///     "did": string, (optional; if not provided then the first 16 bit of the verkey will be used
-    ///             as a new DID; if provided, then keys will be replaced - key rotation use case)
+    ///     "did": string, (optional;
+    ///             if not provided and cid param is false then the first 16 bit of the verkey will be used as a new DID;
+    ///             if not provided and cid is true then the full verkey will be used as a new DID;
+    ///             if provided, then keys will be replaced - key rotation use case)
     ///     "seed": string, (optional; if not provide then a random one will be created)
     ///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
     ///               currently only 'ed25519' value is supported for this field)
+    ///     "cid": bool, (optional; if not set then false is used;)
     /// }
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// DID, verkey (for verification of signature) and public_key (for decryption)
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - err: Error code.
+    ///   did: DID generated and stored in the wallet
+    ///   verkey: The DIDs verification key
     ///
     /// #Errors
     /// Common*
@@ -57,7 +65,12 @@ extern "C" {
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// verkey (for verification of signature) and public_key (for decryption)
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - err: Error code.
+    ///   verkey: The DIDs verification key
+    ///
     ///
     /// #Errors
     /// Common*
@@ -79,8 +92,14 @@ extern "C" {
     /// #Params
     /// wallet_handle: wallet handler (created by open_wallet).
     /// command_handle: command handle to map callback to user context.
-    /// did
+    /// did: DID stored in the wallet
     /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - err: Error code.
     ///
     /// #Errors
     /// Common*
@@ -95,26 +114,29 @@ extern "C" {
                                                                      indy_error_t  err)
                                                );
 
-   /// Saves their DID for a pairwise connection in a secured Wallet,
-   /// so that it can be used to verify transaction.
-   ///
-   /// #Params
-   /// wallet_handle: wallet handler (created by open_wallet).
-   /// command_handle: command handle to map callback to user context.
-   /// identity_json: Identity information as json. Example:
-   ///     {
-   ///        "did": string, (required)
-   ///        "verkey": string (optional, can be avoided if did is cryptonym: did == verkey)
-   ///     }
-   /// cb: Callback that takes command result as parameter.
-   ///
-   /// #Returns
-   /// None
-   ///
-   /// #Errors
-   /// Common*
-   /// Wallet*
-   /// Crypto*
+    /// Saves their DID for a pairwise connection in a secured Wallet,
+    /// so that it can be used to verify transaction.
+    ///
+    /// #Params
+    /// wallet_handle: wallet handler (created by open_wallet).
+    /// command_handle: command handle to map callback to user context.
+    /// identity_json: Identity information as json. Example:
+    ///     {
+    ///        "did": string, (required)
+    ///        "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
+    ///     }
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - err: Error code.
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
 
    extern indy_error_t indy_store_their_did(indy_handle_t command_handle,
                                             indy_handle_t wallet_handle,
@@ -131,15 +153,14 @@ extern "C" {
     /// that is used for checking the freshness of cached pool value.
     ///
     /// Note if you don't want to resolve their DID info from the ledger you can use
-    /// "indy_key_for_local_did" call instead that will look only to local wallet and skip
-    /// freshness checking
+    /// "indy_key_for_local_did" call instead that will look only to the local wallet and skip
+    /// freshness checking.
     ///
-    /// Note that indy_create_and_store_my_did makes similar wallet record as indy_create_key.
+    /// Note that "indy_create_and_store_my_did" makes similar wallet record as "indy_create_key".
     /// As result we can use returned ver key in all generic crypto and messaging functions.
     ///
     /// #Params
     /// command_handle: Command handle to map callback to caller context.
-    /// pool_handle: Pool handle to resolve information from the ledger.
     /// wallet_handle: Wallet handle (created by open_wallet).
     /// did - The DID to resolve key.
     /// cb: Callback that takes command result as parameter.
@@ -165,9 +186,10 @@ extern "C" {
                                                                  const char *const key)
                                         );
 
-    //// Returns ver key (key id) for the given DID.
+    /// Returns ver key (key id) for the given DID.
     ///
-    /// "indy_key_for_local_did" call looks data stored in the local wallet only and skips freshness checking.
+    /// "indy_key_for_local_did" call looks data stored in the local wallet only and skips freshness
+    /// checking.
     ///
     /// Note if you want to get fresh data from the ledger you can use "indy_key_for_did" call
     /// instead.
@@ -201,6 +223,26 @@ extern "C" {
                                                                      const char *const key)
                                              );
 
+    /// Set/replaces endpoint information for the given DID.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// did - The DID to resolve endpoint.
+    /// address -  The DIDs endpoint address.
+    /// transport_key - The DIDs transport key (ver key, key id).
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - err: Error code.
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
     extern indy_error_t indy_set_endpoint_for_did(indy_handle_t     command_handle,
                                                   indy_handle_t     wallet_handle,
                                                   const char *const did,
@@ -211,6 +253,26 @@ extern "C" {
                                                                           indy_error_t      err)
                                                  );
 
+    /// Returns endpoint information for the given DID.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// did - The DID to resolve endpoint.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - err: Error code.
+    /// - endpoint - The DIDs endpoint.
+    /// - transport_vk - The DIDs transport key (ver key, key id).
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
     extern indy_error_t indy_get_endpoint_for_did(indy_handle_t     command_handle,
                                                   indy_handle_t     wallet_handle,
                                                   indy_handle_t     pool_handle,
@@ -278,20 +340,80 @@ extern "C" {
                                                                       const char *const metadata)
                                              );
 
-    /// Get info about My DID in format: DID, verkey, metadata
+    /// Retrieves the information about the giving DID in the wallet.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// did - The DID to retrieve information.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - err: Error code.
+    ///   did_with_meta:  {
+    ///     "did": string - DID stored in the wallet,
+    ///     "verkey": string - The DIDs transport key (ver key, key id),
+    ///     "metadata": string - The meta information stored with the DID
+    ///   }
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
     extern indy_error_t indy_get_my_did_with_meta(indy_handle_t     command_handle,
                                                   indy_handle_t     wallet_handle,
                                                   const char *const my_did,
                                                   void              (*fn)(indy_handle_t xcommand_handle, indy_error_t err, const char *const did_with_meta)
                                                  );
 
-    /// Lists created DIDs with metadata as JSON array with each DID in format: DID, verkey, metadata
+    /// Retrieves the information about all DIDs stored in the wallet.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - err: Error code.
+    ///   dids:  [{
+    ///     "did": string - DID stored in the wallet,
+    ///     "verkey": string - The DIDs transport key (ver key, key id).,
+    ///     "metadata": string - The meta information stored with the DID
+    ///   }]
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
     extern indy_error_t indy_list_my_dids_with_meta(indy_handle_t command_handle,
                                                     indy_handle_t wallet_handle,
                                                     void          (*fn)(indy_handle_t xcommand_handle, indy_error_t err, const char *const dids)
                                                    );
 
-    /// Retrieves abbreviated verkey if it is possible otherwise return full verkey
+    /// Retrieves abbreviated verkey if it is possible otherwise return full verkey.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// did: DID.
+    /// full_verkey: The DIDs verification key,
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - err: Error code.
+    ///   verkey: The DIDs verification key in either abbreviated or full form
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
     extern indy_error_t indy_abbreviate_verkey(indy_handle_t command_handle,
                                              const char *const did,
                                              const char *const full_verkey,

@@ -81,7 +81,7 @@ public enum ErrorCode {
 	CommonInvalidState(112),
  
 	/**
-	 * Object (json, config, key, claim and etc...) passed by library caller has invalid structure
+	 * Object (json, config, key, credential and etc...) passed by library caller has invalid structure
 	 */
 	CommonInvalidStructure(113),
 
@@ -179,18 +179,8 @@ public enum ErrorCode {
 	/**
 	 * ???
 	 */
-	AnoncredsInvalidUserRevocIndex(401),
+	AnoncredsInvalidUserRevocId(401),
 
-	/**
-	 * ???
-	 */
-	AnoncredsAccumulatorIsFull(402),
-
-	/**
-	 * ???
-	 */
-	AnoncredsNotIssuedError(403),
- 
 	/**
 	 * Attempt to generate master secret with dupplicated name
 	 */
@@ -202,14 +192,14 @@ public enum ErrorCode {
 	AnoncredsProofRejected(405),
 	
 	/**
-	 * Attempt to use a revoked claim.
+	 * Attempt to use a revoked credential.
 	 */
-	AnoncredsClaimRevoked(406),
+	AnoncredsCredentialRevoked(406),
 
 	/**
-	 * Attempt to create claim definition with duplicated did schema pair.
+	 * Attempt to create credential definition with duplicated did schema pair.
 	 */
-	AnoncredsClaimDefAlreadyExistsError(407),
+	AnoncredsCredDefAlreadyExistsError(407),
 
 	// Crypto errors
 	

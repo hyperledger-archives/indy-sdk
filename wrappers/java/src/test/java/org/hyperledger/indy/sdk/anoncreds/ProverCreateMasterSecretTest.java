@@ -29,7 +29,7 @@ public class ProverCreateMasterSecretTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverCreateMasterSecretWorks() throws Exception {
 
-		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
+		Anoncreds.proverCreateMasterSecret(wallet, masterSecretId).get();
 	}
 
 	@Test
@@ -38,17 +38,13 @@ public class ProverCreateMasterSecretTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(DuplicateMasterSecretNameException.class));
 
-		String masterSecretName = "master_secret_name_duplicate";
-		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
-		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
+		String masterSecretId = "master_secret_name_duplicate";
+		Anoncreds.proverCreateMasterSecret(wallet, masterSecretId).get();
+		Anoncreds.proverCreateMasterSecret(wallet, masterSecretId).get();
 	}
 
 	@Test
 	public void testProverCreateMasterSecretWorksForEmptyName() throws Exception {
-
-		thrown.expect(IllegalArgumentException.class);
-
-		Anoncreds.proverCreateMasterSecret(wallet, "").get();
-
+		Anoncreds.proverCreateMasterSecret(wallet, null).get();
 	}
 }

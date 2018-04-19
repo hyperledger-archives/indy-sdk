@@ -213,11 +213,16 @@ public class Did extends IndyJava.API {
 	 */
 
 	/**
-	 * Creates keys (signing and encryption keys) for a new DID owned by the caller.
+	 * Creates keys (signing and encryption keys) for a new
+	 * DID (owned by the caller of the library).
+	 *
+	 * Identity's DID must be either explicitly provided, or taken as the first 16 bit of verkey.
+	 * Saves the Identity DID with keys in a secured Wallet, so that it can be used to sign
+	 * and encrypt transactions.
 	 *
 	 * @param wallet  The wallet.
 	 * @param didJson Identity information as json.
-	 * @return A future that resolves to a CreateAndStoreMyDidResult instance.
+	 * @return A future that resolves to a CreateAndStoreMyDidResult containing did and verkey.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<CreateAndStoreMyDidResult> createAndStoreMyDid(
@@ -249,7 +254,7 @@ public class Did extends IndyJava.API {
 	 * @param wallet       The wallet.
 	 * @param did          The DID
 	 * @param identityJson identity information as json.
-	 * @return A future that resolves to a ReplaceKeysStartResult instance.
+	 * @return A future that resolves to a temporary verkey.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> replaceKeysStart(
@@ -279,7 +284,7 @@ public class Did extends IndyJava.API {
 	}
 
 	/**
-	 * Apply temporary keys as main for an existing DID.
+	 * Apply temporary keys as main for an existing DID (owned by the caller of the library).
 	 *
 	 * @param wallet The wallet.
 	 * @param did    The DID
@@ -356,7 +361,7 @@ public class Did extends IndyJava.API {
 	 *
 	 * @param pool   The pool.
 	 * @param wallet The wallet.
-	 * @param did
+	 * @param did    The DID to resolve key.
 	 * @return A future resolving to a verkey
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -399,7 +404,7 @@ public class Did extends IndyJava.API {
 	 * As result we can use returned ver key in all generic crypto and messaging functions.
 	 *
 	 * @param wallet The wallet.
-	 * @param did
+	 * @param did    The DID to resolve key.
 	 * @return A future resolving to a verkey
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -427,10 +432,12 @@ public class Did extends IndyJava.API {
 	}
 
 	/**
+	 * Set/replaces endpoint information for the given DID.
+	 *
 	 * @param wallet       The wallet.
-	 * @param did          The encrypted Did.
-	 * @param address      .
-	 * @param transportKey .
+	 * @param did          The DID to resolve endpoint.
+	 * @param address      The DIDs endpoint address.
+	 * @param transportKey The DIDs transport key (ver key, key id).
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -464,10 +471,12 @@ public class Did extends IndyJava.API {
 	}
 
 	/**
+	 * Returns endpoint information for the given DID.
+	 *
 	 * @param wallet The wallet.
 	 * @param pool The pool.
-	 * @param did
-	 * @return A future resolving to a endpoint object
+	 * @param did  The DID to resolve endpoint.
+	 * @return A future resolving to a object containing endpoint and transportVk
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<EndpointForDidResult> getEndpointForDid(
@@ -501,7 +510,7 @@ public class Did extends IndyJava.API {
 	 * Saves/replaces the meta information for the giving DID in the wallet.
 	 *
 	 * @param wallet   The wallet.
-	 * @param did      The encrypted Did.
+	 * @param did      The DID to store metadata.
 	 * @param metadata The meta information that will be store with the DID.
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -536,7 +545,7 @@ public class Did extends IndyJava.API {
 	 * Retrieves the meta information for the giving DID in the wallet.
 	 *
 	 * @param wallet The wallet.
-	 * @param did
+	 * @param did    The DID to retrieve metadata.
 	 * @return A future resolving to a metadata
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -566,9 +575,9 @@ public class Did extends IndyJava.API {
 	/**
 	 * Retrieves abbreviated verkey if it is possible otherwise return full verkey.
 	 *
-	 * @param did
-	 * @param verkey
-	 * @return A future resolving to a verkey
+	 * @param did   DID.
+	 * @param verkey    The DIDs verification key,
+	 * @return A future resolving to the DIDs verification key in either abbreviated or full form
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> AbbreviateVerkey(

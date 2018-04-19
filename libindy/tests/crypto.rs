@@ -7,6 +7,7 @@ use indy::api as api;
 extern crate rust_base58;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
@@ -18,7 +19,6 @@ mod utils;
 use utils::wallet::WalletUtils;
 use utils::crypto::CryptoUtils;
 use utils::did::DidUtils;
-use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 use utils::constants::*;
 
@@ -494,7 +494,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn indy_prep_anonymous_msg_works() {
+        fn indy_anon_crypt_works() {
             TestUtils::cleanup_storage();
 
             CryptoUtils::anon_crypt(VERKEY_MY2, &MESSAGE.as_bytes()).unwrap();
@@ -503,7 +503,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_prep_anonymous_msg_works_for_invalid_their_vk() {
+        fn indy_anon_crypt_works_for_invalid_their_vk() {
             TestUtils::cleanup_storage();
 
             let res = CryptoUtils::anon_crypt(INVALID_VERKEY_LENGTH, &MESSAGE.as_bytes());
