@@ -164,7 +164,6 @@ impl TransactionHandler {
             self.pending_commands.remove(&req_id);
         } else {
             let pend_cmd: &mut CommandProcess = self.pending_commands.get_mut(&req_id).unwrap();
-            let transaction_type = msg_result["type"].as_str().unwrap();
             pend_cmd.replies.insert(msg_result_without_proof, reply_cnt + 1);
             pend_cmd.try_send_to_next_node_if_exists(&self.nodes);
         }
