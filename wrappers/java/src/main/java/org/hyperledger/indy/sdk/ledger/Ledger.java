@@ -687,7 +687,7 @@ public class Ledger extends IndyJava.API {
 		int result = LibIndy.api.indy_build_get_validator_info_request(
 				commandHandle,
 				submitterDid,
-				buildGetTxnRequestCb);
+				buildRequestCb);
 
 		checkResult(result);
 

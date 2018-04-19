@@ -609,7 +609,7 @@ async def build_get_validator_info_request(submitter_did: str) -> str:
     logger = logging.getLogger(__name__)
     logger.debug("build_get_validator_info_request: >>> submitter_did: %r", submitter_did)
 
-    if not hasattr(build_get_txn_request, "cb"):
+    if not hasattr(build_get_validator_info_request, "cb"):
         logger.debug("build_get_validator_info_request: Creating callback")
         build_get_validator_info_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
