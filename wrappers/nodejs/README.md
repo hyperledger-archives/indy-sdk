@@ -84,7 +84,7 @@ schema\_json: schema as json
 
 Errors: `Common*`, `Anoncreds*`
 
-#### issuerCreateAndStoreCredentialDef \( walletHandle, issuerDid, schema, tag, type, config \) -&gt; \[ credDefId, credDef \]
+#### issuerCreateAndStoreCredentialDef \( walletHandle, issuerDid, schema, tag, signatureType, config \) -&gt; \[ credDefId, credDef \]
 
 Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
 and secrets used for credentials revocation.
@@ -99,7 +99,7 @@ It is IMPORTANT for current version GET Schema from Ledger with correct seq\_no 
 * `issuerDid`: String - a DID of the issuer signing cred\_def transaction to the Ledger
 * `schema`: Json - credential schema as a json
 * `tag`: String - allows to distinct between credential definitions for the same issuer and schema
-* `type`: String - credential definition type \(optional, 'CL' by default\) that defines credentials signature and revocation math. Supported types are:
+* `signatureType`: String - credential definition type \(optional, 'CL' by default\) that defines credentials signature and revocation math. Supported types are:
 - 'CL': Camenisch-Lysyanskaya credential signature type
 * `config`: Json - type-specific configuration of credential definition as json:
 - 'CL':
@@ -109,7 +109,7 @@ cred\_def\_json: public part of created credential definition
 
 Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
-#### issuerCreateAndStoreRevocReg \( walletHandle, issuerDid, type, tag, credDefId, config, tailsWriterHandle \) -&gt; \[ revocRegId, revocRegDef, revocRegEntry \]
+#### issuerCreateAndStoreRevocReg \( walletHandle, issuerDid, revocDefType, tag, credDefId, config, tailsWriterHandle \) -&gt; \[ revocRegId, revocRegDef, revocRegEntry \]
 
 Create a new revocation registry for the given credential definition as tuple of entities:
 - Revocation registry definition that encapsulates credentials definition reference, revocation type specific configuration and
@@ -130,7 +130,7 @@ This call requires access to pre-configured blob storage writer instance handle 
 
 * `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
 * `issuerDid`: String - a DID of the issuer signing transaction to the Ledger
-* `type`: String - revocation registry type \(optional, default value depends on credential definition type\). Supported types are:
+* `revocDefType`: String - revocation registry type \(optional, default value depends on credential definition type\). Supported types are:
 - 'CL\_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
 * `tag`: String - allows to distinct between revocation registries for the same issuer and credential definition
 * `credDefId`: String - id of stored in ledger credential definition
@@ -274,14 +274,13 @@ cred_req_metadata_json: Credential request metadata json for processing of recei
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### proverStoreCredential \( walletHandle, credId, credReq, credReqMetadata, cred, credDef, revRegDef \) -&gt; outCredId
+#### proverStoreCredential \( walletHandle, credId, credReqMetadata, cred, credDef, revRegDef \) -&gt; outCredId
 
 Check credential provided by Issuer for the given credential request,
 updates the credential by a master secret and stores in a secure wallet.
 
 * `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
 * `credId`: String - \(optional, default is a random one\) identifier by which credential will be stored in the wallet
-* `credReq`: Json - a credential request created by indy\_prover\_create\_credential\_req
 * `credReqMetadata`: Json - a credential request metadata created by indy\_prover\_create\_credential\_req
 * `cred`: Json - credential json received from issuer
 * `credDef`: Json - credential definition json
@@ -656,7 +655,7 @@ verkey - The key \(verkey, key id\) to retrieve metadata.
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### cryptoSign \( walletHandle, myVk, messageRaw \) -&gt; signatureRaw
+#### cryptoSign \( walletHandle, signerVk, messageRaw \) -&gt; signatureRaw
 
 Signs a message with a key.
 
@@ -664,27 +663,27 @@ Note to use DID keys with this function you can call indy\_key\_for\_did to get 
 for specific DID.
 
 * `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
-* `myVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
+* `signerVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
 * `messageRaw`: Buffer - a pointer to first byte of message to be signed
 * __->__ `signatureRaw`: Buffer - a signature string
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### cryptoVerify \( theirVk, messageRaw, signatureRaw \) -&gt; valid
+#### cryptoVerify \( signerVk, messageRaw, signatureRaw \) -&gt; valid
 
 Verify a signature with a verkey.
 
 Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
 for specific DID.
 
-* `theirVk`: String - verkey to use
-* `messageRaw`: Buffer - a pointer to first byte of message to be signed
-* `signatureRaw`: Buffer - a a pointer to first byte of signature to be verified
+* `signerVk`: String - verkey of signer of the message
+* `messageRaw`: Buffer - a pointer to first byte of message that has been signed
+* `signatureRaw`: Buffer - a pointer to first byte of signature to be verified
 * __->__ `valid`: Boolean - valid: true - if signature is valid, false - otherwise
 
 Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
-#### cryptoAuthCrypt \( walletHandle, myVk, theirVk, messageRaw \) -&gt; encryptedMsgRaw
+#### cryptoAuthCrypt \( walletHandle, senderVk, recipientVk, messageRaw \) -&gt; encryptedMsgRaw
 
 Encrypt a message by authenticated-encryption scheme.
 
@@ -698,14 +697,14 @@ Note to use DID keys with this function you can call indy\_key\_for\_did to get 
 for specific DID.
 
 * `walletHandle`: Handle (Number) - wallet handle \(created by open\_wallet\).
-* `myVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
-* `theirVk`: String - id \(verkey\) of their key
+* `senderVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
+* `recipientVk`: String - id \(verkey\) of their key
 * `messageRaw`: Buffer - a pointer to first byte of message that to be encrypted
-* __->__ `encryptedMsgRaw`: Buffer - an encrypted message
+* __->__ `encryptedMsgRaw`: Buffer - an encrypted message as a pointer to array of bytes.
 
 Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
-#### cryptoAuthDecrypt \( walletHandle, myVk, encryptedMsgRaw \) -&gt; \[ theirVk, decryptedMsgRaw \]
+#### cryptoAuthDecrypt \( walletHandle, recipientVk, encryptedMsgRaw \) -&gt; \[ senderVk, decryptedMsgRaw \]
 
 Decrypt a message by authenticated-encryption scheme.
 
@@ -719,13 +718,13 @@ Note to use DID keys with this function you can call indy\_key\_for\_did to get 
 for specific DID.
 
 * `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
-* `myVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
+* `recipientVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
 * `encryptedMsgRaw`: Buffer - a pointer to first byte of message that to be decrypted
-* __->__ [ `theirVk`: String, `decryptedMsgRaw`: Buffer ] - sender verkey and decrypted message
+* __->__ [ `senderVk`: String, `decryptedMsgRaw`: Buffer ] - sender verkey and decrypted message as a pointer to array of bytes
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### cryptoAnonCrypt \( theirVk, messageRaw \) -&gt; encryptedMsgRaw
+#### cryptoAnonCrypt \( recipientVk, messageRaw \) -&gt; encryptedMsgRaw
 
 Encrypts a message by anonymous-encryption scheme.
 
@@ -736,13 +735,13 @@ While the Recipient can verify the integrity of the message, it cannot verify th
 Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
 for specific DID.
 
-* `theirVk`: String - id \(verkey\) of their key
+* `recipientVk`: String - verkey of message recipient
 * `messageRaw`: Buffer - a pointer to first byte of message that to be encrypted
-* __->__ `encryptedMsgRaw`: Buffer - an encrypted message
+* __->__ `encryptedMsgRaw`: Buffer - an encrypted message as a pointer to array of bytes
 
 Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
-#### cryptoAnonDecrypt \( walletHandle, myVk, encryptedMsg \) -&gt; decryptedMsgRaw
+#### cryptoAnonDecrypt \( walletHandle, recipientVk, encryptedMsg \) -&gt; decryptedMsgRaw
 
 Decrypts a message by anonymous-encryption scheme.
 
@@ -754,9 +753,9 @@ Note to use DID keys with this function you can call indy\_key\_for\_did to get 
 for specific DID.
 
 * `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
-* `myVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
+* `recipientVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
 * `encryptedMsg`: Buffer
-* __->__ `decryptedMsgRaw`: Buffer - decrypted message
+* __->__ `decryptedMsgRaw`: Buffer - decrypted message as a pointer to an array of bytes
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
@@ -784,7 +783,8 @@ and encrypt transactions.
     "cid": bool, (optional; if not set then false is used;)
 }
 ````
-* __->__ [ `did`: String, `verkey`: String ] - DID, verkey \(for verification of signature\) and public\_key \(for decryption\)
+* __->__ [ `did`: String, `verkey`: String ] - did: DID generated and stored in the wallet
+verkey: The DIDs verification key
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
@@ -803,7 +803,7 @@ DID \(owned by the caller of the library\).
               currently only 'ed25519' value is supported for this field)
 }
 ````
-* __->__ `verkey`: String - verkey \(for verification of signature\) and public\_key \(for decryption\)
+* __->__ `verkey`: String - verkey: The DIDs verification key
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
@@ -812,7 +812,7 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 Apply temporary keys as main for an existing DID \(owned by the caller of the library\).
 
 * `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
-* `did`: String
+* `did`: String - DID stored in the wallet
 * __->__ void
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
@@ -849,7 +849,7 @@ freshness checking.
 Note that "indy\_create\_and\_store\_my\_did" makes similar wallet record as "indy\_create\_key".
 As result we can use returned ver key in all generic crypto and messaging functions.
 
-* `poolHandle`: Handle (Number)
+* `poolHandle`: Handle (Number) - Pool handle \(created by open\_pool\).
 * `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
 did - The DID to resolve key.
 * `did`: String
@@ -879,10 +879,12 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 #### setEndpointForDid \( walletHandle, did, address, transportKey \) -&gt; void
 
-Returns endpoint information for the given DID.
+Set\/replaces endpoint information for the given DID.
 
 * `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
 did - The DID to resolve endpoint.
+address -  The DIDs endpoint address.
+transport\_key - The DIDs transport key \(ver key, key id\).
 * `did`: String
 * `address`: String
 * `transportKey`: String
@@ -892,13 +894,16 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 #### getEndpointForDid \( walletHandle, poolHandle, did \) -&gt; \[ address, transportVk \]
 
+Returns endpoint information for the given DID.
 
-
-* `walletHandle`: Handle (Number)
+* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
+did - The DID to resolve endpoint.
 * `poolHandle`: Handle (Number)
 * `did`: String
-* __->__ [ `address`: String, `transportVk`: String ]
+* __->__ [ `address`: String, `transportVk`: String ] - The DIDs endpoint.
+- transport\_vk - The DIDs transport key \(ver key, key id\).
 
+Errors: `Common*`, `Wallet*`, `Crypto*`
 
 #### setDidMetadata \( walletHandle, did, metadata \) -&gt; void
 
@@ -926,29 +931,41 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 #### getMyDidWithMeta \( walletHandle, myDid \) -&gt; didWithMeta
 
-Get info about My DID in format: DID, verkey, metadata
+Retrieves the information about the giving DID in the wallet.
 
-* `walletHandle`: Handle (Number)
+* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
+did - The DID to retrieve information.
 * `myDid`: String
-* __->__ `didWithMeta`: String
+* __->__ `didWithMeta`: String - did\_with\_meta: {
+"did": string - DID stored in the wallet,
+"verkey": string - The DIDs transport key \(ver key, key id\),
+"metadata": string - The meta information stored with the DID
+}
 
+Errors: `Common*`, `Wallet*`, `Crypto*`
 
 #### listMyDidsWithMeta \( walletHandle \) -&gt; dids
 
-Lists created DIDs with metadata as JSON array with each DID in format: DID, verkey, metadata
+Retrieves the information about all DIDs stored in the wallet.
 
-* `walletHandle`: Handle (Number)
-* __->__ `dids`: String
+* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
+* __->__ `dids`: String - dids: \[{
+"did": string - DID stored in the wallet,
+"verkey": string - The DIDs transport key \(ver key, key id\).,
+"metadata": string - The meta information stored with the DID
+}\]
 
+Errors: `Common*`, `Wallet*`, `Crypto*`
 
 #### abbreviateVerkey \( did, fullVerkey \) -&gt; verkey
 
 Retrieves abbreviated verkey if it is possible otherwise return full verkey.
 
-* `did`: String
-* `fullVerkey`: String
-* __->__ `verkey`: String
+* `did`: String - DID.
+* `fullVerkey`: String - The DIDs verification key,
+* __->__ `verkey`: String - verkey: The DIDs verification key in either abbreviated or full form
 
+Errors: `Common*`, `Wallet*`, `Crypto*`
 
 ### ledger
 
@@ -1176,6 +1193,17 @@ Builds a POOL\_CONFIG request. Request to change Pool's configuration.
 \(if false, then pool goes to read-only state\). True by default.
 * `force`: Boolean - Whether we should apply transaction \(for example, move pool to read-only state\)
 without waiting for consensus of this transaction.
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### buildPoolRestartRequest \( submitterDid, action, datetime \) -&gt; request
+
+Builds a POOL\_RESTART request.
+
+* `submitterDid`: String - Id of Identity stored in secured Wallet.
+* `action`: String
+* `datetime`: String
 * __->__ `request`: Json
 
 Errors: `Common*`

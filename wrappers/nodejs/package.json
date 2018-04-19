@@ -24,7 +24,7 @@
   ],
   "scripts": {
     "prepare": "cp -r ../../libindy/include/ .",
-    "test": "standard && ava --fail-fast tests",
+    "test": "standard && ava --fail-fast",
     "rebuild": "node codegen && node-gyp rebuild"
   },
   "dependencies": {

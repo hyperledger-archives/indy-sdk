@@ -21,15 +21,15 @@ indy.issuerCreateSchema = function issuerCreateSchema (issuerDid, name, version,
   return cb.promise
 }
 
-indy.issuerCreateAndStoreCredentialDef = function issuerCreateAndStoreCredentialDef (walletHandle, issuerDid, schema, tag, type, config, cb) {
+indy.issuerCreateAndStoreCredentialDef = function issuerCreateAndStoreCredentialDef (walletHandle, issuerDid, schema, tag, signatureType, config, cb) {
   cb = wrapIndyCallback(cb)
-  capi.issuerCreateAndStoreCredentialDef(walletHandle, issuerDid, jsonify(schema), tag, type, jsonify(config), cb)
+  capi.issuerCreateAndStoreCredentialDef(walletHandle, issuerDid, jsonify(schema), tag, signatureType, jsonify(config), cb)
   return cb.promise
 }
 
-indy.issuerCreateAndStoreRevocReg = function issuerCreateAndStoreRevocReg (walletHandle, issuerDid, type, tag, credDefId, config, tailsWriterHandle, cb) {
+indy.issuerCreateAndStoreRevocReg = function issuerCreateAndStoreRevocReg (walletHandle, issuerDid, revocDefType, tag, credDefId, config, tailsWriterHandle, cb) {
   cb = wrapIndyCallback(cb)
-  capi.issuerCreateAndStoreRevocReg(walletHandle, issuerDid, type, tag, credDefId, jsonify(config), tailsWriterHandle, cb)
+  capi.issuerCreateAndStoreRevocReg(walletHandle, issuerDid, revocDefType, tag, credDefId, jsonify(config), tailsWriterHandle, cb)
   return cb.promise
 }
 
@@ -69,9 +69,9 @@ indy.proverCreateCredentialReq = function proverCreateCredentialReq (walletHandl
   return cb.promise
 }
 
-indy.proverStoreCredential = function proverStoreCredential (walletHandle, credId, credReq, credReqMetadata, cred, credDef, revRegDef, cb) {
+indy.proverStoreCredential = function proverStoreCredential (walletHandle, credId, credReqMetadata, cred, credDef, revRegDef, cb) {
   cb = wrapIndyCallback(cb)
-  capi.proverStoreCredential(walletHandle, credId, jsonify(credReq), jsonify(credReqMetadata), jsonify(cred), jsonify(credDef), jsonify(revRegDef), cb)
+  capi.proverStoreCredential(walletHandle, credId, jsonify(credReqMetadata), jsonify(cred), jsonify(credDef), jsonify(revRegDef), cb)
   return cb.promise
 }
 
@@ -141,39 +141,39 @@ indy.getKeyMetadata = function getKeyMetadata (walletHandle, verkey, cb) {
   return cb.promise
 }
 
-indy.cryptoSign = function cryptoSign (walletHandle, myVk, messageRaw, cb) {
+indy.cryptoSign = function cryptoSign (walletHandle, signerVk, messageRaw, cb) {
   cb = wrapIndyCallback(cb)
-  capi.cryptoSign(walletHandle, myVk, messageRaw, cb)
+  capi.cryptoSign(walletHandle, signerVk, messageRaw, cb)
   return cb.promise
 }
 
-indy.cryptoVerify = function cryptoVerify (theirVk, messageRaw, signatureRaw, cb) {
+indy.cryptoVerify = function cryptoVerify (signerVk, messageRaw, signatureRaw, cb) {
   cb = wrapIndyCallback(cb)
-  capi.cryptoVerify(theirVk, messageRaw, signatureRaw, cb)
+  capi.cryptoVerify(signerVk, messageRaw, signatureRaw, cb)
   return cb.promise
 }
 
-indy.cryptoAuthCrypt = function cryptoAuthCrypt (walletHandle, myVk, theirVk, messageRaw, cb) {
+indy.cryptoAuthCrypt = function cryptoAuthCrypt (walletHandle, senderVk, recipientVk, messageRaw, cb) {
   cb = wrapIndyCallback(cb)
-  capi.cryptoAuthCrypt(walletHandle, myVk, theirVk, messageRaw, cb)
+  capi.cryptoAuthCrypt(walletHandle, senderVk, recipientVk, messageRaw, cb)
   return cb.promise
 }
 
-indy.cryptoAuthDecrypt = function cryptoAuthDecrypt (walletHandle, myVk, encryptedMsgRaw, cb) {
+indy.cryptoAuthDecrypt = function cryptoAuthDecrypt (walletHandle, recipientVk, encryptedMsgRaw, cb) {
   cb = wrapIndyCallback(cb)
-  capi.cryptoAuthDecrypt(walletHandle, myVk, encryptedMsgRaw, cb)
+  capi.cryptoAuthDecrypt(walletHandle, recipientVk, encryptedMsgRaw, cb)
   return cb.promise
 }
 
-indy.cryptoAnonCrypt = function cryptoAnonCrypt (theirVk, messageRaw, cb) {
+indy.cryptoAnonCrypt = function cryptoAnonCrypt (recipientVk, messageRaw, cb) {
   cb = wrapIndyCallback(cb)
-  capi.cryptoAnonCrypt(theirVk, messageRaw, cb)
+  capi.cryptoAnonCrypt(recipientVk, messageRaw, cb)
   return cb.promise
 }
 
-indy.cryptoAnonDecrypt = function cryptoAnonDecrypt (walletHandle, myVk, encryptedMsg, cb) {
+indy.cryptoAnonDecrypt = function cryptoAnonDecrypt (walletHandle, recipientVk, encryptedMsg, cb) {
   cb = wrapIndyCallback(cb)
-  capi.cryptoAnonDecrypt(walletHandle, myVk, encryptedMsg, cb)
+  capi.cryptoAnonDecrypt(walletHandle, recipientVk, encryptedMsg, cb)
   return cb.promise
 }
 
@@ -354,6 +354,12 @@ indy.buildGetTxnRequest = function buildGetTxnRequest (submitterDid, data, cb) {
 indy.buildPoolConfigRequest = function buildPoolConfigRequest (submitterDid, writes, force, cb) {
   cb = wrapIndyCallback(cb, true)
   capi.buildPoolConfigRequest(submitterDid, writes, force, cb)
+  return cb.promise
+}
+
+indy.buildPoolRestartRequest = function buildPoolRestartRequest (submitterDid, action, datetime, cb) {
+  cb = wrapIndyCallback(cb, true)
+  capi.buildPoolRestartRequest(submitterDid, action, datetime, cb)
   return cb.promise
 }
 

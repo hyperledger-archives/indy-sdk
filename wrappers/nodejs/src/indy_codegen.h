@@ -59,10 +59,10 @@ void issuerCreateAndStoreCredentialDef_cb(indy_handle_t handle, indy_error_t xer
 }
 NAN_METHOD(issuerCreateAndStoreCredentialDef) {
   if(info.Length() != 7){
-    return Nan::ThrowError(Nan::New("Expected 7 arguments: issuerCreateAndStoreCredentialDef(wallet_handle, issuer_did, schema_json, tag, type_, config_json, cb(err, [ credDefId, credDef ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected 7 arguments: issuerCreateAndStoreCredentialDef(wallet_handle, issuer_did, schema_json, tag, signature_type, config_json, cb(err, [ credDefId, credDef ]))").ToLocalChecked());
   }
   if(!info[0]->IsNumber()){
-    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: issuerCreateAndStoreCredentialDef(wallet_handle, issuer_did, schema_json, tag, type_, config_json, cb(err, [ credDefId, credDef ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: issuerCreateAndStoreCredentialDef(wallet_handle, issuer_did, schema_json, tag, signature_type, config_json, cb(err, [ credDefId, credDef ]))").ToLocalChecked());
   }
   indy_handle_t arg0 = info[0]->Int32Value();
   Nan::Utf8String* arg1UTF = nullptr;
@@ -71,7 +71,7 @@ NAN_METHOD(issuerCreateAndStoreCredentialDef) {
     arg1UTF = new Nan::Utf8String(info[1]);
     arg1 = (const char*)(**arg1UTF);
   } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for issuer_did: issuerCreateAndStoreCredentialDef(wallet_handle, issuer_did, schema_json, tag, type_, config_json, cb(err, [ credDefId, credDef ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for issuer_did: issuerCreateAndStoreCredentialDef(wallet_handle, issuer_did, schema_json, tag, signature_type, config_json, cb(err, [ credDefId, credDef ]))").ToLocalChecked());
   }
   Nan::Utf8String* arg2UTF = nullptr;
   const char* arg2 = nullptr;
@@ -79,7 +79,7 @@ NAN_METHOD(issuerCreateAndStoreCredentialDef) {
     arg2UTF = new Nan::Utf8String(info[2]);
     arg2 = (const char*)(**arg2UTF);
   } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for schema_json: issuerCreateAndStoreCredentialDef(wallet_handle, issuer_did, schema_json, tag, type_, config_json, cb(err, [ credDefId, credDef ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for schema_json: issuerCreateAndStoreCredentialDef(wallet_handle, issuer_did, schema_json, tag, signature_type, config_json, cb(err, [ credDefId, credDef ]))").ToLocalChecked());
   }
   Nan::Utf8String* arg3UTF = nullptr;
   const char* arg3 = nullptr;
@@ -87,7 +87,7 @@ NAN_METHOD(issuerCreateAndStoreCredentialDef) {
     arg3UTF = new Nan::Utf8String(info[3]);
     arg3 = (const char*)(**arg3UTF);
   } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for tag: issuerCreateAndStoreCredentialDef(wallet_handle, issuer_did, schema_json, tag, type_, config_json, cb(err, [ credDefId, credDef ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for tag: issuerCreateAndStoreCredentialDef(wallet_handle, issuer_did, schema_json, tag, signature_type, config_json, cb(err, [ credDefId, credDef ]))").ToLocalChecked());
   }
   Nan::Utf8String* arg4UTF = nullptr;
   const char* arg4 = nullptr;
@@ -95,7 +95,7 @@ NAN_METHOD(issuerCreateAndStoreCredentialDef) {
     arg4UTF = new Nan::Utf8String(info[4]);
     arg4 = (const char*)(**arg4UTF);
   } else if(!info[4]->IsNull() && !info[4]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for type_: issuerCreateAndStoreCredentialDef(wallet_handle, issuer_did, schema_json, tag, type_, config_json, cb(err, [ credDefId, credDef ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for signature_type: issuerCreateAndStoreCredentialDef(wallet_handle, issuer_did, schema_json, tag, signature_type, config_json, cb(err, [ credDefId, credDef ]))").ToLocalChecked());
   }
   Nan::Utf8String* arg5UTF = nullptr;
   const char* arg5 = nullptr;
@@ -103,7 +103,7 @@ NAN_METHOD(issuerCreateAndStoreCredentialDef) {
     arg5UTF = new Nan::Utf8String(info[5]);
     arg5 = (const char*)(**arg5UTF);
   } else if(!info[5]->IsNull() && !info[5]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for config_json: issuerCreateAndStoreCredentialDef(wallet_handle, issuer_did, schema_json, tag, type_, config_json, cb(err, [ credDefId, credDef ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for config_json: issuerCreateAndStoreCredentialDef(wallet_handle, issuer_did, schema_json, tag, signature_type, config_json, cb(err, [ credDefId, credDef ]))").ToLocalChecked());
   }
   if(!info[6]->IsFunction()) {
     return Nan::ThrowError(Nan::New("issuerCreateAndStoreCredentialDef arg 6 expected callback Function").ToLocalChecked());
@@ -125,10 +125,10 @@ void issuerCreateAndStoreRevocReg_cb(indy_handle_t handle, indy_error_t xerr, co
 }
 NAN_METHOD(issuerCreateAndStoreRevocReg) {
   if(info.Length() != 8){
-    return Nan::ThrowError(Nan::New("Expected 8 arguments: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected 8 arguments: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, revoc_def_type, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
   }
   if(!info[0]->IsNumber()){
-    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, revoc_def_type, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
   }
   indy_handle_t arg0 = info[0]->Int32Value();
   Nan::Utf8String* arg1UTF = nullptr;
@@ -137,7 +137,7 @@ NAN_METHOD(issuerCreateAndStoreRevocReg) {
     arg1UTF = new Nan::Utf8String(info[1]);
     arg1 = (const char*)(**arg1UTF);
   } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for issuer_did: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for issuer_did: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, revoc_def_type, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
   }
   Nan::Utf8String* arg2UTF = nullptr;
   const char* arg2 = nullptr;
@@ -145,7 +145,7 @@ NAN_METHOD(issuerCreateAndStoreRevocReg) {
     arg2UTF = new Nan::Utf8String(info[2]);
     arg2 = (const char*)(**arg2UTF);
   } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for type_: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for revoc_def_type: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, revoc_def_type, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
   }
   Nan::Utf8String* arg3UTF = nullptr;
   const char* arg3 = nullptr;
@@ -153,7 +153,7 @@ NAN_METHOD(issuerCreateAndStoreRevocReg) {
     arg3UTF = new Nan::Utf8String(info[3]);
     arg3 = (const char*)(**arg3UTF);
   } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for tag: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for tag: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, revoc_def_type, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
   }
   Nan::Utf8String* arg4UTF = nullptr;
   const char* arg4 = nullptr;
@@ -161,7 +161,7 @@ NAN_METHOD(issuerCreateAndStoreRevocReg) {
     arg4UTF = new Nan::Utf8String(info[4]);
     arg4 = (const char*)(**arg4UTF);
   } else if(!info[4]->IsNull() && !info[4]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for cred_def_id: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for cred_def_id: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, revoc_def_type, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
   }
   Nan::Utf8String* arg5UTF = nullptr;
   const char* arg5 = nullptr;
@@ -169,10 +169,10 @@ NAN_METHOD(issuerCreateAndStoreRevocReg) {
     arg5UTF = new Nan::Utf8String(info[5]);
     arg5 = (const char*)(**arg5UTF);
   } else if(!info[5]->IsNull() && !info[5]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for config_json: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for config_json: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, revoc_def_type, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
   }
   if(!info[6]->IsNumber()){
-    return Nan::ThrowError(Nan::New("Expected IndyHandle for tails_writer_handle: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for tails_writer_handle: issuerCreateAndStoreRevocReg(wallet_handle, issuer_did, revoc_def_type, tag, cred_def_id, config_json, tails_writer_handle, cb(err, [ revocRegId, revocRegDef, revocRegEntry ]))").ToLocalChecked());
   }
   indy_handle_t arg6 = info[6]->Int32Value();
   if(!info[7]->IsFunction()) {
@@ -450,11 +450,11 @@ void proverStoreCredential_cb(indy_handle_t handle, indy_error_t xerr, const cha
   }
 }
 NAN_METHOD(proverStoreCredential) {
-  if(info.Length() != 8){
-    return Nan::ThrowError(Nan::New("Expected 8 arguments: proverStoreCredential(wallet_handle, cred_id, cred_req_json, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb(err, outCredId))").ToLocalChecked());
+  if(info.Length() != 7){
+    return Nan::ThrowError(Nan::New("Expected 7 arguments: proverStoreCredential(wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb(err, outCredId))").ToLocalChecked());
   }
   if(!info[0]->IsNumber()){
-    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: proverStoreCredential(wallet_handle, cred_id, cred_req_json, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb(err, outCredId))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: proverStoreCredential(wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb(err, outCredId))").ToLocalChecked());
   }
   indy_handle_t arg0 = info[0]->Int32Value();
   Nan::Utf8String* arg1UTF = nullptr;
@@ -463,7 +463,7 @@ NAN_METHOD(proverStoreCredential) {
     arg1UTF = new Nan::Utf8String(info[1]);
     arg1 = (const char*)(**arg1UTF);
   } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for cred_id: proverStoreCredential(wallet_handle, cred_id, cred_req_json, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb(err, outCredId))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for cred_id: proverStoreCredential(wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb(err, outCredId))").ToLocalChecked());
   }
   Nan::Utf8String* arg2UTF = nullptr;
   const char* arg2 = nullptr;
@@ -471,7 +471,7 @@ NAN_METHOD(proverStoreCredential) {
     arg2UTF = new Nan::Utf8String(info[2]);
     arg2 = (const char*)(**arg2UTF);
   } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for cred_req_json: proverStoreCredential(wallet_handle, cred_id, cred_req_json, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb(err, outCredId))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for cred_req_metadata_json: proverStoreCredential(wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb(err, outCredId))").ToLocalChecked());
   }
   Nan::Utf8String* arg3UTF = nullptr;
   const char* arg3 = nullptr;
@@ -479,7 +479,7 @@ NAN_METHOD(proverStoreCredential) {
     arg3UTF = new Nan::Utf8String(info[3]);
     arg3 = (const char*)(**arg3UTF);
   } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for cred_req_metadata_json: proverStoreCredential(wallet_handle, cred_id, cred_req_json, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb(err, outCredId))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for cred_json: proverStoreCredential(wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb(err, outCredId))").ToLocalChecked());
   }
   Nan::Utf8String* arg4UTF = nullptr;
   const char* arg4 = nullptr;
@@ -487,7 +487,7 @@ NAN_METHOD(proverStoreCredential) {
     arg4UTF = new Nan::Utf8String(info[4]);
     arg4 = (const char*)(**arg4UTF);
   } else if(!info[4]->IsNull() && !info[4]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for cred_json: proverStoreCredential(wallet_handle, cred_id, cred_req_json, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb(err, outCredId))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for cred_def_json: proverStoreCredential(wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb(err, outCredId))").ToLocalChecked());
   }
   Nan::Utf8String* arg5UTF = nullptr;
   const char* arg5 = nullptr;
@@ -495,27 +495,18 @@ NAN_METHOD(proverStoreCredential) {
     arg5UTF = new Nan::Utf8String(info[5]);
     arg5 = (const char*)(**arg5UTF);
   } else if(!info[5]->IsNull() && !info[5]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for cred_def_json: proverStoreCredential(wallet_handle, cred_id, cred_req_json, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb(err, outCredId))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for rev_reg_def_json: proverStoreCredential(wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb(err, outCredId))").ToLocalChecked());
   }
-  Nan::Utf8String* arg6UTF = nullptr;
-  const char* arg6 = nullptr;
-  if(info[6]->IsString()){
-    arg6UTF = new Nan::Utf8String(info[6]);
-    arg6 = (const char*)(**arg6UTF);
-  } else if(!info[6]->IsNull() && !info[6]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for rev_reg_def_json: proverStoreCredential(wallet_handle, cred_id, cred_req_json, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb(err, outCredId))").ToLocalChecked());
+  if(!info[6]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("proverStoreCredential arg 6 expected callback Function").ToLocalChecked());
   }
-  if(!info[7]->IsFunction()) {
-    return Nan::ThrowError(Nan::New("proverStoreCredential arg 7 expected callback Function").ToLocalChecked());
-  }
-  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[7]).ToLocalChecked());
-  indyCalled(icb, indy_prover_store_credential(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, arg6, proverStoreCredential_cb));
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[6]).ToLocalChecked());
+  indyCalled(icb, indy_prover_store_credential(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, proverStoreCredential_cb));
   delete arg1UTF;
   delete arg2UTF;
   delete arg3UTF;
   delete arg4UTF;
   delete arg5UTF;
-  delete arg6UTF;
 }
 
 void proverGetCredentials_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
@@ -1014,10 +1005,10 @@ void cryptoSign_cb(indy_handle_t handle, indy_error_t xerr, const indy_u8_t* arg
 }
 NAN_METHOD(cryptoSign) {
   if(info.Length() != 4){
-    return Nan::ThrowError(Nan::New("Expected 4 arguments: cryptoSign(wallet_handle, my_vk, message_raw, cb(err, signatureRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected 4 arguments: cryptoSign(wallet_handle, signer_vk, message_raw, cb(err, signatureRaw))").ToLocalChecked());
   }
   if(!info[0]->IsNumber()){
-    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: cryptoSign(wallet_handle, my_vk, message_raw, cb(err, signatureRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: cryptoSign(wallet_handle, signer_vk, message_raw, cb(err, signatureRaw))").ToLocalChecked());
   }
   indy_handle_t arg0 = info[0]->Int32Value();
   Nan::Utf8String* arg1UTF = nullptr;
@@ -1026,10 +1017,10 @@ NAN_METHOD(cryptoSign) {
     arg1UTF = new Nan::Utf8String(info[1]);
     arg1 = (const char*)(**arg1UTF);
   } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for my_vk: cryptoSign(wallet_handle, my_vk, message_raw, cb(err, signatureRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for signer_vk: cryptoSign(wallet_handle, signer_vk, message_raw, cb(err, signatureRaw))").ToLocalChecked());
   }
   if(!info[2]->IsUint8Array()){
-    return Nan::ThrowError(Nan::New("Expected Buffer for message_raw: cryptoSign(wallet_handle, my_vk, message_raw, cb(err, signatureRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected Buffer for message_raw: cryptoSign(wallet_handle, signer_vk, message_raw, cb(err, signatureRaw))").ToLocalChecked());
   }
   const indy_u8_t* arg2data = (indy_u8_t*)node::Buffer::Data(info[2]->ToObject());
   indy_u32_t arg2len = node::Buffer::Length(info[2]);
@@ -1049,7 +1040,7 @@ void cryptoVerify_cb(indy_handle_t handle, indy_error_t xerr, indy_bool_t arg0) 
 }
 NAN_METHOD(cryptoVerify) {
   if(info.Length() != 4){
-    return Nan::ThrowError(Nan::New("Expected 4 arguments: cryptoVerify(their_vk, message_raw, signature_raw, cb(err, valid))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected 4 arguments: cryptoVerify(signer_vk, message_raw, signature_raw, cb(err, valid))").ToLocalChecked());
   }
   Nan::Utf8String* arg0UTF = nullptr;
   const char* arg0 = nullptr;
@@ -1057,15 +1048,15 @@ NAN_METHOD(cryptoVerify) {
     arg0UTF = new Nan::Utf8String(info[0]);
     arg0 = (const char*)(**arg0UTF);
   } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for their_vk: cryptoVerify(their_vk, message_raw, signature_raw, cb(err, valid))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for signer_vk: cryptoVerify(signer_vk, message_raw, signature_raw, cb(err, valid))").ToLocalChecked());
   }
   if(!info[1]->IsUint8Array()){
-    return Nan::ThrowError(Nan::New("Expected Buffer for message_raw: cryptoVerify(their_vk, message_raw, signature_raw, cb(err, valid))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected Buffer for message_raw: cryptoVerify(signer_vk, message_raw, signature_raw, cb(err, valid))").ToLocalChecked());
   }
   const indy_u8_t* arg1data = (indy_u8_t*)node::Buffer::Data(info[1]->ToObject());
   indy_u32_t arg1len = node::Buffer::Length(info[1]);
   if(!info[2]->IsUint8Array()){
-    return Nan::ThrowError(Nan::New("Expected Buffer for signature_raw: cryptoVerify(their_vk, message_raw, signature_raw, cb(err, valid))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected Buffer for signature_raw: cryptoVerify(signer_vk, message_raw, signature_raw, cb(err, valid))").ToLocalChecked());
   }
   const indy_u8_t* arg2data = (indy_u8_t*)node::Buffer::Data(info[2]->ToObject());
   indy_u32_t arg2len = node::Buffer::Length(info[2]);
@@ -1085,10 +1076,10 @@ void cryptoAuthCrypt_cb(indy_handle_t handle, indy_error_t xerr, const indy_u8_t
 }
 NAN_METHOD(cryptoAuthCrypt) {
   if(info.Length() != 5){
-    return Nan::ThrowError(Nan::New("Expected 5 arguments: cryptoAuthCrypt(wallet_handle, my_vk, their_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected 5 arguments: cryptoAuthCrypt(wallet_handle, sender_vk, recipient_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
   }
   if(!info[0]->IsNumber()){
-    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: cryptoAuthCrypt(wallet_handle, my_vk, their_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: cryptoAuthCrypt(wallet_handle, sender_vk, recipient_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
   }
   indy_handle_t arg0 = info[0]->Int32Value();
   Nan::Utf8String* arg1UTF = nullptr;
@@ -1097,7 +1088,7 @@ NAN_METHOD(cryptoAuthCrypt) {
     arg1UTF = new Nan::Utf8String(info[1]);
     arg1 = (const char*)(**arg1UTF);
   } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for my_vk: cryptoAuthCrypt(wallet_handle, my_vk, their_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for sender_vk: cryptoAuthCrypt(wallet_handle, sender_vk, recipient_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
   }
   Nan::Utf8String* arg2UTF = nullptr;
   const char* arg2 = nullptr;
@@ -1105,10 +1096,10 @@ NAN_METHOD(cryptoAuthCrypt) {
     arg2UTF = new Nan::Utf8String(info[2]);
     arg2 = (const char*)(**arg2UTF);
   } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for their_vk: cryptoAuthCrypt(wallet_handle, my_vk, their_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for recipient_vk: cryptoAuthCrypt(wallet_handle, sender_vk, recipient_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
   }
   if(!info[3]->IsUint8Array()){
-    return Nan::ThrowError(Nan::New("Expected Buffer for message_raw: cryptoAuthCrypt(wallet_handle, my_vk, their_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected Buffer for message_raw: cryptoAuthCrypt(wallet_handle, sender_vk, recipient_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
   }
   const indy_u8_t* arg3data = (indy_u8_t*)node::Buffer::Data(info[3]->ToObject());
   indy_u32_t arg3len = node::Buffer::Length(info[3]);
@@ -1129,10 +1120,10 @@ void cryptoAuthDecrypt_cb(indy_handle_t handle, indy_error_t xerr, const char* a
 }
 NAN_METHOD(cryptoAuthDecrypt) {
   if(info.Length() != 4){
-    return Nan::ThrowError(Nan::New("Expected 4 arguments: cryptoAuthDecrypt(wallet_handle, my_vk, encrypted_msg_raw, cb(err, [ theirVk, decryptedMsgRaw ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected 4 arguments: cryptoAuthDecrypt(wallet_handle, recipient_vk, encrypted_msg_raw, cb(err, [ senderVk, decryptedMsgRaw ]))").ToLocalChecked());
   }
   if(!info[0]->IsNumber()){
-    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: cryptoAuthDecrypt(wallet_handle, my_vk, encrypted_msg_raw, cb(err, [ theirVk, decryptedMsgRaw ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: cryptoAuthDecrypt(wallet_handle, recipient_vk, encrypted_msg_raw, cb(err, [ senderVk, decryptedMsgRaw ]))").ToLocalChecked());
   }
   indy_handle_t arg0 = info[0]->Int32Value();
   Nan::Utf8String* arg1UTF = nullptr;
@@ -1141,10 +1132,10 @@ NAN_METHOD(cryptoAuthDecrypt) {
     arg1UTF = new Nan::Utf8String(info[1]);
     arg1 = (const char*)(**arg1UTF);
   } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for my_vk: cryptoAuthDecrypt(wallet_handle, my_vk, encrypted_msg_raw, cb(err, [ theirVk, decryptedMsgRaw ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for recipient_vk: cryptoAuthDecrypt(wallet_handle, recipient_vk, encrypted_msg_raw, cb(err, [ senderVk, decryptedMsgRaw ]))").ToLocalChecked());
   }
   if(!info[2]->IsUint8Array()){
-    return Nan::ThrowError(Nan::New("Expected Buffer for encrypted_msg_raw: cryptoAuthDecrypt(wallet_handle, my_vk, encrypted_msg_raw, cb(err, [ theirVk, decryptedMsgRaw ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected Buffer for encrypted_msg_raw: cryptoAuthDecrypt(wallet_handle, recipient_vk, encrypted_msg_raw, cb(err, [ senderVk, decryptedMsgRaw ]))").ToLocalChecked());
   }
   const indy_u8_t* arg2data = (indy_u8_t*)node::Buffer::Data(info[2]->ToObject());
   indy_u32_t arg2len = node::Buffer::Length(info[2]);
@@ -1164,7 +1155,7 @@ void cryptoAnonCrypt_cb(indy_handle_t handle, indy_error_t xerr, const indy_u8_t
 }
 NAN_METHOD(cryptoAnonCrypt) {
   if(info.Length() != 3){
-    return Nan::ThrowError(Nan::New("Expected 3 arguments: cryptoAnonCrypt(their_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected 3 arguments: cryptoAnonCrypt(recipient_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
   }
   Nan::Utf8String* arg0UTF = nullptr;
   const char* arg0 = nullptr;
@@ -1172,10 +1163,10 @@ NAN_METHOD(cryptoAnonCrypt) {
     arg0UTF = new Nan::Utf8String(info[0]);
     arg0 = (const char*)(**arg0UTF);
   } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for their_vk: cryptoAnonCrypt(their_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for recipient_vk: cryptoAnonCrypt(recipient_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
   }
   if(!info[1]->IsUint8Array()){
-    return Nan::ThrowError(Nan::New("Expected Buffer for message_raw: cryptoAnonCrypt(their_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected Buffer for message_raw: cryptoAnonCrypt(recipient_vk, message_raw, cb(err, encryptedMsgRaw))").ToLocalChecked());
   }
   const indy_u8_t* arg1data = (indy_u8_t*)node::Buffer::Data(info[1]->ToObject());
   indy_u32_t arg1len = node::Buffer::Length(info[1]);
@@ -1195,10 +1186,10 @@ void cryptoAnonDecrypt_cb(indy_handle_t handle, indy_error_t xerr, const indy_u8
 }
 NAN_METHOD(cryptoAnonDecrypt) {
   if(info.Length() != 4){
-    return Nan::ThrowError(Nan::New("Expected 4 arguments: cryptoAnonDecrypt(wallet_handle, my_vk, encrypted_msg, cb(err, decryptedMsgRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected 4 arguments: cryptoAnonDecrypt(wallet_handle, recipient_vk, encrypted_msg, cb(err, decryptedMsgRaw))").ToLocalChecked());
   }
   if(!info[0]->IsNumber()){
-    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: cryptoAnonDecrypt(wallet_handle, my_vk, encrypted_msg, cb(err, decryptedMsgRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: cryptoAnonDecrypt(wallet_handle, recipient_vk, encrypted_msg, cb(err, decryptedMsgRaw))").ToLocalChecked());
   }
   indy_handle_t arg0 = info[0]->Int32Value();
   Nan::Utf8String* arg1UTF = nullptr;
@@ -1207,10 +1198,10 @@ NAN_METHOD(cryptoAnonDecrypt) {
     arg1UTF = new Nan::Utf8String(info[1]);
     arg1 = (const char*)(**arg1UTF);
   } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for my_vk: cryptoAnonDecrypt(wallet_handle, my_vk, encrypted_msg, cb(err, decryptedMsgRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for recipient_vk: cryptoAnonDecrypt(wallet_handle, recipient_vk, encrypted_msg, cb(err, decryptedMsgRaw))").ToLocalChecked());
   }
   if(!info[2]->IsUint8Array()){
-    return Nan::ThrowError(Nan::New("Expected Buffer for encrypted_msg: cryptoAnonDecrypt(wallet_handle, my_vk, encrypted_msg, cb(err, decryptedMsgRaw))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected Buffer for encrypted_msg: cryptoAnonDecrypt(wallet_handle, recipient_vk, encrypted_msg, cb(err, decryptedMsgRaw))").ToLocalChecked());
   }
   const indy_u8_t* arg2data = (indy_u8_t*)node::Buffer::Data(info[2]->ToObject());
   indy_u32_t arg2len = node::Buffer::Length(info[2]);
@@ -2320,6 +2311,50 @@ NAN_METHOD(buildPoolConfigRequest) {
   delete arg0UTF;
 }
 
+void buildPoolRestartRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(buildPoolRestartRequest) {
+  if(info.Length() != 4){
+    return Nan::ThrowError(Nan::New("Expected 4 arguments: buildPoolRestartRequest(submitter_did, action, datetime, cb(err, request))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg0UTF = nullptr;
+  const char* arg0 = nullptr;
+  if(info[0]->IsString()){
+    arg0UTF = new Nan::Utf8String(info[0]);
+    arg0 = (const char*)(**arg0UTF);
+  } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: buildPoolRestartRequest(submitter_did, action, datetime, cb(err, request))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for action: buildPoolRestartRequest(submitter_did, action, datetime, cb(err, request))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for datetime: buildPoolRestartRequest(submitter_did, action, datetime, cb(err, request))").ToLocalChecked());
+  }
+  if(!info[3]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("buildPoolRestartRequest arg 3 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[3]).ToLocalChecked());
+  indyCalled(icb, indy_build_pool_restart_request(icb->handle, arg0, arg1, arg2, buildPoolRestartRequest_cb));
+  delete arg0UTF;
+  delete arg1UTF;
+  delete arg2UTF;
+}
+
 void buildPoolUpgradeRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3255,6 +3290,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildNodeRequest", buildNodeRequest);
   Nan::Export(target, "buildGetTxnRequest", buildGetTxnRequest);
   Nan::Export(target, "buildPoolConfigRequest", buildPoolConfigRequest);
+  Nan::Export(target, "buildPoolRestartRequest", buildPoolRestartRequest);
   Nan::Export(target, "buildPoolUpgradeRequest", buildPoolUpgradeRequest);
   Nan::Export(target, "buildRevocRegDefRequest", buildRevocRegDefRequest);
   Nan::Export(target, "buildGetRevocRegDefRequest", buildGetRevocRegDefRequest);
