@@ -168,7 +168,6 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     // Prover store received Credential
     AnoncredsUtils::prover_store_credential(prover_wallet_handle,
                                             CREDENTIAL1_ID,
-                                            &cred_req_json,
                                             &cred_req_metadata_json,
                                             &cred_json,
                                             &cred_def_json,
@@ -505,7 +504,6 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
     // Prover store received Credential
     AnoncredsUtils::prover_store_credential(prover_wallet_handle,
                                             CREDENTIAL1_ID,
-                                            &cred_req_json,
                                             &cred_req_metadata_json,
                                             &cred_json,
                                             &cred_def_json,

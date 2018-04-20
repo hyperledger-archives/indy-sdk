@@ -213,12 +213,11 @@ impl AnoncredsUtils {
         super::results::result_to_string_string(err, receiver)
     }
 
-    pub fn prover_store_credential(wallet_handle: i32, cred_id: &str, cred_req_json: &str, cred_req_metadata_json: &str, cred_json: &str,
+    pub fn prover_store_credential(wallet_handle: i32, cred_id: &str, cred_req_metadata_json: &str, cred_json: &str,
                                    cred_def_json: &str, rev_reg_def_json: Option<&str>) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let cred_id = CString::new(cred_id).unwrap();
-        let cred_req_json = CString::new(cred_req_json).unwrap();
         let cred_req_metadata_json = CString::new(cred_req_metadata_json).unwrap();
         let cred_json = CString::new(cred_json).unwrap();
         let cred_def_json = CString::new(cred_def_json).unwrap();
@@ -227,7 +226,6 @@ impl AnoncredsUtils {
         let err = indy_prover_store_credential(command_handle,
                                                wallet_handle,
                                                cred_id.as_ptr(),
-                                               cred_req_json.as_ptr(),
                                                cred_req_metadata_json.as_ptr(),
                                                cred_json.as_ptr(),
                                                cred_def_json.as_ptr(),
@@ -729,7 +727,6 @@ impl AnoncredsUtils {
                 //11. Prover stores Credential
                 AnoncredsUtils::prover_store_credential(WALLET_HANDLE,
                                                         CREDENTIAL1_ID,
-                                                        &issuer1_gvt_credential_req,
                                                         &issuer1_gvt_credential_req_metadata,
                                                         &issuer1_gvt_cred,
                                                         &issuer1_gvt_credential_def_json,
@@ -753,7 +750,6 @@ impl AnoncredsUtils {
                 //14. Prover stores Credential
                 AnoncredsUtils::prover_store_credential(WALLET_HANDLE,
                                                         CREDENTIAL2_ID,
-                                                        &issuer1_xyz_credential_req,
                                                         &issuer1_xyz_credential_req_metadata,
                                                         &issuer1_xyz_cred,
                                                         &issuer1_xyz_credential_def_json,
@@ -778,7 +774,6 @@ impl AnoncredsUtils {
                 //17. Prover Stores Credential
                 AnoncredsUtils::prover_store_credential(WALLET_HANDLE,
                                                         CREDENTIAL3_ID,
-                                                        &issuer2_gvt_credential_req,
                                                         &issuer2_gvt_credential_req_metadata,
                                                         &issuer2_gvt_cred,
                                                         &issuer2_gvt_credential_def_json,
@@ -889,7 +884,6 @@ impl AnoncredsUtils {
         // Prover stores received Credential
         AnoncredsUtils::prover_store_credential(prover_wallet_handle,
                                                 cred_id,
-                                                &cred_req,
                                                 &cred_req_metadata,
                                                 &cred_json,
                                                 &cred_def_json,
@@ -930,7 +924,6 @@ impl AnoncredsUtils {
         // Prover1 stores Credential
         AnoncredsUtils::prover_store_credential(prover_wallet_handle,
                                                 credential_id,
-                                                &prover1_cred_req_json,
                                                 &prover1_cred_req_metadata_json,
                                                 &prover1_cred_json,
                                                 &cred_def_json,

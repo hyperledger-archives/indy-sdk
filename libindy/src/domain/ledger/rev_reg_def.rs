@@ -26,7 +26,7 @@ impl RevRegDefOperation {
         RevRegDefOperation {
             _type: REVOC_REG_DEF.to_string(),
             id: rev_reg_def.id.to_string(),
-            type_: rev_reg_def.type_.to_str().to_string(),
+            type_: rev_reg_def.revoc_def_type.to_str().to_string(),
             tag: rev_reg_def.tag.to_string(),
             cred_def_id: rev_reg_def.cred_def_id.to_string(),
             value: rev_reg_def.value

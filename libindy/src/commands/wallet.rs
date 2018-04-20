@@ -65,16 +65,16 @@ impl WalletCommandExecutor {
         match command {
             WalletCommand::RegisterWalletType(type_, create, open, close, delete, add_record,
                                               update_record_value, update_record_tags, add_record_tags,
-                                              delete_record_tags, delete_record, get_record, get_record_id,
+                                              delete_record_tags, delete_record, get_record, get_record_id, get_record_type,
                                               get_record_value, get_record_tags, free_record,
-                                              search_records, get_search_total_count, fetch_search_next_record,
+                                              search_records, search_all_records, get_search_total_count, fetch_search_next_record,
                                               free_search, cb) => {
                 info!(target: "wallet_command_executor", "RegisterWalletType command received");
                 cb(self.register_type(&type_, create, open, close, delete, add_record,
                                       update_record_value, update_record_tags, add_record_tags,
                                       delete_record_tags, delete_record, get_record, get_record_id,
-                                      get_record_value, get_record_tags, free_record,
-                                      search_records, get_search_total_count, fetch_search_next_record,
+                                      get_record_type, get_record_value, get_record_tags, free_record,
+                                      search_records, search_all_records, get_search_total_count, fetch_search_next_record,
                                       free_search));
             }
             WalletCommand::Create(pool_name, name, xtype, config, credentials, cb) => {
@@ -117,10 +117,12 @@ impl WalletCommandExecutor {
                      delete_record: WalletDeleteRecord,
                      get_record: WalletGetRecord,
                      get_record_id: WalletGetRecordId,
+                     get_record_type: WalletGetRecordType,
                      get_record_value: WalletGetRecordValue,
                      get_record_tags: WalletGetRecordTags,
                      free_record: WalletFreeRecord,
                      search_records: WalletSearchRecords,
+                     search_all_records: WalletSearchAllRecords,
                      get_search_total_count: WalletGetSearchTotalCount,
                      fetch_search_next_record: WalletFetchSearchNextRecord,
                      free_search: WalletFreeSearch) -> Result<(), IndyError> {
@@ -128,8 +130,8 @@ impl WalletCommandExecutor {
             .wallet_service
             .register_wallet_storage(
                 type_, create, open, close, delete, add_record, update_record_value, update_record_tags,
-                add_record_tags, delete_record_tags, delete_record, get_record, get_record_id,
-                get_record_value, get_record_tags, free_record, search_records, get_search_total_count,
+                add_record_tags, delete_record_tags, delete_record, get_record, get_record_id, get_record_type,
+                get_record_value, get_record_tags, free_record, search_records, search_all_records, get_search_total_count,
                 fetch_search_next_record, free_search)
             .map_err(IndyError::from)
     }

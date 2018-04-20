@@ -318,7 +318,7 @@ impl IssuerCommandExecutor {
             RevocationRegistryDefinition::RevocationRegistryDefinitionV1(
                 RevocationRegistryDefinitionV1 {
                     id: rev_reg_id.clone(),
-                    type_: rev_reg_type,
+                    revoc_def_type: rev_reg_type,
                     tag: tag.to_string(),
                     cred_def_id: cred_def_id.to_string(),
                     value: revoc_reg_def_value
