@@ -231,7 +231,7 @@ Send common delta to ledger to reduce the load.
 
 * `revRegDelta`: Json - revocation registry delta.
 * `otherRevRegDelta`: Json - revocation registry delta for which PrevAccum value  is equal to current accum value of rev\_reg\_delta\_json.
-* __->__ `mergedRevRegDelta`: String - merged\_rev\_reg\_delta: Merged revocation registry delta
+* __->__ `mergedRevRegDelta`: Json - merged\_rev\_reg\_delta: Merged revocation registry delta
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 

@@ -1,6 +1,6 @@
 var IndyError = require('./IndyError')
 
-function wrapIndyCallback (cb, returnsJson) {
+function wrapIndyCallback (cb, mapResponse) {
   var promise
   if (!cb) {
     promise = new Promise(function (resolve, reject) {
@@ -15,8 +15,8 @@ function wrapIndyCallback (cb, returnsJson) {
       cb(new IndyError(err))
       return
     }
-    if (returnsJson) {
-      data = JSON.parse(data || null)
+    if (mapResponse) {
+      data = mapResponse(data)
     }
     cb(null, data)
   }

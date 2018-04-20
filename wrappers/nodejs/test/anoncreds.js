@@ -6,7 +6,6 @@ var initTestPool = require('./helpers/initTestPool')
 var indyHomeDir = require('home-dir')('.indy_client')
 
 test('anoncreds', async function (t) {
-  // 1. Create My Wallet and Get Wallet Handle
   var pool = await initTestPool()
   var wName = 'wallet-' + cuid()
   await indy.createWallet(pool.name, wName, 'default', null, null)
@@ -14,16 +13,16 @@ test('anoncreds', async function (t) {
   var issuerDid = 'NcYxiDXkpYi6ov5FcYDi1e'
   var proverDid = 'VsKV7grR1BUE29mG2Fm2kX'
 
-  // 2. Issuer create credential Definition for Schema
+  // Issuer create a credential schema
   var [schemaId, schema] = await indy.issuerCreateSchema(issuerDid, 'gvt', '1.0', ['age', 'height', 'name'])
-  schema = JSON.parse(schema)
+  t.not(typeof schema, 'string')
 
   var [credDefId, credDef] = await indy.issuerCreateAndStoreCredentialDef(walletH, issuerDid, schema, 'tag1', 'CL', {
     support_revocation: true
   })
-  credDef = JSON.parse(credDef)
+  t.not(typeof credDef, 'string')
 
-  // 3. Issuer create Revocation Registry
+  // Issuer create Revocation Registry
   var tailsWriterConfig = {
     'base_dir': path.join(indyHomeDir, 'tails'),
     'uri_pattern': ''
@@ -32,37 +31,39 @@ test('anoncreds', async function (t) {
   var [revocRegId, revocRegDef, revocRegEntry] = await indy.issuerCreateAndStoreRevocReg(walletH, issuerDid, null, 'tag1', credDefId, {
     max_cred_num: 5
   }, tailsWriterHandle)
-  revocRegDef = JSON.parse(revocRegDef)
-  revocRegEntry = JSON.parse(revocRegEntry)
+  t.not(typeof revocRegDef, 'string')
+  t.not(typeof revocRegEntry, 'string')
 
-  t.is(typeof revocRegEntry, 'object')
-
-  // 4. Prover create Master Secret
+  // Prover create Master Secret
   var masterSecretName = 'master_secret'
   await indy.proverCreateMasterSecret(walletH, masterSecretName)
 
-  // 5. Issuer create credential Offer
+  // Issuer create credential Offer
   var credOffer = await indy.issuerCreateCredentialOffer(walletH, credDefId)
 
-  // 6. Prover create credential Request
-  var [credReqJson, credReqMetadataJson] = await indy.proverCreateCredentialReq(walletH, proverDid, credOffer, credDef, 'master_secret')
+  // Prover create credential Request
+  var [credReq, credReqMetadata] = await indy.proverCreateCredentialReq(walletH, proverDid, credOffer, credDef, 'master_secret')
+  t.not(typeof credReq, 'string')
+  t.not(typeof credReqMetadata, 'string')
 
-  // 7. Issuer open Tails reader
+  // Issuer open Tails reader
   var blobReaderHandle = await indy.openBlobStorageReader('default', tailsWriterConfig)
 
-  // 8. Issuer create credential for credential Request
-  var [credJson, revId, revRegDelta] = await indy.issuerCreateCredential(walletH, credOffer, credReqJson, {
+  // Issuer create credential for credential Request
+  var [cred, revId, revDelta] = await indy.issuerCreateCredential(walletH, credOffer, credReq, {
     name: {'raw': 'Alex', 'encoded': '1139481716457488690172217916278103335'},
     height: {'raw': '175', 'encoded': '175'},
     age: {'raw': '28', 'encoded': '28'}
   }, revocRegId, blobReaderHandle)
-  revRegDelta = JSON.parse(revRegDelta)
+  t.not(typeof cred, 'string')
+  t.truthy(/^true /.test(revDelta.value.prevAccum))
+  t.truthy(/^false /.test(revDelta.value.accum))
 
-  // 9. Prover process and store credential
-  var outCredId = await indy.proverStoreCredential(walletH, 'cred_1_id', credReqMetadataJson, credJson, credDef, revocRegDef)
+  // Prover process and store credential
+  var outCredId = await indy.proverStoreCredential(walletH, 'cred_1_id', credReqMetadata, cred, credDef, revocRegDef)
   t.is(typeof outCredId, 'string')
 
-  // 10. Prover gets credentials for Proof Request
+  // Prover gets credentials for Proof Request
   var proofReq = {
     'nonce': '123432421212',
     'name': 'proof_req_1',
@@ -77,11 +78,25 @@ test('anoncreds', async function (t) {
   }
   var credentialsForProof = await indy.proverGetCredentialsForProofReq(walletH, proofReq)
 
-  // 11. Prover gets credentials for Proof Request
-  var timestamp = 100
-  var revState = await indy.createRevocationState(blobReaderHandle, revocRegDef, revRegDelta, timestamp, revId)
+  var credentials = await indy.proverGetCredentials(walletH)
+  t.truthy(Array.isArray(credentials))
+  t.truthy(credentials.length > 0)
 
-  // 12. Prover create Proof for Proof Request
+  credentials = await indy.proverGetCredentials(walletH, {schema_id: schemaId})
+  t.truthy(Array.isArray(credentials))
+  t.truthy(credentials.length > 0)
+  t.is(credentials[0].schema_id, schemaId)
+
+  // Prover gets credentials for Proof Request
+  var timestamp = 100
+  var revState = await indy.createRevocationState(blobReaderHandle, revocRegDef, revDelta, timestamp, revId)
+  t.is(revState.timestamp, 100)
+
+  timestamp = 101
+  revState = await indy.updateRevocationState(blobReaderHandle, revState, revocRegDef, revDelta, timestamp, revId)
+  t.is(revState.timestamp, 101)
+
+  // Prover create Proof for Proof Request
   var referent = credentialsForProof['attrs']['attr1_referent'][0]['cred_info']['referent']
   var requestedCredentials = {
     'self_attested_attributes': {},
@@ -101,7 +116,7 @@ test('anoncreds', async function (t) {
 
   var proof = await indy.proverCreateProof(walletH, proofReq, requestedCredentials, masterSecretName, schemas, credentialDefs, revocStates)
 
-  // 13. Verifier verify proof
+  // Verify the proof
   t.is(proof['requested_proof']['revealed_attrs']['attr1_referent']['raw'], 'Alex')
 
   var revocRefDefs = {}
@@ -109,10 +124,19 @@ test('anoncreds', async function (t) {
 
   var revocRegs = {}
   revocRegs[revocRegId] = {}
-  revocRegs[revocRegId][timestamp] = revRegDelta
+  revocRegs[revocRegId][timestamp] = revDelta
 
   var isValid = await indy.verifierVerifyProof(proofReq, proof, schemas, credentialDefs, revocRefDefs, revocRegs)
   t.is(isValid, true)
+
+  // Revoke the credential
+  var revocedDelta = await indy.issuerRevokeCredential(walletH, blobReaderHandle, revocRegId, revId)
+  t.truthy(/^false /.test(revocedDelta.value.prevAccum))
+  t.truthy(/^true /.test(revocedDelta.value.accum))
+
+  var mergedDelta = await indy.issuerMergeRevocationRegistryDeltas(revDelta, revocedDelta)
+  t.truthy(/^true /.test(mergedDelta.value.prevAccum))
+  t.truthy(/^true /.test(mergedDelta.value.accum))
 
   await indy.closeWallet(walletH)
   await indy.deleteWallet(wName, null)

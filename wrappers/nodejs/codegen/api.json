@@ -184,7 +184,7 @@
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "merged_rev_reg_delta", "type": "const char*"}
+            {"name": "merged_rev_reg_delta", "type": "const char*", "json": true}
           ]
         }
       ],

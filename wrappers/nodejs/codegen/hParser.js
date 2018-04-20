@@ -225,6 +225,8 @@ api.functions.indy_issuer_create_schema.params[4].json = true
 api.functions.indy_create_pool_ledger_config.params[2].json = true
 api.functions.indy_list_pools.params[1].params[2].json = true
 api.functions.indy_list_wallets.params[1].params[2].json = true
+api.functions.indy_issuer_merge_revocation_registry_deltas.params[3].params[2].json = true
+
 api.functions.indy_build_get_revoc_reg_delta_request.params[3].timestamp = true
 api.functions.indy_build_get_revoc_reg_delta_request.params[4].timestamp = true
 
