@@ -17,12 +17,25 @@ use self::libc::c_char;
 /// type_: Wallet type name.
 /// create: WalletType create operation handler
 /// open: WalletType open operation handler
-/// set: Wallet set operation handler
-/// get: Wallet get operation handler
-/// get_not_expired: Wallet get_not_expired operation handler
-/// list: Wallet list operation handler(must to return data in the following format: {"values":[{"key":"", "value":""}, {"key":"", "value":""}]}
 /// close: Wallet close operation handler
 /// delete: WalletType delete operation handler
+/// add_record: WalletType add record operation handler
+/// update_record_value: WalletType update record value operation handler
+/// update_record_tags: WalletType update record tags operation handler
+/// add_record_tags: WalletType add record tags operation handler
+/// delete_record_tags: WalletType delete record tags operation handler
+/// delete_record: WalletType delete record operation handler
+/// get_record: WalletType get record operation handler
+/// get_record_id: WalletType get record id operation handler
+/// get_record_type: WalletType get record type operation handler
+/// get_record_value: WalletType get record value operation handler
+/// get_record_tags: WalletType get record tags operation handler
+/// free_record: WalletType free record operation handler
+/// search_records: WalletType search records operation handler
+/// search_all_records: WalletType search all records operation handler
+/// get_search_total_count: WalletType get search total count operation handler
+/// fetch_search_next_record: WalletType fetch search next record operation handler
+/// free_search: WalletType free search operation handler
 /// free: Handler that allows to de-allocate strings allocated in caller code
 ///
 /// #Returns
@@ -42,10 +55,12 @@ pub extern fn indy_register_wallet_type(command_handle: i32,
                                         delete_record: Option<WalletDeleteRecord>,
                                         get_record: Option<WalletGetRecord>,
                                         get_record_id: Option<WalletGetRecordId>,
+                                        get_record_type: Option<WalletGetRecordType>,
                                         get_record_value: Option<WalletGetRecordValue>,
                                         get_record_tags: Option<WalletGetRecordTags>,
                                         free_record: Option<WalletFreeRecord>,
                                         search_records: Option<WalletSearchRecords>,
+                                        search_all_records: Option<WalletSearchAllRecords>,
                                         get_search_total_count: Option<WalletGetSearchTotalCount>,
                                         fetch_search_next_record: Option<WalletFetchSearchNextRecord>,
                                         free_search: Option<WalletFreeSearch>,
@@ -64,10 +79,12 @@ pub extern fn indy_register_wallet_type(command_handle: i32,
     check_useful_c_callback!(delete_record, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(get_record, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(get_record_id, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(get_record_type, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(get_record_value, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(get_record_tags, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(free_record, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(search_records, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(search_all_records, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(get_search_total_count, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(fetch_search_next_record, ErrorCode::CommonInvalidParam11); // TODO: CommonInvalidParam.......
     check_useful_c_callback!(free_search, ErrorCode::CommonInvalidParam11); // TODO: CommonInvalidParam.......
@@ -89,10 +106,12 @@ pub extern fn indy_register_wallet_type(command_handle: i32,
                 delete_record,
                 get_record,
                 get_record_id,
+                get_record_type,
                 get_record_value,
                 get_record_tags,
                 free_record,
                 search_records,
+                search_all_records,
                 get_search_total_count,
                 fetch_search_next_record,
                 free_search,
@@ -356,7 +375,7 @@ pub type WalletUpdateRecordValue = extern fn(storage_handle: i32,
                                              type_: *const c_char,
                                              id: *const c_char,
                                              value: *const u8,
-                                             value_len: usize,) -> ErrorCode;
+                                             value_len: usize, ) -> ErrorCode;
 
 /// Update a record tags
 ///
@@ -450,6 +469,19 @@ pub type WalletGetRecordId = extern fn(storage_handle: i32,
                                        record_handle: u32,
                                        record_id_p: *mut *const c_char) -> ErrorCode;
 
+/// Get an type for retrieved wallet storage record
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// record_handle: retrieved record handle (See get_record handler)
+///
+/// returns: record type
+///          Note that pointer lifetime the same as retrieved record lifetime
+///            (until record_free called)
+pub type WalletGetRecordType = extern fn(storage_handle: i32,
+                                         record_handle: u32,
+                                         record_type_p: *mut *const c_char) -> ErrorCode;
+
 /// Get an value for retrieved wallet storage record
 ///
 /// #Params
@@ -513,6 +545,14 @@ pub type WalletSearchRecords = extern fn(storage_handle: i32,
                                          query_json: *const c_char,
                                          options_json: *const c_char,
                                          search_handle_p: *mut u32) -> ErrorCode;
+
+/// Search for all wallet storage records
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// search_handle_p: pointer to store wallet search handle
+pub type WalletSearchAllRecords = extern fn(storage_handle: i32,
+                                            search_handle_p: *mut u32) -> ErrorCode;
 
 /// Get total count of records that corresponds to wallet storage search query
 ///

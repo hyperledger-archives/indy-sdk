@@ -42,10 +42,12 @@ struct PluggedWallet {
     delete_record_handler: WalletDeleteRecord,
     get_record_handler: WalletGetRecord,
     get_record_id_handler: WalletGetRecordId,
+    get_record_type_handler: WalletGetRecordType,
     get_record_value_handler: WalletGetRecordValue,
     get_record_tags_handler: WalletGetRecordTags,
     free_record_handler: WalletFreeRecord,
     search_records_handler: WalletSearchRecords,
+    search_all_records_handler: WalletSearchAllRecords,
     get_search_total_count_handler: WalletGetSearchTotalCount,
     fetch_search_next_record_handler: WalletFetchSearchNextRecord,
     free_search_handler: WalletFreeSearch,
@@ -64,10 +66,12 @@ impl PluggedWallet {
            delete_record_handler: WalletDeleteRecord,
            get_record_handler: WalletGetRecord,
            get_record_id_handler: WalletGetRecordId,
+           get_record_type_handler: WalletGetRecordType,
            get_record_value_handler: WalletGetRecordValue,
            get_record_tags_handler: WalletGetRecordTags,
            free_record_handler: WalletFreeRecord,
            search_records_handler: WalletSearchRecords,
+           search_all_records_handler: WalletSearchAllRecords,
            get_search_total_count_handler: WalletGetSearchTotalCount,
            fetch_search_next_record_handler: WalletFetchSearchNextRecord,
            free_search_handler: WalletFreeSearch,
@@ -84,9 +88,11 @@ impl PluggedWallet {
             delete_record_handler,
             get_record_handler,
             get_record_id_handler,
+            get_record_type_handler,
             get_record_value_handler,
             close_handler,
             search_records_handler,
+            search_all_records_handler,
             get_search_total_count_handler,
             free_record_handler,
             free_search_handler,
@@ -241,6 +247,17 @@ impl WalletStorage for PluggedWallet {
 
         let id = unsafe { CStr::from_ptr(id_ptr).to_str()?.to_string() };
 
+        let mut type_ptr: *const c_char = ptr::null_mut();
+        let err = (self.get_record_type_handler)(self.handle,
+                                                 record_handle_p,
+                                                 &mut type_ptr);
+
+        if err != ErrorCode::Success {
+            return Err(WalletError::PluggedWallerError(err));
+        }
+
+        let type_ = unsafe { CStr::from_ptr(type_ptr).to_str()?.to_string() };
+
         let mut value_bytes: *const u8 = ptr::null();
         let mut value_bytes_len: usize = 0;
         let err = (self.get_record_value_handler)(self.handle,
@@ -268,9 +285,9 @@ impl WalletStorage for PluggedWallet {
 
         let tags = unsafe { CStr::from_ptr(tags_ptr).to_str()?.to_string() };
 
-
         let result = WalletRecord {
             id,
+            type_,
             value,
             tags
         };
@@ -302,8 +319,33 @@ impl WalletStorage for PluggedWallet {
 
         let records: Vec<WalletRecord> = Vec::new();
         let result = WalletSearch {
-            total_count: 0,
-            iter: Box::new(records.into_iter()),
+            total_count: Some(0),
+            iter: Some(Box::new(records.into_iter())),
+        };
+
+        let err = (self.free_search_handler)(self.handle, search_handle_p);
+
+        if err != ErrorCode::Success {
+            return Err(WalletError::PluggedWallerError(err));
+        }
+
+        Ok(result)
+    }
+
+    fn search_all_records(&self) -> Result<WalletSearch, WalletError> {
+        let mut search_handle_p: u32 = 0;
+
+        let err = (self.search_all_records_handler)(self.handle,
+                                                    &mut search_handle_p);
+
+        if err != ErrorCode::Success {
+            return Err(WalletError::PluggedWallerError(err));
+        }
+
+        let records: Vec<WalletRecord> = Vec::new();
+        let result = WalletSearch {
+            total_count: Some(0),
+            iter: Some(Box::new(records.into_iter())),
         };
 
         let err = (self.free_search_handler)(self.handle, search_handle_p);
@@ -339,10 +381,12 @@ pub struct PluggedWalletType {
     delete_record_handler: WalletDeleteRecord,
     get_record_handler: WalletGetRecord,
     get_record_id_handler: WalletGetRecordId,
+    get_record_type_handler: WalletGetRecordType,
     get_record_value_handler: WalletGetRecordValue,
     get_record_tags_handler: WalletGetRecordTags,
     free_record_handler: WalletFreeRecord,
     search_records_handler: WalletSearchRecords,
+    search_all_records_handler: WalletSearchAllRecords,
     get_search_total_count_handler: WalletGetSearchTotalCount,
     fetch_search_next_record_handler: WalletFetchSearchNextRecord,
     free_search_handler: WalletFreeSearch
@@ -361,10 +405,12 @@ impl PluggedWalletType {
                delete_record_handler: WalletDeleteRecord,
                get_record_handler: WalletGetRecord,
                get_record_id_handler: WalletGetRecordId,
+               get_record_type_handler: WalletGetRecordType,
                get_record_value_handler: WalletGetRecordValue,
                get_record_tags_handler: WalletGetRecordTags,
                free_record_handler: WalletFreeRecord,
                search_records_handler: WalletSearchRecords,
+               search_all_records_handler: WalletSearchAllRecords,
                get_search_total_count_handler: WalletGetSearchTotalCount,
                fetch_search_next_record_handler: WalletFetchSearchNextRecord,
                free_search_handler: WalletFreeSearch) -> PluggedWalletType {
@@ -381,10 +427,12 @@ impl PluggedWalletType {
             delete_record_handler,
             get_record_handler,
             get_record_id_handler,
+            get_record_type_handler,
             get_record_value_handler,
             get_record_tags_handler,
             free_record_handler,
             search_records_handler,
+            search_all_records_handler,
             get_search_total_count_handler,
             fetch_search_next_record_handler,
             free_search_handler,
@@ -483,10 +531,12 @@ impl WalletStorageType for PluggedWalletType {
                 self.delete_record_handler,
                 self.get_record_handler,
                 self.get_record_id_handler,
+                self.get_record_type_handler,
                 self.get_record_value_handler,
                 self.get_record_tags_handler,
                 self.free_record_handler,
                 self.search_records_handler,
+                self.search_all_records_handler,
                 self.get_search_total_count_handler,
                 self.fetch_search_next_record_handler,
                 self.free_search_handler,

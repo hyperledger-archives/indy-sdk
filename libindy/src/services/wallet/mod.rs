@@ -32,6 +32,7 @@ pub trait WalletStorage {
     fn delete_record(&self, type_: &str, id: &str) -> Result<(), WalletError>;
     fn get_record(&self, type_: &str, id: &str, options_json: &str) -> Result<WalletRecord, WalletError>;
     fn search_records(&self, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError>;
+    fn search_all_records(&self) -> Result<WalletSearch, WalletError>;
     fn close(&self) -> Result<(), WalletError>;
     fn get_pool_name(&self) -> String;
     fn get_name(&self) -> String;
@@ -94,10 +95,12 @@ impl WalletService {
                                    delete_record: WalletDeleteRecord,
                                    get_record: WalletGetRecord,
                                    get_record_id: WalletGetRecordId,
+                                   get_record_type: WalletGetRecordType,
                                    get_record_value: WalletGetRecordValue,
                                    get_record_tags: WalletGetRecordTags,
                                    free_record: WalletFreeRecord,
                                    search_records: WalletSearchRecords,
+                                   search_all_records: WalletSearchAllRecords,
                                    get_search_total_count: WalletGetSearchTotalCount,
                                    fetch_search_next_record: WalletFetchSearchNextRecord,
                                    free_search: WalletFreeSearch) -> Result<(), WalletError> {
@@ -112,9 +115,11 @@ impl WalletService {
                                 PluggedWalletType::new(create, open, close, delete,
                                                        add_record, update_record_value,
                                                        update_record_tags, add_record_tags, delete_record_tags,
-                                                       delete_record, get_record, get_record_id, get_record_value,
-                                                       get_record_tags, free_record, search_records,
-                                                       get_search_total_count, fetch_search_next_record, free_search)));
+                                                       delete_record, get_record, get_record_id,
+                                                       get_record_type, get_record_value, get_record_tags,
+                                                       free_record, search_records, search_all_records,
+                                                       get_search_total_count,
+                                                       fetch_search_next_record, free_search)));
         Ok(())
     }
 
@@ -360,6 +365,13 @@ impl WalletService {
         }
     }
 
+    pub fn search_all_records(&self, storage_handle: i32) -> Result<WalletSearch, WalletError> {
+        match self.wallets.borrow().get(&storage_handle) {
+            Some(wallet) => wallet.search_all_records(),
+            None => Err(WalletError::InvalidHandle(storage_handle.to_string()))
+        }
+    }
+
     pub fn get_pool_name(&self, handle: i32) -> Result<String, WalletError> {
         match self.wallets.borrow().get(&handle) {
             Some(wallet) => Ok(wallet.get_pool_name()),
@@ -368,17 +380,24 @@ impl WalletService {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct WalletRecord {
     pub id: String,
+    pub type_: String,
     pub value: String,
     pub tags: String
 }
+
+impl JsonEncodable for WalletRecord {}
+
+impl<'a> JsonDecodable<'a> for WalletRecord {}
 
 impl WalletRecord {
     pub fn get_id(&self) -> Result<&str, WalletError> {
         Ok(self.id.as_str())
     }
+
+    pub fn get_type(&self) -> Result<&str, WalletError> { Ok(self.type_.as_str()) }
 
     pub fn get_value(&self) -> Result<&str, WalletError> {
         Ok(self.value.as_str())
@@ -400,17 +419,17 @@ impl WalletRecordRetrieveOptions {
 
 pub struct WalletSearch {
     // TODO
-    total_count: usize,
-    iter: Box<Iterator<Item=WalletRecord>>,
+    total_count: Option<usize>,
+    iter: Option<Box<Iterator<Item=WalletRecord>>>,
 }
 
 impl WalletSearch {
     pub fn get_total_count(&self) -> Result<Option<usize>, WalletError> {
-        Ok(Some(self.total_count))
+        Ok(self.total_count)
     }
 
     pub fn fetch_next_record(&mut self) -> Result<Option<WalletRecord>, WalletError> {
-        Ok(self.iter.next())
+        Ok(self.iter.as_mut().and_then(|i| i.next()))
     }
 }
 

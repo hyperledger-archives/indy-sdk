@@ -22,10 +22,12 @@ pub enum WalletCommand {
                        WalletDeleteRecord, // delete record
                        WalletGetRecord, // get record
                        WalletGetRecordId, // get record id
+                       WalletGetRecordType, // get record id
                        WalletGetRecordValue, // get record value
                        WalletGetRecordTags, // get record tags
                        WalletFreeRecord, // free record
                        WalletSearchRecords, // search records
+                       WalletSearchAllRecords, // search all records
                        WalletGetSearchTotalCount, // get search total count
                        WalletFetchSearchNextRecord, // fetch search next record
                        WalletFreeSearch, // free search

@@ -1,6 +1,7 @@
 extern crate rusqlcipher;
 extern crate time;
 extern crate indy_crypto;
+extern crate serde_json;
 
 use super::{WalletStorage, WalletStorageType, WalletRecord, WalletSearch};
 
@@ -45,11 +46,6 @@ impl Default for DefaultWalletCredentials {
     }
 }
 
-const TABLES: &'static [&str; 19] =
-    &["CredentialDefinition", "CredentialPrivateKey", "CredentialPrivateKey", "CredentialKeyCorrectnessProof", "SchemaId",
-        "RevocationRegistryDefinition", "RevocationRegistry", "RevocationKeyPrivate", "RevocationRegistryInfo", "MasterSecret", "Credential",
-        "Key", "KeyMetadata", "Did", "TheirDid", "MyTemporaryDid", "Endpoint", "DidMetadata", "Pairwise"];
-
 struct DefaultWalletRecord {
     key: String,
     value: String,
@@ -85,8 +81,8 @@ impl WalletStorage for DefaultWallet {
 
         _open_connection(self.name.as_str(), &self.credentials)?
             .execute(
-                &format!("INSERT INTO {} (id, value, tags) VALUES (?1, ?2, ?3)", type_),
-                &[&id.to_string(), &value.to_string(), &tags_json.to_string()])?;
+                "INSERT INTO wallet (id, type, value, tags) VALUES (?1, ?2, ?3, ?4)",
+                &[&id.to_string(), &type_.to_string(), &value.to_string(), &tags_json.to_string()])?;
 
         Ok(())
     }
@@ -104,16 +100,16 @@ impl WalletStorage for DefaultWallet {
     fn update_record_value(&self, type_: &str, id: &str, value: &str) -> Result<(), WalletError> {
         _open_connection(self.name.as_str(), &self.credentials)?
             .execute(
-                &format!("UPDATE {} SET value = ?1 WHERE id = ?2", type_),
-                &[&value.to_string(), &id.to_string()])?;
+                "UPDATE wallet SET value = ?1 WHERE id = ?2 AND type = ?3",
+                &[&value.to_string(), &id.to_string(), &type_.to_string()])?;
         Ok(())
     }
 
     fn update_record_tags(&self, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletError> {
         _open_connection(self.name.as_str(), &self.credentials)?
             .execute(
-                &format!("UPDATE {} SET tags = ?1 WHERE id = ?2", type_),
-                &[&tags_json.to_string(), &id.to_string()])?;
+                "UPDATE wallet SET tags = ?1 WHERE id = ?2 AND type = ?3",
+                &[&tags_json.to_string(), &id.to_string(), &type_.to_string()])?;
         Ok(())
     }
 
@@ -124,28 +120,29 @@ impl WalletStorage for DefaultWallet {
     fn delete_record_tags(&self, type_: &str, id: &str, tag_names_json: &str) -> Result<(), WalletError> {
         _open_connection(self.name.as_str(), &self.credentials)?
             .execute(
-                &format!("UPDATE {} SET tags = null WHERE id = ?1", type_),
-                &[&id.to_string()])?;
+                "UPDATE wallet SET tags = null WHERE id = ?1 AND type = ?2",
+                &[&id.to_string(), &type_.to_string()])?;
         Ok(())
     }
 
     fn delete_record(&self, type_: &str, id: &str) -> Result<(), WalletError> {
         _open_connection(self.name.as_str(), &self.credentials)?
             .execute(
-                &format!("DELETE FROM {} WHERE id = ?1", type_),
-                &[&id.to_string()])?;
+                "DELETE FROM wallet WHERE id = ?1 AND type = ?2",
+                &[&id.to_string(), &type_.to_string()])?;
         Ok(())
     }
 
     fn get_record(&self, type_: &str, id: &str, options_json: &str) -> Result<WalletRecord, WalletError> {
         let record = _open_connection(self.name.as_str(), &self.credentials)?
             .query_row(
-                &format!("SELECT id, value, tags FROM {} WHERE id = ?1 LIMIT 1", type_),
-                &[&id.to_string()], |row| {
+                "SELECT id, type, value, tags FROM wallet WHERE id = ?1 AND type = ?2 LIMIT 1",
+                &[&id.to_string(), &type_.to_string()], |row| {
                     WalletRecord {
                         id: row.get(0),
-                        value: row.get(1),
-                        tags: row.get(2)
+                        type_: row.get(1),
+                        value: row.get(2),
+                        tags: row.get(3)
                     }
                 })?;
         Ok(record)
@@ -153,12 +150,13 @@ impl WalletStorage for DefaultWallet {
 
     fn search_records(&self, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> {
         let connection = _open_connection(self.name.as_str(), &self.credentials)?;
-        let mut stmt = connection.prepare(&format!("SELECT id, value, tags FROM {}", type_))?;
-        let records = stmt.query_map(&[], |row| {
+        let mut stmt = connection.prepare("SELECT id, type, value, tags FROM wallet WHERE type = ?1")?;
+        let records = stmt.query_map(&[&type_.to_string()], |row| {
             WalletRecord {
                 id: row.get(0),
-                value: row.get(1),
-                tags: row.get(2)
+                type_: row.get(1),
+                value: row.get(2),
+                tags: row.get(3)
             }
         })?;
 
@@ -169,8 +167,35 @@ impl WalletStorage for DefaultWallet {
         }
 
         let wallet_search = WalletSearch {
-            total_count: wallet_records.len(),
-            iter: Box::new(wallet_records.into_iter()),
+            total_count: Some(wallet_records.len()),
+            iter: Some(Box::new(wallet_records.into_iter()))
+        };
+
+        Ok(wallet_search)
+    }
+
+    fn search_all_records(&self) -> Result<WalletSearch, WalletError> {
+
+        let connection = _open_connection(self.name.as_str(), &self.credentials)?;
+        let mut stmt = connection.prepare("SELECT id, type, value, tags FROM wallet")?;
+        let records = stmt.query_map(&[], |row| {
+            WalletRecord {
+                id: row.get(0),
+                type_: row.get(1),
+                value: row.get(2),
+                tags: row.get(3)
+            }
+        })?;
+
+        let mut wallet_records: Vec<WalletRecord> = Vec::new();
+
+        for record in records {
+            wallet_records.push(record?);
+        }
+
+        let wallet_search = WalletSearch {
+            total_count: Some(wallet_records.len()),
+            iter: Some(Box::new(wallet_records.into_iter()))
         };
 
         Ok(wallet_search)
@@ -203,11 +228,9 @@ impl WalletStorageType for DefaultWalletType {
             return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
         }
 
-        for table in TABLES {
-            _open_connection(name, &DefaultWalletCredentials::default()).map_err(map_err_trace!())?
-                .execute(&format!("CREATE TABLE IF NOT EXISTS {} (id TEXT CONSTRAINT constraint_name PRIMARY KEY, value TEXT NOT NULL, tags TEXT)", table), &[])
-                .map_err(map_err_trace!())?;
-        }
+        _open_connection(name, &DefaultWalletCredentials::default()).map_err(map_err_trace!())?
+            .execute("CREATE TABLE IF NOT EXISTS wallet (id TEXT NOT NULL, type TEXT NOT NULL, value TEXT NOT NULL, tags TEXT, PRIMARY KEY (id, type))", &[])
+            .map_err(map_err_trace!())?;
 
         trace!("DefaultWalletType.create <<");
         Ok(())
