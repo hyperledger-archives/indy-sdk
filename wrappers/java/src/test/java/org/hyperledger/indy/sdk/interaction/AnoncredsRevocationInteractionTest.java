@@ -177,7 +177,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 		String revocRegDefJson = revRegInfo1.getObjectJson();
 
 		// Prover store received Credential
-		Anoncreds.proverStoreCredential(proverWallet, "credential1_id", credReqJson,
+		Anoncreds.proverStoreCredential(proverWallet, "credential1_id",
 				credReqMetadataJson, credJson, credDefJson, revocRegDefJson).get();
 
 		// Verifying Prover Credential
@@ -517,7 +517,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Prover store received Credential
 
-		Anoncreds.proverStoreCredential(proverWallet, "credential1_id", credReqJson,
+		Anoncreds.proverStoreCredential(proverWallet, "credential1_id",
 				credReqMetadataJson, credJson, credDefJson,
 				revocRegDefJson).get();
 

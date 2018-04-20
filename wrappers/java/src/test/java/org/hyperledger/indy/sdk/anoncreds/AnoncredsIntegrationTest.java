@@ -132,7 +132,7 @@ public class AnoncredsIntegrationTest {
 				Anoncreds.issuerCreateCredential(wallet, issuer1GvtCredOffer, issuer1GvtCredReq, gvtCredentialValuesJson, null, - 1).get();
 		issuer1GvtCredential = createCredResult.getCredentialJson();
 
-		Anoncreds.proverStoreCredential(wallet, credentialId1, issuer1GvtCredReq, issuer1GvtCredReqMetadata, issuer1GvtCredential, issuer1gvtCredDef, null).get();
+		Anoncreds.proverStoreCredential(wallet, credentialId1, issuer1GvtCredReqMetadata, issuer1GvtCredential, issuer1gvtCredDef, null).get();
 
 		createCredReqResult = Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer1XyzCredOffer, issuer1xyzCredDef, masterSecretId).get();
 		String issuer1XyzCredReq = createCredReqResult.getCredentialRequestJson();
@@ -141,7 +141,7 @@ public class AnoncredsIntegrationTest {
 		createCredResult = Anoncreds.issuerCreateCredential(wallet, issuer1XyzCredOffer, issuer1XyzCredReq, xyzCredentialValuesJson, null, - 1).get();
 		String issuer1XyzCredential = createCredResult.getCredentialJson();
 
-		Anoncreds.proverStoreCredential(wallet, credentialId2, issuer1XyzCredReq, issuer1XyzCredReqMetadata, issuer1XyzCredential, issuer1xyzCredDef, null).get();
+		Anoncreds.proverStoreCredential(wallet, credentialId2, issuer1XyzCredReqMetadata, issuer1XyzCredential, issuer1xyzCredDef, null).get();
 
 		createCredReqResult = Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer2GvtCredOffer, issuer2gvtCredDef, masterSecretId).get();
 		String issuer2GvtCredReq = createCredReqResult.getCredentialRequestJson();
@@ -158,7 +158,7 @@ public class AnoncredsIntegrationTest {
 		String issuer2GvtCredential = createCredResult.getCredentialJson();
 
 		String credentialId3 = "id3";
-		Anoncreds.proverStoreCredential(wallet, credentialId3, issuer2GvtCredReq, issuer2GvtCredReqMetadata, issuer2GvtCredential, issuer2gvtCredDef, null).get();
+		Anoncreds.proverStoreCredential(wallet, credentialId3, issuer2GvtCredReqMetadata, issuer2GvtCredential, issuer2gvtCredDef, null).get();
 
 		walletOpened = true;
 	}
