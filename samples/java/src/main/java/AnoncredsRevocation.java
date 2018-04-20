@@ -94,7 +94,7 @@ class AnoncredsRevocation {
 		String credRevId = createCredentialResult.getRevocId();
 
 		//12. Prover Stores Credential
-		Anoncreds.proverStoreCredential(proverWallet, null, credReqJson, credReqMetadataJson, credentialJson, credDefJson, revRegDefJson).get();
+		Anoncreds.proverStoreCredential(proverWallet, null, credReqMetadataJson, credentialJson, credDefJson, revRegDefJson).get();
 
 		//13. Prover Gets Credentials for Proof Request
 		String proofRequestJson = new JSONObject("{\n" +

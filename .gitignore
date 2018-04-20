@@ -8,3 +8,5 @@ build
 .DS_Store
 Podfile.lock
 
+
+/wrappers/python/venv/

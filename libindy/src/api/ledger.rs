@@ -753,6 +753,46 @@ pub extern fn indy_build_pool_config_request(command_handle: i32,
     result_to_err_code!(result)
 }
 
+/// Builds a POOL_RESTART request.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: Id of Identity stored in secured Wallet.
+/// action:
+/// datetime:
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_pool_restart_request(command_handle: i32,
+                                              submitter_did: *const c_char,
+                                              action: *const c_char,
+                                              datetime: *const c_char,
+                                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                  request_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(action, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(datetime, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildPoolRestartRequest(submitter_did,
+                                                                     action,
+                                                                     datetime,
+                                                                     Box::new(move |result| {
+                                                                         let (err, request_json) = result_to_err_code_1!(result, String::new());
+                                                                         let request_json = CStringUtils::string_to_cstring(request_json);
+                                                                         cb(command_handle, err, request_json.as_ptr())
+                                                                     }))));
+
+    result_to_err_code!(result)
+}
+
+
 /// Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
 /// It upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).
 ///

@@ -75,7 +75,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		String credential = createCredentialResult.getCredentialJson();
 
 		//  Prover stores Credential
-		Anoncreds.proverStoreCredential(wallet, "id1", credentialRequest, credentialRequestMetadata, credential, credentialDef, null).get();
+		Anoncreds.proverStoreCredential(wallet, "id1", credentialRequestMetadata, credential, credentialDef, null).get();
 
 		//  Prover gets Credential
 		String credentials = Anoncreds.proverGetCredentials(wallet, String.format("{\"issuer_did\":\"%s\"}", DID)).get();

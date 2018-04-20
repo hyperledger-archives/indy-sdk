@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 async def demo():
-    logger.info("Anoncreds sample -> started")
+    logger.info("Anoncreds Revocation sample -> started")
 
     pool_name = 'pool1'
     issuer_wallet_name = 'issuer_wallet'
@@ -82,7 +82,7 @@ async def demo():
                                                  cred_values_json, rev_reg_id, blob_storage_reader_handle)
 
     # 11. Prover store Credential
-    await anoncreds.prover_store_credential(prover_wallet, None, cred_req_json, cred_req_metadata_json,
+    await anoncreds.prover_store_credential(prover_wallet, None, cred_req_metadata_json,
                                             cred_json, cred_def_json, rev_reg_def_json)
 
     # 11. Prover gets Credentials for Proof Request
@@ -148,7 +148,7 @@ async def demo():
     await wallet.close_wallet(prover_wallet)
     await wallet.delete_wallet(prover_wallet_name, None)
 
-    logger.info("Anoncreds sample -> completed")
+    logger.info("Anoncreds Revocation sample -> completed")
 
 
 if __name__ == '__main__':

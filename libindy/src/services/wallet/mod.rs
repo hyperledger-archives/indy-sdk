@@ -320,24 +320,6 @@ impl WalletService {
                 IndyError::CommonError(CommonError::InvalidState(format!("Cannot deserialize {:?}: {:?}", _type, err))))
     }
 
-    pub fn get_opt_object<'a, T>(&self, handle: i32, key: &str, _type: &str, json: &'a mut String) -> Result<Option<T>, IndyError> where T: JsonDecodable<'a> {
-        let row = match self.wallets.borrow().get(&handle) {
-            Some(wallet) => wallet.get(key),
-            None => return Err(IndyError::WalletError(WalletError::InvalidHandle(handle.to_string())))
-        };
-
-        *json = match row {
-            Ok(row) => row,
-            Err(WalletError::NotFound(_)) => return Ok(None),
-            Err(err) => return Err(IndyError::WalletError(err))
-        };
-
-        T::from_json(json)
-            .map(|obj| Some(obj))
-            .map_err(|err|
-                IndyError::CommonError(CommonError::InvalidState(format!("Cannot deserialize {:?}: {:?}", _type, err))))
-    }
-
     pub fn list(&self, handle: i32, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError> {
         match self.wallets.borrow().get(&handle) {
             Some(wallet) => wallet.list(key_prefix),
