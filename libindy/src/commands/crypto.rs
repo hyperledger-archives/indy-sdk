@@ -3,7 +3,8 @@ extern crate indy_crypto;
 use self::indy_crypto::utils::json::JsonDecodable;
 use errors::common::CommonError;
 use errors::indy::IndyError;
-use services::crypto::types::{KeyInfo, Key, ComboBox};
+use domain::crypto::key::{KeyInfo, Key};
+use domain::crypto::combo_box::ComboBox;
 use services::wallet::{WalletService, WalletRecordRetrieveOptions};
 use services::crypto::CryptoService;
 

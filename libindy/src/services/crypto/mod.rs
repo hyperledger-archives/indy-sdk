@@ -1,13 +1,15 @@
 mod ed25519;
-pub mod types;
 
 use base64;
 
 use self::ed25519::ED25519CryptoType;
-use self::types::*;
+
 
 use utils::crypto::base58::Base58;
 use utils::crypto::verkey_builder::build_full_verkey;
+use domain::crypto::key::{Key, KeyInfo};
+use domain::crypto::did::{Did, MyDidInfo, TheirDidInfo};
+use domain::crypto::combo_box::ComboBox;
 
 use errors::common::CommonError;
 use errors::crypto::CryptoError;

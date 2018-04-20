@@ -37,11 +37,11 @@ use utils::constants::*;
 use self::openssl::hash::{MessageDigest, Hasher};
 use self::sodiumoxide::crypto::secretbox;
 
-use utils::domain::schema::SchemaV1;
-use utils::domain::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
-use utils::domain::revocation_registry_definition::RevocationRegistryDefinitionV1;
-use utils::domain::revocation_registry::RevocationRegistryV1;
-use utils::domain::revocation_registry_delta::RevocationRegistryDeltaV1;
+use utils::domain::anoncreds::schema::SchemaV1;
+use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
+use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
+use utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
 
 use std::thread;
 

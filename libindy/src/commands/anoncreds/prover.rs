@@ -17,18 +17,18 @@ use self::indy_crypto::cl::{MasterSecret, Witness, RevocationRegistry, new_nonce
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use super::tails::SDKTailsAccessor;
 
-use domain::schema::{Schema, schemas_map_to_schemas_v1_map};
-use domain::credential::{Credential, CredentialInfo};
-use domain::credential_definition::{CredentialDefinition, CredentialDefinitionV1, cred_defs_map_to_cred_defs_v1_map};
-use domain::credential_offer::CredentialOffer;
-use domain::credential_request::{CredentialRequest, CredentialRequestMetadata};
-use domain::filter::Filter;
-use domain::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
-use domain::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
-use domain::proof::Proof;
-use domain::proof_request::ProofRequest;
-use domain::requested_credential::RequestedCredentials;
-use domain::revocation_state::RevocationState;
+use domain::anoncreds::schema::{Schema, schemas_map_to_schemas_v1_map};
+use domain::anoncreds::credential::{Credential, CredentialInfo};
+use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1, cred_defs_map_to_cred_defs_v1_map};
+use domain::anoncreds::credential_offer::CredentialOffer;
+use domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
+use domain::anoncreds::filter::Filter;
+use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
+use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
+use domain::anoncreds::proof::Proof;
+use domain::anoncreds::proof_request::ProofRequest;
+use domain::anoncreds::requested_credential::RequestedCredentials;
+use domain::anoncreds::revocation_state::RevocationState;
 
 pub enum ProverCommand {
     CreateMasterSecret(

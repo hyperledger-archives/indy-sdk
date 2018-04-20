@@ -21,13 +21,13 @@ use utils::callback::CallbackUtils;
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
-use utils::domain::credential_definition::CredentialDefinition;
-use utils::domain::credential_for_proof_request::CredentialsForProofRequest;
-use utils::domain::proof::Proof;
-use utils::domain::revocation_registry_definition::RevocationRegistryDefinition;
-use utils::domain::revocation_registry::RevocationRegistry;
-use utils::domain::revocation_state::RevocationState;
-use utils::domain::schema::Schema;
+use utils::domain::anoncreds::credential_definition::CredentialDefinition;
+use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
+use utils::domain::anoncreds::proof::Proof;
+use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
+use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
+use utils::domain::anoncreds::revocation_state::RevocationState;
+use utils::domain::anoncreds::schema::Schema;
 
 use utils::environment::EnvironmentUtils;
 

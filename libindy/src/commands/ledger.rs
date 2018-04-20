@@ -10,7 +10,8 @@ use errors::indy::IndyError;
 
 use services::pool::PoolService;
 use services::crypto::CryptoService;
-use services::crypto::types::{Did, Key};
+use domain::crypto::key::Key;
+use domain::crypto::did::Did;
 use services::wallet::{WalletService, WalletRecordRetrieveOptions};
 use services::ledger::LedgerService;
 

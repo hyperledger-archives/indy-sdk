@@ -24,14 +24,14 @@ use self::indy_crypto::cl::{
 };
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use super::tails::{SDKTailsAccessor, store_tails_from_generator};
-use domain::schema::{Schema, SchemaV1};
-use domain::credential_definition::{
+use domain::anoncreds::schema::{Schema, SchemaV1};
+use domain::anoncreds::credential_definition::{
     CredentialDefinition,
     CredentialDefinitionV1,
     CredentialDefinitionConfig,
     SignatureType
 };
-use domain::revocation_registry_definition::{
+use domain::anoncreds::revocation_registry_definition::{
     RevocationRegistryConfig,
     IssuanceType,
     RegistryType,
@@ -39,17 +39,17 @@ use domain::revocation_registry_definition::{
     RevocationRegistryDefinition,
     RevocationRegistryDefinitionV1
 };
-use domain::revocation_registry::{
+use domain::anoncreds::revocation_registry::{
     RevocationRegistry,
     RevocationRegistryV1
 };
-use domain::revocation_registry_delta::{
+use domain::anoncreds::revocation_registry_delta::{
     RevocationRegistryDelta,
     RevocationRegistryDeltaV1
 };
-use domain::credential::{AttributeValues, Credential};
-use domain::credential_offer::CredentialOffer;
-use domain::credential_request::CredentialRequest;
+use domain::anoncreds::credential::{AttributeValues, Credential};
+use domain::anoncreds::credential_offer::CredentialOffer;
+use domain::anoncreds::credential_request::CredentialRequest;
 
 pub enum IssuerCommand {
     CreateSchema(

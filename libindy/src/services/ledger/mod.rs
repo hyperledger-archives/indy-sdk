@@ -3,20 +3,29 @@ extern crate serde_json;
 extern crate indy_crypto;
 
 pub mod merkletree;
-pub mod types;
-pub mod constants;
 
-use self::types::*;
 use errors::common::CommonError;
 use errors::ledger::LedgerError;
 use serde_json::Value;
-use services::ledger::constants::NYM;
-use domain::DELIMITER;
-use domain::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
-use domain::revocation_registry::RevocationRegistry;
-use domain::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
-use domain::schema::{Schema, SchemaV1};
-use domain::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
+use domain::ledger::constants::{NYM, ROLE_REMOVE, STEWARD, TRUSTEE, TRUST_ANCHOR, TGB};
+use domain::ledger::request::Request;
+use domain::ledger::nym::GetNymOperation;
+use domain::ledger::attrib::{AttribOperation, GetAttribOperation};
+use domain::ledger::ddo::GetDdoOperation;
+use domain::ledger::schema::{SchemaOperation, SchemaOperationData, GetSchemaOperation, GetSchemaOperationData, GetSchemaReplyResult};
+use domain::ledger::cred_def::{CredDefOperation, GetCredDefOperation, GetCredDefReplyResult};
+use domain::ledger::rev_reg_def::{RevRegDefOperation, GetRevRegDefOperation, GetRevocRegDefReplyResult};
+use domain::ledger::rev_reg::{RevRegEntryOperation, GetRevRegOperation, GetRevRegDeltaOperation, GetRevocRegReplyResult, GetRevocRegDeltaReplyResult};
+use domain::ledger::pool::{PoolConfigOperation, PoolUpgradeOperation, PoolRestartOperation};
+use domain::ledger::node::{NodeOperation, NodeOperationData};
+use domain::ledger::txn::GetTxnOperation;
+use domain::ledger::response::{Message, Reply};
+use domain::anoncreds::DELIMITER;
+use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
+use domain::anoncreds::revocation_registry::RevocationRegistry;
+use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
+use domain::anoncreds::schema::{Schema, SchemaV1};
+use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
 use self::indy_crypto::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
 use self::indy_crypto::utils::json::{JsonEncodable, JsonDecodable};
 
@@ -48,14 +57,14 @@ impl LedgerService {
         }
 
         if let Some(r) = role {
-            if r == constants::ROLE_REMOVE {
+            if r == ROLE_REMOVE {
                 operation["role"] = Value::Null
             } else {
                 operation["role"] = Value::String(match r {
-                    "STEWARD" => constants::STEWARD,
-                    "TRUSTEE" => constants::TRUSTEE,
-                    "TRUST_ANCHOR" => constants::TRUST_ANCHOR,
-                    "TGB" => constants::TGB,
+                    "STEWARD" => STEWARD,
+                    "TRUSTEE" => TRUSTEE,
+                    "TRUST_ANCHOR" => TRUST_ANCHOR,
+                    "TGB" => TGB,
                     role @ _ => return Err(CommonError::InvalidStructure(format!("Invalid role: {}", role)))
                 }.to_string())
             }
@@ -232,7 +241,7 @@ impl LedgerService {
             RevocationRegistryDefinition::from_json(&data)
                 .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistryDefinition: {:?}", err)))?);
 
-        let rev_reg_def_operation = RevocationRegistryDefOperation::new(rev_reg_def);
+        let rev_reg_def_operation = RevRegDefOperation::new(rev_reg_def);
 
         Request::build_request(identifier, rev_reg_def_operation)
             .map_err(|err| CommonError::InvalidState(format!("REVOC_REG_DEF request json is invalid {:?}.", err)))
@@ -249,7 +258,7 @@ impl LedgerService {
             RevocationRegistryDelta::from_json(&value)
                 .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistry: {:?}", err)))?);
 
-        let operation = RevocationRegistryEntryOperation::new(revoc_def_type, revoc_reg_def_id, rev_reg_entry);
+        let operation = RevRegEntryOperation::new(revoc_def_type, revoc_reg_def_id, rev_reg_entry);
 
         Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("REVOC_REG_ENTRY request json is invalid {:?}.", err)))
@@ -336,7 +345,7 @@ impl LedgerService {
                 .to_json()
                 .map_err(|err|
                     LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistry {:?}.", err))))?,
-        reply.result.txn_time))
+            reply.result.txn_time))
     }
 
     pub fn parse_get_revoc_reg_delta_response(&self, get_revoc_reg_delta_response: &str) -> Result<(String, String, u64), LedgerError> {
@@ -353,11 +362,7 @@ impl LedgerService {
                 .to_json()
                 .map_err(|err|
                     LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta {:?}.", err))))?,
-           reply.result.data.value.accum_to.txn_time))
-    }
-
-    fn get_req_id() -> u64 {
-        time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64
+            reply.result.data.value.accum_to.txn_time))
     }
 }
 
