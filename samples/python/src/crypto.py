@@ -8,7 +8,6 @@ import logging
 from src.utils import run_coroutine
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 
 async def demo():

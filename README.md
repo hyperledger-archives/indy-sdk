@@ -172,3 +172,7 @@ rewritten but still contains some useful ideas.)
 
 Short, simple tutorials that demonstrate how to accomplish common tasks
 are also available. See [the doc/how-tos folder](doc/how-tos).
+
+## How to migrate
+The documents that provide necessary information for Libindy migration.
+* [v1.3.0 → v1.4.0](doc/migration-guide.md)

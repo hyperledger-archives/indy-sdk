@@ -55,7 +55,7 @@ pub enum ErrorCode
     // Invalid library state was detected in runtime. It signals library bug
     CommonInvalidState = 112,
 
-    // Object (json, config, key, claim and etc...) passed by library caller has invalid structure
+    // Object (json, config, key, credential and etc...) passed by library caller has invalid structure
     CommonInvalidStructure = 113,
 
     // IO Error
@@ -122,10 +122,10 @@ pub enum ErrorCode
 
     AnoncredsProofRejected = 405,
 
-    AnoncredsClaimRevoked = 406,
+    AnoncredsCredentialRevoked = 406,
 
-    // Attempt to create claim definition with duplicated did schema pair
-    AnoncredsClaimDefAlreadyExistsError = 407,
+    // Attempt to create credential definition with duplicated did schema pair
+    AnoncredsCredDefAlreadyExistsError = 407,
 
     // Signus errors
     // Unknown format of DID entity keys
@@ -154,7 +154,7 @@ impl ErrorCode {
             CommonInvalidParam11 => "Caller passed invalid value as param 11",
             CommonInvalidParam12 => "Caller passed invalid value as param 12",
             CommonInvalidState => "Invalid library state was detected in runtime. It signals library bug",
-            CommonInvalidStructure => "Object (json, config, key, claim and etc...) passed by library caller has invalid structure",
+            CommonInvalidStructure => "Object (json, config, key, credential and etc...) passed by library caller has invalid structure",
             CommonIOError => "IO Error",
             WalletInvalidHandle => "Caller passed invalid wallet handle",
             WalletUnknownTypeError => "Caller passed invalid wallet handle",
@@ -177,8 +177,8 @@ impl ErrorCode {
             AnoncredsNotIssuedError => "Not issued",
             AnoncredsMasterSecretDuplicateNameError => "Attempt to generate master secret with duplicated name",
             AnoncredsProofRejected => "Proof rejected",
-            AnoncredsClaimRevoked => "Claim revoked",
-            AnoncredsClaimDefAlreadyExistsError => "Claim definition already exists",
+            AnoncredsCredentialRevoked => "Credential revoked",
+            AnoncredsCredDefAlreadyExistsError => "Credential definition already exists",
             UnknownCryptoTypeError => "Unknown format of DID entity keys",
             DidAlreadyExistsError => "Did already exists",
         }

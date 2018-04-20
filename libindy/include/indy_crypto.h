@@ -98,13 +98,15 @@ extern "C" {
 
 
 
-    /// Signs a message by a signing key associated with my DID. The DID with a signing key
-    /// must be already created and stored in a secured wallet (see create_and_store_my_identity)
+    /// Signs a message with a key.
+    ///
+    /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
+    /// for specific DID.
     ///
     /// #Params
-    /// wallet_handle: wallet handler (created by open_wallet).
     /// command_handle: command handle to map callback to user context.
-    /// my_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
+    /// wallet_handle: wallet handler (created by open_wallet).
+    /// signer_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
     /// message_raw: a pointer to first byte of message to be signed
     /// message_len: a message length
     /// cb: Callback that takes command result as parameter.
@@ -118,7 +120,7 @@ extern "C" {
     /// Crypto*
     extern indy_error_t indy_crypto_sign(indy_handle_t      command_handle,
                                          indy_handle_t      wallet_handle,
-                                         const char *       my_vk,
+                                         const char *       signer_vk,
                                          const indy_u8_t *  message_raw,
                                          indy_u32_t         message_len,
 
@@ -135,10 +137,10 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to user context.
-    /// their_vk: verkey to use
-    /// message_raw: a pointer to first byte of message to be signed
+    /// signer_vk: verkey of signer of the message
+    /// message_raw: a pointer to first byte of message that has been signed
     /// message_len: a message length
-    /// signature_raw: a a pointer to first byte of signature to be verified
+    /// signature_raw: a pointer to first byte of signature to be verified
     /// signature_len: a signature length
     /// cb: Callback that takes command result as parameter.
     ///
@@ -151,7 +153,7 @@ extern "C" {
     /// Ledger*
     /// Crypto*
     extern indy_error_t indy_crypto_verify(indy_handle_t      command_handle,
-                                           const char *       their_vk,
+                                           const char *       signer_vk,
                                            const indy_u8_t *  message_raw,
                                            indy_u32_t         message_len,
                                            const indy_u8_t *  signature_raw,
@@ -176,24 +178,24 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to user context.
     /// wallet_handle: wallet handle (created by open_wallet).
-    /// my_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
-    /// their_vk: id (verkey) of their key
+    /// sender_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
+    /// recipient_vk: id (verkey) of their key
     /// message_raw: a pointer to first byte of message that to be encrypted
     /// message_len: a message length
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// an encrypted message
+    /// an encrypted message as a pointer to array of bytes.
     ///
     /// #Errors
     /// Common*
     /// Wallet*
     /// Ledger*
-    /// Crypto*
+/// Crypto*
     extern indy_error_t indy_crypto_auth_crypt(indy_handle_t      command_handle,
                                                indy_handle_t      wallet_handle,
-                                               const char *       my_vk,
-                                               const char *       their_vk,
+                                               const char *       sender_vk,
+                                               const char *       recipient_vk,
                                                const indy_u8_t *  message_raw,
                                                indy_u32_t         message_len,
 
@@ -217,13 +219,13 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to user context.
     /// wallet_handle: wallet handler (created by open_wallet).
-    /// my_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
+    /// recipient_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
     /// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
     /// encrypted_msg_len: a message length
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// sender verkey and decrypted message
+    /// sender verkey and decrypted message as a pointer to array of bytes
     ///
     /// #Errors
     /// Common*
@@ -231,13 +233,13 @@ extern "C" {
     /// Crypto*
     extern indy_error_t indy_crypto_auth_decrypt(indy_handle_t      command_handle,
                                                  indy_handle_t      wallet_handle,
-                                                 const char *       my_vk,
+                                                 const char *       recipient_vk,
                                                  const indy_u8_t*   encrypted_msg_raw,
                                                  indy_u32_t         encrypted_msg_len,
 
                                                  void           (*cb)(indy_handle_t     xcommand_handle,
                                                                       indy_error_t      err,
-                                                                      const char *      their_vk,
+                                                                      const char *      sender_vk,
                                                                       const indy_u8_t*  decrypted_msg_raw,
                                                                       indy_u32_t        decrypted_msg_len)
                                                 );
@@ -254,13 +256,13 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to user context.
-    /// their_vk: id (verkey) of their key
+    /// recipient_vk: verkey of message recipient
     /// message_raw: a pointer to first byte of message that to be encrypted
     /// message_len: a message length
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// an encrypted message
+    /// an encrypted message as a pointer to array of vytes
     ///
     /// #Errors
     /// Common*
@@ -268,7 +270,7 @@ extern "C" {
     /// Ledger*
     /// Crypto*
     extern indy_error_t indy_crypto_anon_crypt(indy_handle_t      command_handle,
-                                               const char *       their_vk,
+                                               const char *       recipient_vk,
                                                const indy_u8_t *  message_raw,
                                                indy_u32_t         message_len,
 
@@ -290,13 +292,13 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to user context.
     /// wallet_handle: wallet handler (created by open_wallet).
-    /// my_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
+    /// recipient_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
     /// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
     /// encrypted_msg_len: a message length
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// decrypted message
+    /// decrypted message as a pointer to an array of bytes
     ///
     /// #Errors
     /// Common*
@@ -304,7 +306,7 @@ extern "C" {
     /// Crypto*
     extern indy_error_t indy_crypto_anon_decrypt(indy_handle_t      command_handle,
                                                  indy_handle_t      wallet_handle,
-                                                 const char *       my_vk,
+                                                 const char *       recipient_vk,
                                                  const indy_u8_t*   encrypted_msg,
                                                  indy_u32_t         encrypted_len,
 
