@@ -1405,7 +1405,7 @@ Errors: `Common*`, `Wallet*`
 Get list of saved pairwise.
 
 * `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
-* __->__ `listPairwise`: String - list\_pairwise: list of saved pairwise
+* __->__ `listPairwise`: Json - list\_pairwise: list of saved pairwise
 
 Errors: `Common*`, `Wallet*`
 

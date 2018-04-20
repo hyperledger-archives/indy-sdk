@@ -460,7 +460,9 @@ indy.createPairwise = function createPairwise (walletHandle, theirDid, myDid, me
 }
 
 indy.listPairwise = function listPairwise (walletHandle, cb) {
-  cb = wrapIndyCallback(cb)
+  cb = wrapIndyCallback(cb, function (data) {
+    return fromJson(data).map(fromJson)
+  })
   capi.listPairwise(walletHandle, cb)
   return cb.promise
 }

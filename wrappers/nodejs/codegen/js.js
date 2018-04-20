@@ -42,10 +42,15 @@ apiFunctions.forEach(function (fn) {
   })
   js += 'cb) {\n'
   js += '  cb = wrapIndyCallback(cb'
-  if (fn.jsCbParams.length === 1 && fn.jsCbParams[0].json) {
+
+  if (fn.jsName === 'listPairwise') {
+    // indy_list_pairwise returns an array of json strings
+    js += ', function (data) {\n'
+    js += '    return fromJson(data).map(fromJson)\n'
+    js += '  }'
+  } else if (fn.jsCbParams.length === 1 && fn.jsCbParams[0].json) {
     js += ', fromJson'
-  }
-  if (fn.jsCbParams.length > 1) {
+  } else if (fn.jsCbParams.length > 1) {
     if (fn.jsCbParams.find(p => p.json)) {
       js += ', function (data) {\n'
       js += '    return [' + fn.jsCbParams.map(function (p, i) {
@@ -56,6 +61,7 @@ apiFunctions.forEach(function (fn) {
       js += '  }'
     }
   }
+
   js += ')\n'
   js += '  capi.' + fn.jsName + '('
   fn.jsParams.forEach(function (arg) {

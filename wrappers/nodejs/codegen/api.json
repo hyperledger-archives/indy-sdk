@@ -1394,7 +1394,7 @@
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "list_pairwise", "type": "const char*"}
+            {"name": "list_pairwise", "type": "const char*", "json": true}
           ]
         }
       ],
