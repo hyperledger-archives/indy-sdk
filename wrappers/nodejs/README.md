@@ -936,7 +936,7 @@ Retrieves the information about the giving DID in the wallet.
 * `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
 did - The DID to retrieve information.
 * `myDid`: String
-* __->__ `didWithMeta`: String - did\_with\_meta: {
+* __->__ `didWithMeta`: Json - did\_with\_meta: {
 "did": string - DID stored in the wallet,
 "verkey": string - The DIDs transport key \(ver key, key id\),
 "metadata": string - The meta information stored with the DID
@@ -949,7 +949,7 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 Retrieves the information about all DIDs stored in the wallet.
 
 * `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
-* __->__ `dids`: String - dids: \[{
+* __->__ `dids`: Json - dids: \[{
 "did": string - DID stored in the wallet,
 "verkey": string - The DIDs transport key \(ver key, key id\).,
 "metadata": string - The meta information stored with the DID

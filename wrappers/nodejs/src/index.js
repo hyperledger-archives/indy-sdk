@@ -258,13 +258,13 @@ indy.getDidMetadata = function getDidMetadata (walletHandle, did, cb) {
 }
 
 indy.getMyDidWithMeta = function getMyDidWithMeta (walletHandle, myDid, cb) {
-  cb = wrapIndyCallback(cb)
+  cb = wrapIndyCallback(cb, fromJson)
   capi.getMyDidWithMeta(walletHandle, myDid, cb)
   return cb.promise
 }
 
 indy.listMyDidsWithMeta = function listMyDidsWithMeta (walletHandle, cb) {
-  cb = wrapIndyCallback(cb)
+  cb = wrapIndyCallback(cb, fromJson)
   capi.listMyDidsWithMeta(walletHandle, cb)
   return cb.promise
 }

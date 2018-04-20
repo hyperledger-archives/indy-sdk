@@ -789,7 +789,7 @@
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "did_with_meta", "type": "const char *const"}
+            {"name": "did_with_meta", "type": "const char *const", "json": true}
           ]
         }
       ],
@@ -806,7 +806,7 @@
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "dids", "type": "const char *const"}
+            {"name": "dids", "type": "const char *const", "json": true}
           ]
         }
       ],
