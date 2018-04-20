@@ -28,6 +28,7 @@ var toJsName = function (name) {
       return letter.toUpperCase()
     })
     .replace(/^type_$/, 'type')
+    .replace(/^walletHandle$/, 'wh')
 }
 
 var toJsParams = function (params) {

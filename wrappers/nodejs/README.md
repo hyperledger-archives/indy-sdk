@@ -84,7 +84,7 @@ schema\_json: schema as json
 
 Errors: `Common*`, `Anoncreds*`
 
-#### issuerCreateAndStoreCredentialDef \( walletHandle, issuerDid, schema, tag, signatureType, config \) -&gt; \[ credDefId, credDef \]
+#### issuerCreateAndStoreCredentialDef \( wh, issuerDid, schema, tag, signatureType, config \) -&gt; \[ credDefId, credDef \]
 
 Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
 and secrets used for credentials revocation.
@@ -95,7 +95,7 @@ to Indy distributed ledger.
 
 It is IMPORTANT for current version GET Schema from Ledger with correct seq\_no to save compatibility with Ledger.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `issuerDid`: String - a DID of the issuer signing cred\_def transaction to the Ledger
 * `schema`: Json - credential schema as a json
 * `tag`: String - allows to distinct between credential definitions for the same issuer and schema
@@ -109,7 +109,7 @@ cred\_def\_json: public part of created credential definition
 
 Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
-#### issuerCreateAndStoreRevocReg \( walletHandle, issuerDid, revocDefType, tag, credDefId, config, tailsWriterHandle \) -&gt; \[ revocRegId, revocRegDef, revocRegEntry \]
+#### issuerCreateAndStoreRevocReg \( wh, issuerDid, revocDefType, tag, credDefId, config, tailsWriterHandle \) -&gt; \[ revocRegId, revocRegDef, revocRegEntry \]
 
 Create a new revocation registry for the given credential definition as tuple of entities:
 - Revocation registry definition that encapsulates credentials definition reference, revocation type specific configuration and
@@ -128,7 +128,7 @@ Some revocation registry types \(for example, 'CL\_ACCUM'\) can require generati
 revocation registry and intended to be distributed out of leger \(REVOC\_REG\_DEF transaction will still contain uri and hash of tails\).
 This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `issuerDid`: String - a DID of the issuer signing transaction to the Ledger
 * `revocDefType`: String - revocation registry type \(optional, default value depends on credential definition type\). Supported types are:
 - 'CL\_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
@@ -149,13 +149,13 @@ revoc\_reg\_entry\_json: revocation registry entry that defines initial state of
 
 Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
-#### issuerCreateCredentialOffer \( walletHandle, credDefId \) -&gt; credOffer
+#### issuerCreateCredentialOffer \( wh, credDefId \) -&gt; credOffer
 
 Create credential offer that will be used by Prover for
 credential request creation. Offer includes nonce and key correctness proof
 for authentication between protocol steps and integrity checking.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\)
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `credDefId`: String - id of credential definition stored in the wallet
 * __->__ `credOffer`: Json - credential offer json:
 ```js
@@ -170,7 +170,7 @@ for authentication between protocol steps and integrity checking.
 
 Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
-#### issuerCreateCredential \( walletHandle, credOffer, credReq, credValues, revRegId, blobStorageReaderHandle \) -&gt; \[ cred, credRevocId, revocRegDelta \]
+#### issuerCreateCredential \( wh, credOffer, credReq, credValues, revRegId, blobStorageReaderHandle \) -&gt; \[ cred, credRevocId, revocRegDelta \]
 
 Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.
 
@@ -183,7 +183,7 @@ generated cred\_revoc\_id local for this wallet.
 This call returns revoc registry delta as json file intended to be shared as REVOC\_REG\_ENTRY transaction.
 Note that it is possible to accumulate deltas to reduce ledger load.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `credOffer`: Json - a cred offer created by indy\_issuer\_create\_credential\_offer
 * `credReq`: Json - a credential request created by indy\_prover\_create\_credential\_req
 * `credValues`: Json - a credential containing attribute values for each of requested attribute names.
@@ -206,7 +206,7 @@ revoc_reg_delta_json: Revocation registry delta json with a newly issued credent
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### issuerRevokeCredential \( walletHandle, blobStorageReaderHandle, revRegId, credRevocId \) -&gt; revocRegDelta
+#### issuerRevokeCredential \( wh, blobStorageReaderHandle, revRegId, credRevocId \) -&gt; revocRegDelta
 
 Revoke a credential identified by a cred\_revoc\_id \(returned by indy\_issuer\_create\_credential\).
 
@@ -216,7 +216,7 @@ created an stored into the wallet.
 This call returns revoc registry delta as json file intended to be shared as REVOC\_REG\_ENTRY transaction.
 Note that it is possible to accumulate deltas to reduce ledger load.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `blobStorageReaderHandle`: Number
 * `revRegId`: String - id of revocation registry stored in wallet
 * `credRevocId`: String - local id for revocation info
@@ -235,18 +235,18 @@ Send common delta to ledger to reduce the load.
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### proverCreateMasterSecret \( walletHandle, masterSecretId \) -&gt; outMasterSecretId
+#### proverCreateMasterSecret \( wh, masterSecretId \) -&gt; outMasterSecretId
 
 Creates a master secret with a given id and stores it in the wallet.
 The id must be unique.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `masterSecretId`: String - \(optional, if not present random one will be generated\) new master id
 * __->__ `outMasterSecretId`: String - out\_master\_secret\_id: Id of generated master secret
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### proverCreateCredentialReq \( walletHandle, proverDid, credOffer, credDef, masterSecretId \) -&gt; \[ credReq, credReqMetadata \]
+#### proverCreateCredentialReq \( wh, proverDid, credOffer, credDef, masterSecretId \) -&gt; \[ credReq, credReqMetadata \]
 
 Creates a credential request for the given credential offer.
 
@@ -254,7 +254,7 @@ The method creates a blinded master secret for a master secret identified by a p
 The master secret identified by the name must be already stored in the secure wallet \(see prover\_create\_master\_secret\)
 The blinded master secret is a part of the credential request.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\)
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `proverDid`: String - a DID of the prover
 * `credOffer`: Json - credential offer as a json containing information about the issuer and a credential
 * `credDef`: Json - credential definition json
@@ -274,12 +274,12 @@ cred_req_metadata_json: Credential request metadata json for processing of recei
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### proverStoreCredential \( walletHandle, credId, credReqMetadata, cred, credDef, revRegDef \) -&gt; outCredId
+#### proverStoreCredential \( wh, credId, credReqMetadata, cred, credDef, revRegDef \) -&gt; outCredId
 
 Check credential provided by Issuer for the given credential request,
 updates the credential by a master secret and stores in a secure wallet.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `credId`: String - \(optional, default is a random one\) identifier by which credential will be stored in the wallet
 * `credReqMetadata`: Json - a credential request metadata created by indy\_prover\_create\_credential\_req
 * `cred`: Json - credential json received from issuer
@@ -289,13 +289,13 @@ updates the credential by a master secret and stores in a secure wallet.
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### proverGetCredentials \( walletHandle, filter \) -&gt; credentials
+#### proverGetCredentials \( wh, filter \) -&gt; credentials
 
 Gets human readable credentials according to the filter.
 If filter is NULL, then all credentials are returned.
 Credentials can be filtered by Issuer, credential\_def and\/or Schema.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `filter`: Json - filter for credentials
 ```js
        {
@@ -321,11 +321,11 @@ Credentials can be filtered by Issuer, credential\_def and\/or Schema.
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### proverGetCredentialsForProofReq \( walletHandle, proofRequest \) -&gt; credentials
+#### proverGetCredentialsForProofReq \( wh, proofRequest \) -&gt; credentials
 
 Gets human readable credentials matching the given proof request.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `proofRequest`: Json - proof request json
 ```js
     {
@@ -371,7 +371,7 @@ where
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### proverCreateProof \( walletHandle, proofReq, requestedCredentials, masterSecretName, schemas, credentialDefs, revStates \) -&gt; proof
+#### proverCreateProof \( wh, proofReq, requestedCredentials, masterSecretName, schemas, credentialDefs, revStates \) -&gt; proof
 
 Creates a proof according to the given proof request
 Either a corresponding credential with optionally revealed attributes or self-attested attribute must be provided
@@ -381,7 +381,7 @@ All required schemas, public keys and revocation registries must be provided.
 The proof request also contains nonce.
 The proof contains either proof or self-attested attribute value for each requested attribute.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `proofReq`: Json
 * `requestedCredentials`: Json - either a credential or self-attested attribute for each requested attribute
 ```js
@@ -615,11 +615,11 @@ Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
 ### crypto
 
-#### createKey \( walletHandle, key \) -&gt; vk
+#### createKey \( wh, key \) -&gt; vk
 
 Creates keys pair and stores in the wallet.
 
-* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `key`: Json - Key information as json. Example:
 ```js
 {
@@ -631,38 +631,35 @@ Creates keys pair and stores in the wallet.
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### setKeyMetadata \( walletHandle, verkey, metadata \) -&gt; void
+#### setKeyMetadata \( wh, verkey, metadata \) -&gt; void
 
 Saves\/replaces the meta information for the giving key in the wallet.
 
-* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
-verkey - the key \(verkey, key id\) to store metadata.
-metadata - the meta information that will be store with the key.
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `verkey`: String
 * `metadata`: String
 * __->__ void
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### getKeyMetadata \( walletHandle, verkey \) -&gt; metadata
+#### getKeyMetadata \( wh, verkey \) -&gt; metadata
 
 Retrieves the meta information for the giving key in the wallet.
 
-* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
-verkey - The key \(verkey, key id\) to retrieve metadata.
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `verkey`: String
 * __->__ `metadata`: String - The meta information stored with the key; Can be null if no metadata was saved for this key.
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### cryptoSign \( walletHandle, signerVk, messageRaw \) -&gt; signatureRaw
+#### cryptoSign \( wh, signerVk, messageRaw \) -&gt; signatureRaw
 
 Signs a message with a key.
 
 Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
 for specific DID.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `signerVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
 * `messageRaw`: Buffer - a pointer to first byte of message to be signed
 * __->__ `signatureRaw`: Buffer - a signature string
@@ -683,7 +680,7 @@ for specific DID.
 
 Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
-#### cryptoAuthCrypt \( walletHandle, senderVk, recipientVk, messageRaw \) -&gt; encryptedMsgRaw
+#### cryptoAuthCrypt \( wh, senderVk, recipientVk, messageRaw \) -&gt; encryptedMsgRaw
 
 Encrypt a message by authenticated-encryption scheme.
 
@@ -696,7 +693,7 @@ before eventually decrypting it.
 Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
 for specific DID.
 
-* `walletHandle`: Handle (Number) - wallet handle \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `senderVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
 * `recipientVk`: String - id \(verkey\) of their key
 * `messageRaw`: Buffer - a pointer to first byte of message that to be encrypted
@@ -704,7 +701,7 @@ for specific DID.
 
 Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
-#### cryptoAuthDecrypt \( walletHandle, recipientVk, encryptedMsgRaw \) -&gt; \[ senderVk, decryptedMsgRaw \]
+#### cryptoAuthDecrypt \( wh, recipientVk, encryptedMsgRaw \) -&gt; \[ senderVk, decryptedMsgRaw \]
 
 Decrypt a message by authenticated-encryption scheme.
 
@@ -717,7 +714,7 @@ before eventually decrypting it.
 Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
 for specific DID.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `recipientVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
 * `encryptedMsgRaw`: Buffer - a pointer to first byte of message that to be decrypted
 * __->__ [ `senderVk`: String, `decryptedMsgRaw`: Buffer ] - sender verkey and decrypted message as a pointer to array of bytes
@@ -741,7 +738,7 @@ for specific DID.
 
 Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
-#### cryptoAnonDecrypt \( walletHandle, recipientVk, encryptedMsg \) -&gt; decryptedMsgRaw
+#### cryptoAnonDecrypt \( wh, recipientVk, encryptedMsg \) -&gt; decryptedMsgRaw
 
 Decrypts a message by anonymous-encryption scheme.
 
@@ -752,7 +749,7 @@ While the Recipient can verify the integrity of the message, it cannot verify th
 Note to use DID keys with this function you can call indy\_key\_for\_did to get key id \(verkey\)
 for specific DID.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `recipientVk`: String - id \(verkey\) of my key. The key must be created by calling indy\_create\_key or indy\_create\_and\_store\_my\_did
 * `encryptedMsg`: Buffer
 * __->__ `decryptedMsgRaw`: Buffer - decrypted message as a pointer to an array of bytes
@@ -761,7 +758,7 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 ### did
 
-#### createAndStoreMyDid \( walletHandle, did \) -&gt; \[ did, verkey \]
+#### createAndStoreMyDid \( wh, did \) -&gt; \[ did, verkey \]
 
 Creates keys \(signing and encryption keys\) for a new
 DID \(owned by the caller of the library\).
@@ -769,7 +766,7 @@ Identity's DID must be either explicitly provided, or taken as the first 16 bit 
 Saves the Identity DID with keys in a secured Wallet, so that it can be used to sign
 and encrypt transactions.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `did`: Json - Identity information as json. Example:
 ```js
 {
@@ -788,12 +785,12 @@ verkey: The DIDs verification key
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### replaceKeysStart \( walletHandle, did, identity \) -&gt; verkey
+#### replaceKeysStart \( wh, did, identity \) -&gt; verkey
 
 Generated temporary keys \(signing and encryption keys\) for an existing
 DID \(owned by the caller of the library\).
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `did`: String
 * `identity`: Json - Identity information as json. Example:
 ```js
@@ -807,22 +804,22 @@ DID \(owned by the caller of the library\).
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### replaceKeysApply \( walletHandle, did \) -&gt; void
+#### replaceKeysApply \( wh, did \) -&gt; void
 
 Apply temporary keys as main for an existing DID \(owned by the caller of the library\).
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `did`: String - DID stored in the wallet
 * __->__ void
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### storeTheirDid \( walletHandle, identity \) -&gt; void
+#### storeTheirDid \( wh, identity \) -&gt; void
 
 Saves their DID for a pairwise connection in a secured Wallet,
 so that it can be used to verify transaction.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `identity`: Json - Identity information as json. Example:
 ```js
     {
@@ -834,7 +831,7 @@ so that it can be used to verify transaction.
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### keyForDid \( poolHandle, walletHandle, did \) -&gt; key
+#### keyForDid \( poolHandle, wh, did \) -&gt; key
 
 Returns ver key \(key id\) for the given DID.
 
@@ -850,14 +847,13 @@ Note that "indy\_create\_and\_store\_my\_did" makes similar wallet record as "in
 As result we can use returned ver key in all generic crypto and messaging functions.
 
 * `poolHandle`: Handle (Number) - Pool handle \(created by open\_pool\).
-* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
-did - The DID to resolve key.
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `did`: String
 * __->__ `key`: String - The DIDs ver key \(key id\).
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### keyForLocalDid \( walletHandle, did \) -&gt; key
+#### keyForLocalDid \( wh, did \) -&gt; key
 
 Returns ver key \(key id\) for the given DID.
 
@@ -870,21 +866,17 @@ instead.
 Note that "indy\_create\_and\_store\_my\_did" makes similar wallet record as "indy\_create\_key".
 As result we can use returned ver key in all generic crypto and messaging functions.
 
-* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
-did - The DID to resolve key.
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `did`: String
 * __->__ `key`: String - The DIDs ver key \(key id\).
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### setEndpointForDid \( walletHandle, did, address, transportKey \) -&gt; void
+#### setEndpointForDid \( wh, did, address, transportKey \) -&gt; void
 
 Set\/replaces endpoint information for the given DID.
 
-* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
-did - The DID to resolve endpoint.
-address -  The DIDs endpoint address.
-transport\_key - The DIDs transport key \(ver key, key id\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `did`: String
 * `address`: String
 * `transportKey`: String
@@ -892,12 +884,11 @@ transport\_key - The DIDs transport key \(ver key, key id\).
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### getEndpointForDid \( walletHandle, poolHandle, did \) -&gt; \[ address, transportVk \]
+#### getEndpointForDid \( wh, poolHandle, did \) -&gt; \[ address, transportVk \]
 
 Returns endpoint information for the given DID.
 
-* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
-did - The DID to resolve endpoint.
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `poolHandle`: Handle (Number)
 * `did`: String
 * __->__ [ `address`: String, `transportVk`: String ] - The DIDs endpoint.
@@ -905,36 +896,32 @@ did - The DID to resolve endpoint.
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### setDidMetadata \( walletHandle, did, metadata \) -&gt; void
+#### setDidMetadata \( wh, did, metadata \) -&gt; void
 
 Saves\/replaces the meta information for the giving DID in the wallet.
 
-* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
-did - the DID to store metadata.
-metadata - the meta information that will be store with the DID.
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `did`: String
 * `metadata`: String
 * __->__ void
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### getDidMetadata \( walletHandle, did \) -&gt; metadata
+#### getDidMetadata \( wh, did \) -&gt; metadata
 
 Retrieves the meta information for the giving DID in the wallet.
 
-* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
-did - The DID to retrieve metadata.
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `did`: String
 * __->__ `metadata`: String - The meta information stored with the DID; Can be null if no metadata was saved for this DID.
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### getMyDidWithMeta \( walletHandle, myDid \) -&gt; didWithMeta
+#### getMyDidWithMeta \( wh, myDid \) -&gt; didWithMeta
 
 Retrieves the information about the giving DID in the wallet.
 
-* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
-did - The DID to retrieve information.
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `myDid`: String
 * __->__ `didWithMeta`: Json - did\_with\_meta: {
 "did": string - DID stored in the wallet,
@@ -944,11 +931,11 @@ did - The DID to retrieve information.
 
 Errors: `Common*`, `Wallet*`, `Crypto*`
 
-#### listMyDidsWithMeta \( walletHandle \) -&gt; dids
+#### listMyDidsWithMeta \( wh \) -&gt; dids
 
 Retrieves the information about all DIDs stored in the wallet.
 
-* `walletHandle`: Handle (Number) - Wallet handle \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * __->__ `dids`: Json - dids: \[{
 "did": string - DID stored in the wallet,
 "verkey": string - The DIDs transport key \(ver key, key id\).,
@@ -969,7 +956,7 @@ Errors: `Common*`, `Wallet*`, `Crypto*`
 
 ### ledger
 
-#### signAndSubmitRequest \( poolHandle, walletHandle, submitterDid, request \) -&gt; requestResult
+#### signAndSubmitRequest \( poolHandle, wh, submitterDid, request \) -&gt; requestResult
 
 Signs and submits request message to validator pool.
 
@@ -978,7 +965,7 @@ sign key \(see wallet\_sign\), and sends signed request message
 to validator pool \(see write\_request\).
 
 * `poolHandle`: Handle (Number) - pool handle \(created by open\_pool\_ledger\).
-* `walletHandle`: Handle (Number) - wallet handle \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - Id of Identity stored in secured Wallet.
 * `request`: Json - Request data json.
 * __->__ `requestResult`: Json
@@ -997,14 +984,14 @@ The request is sent to the validator pool as is. It's assumed that it's already 
 
 Errors: `Common*`, `Ledger*`
 
-#### signRequest \( walletHandle, submitterDid, request \) -&gt; signedRequest
+#### signRequest \( wh, submitterDid, request \) -&gt; signedRequest
 
 Signs request message.
 
 Adds submitter information to passed request json, signs it with submitter
 sign key \(see wallet\_sign\).
 
-* `walletHandle`: Handle (Number) - wallet handle \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - Id of Identity stored in secured Wallet.
 * `request`: Json - Request data json.
 * __->__ `signedRequest`: Json - Signed request json.
@@ -1377,21 +1364,21 @@ Errors: `Common*`
 
 ### pairwise
 
-#### isPairwiseExists \( walletHandle, theirDid \) -&gt; exists
+#### isPairwiseExists \( wh, theirDid \) -&gt; exists
 
 Check if pairwise is exists.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `theirDid`: String - encrypted DID
 * __->__ `exists`: Boolean - exists: true - if pairwise is exists, false - otherwise
 
 Errors: `Common*`, `Wallet*`
 
-#### createPairwise \( walletHandle, theirDid, myDid, metadata \) -&gt; void
+#### createPairwise \( wh, theirDid, myDid, metadata \) -&gt; void
 
 Creates pairwise.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `theirDid`: String - encrypted DID
 * `myDid`: String - encrypted DID
 metadata Optional: extra information for pairwise
@@ -1400,30 +1387,30 @@ metadata Optional: extra information for pairwise
 
 Errors: `Common*`, `Wallet*`
 
-#### listPairwise \( walletHandle \) -&gt; listPairwise
+#### listPairwise \( wh \) -&gt; listPairwise
 
 Get list of saved pairwise.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * __->__ `listPairwise`: Json - list\_pairwise: list of saved pairwise
 
 Errors: `Common*`, `Wallet*`
 
-#### getPairwise \( walletHandle, theirDid \) -&gt; pairwiseInfo
+#### getPairwise \( wh, theirDid \) -&gt; pairwiseInfo
 
 Gets pairwise information for specific their\_did.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `theirDid`: String - encoded Did
 * __->__ `pairwiseInfo`: Json - pairwise\_info\_json: did info associated with their did
 
 Errors: `Common*`, `Wallet*`
 
-#### setPairwiseMetadata \( walletHandle, theirDid, metadata \) -&gt; void
+#### setPairwiseMetadata \( wh, theirDid, metadata \) -&gt; void
 
 Save some data in the Wallet for pairwise associated with Did.
 
-* `walletHandle`: Handle (Number) - wallet handler \(created by open\_wallet\).
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `theirDid`: String - encoded Did
 * `metadata`: String - some extra information for pairwise
 * __->__ void
