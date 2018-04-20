@@ -35,8 +35,6 @@ impl LedgerService {
 
     pub fn build_nym_request(&self, identifier: &str, dest: &str, verkey: Option<&str>,
                              alias: Option<&str>, role: Option<&str>) -> Result<String, CommonError> {
-        let req_id = LedgerService::get_req_id();
-
         let mut operation: Value = Value::Object(serde_json::map::Map::new());
         operation["type"] = Value::String(NYM.to_string());
         operation["dest"] = Value::String(dest.to_string());
@@ -50,7 +48,7 @@ impl LedgerService {
         }
 
         if let Some(r) = role {
-            if r == "" {
+            if r == constants::ROLE_REMOVE {
                 operation["role"] = Value::Null
             } else {
                 operation["role"] = Value::String(match r {
@@ -190,6 +188,22 @@ impl LedgerService {
         let operation = PoolConfigOperation::new(writes, force);
         Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("POOL_CONFIG request json is invalid {:?}.", err)))
+    }
+
+    pub fn build_pool_restart(&self, identifier: &str, action: &str, datetime: Option<&str>) -> Result<String, CommonError> {
+        if action != "start" && action != "cancel" {
+            return Err(CommonError::InvalidStructure(format!("Invalid action: {}", action)));
+        }
+
+        if action == "start" && datetime.is_none() {
+            return Err(CommonError::InvalidStructure(format!("Datetime is required for `{}` action", action)));
+        }
+
+
+        let operation = PoolRestartOperation::new(action, datetime.map(String::from));
+
+        Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid pool_restart request json: {:?}", err)))
     }
 
     pub fn build_pool_upgrade(&self, identifier: &str, name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<&str>,

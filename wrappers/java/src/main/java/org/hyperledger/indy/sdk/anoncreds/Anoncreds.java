@@ -371,9 +371,9 @@ public class Anoncreds extends IndyJava.API {
 	 * @param issuerDid  DID of the issuer signing cred_def transaction to the Ledger
 	 * @param schemaJson Сredential schema as a json
 	 * @param tag        Allows to distinct between credential definitions for the same issuer and schema
-	 * @param type       Credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
+	 * @param signature_type       Credential definition signature_type (optional, 'CL' by default) that defines credentials signature and revocation math.
 	 *                   Supported types are:
-	 *                   - 'CL': Camenisch-Lysyanskaya credential signature type
+	 *                   - 'CL': Camenisch-Lysyanskaya credential signature signature_type
 	 * @param configJson Type-specific configuration of credential definition as json:
 	 *                   - 'CL':
 	 *                      - revocationSupport: whether to request non-revocation credential (optional, default false)
@@ -387,7 +387,7 @@ public class Anoncreds extends IndyJava.API {
 			String issuerDid,
 			String schemaJson,
 			String tag,
-			String type,
+			String signature_type,
 			String configJson) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
@@ -407,7 +407,7 @@ public class Anoncreds extends IndyJava.API {
 				issuerDid,
 				schemaJson,
 				tag,
-				type,
+				signature_type,
 				configJson,
 				issuerCreateAndStoreCredentialDefCb);
 
@@ -418,7 +418,7 @@ public class Anoncreds extends IndyJava.API {
 
 	/**
 	 * Create a new revocation registry for the given credential definition as tuple of entities:
-	 * - Revocation registry definition that encapsulates credentials definition reference, revocation type specific configuration and
+	 * - Revocation registry definition that encapsulates credentials definition reference, revocation revoc_def_type specific configuration and
 	 * secrets used for credentials revocation
 	 * - Revocation registry state that stores the information about revoked entities in a non-disclosing way. The state can be
 	 * represented as ordered list of revocation registry entries were each entry represents the list of revocation or issuance operations.
@@ -436,13 +436,13 @@ public class Anoncreds extends IndyJava.API {
 	 *
 	 * @param wallet      The wallet.
 	 * @param issuerDid   The DID of the issuer.
-	 * @param type        Revocation registry type (optional, default value depends on credential definition type). Supported types are:
-	 *                    - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type
+	 * @param revoc_def_type        Revocation registry revoc_def_type (optional, default value depends on credential definition revoc_def_type). Supported types are:
+	 *                    - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition revoc_def_type
 	 * @param tag         Allows to distinct between revocation registries for the same issuer and credential definition
 	 * @param credDefId   Id of stored in ledger credential definition
-	 * @param configJson  type-specific configuration of revocation registry as json:
+	 * @param configJson  revoc_def_type-specific configuration of revocation registry as json:
 	 * - 'CL_ACCUM': {
-	 *     "issuance_type": (optional) type of issuance. Currently supported:
+	 *     "issuance_type": (optional) revoc_def_type of issuance. Currently supported:
 	 *         1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
 	 *            Revocation Registry is updated only during revocation.
 	 *         2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
@@ -458,7 +458,7 @@ public class Anoncreds extends IndyJava.API {
 	public static CompletableFuture<IssuerCreateAndStoreRevocRegResult> issuerCreateAndStoreRevocReg(
 			Wallet wallet,
 			String issuerDid,
-			String type,
+			String revoc_def_type,
 			String tag,
 			String credDefId,
 			String configJson,
@@ -479,7 +479,7 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				issuerDid,
-				type,
+				revoc_def_type,
 				tag,
 				credDefId,
 				configJson,
@@ -813,7 +813,6 @@ public class Anoncreds extends IndyJava.API {
 	 *
 	 * @param wallet              A Wallet.
 	 * @param credId              (optional, default is a random one) Identifier by which credential will be stored in the wallet
-	 * @param credReqJson         Credential request created by proverCreateCredentialReq
 	 * @param credReqMetadataJson Credential request metadata created by proverCreateCredentialReq
 	 * @param credJson            Credential json received from issuer
 	 * @param credDefJson         Credential definition json
@@ -824,14 +823,12 @@ public class Anoncreds extends IndyJava.API {
 	public static CompletableFuture<String> proverStoreCredential(
 			Wallet wallet,
 			String credId,
-			String credReqJson,
 			String credReqMetadataJson,
 			String credJson,
 			String credDefJson,
 			String revRegDefJson) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNullOrWhiteSpace(credReqJson, "credReqJson");
 		ParamGuard.notNullOrWhiteSpace(credReqMetadataJson, "credReqMetadataJson");
 		ParamGuard.notNullOrWhiteSpace(credJson, "credJson");
 		ParamGuard.notNullOrWhiteSpace(credDefJson, "credDefJson");
@@ -845,7 +842,6 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				credId,
-				credReqJson,
 				credReqMetadataJson,
 				credJson,
 				credDefJson,

@@ -129,7 +129,6 @@
     completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:credentialJSON
                                                           credID:[[AnoncredsUtils sharedInstance] credentialId1]
-                                                     credReqJSON:credentialReqJSON
                                              credReqMetadataJSON:credentialReqMetadataJSON
                                                      credDefJSON:credentialDefJSON
                                                    revRegDefJSON:nil
@@ -333,7 +332,6 @@
     completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:credentialJSON
                                                           credID:[[AnoncredsUtils sharedInstance] credentialId1]
-                                                     credReqJSON:credentialReqJSON
                                              credReqMetadataJSON:credentialReqMetadataJSON
                                                      credDefJSON:credentialDefJSON
                                                    revRegDefJSON:nil
@@ -563,7 +561,6 @@
     // 9. Prover store received Credential
     ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:credentialJson
                                                           credID:[[AnoncredsUtils sharedInstance] credentialId1]
-                                                     credReqJSON:credentialReq
                                              credReqMetadataJSON:credentialReqMetadata
                                                      credDefJSON:credentialDefJSON
                                                    revRegDefJSON:revocRegDefJson

@@ -28,7 +28,7 @@ impl SDKTailsAccessor {
                tails_reader_handle: i32,
                rev_reg_def: &RevocationRegistryDefinitionV1) -> Result<SDKTailsAccessor, CommonError> {
         let tails_hash = rev_reg_def.value.tails_hash.from_base58()
-            .map_err(|err| CommonError::InvalidState(format!("Invalid base58 for Tails hash")))?;
+            .map_err(|_| CommonError::InvalidState(format!("Invalid base58 for Tails hash")))?;
 
         let tails_reader_handle = tails_service.open_blob(tails_reader_handle,
                                                           &rev_reg_def.value.tails_location,
@@ -56,7 +56,7 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
             .read(self.tails_reader_handle,
                   TAIL_SIZE,
                   TAIL_SIZE * tail_id as usize)  // + _TAILS_BLOB_TAG_SZ
-            .map_err(|err|
+            .map_err(|_|
                 IndyCryptoError::InvalidState("Can't read tail bytes from blob storage".to_owned()))?; //TODO
         let tail = Tail::from_bytes(tail_bytes.as_slice())?;
         accessor(&tail);

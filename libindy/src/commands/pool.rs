@@ -49,7 +49,6 @@ impl PoolCommandExecutor {
         }
     }
 
-    #[allow(unused_variables)] /* FIXME */
     pub fn execute(&self, command: PoolCommand) {
         match command {
             PoolCommand::Create(name, config, cb) => {

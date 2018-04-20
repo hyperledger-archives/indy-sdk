@@ -73,7 +73,7 @@ class Anoncreds {
 		String credential = createCredentialResult.getCredentialJson();
 
 		//10. Prover Stores Credential
-		proverStoreCredential(proverWallet, null, credReqJson, credReqMetadataJson, credential, credDefJson, null).get();
+		proverStoreCredential(proverWallet, null, credReqMetadataJson, credential, credDefJson, null).get();
 
 		//11. Prover Gets Credentials for Proof Request
 		String proofRequestJson = new JSONObject("{" +
