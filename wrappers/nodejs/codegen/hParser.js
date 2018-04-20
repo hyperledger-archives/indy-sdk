@@ -221,6 +221,7 @@ fs.readdirSync(dir).forEach(function (file) {
 })
 
 // manually set some json and timestamp hints
+api.functions.indy_issuer_create_schema.params[4].json = true
 api.functions.indy_create_pool_ledger_config.params[2].json = true
 api.functions.indy_list_pools.params[1].params[2].json = true
 api.functions.indy_list_wallets.params[1].params[2].json = true

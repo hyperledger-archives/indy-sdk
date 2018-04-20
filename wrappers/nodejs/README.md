@@ -78,7 +78,7 @@ After that can call indy\_issuer\_create\_and\_store\_credential\_def to build c
 * `issuerDid`: String - DID of schema issuer
 * `name`: String - a name the schema
 * `version`: String - a version of the schema
-* `attrNames`: String
+* `attrNames`: Json
 * __->__ [ `id`: String, `schema`: Json ] - schema\_id: identifier of created schema
 schema\_json: schema as json
 

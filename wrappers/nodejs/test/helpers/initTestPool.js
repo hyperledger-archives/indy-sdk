@@ -10,6 +10,7 @@ module.exports = async function () {
 
   return {
     name: pool.name,
+    file: pool.file,
     handle: poolH,
     cleanup: async function () {
       await indy.closePoolLedger(poolH)

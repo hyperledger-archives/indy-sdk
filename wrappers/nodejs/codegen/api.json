@@ -49,7 +49,7 @@
         {"name": "issuer_did", "type": "const char*"},
         {"name": "name", "type": "const char*"},
         {"name": "version", "type": "const char*"},
-        {"name": "attr_names", "type": "const char*"},
+        {"name": "attr_names", "type": "const char*", "json": true},
         {
           "name": "cb",
           "params": [

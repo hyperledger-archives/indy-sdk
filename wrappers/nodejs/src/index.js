@@ -17,7 +17,7 @@ var indy = {}
 
 indy.issuerCreateSchema = function issuerCreateSchema (issuerDid, name, version, attrNames, cb) {
   cb = wrapIndyCallback(cb)
-  capi.issuerCreateSchema(issuerDid, name, version, attrNames, cb)
+  capi.issuerCreateSchema(issuerDid, name, version, jsonify(attrNames), cb)
   return cb.promise
 }
 
