@@ -4,6 +4,8 @@ extern crate libc;
 
 use self::libc::c_char;
 use api::ErrorCode;
+use commands::{Command, CommandExecutor};
+use commands::payments::PaymentsCommand;
 use errors::ToErrorCode;
 use services::payments::PaymentsMethodCBs;
 use utils::cstring::CStringUtils;
@@ -275,8 +277,8 @@ pub extern fn indy_register_payment_method(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam1); //FIXME
 
     let cbs = PaymentsMethodCBs::new(create_payment_address);
-    let result = ::commands::CommandExecutor::instance().send(::commands::Command::Payments(
-        ::commands::payments::PaymentsCommand::RegisterMethod(payment_method, cbs, Box::new(move |result| {
+    let result = CommandExecutor::instance().send(Command::Payments(
+        PaymentsCommand::RegisterMethod(payment_method, cbs, Box::new(move |result| {
             cb(command_handle, result.to_error_code());
         }))
     ));
@@ -311,7 +313,19 @@ pub extern fn indy_create_payment_address(command_handle: i32,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
                                                                payment_address: *const c_char) -> ErrorCode>) -> ErrorCode {
-    unimplemented!();
+    check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(config, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance().send(Command::Payments(
+        PaymentsCommand::CreateAddress(payment_method, config, Box::new(move |result| {
+            let (err, address) = result_to_err_code_1!(result, String::new());
+            let address = CStringUtils::string_to_cstring(address);
+            cb(command_handle, err, address.as_ptr());
+        }))
+    ));
+
+    result.to_error_code()
 }
 
 /// Modifies Indy request by adding information how to pay fees for this transaction

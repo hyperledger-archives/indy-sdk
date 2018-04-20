@@ -4,11 +4,13 @@ use std::fmt::{Display, Formatter};
 
 use api::ErrorCode;
 use errors::ToErrorCode;
+use errors::common::CommonError;
 
 #[derive(Debug)]
 pub enum PaymentsError {
     PluggedMethodError(ErrorCode),
     UnknownType(String),
+    CommonError(CommonError),
 }
 
 impl Error for PaymentsError {
