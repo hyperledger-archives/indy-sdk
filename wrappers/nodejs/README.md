@@ -1033,7 +1033,7 @@ Builds an ATTRIB request. Request to add attribute to a NYM record.
 * `submitterDid`: String - DID of the submitter stored in secured Wallet.
 * `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * `hash`: String - \(Optional\) Hash of attribute data.
-* `raw`: String - \(Optional\) Json, where key is attribute name and value is attribute value.
+* `raw`: Json - \(Optional\) Json, where key is attribute name and value is attribute value.
 * `enc`: String - \(Optional\) Encrypted value attribute data.
 * __->__ `request`: Json
 
@@ -1067,7 +1067,7 @@ Errors: `Common*`
 Builds a SCHEMA request. Request to add Credential's schema.
 
 * `submitterDid`: String - DID of the submitter stored in secured Wallet.
-* `data`: String - Credential schema.
+* `data`: Json - Credential schema.
 ```js
 {
 ````
@@ -1089,7 +1089,7 @@ Errors: `Common*`
 
 Parse a GET\_SCHEMA response to get Schema in the format compatible with Anoncreds API.
 
-* `getSchemaResponse`: String - response of GET\_SCHEMA request.
+* `getSchemaResponse`: Json - response of GET\_SCHEMA request.
 * __->__ [ `schemaId`: String, `schema`: Json ] - Schema Id and Schema json.
 ```js
 {
@@ -1156,7 +1156,7 @@ Builds a NODE request. Request to add a new node to the pool, or updates existin
 
 * `submitterDid`: String - DID of the submitter stored in secured Wallet.
 * `targetDid`: String - Target Node's DID.  It differs from submitter\_did field.
-* `data`: String - Data associated with the Node: {
+* `data`: Json - Data associated with the Node: {
 * __->__ `request`: Json
 
 Errors: `Common*`

@@ -934,7 +934,7 @@
         {"name": "submitter_did", "type": "const char*"},
         {"name": "target_did", "type": "const char*"},
         {"name": "hash", "type": "const char*"},
-        {"name": "raw", "type": "const char*"},
+        {"name": "raw", "type": "const char*", "json": true},
         {"name": "enc", "type": "const char*"},
         {
           "name": "cb",
@@ -992,7 +992,7 @@
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
-        {"name": "data", "type": "const char*"},
+        {"name": "data", "type": "const char*", "json": true},
         {
           "name": "cb",
           "params": [
@@ -1027,7 +1027,7 @@
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
-        {"name": "get_schema_response", "type": "const char*"},
+        {"name": "get_schema_response", "type": "const char*", "json": true},
         {
           "name": "cb",
           "params": [
@@ -1101,7 +1101,7 @@
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
         {"name": "target_did", "type": "const char*"},
-        {"name": "data", "type": "const char*"},
+        {"name": "data", "type": "const char*", "json": true},
         {
           "name": "cb",
           "params": [

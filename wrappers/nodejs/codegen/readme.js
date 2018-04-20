@@ -97,9 +97,9 @@ function readmeFn (fn) {
         readme += '?'
       }
       if (docAST.params[arg.name].text.trim().length > 0) {
-        if(arg.jsName === 'wh'){
+        if (arg.jsName === 'wh') {
           readme += ' - wallet handle (created by openWallet)'
-        }else{
+        } else {
           readme += ' - ' + markdownify(docAST.params[arg.name].text)
         }
       }

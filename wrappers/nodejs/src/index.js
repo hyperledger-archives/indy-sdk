@@ -307,7 +307,7 @@ indy.buildNymRequest = function buildNymRequest (submitterDid, targetDid, verkey
 
 indy.buildAttribRequest = function buildAttribRequest (submitterDid, targetDid, hash, raw, enc, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildAttribRequest(submitterDid, targetDid, hash, raw, enc, cb)
+  capi.buildAttribRequest(submitterDid, targetDid, hash, toJson(raw), enc, cb)
   return cb.promise
 }
 
@@ -325,7 +325,7 @@ indy.buildGetNymRequest = function buildGetNymRequest (submitterDid, targetDid, 
 
 indy.buildSchemaRequest = function buildSchemaRequest (submitterDid, data, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildSchemaRequest(submitterDid, data, cb)
+  capi.buildSchemaRequest(submitterDid, toJson(data), cb)
   return cb.promise
 }
 
@@ -339,7 +339,7 @@ indy.parseGetSchemaResponse = function parseGetSchemaResponse (getSchemaResponse
   cb = wrapIndyCallback(cb, function (data) {
     return [data[0], fromJson(data[1])]
   })
-  capi.parseGetSchemaResponse(getSchemaResponse, cb)
+  capi.parseGetSchemaResponse(toJson(getSchemaResponse), cb)
   return cb.promise
 }
 
@@ -365,7 +365,7 @@ indy.parseGetCredDefResponse = function parseGetCredDefResponse (getCredDefRespo
 
 indy.buildNodeRequest = function buildNodeRequest (submitterDid, targetDid, data, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildNodeRequest(submitterDid, targetDid, data, cb)
+  capi.buildNodeRequest(submitterDid, targetDid, toJson(data), cb)
   return cb.promise
 }
 
