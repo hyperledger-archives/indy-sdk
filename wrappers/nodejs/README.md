@@ -1109,7 +1109,7 @@ Builds an CRED\_DEF request. Request to add a Credential Definition \(in particu
 that Issuer creates for a particular Credential Schema.
 
 * `submitterDid`: String - DID of the submitter stored in secured Wallet.
-* `data`: String - credential definition json
+* `data`: Json - credential definition json
 ```js
 {
 ````
@@ -1132,7 +1132,7 @@ Errors: `Common*`
 
 Parse a GET\_CRED\_DEF response to get Credential Definition in the format compatible with Anoncreds API.
 
-* `getCredDefResponse`: String - response of GET\_CRED\_DEF request.
+* `getCredDefResponse`: Json - response of GET\_CRED\_DEF request.
 * __->__ [ `credDefId`: String, `credDef`: Json ] - Credential Definition Id and Credential Definition json.
 ```js
 {
@@ -1222,7 +1222,7 @@ Builds a REVOC\_REG\_DEF request. Request to add the definition of revocation re
 to an exists credential definition.
 
 * `submitterDid`: String - DID of the submitter stored in secured Wallet.
-* `data`: String - Revocation Registry data:
+* `data`: Json - Revocation Registry data:
 ```js
     {
         "id": string - ID of the Revocation Registry,
@@ -1259,7 +1259,7 @@ Errors: `Common*`
 Parse a GET\_REVOC\_REG\_DEF response to get Revocation Registry Definition in the format
 compatible with Anoncreds API.
 
-* `getRevocRefDefResponse`: String
+* `getRevocRefDefResponse`: Json
 * __->__ [ `revocRegDefId`: String, `revocRegDef`: Json ] - Revocation Registry Definition Id and Revocation Registry Definition json.
 ```js
 {
@@ -1290,7 +1290,7 @@ So, it can be sent each time a new credential is issued\/revoked.
 * `submitterDid`: String - DID of the submitter stored in secured Wallet.
 * `revocRegDefId`: String - ID of the corresponding RevocRegDef.
 * `revDefType`: String - Revocation Registry type \(only CL\_ACCUM is supported for now\).
-* `value`: String - Registry-specific data: {
+* `value`: Json - Registry-specific data: {
 
 ```js
  {
@@ -1315,7 +1315,7 @@ Errors: `Common*`
 
 Parse a GET\_REVOC\_REG response to get Revocation Registry in the format compatible with Anoncreds API.
 
-* `getRevocRegResponse`: String - response of GET\_REVOC\_REG request.
+* `getRevocRegResponse`: Json - response of GET\_REVOC\_REG request.
 * __->__ [ `revocRegDefId`: String, `revocReg`: Json, `timestamp`: Timestamp (Number) ] - Revocation Registry Definition Id, Revocation Registry json and Timestamp.
 ```js
 {
@@ -1346,7 +1346,7 @@ Errors: `Common*`
 
 Parse a GET\_REVOC\_REG\_DELTA response to get Revocation Registry Delta in the format compatible with Anoncreds API.
 
-* `getRevocRegDeltaResponse`: String
+* `getRevocRegDeltaResponse`: Json
 * __->__ [ `revocRegDefId`: String, `revocRegDelta`: Json, `timestamp`: Timestamp (Number) ] - Revocation Registry Definition Id, Revocation Registry Delta json and Timestamp.
 ```js
 {

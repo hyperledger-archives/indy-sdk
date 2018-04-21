@@ -345,7 +345,7 @@ indy.parseGetSchemaResponse = function parseGetSchemaResponse (getSchemaResponse
 
 indy.buildCredDefRequest = function buildCredDefRequest (submitterDid, data, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildCredDefRequest(submitterDid, data, cb)
+  capi.buildCredDefRequest(submitterDid, toJson(data), cb)
   return cb.promise
 }
 
@@ -359,7 +359,7 @@ indy.parseGetCredDefResponse = function parseGetCredDefResponse (getCredDefRespo
   cb = wrapIndyCallback(cb, function (data) {
     return [data[0], fromJson(data[1])]
   })
-  capi.parseGetCredDefResponse(getCredDefResponse, cb)
+  capi.parseGetCredDefResponse(toJson(getCredDefResponse), cb)
   return cb.promise
 }
 
@@ -395,7 +395,7 @@ indy.buildPoolUpgradeRequest = function buildPoolUpgradeRequest (submitterDid, n
 
 indy.buildRevocRegDefRequest = function buildRevocRegDefRequest (submitterDid, data, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildRevocRegDefRequest(submitterDid, data, cb)
+  capi.buildRevocRegDefRequest(submitterDid, toJson(data), cb)
   return cb.promise
 }
 
@@ -409,13 +409,13 @@ indy.parseGetRevocRegDefResponse = function parseGetRevocRegDefResponse (getRevo
   cb = wrapIndyCallback(cb, function (data) {
     return [data[0], fromJson(data[1])]
   })
-  capi.parseGetRevocRegDefResponse(getRevocRefDefResponse, cb)
+  capi.parseGetRevocRegDefResponse(toJson(getRevocRefDefResponse), cb)
   return cb.promise
 }
 
 indy.buildRevocRegEntryRequest = function buildRevocRegEntryRequest (submitterDid, revocRegDefId, revDefType, value, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildRevocRegEntryRequest(submitterDid, revocRegDefId, revDefType, value, cb)
+  capi.buildRevocRegEntryRequest(submitterDid, revocRegDefId, revDefType, toJson(value), cb)
   return cb.promise
 }
 
@@ -429,7 +429,7 @@ indy.parseGetRevocRegResponse = function parseGetRevocRegResponse (getRevocRegRe
   cb = wrapIndyCallback(cb, function (data) {
     return [data[0], fromJson(data[1]), data[2]]
   })
-  capi.parseGetRevocRegResponse(getRevocRegResponse, cb)
+  capi.parseGetRevocRegResponse(toJson(getRevocRegResponse), cb)
   return cb.promise
 }
 
@@ -443,7 +443,7 @@ indy.parseGetRevocRegDeltaResponse = function parseGetRevocRegDeltaResponse (get
   cb = wrapIndyCallback(cb, function (data) {
     return [data[0], fromJson(data[1]), data[2]]
   })
-  capi.parseGetRevocRegDeltaResponse(getRevocRegDeltaResponse, cb)
+  capi.parseGetRevocRegDeltaResponse(toJson(getRevocRegDeltaResponse), cb)
   return cb.promise
 }
 
