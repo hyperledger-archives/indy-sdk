@@ -64,7 +64,7 @@ function markdownify (src) {
     line = lines[i]
     i++
     if (line.trim() === '{' || line.trim() === '[{') {
-      out.push('```js')
+      out.push('```')
       out.push(line)
       while (i < lines.length) {
         line = lines[i]
@@ -72,6 +72,9 @@ function markdownify (src) {
         out.push(line)
       }
       out.push('````')
+    } else if (/^\s*\*/.test(line)) {
+      var parts = line.split('*')
+      out.push(parts[0] + '* ' + mdEscape(parts.slice(1).join('*')))
     } else {
       line = mdEscape(line)
         .replace(/\s+/, ' ')
@@ -208,6 +211,12 @@ function parseDocStringParams (params) {
     optional: false,
     text: ''
   }
+
+  // json examples that share a line
+  lines = lines.map(function (line) {
+    return line.replace(/([^"])\s*:\s*{\s*$/, '$1:\n{')
+  }).join('\n').split('\n')
+
   lines.forEach(function (line) {
     if (line.trim().length === 0) {
       return
@@ -215,7 +224,13 @@ function parseDocStringParams (params) {
     if (line.trim() === 'cb: Callback that takes command result as parameter.') {
       return
     }
-    var m = /^\s*([a-zA-Z0-9_]+)\s*(\([^)]*\)\s*)?:(.*)$/.exec(line)
+
+    // sublists
+    line = line
+      .replace(/^- /, '  * ')
+      .replace(/^ {2}- /, '    * ')
+
+    var m = /^([a-zA-Z0-9_]+)\s*(\([^)]*\)\s*)?:(.*)$/.exec(line)
     if (m) {
       if (m[2] && !/optional/i.test(m[2])) {
         throw new Error('Expected param (optional): ' + line)
@@ -244,7 +259,7 @@ function parseDocStringParams (params) {
     ast[o.name].optional = ast[o.name].optional || o.optional
   })
   Object.keys(ast).forEach(function (name) {
-    ast[name].text = ast[name].text.trim()
+    ast[name].text = ast[name].text.replace(/\s*$/, '')
   })
   return ast
 }

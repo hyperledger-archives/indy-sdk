@@ -129,7 +129,8 @@ test('ledger', async function (t) {
   res = await waitUntilApplied(pool.handle, req, res => res['result']['seqNo'] != null)
   res = await indy.parseGetRevocRegResponse(res)
   t.is(res[0], revRegDefId)
-  t.is(res[1].id, revRegDefId)
+  t.is(typeof res[1], 'object')
+  t.is(typeof res[2], 'number')
 
   // RevocRegDelta
   req = await indy.buildGetRevocRegDeltaRequest(myDid, revRegDefId, nowSeconds, nowSeconds + 100)

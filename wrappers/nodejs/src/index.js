@@ -25,6 +25,8 @@ function fromJson (val) {
 
 var indy = {}
 
+indy.capi = capi // if you want to skip the json dance, IndyError, and promise support
+
 indy.issuerCreateSchema = function issuerCreateSchema (issuerDid, name, version, attrNames, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [data[0], fromJson(data[1])]

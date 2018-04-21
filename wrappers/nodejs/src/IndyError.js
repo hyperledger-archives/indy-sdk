@@ -33,13 +33,11 @@ var errors = {
   306: 'PoolLedgerConfigAlreadyExistsError',
   307: 'PoolLedgerTimeout',
   400: 'AnoncredsRevocationRegistryFullError',
-  401: 'AnoncredsInvalidUserRevocIndex',
-  402: 'AnoncredsAccumulatorIsFull',
-  403: 'AnoncredsNotIssuedError',
+  401: 'AnoncredsInvalidUserRevocId',
   404: 'AnoncredsMasterSecretDuplicateNameError',
   405: 'AnoncredsProofRejected',
-  406: 'AnoncredsClaimRevoked',
-  407: 'AnoncredsClaimDefAlreadyExistsError',
+  406: 'AnoncredsCredentialRevoked',
+  407: 'AnoncredsCredDefAlreadyExistsError',
   500: 'UnknownCryptoTypeError',
   600: 'DidAlreadyExistsError'
 }

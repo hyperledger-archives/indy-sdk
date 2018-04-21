@@ -1,11 +1,12 @@
 var test = require('ava')
 var indy = require('../')
 
-test('abbreviateVerkey', async function (t) {
-  var did = 'VsKV7grR1BUE29mG2Fm2kX'
-  var verkey = 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa'
+var did = 'VsKV7grR1BUE29mG2Fm2kX'
+var verkey = 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa'
+var abbrVerkey = '~HYwqs2vrTc8Tn4uBV7NBTe'
 
-  t.is(await indy.abbreviateVerkey(did, verkey), '~HYwqs2vrTc8Tn4uBV7NBTe')
+test('wrapper essentials', async function (t) {
+  t.is(await indy.abbreviateVerkey(did, verkey), abbrVerkey)
 
   var err = await t.throws(indy.abbreviateVerkey())
   t.is(err.message, 'CommonInvalidParam3')
@@ -32,4 +33,30 @@ test('abbreviateVerkey', async function (t) {
   t.is(err + '', 'IndyError: CommonInvalidStructure')
   t.is(err.indyCode, 113)
   t.is(err.indyName, 'CommonInvalidStructure')
+})
+
+test.cb('wrapper capi', function (t) {
+  indy.capi.abbreviateVerkey(did, verkey, function (err, data) {
+    t.falsy(err)
+    t.is(data, abbrVerkey)
+
+    indy.capi.abbreviateVerkey('?', verkey, function (err) {
+      t.is(err, 113)
+      t.end()
+    })
+  })
+})
+
+test.cb('wrapper callbacks', function (t) {
+  indy.abbreviateVerkey(did, verkey, function (err, data) {
+    t.falsy(err)
+    t.is(data, abbrVerkey)
+
+    indy.abbreviateVerkey('?', verkey, function (err) {
+      t.is(err + '', 'IndyError: CommonInvalidStructure')
+      t.is(err.indyCode, 113)
+      t.is(err.indyName, 'CommonInvalidStructure')
+      t.end()
+    })
+  })
 })
