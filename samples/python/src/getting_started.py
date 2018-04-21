@@ -238,9 +238,8 @@ async def run():
         await auth_decrypt(alice_wallet, alice_faber_key, authcrypted_transcript_cred_json)
 
     logger.info("\"Alice\" -> Store \"Transcript\" Credential from Faber")
-    await anoncreds.prover_store_credential(alice_wallet, None, transcript_cred_request_json,
-                                            transcript_cred_request_metadata_json, authdecrypted_transcript_cred_json,
-                                            faber_transcript_cred_def, None)
+    await anoncreds.prover_store_credential(alice_wallet, None, transcript_cred_request_metadata_json,
+                                            authdecrypted_transcript_cred_json, faber_transcript_cred_def, None)
 
     logger.info("==============================")
     logger.info("=== Apply for the job with Acme ==")
@@ -448,8 +447,7 @@ async def run():
         await auth_decrypt(alice_wallet, alice_acme_key, authcrypted_job_certificate_cred_json)
 
     logger.info("\"Alice\" -> Store \"Job-Certificate\" Credential")
-    await anoncreds.prover_store_credential(alice_wallet, None, job_certificate_cred_request_json,
-                                            job_certificate_cred_request_metadata_json,
+    await anoncreds.prover_store_credential(alice_wallet, None,  job_certificate_cred_request_metadata_json,
                                             authdecrypted_job_certificate_cred_json,
                                             acme_job_certificate_cred_def_json, None)
 
