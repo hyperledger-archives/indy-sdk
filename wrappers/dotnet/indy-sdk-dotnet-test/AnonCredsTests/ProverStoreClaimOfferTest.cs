@@ -33,7 +33,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         {
             var claimOffer = "{\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"schema_seq_no\":1 }";
 
-            await AnonCreds.ProverStoreClaimOfferAsync(_wallet, claimOffer);
+            await AnonCreds.ProverStoreCredentialOfferAsync(_wallet, claimOffer);
         }
 
 
@@ -43,7 +43,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var claimOffer = "{\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\"}";
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.ProverStoreClaimOfferAsync(_wallet, claimOffer)
+                AnonCreds.ProverStoreCredentialOfferAsync(_wallet, claimOffer)
             );
         }
 
@@ -53,7 +53,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var claimOffer = "{\"issuer_did\":\"invalid_base58_string\",\"schema_seq_no\":1}";
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.ProverStoreClaimOfferAsync(_wallet, claimOffer)
+                AnonCreds.ProverStoreCredentialOfferAsync(_wallet, claimOffer)
             );
         }
 

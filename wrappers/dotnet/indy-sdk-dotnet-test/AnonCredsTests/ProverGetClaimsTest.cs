@@ -13,7 +13,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         {
             await InitCommonWallet();
 
-            var claims = await AnonCreds.ProverGetClaimsAsync(commonWallet, "{}");
+            var claims = await AnonCreds.ProverGetCredentialsAsync(commonWallet, "{}");
 
             var claimsArray = JArray.Parse(claims);
 
@@ -27,7 +27,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
             var filter = string.Format("{{\"issuer_did\":\"{0}\"}}", issuerDid);
 
-            var claims = await AnonCreds.ProverGetClaimsAsync(commonWallet, filter);
+            var claims = await AnonCreds.ProverGetCredentialsAsync(commonWallet, filter);
 
             var claimsArray = JArray.Parse(claims);
 
@@ -41,7 +41,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
             var filter = string.Format("{{\"issuer_did\":\"{0}\", \"schema_seq_no\":{1}}}", issuerDid, 1);
 
-            var claims = await AnonCreds.ProverGetClaimsAsync(commonWallet, filter);
+            var claims = await AnonCreds.ProverGetCredentialsAsync(commonWallet, filter);
 
             var claimsArray = JArray.Parse(claims);
 
@@ -55,7 +55,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
             var filter = string.Format("{{\"schema_seq_no\":{0}}}",  10);
 
-            var claims = await AnonCreds.ProverGetClaimsAsync(commonWallet, filter);
+            var claims = await AnonCreds.ProverGetCredentialsAsync(commonWallet, filter);
 
             var claimsArray = JArray.Parse(claims);
 
@@ -71,7 +71,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var filter = string.Format("{{\"schema_seq_no\":\"{0}\"}}", 1);
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.ProverGetClaimsAsync(commonWallet, filter)
+                AnonCreds.ProverGetCredentialsAsync(commonWallet, filter)
             );
         }
 

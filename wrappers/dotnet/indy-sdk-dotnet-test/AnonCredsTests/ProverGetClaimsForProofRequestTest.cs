@@ -20,7 +20,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "              \"requested_predicates\":{}\n" +
                 "             }";
 
-            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);                
+            var claimsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(commonWallet, proofRequest);                
 
             var claims = JObject.Parse(claimsJson);
 
@@ -40,7 +40,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "              \"requested_predicates\":{}\n" +
                 "             }";
 
-            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
+            var claimsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -60,7 +60,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "              \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                 "             }";
 
-            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
+            var claimsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -80,7 +80,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "              \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":58}}\n" +
                 "             }";
 
-            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
+            var claimsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -105,7 +105,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "                     \"predicate2_referent\":{\"attr_name\":\"height\",\"p_type\":\">=\",\"value\":160}\n" +
                 "               }}";
 
-            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
+            var claimsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -134,7 +134,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "              \"requested_predicates\":{}\n" +
                 "             }";
 
-            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
+            var claimsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -154,7 +154,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "              \"requested_predicates\":{}\n" +
                 "             }";
 
-            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
+            var claimsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -174,7 +174,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "              \"requested_predicates\":{}\n" +
                 "             }";
 
-            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
+            var claimsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -194,7 +194,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "              \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18,\"restrictions\":[{\"issuer_did\":\"cYxiDXkpYi6ov5FcYDi1\"}]}}\n" +
                 "             }";
 
-            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
+            var claimsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -214,7 +214,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "             }";
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest)
+                AnonCreds.ProverGetCredentialsForProofReqAsync(commonWallet, proofRequest)
             );
         }
 
@@ -231,7 +231,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "             }";
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest)
+                AnonCreds.ProverGetCredentialsForProofReqAsync(commonWallet, proofRequest)
             );
         }
 
