@@ -26,7 +26,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                                                       "\"requested_predicates\":{{}}" +
                                                     "}}";
         private string _claimDefJson;
-        private IssuerCreateClaimResult _claimResult;
+        private IssuerCreateCredentialResult _claimResult;
 
         [TestInitialize]
         public async Task Before()
@@ -48,11 +48,11 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
             //5. Prover store Claim Offer received from Issuer
             var claimOfferJson = string.Format(claimOfferTemplate, issuerDid, 1);
-            await AnonCreds.ProverStoreClaimOfferAsync(_issuerWallet, claimOfferJson);
+            await AnonCreds.ProverStoreCredentialOfferAsync(_issuerWallet, claimOfferJson);
 
             //6. Prover create Claim Request
             var proverDid = "BzfFCYk";
-            var claimReq = await AnonCreds.ProverCreateAndStoreClaimReqAsync(
+            var claimReq = await AnonCreds.ProverCreateCredentialReqAsync(
                 _issuerWallet,
                 proverDid,
                 claimOfferJson,
@@ -68,10 +68,10 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             "}";
 
             
-            _claimResult = await AnonCreds.IssuerCreateClaimAsync(_issuerWallet, claimReq, claimJson, _userRevocIndex);
+            _claimResult = await AnonCreds.IssuerCreateCredentialAsync(_issuerWallet, claimReq, claimJson, _userRevocIndex);
 
             //8. Prover store received Claim
-            await AnonCreds.ProverStoreClaimAsync(_issuerWallet, _claimResult.ClaimJson, _claimResult.RevocRegUpdateJson);
+            await AnonCreds.ProverStoreClaimAsync(_issuerWallet, _claimResult.CredentialJson, _claimResult.RevocRegDeltaJson);
         }
 
         [TestCleanup]
@@ -85,14 +85,14 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         public async Task TestAnoncredsWorksForClaimRevokedBeforeProofCreated()
         {
             //9. Issuer revoke claim
-            var revocRegUpdateJson = await AnonCreds.IssuerRevokeClaimAsync(
+            var revocRegUpdateJson = await AnonCreds.IssuerRevokeCredentialAsync(
                 _issuerWallet,
                 issuerDid,
                 1,
                 1);
 
             //10. Prover gets Claims for Proof Request
-            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_issuerWallet, _proofReqJson);
+            var claimsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(_issuerWallet, _proofReqJson);
             var claims = JObject.Parse(claimsJson);
             var claimsForAttr1 = claims["attrs"]["attr1_referent"];
             var claim = claimsForAttr1[0];
@@ -121,7 +121,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         public async Task TestAnoncredsWorksForClaimRevokedAfterProofCreated()
         {
             //9. Prover gets Claims for Proof Request
-            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_issuerWallet, _proofReqJson);
+            var claimsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(_issuerWallet, _proofReqJson);
             var claims = JObject.Parse(claimsJson);
             var claimsForAttr1 = claims["attrs"]["attr1_referent"];
             var claim = claimsForAttr1[0];
@@ -132,7 +132,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
             var schemasJson = string.Format("{{\"{0}\":{1}}}", claimUuid, schema);
             var claimDefsJson = string.Format("{{\"{0}\":{1}}}", claimUuid, _claimDefJson);
-            var revocRegsJsons = string.Format("{{\"{0}\":{1}}}", claimUuid, _claimResult.RevocRegUpdateJson);
+            var revocRegsJsons = string.Format("{{\"{0}\":{1}}}", claimUuid, _claimResult.RevocRegDeltaJson);
 
             var proofJson = await AnonCreds.ProverCreateProofAsync(
                 _issuerWallet,
@@ -144,7 +144,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 revocRegsJsons);
 
             //11. Issuer revoke prover claim
-            var revocRegUpdateJson = await AnonCreds.IssuerRevokeClaimAsync(
+            var revocRegUpdateJson = await AnonCreds.IssuerRevokeCredentialAsync(
                 _issuerWallet,
                 issuerDid,
                 1,

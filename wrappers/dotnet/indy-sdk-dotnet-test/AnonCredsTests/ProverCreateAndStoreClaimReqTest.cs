@@ -15,7 +15,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
             var claimOffer = string.Format(claimOfferTemplate, issuerDid, 1);
 
-            await AnonCreds.ProverCreateAndStoreClaimReqAsync(commonWallet, proverDid, claimOffer, claimDef, masterSecretName);
+            await AnonCreds.ProverCreateCredentialReqAsync(commonWallet, proverDid, claimOffer, claimDef, masterSecretName);
         }
 
         [TestMethod]
@@ -26,7 +26,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var claimOffer = string.Format(claimOfferTemplate, "acWziYqKpYi6ov5FcYDi1e3", 1);         
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.ProverCreateAndStoreClaimReqAsync(commonWallet, proverDid, claimOffer, claimDef, masterSecretName)
+                AnonCreds.ProverCreateCredentialReqAsync(commonWallet, proverDid, claimOffer, claimDef, masterSecretName)
             );
         }
 
@@ -38,7 +38,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var claimOffer = string.Format(claimOfferTemplate, issuerDid, 2);
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.ProverCreateAndStoreClaimReqAsync(commonWallet, proverDid, claimOffer, claimDef, masterSecretName)
+                AnonCreds.ProverCreateCredentialReqAsync(commonWallet, proverDid, claimOffer, claimDef, masterSecretName)
             );
         }
 
@@ -50,7 +50,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var claimOffer = string.Format("{{\"issuer_did\":\"{0}\"}}", issuerDid);
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.ProverCreateAndStoreClaimReqAsync(commonWallet, proverDid, claimOffer, claimDef, masterSecretName)
+                AnonCreds.ProverCreateCredentialReqAsync(commonWallet, proverDid, claimOffer, claimDef, masterSecretName)
             );
         }
 
@@ -62,7 +62,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var claimOffer = string.Format(claimOfferTemplate, issuerDid, 2);
 
             var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-                AnonCreds.ProverCreateAndStoreClaimReqAsync(commonWallet, proverDid, claimOffer, claimDef, "other_master_secret")
+                AnonCreds.ProverCreateCredentialReqAsync(commonWallet, proverDid, claimOffer, claimDef, "other_master_secret")
             );
         }
     }
