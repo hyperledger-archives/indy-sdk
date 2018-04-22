@@ -115,9 +115,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             {
                 wallet = await Wallet.OpenWalletAsync(walletName, null, null);
 
-                await AnonCreds.ProverStoreClaimOfferAsync(wallet, claimOffer);
-                await AnonCreds.ProverStoreClaimOfferAsync(wallet, claimOffer2);
-                await AnonCreds.ProverStoreClaimOfferAsync(wallet, claimOffer3);
+                await AnonCreds.ProverStoreCredentialOfferAsync(wallet, claimOffer);
+                await AnonCreds.ProverStoreCredentialOfferAsync(wallet, claimOffer2);
+                await AnonCreds.ProverStoreCredentialOfferAsync(wallet, claimOffer3);
 
                 var filter = string.Format("{{\"issuer_did\":\"{0}\"}}", issuerDid);
 
