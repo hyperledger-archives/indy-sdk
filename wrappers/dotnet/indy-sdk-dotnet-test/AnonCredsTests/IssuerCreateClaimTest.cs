@@ -22,7 +22,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                     "               \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(commonWallet, claimRequest, claim, -1);
+            var createClaimResult = await AnonCreds.IssuerCreateCredentialAsync(commonWallet, claimRequest, claim, -1);
             Assert.IsNotNull(createClaimResult);
             var claimJson = createClaimResult.ClaimJson;
 
@@ -47,7 +47,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                     "       }";
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.IssuerCreateClaimAsync(commonWallet, claimRequest, claim, -1)
+                AnonCreds.IssuerCreateCredentialAsync(commonWallet, claimRequest, claim, -1)
             );
         }
 
@@ -65,7 +65,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                     "       }";
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.IssuerCreateClaimAsync(commonWallet, claimRequest, claim, -1)
+                AnonCreds.IssuerCreateCredentialAsync(commonWallet, claimRequest, claim, -1)
             );
         }
     }
