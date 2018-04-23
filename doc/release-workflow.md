@@ -36,6 +36,23 @@ Indy SDK release process defines the following release channels:
 * master - development builds for each push to master branch
 * rc - release candidates
 * stable - stable releases
+These channels don't correspond exactly to branches; the stable channel is just tags in the rc branch, right now.
+In the future, this may change.
+
+## Compatibility with indy-node
+It's important to understand the relationship between indy-sdk and indy-node as it relates to releases.
+The SDK generally focuses on adding new features at about the same time that indy-node does, and it spends
+most of its compatibility testing effort on proving that its new features work with the corresponding
+features in a newly evolved ledger. Sometimes the SDK may also be released with bug fixes, without the ledger changing--
+but this flow is less common.
+For this reason, the most important release sequence is one where the ledger (indy-node) gets a new feature,
+and the SDK gets the new feature very soon thereafter. The SDK has to prove that it is compatible with the
+new capability the ledger is exposing.
+
+Thus, the SDK's master branch may depend on either the latest stable build of indy-node,
+or on a recent (latest or close-to-latest) master build of indy-node. This means it is a bad idea for
+consumers of indy-sdk to use the latest master build, because that build might not be compatible with
+the version of indy-node that's currently in stable production. Use indy-sdk master branch at your own risk.  
   
 ## Versioning
 * All components are always released together and for simplicity have the same version. It can be changed in the future.
