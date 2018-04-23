@@ -8,10 +8,10 @@ impl TimeoutUtils {
     }
 
     pub fn medium_timeout() -> Duration {
-        Duration::from_secs(10)
+        Duration::from_secs(20)
     }
 
     pub fn long_timeout() -> Duration {
-        Duration::from_secs(100)
+        Duration::from_secs(200)
     }
 }

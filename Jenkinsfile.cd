@@ -636,5 +636,5 @@ def downloadPackagingUtils() {
 }
 
 def setupRust() {
-    sh "rustup default 1.21.0"
+    sh "rustup default 1.25.0"
 }

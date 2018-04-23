@@ -32,7 +32,7 @@ RUN pip3 install -U \
 	plumbum \
 	deb-pkg-tools
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.21.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.25.0
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.cargo/bin"
 
 RUN apt-get update && apt-get install openjdk-8-jdk -y
