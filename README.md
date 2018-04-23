@@ -113,7 +113,35 @@ docker run -itd -p 9701-9708:9701-9708 indy_pool
  Note that for Windows and MacOS this approach has some issues. Docker for these OS run in
  their virtual environment. First command creates network for container and host can't
  get access to that network because container placed on virtual machine. You must appropriate set up 
- networking on your virtual environment.
+ networking on your virtual environment. See the instructions for MacOS below.
+
+### Docker port mapping on MacOS
+
+If you use some Docker distribution based on Virtual Box you can use Virtual Box's
+port forwarding future to map 9701-9709 container ports to local 9701-9709 ports.
+
+If you use VMWare Fusion to run Docker locally, follow the instructions from
+[this article](https://medium.com/@tuweizhong/how-to-setup-port-forward-at-vmware-fusion-8-for-os-x-742ad6ca1344)
+and add the following lines to _/Library/Preferences/VMware Fusion/vmnet8/nat.conf_:
+
+```
+# Use these with care - anyone can enter into your VM through these...
+# The format and example are as follows:
+#<external port number> = <VM's IP address>:<VM's port number>
+#8080 = 172.16.3.128:80
+9701 = <your_docker_ip>:9701
+9702 = <your_docker_ip>:9702
+9703 = <your_docker_ip>:9703
+9704 = <your_docker_ip>:9704
+9705 = <your_docker_ip>:9705
+9706 = <your_docker_ip>:9706
+9707 = <your_docker_ip>:9707
+9708 = <your_docker_ip>:9708
+9709 = <your_docker_ip>:9709
+```
+where <your_docker_ip> is your Docker host IP.
+
+Docker machine needs to be rebooted after these changes.
 
 ## Wrappers documentation
 
