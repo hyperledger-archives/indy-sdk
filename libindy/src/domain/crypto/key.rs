@@ -31,13 +31,3 @@ pub struct KeyInfo {
 impl JsonEncodable for KeyInfo {}
 
 impl<'a> JsonDecodable<'a> for KeyInfo {}
-
-#[derive(Serialize, Deserialize, NamedType)]
-pub struct  KeyMetadata {
-    pub value: String
-}
-
-impl JsonEncodable for KeyMetadata {}
-
-impl<'a> JsonDecodable<'a> for KeyMetadata {}
-

@@ -3,7 +3,7 @@ extern crate libc;
 use api::ErrorCode;
 use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
-use commands::wallet::WalletCommand;
+use commands::non_secrets::NonSecretsCommand;
 use utils::cstring::CStringUtils;
 
 use self::libc::c_char;
@@ -43,8 +43,8 @@ pub extern fn indy_add_wallet_record(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
-        .send(Command::Wallet(
-            WalletCommand::AddRecord(
+        .send(Command::NonSecrets(
+            NonSecretsCommand::AddRecord(
                 wallet_handle,
                 type_,
                 id,
@@ -80,8 +80,8 @@ pub extern fn indy_update_wallet_record_value(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Wallet(
-            WalletCommand::UpdateRecordValue(
+        .send(Command::NonSecrets(
+            NonSecretsCommand::UpdateRecordValue(
                 wallet_handle,
                 type_,
                 id,
@@ -125,8 +125,8 @@ pub extern fn indy_update_wallet_record_tags(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Wallet(
-            WalletCommand::UpdateRecordTags(
+        .send(Command::NonSecrets(
+            NonSecretsCommand::UpdateRecordTags(
                 wallet_handle,
                 type_,
                 id,
@@ -172,8 +172,8 @@ pub extern fn indy_add_wallet_record_tags(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Wallet(
-            WalletCommand::AddRecordTags(
+        .send(Command::NonSecrets(
+            NonSecretsCommand::AddRecordTags(
                 wallet_handle,
                 type_,
                 id,
@@ -209,8 +209,8 @@ pub extern fn indy_delete_wallet_record_tags(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Wallet(
-            WalletCommand::DeleteRecordTags(
+        .send(Command::NonSecrets(
+            NonSecretsCommand::DeleteRecordTags(
                 wallet_handle,
                 type_,
                 id,
@@ -242,8 +242,8 @@ pub extern fn indy_delete_wallet_record(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
-        .send(Command::Wallet(
-            WalletCommand::DeleteRecord(
+        .send(Command::NonSecrets(
+            NonSecretsCommand::DeleteRecord(
                 wallet_handle,
                 type_,
                 id,
@@ -265,6 +265,7 @@ pub extern fn indy_delete_wallet_record(command_handle: i32,
 /// id: the id of record
 /// options_json: //TODO: FIXME: Think about replacing by bitmaks
 ///  {
+///    retrieveType: (optional, false by default) Retrieve record type,
 ///    retrieveValue: (optional, true by default) Retrieve record value,
 ///    retrieveTags: (optional, true by default) Retrieve record tags
 ///  }
@@ -272,6 +273,7 @@ pub extern fn indy_delete_wallet_record(command_handle: i32,
 /// wallet record json:
 /// {
 ///   id: "Some id",
+///   type: "Some type", // present only if retrieveType set to true
 ///   value: "Some value", // present only if retrieveValue set to true
 ///   tags: <tags json>, // present only if retrieveTags set to true
 /// }
@@ -289,8 +291,8 @@ pub  extern fn indy_get_wallet_record(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Wallet(
-            WalletCommand::GetRecord(
+        .send(Command::NonSecrets(
+            NonSecretsCommand::GetRecord(
                 wallet_handle,
                 type_,
                 id,
@@ -326,6 +328,7 @@ pub  extern fn indy_get_wallet_record(command_handle: i32,
 ///  {
 ///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
 ///    retrieveTotalCount: (optional, false by default) Calculate total count,
+///    retrieveType: (optional, false by default) Retrieve record type,
 ///    retrieveValue: (optional, true by default) Retrieve record value,
 ///    retrieveTags: (optional, true by default) Retrieve record tags,
 ///  }
@@ -346,8 +349,8 @@ pub  extern fn indy_open_wallet_search(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Wallet(
-            WalletCommand::OpenSearch(
+        .send(Command::NonSecrets(
+            NonSecretsCommand::OpenSearch(
                 wallet_handle,
                 type_,
                 query_json,
@@ -376,6 +379,7 @@ pub  extern fn indy_open_wallet_search(command_handle: i32,
 ///   totalCount: <int>, // present only if retrieveTotalCount set to true
 ///   records: [{ // present only if retrieveRecords set to true
 ///       id: "Some id",
+///       type: "Some type", // present only if retrieveType set to true
 ///       value: "Some value", // present only if retrieveValue set to true
 ///       tags: <tags json>, // present only if retrieveTags set to true
 ///   }],
@@ -390,8 +394,8 @@ pub  extern fn indy_fetch_wallet_search_next_records(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
-        .send(Command::Wallet(
-            WalletCommand::FetchSearchNextRecords(
+        .send(Command::NonSecrets(
+            NonSecretsCommand::FetchSearchNextRecords(
                 wallet_handle,
                 wallet_search_handle,
                 count,

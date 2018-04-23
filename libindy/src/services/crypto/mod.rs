@@ -8,7 +8,7 @@ use self::ed25519::ED25519CryptoType;
 use utils::crypto::base58::Base58;
 use utils::crypto::verkey_builder::build_full_verkey;
 use domain::crypto::key::{Key, KeyInfo};
-use domain::crypto::did::{Did, MyDidInfo, TheirDidInfo};
+use domain::crypto::did::{Did, MyDidInfo, TheirDidInfo, TheirDid};
 use domain::crypto::combo_box::ComboBox;
 
 use errors::common::CommonError;
@@ -109,7 +109,7 @@ impl CryptoService {
         Ok((Did::new(did, vk.clone()), Key::new(vk, sk)))
     }
 
-    pub fn create_their_did(&self, their_did_info: &TheirDidInfo) -> Result<Did, CryptoError> {
+    pub fn create_their_did(&self, their_did_info: &TheirDidInfo) -> Result<TheirDid, CryptoError> {
         // Check did is correct Base58
         Base58::decode(&their_did_info.did)?;
 
@@ -118,7 +118,7 @@ impl CryptoService {
 
         self.validate_key(&verkey)?;
 
-        let did = Did::new(their_did_info.did.clone(), verkey);
+        let did = TheirDid { did: their_did_info.did.clone(), verkey };
         Ok(did)
     }
 
@@ -341,7 +341,7 @@ impl CryptoService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use services::crypto::types::MyDidInfo;
+    use domain::crypto::did::MyDidInfo;
 
     #[test]
     fn create_my_did_with_works_for_empty_info() {

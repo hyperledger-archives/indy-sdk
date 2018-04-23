@@ -1,7 +1,8 @@
 extern crate libc;
 extern crate indy_crypto;
+extern crate serde_json;
 
-use super::{WalletStorage, WalletStorageType, WalletRecord, WalletSearch};
+use super::{WalletStorage, WalletStorageType, WalletRecord, WalletSearch, RecordOptions};
 
 use api::ErrorCode;
 use errors::common::CommonError;
@@ -13,6 +14,7 @@ use std::error::Error;
 use std::ffi::{CString, CStr, NulError};
 use std::ptr;
 use std::str::Utf8Error;
+use std::{slice, str};
 
 use self::indy_crypto::utils::json::JsonDecodable;
 use api::wallet::*;
@@ -221,11 +223,15 @@ impl WalletStorage for PluggedWallet {
     }
 
     fn get_record(&self, type_: &str, id: &str, options_json: &str) -> Result<WalletRecord, WalletError> {
+        let options: RecordOptions = RecordOptions::from_json(options_json)
+            .map_err(|err|
+                WalletError::CommonError(
+                    CommonError::InvalidStructure(format!("Cannot deserialize RecordRetrieveOptions: {:?}", err))))?;
+
         let type_ = CString::new(type_)?;
         let id = CString::new(id)?;
         let options_json = CString::new(options_json)?;
         let mut record_handle_p: u32 = 0;
-
         let err = (self.get_record_handler)(self.handle,
                                             type_.as_ptr(),
                                             id.as_ptr(),
@@ -247,49 +253,57 @@ impl WalletStorage for PluggedWallet {
 
         let id = unsafe { CStr::from_ptr(id_ptr).to_str()?.to_string() };
 
-        let mut type_ptr: *const c_char = ptr::null_mut();
-        let err = (self.get_record_type_handler)(self.handle,
-                                                 record_handle_p,
-                                                 &mut type_ptr);
+        let type_ = if let Some(true) = options.retrieve_type {
+            let mut type_ptr: *const c_char = ptr::null_mut();
+            let err = (self.get_record_type_handler)(self.handle,
+                                                     record_handle_p,
+                                                     &mut type_ptr);
 
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
+            if err != ErrorCode::Success {
+                return Err(WalletError::PluggedWallerError(err));
+            }
 
-        let type_ = unsafe { CStr::from_ptr(type_ptr).to_str()?.to_string() };
+            Some(unsafe { CStr::from_ptr(type_ptr).to_str()?.to_string() })
+        } else { None };
 
-        let mut value_bytes: *const u8 = ptr::null();
-        let mut value_bytes_len: usize = 0;
-        let err = (self.get_record_value_handler)(self.handle,
-                                                  record_handle_p,
-                                                  &mut value_bytes,
-                                                  &mut value_bytes_len);
+        let value = if let Some(false) = options.retrieve_value {
+            None
+        } else {
+            let mut value_bytes: *const u8 = ptr::null();
+            let mut value_bytes_len: usize = 0;
+            let err = (self.get_record_value_handler)(self.handle,
+                                                      record_handle_p,
+                                                      &mut value_bytes,
+                                                      &mut value_bytes_len);
 
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
+            if err != ErrorCode::Success {
+                return Err(WalletError::PluggedWallerError(err));
+            }
 
-        use std::{slice, str};
+            let value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
+            Some(str::from_utf8(&value).unwrap().to_string())
+        };
 
-        let value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
-        let value = str::from_utf8(&value).unwrap().to_string();
+        let tags = if let Some(false) = options.retrieve_tags {
+            None
+        } else {
+            let mut tags_ptr: *const c_char = ptr::null_mut();
+            let err = (self.get_record_tags_handler)(self.handle,
+                                                     record_handle_p,
+                                                     &mut tags_ptr);
 
-        let mut tags_ptr: *const c_char = ptr::null_mut();
-        let err = (self.get_record_tags_handler)(self.handle,
-                                                 record_handle_p,
-                                                 &mut tags_ptr);
+            if err != ErrorCode::Success {
+                return Err(WalletError::PluggedWallerError(err));
+            }
 
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        let tags = unsafe { CStr::from_ptr(tags_ptr).to_str()?.to_string() };
+            Some(unsafe { CStr::from_ptr(tags_ptr).to_str()?.to_string() })
+        };
 
         let result = WalletRecord {
             id,
-            type_: Some(type_),
-            value: Some(value),
-            tags: Some(tags)
+            type_,
+            value,
+            tags
         };
 
         let err = (self.free_record_handler)(self.handle, record_handle_p);
@@ -317,6 +331,7 @@ impl WalletStorage for PluggedWallet {
             return Err(WalletError::PluggedWallerError(err));
         }
 
+        //TODO:
         let records: Vec<WalletRecord> = Vec::new();
         let result = WalletSearch {
             total_count: Some(0),
@@ -342,6 +357,7 @@ impl WalletStorage for PluggedWallet {
             return Err(WalletError::PluggedWallerError(err));
         }
 
+        //TODO:
         let records: Vec<WalletRecord> = Vec::new();
         let result = WalletSearch {
             total_count: Some(0),

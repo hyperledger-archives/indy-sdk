@@ -466,7 +466,9 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            DidUtils::set_did_metadata(wallet_handle, DID, METADATA).unwrap();
+            let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            DidUtils::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -479,13 +481,15 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            DidUtils::set_did_metadata(wallet_handle, DID, METADATA).unwrap();
-            let metadata = DidUtils::get_did_metadata(wallet_handle, DID).unwrap();
+            let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            DidUtils::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
+            let metadata = DidUtils::get_did_metadata(wallet_handle, &did).unwrap();
             assert_eq!(METADATA.to_string(), metadata);
 
             let new_metadata = "updated metadata";
-            DidUtils::set_did_metadata(wallet_handle, DID, new_metadata).unwrap();
-            let updated_metadata = DidUtils::get_did_metadata(wallet_handle, DID).unwrap();
+            DidUtils::set_did_metadata(wallet_handle, &did, new_metadata).unwrap();
+            let updated_metadata = DidUtils::get_did_metadata(wallet_handle, &did).unwrap();
             assert_eq!(new_metadata, updated_metadata);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -499,7 +503,9 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            DidUtils::set_did_metadata(wallet_handle, DID, "").unwrap();
+            let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            DidUtils::set_did_metadata(wallet_handle, &did, "").unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -521,13 +527,29 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_set_did_metadata_works_for_unknown_did() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let res = DidUtils::set_did_metadata(wallet_handle, &DID, METADATA);
+            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
         fn indy_set_did_metadata_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
+            let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
             let invalid_wallet_handle = wallet_handle + 1;
-            let res = DidUtils::set_did_metadata(invalid_wallet_handle, DID, METADATA);
+            let res = DidUtils::set_did_metadata(invalid_wallet_handle, &did, METADATA);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -545,9 +567,11 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            DidUtils::set_did_metadata(wallet_handle, DID, METADATA).unwrap();
+            let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let metadata = DidUtils::get_did_metadata(wallet_handle, DID).unwrap();
+            DidUtils::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
+
+            let metadata = DidUtils::get_did_metadata(wallet_handle, &did).unwrap();
             assert_eq!(METADATA.to_string(), metadata);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -561,9 +585,11 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            DidUtils::set_did_metadata(wallet_handle, DID, "").unwrap();
+            let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let metadata = DidUtils::get_did_metadata(wallet_handle, DID).unwrap();
+            DidUtils::set_did_metadata(wallet_handle, &did, "").unwrap();
+
+            let metadata = DidUtils::get_did_metadata(wallet_handle, &did).unwrap();
             assert_eq!("", metadata);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -573,6 +599,22 @@ mod high_cases {
 
         #[test]
         fn indy_get_did_metadata_works_for_no_metadata() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            let res = DidUtils::get_did_metadata(wallet_handle, &did);
+            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_get_did_metadata_works_for_unknown_did() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
@@ -591,9 +633,11 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            DidUtils::set_did_metadata(wallet_handle, DID, METADATA).unwrap();
+            let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
-            let res = DidUtils::get_did_metadata(wallet_handle + 1, DID);
+            DidUtils::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
+
+            let res = DidUtils::get_did_metadata(wallet_handle + 1, &did);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();

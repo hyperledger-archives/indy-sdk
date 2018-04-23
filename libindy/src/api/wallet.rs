@@ -129,12 +129,19 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
 /// #Params
 /// pool_name: Name of the pool that corresponds to this wallet.
 /// name: Name of the wallet.
-/// xtype(optional): Type of the wallet. Defaults to 'default'.
-///                  Custom types can be registered with indy_register_wallet_storage call.
-/// config(optional): Wallet configuration json. List of supported keys are defined by wallet type.
-///                    if NULL, then default config will be used.
-/// credentials(optional): Wallet credentials json. List of supported keys are defined by wallet type.
-///                    if NULL, then default config will be used.
+/// storage_type(optional): Type of the wallet storage. Defaults to 'default'.
+///                  Custom storage types can be registered with indy_register_wallet_storage call.
+/// config(optional): Wallet configuration json.
+///   {
+///       "storage": <object>  List of supported keys are defined by wallet type.
+///   }
+/// credentials(optional): Wallet credentials json (if NULL, then default config will be used).
+///   {
+///       "key": string,
+///       "rekey": Optional<string>,
+///       "storage": Optional<object>  List of supported keys are defined by wallet type.
+///
+///   }
 ///
 /// #Returns
 /// Error code
@@ -146,13 +153,13 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
 pub extern fn indy_create_wallet(command_handle: i32,
                                  pool_name: *const c_char,
                                  name: *const c_char,
-                                 xtype: *const c_char,
+                                 storage_type: *const c_char,
                                  config: *const c_char,
                                  credentials: *const c_char,
                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(pool_name, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam3);
-    check_useful_opt_c_str!(xtype, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(storage_type, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(credentials, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
@@ -161,7 +168,7 @@ pub extern fn indy_create_wallet(command_handle: i32,
         .send(Command::Wallet(WalletCommand::Create(
             pool_name,
             name,
-            xtype,
+            storage_type,
             config,
             credentials,
             Box::new(move |result| {
@@ -180,13 +187,17 @@ pub extern fn indy_create_wallet(command_handle: i32,
 ///
 /// #Params
 /// name: Name of the wallet.
-/// runtime_config (optional): Runtime wallet configuration json. if NULL, then default runtime_config will be used. Example:
-/// {
-///     "freshness_time": string (optional), Amount of minutes to consider wallet value as fresh. Defaults to 24*60.
-///     ... List of additional supported keys are defined by wallet type.
-/// }
-/// credentials(optional): Wallet credentials json. List of supported keys are defined by wallet type.
-///                    if NULL, then default credentials will be used.
+/// runtime_config (optional): Runtime wallet configuration json. if NULL, then default runtime_config will be used.
+///   {
+///       "storage": Optional<object>  List of supported keys are defined by wallet type.
+///   }
+/// credentials(optional): Wallet credentials json.
+///   {
+///       "key": string,
+///       "rekey": Optional<string>,
+///       "storage": Optional<object>  List of supported keys are defined by wallet type.
+///
+///   }
 ///
 /// #Returns
 /// Handle to opened wallet to use in methods that require wallet access.
@@ -446,6 +457,7 @@ pub type WalletDeleteRecord = extern fn(storage_handle: i32,
 /// id: the id of record
 /// options_json: //TODO: FIXME: Think about replacing by bitmaks
 ///  {
+///    retrieveType: (optional, false by default) Retrieve record type,
 ///    retrieveValue: (optional, true by default) Retrieve record value,
 ///    retrieveTags: (optional, true by default) Retrieve record tags
 ///  }
@@ -536,6 +548,7 @@ pub type WalletFreeRecord = extern fn(storage_handle: i32,
 ///  {
 ///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
 ///    retrieveTotalCount: (optional, false by default) Calculate total count,
+///    retrieveType: (optional, false by default) Retrieve record type,
 ///    retrieveValue: (optional, true by default) Retrieve record value,
 ///    retrieveTags: (optional, true by default) Retrieve record tags,
 ///  }

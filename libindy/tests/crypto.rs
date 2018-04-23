@@ -89,7 +89,9 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            CryptoUtils::set_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
+
+            CryptoUtils::set_key_metadata(wallet_handle, &verkey, METADATA).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -102,13 +104,15 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            CryptoUtils::set_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
-            let metadata = CryptoUtils::get_key_metadata(wallet_handle, VERKEY).unwrap();
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
+
+            CryptoUtils::set_key_metadata(wallet_handle, &verkey, METADATA).unwrap();
+            let metadata = CryptoUtils::get_key_metadata(wallet_handle, &verkey).unwrap();
             assert_eq!(METADATA.to_string(), metadata);
 
             let new_metadata = "updated metadata";
-            CryptoUtils::set_key_metadata(wallet_handle, VERKEY, new_metadata).unwrap();
-            let updated_metadata = CryptoUtils::get_key_metadata(wallet_handle, VERKEY).unwrap();
+            CryptoUtils::set_key_metadata(wallet_handle, &verkey, new_metadata).unwrap();
+            let updated_metadata = CryptoUtils::get_key_metadata(wallet_handle, &verkey).unwrap();
             assert_eq!(new_metadata, updated_metadata);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -122,7 +126,9 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let res = CryptoUtils::set_key_metadata(wallet_handle + 1, VERKEY, METADATA);
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
+
+            let res = CryptoUtils::set_key_metadata(wallet_handle + 1, &verkey, METADATA);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -136,7 +142,9 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            CryptoUtils::set_key_metadata(wallet_handle, VERKEY, "").unwrap();
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
+
+            CryptoUtils::set_key_metadata(wallet_handle, &verkey, "").unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -168,9 +176,11 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            CryptoUtils::set_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
-            let metadata = CryptoUtils::get_key_metadata(wallet_handle, VERKEY).unwrap();
+            CryptoUtils::set_key_metadata(wallet_handle, &verkey, METADATA).unwrap();
+
+            let metadata = CryptoUtils::get_key_metadata(wallet_handle, &verkey).unwrap();
             assert_eq!(METADATA.to_string(), metadata);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -184,9 +194,11 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            CryptoUtils::set_key_metadata(wallet_handle, VERKEY, "").unwrap();
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
-            let metadata = CryptoUtils::get_key_metadata(wallet_handle, VERKEY).unwrap();
+            CryptoUtils::set_key_metadata(wallet_handle, &verkey, "").unwrap();
+
+            let metadata = CryptoUtils::get_key_metadata(wallet_handle, &verkey).unwrap();
             assert_eq!("", metadata);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -200,7 +212,9 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let res = CryptoUtils::get_key_metadata(wallet_handle, VERKEY);
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
+
+            let res = CryptoUtils::get_key_metadata(wallet_handle, &verkey);
             assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -214,9 +228,11 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            CryptoUtils::set_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
-            let res = CryptoUtils::get_key_metadata(wallet_handle + 1, VERKEY);
+            CryptoUtils::set_key_metadata(wallet_handle, &verkey, METADATA).unwrap();
+
+            let res = CryptoUtils::get_key_metadata(wallet_handle + 1, &verkey);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();

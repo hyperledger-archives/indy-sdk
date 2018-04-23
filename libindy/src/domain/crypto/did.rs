@@ -52,11 +52,31 @@ impl JsonEncodable for Did {}
 
 impl<'a> JsonDecodable<'a> for Did {}
 
-#[derive(Serialize, Deserialize, NamedType)]
-pub struct DidMetadata {
-    pub value: String
+#[derive(Serialize, Deserialize, Debug, NamedType)]
+pub struct TheirDid {
+    pub did: String,
+    pub verkey: String
 }
 
-impl JsonEncodable for DidMetadata {}
+impl JsonEncodable for TheirDid {}
 
-impl<'a> JsonDecodable<'a> for DidMetadata {}
+impl<'a> JsonDecodable<'a> for TheirDid {}
+
+#[derive(Serialize, Deserialize, Debug, NamedType)]
+pub struct TemporaryDid {
+    pub did: String,
+    pub verkey: String
+}
+
+impl JsonEncodable for TemporaryDid {}
+
+impl<'a> JsonDecodable<'a> for TemporaryDid {}
+
+impl From<TemporaryDid> for Did {
+    fn from(temp_did: TemporaryDid) -> Self {
+        Did {
+            did: temp_did.did,
+            verkey: temp_did.verkey
+        }
+    }
+}

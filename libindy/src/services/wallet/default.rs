@@ -3,14 +3,13 @@ extern crate time;
 extern crate indy_crypto;
 extern crate serde_json;
 
-use super::{WalletStorage, WalletStorageType, WalletRecord, WalletSearch};
+use super::{WalletStorage, WalletStorageType, WalletRecord, RecordOptions, WalletSearch, SearchOptions};
 
 use errors::common::CommonError;
 use errors::wallet::WalletError;
 use utils::environment::EnvironmentUtils;
 
 use self::rusqlcipher::Connection;
-use self::time::Timespec;
 
 use std::error::Error;
 use std::fs;
@@ -20,17 +19,13 @@ use std::path::PathBuf;
 use self::indy_crypto::utils::json::JsonDecodable;
 
 #[derive(Deserialize)]
-struct DefaultWalletRuntimeConfig {
-    freshness_time: i64
+struct DefaultWalletRuntimeConfig {}
+
+impl Default for DefaultWalletRuntimeConfig {
+    fn default() -> Self { DefaultWalletRuntimeConfig {} }
 }
 
 impl<'a> JsonDecodable<'a> for DefaultWalletRuntimeConfig {}
-
-impl Default for DefaultWalletRuntimeConfig {
-    fn default() -> Self {
-        DefaultWalletRuntimeConfig { freshness_time: 1000 }
-    }
-}
 
 #[derive(Deserialize, Debug)]
 struct DefaultWalletCredentials {
@@ -44,12 +39,6 @@ impl Default for DefaultWalletCredentials {
     fn default() -> Self {
         DefaultWalletCredentials { key: String::new(), rekey: None }
     }
-}
-
-struct DefaultWalletRecord {
-    key: String,
-    value: String,
-    time_created: Timespec
 }
 
 struct DefaultWallet {
@@ -134,29 +123,67 @@ impl WalletStorage for DefaultWallet {
     }
 
     fn get_record(&self, type_: &str, id: &str, options_json: &str) -> Result<WalletRecord, WalletError> {
+        let options = RecordOptions::from_json(options_json)
+            .map_err(|err|
+                WalletError::CommonError(
+                    CommonError::InvalidStructure(format!("Cannot deserialize RecordRetrieveOptions: {:?}", err))))?;
+
+        let mut columns: Vec<&'static str> = vec!["id"];
+
+        if Some(true) == options.retrieve_type {
+            columns.push("type")
+        }
+        if Some(false) != options.retrieve_value {
+            columns.push("value")
+        }
+        if Some(false) != options.retrieve_tags {
+            columns.push("tags")
+        }
+
+        let columns_str = columns.join(", ").to_string();
+
         let record = _open_connection(self.name.as_str(), &self.credentials)?
             .query_row(
-                "SELECT id, type, value, tags FROM wallet WHERE id = ?1 AND type = ?2 LIMIT 1",
+                &format!("SELECT {} FROM wallet WHERE id = ?1 AND type = ?2 LIMIT 1", columns_str),
                 &[&id.to_string(), &type_.to_string()], |row| {
                     WalletRecord {
-                        id: row.get(0),
-                        type_: row.get(1),
-                        value: row.get(2),
-                        tags: row.get(3)
+                        id: row.get("id"),
+                        type_: if columns.contains(&"type") { row.get("type") } else { None },
+                        value: if columns.contains(&"value") { row.get("value") } else { None },
+                        tags: if columns.contains(&"tags") { row.get("tags") } else { None },
                     }
                 })?;
         Ok(record)
     }
 
     fn search_records(&self, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> {
+        let options = SearchOptions::from_json(options_json)
+            .map_err(|err|
+                WalletError::CommonError(
+                    CommonError::InvalidStructure(format!("Cannot deserialize RecordRetrieveOptions: {:?}", err))))?;
+
+        let mut columns: Vec<&'static str> = vec!["id"];
+
+        if Some(true) == options.retrieve_type {
+            columns.push("type")
+        }
+        if Some(false) != options.retrieve_value {
+            columns.push("value")
+        }
+        if Some(false) != options.retrieve_tags {
+            columns.push("tags")
+        }
+
+        let columns_str = columns.join(", ").to_string();
+
         let connection = _open_connection(self.name.as_str(), &self.credentials)?;
-        let mut stmt = connection.prepare("SELECT id, type, value, tags FROM wallet WHERE type = ?1")?;
+        let mut stmt = connection.prepare(&format!("SELECT {} FROM wallet WHERE type = ?1", columns_str))?;
         let records = stmt.query_map(&[&type_.to_string()], |row| {
             WalletRecord {
-                id: row.get(0),
-                type_: row.get(1),
-                value: row.get(2),
-                tags: row.get(3)
+                id: row.get("id"),
+                type_: if columns.contains(&"type") { row.get("type") } else { None },
+                value: if columns.contains(&"value") { row.get("value") } else { None },
+                tags: if columns.contains(&"tags") { row.get("tags") } else { None }
             }
         })?;
 
@@ -175,7 +202,6 @@ impl WalletStorage for DefaultWallet {
     }
 
     fn search_all_records(&self) -> Result<WalletSearch, WalletError> {
-
         let connection = _open_connection(self.name.as_str(), &self.credentials)?;
         let mut stmt = connection.prepare("SELECT id, type, value, tags FROM wallet")?;
         let records = stmt.query_map(&[], |row| {
@@ -228,8 +254,8 @@ impl WalletStorageType for DefaultWalletType {
             return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
         }
 
-        _open_connection(name, &DefaultWalletCredentials::default()).map_err(map_err_trace!())?
-            .execute("CREATE TABLE IF NOT EXISTS wallet (id TEXT NOT NULL, type TEXT NOT NULL, value TEXT NOT NULL, tags TEXT, PRIMARY KEY (id, type))", &[])
+        _open_connection(name, &runtime_auth).map_err(map_err_trace!())?
+            .execute("CREATE TABLE wallet (id TEXT NOT NULL, type TEXT NOT NULL, value TEXT NOT NULL, tags TEXT, PRIMARY KEY (id, type))", &[])
             .map_err(map_err_trace!())?;
 
         trace!("DefaultWalletType.create <<");
@@ -426,9 +452,9 @@ mod tests {
         wallet_type.create("wallet1", None, None).unwrap();
         let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
 
-        wallet.set("key1", "value1").unwrap();
-        let value = wallet.get("key1").unwrap();
-        assert_eq!("value1", value);
+        wallet.add_record("type1", "key1", "value1", "{}").unwrap();
+        let value = wallet.get_record("type1", "key1", "{}").unwrap();
+        assert_eq!("value1", value.get_value().unwrap());
 
         TestUtils::cleanup_indy_home();
     }
@@ -442,12 +468,12 @@ mod tests {
 
         {
             let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
-            wallet.set("key1", "value1").unwrap();
+            wallet.add_record("type1", "key1", "value1", "{}").unwrap();
         }
 
         let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
-        let value = wallet.get("key1").unwrap();
-        assert_eq!("value1", value);
+        let value = wallet.get_record("type1", "key1", "{}").unwrap();
+        assert_eq!("value1", value.get_value().unwrap());
 
         TestUtils::cleanup_indy_home();
     }
@@ -460,45 +486,27 @@ mod tests {
         wallet_type.create("wallet1", None, None).unwrap();
 
         let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
-        let value = wallet.get("key1");
-        assert_match!(Err(WalletError::NotFound(_)), value);
+        let search = wallet.get_record("type1", "key1", "{}");
+        assert_match!(Err(WalletError::NotFound(_)), search);
 
         TestUtils::cleanup_indy_home();
     }
 
     #[test]
-    fn default_wallet_set_get_works_for_update() {
+    fn default_wallet_update_record_works() {
         TestUtils::cleanup_indy_home();
 
         let wallet_type = DefaultWalletType::new();
         wallet_type.create("wallet1", None, None).unwrap();
         let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
 
-        wallet.set("key1", "value1").unwrap();
-        let value = wallet.get("key1").unwrap();
-        assert_eq!("value1", value);
+        wallet.add_record("type1", "key1", "value1", "{}").unwrap();
+        let value = wallet.get_record("type1", "key1", "{}").unwrap();
+        assert_eq!("value1", value.get_value().unwrap());
 
-        wallet.set("key1", "value2").unwrap();
-        let value = wallet.get("key1").unwrap();
-        assert_eq!("value2", value);
-
-        TestUtils::cleanup_indy_home();
-    }
-
-    #[test]
-    fn default_wallet_set_get_not_expired_works() {
-        TestUtils::cleanup_indy_home();
-
-        let wallet_type = DefaultWalletType::new();
-        wallet_type.create("wallet1", None, None).unwrap();
-        let wallet = wallet_type.open("wallet1", "pool1", None, Some("{\"freshness_time\": 1}"), None).unwrap();
-        wallet.set("key1", "value1").unwrap();
-
-        // Wait until value expires
-        thread::sleep(Duration::new(2, 0));
-
-        let value = wallet.get_not_expired("key1");
-        assert_match!(Err(WalletError::NotFound(_)), value);
+        wallet.update_record_value("type1", "key1", "value2").unwrap();
+        let value = wallet.get_record("type1", "key1", "{}").unwrap();
+        assert_eq!("value2", value.get_value().unwrap());
 
         TestUtils::cleanup_indy_home();
     }
@@ -511,20 +519,19 @@ mod tests {
         wallet_type.create("wallet1", None, None).unwrap();
         let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
 
-        wallet.set("key1::subkey1", "value1").unwrap();
-        wallet.set("key1::subkey2", "value2").unwrap();
+        wallet.add_record("type1", "key1", "value1", "{}").unwrap();
+        wallet.add_record("type1", "key2", "value2", "{}").unwrap();
 
-        let mut key_values = wallet.list("key1::").unwrap();
-        key_values.sort();
-        assert_eq!(2, key_values.len());
+        let mut search = wallet.search_records("type1", "{}", "{}").unwrap();
+        assert_eq!(2, search.get_total_count().unwrap().unwrap());
 
-        let (key, value) = key_values.pop().unwrap();
-        assert_eq!("key1::subkey2", key);
-        assert_eq!("value2", value);
+        let record = search.fetch_next_record().unwrap().unwrap();
+        assert_eq!("key1", record.get_id());
+        assert_eq!("value1", record.get_value().unwrap());
 
-        let (key, value) = key_values.pop().unwrap();
-        assert_eq!("key1::subkey1", key);
-        assert_eq!("value1", value);
+        let record = search.fetch_next_record().unwrap().unwrap();
+        assert_eq!("key2", record.get_id());
+        assert_eq!("value2", record.get_value().unwrap());
 
         TestUtils::cleanup_indy_home();
     }
@@ -593,39 +600,28 @@ mod tests {
             default_wallet_type.create("mywallet", None, Some(r#"{"key":""}"#)).unwrap();
             let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":""}"#)).unwrap();
 
-            wallet.set("key1::subkey1", "value1").unwrap();
-            wallet.set("key1::subkey2", "value2").unwrap();
+            wallet.add_record("type1", "key1", "value1", "{}").unwrap();
         }
         {
             let default_wallet_type = DefaultWalletType::new();
             let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":"", "rekey":"thisisatest"}"#)).unwrap();
-            let mut key_values = wallet.list("key1::").unwrap();
-            key_values.sort();
-            assert_eq!(2, key_values.len());
+            let mut search = wallet.search_records("type1", "{}", "{}").unwrap();
+            assert_eq!(1, search.get_total_count().unwrap().unwrap());
 
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey2", key);
-            assert_eq!("value2", value);
-
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey1", key);
-            assert_eq!("value1", value);
+            let record = search.fetch_next_record().unwrap().unwrap();
+            assert_eq!("key1", record.get_id());
+            assert_eq!("value1", record.get_value().unwrap());
         }
         {
             let default_wallet_type = DefaultWalletType::new();
             let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":"thisisatest"}"#)).unwrap();
 
-            let mut key_values = wallet.list("key1::").unwrap();
-            key_values.sort();
-            assert_eq!(2, key_values.len());
+            let mut search = wallet.search_records("type1", "{}", "{}").unwrap();
+            assert_eq!(1, search.get_total_count().unwrap().unwrap());
 
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey2", key);
-            assert_eq!("value2", value);
-
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey1", key);
-            assert_eq!("value1", value);
+            let record = search.fetch_next_record().unwrap().unwrap();
+            assert_eq!("key1", record.get_id());
+            assert_eq!("value1", record.get_value().unwrap());
         }
 
         TestUtils::cleanup_indy_home();
@@ -639,39 +635,29 @@ mod tests {
             default_wallet_type.create("mywallet", None, Some(r#"{"key":"thisisatest"}"#)).unwrap();
             let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":"thisisatest"}"#)).unwrap();
 
-            wallet.set("key1::subkey1", "value1").unwrap();
-            wallet.set("key1::subkey2", "value2").unwrap();
+            wallet.add_record("type1", "key1", "value1", "{}").unwrap();
         }
         {
             let default_wallet_type = DefaultWalletType::new();
             let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":"thisisatest", "rekey":""}"#)).unwrap();
-            let mut key_values = wallet.list("key1::").unwrap();
-            key_values.sort();
-            assert_eq!(2, key_values.len());
 
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey2", key);
-            assert_eq!("value2", value);
+            let mut search = wallet.search_records("type1", "{}", "{}").unwrap();
+            assert_eq!(1, search.get_total_count().unwrap().unwrap());
 
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey1", key);
-            assert_eq!("value1", value);
+            let record = search.fetch_next_record().unwrap().unwrap();
+            assert_eq!("key1", record.get_id());
+            assert_eq!("value1", record.get_value().unwrap());
         }
         {
             let default_wallet_type = DefaultWalletType::new();
             let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":""}"#)).unwrap();
 
-            let mut key_values = wallet.list("key1::").unwrap();
-            key_values.sort();
-            assert_eq!(2, key_values.len());
+            let mut search = wallet.search_records("type1", "{}", "{}").unwrap();
+            assert_eq!(1, search.get_total_count().unwrap().unwrap());
 
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey2", key);
-            assert_eq!("value2", value);
-
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey1", key);
-            assert_eq!("value1", value);
+            let record = search.fetch_next_record().unwrap().unwrap();
+            assert_eq!("key1", record.get_id());
+            assert_eq!("value1", record.get_value().unwrap());
         }
 
         TestUtils::cleanup_indy_home();
@@ -686,20 +672,14 @@ mod tests {
             default_wallet_type.create("encrypted_wallet", None, Some(r#"{"key":"test"}"#)).unwrap();
             let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some(r#"{"key":"test"}"#)).unwrap();
 
-            wallet.set("key1::subkey1", "value1").unwrap();
-            wallet.set("key1::subkey2", "value2").unwrap();
+            wallet.add_record("type1", "key1", "value1", "{}").unwrap();
 
-            let mut key_values = wallet.list("key1::").unwrap();
-            key_values.sort();
-            assert_eq!(2, key_values.len());
+            let mut search = wallet.search_records("type1", "{}", "{}").unwrap();
+            assert_eq!(1, search.get_total_count().unwrap().unwrap());
 
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey2", key);
-            assert_eq!("value2", value);
-
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey1", key);
-            assert_eq!("value1", value);
+            let record = search.fetch_next_record().unwrap().unwrap();
+            assert_eq!("key1", record.get_id());
+            assert_eq!("value1", record.get_value().unwrap());
         }
         {
             let default_wallet_type = DefaultWalletType::new();
@@ -723,54 +703,38 @@ mod tests {
             default_wallet_type.create("encrypted_wallet", None, Some(r#"{"key":"test"}"#)).unwrap();
             let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some(r#"{"key":"test"}"#)).unwrap();
 
-            wallet.set("key1::subkey1", "value1").unwrap();
-            wallet.set("key1::subkey2", "value2").unwrap();
+            wallet.add_record("type1", "key1", "value1", "{}").unwrap();
 
-            let mut key_values = wallet.list("key1::").unwrap();
-            key_values.sort();
-            assert_eq!(2, key_values.len());
+            let mut search = wallet.search_records("type1", "{}", "{}").unwrap();
+            assert_eq!(1, search.get_total_count().unwrap().unwrap());
 
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey2", key);
-            assert_eq!("value2", value);
-
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey1", key);
-            assert_eq!("value1", value);
+            let record = search.fetch_next_record().unwrap().unwrap();
+            assert_eq!("key1", record.get_id());
+            assert_eq!("value1", record.get_value().unwrap());
         }
 
         {
             let default_wallet_type = DefaultWalletType::new();
             let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some(r#"{"key":"test","rekey":"newtest"}"#)).unwrap();
 
-            let mut key_values = wallet.list("key1::").unwrap();
-            key_values.sort();
-            assert_eq!(2, key_values.len());
+            let mut search = wallet.search_records("type1", "{}", "{}").unwrap();
+            assert_eq!(1, search.get_total_count().unwrap().unwrap());
 
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey2", key);
-            assert_eq!("value2", value);
-
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey1", key);
-            assert_eq!("value1", value);
+            let record = search.fetch_next_record().unwrap().unwrap();
+            assert_eq!("key1", record.get_id());
+            assert_eq!("value1", record.get_value().unwrap());
         }
 
         {
             let default_wallet_type = DefaultWalletType::new();
             let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some(r#"{"key":"newtest"}"#)).unwrap();
 
-            let mut key_values = wallet.list("key1::").unwrap();
-            key_values.sort();
-            assert_eq!(2, key_values.len());
+            let mut search = wallet.search_records("type1", "{}", "{}").unwrap();
+            assert_eq!(1, search.get_total_count().unwrap().unwrap());
 
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey2", key);
-            assert_eq!("value2", value);
-
-            let (key, value) = key_values.pop().unwrap();
-            assert_eq!("key1::subkey1", key);
-            assert_eq!("value1", value);
+            let record = search.fetch_next_record().unwrap().unwrap();
+            assert_eq!("key1", record.get_id());
+            assert_eq!("value1", record.get_value().unwrap());
         }
 
         TestUtils::cleanup_indy_home();

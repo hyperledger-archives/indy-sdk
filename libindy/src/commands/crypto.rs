@@ -1,11 +1,13 @@
 extern crate indy_crypto;
+extern crate serde_json;
 
 use self::indy_crypto::utils::json::JsonDecodable;
 use errors::common::CommonError;
+use errors::wallet::WalletError;
 use errors::indy::IndyError;
-use domain::crypto::key::{KeyInfo, Key, KeyMetadata};
+use domain::crypto::key::{KeyInfo, Key};
 use domain::crypto::combo_box::ComboBox;
-use services::wallet::{WalletService, RecordRetrieveOptions};
+use services::wallet::{WalletService, RecordOptions};
 use services::crypto::CryptoService;
 
 use std::error::Error;
@@ -143,8 +145,7 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(my_vk)?;
 
-        let key: Key =
-            self.wallet_service.get_indy_object(wallet_handle, &my_vk, RecordRetrieveOptions::ID_VALUE, &mut String::new())?;
+        let key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value(), &mut String::new())?;
 
         let res = self.crypto_service.sign(&key, msg)?;
 
@@ -179,7 +180,7 @@ impl CryptoCommandExecutor {
         self.crypto_service.validate_key(&their_vk)?;
 
         let my_key: Key =
-            self.wallet_service.get_indy_object(wallet_handle, &my_vk, RecordRetrieveOptions::ID_VALUE, &mut String::new())?;
+            self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value(), &mut String::new())?;
 
         let msg = self.crypto_service.create_combo_box(&my_key, &their_vk, msg.as_slice())?;
 
@@ -201,8 +202,7 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(&my_vk)?;
 
-        let my_key: Key =  self.
-            wallet_service.get_indy_object(wallet_handle, &my_vk, RecordRetrieveOptions::ID_VALUE, &mut String::new())?;
+        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value(), &mut String::new())?;
 
         let decrypted_msg = self.crypto_service.decrypt_sealed(&my_key, &msg)?;
 
@@ -246,8 +246,7 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(&my_vk)?;
 
-        let my_key: Key =  self
-            .wallet_service.get_indy_object(wallet_handle, &my_vk, RecordRetrieveOptions::ID_VALUE, &mut String::new())?;
+        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value(), &mut String::new())?;
 
         let res = self.crypto_service.decrypt_sealed(&my_key, &encrypted_msg)?;
 
@@ -261,15 +260,11 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(&verkey)?;
 
-        let meta = KeyMetadata {
-            value: metadata
-        };
+        self.wallet_service.get_indy_record::<Key>(wallet_handle, &verkey, &RecordOptions::id())?;
 
-        let res = if self.wallet_service.record_exists::<KeyMetadata>(wallet_handle, &verkey)? {
-            self.wallet_service.update_indy_object(wallet_handle, &verkey, &meta)?;
-        } else {
-            self.wallet_service.add_indy_object(wallet_handle, &verkey, &meta, "{}")?;
-        };
+        let tags_json = json!({"metadata": metadata}).to_string();
+
+        let res = self.wallet_service.update_indy_record_tags::<Key>(wallet_handle, &verkey, &tags_json)?;
 
         info!("set_key_metadata <<< res: {:?}", res);
 
@@ -283,10 +278,11 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(&verkey)?;
 
-        let metadata: KeyMetadata =
-            self.wallet_service.get_indy_object(wallet_handle, &verkey, RecordRetrieveOptions::ID_VALUE, &mut String::new())?;
-
-        let res = metadata.value;
+        let res = self.wallet_service.get_indy_record::<Key>(wallet_handle, &verkey, &RecordOptions::full())?
+            .get_tags()
+            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
+            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
+            .ok_or(WalletError::NotFound(format!("Metadata not found for did: {}", verkey)))?;
 
         info!("get_key_metadata <<< res: {:?}", res);
 

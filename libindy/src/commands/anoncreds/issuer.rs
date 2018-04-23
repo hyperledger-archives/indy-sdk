@@ -10,7 +10,7 @@ use services::anoncreds::AnoncredsService;
 use services::anoncreds::helpers::parse_cred_rev_id;
 use services::blob_storage::BlobStorageService;
 use services::pool::PoolService;
-use services::wallet::{WalletService, RecordRetrieveOptions};
+use services::wallet::{WalletService, RecordOptions};
 use services::crypto::CryptoService;
 use std::rc::Rc;
 use std::collections::{HashMap, HashSet};
@@ -305,7 +305,7 @@ impl IssuerCommandExecutor {
         let rev_reg_id = RevocationRegistryDefinition::rev_reg_id(issuer_did, cred_def_id, &rev_reg_type, tag);
 
         let cred_def: CredentialDefinition =
-            self.wallet_service.get_indy_object(wallet_handle, &cred_def_id, RecordRetrieveOptions::ID_VALUE, &mut String::new())?;
+            self.wallet_service.get_indy_object(wallet_handle, &cred_def_id, &RecordOptions::id_value(), &mut String::new())?;
 
         let (revoc_public_keys, revoc_key_private, revoc_registry, mut revoc_tails_generator) =
             self.anoncreds_service.issuer.new_revocation_registry(&CredentialDefinitionV1::from(cred_def),
@@ -371,7 +371,7 @@ impl IssuerCommandExecutor {
         trace!("create_credential_offer >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
 
         let cred_def_correctness_proof: CredentialDefinitionCorrectnessProof =
-            self.wallet_service.get_indy_object(wallet_handle, &cred_def_id, RecordRetrieveOptions::ID_VALUE, &mut String::new())?;
+            self.wallet_service.get_indy_object(wallet_handle, &cred_def_id, &RecordOptions::id_value(), &mut String::new())?;
 
         let nonce = new_nonce()
             .map_err(|err| IndyError::AnoncredsError(AnoncredsError::from(err)))?;
@@ -414,10 +414,10 @@ impl IssuerCommandExecutor {
 
         let cred_def: CredentialDefinitionV1 =
             CredentialDefinitionV1::from(
-                self.wallet_service.get_indy_object::<CredentialDefinition>(wallet_handle, &cred_offer.cred_def_id, RecordRetrieveOptions::ID_VALUE, &mut String::new())?);
+                self.wallet_service.get_indy_object::<CredentialDefinition>(wallet_handle, &cred_offer.cred_def_id, &RecordOptions::id_value(), &mut String::new())?);
 
         let cred_def_priv_key: CredentialDefinitionPrivateKey =
-            self.wallet_service.get_indy_object(wallet_handle, &cred_request.cred_def_id, RecordRetrieveOptions::ID_VALUE, &mut String::new())?;
+            self.wallet_service.get_indy_object(wallet_handle, &cred_request.cred_def_id, &RecordOptions::id_value(), &mut String::new())?;
 
         let schema_id = self._wallet_get_schema_id(wallet_handle, &cred_offer.cred_def_id)?;  // TODO: FIXME
 
@@ -433,7 +433,7 @@ impl IssuerCommandExecutor {
                         self._wallet_get_rev_reg(wallet_handle, &r_reg_id)?);
 
                 let rev_key_priv: RevocationRegistryDefinitionPrivate =
-                    self.wallet_service.get_indy_object(wallet_handle, &r_reg_id, RecordRetrieveOptions::ID_VALUE, &mut String::new())?;
+                    self.wallet_service.get_indy_object(wallet_handle, &r_reg_id, &RecordOptions::id_value(), &mut String::new())?;
 
                 let mut rev_reg_info = self._wallet_get_rev_reg_info(wallet_handle, &r_reg_id)?;
 
@@ -673,26 +673,26 @@ impl IssuerCommandExecutor {
 
     // TODO: DELETE IT
     fn _wallet_set_schema_id(&self, wallet_handle: i32, id: &str, schema_id: &str) -> Result<(), WalletError> {
-        self.wallet_service.add_record(wallet_handle, &self.wallet_service.add_prefix("SchemaId"), id, schema_id, "{}")
+        self.wallet_service.add_record(wallet_handle, "Indy::SchemaId", id, schema_id, "{}")
     }
 
     // TODO: DELETE IT
     fn _wallet_get_schema_id(&self, wallet_handle: i32, key: &str) -> Result<String, IndyError> {
-        let schema_id_record = self.wallet_service.get_record(wallet_handle, &self.wallet_service.add_prefix("SchemaId"), &key, RecordRetrieveOptions::ID_VALUE)?;
+        let schema_id_record = self.wallet_service.get_record(wallet_handle, "Indy::SchemaId", &key, &RecordOptions::id_value())?;
         Ok(schema_id_record.get_value()
             .ok_or(CommonError::InvalidStructure(format!("SchemaId not found for id: {}", key)))?.to_string())
     }
 
     fn _wallet_get_rev_reg_def(&self, wallet_handle: i32, key: &str) -> Result<RevocationRegistryDefinition, IndyError> {
-        self.wallet_service.get_indy_object(wallet_handle, &key, RecordRetrieveOptions::ID_VALUE, &mut String::new())
+        self.wallet_service.get_indy_object(wallet_handle, &key, &RecordOptions::id_value(), &mut String::new())
     }
 
     fn _wallet_get_rev_reg(&self, wallet_handle: i32, key: &str) -> Result<RevocationRegistry, IndyError> {
-        self.wallet_service.get_indy_object(wallet_handle, &key, RecordRetrieveOptions::ID_VALUE, &mut String::new())
+        self.wallet_service.get_indy_object(wallet_handle, &key, &RecordOptions::id_value(), &mut String::new())
     }
 
     fn _wallet_get_rev_reg_info(&self, wallet_handle: i32, key: &str) -> Result<RevocationRegistryInfo, IndyError> {
-        self.wallet_service.get_indy_object(wallet_handle, &key, RecordRetrieveOptions::ID_VALUE, &mut String::new())
+        self.wallet_service.get_indy_object(wallet_handle, &key, &RecordOptions::id_value(), &mut String::new())
     }
 }
 
