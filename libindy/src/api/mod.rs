@@ -8,6 +8,7 @@ pub mod pool;
 pub mod did;
 pub mod wallet;
 pub mod blob_storage;
+pub mod payments;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
@@ -100,7 +101,7 @@ pub enum ErrorCode
     // No concensus during ledger operation
     LedgerNoConsensusError = 303,
 
-    // Attempt to send unknown or incomplete transaction message
+    // Attempt to parse invalid transaction response
     LedgerInvalidTransaction = 304,
 
     // Attempt to send transaction without the necessary privileges

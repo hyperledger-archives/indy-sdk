@@ -66,8 +66,7 @@ async def demo():
     (cred_json, _, _) = await anoncreds.issuer_create_credential(issuer_wallet, cred_offer_json, cred_req_json,
                                                                  cred_values_json, None, None)
     # 9. Prover store Credential
-    await anoncreds.prover_store_credential(prover_wallet, None, cred_req_json, cred_req_metadata_json,
-                                            cred_json, cred_def_json, None)
+    await anoncreds.prover_store_credential(prover_wallet, None, cred_req_metadata_json, cred_json, cred_def_json, None)
 
     # 10. Prover gets Credentials for Proof Request
     proof_req_json = json.dumps({
