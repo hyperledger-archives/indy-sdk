@@ -18,16 +18,18 @@
    
    ```
    cd /tmp
-   curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.12.tar.gz | tar -xz
-   cd /tmp/libsodium-1.0.12
+   curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.14.tar.gz | tar -xz
+   cd /tmp/libsodium-1.0.14
    ./configure
    make
    make install
-   rm -rf /tmp/libsodium-1.0.12
+   rm -rf /tmp/libsodium-1.0.14
 
    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig
    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
    ```
+   - versions of libsodium starting from 1.0.15 onwards miss the required `crypto_stream_aes128ctr_*` methods
+   - please note that in the future this release might be moved to subdirectory `old`
 
 1. Checkout and build the library:
 
