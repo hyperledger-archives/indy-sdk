@@ -57,7 +57,10 @@ pub enum NonSecretsCommand {
     FetchSearchNextRecords(i32, // wallet handle
                            i32, // search handle
                            usize, // count
-                           Box<Fn(Result<String, IndyError>) + Send>)
+                           Box<Fn(Result<String, IndyError>) + Send>),
+    CloseSearch(i32, // wallet handle
+                u32, // search handle
+                Box<Fn(Result<(), IndyError>) + Send>)
 }
 
 pub struct NonSecretsCommandExecutor {
@@ -110,6 +113,10 @@ impl NonSecretsCommandExecutor {
             NonSecretsCommand::FetchSearchNextRecords(wallet_handle, wallet_search_handle, count, cb) => {
                 info!(target: "non_secrets_command_executor", "SearchNextRecords command received");
                 cb(self.fetch_search_next_records(wallet_handle, wallet_search_handle, count));
+            }
+            NonSecretsCommand::CloseSearch(wallet_handle, search_handle, cb) => {
+                info!(target: "non_secrets_command_executor", "CloseSearch command received");
+                cb(self.close_search(wallet_handle, search_handle));
             }
         };
     }
@@ -282,6 +289,21 @@ impl NonSecretsCommandExecutor {
         trace!("fetch_search_next_records <<< res: {:?}", res);
 
         Ok(res)
+    }
+
+    fn close_search(&self,
+                    handle: i32,
+                    search_handle: u32) -> Result<(), IndyError> {
+        trace!("close_search >>> handle: {:?}, search_handle: {:?}", handle, search_handle);
+
+        match self.searches.borrow_mut().remove(&handle) {
+            Some(_) => self.wallet_service.close_search(handle, search_handle),
+            None => Err(WalletError::InvalidHandle(format!("Wallet Search handle is invalid: {}", handle)))
+        }?;
+
+        trace!("close_search <<< ");
+
+        Ok(())
     }
 
     fn _check_type(&self, type_: &str) -> Result<(), IndyError> {

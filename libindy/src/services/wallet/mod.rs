@@ -35,6 +35,7 @@ pub trait WalletStorage {
     fn search_records(&self, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError>;
     fn search_all_records(&self) -> Result<WalletSearch, WalletError>;
     fn close(&self) -> Result<(), WalletError>;
+    fn close_search(&self, search_handle: u32) -> Result<(), WalletError>;
     fn get_pool_name(&self) -> String;
     fn get_name(&self) -> String;
 }
@@ -277,6 +278,20 @@ impl WalletService {
         }
     }
 
+    pub fn add_indy_object<T>(&self, wallet_handle: i32, id: &str, object: &T, tags_json: &str) -> Result<String, IndyError> where T: JsonEncodable, T: NamedType {
+        let type_ = T::short_type_name();
+        match self.wallets.borrow().get(&wallet_handle) {
+            Some(wallet) => {
+                let object_json = object.to_json()
+                    .map_err(map_err_trace!())
+                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize {:?}: {:?}", type_, err)))?;
+                wallet.add_record(&self.add_prefix(type_), &id, &object_json, tags_json)?;
+                Ok(object_json)
+            }
+            None => Err(IndyError::WalletError(WalletError::InvalidHandle(wallet_handle.to_string())))
+        }
+    }
+
     pub fn update_record_value(&self, wallet_handle: i32, type_: &str, id: &str, value: &str) -> Result<(), WalletError> {
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => wallet.update_record_value(type_, id, value),
@@ -303,6 +318,10 @@ impl WalletService {
             Some(wallet) => wallet.add_record_tags(type_, id, tags_json),
             None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         }
+    }
+
+    pub fn add_indy_record_tags<T>(&self, wallet_handle: i32, id: &str, tags_json: &str) -> Result<(), WalletError> where T: NamedType {
+        self.add_record_tags(wallet_handle, &self.add_prefix(T::short_type_name()), id, tags_json)
     }
 
     pub fn update_record_tags(&self, wallet_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletError> {
@@ -332,20 +351,6 @@ impl WalletService {
 
     pub fn delete_indy_record<T>(&self, wallet_handle: i32, id: &str) -> Result<(), WalletError> where T: NamedType {
         self.delete_record(wallet_handle, &self.add_prefix(T::short_type_name()), id)
-    }
-
-    pub fn add_indy_object<T>(&self, wallet_handle: i32, id: &str, object: &T, tags_json: &str) -> Result<String, IndyError> where T: JsonEncodable, T: NamedType {
-        let type_ = T::short_type_name();
-        match self.wallets.borrow().get(&wallet_handle) {
-            Some(wallet) => {
-                let object_json = object.to_json()
-                    .map_err(map_err_trace!())
-                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize {:?}: {:?}", type_, err)))?;
-                wallet.add_record(&self.add_prefix(type_), &id, &object_json, tags_json)?;
-                Ok(object_json)
-            }
-            None => Err(IndyError::WalletError(WalletError::InvalidHandle(wallet_handle.to_string())))
-        }
     }
 
     pub fn get_record(&self, wallet_handle: i32, type_: &str, id: &str, options_json: &str) -> Result<WalletRecord, WalletError> {
@@ -394,11 +399,29 @@ impl WalletService {
         }
     }
 
+    pub fn close_search(&self, wallet_handle: i32, search_handle: u32) -> Result<(), WalletError> {
+        match self.wallets.borrow().get(&wallet_handle) {
+            Some(wallet) => wallet.close_search(search_handle),
+            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
+        }
+    }
+
     pub fn get_pool_name(&self, wallet_handle: i32) -> Result<String, WalletError> {
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => Ok(wallet.get_pool_name()),
             None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         }
+    }
+
+    pub fn upsert_indy_object<'a, T>(&self, wallet_handle: i32, id: &str, object: &T) -> Result<(), IndyError> where T: JsonEncodable,
+                                                                                                                     T: JsonDecodable<'a>,
+                                                                                                                     T: NamedType {
+        if self.record_exists::<T>(wallet_handle, id)? {
+            self.update_indy_object::<T>(wallet_handle, id, object)?
+        } else {
+            self.add_indy_object::<T>(wallet_handle, id, object, "{}")?
+        };
+        Ok(())
     }
 
     pub fn record_exists<T>(&self, wallet_handle: i32, id: &str) -> Result<bool, WalletError> where T: NamedType {
@@ -422,10 +445,10 @@ impl WalletService {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WalletRecord {
-    pub id: String,
-    pub type_: Option<String>,
-    pub value: Option<String>,
-    pub tags: Option<String>
+    id: String,
+    type_: Option<String>,
+    value: Option<String>,
+    tags: Option<String>
 }
 
 impl JsonEncodable for WalletRecord {}
@@ -489,7 +512,6 @@ impl RecordOptions {
         options.to_json().unwrap()
     }
 
-
     pub fn full() -> String {
         let options = RecordOptions {
             retrieve_type: Some(true),
@@ -525,6 +547,20 @@ pub struct SearchOptions {
     retrieve_type: Option<bool>,
     retrieve_value: Option<bool>,
     retrieve_tags: Option<bool>
+}
+
+impl SearchOptions {
+    pub fn full() -> String {
+        let options = SearchOptions {
+            retrieve_records: Some(true),
+            retrieve_total_count: Some(true),
+            retrieve_type: Some(true),
+            retrieve_value: Some(true),
+            retrieve_tags: Some(true)
+        };
+
+        options.to_json().unwrap()
+    }
 }
 
 impl JsonEncodable for SearchOptions {}

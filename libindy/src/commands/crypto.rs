@@ -179,8 +179,7 @@ impl CryptoCommandExecutor {
         self.crypto_service.validate_key(&my_vk)?;
         self.crypto_service.validate_key(&their_vk)?;
 
-        let my_key: Key =
-            self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value(), &mut String::new())?;
+        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value(), &mut String::new())?;
 
         let msg = self.crypto_service.create_combo_box(&my_key, &their_vk, msg.as_slice())?;
 
@@ -217,7 +216,7 @@ impl CryptoCommandExecutor {
 
         let decrypted_msg = self.crypto_service.decrypt(&my_key, &parsed_msg.sender, &doc, &nonce)?;
 
-        let res = (parsed_msg.sender.clone(), decrypted_msg);
+        let res = (parsed_msg.sender, decrypted_msg);
 
         info!("authenticated_decrypt <<< res: {:?}", res);
 
@@ -264,7 +263,7 @@ impl CryptoCommandExecutor {
 
         let tags_json = json!({"metadata": metadata}).to_string();
 
-        let res = self.wallet_service.update_indy_record_tags::<Key>(wallet_handle, &verkey, &tags_json)?;
+        let res = self.wallet_service.add_indy_record_tags::<Key>(wallet_handle, &verkey, &tags_json)?;
 
         info!("set_key_metadata <<< res: {:?}", res);
 
@@ -282,7 +281,7 @@ impl CryptoCommandExecutor {
             .get_tags()
             .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
             .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
-            .ok_or(WalletError::NotFound(format!("Metadata not found for did: {}", verkey)))?;
+            .ok_or(WalletError::NotFound(format!("Key Metadata not found for: {}", verkey)))?;
 
         info!("get_key_metadata <<< res: {:?}", res);
 

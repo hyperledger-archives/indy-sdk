@@ -382,6 +382,15 @@ impl WalletStorage for PluggedWallet {
 
         Ok(())
     }
+    fn close_search(&self, search_handle: u32) -> Result<(), WalletError> {
+        let err = (self.free_search_handler)(self.handle, search_handle);
+
+        if err != ErrorCode::Success {
+            return Err(WalletError::PluggedWallerError(err));
+        }
+
+        Ok(())
+    }
 }
 
 pub struct PluggedWalletType {

@@ -11,7 +11,7 @@ use domain::ledger::response::Reply;
 use domain::ledger::nym::{GetNymReplyResult, GetNymResultData};
 use domain::ledger::attrib::{GetAttribReplyResult, AttribData, Endpoint};
 use services::pool::PoolService;
-use services::wallet::{WalletService, RecordOptions};
+use services::wallet::{WalletService, RecordOptions, SearchOptions};
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 
@@ -282,8 +282,16 @@ impl DidCommandExecutor {
 
     fn get_my_did_with_meta(&self, wallet_handle: i32, my_did: String) -> Result<String, IndyError> {
         self.crypto_service.validate_did(&my_did)?;
-        let did = self._wallet_get_my_did(wallet_handle, &my_did)?;
-        let meta: Option<String> = self._wallet_get_did_metadata(wallet_handle, &did.did);
+        let did_record = self.wallet_service.get_indy_record::<Did>(wallet_handle, &my_did, &RecordOptions::full())?;
+
+        let did = did_record.get_value()
+            .and_then(|tags_json| Did::from_json(&tags_json).ok())
+            .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", my_did)))?;
+
+        let meta: Option<String> = did_record.get_tags()
+            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
+            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from));
+
         Ok(json!({
             "did": did.did,
             "verkey": did.verkey,
@@ -292,20 +300,20 @@ impl DidCommandExecutor {
     }
 
     fn list_my_dids_with_meta(&self, wallet_handle: i32) -> Result<String, IndyError> {
-        let mut did_search = self.wallet_service.search_indy_records::<Did>(wallet_handle, "{}", &RecordOptions::id_value())?;
+        let mut did_search = self.wallet_service.search_indy_records::<Did>(wallet_handle, "{}", &SearchOptions::full())?;
 
         let mut dids: Vec<::serde_json::Value> = Vec::new();
 
         while let Some(did_record) = did_search.fetch_next_record()? {
             let did_id = did_record.get_id();
-            let did_value = did_record.get_value()
-                .ok_or(CommonError::InvalidStructure(format!("Did not found for id: {}", did_id)))?;
-            let did = Did::from_json(did_value)
-                .map_err(|err|
-                    IndyError::CommonError(
-                        CommonError::InvalidStructure(format!("Can't deserialize Did: {:?}", err))))?;
 
-            let meta: Option<String> = self._wallet_get_did_metadata(wallet_handle, &did.did);
+            let did = did_record.get_value()
+                .and_then(|tags_json| Did::from_json(&tags_json).ok())
+                .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", did_id)))?;
+
+            let meta: Option<String> = did_record.get_tags()
+                .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
+                .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from));
 
             dids.push(json!({
                         "did": did.did,
@@ -379,13 +387,9 @@ impl DidCommandExecutor {
 
         let endpoint = Endpoint::new(address.to_string(), Some(transport_key.to_string()));
 
-        if self.wallet_service.record_exists::<Endpoint>(wallet_handle, &did)? {
-            self.wallet_service.update_indy_object(wallet_handle, &did, &endpoint)?
-        } else {
-            self.wallet_service.add_indy_object(wallet_handle, &did, &endpoint, "{}")?
-        };
+        let res = self.wallet_service.upsert_indy_object(wallet_handle, &did, &endpoint)?;
 
-        Ok(())
+        Ok(res)
     }
 
     fn get_endpoint_for_did(&self,
@@ -424,7 +428,7 @@ impl DidCommandExecutor {
 
         let tags_json = json!({"metadata": metadata}).to_string();
 
-        self.wallet_service.update_indy_record_tags::<Did>(wallet_handle, &did, &tags_json)?;
+        self.wallet_service.add_indy_record_tags::<Did>(wallet_handle, &did, &tags_json)?;
 
         Ok(())
     }

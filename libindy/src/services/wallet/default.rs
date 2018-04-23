@@ -103,7 +103,11 @@ impl WalletStorage for DefaultWallet {
     }
 
     fn add_record_tags(&self, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletError> {
-        unimplemented!()
+        _open_connection(self.name.as_str(), &self.credentials)?
+            .execute(
+                "UPDATE wallet SET tags = ?1 WHERE id = ?2 AND type = ?3",
+                &[&tags_json.to_string(), &id.to_string(), &type_.to_string()])?;
+        Ok(())
     }
 
     fn delete_record_tags(&self, type_: &str, id: &str, tag_names_json: &str) -> Result<(), WalletError> {
@@ -226,6 +230,9 @@ impl WalletStorage for DefaultWallet {
 
         Ok(wallet_search)
     }
+
+    fn close_search(&self, search_handle: u32) -> Result<(), WalletError> { Ok(()) }
+
 }
 
 pub struct DefaultWalletType {}

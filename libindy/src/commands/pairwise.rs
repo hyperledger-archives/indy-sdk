@@ -123,10 +123,9 @@ impl PairwiseCommandExecutor {
     fn get_pairwise(&self,
                     wallet_handle: i32,
                     their_did: &str) -> Result<String, IndyError> {
-        let pairwise_info = PairwiseInfo::from(self.wallet_service.get_indy_object::<Pairwise>(wallet_handle,
-                                                                                               &their_did,
-                                                                                               &RecordOptions::id_value(),
-                                                                                               &mut String::new())?);
+        let pairwise_info =
+            PairwiseInfo::from(
+                self.wallet_service.get_indy_object::<Pairwise>(wallet_handle, &their_did, &RecordOptions::id_value(), &mut String::new())?);
 
         let pairwise_info_json = pairwise_info.to_json()
             .map_err(|e|
