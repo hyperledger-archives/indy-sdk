@@ -1027,7 +1027,7 @@ mod tests {
         use super::*;
         use self::indy_crypto::bls::{Generator, SignKey, VerKey};
 
-        pub static POLL_TIMEOUT: i64 = 1000; /* in ms */
+        pub static POLL_TIMEOUT: i64 = 5_000; /* in ms */
 
         pub fn start() -> (NodeTransaction, thread::JoinHandle<Vec<String>>) {
             let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
