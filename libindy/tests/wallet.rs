@@ -30,7 +30,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn indy_register_wallet_type_works() {
+        fn indy_register_wallet_storage_works() {
             TestUtils::cleanup_storage();
             InmemWallet::cleanup();
 
@@ -256,10 +256,10 @@ mod medium_cases {
 
     mod register_wallet_type {
         use super::*;
-        use indy::api::wallet::indy_register_wallet_type;
+        use indy::api::wallet::indy_register_wallet_storage;
 
         #[test]
-        fn indy_register_wallet_type_does_not_work_twice_with_same_name() {
+        fn indy_register_wallet_storage_does_not_work_twice_with_same_name() {
             TestUtils::cleanup_storage();
             InmemWallet::cleanup();
 
@@ -272,13 +272,13 @@ mod medium_cases {
         }
 
         #[test]
-        fn indy_register_wallet_type_does_not_work_with_null_params() {
+        fn indy_register_wallet_storage_does_not_work_with_null_params() {
             TestUtils::cleanup_storage();
             InmemWallet::cleanup();
 
             let xtype = CString::new(INMEM_TYPE).unwrap();
-            let res = indy_register_wallet_type(1, xtype.as_ptr(), None, None, None, None, None,
-                                                None, None, None, None, None);
+            let res = indy_register_wallet_storage(1, xtype.as_ptr(), None, None, None, None, None,
+                                                   None, None, None, None, None);
             assert_eq!(res, ErrorCode::CommonInvalidParam3);
 
             extern "C" fn callback(_: *const c_char, _: *const c_char,
@@ -286,8 +286,8 @@ mod medium_cases {
                 ErrorCode::Success
             }
 
-            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), None, None, None,
-                                                None, None, None, None, None, None);
+            let res = indy_register_wallet_storage(1, xtype.as_ptr(), Some(callback), None, None, None,
+                                                   None, None, None, None, None, None);
             assert_eq!(res, ErrorCode::CommonInvalidParam4);
 
             extern "C" fn callback1(_: *const c_char, _: *const c_char, _: *const c_char,
@@ -295,61 +295,61 @@ mod medium_cases {
                 ErrorCode::Success
             }
 
-            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
-                                                None, None, None, None, None, None, None, None);
+            let res = indy_register_wallet_storage(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                   None, None, None, None, None, None, None, None);
             assert_eq!(res, ErrorCode::CommonInvalidParam5);
 
             extern "C" fn callback2(_: i32, _: *const c_char, _: *const c_char) -> ErrorCode {
                 ErrorCode::Success
             }
 
-            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
-                                                Some(callback2), None, None, None, None, None,
-                                                None, None);
+            let res = indy_register_wallet_storage(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                   Some(callback2), None, None, None, None, None,
+                                                   None, None);
             assert_eq!(res, ErrorCode::CommonInvalidParam6);
 
             extern "C" fn callback3(_: i32, _: *const c_char, _: *mut *const c_char) -> ErrorCode {
                 ErrorCode::Success
             }
 
-            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
-                                                Some(callback2), Some(callback3), None, None, None,
-                                                None, None, None);
+            let res = indy_register_wallet_storage(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                   Some(callback2), Some(callback3), None, None, None,
+                                                   None, None, None);
             assert_eq!(res, ErrorCode::CommonInvalidParam7);
 
-            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
-                                                Some(callback2), Some(callback3), Some(callback3),
-                                                None, None, None, None, None);
+            let res = indy_register_wallet_storage(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                   Some(callback2), Some(callback3), Some(callback3),
+                                                   None, None, None, None, None);
             assert_eq!(res, ErrorCode::CommonInvalidParam8);
 
-            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
-                                                Some(callback2), Some(callback3), Some(callback3),
-                                                Some(callback3), None, None, None, None);
+            let res = indy_register_wallet_storage(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                   Some(callback2), Some(callback3), Some(callback3),
+                                                   Some(callback3), None, None, None, None);
             assert_eq!(res, ErrorCode::CommonInvalidParam9);
 
             extern "C" fn callback4(_: i32) -> ErrorCode {
                 ErrorCode::Success
             }
 
-            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
-                                                Some(callback2), Some(callback3), Some(callback3),
-                                                Some(callback3), Some(callback4), None, None, None);
+            let res = indy_register_wallet_storage(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                   Some(callback2), Some(callback3), Some(callback3),
+                                                   Some(callback3), Some(callback4), None, None, None);
             assert_eq!(res, ErrorCode::CommonInvalidParam10);
 
-            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
-                                                Some(callback2), Some(callback3), Some(callback3),
-                                                Some(callback3), Some(callback4), Some(callback),
-                                                None, None);
+            let res = indy_register_wallet_storage(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                   Some(callback2), Some(callback3), Some(callback3),
+                                                   Some(callback3), Some(callback4), Some(callback),
+                                                   None, None);
             assert_eq!(res, ErrorCode::CommonInvalidParam11);
 
             extern "C" fn callback5(_: i32, _: *const c_char) -> ErrorCode {
                 ErrorCode::Success
             }
 
-            let res = indy_register_wallet_type(1, xtype.as_ptr(), Some(callback), Some(callback1),
-                                                Some(callback2), Some(callback3), Some(callback3),
-                                                Some(callback3), Some(callback4), Some(callback),
-                                                Some(callback5), None);
+            let res = indy_register_wallet_storage(1, xtype.as_ptr(), Some(callback), Some(callback1),
+                                                   Some(callback2), Some(callback3), Some(callback3),
+                                                   Some(callback3), Some(callback4), Some(callback),
+                                                   Some(callback5), None);
             assert_eq!(res, ErrorCode::CommonInvalidParam12);
 
             TestUtils::cleanup_storage();

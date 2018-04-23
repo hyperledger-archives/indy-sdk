@@ -1,6 +1,9 @@
 extern crate indy;
 extern crate uuid;
 extern crate time;
+extern crate named_type;
+#[macro_use]
+extern crate named_type_derive;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
 use indy::api as api;

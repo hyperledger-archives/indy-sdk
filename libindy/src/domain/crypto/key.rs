@@ -1,8 +1,9 @@
 extern crate indy_crypto;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use named_type::NamedType;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, NamedType)]
 pub struct Key {
     pub verkey: String,
     pub signkey: String
@@ -30,4 +31,13 @@ pub struct KeyInfo {
 impl JsonEncodable for KeyInfo {}
 
 impl<'a> JsonDecodable<'a> for KeyInfo {}
+
+#[derive(Serialize, Deserialize, NamedType)]
+pub struct  KeyMetadata {
+    pub value: String
+}
+
+impl JsonEncodable for KeyMetadata {}
+
+impl<'a> JsonDecodable<'a> for KeyMetadata {}
 

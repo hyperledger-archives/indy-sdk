@@ -12,6 +12,9 @@ extern crate serde_json;
 extern crate lazy_static;
 #[macro_use]
 extern crate log;
+extern crate named_type;
+#[macro_use]
+extern crate named_type_derive;
 
 #[macro_use]
 mod utils;

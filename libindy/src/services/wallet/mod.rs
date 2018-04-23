@@ -21,6 +21,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use api::wallet::*;
+use named_type::NamedType;
 
 
 pub trait WalletStorage {
@@ -283,13 +284,14 @@ impl WalletService {
         }
     }
 
-    pub fn update_object<T>(&self, storage_handle: i32, type_: &str, id: &str, object: &T) -> Result<String, IndyError> where T: JsonEncodable {
+    pub fn update_indy_object<T>(&self, storage_handle: i32, id: &str, object: &T) -> Result<String, IndyError> where T: JsonEncodable, T: NamedType {
+        let type_ = T::short_type_name();
         match self.wallets.borrow().get(&storage_handle) {
             Some(wallet) => {
                 let object_json = object.to_json()
                     .map_err(map_err_trace!())
                     .map_err(|err| CommonError::InvalidState(format!("Cannot serialize {:?}: {:?}", type_, err)))?;
-                wallet.update_record_value(type_, id, &object_json)?;
+                wallet.update_record_value(&self.add_prefix(type_), id, &object_json)?;
                 Ok(object_json)
             }
             None => Err(IndyError::WalletError(WalletError::InvalidHandle(storage_handle.to_string())))
@@ -324,13 +326,18 @@ impl WalletService {
         }
     }
 
-    pub fn set_object<T>(&self, storage_handle: i32, _type: &str, id: &str, object: &T, tags_json: &str) -> Result<String, IndyError> where T: JsonEncodable {
+    pub fn delete_indy_record<T>(&self, storage_handle: i32, id: &str) -> Result<(), WalletError> where T: NamedType {
+        self.delete_record(storage_handle, &self.add_prefix(T::short_type_name()), id)
+    }
+
+    pub fn add_indy_object<T>(&self, storage_handle: i32, id: &str, object: &T, tags_json: &str) -> Result<String, IndyError> where T: JsonEncodable, T: NamedType {
+        let type_ = T::short_type_name();
         match self.wallets.borrow().get(&storage_handle) {
             Some(wallet) => {
                 let object_json = object.to_json()
                     .map_err(map_err_trace!())
-                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize {:?}: {:?}", _type, err)))?;
-                wallet.add_record(_type, id, &object_json, tags_json)?;
+                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize {:?}: {:?}", type_, err)))?;
+                wallet.add_record(&self.add_prefix(type_), &id, &object_json, tags_json)?;
                 Ok(object_json)
             }
             None => Err(IndyError::WalletError(WalletError::InvalidHandle(storage_handle.to_string())))
@@ -345,12 +352,15 @@ impl WalletService {
     }
 
     // Dirty hack. json must live longer then result T
-    pub fn get_object<'a, T>(&self, handle: i32, type_: &str, id: &str, options_json: &str, json: &'a mut String) -> Result<T, IndyError> where T: JsonDecodable<'a> {
+    pub fn get_indy_object<'a, T>(&self, handle: i32, id: &str, options_json: &str, json: &'a mut String) -> Result<T, IndyError> where T: JsonDecodable<'a>, T: NamedType {
+        let type_ = T::short_type_name();
+
         let record: WalletRecord = match self.wallets.borrow().get(&handle) {
-            Some(wallet) => wallet.get_record(type_, id, options_json),
+            Some(wallet) => wallet.get_record(&self.add_prefix(type_), id, options_json),
             None => Err(WalletError::InvalidHandle(handle.to_string()))
         }?;
-        *json = record.get_value()?.to_string();
+        *json = record.get_value()
+            .ok_or(CommonError::InvalidStructure(format!("{} not found for id: {:?}", type_, id)))?.to_string();
 
         T::from_json(json)
             .map_err(map_err_trace!())
@@ -363,6 +373,10 @@ impl WalletService {
             Some(wallet) => wallet.search_records(type_, query_json, options_json),
             None => Err(WalletError::InvalidHandle(storage_handle.to_string()))
         }
+    }
+
+    pub fn search_indy_records<T>(&self, storage_handle: i32, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> where T: NamedType {
+        self.search_records(storage_handle, &self.add_prefix(T::short_type_name()), query_json, options_json)
     }
 
     pub fn search_all_records(&self, storage_handle: i32) -> Result<WalletSearch, WalletError> {
@@ -378,14 +392,32 @@ impl WalletService {
             None => Err(WalletError::InvalidHandle(handle.to_string()))
         }
     }
+
+    pub fn record_exists<T>(&self, storage_handle: i32, id: &str) -> Result<bool, WalletError> where T: NamedType {
+        match self.wallets.borrow().get(&storage_handle) {
+            Some(wallet) =>
+                match wallet.get_record(&self.add_prefix(T::short_type_name()), id, RecordRetrieveOptions::ID) {
+                    Ok(_) => Ok(true),
+                    Err(WalletError::NotFound(_)) => Ok(false),
+                    Err(err) => Err(err),
+                }
+            None => Err(WalletError::InvalidHandle(storage_handle.to_string()))
+        }
+    }
+
+    pub const PREFIX: &'static str = "Indy::";
+
+    pub fn add_prefix(&self, type_: &str) -> String {
+        format!("{}{}", WalletService::PREFIX, type_)
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WalletRecord {
     pub id: String,
-    pub type_: String,
-    pub value: String,
-    pub tags: String
+    pub type_: Option<String>,
+    pub value: Option<String>,
+    pub tags: Option<String>
 }
 
 impl JsonEncodable for WalletRecord {}
@@ -393,26 +425,34 @@ impl JsonEncodable for WalletRecord {}
 impl<'a> JsonDecodable<'a> for WalletRecord {}
 
 impl WalletRecord {
-    pub fn get_id(&self) -> Result<&str, WalletError> {
-        Ok(self.id.as_str())
+    pub fn get_id(&self) -> &str {
+        self.id.as_str()
     }
 
-    pub fn get_type(&self) -> Result<&str, WalletError> { Ok(self.type_.as_str()) }
-
-    pub fn get_value(&self) -> Result<&str, WalletError> {
-        Ok(self.value.as_str())
+    pub fn get_type(&self) -> Option<&str> {
+        self.type_.as_ref().map(|t|
+            if t.starts_with(WalletService::PREFIX) {
+                t[WalletService::PREFIX.len()..].as_ref()
+            } else {
+                t.as_str()
+            }
+        )
     }
 
-    pub fn get_tags(&self) -> Result<&str, WalletError> {
-        Ok(self.tags.as_str())
+    pub fn get_value(&self) -> Option<&str> {
+        self.value.as_ref().map(String::as_str)
+    }
+
+    pub fn get_tags(&self) -> Option<&str> {
+        self.tags.as_ref().map(String::as_str)
     }
 }
 
-pub struct WalletRecordRetrieveOptions {}
+pub struct RecordRetrieveOptions {}
 
-impl WalletRecordRetrieveOptions {
-    pub const RETRIEVE_ID: &'static str = r#"{"retrieveValue": false, "retrieveTags":false}"#;
-    pub const RETRIEVE_ID_VALUE: &'static str = r#"{"retrieveTags":false}"#;
+impl RecordRetrieveOptions {
+    pub const ID: &'static str = r#"{"retrieveValue": false, "retrieveTags":false}"#;
+    pub const ID_VALUE: &'static str = r#"{"retrieveTags":false}"#;
     pub const RETRIEVE_ID_TAGS: &'static str = r#"{"retrieveValue":false}"#;
     pub const RETRIEVE_ID_VALUE_TAGS: &'static str = r#"{}"#;
 }

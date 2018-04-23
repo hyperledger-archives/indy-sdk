@@ -287,9 +287,9 @@ impl WalletStorage for PluggedWallet {
 
         let result = WalletRecord {
             id,
-            type_,
-            value,
-            tags
+            type_: Some(type_),
+            value: Some(value),
+            tags: Some(tags)
         };
 
         let err = (self.free_record_handler)(self.handle, record_handle_p);

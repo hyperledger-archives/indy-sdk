@@ -30,7 +30,7 @@ impl WalletUtils {
 //
 //        let xxtype = CString::new(xtype).unwrap();
 //
-//        let err = indy_register_wallet_type(
+//        let err = indy_register_wallet_storage(
 //            command_handle,
 //            xxtype.as_ptr(),
 //            Some(InmemWallet::create),

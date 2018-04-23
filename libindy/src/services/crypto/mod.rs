@@ -118,8 +118,7 @@ impl CryptoService {
 
         self.validate_key(&verkey)?;
 
-        let did = Did::new(their_did_info.did.clone(),
-                           verkey);
+        let did = Did::new(their_did_info.did.clone(), verkey);
         Ok(did)
     }
 

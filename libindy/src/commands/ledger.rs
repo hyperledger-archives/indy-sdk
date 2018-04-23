@@ -12,7 +12,7 @@ use services::pool::PoolService;
 use services::crypto::CryptoService;
 use domain::crypto::key::Key;
 use domain::crypto::did::Did;
-use services::wallet::{WalletService, WalletRecordRetrieveOptions};
+use services::wallet::{WalletService, RecordRetrieveOptions};
 use services::ledger::LedgerService;
 
 
@@ -337,11 +337,9 @@ impl LedgerCommandExecutor {
                      wallet_handle: i32,
                      submitter_did: &str,
                      request_json: &str) -> Result<String, IndyError> {
-        let my_did: Did =
-            self.wallet_service.get_object(wallet_handle, "Did", &submitter_did, WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE, &mut String::new())?;
+        let my_did: Did = self.wallet_service.get_indy_object(wallet_handle, &submitter_did, RecordRetrieveOptions::ID_VALUE, &mut String::new())?;
 
-        let my_key: Key =
-            self.wallet_service.get_object(wallet_handle, "Key", &my_did.verkey, WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE, &mut String::new())?;
+        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_did.verkey, RecordRetrieveOptions::ID_VALUE, &mut String::new())?;
 
         let mut request: Value = serde_json::from_str(request_json)
             .map_err(|err|

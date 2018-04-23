@@ -5,6 +5,7 @@ extern crate indy_crypto;
 use super::constants::{ATTRIB, GET_ATTR};
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use named_type::NamedType;
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct AttribOperation {
@@ -85,7 +86,7 @@ pub struct AttribData {
 
 impl<'a> JsonDecodable<'a> for AttribData {}
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, NamedType)]
 pub struct Endpoint {
     pub ha: String,
     pub verkey: Option<String>

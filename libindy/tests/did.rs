@@ -11,6 +11,9 @@ extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
 extern crate log;
+extern crate named_type;
+#[macro_use]
+extern crate named_type_derive;
 
 #[macro_use]
 mod utils;
@@ -1057,11 +1060,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
-            let (my_did, my_verkey) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
-
-            let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, Some(&my_verkey), None, None).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            let (my_did, my_verkey) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
             DidUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
             DidUtils::replace_keys_apply(wallet_handle, &my_did).unwrap();

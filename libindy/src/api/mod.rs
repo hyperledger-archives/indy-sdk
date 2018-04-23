@@ -8,6 +8,7 @@ pub mod pool;
 pub mod did;
 pub mod wallet;
 pub mod blob_storage;
+pub mod non_secrets;
 pub mod payments;
 
 #[derive(Debug, PartialEq, Copy, Clone)]

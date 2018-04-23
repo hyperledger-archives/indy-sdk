@@ -12,6 +12,9 @@ extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
 extern crate indy_crypto;
+extern crate named_type;
+#[macro_use]
+extern crate named_type_derive;
 
 #[macro_use]
 mod utils;
@@ -1968,6 +1971,7 @@ mod demos {
     }
 
     #[test]
+    #[ignore]
     fn anoncreds_works_for_custom_wallet() {
         TestUtils::cleanup_storage();
         InmemWallet::cleanup();

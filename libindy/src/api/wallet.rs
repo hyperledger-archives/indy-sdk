@@ -8,7 +8,7 @@ use utils::cstring::CStringUtils;
 
 use self::libc::c_char;
 
-/// Registers custom wallet implementation.
+/// Registers custom wallet storage implementation.
 ///
 /// It allows library user to provide custom wallet implementation.
 ///
@@ -41,31 +41,31 @@ use self::libc::c_char;
 /// #Returns
 /// Error code
 #[no_mangle]
-pub extern fn indy_register_wallet_type(command_handle: i32,
-                                        type_: *const c_char,
-                                        create: Option<WalletCreate>,
-                                        open: Option<WalletOpen>,
-                                        close: Option<WalletClose>,
-                                        delete: Option<WalletDelete>,
-                                        add_record: Option<WalletAddRecord>,
-                                        update_record_value: Option<WalletUpdateRecordValue>,
-                                        update_record_tags: Option<WalletUpdateRecordTags>,
-                                        add_record_tags: Option<WalletAddRecordTags>,
-                                        delete_record_tags: Option<WalletDeleteRecordTags>,
-                                        delete_record: Option<WalletDeleteRecord>,
-                                        get_record: Option<WalletGetRecord>,
-                                        get_record_id: Option<WalletGetRecordId>,
-                                        get_record_type: Option<WalletGetRecordType>,
-                                        get_record_value: Option<WalletGetRecordValue>,
-                                        get_record_tags: Option<WalletGetRecordTags>,
-                                        free_record: Option<WalletFreeRecord>,
-                                        search_records: Option<WalletSearchRecords>,
-                                        search_all_records: Option<WalletSearchAllRecords>,
-                                        get_search_total_count: Option<WalletGetSearchTotalCount>,
-                                        fetch_search_next_record: Option<WalletFetchSearchNextRecord>,
-                                        free_search: Option<WalletFreeSearch>,
-                                        cb: Option<extern fn(xcommand_handle: i32,
-                                                             err: ErrorCode)>) -> ErrorCode {
+pub extern fn indy_register_wallet_storage(command_handle: i32,
+                                           type_: *const c_char,
+                                           create: Option<WalletCreate>,
+                                           open: Option<WalletOpen>,
+                                           close: Option<WalletClose>,
+                                           delete: Option<WalletDelete>,
+                                           add_record: Option<WalletAddRecord>,
+                                           update_record_value: Option<WalletUpdateRecordValue>,
+                                           update_record_tags: Option<WalletUpdateRecordTags>,
+                                           add_record_tags: Option<WalletAddRecordTags>,
+                                           delete_record_tags: Option<WalletDeleteRecordTags>,
+                                           delete_record: Option<WalletDeleteRecord>,
+                                           get_record: Option<WalletGetRecord>,
+                                           get_record_id: Option<WalletGetRecordId>,
+                                           get_record_type: Option<WalletGetRecordType>,
+                                           get_record_value: Option<WalletGetRecordValue>,
+                                           get_record_tags: Option<WalletGetRecordTags>,
+                                           free_record: Option<WalletFreeRecord>,
+                                           search_records: Option<WalletSearchRecords>,
+                                           search_all_records: Option<WalletSearchAllRecords>,
+                                           get_search_total_count: Option<WalletGetSearchTotalCount>,
+                                           fetch_search_next_record: Option<WalletFetchSearchNextRecord>,
+                                           free_search: Option<WalletFreeSearch>,
+                                           cb: Option<extern fn(xcommand_handle: i32,
+                                                                err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(create, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(open, ErrorCode::CommonInvalidParam4);
@@ -130,7 +130,7 @@ pub extern fn indy_register_wallet_type(command_handle: i32,
 /// pool_name: Name of the pool that corresponds to this wallet.
 /// name: Name of the wallet.
 /// xtype(optional): Type of the wallet. Defaults to 'default'.
-///                  Custom types can be registered with indy_register_wallet_type call.
+///                  Custom types can be registered with indy_register_wallet_storage call.
 /// config(optional): Wallet configuration json. List of supported keys are defined by wallet type.
 ///                    if NULL, then default config will be used.
 /// credentials(optional): Wallet credentials json. List of supported keys are defined by wallet type.

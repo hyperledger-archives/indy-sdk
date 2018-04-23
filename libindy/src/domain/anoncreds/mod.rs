@@ -12,5 +12,6 @@ pub mod revocation_registry_delta;
 pub mod revocation_registry;
 pub mod revocation_state;
 pub mod schema;
+pub mod master_secret;
 
 pub const DELIMITER: &'static str = ":";

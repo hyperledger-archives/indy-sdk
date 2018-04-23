@@ -4,16 +4,15 @@ extern crate uuid;
 
 use errors::common::CommonError;
 use errors::indy::IndyError;
-use errors::wallet::WalletError;
 use errors::anoncreds::AnoncredsError;
 use services::anoncreds::AnoncredsService;
 use services::anoncreds::helpers::parse_cred_rev_id;
-use services::wallet::{WalletService, WalletRecordRetrieveOptions, WalletSearch};
+use services::wallet::{WalletService, RecordRetrieveOptions};
 use services::crypto::CryptoService;
 use std::rc::Rc;
 use services::blob_storage::BlobStorageService;
 use std::collections::{HashMap, HashSet};
-use self::indy_crypto::cl::{MasterSecret, Witness, RevocationRegistry, new_nonce};
+use self::indy_crypto::cl::{Witness, RevocationRegistry, new_nonce};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use super::tails::SDKTailsAccessor;
 
@@ -29,6 +28,7 @@ use domain::anoncreds::proof::Proof;
 use domain::anoncreds::proof_request::ProofRequest;
 use domain::anoncreds::requested_credential::RequestedCredentials;
 use domain::anoncreds::revocation_state::RevocationState;
+use domain::anoncreds::master_secret::MasterSecret;
 
 pub enum ProverCommand {
     CreateMasterSecret(
@@ -154,14 +154,18 @@ impl ProverCommandExecutor {
 
         let master_secret_id = master_secret_id.map(String::from).unwrap_or(uuid::Uuid::new_v4().to_string());
 
-        if let Ok(_) = self._wallet_get_master_secret(wallet_handle, &master_secret_id) {
+        if self.wallet_service.record_exists::<MasterSecret>(wallet_handle, &master_secret_id)? {
             return Err(IndyError::AnoncredsError(
                 AnoncredsError::MasterSecretDuplicateNameError(format!("MasterSecret already exists {}", master_secret_id))));
-        };
+        }
 
         let master_secret = self.anoncreds_service.prover.new_master_secret()?;
 
-        self._wallet_set_master_secret(wallet_handle, &master_secret_id, &master_secret)?;
+        let master_secret = MasterSecret {
+            value: master_secret
+        };
+
+        self.wallet_service.add_indy_object(wallet_handle, &master_secret_id, &master_secret, "{}")?;
 
         trace!("create_master_secret <<< master_secret_id: {:?}", master_secret_id);
 
@@ -189,7 +193,7 @@ impl ProverCommandExecutor {
 
         let (blinded_ms, ms_blinding_data, blinded_ms_correctness_proof) =
             self.anoncreds_service.prover.new_credential_request(&CredentialDefinitionV1::from(cred_def),
-                                                                 &master_secret,
+                                                                 &master_secret.value,
                                                                  &cred_offer)?;
 
         let nonce = new_nonce()
@@ -254,7 +258,7 @@ impl ProverCommandExecutor {
 
         self.anoncreds_service.prover.process_credential(&mut credential,
                                                          &cred_request_metadata,
-                                                         &master_secret,
+                                                         &master_secret.value,
                                                          &CredentialDefinitionV1::from(cred_def),
                                                          rev_reg_def.as_ref())?;
 
@@ -263,7 +267,7 @@ impl ProverCommandExecutor {
 
         let out_cred_id = cred_id.map(String::from).unwrap_or(uuid::Uuid::new_v4().to_string());
 
-        self._wallet_set_credential(wallet_handle, &out_cred_id, &credential)?;
+        self.wallet_service.add_indy_object(wallet_handle, &out_cred_id, &credential, "{}")?;
 
         trace!("store_credential <<< out_cred_id: {:?}", out_cred_id);
 
@@ -295,13 +299,15 @@ impl ProverCommandExecutor {
                             wallet_handle: i32) -> Result<Vec<CredentialInfo>, IndyError> {
         trace!("get_credentials_info >>> wallet_handle: {:?}", wallet_handle);
 
-        let mut credentials_search = self._wallet_credentials_search(wallet_handle, "{}")?;
+        let mut credentials_search =
+            self.wallet_service.search_indy_records::<Credential>(wallet_handle, "{}", RecordRetrieveOptions::ID_VALUE)?;
 
         let mut credentials_info: Vec<CredentialInfo> = Vec::new();
 
         while let Some(credential_record) = credentials_search.fetch_next_record()? {
-            let referent = credential_record.get_id().map_err(|err| IndyError::from(err))?;
-            let value = credential_record.get_value().map_err(|err| IndyError::from(err))?;
+            let referent = credential_record.get_id();
+            let value = credential_record.get_value()
+                .ok_or(CommonError::InvalidStructure(format!("Credential not found for id: {}", referent)))?;
 
             let credential: Credential = Credential::from_json(value)
                 .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize Credential: {:?}", err)))?;
@@ -392,14 +398,14 @@ impl ProverCommandExecutor {
         let mut credentials: HashMap<String, Credential> = HashMap::new();
 
         for cred_referent in cred_referents {
-            let credential: Credential = self._wallet_get_credential(wallet_handle, &cred_referent)?;
+            let credential: Credential = self.wallet_service.get_indy_object(wallet_handle, &cred_referent, RecordRetrieveOptions::ID_VALUE, &mut String::new())?;
             credentials.insert(cred_referent.clone(), credential);
         }
 
         let proof = self.anoncreds_service.prover.create_proof(&credentials,
                                                                &proof_req,
                                                                &requested_credentials,
-                                                               &master_secret,
+                                                               &master_secret.value,
                                                                &schemas_map_to_schemas_v1_map(schemas),
                                                                &cred_defs_map_to_cred_defs_v1_map(cred_defs),
                                                                &rev_states)?;
@@ -496,27 +502,8 @@ impl ProverCommandExecutor {
         Ok(rev_state_json)
     }
 
-    fn _wallet_set_master_secret(&self, wallet_handle: i32, id: &str, master_secret: &MasterSecret) -> Result<String, IndyError> {
-        self.wallet_service.set_object(wallet_handle, "MasterSecret", id, master_secret, "{}")
-    }
-
     fn _wallet_get_master_secret(&self, wallet_handle: i32, key: &str) -> Result<MasterSecret, IndyError> {
-        self.wallet_service.get_object::<MasterSecret>(wallet_handle, "MasterSecret", &key,
-                                                       WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE, &mut String::new())
-    }
-
-    fn _wallet_set_credential(&self, wallet_handle: i32, id: &str, credential: &Credential) -> Result<String, IndyError> {
-        self.wallet_service.set_object(wallet_handle, "Credential", id, credential, "{}")
-    }
-
-    fn _wallet_get_credential(&self, wallet_handle: i32, key: &str) -> Result<Credential, IndyError> {
-        self.wallet_service.get_object::<Credential>(wallet_handle, "Credential", &key,
-                                                     WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE, &mut String::new())
-    }
-
-    fn _wallet_credentials_search(&self, wallet_handle: i32, query: &str) -> Result<WalletSearch, WalletError> {
-        self.wallet_service.search_records(wallet_handle, "Credential",
-                                           query, WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE)
+        self.wallet_service.get_indy_object(wallet_handle, &key, RecordRetrieveOptions::ID_VALUE, &mut String::new())
     }
 }
 

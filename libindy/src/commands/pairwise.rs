@@ -3,13 +3,14 @@ extern crate indy_crypto;
 
 use errors::common::CommonError;
 use errors::indy::IndyError;
-use errors::wallet::WalletError;
-use services::wallet::{WalletService, WalletRecordRetrieveOptions, WalletSearch};
+use services::wallet::{WalletService, RecordRetrieveOptions};
+use domain::pairwise::{Pairwise, PairwiseInfo};
+use domain::crypto::did::Did;
 
 use std::rc::Rc;
 use std::str;
 
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use self::indy_crypto::utils::json::JsonEncodable;
 
 pub enum PairwiseCommand {
     PairwiseExists(
@@ -75,11 +76,8 @@ impl PairwiseCommandExecutor {
     fn pairwise_exists(&self,
                        wallet_handle: i32,
                        their_did: &str) -> Result<bool, IndyError> {
-        match self._wallet_get_pairwise(wallet_handle, their_did) {
-            Ok(_) => Ok(true),
-            Err(IndyError::WalletError(WalletError::NotFound(_))) => Ok(false),
-            Err(err) => Err(err),
-        }
+        let res = self.wallet_service.record_exists::<Pairwise>(wallet_handle, their_did)?;
+        Ok(res)
     }
 
     fn create_pairwise(&self,
@@ -87,8 +85,8 @@ impl PairwiseCommandExecutor {
                        their_did: &str,
                        my_did: &str,
                        metadata: Option<&str>) -> Result<(), IndyError> {
-        self.wallet_service.get_record(wallet_handle, "Did", &my_did, WalletRecordRetrieveOptions::RETRIEVE_ID)?;
-        self.wallet_service.get_record(wallet_handle, "TheirDid", &their_did, WalletRecordRetrieveOptions::RETRIEVE_ID)?;
+        self.wallet_service.record_exists::<Did>(wallet_handle, &my_did)?;
+        self.wallet_service.get_record(wallet_handle, &self.wallet_service.add_prefix("TheirDid"), &their_did, RecordRetrieveOptions::ID)?;
 
         let pairwise = Pairwise {
             my_did: my_did.to_string(),
@@ -96,7 +94,7 @@ impl PairwiseCommandExecutor {
             metadata: metadata.map(str::to_string)
         };
 
-        self._wallet_set_pairwise(wallet_handle, &their_did, &pairwise)?;
+        self.wallet_service.add_indy_object(wallet_handle, &their_did, &pairwise, "{}")?;
 
         Ok(())
     }
@@ -105,10 +103,14 @@ impl PairwiseCommandExecutor {
                      wallet_handle: i32) -> Result<String, IndyError> {
         let mut list_pairwise: Vec<String> = Vec::new();
 
-        let mut pairwise_search = self._wallet_pairwise_search(wallet_handle, "{}")?;
+        let mut pairwise_search = self.wallet_service.search_indy_records::<Pairwise>(wallet_handle,
+                                                                                      "{}", RecordRetrieveOptions::ID_VALUE)?;
 
         while let Some(pairwise_record) = pairwise_search.fetch_next_record()? {
-            let pairwise_value = pairwise_record.get_value()?;
+            let pairwise_id = pairwise_record.get_id();
+            let pairwise_value = pairwise_record.get_value()
+                .ok_or(CommonError::InvalidStructure(format!("Pairwise not found for id: {}", pairwise_id)))?;
+
             list_pairwise.push(pairwise_value.to_string());
         }
 
@@ -121,7 +123,10 @@ impl PairwiseCommandExecutor {
     fn get_pairwise(&self,
                     wallet_handle: i32,
                     their_did: &str) -> Result<String, IndyError> {
-        let pairwise_info: PairwiseInfo = self._wallet_get_pairwise_info(wallet_handle, &their_did)?;
+        let pairwise_info = PairwiseInfo::from(self.wallet_service.get_indy_object::<Pairwise>(wallet_handle,
+                                                                                               &their_did,
+                                                                                               RecordRetrieveOptions::ID_VALUE,
+                                                                                               &mut String::new())?);
 
         let pairwise_info_json = pairwise_info.to_json()
             .map_err(|e|
@@ -134,63 +139,13 @@ impl PairwiseCommandExecutor {
                              wallet_handle: i32,
                              their_did: &str,
                              metadata: Option<&str>) -> Result<(), IndyError> {
-        let mut pairwise: Pairwise = self._wallet_get_pairwise(wallet_handle, &their_did)?;
+        let mut pairwise: Pairwise =
+            self.wallet_service.get_indy_object(wallet_handle, &their_did, RecordRetrieveOptions::ID_VALUE, &mut String::new())?;
 
         pairwise.metadata = metadata.as_ref().map(|m| m.to_string());
 
-        self._wallet_update_pairwise(wallet_handle, &their_did, &pairwise)?;
+        self.wallet_service.update_indy_object(wallet_handle, &their_did, &pairwise)?;
 
         Ok(())
     }
-
-    fn _wallet_set_pairwise(&self, wallet_handle: i32, id: &str, pairwise: &Pairwise) -> Result<String, IndyError> {
-        self.wallet_service.set_object(wallet_handle, "Pairwise", id, pairwise, "{}")
-    }
-
-    fn _wallet_update_pairwise(&self, wallet_handle: i32, id: &str, pairwise: &Pairwise) -> Result<(), IndyError> {
-        let pairwise_json = pairwise.to_json()
-            .map_err(|err|
-                CommonError::InvalidState(format!("Can't serialize Pairwise: {:?}", err)))?;
-
-        self.wallet_service.update_record_value(wallet_handle, "Pairwise", id, &pairwise_json)
-            .map_err(|err| IndyError::from(err))
-    }
-
-    fn _wallet_get_pairwise(&self, wallet_handle: i32, key: &str) -> Result<Pairwise, IndyError> {
-        self.wallet_service.get_object::<Pairwise>(wallet_handle, "Pairwise", &key,
-                                                   WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE, &mut String::new())
-    }
-
-    fn _wallet_get_pairwise_info(&self, wallet_handle: i32, key: &str) -> Result<PairwiseInfo, IndyError> {
-        self.wallet_service.get_object::<PairwiseInfo>(wallet_handle, "Pairwise", &key,
-                                                       WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE, &mut String::new())
-    }
-
-    fn _wallet_pairwise_search(&self, wallet_handle: i32, query: &str) -> Result<WalletSearch, WalletError> {
-        self.wallet_service.search_records(wallet_handle, "Pairwise",
-                                           query, WalletRecordRetrieveOptions::RETRIEVE_ID_VALUE)
-    }
 }
-
-#[derive(Serialize, Deserialize)]
-pub struct Pairwise {
-    my_did: String,
-    their_did: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    metadata: Option<String>,
-}
-
-impl JsonEncodable for Pairwise {}
-
-impl<'a> JsonDecodable<'a> for Pairwise {}
-
-#[derive(Serialize, Deserialize)]
-pub struct PairwiseInfo {
-    pub my_did: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<String>,
-}
-
-impl JsonEncodable for PairwiseInfo {}
-
-impl<'a> JsonDecodable<'a> for PairwiseInfo {}
