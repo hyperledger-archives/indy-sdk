@@ -1,0 +1,41 @@
+@startuml wallet-encryption
+
+interface Tag {
+    +name
+    +value
+}
+
+class EncryptedTag {
+    +name: XChaCha20-Poly1305(data=tag_name, key=k5, iv=HMAC-SHA256(data=tag_name, key=k7))
+    +value: XChaCha20-Poly1305(data=tag_value, key=k6, iv=HMAC-SHA256(data=tag_value, key=k7))
+}
+Tag <|-- EncryptedTag
+
+class UnencryptedTag {
+     +name: XChaCha20-Poly1305(data=tag_name, key=k5, iv=HMAC-SHA256(data=tag_name, key=k7))
+     +value: plain(data=tag_value)
+ }
+Tag <|-- UnencryptedTag
+
+interface Record {
+    +type
+    +id
+    +value
+}
+Record "1" --* "*" Tag : tags
+
+class KeysRecord {
+    +type: "KEYS"
+    +id: "KEYS_ID"
+    +value: XChaCha20-Poly1305(data=k1||k2||k3||k4||k5||k6||k7, key=master_key, iv=rand())
+}
+KeysRecord --|> Record
+
+class WalletRecord {
+    +type: XChaCha20-Poly1305(data=type, key=k1, iv=HMAC-SHA256(data=type, key=k4))
+    +name: XChaCha20-Poly1305(data=name, key=k2, iv=HMAC-SHA256(data=name, key=k4))
+    +value: XChaCha20-Poly1305(data=value_key, key=k3, iv=rand())||XChaCha20-Poly1305(data=value, key=value_key, iv=rand())    
+}
+WalletRecord --|> Record
+
+@enduml
