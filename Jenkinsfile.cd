@@ -243,7 +243,8 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
 def windowsTesting() {
     node('win2016') {
         stage('Windows Test') {
-            ws("workspace\\${env.JOB_NAME}") {
+            def ws_path = "workspace/${env.JOB_NAME}".replace(' ', '_')
+            ws(ws_path) {
                 try {
                     echo "Windows Test: Checkout scm"
                     checkout scm
