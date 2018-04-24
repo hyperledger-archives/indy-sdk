@@ -37,17 +37,17 @@ pub enum WalletCommand {
            String, // wallet name
            Option<String>, // storage type
            Option<String>, // config
-           Option<String>, // credentials
+           String, // credentials
            Box<Fn(Result<(), IndyError>) + Send>),
     Open(String, // wallet name
          Option<String>, // wallet runtime config
-         Option<String>, // wallet credentials
+         String, // wallet credentials
          Box<Fn(Result<i32, IndyError>) + Send>),
     Close(i32, // handle
           Box<Fn(Result<(), IndyError>) + Send>),
     ListWallets(Box<Fn(Result<String, IndyError>) + Send>),
     Delete(String, // name
-           Option<String>, // wallet credentials
+           String, // wallet credentials
            Box<Fn(Result<(), IndyError>) + Send>)
 }
 
@@ -81,13 +81,11 @@ impl WalletCommandExecutor {
             WalletCommand::Create(pool_name, name, storage_type, config, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Create command received");
                 cb(self.create(&pool_name, &name, storage_type.as_ref().map(String::as_str),
-                               config.as_ref().map(String::as_str),
-                               credentials.as_ref().map(String::as_str)));
+                               config.as_ref().map(String::as_str), &credentials));
             }
             WalletCommand::Open(name, runtime_config, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Open command received");
-                cb(self.open(&name, runtime_config.as_ref().map(String::as_str),
-                             credentials.as_ref().map(String::as_str)));
+                cb(self.open(&name, runtime_config.as_ref().map(String::as_str), &credentials));
             }
             WalletCommand::Close(handle, cb) => {
                 info!(target: "wallet_command_executor", "Close command received");
@@ -99,7 +97,7 @@ impl WalletCommandExecutor {
             }
             WalletCommand::Delete(name, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Delete command received");
-                cb(self.delete(&name, credentials.as_ref().map(String::as_str)));
+                cb(self.delete(&name, &credentials));
             }
         };
     }
@@ -147,7 +145,7 @@ impl WalletCommandExecutor {
               name: &str,
               storage_type: Option<&str>,
               config: Option<&str>,
-              credentials: Option<&str>) -> Result<(), IndyError> {
+              credentials: &str) -> Result<(), IndyError> {
         info!("create >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}",
               pool_name, name, storage_type, config, credentials);
 
@@ -161,7 +159,7 @@ impl WalletCommandExecutor {
     fn open(&self,
             name: &str,
             runtime_config: Option<&str>,
-            credentials: Option<&str>) -> Result<i32, IndyError> {
+            credentials: &str) -> Result<i32, IndyError> {
         info!("open >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
 
         let res = self.wallet_service.open(name, runtime_config, credentials)?;
@@ -198,7 +196,7 @@ impl WalletCommandExecutor {
 
     fn delete(&self,
               name: &str,
-              credentials: Option<&str>) -> Result<(), IndyError> {
+              credentials: &str) -> Result<(), IndyError> {
         info!("delete >>> name: {:?}, credentials: {:?}", name, credentials);
 
         let res = self.wallet_service.delete(name, credentials)?;

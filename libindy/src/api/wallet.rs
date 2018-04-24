@@ -135,7 +135,7 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
 ///   {
 ///       "storage": <object>  List of supported keys are defined by wallet type.
 ///   }
-/// credentials(optional): Wallet credentials json (if NULL, then default config will be used).
+/// credentials: Wallet credentials json (if NULL, then default config will be used).
 ///   {
 ///       "key": string,
 ///       "rekey": Optional<string>,
@@ -161,7 +161,7 @@ pub extern fn indy_create_wallet(command_handle: i32,
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(storage_type, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam5);
-    check_useful_opt_c_str!(credentials, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
@@ -191,7 +191,7 @@ pub extern fn indy_create_wallet(command_handle: i32,
 ///   {
 ///       "storage": Optional<object>  List of supported keys are defined by wallet type.
 ///   }
-/// credentials(optional): Wallet credentials json.
+/// credentials: Wallet credentials json.
 ///   {
 ///       "key": string,
 ///       "rekey": Optional<string>,
@@ -213,7 +213,7 @@ pub extern fn indy_open_wallet(command_handle: i32,
                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, handle: i32)>) -> ErrorCode {
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
     check_useful_opt_c_str!(runtime_config, ErrorCode::CommonInvalidParam3);
-    check_useful_opt_c_str!(credentials, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
@@ -282,7 +282,7 @@ pub extern fn indy_close_wallet(command_handle: i32,
 ///
 /// #Params
 /// name: Name of the wallet to delete.
-/// credentials(optional): Wallet credentials json. List of supported keys are defined by wallet type.
+/// credentials: Wallet credentials json. List of supported keys are defined by wallet type.
 ///                    if NULL, then default credentials will be used.
 ///
 /// #Returns
@@ -297,7 +297,7 @@ pub extern fn indy_delete_wallet(command_handle: i32,
                                  credentials: *const c_char,
                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
-    check_useful_opt_c_str!(credentials, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
