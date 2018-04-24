@@ -1,6 +1,6 @@
 import pytest
 from vcx.error import ErrorCode, VcxError
-from vcx.common import error_message
+from vcx.common import error_message, get_version
 from vcx.api.utils import vcx_agent_provision, vcx_agent_update_info
 from ctypes import *
 
@@ -31,3 +31,6 @@ async def test_update_agent_info_fails():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_update_agent_info():
     await vcx_agent_update_info(agentUpdateString)
+
+def test_get_version():
+    assert get_version()

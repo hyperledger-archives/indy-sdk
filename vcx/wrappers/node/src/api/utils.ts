@@ -50,3 +50,7 @@ export async function updateAgentInfo (options: string): Promise<string> {
     throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_update_agent_info')
   }
 }
+
+export function getVersion (): string {
+  return rustAPI().vcx_version()
+}

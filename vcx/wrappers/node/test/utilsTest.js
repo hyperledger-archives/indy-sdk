@@ -39,4 +39,9 @@ describe('provisioning and updating agents ', function () {
     let obj = await vcx.updateAgentInfo(agentUpdateString)
     assert(obj)
   })
+
+  it('can get the version', () => {
+    let version = vcx.getVersion()
+    assert(version)
+  })
 })

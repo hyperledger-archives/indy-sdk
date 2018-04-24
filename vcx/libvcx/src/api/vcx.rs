@@ -1,13 +1,14 @@
 extern crate libc;
 
+use utils::version_constants;
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::libindy::{wallet, pool};
 use utils::error;
-use utils::version_constants::{VERSION, REVISION};
 use settings;
 use std::thread;
 use std::path::Path;
+use std::ffi::CString;
 
 
 /// Initializes VCX with config file
@@ -129,7 +130,7 @@ pub extern fn vcx_init (command_handle: u32,
         Ok(v) => v,
     };
 
-    info!("libvcx version: {}{}", VERSION, REVISION);
+    info!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
 
     info!("Initializing wallet with name: {} and pool: {}", &wallet_name, &pool_name);
 
@@ -179,6 +180,15 @@ pub extern fn vcx_init (command_handle: u32,
     error::SUCCESS.code_num
 }
 
+lazy_static!{
+    pub static ref VERSION_STRING: CString = CString::new(format!("{}{}", version_constants::VERSION, version_constants::REVISION)).unwrap();
+}
+
+#[no_mangle]
+pub extern fn vcx_version() -> *const c_char {
+    VERSION_STRING.as_ptr()
+}
+
 #[no_mangle]
 pub extern fn vcx_reset() -> u32 {
 
@@ -213,7 +223,6 @@ mod tests {
 
     use super::*;
     use std::path::Path;
-    use std::ffi::CString;
     use std::error::Error;
     use std::io::prelude::*;
     use std::time::Duration;
@@ -326,7 +335,11 @@ mod tests {
 
         let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(1021)).unwrap().unwrap();
         assert_eq!(c_message,error::INVALID_ATTRIBUTES_STRUCTURE.message);
+    }
 
-
+    #[test]
+    fn test_vcx_version() {
+        let return_version = CStringUtils::c_str_to_string(vcx_version()).unwrap().unwrap();
+        assert!(return_version.len() > 5);
     }
 }
