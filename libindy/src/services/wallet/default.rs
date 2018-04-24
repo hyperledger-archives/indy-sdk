@@ -76,7 +76,7 @@ impl WalletStorage for DefaultWallet {
         Ok(())
     }
 
-    fn close(&self) -> Result<(), WalletError> { Ok(()) }
+    fn close_wallet(&self) -> Result<(), WalletError> { Ok(()) }
 
     fn get_pool_name(&self) -> String {
         self.pool_name.clone()
@@ -244,7 +244,7 @@ impl DefaultWalletType {
 }
 
 impl WalletStorageType for DefaultWalletType {
-    fn create(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError> {
+    fn create_wallet(&self, name: &str, config: Option<&str>, credentials: &str) -> Result<(), WalletError> {
         trace!("DefaultWalletType.create >> {}, with config {:?} and credentials {:?}", name, config, credentials);
         let path = _db_path(name);
         if path.exists() {
@@ -252,10 +252,7 @@ impl WalletStorageType for DefaultWalletType {
             return Err(WalletError::AlreadyExists(name.to_string()));
         }
 
-        let runtime_auth = match credentials {
-            Some(auth) => DefaultWalletCredentials::from_json(auth)?,
-            None => DefaultWalletCredentials::default()
-        };
+        let runtime_auth = DefaultWalletCredentials::from_json(credentials)?;
 
         if runtime_auth.rekey.is_some() {
             return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
@@ -269,22 +266,19 @@ impl WalletStorageType for DefaultWalletType {
         Ok(())
     }
 
-    fn delete(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError> {
+    fn delete_wallet(&self, name: &str, config: Option<&str>, credentials: &str) -> Result<(), WalletError> {
         trace!("DefaultWalletType.delete {}, with config {:?} and credentials {:?}", name, config, credentials);
         // FIXME: parse and implement credentials!!!
         Ok(fs::remove_file(_db_path(name)).map_err(map_err_trace!())?)
     }
 
-    fn open(&self, name: &str, pool_name: &str, _config: Option<&str>, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<Box<WalletStorage>, WalletError> {
+    fn open_wallet(&self, name: &str, pool_name: &str, _config: Option<&str>, runtime_config: Option<&str>, credentials: &str) -> Result<Box<WalletStorage>, WalletError> {
         let runtime_config = match runtime_config {
             Some(config) => DefaultWalletRuntimeConfig::from_json(config)?,
             None => DefaultWalletRuntimeConfig::default()
         };
 
-        let mut runtime_auth = match credentials {
-            Some(auth) => DefaultWalletCredentials::from_json(auth)?,
-            None => DefaultWalletCredentials::default()
-        };
+        let mut runtime_auth = DefaultWalletCredentials::from_json(credentials)?;
 
         _open_connection(name, &runtime_auth).map_err(map_err_trace!())?
             .query_row("SELECT sql FROM sqlite_master", &[], |_| {})
@@ -410,7 +404,7 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_type = DefaultWalletType::new();
-        wallet_type.create("wallet1", None, None).unwrap();
+        wallet_type.create_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
 
         TestUtils::cleanup_indy_home();
     }
@@ -420,9 +414,9 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_type = DefaultWalletType::new();
-        wallet_type.create("wallet1", None, None).unwrap();
+        wallet_type.create_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
 
-        let res = wallet_type.create("wallet1", None, None);
+        let res = wallet_type.create_wallet("wallet1", None, r#"{"key":"key"}"#);
         assert_match!(Err(WalletError::AlreadyExists(_)), res);
 
         TestUtils::cleanup_indy_home();
@@ -433,9 +427,9 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_type = DefaultWalletType::new();
-        wallet_type.create("wallet1", None, None).unwrap();
-        wallet_type.delete("wallet1", None, None).unwrap();
-        wallet_type.create("wallet1", None, None).unwrap();
+        wallet_type.create_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        wallet_type.delete_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        wallet_type.create_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
 
         TestUtils::cleanup_indy_home();
     }
@@ -445,8 +439,8 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_type = DefaultWalletType::new();
-        wallet_type.create("wallet1", None, None).unwrap();
-        wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+        wallet_type.create_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        wallet_type.open_wallet("wallet1", "pool1", None, None, r#"{"key":"key"}"#).unwrap();
 
         TestUtils::cleanup_indy_home();
     }
@@ -456,8 +450,8 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_type = DefaultWalletType::new();
-        wallet_type.create("wallet1", None, None).unwrap();
-        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+        wallet_type.create_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        let wallet = wallet_type.open_wallet("wallet1", "pool1", None, None, r#"{"key":"key"}"#).unwrap();
 
         wallet.add_record("type1", "key1", "value1", "{}").unwrap();
         let value = wallet.get_record("type1", "key1", "{}").unwrap();
@@ -471,14 +465,14 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_type = DefaultWalletType::new();
-        wallet_type.create("wallet1", None, None).unwrap();
+        wallet_type.create_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
 
         {
-            let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+            let wallet = wallet_type.open_wallet("wallet1", "pool1", None, None, r#"{"key":"key"}"#).unwrap();
             wallet.add_record("type1", "key1", "value1", "{}").unwrap();
         }
 
-        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+        let wallet = wallet_type.open_wallet("wallet1", "pool1", None, None, r#"{"key":"key"}"#).unwrap();
         let value = wallet.get_record("type1", "key1", "{}").unwrap();
         assert_eq!("value1", value.get_value().unwrap());
 
@@ -490,9 +484,9 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_type = DefaultWalletType::new();
-        wallet_type.create("wallet1", None, None).unwrap();
+        wallet_type.create_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
 
-        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+        let wallet = wallet_type.open_wallet("wallet1", "pool1", None, None, r#"{"key":"key"}"#).unwrap();
         let search = wallet.get_record("type1", "key1", "{}");
         assert_match!(Err(WalletError::NotFound(_)), search);
 
@@ -504,8 +498,8 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_type = DefaultWalletType::new();
-        wallet_type.create("wallet1", None, None).unwrap();
-        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+        wallet_type.create_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        let wallet = wallet_type.open_wallet("wallet1", "pool1", None, None, r#"{"key":"key"}"#).unwrap();
 
         wallet.add_record("type1", "key1", "value1", "{}").unwrap();
         let value = wallet.get_record("type1", "key1", "{}").unwrap();
@@ -523,8 +517,8 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_type = DefaultWalletType::new();
-        wallet_type.create("wallet1", None, None).unwrap();
-        let wallet = wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+        wallet_type.create_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        let wallet = wallet_type.open_wallet("wallet1", "pool1", None, None, r#"{"key":"key"}"#).unwrap();
 
         wallet.add_record("type1", "key1", "value1", "{}").unwrap();
         wallet.add_record("type1", "key2", "value2", "{}").unwrap();
@@ -548,8 +542,8 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let default_wallet_type = DefaultWalletType::new();
-        default_wallet_type.create("wallet1", None, None).unwrap();
-        let wallet = default_wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+        default_wallet_type.create_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        let wallet = default_wallet_type.open_wallet("wallet1", "pool1", None, None, r#"{"key":"key"}"#).unwrap();
 
         assert_eq!(wallet.get_pool_name(), "pool1");
 
@@ -561,8 +555,8 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let default_wallet_type = DefaultWalletType::new();
-        default_wallet_type.create("wallet1", None, None).unwrap();
-        let wallet = default_wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
+        default_wallet_type.create_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        let wallet = default_wallet_type.open_wallet("wallet1", "pool1", None, None, r#"{"key":"key"}"#).unwrap();
 
         assert_eq!(wallet.get_name(), "wallet1");
 
@@ -604,14 +598,14 @@ mod tests {
         TestUtils::cleanup_indy_home();
         {
             let default_wallet_type = DefaultWalletType::new();
-            default_wallet_type.create("mywallet", None, Some(r#"{"key":""}"#)).unwrap();
-            let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":""}"#)).unwrap();
+            default_wallet_type.create_wallet("mywallet", None, r#"{"key":""}"#).unwrap();
+            let wallet = default_wallet_type.open_wallet("mywallet", "pool1", None, None, r#"{"key":""}"#).unwrap();
 
             wallet.add_record("type1", "key1", "value1", "{}").unwrap();
         }
         {
             let default_wallet_type = DefaultWalletType::new();
-            let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":"", "rekey":"thisisatest"}"#)).unwrap();
+            let wallet = default_wallet_type.open_wallet("mywallet", "pool1", None, None, r#"{"key":"", "rekey":"thisisatest"}"#).unwrap();
             let mut search = wallet.search_records("type1", "{}", "{}").unwrap();
             assert_eq!(1, search.get_total_count().unwrap().unwrap());
 
@@ -621,7 +615,7 @@ mod tests {
         }
         {
             let default_wallet_type = DefaultWalletType::new();
-            let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":"thisisatest"}"#)).unwrap();
+            let wallet = default_wallet_type.open_wallet("mywallet", "pool1", None, None, r#"{"key":"thisisatest"}"#).unwrap();
 
             let mut search = wallet.search_records("type1", "{}", "{}").unwrap();
             assert_eq!(1, search.get_total_count().unwrap().unwrap());
@@ -639,14 +633,14 @@ mod tests {
         TestUtils::cleanup_indy_home();
         {
             let default_wallet_type = DefaultWalletType::new();
-            default_wallet_type.create("mywallet", None, Some(r#"{"key":"thisisatest"}"#)).unwrap();
-            let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":"thisisatest"}"#)).unwrap();
+            default_wallet_type.create_wallet("mywallet", None, r#"{"key":"thisisatest"}"#).unwrap();
+            let wallet = default_wallet_type.open_wallet("mywallet", "pool1", None, None, r#"{"key":"thisisatest"}"#).unwrap();
 
             wallet.add_record("type1", "key1", "value1", "{}").unwrap();
         }
         {
             let default_wallet_type = DefaultWalletType::new();
-            let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":"thisisatest", "rekey":""}"#)).unwrap();
+            let wallet = default_wallet_type.open_wallet("mywallet", "pool1", None, None, r#"{"key":"thisisatest", "rekey":""}"#).unwrap();
 
             let mut search = wallet.search_records("type1", "{}", "{}").unwrap();
             assert_eq!(1, search.get_total_count().unwrap().unwrap());
@@ -657,7 +651,7 @@ mod tests {
         }
         {
             let default_wallet_type = DefaultWalletType::new();
-            let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":""}"#)).unwrap();
+            let wallet = default_wallet_type.open_wallet("mywallet", "pool1", None, None, r#"{"key":""}"#).unwrap();
 
             let mut search = wallet.search_records("type1", "{}", "{}").unwrap();
             assert_eq!(1, search.get_total_count().unwrap().unwrap());
@@ -676,8 +670,8 @@ mod tests {
 
         {
             let default_wallet_type = DefaultWalletType::new();
-            default_wallet_type.create("encrypted_wallet", None, Some(r#"{"key":"test"}"#)).unwrap();
-            let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some(r#"{"key":"test"}"#)).unwrap();
+            default_wallet_type.create_wallet("encrypted_wallet", None, r#"{"key":"test"}"#).unwrap();
+            let wallet = default_wallet_type.open_wallet("encrypted_wallet", "pool1", None, None, r#"{"key":"test"}"#).unwrap();
 
             wallet.add_record("type1", "key1", "value1", "{}").unwrap();
 
@@ -690,7 +684,7 @@ mod tests {
         }
         {
             let default_wallet_type = DefaultWalletType::new();
-            let wallet_error = default_wallet_type.open("encrypted_wallet", "pool1", None, None, None);
+            let wallet_error = default_wallet_type.open_wallet("encrypted_wallet", "pool1", None, None, r#"{"key":"key"}"#);
 
             match wallet_error {
                 Ok(_) => assert!(false),
@@ -707,8 +701,8 @@ mod tests {
 
         {
             let default_wallet_type = DefaultWalletType::new();
-            default_wallet_type.create("encrypted_wallet", None, Some(r#"{"key":"test"}"#)).unwrap();
-            let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some(r#"{"key":"test"}"#)).unwrap();
+            default_wallet_type.create_wallet("encrypted_wallet", None, r#"{"key":"test"}"#).unwrap();
+            let wallet = default_wallet_type.open_wallet("encrypted_wallet", "pool1", None, None, r#"{"key":"test"}"#).unwrap();
 
             wallet.add_record("type1", "key1", "value1", "{}").unwrap();
 
@@ -722,7 +716,7 @@ mod tests {
 
         {
             let default_wallet_type = DefaultWalletType::new();
-            let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some(r#"{"key":"test","rekey":"newtest"}"#)).unwrap();
+            let wallet = default_wallet_type.open_wallet("encrypted_wallet", "pool1", None, None, r#"{"key":"test","rekey":"newtest"}"#).unwrap();
 
             let mut search = wallet.search_records("type1", "{}", "{}").unwrap();
             assert_eq!(1, search.get_total_count().unwrap().unwrap());
@@ -734,7 +728,7 @@ mod tests {
 
         {
             let default_wallet_type = DefaultWalletType::new();
-            let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some(r#"{"key":"newtest"}"#)).unwrap();
+            let wallet = default_wallet_type.open_wallet("encrypted_wallet", "pool1", None, None, r#"{"key":"newtest"}"#).unwrap();
 
             let mut search = wallet.search_records("type1", "{}", "{}").unwrap();
             assert_eq!(1, search.get_total_count().unwrap().unwrap());

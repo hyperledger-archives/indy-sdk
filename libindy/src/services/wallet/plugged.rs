@@ -373,7 +373,7 @@ impl WalletStorage for PluggedWallet {
         Ok(result)
     }
 
-    fn close(&self) -> Result<(), WalletError> {
+    fn close_wallet(&self) -> Result<(), WalletError> {
         let err = (self.close_handler)(self.handle);
 
         if err != ErrorCode::Success {
@@ -466,7 +466,7 @@ impl PluggedWalletType {
 }
 
 impl WalletStorageType for PluggedWalletType {
-    fn create(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError> {
+    fn create_wallet(&self, name: &str, config: Option<&str>, credentials: &str) -> Result<(), WalletError> {
         let name = CString::new(name)?;
 
         let config = match config {
@@ -474,14 +474,11 @@ impl WalletStorageType for PluggedWalletType {
             None => None
         };
 
-        let credentials = match credentials {
-            Some(credentials) => Some(CString::new(credentials)?),
-            None => None
-        };
+        let credentials = CString::new(credentials)?;
 
         let err = (self.create_handler)(name.as_ptr(),
                                         config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
-                                        credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
+                                        credentials.as_ptr());
 
         if err != ErrorCode::Success {
             return Err(WalletError::PluggedWallerError(err));
@@ -490,7 +487,7 @@ impl WalletStorageType for PluggedWalletType {
         Ok(())
     }
 
-    fn delete(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletError> {
+    fn delete_wallet(&self, name: &str, config: Option<&str>, credentials: &str) -> Result<(), WalletError> {
         let name = CString::new(name)?;
 
         let config = match config {
@@ -498,14 +495,11 @@ impl WalletStorageType for PluggedWalletType {
             None => None
         };
 
-        let credentials = match credentials {
-            Some(credentials) => Some(CString::new(credentials)?),
-            None => None
-        };
+        let credentials = CString::new(credentials)?;
 
         let err = (self.delete_handler)(name.as_ptr(),
                                         config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
-                                        credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
+                                        credentials.as_ptr());
 
         if err != ErrorCode::Success {
             return Err(WalletError::PluggedWallerError(err));
@@ -514,7 +508,7 @@ impl WalletStorageType for PluggedWalletType {
         Ok(())
     }
 
-    fn open(&self, name: &str, pool_name: &str, config: Option<&str>, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<Box<WalletStorage>, WalletError> {
+    fn open_wallet(&self, name: &str, pool_name: &str, config: Option<&str>, runtime_config: Option<&str>, credentials: &str) -> Result<Box<WalletStorage>, WalletError> {
         let mut handle: i32 = 0;
         let cname = CString::new(name)?;
 
@@ -528,15 +522,12 @@ impl WalletStorageType for PluggedWalletType {
             None => None
         };
 
-        let credentials = match credentials {
-            Some(credentials) => Some(CString::new(credentials)?),
-            None => None
-        };
+        let credentials = CString::new(credentials)?;
 
         let err = (self.open_handler)(cname.as_ptr(),
                                       config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
                                       runtime_config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
-                                      credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
+                                      credentials.as_ptr(),
                                       &mut handle);
 
         if err != ErrorCode::Success {

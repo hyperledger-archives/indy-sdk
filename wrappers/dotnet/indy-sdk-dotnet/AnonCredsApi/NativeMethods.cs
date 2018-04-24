@@ -6,155 +6,171 @@ namespace Hyperledger.Indy.AnonCredsApi
 {
     internal static class NativeMethods
     {
+        /// <summary>
+        /// Create credential schema entity that describes credential attributes list and allows credentials
+        /// interoperability.
+        /// to Indy distributed ledger.
+        ///
+        /// Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
+        /// to Indy distributed ledger.
+        ///
+        /// It is IMPORTANT for current version POST Schema in Ledger and after that GET it from Ledger
+        /// with correct seq_no to save compatibility with Ledger.
+        /// After that can call indy_issuer_create_and_store_credential_def to build corresponding Credential Definition.
+        ///
+        /// </summary>
+        /// <returns>The issuer create schema.</returns>
+        /// <param name="command_handle">Command handle to map callback to user context</param>
+        /// <param name="issuer_did">DID of schema issuer.</param>
+        /// <param name="name">Name of the schema</param>
+        /// <param name="version">Version of the schema</param>
+        /// <param name="attrs">A list of schema atribute descriptions.</param>
+        /// <param name="cb">Callback that takes command result as parameter</param>
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_issuer_create_schema(int command_handle, string issuer_did, string name, string version, string attrs, IssuerCreateSchemaCompletedDelegate cb);
 
         /// <summary>
-        /// Create keys (both primary and revocation) for the given schema and signature type (currently only CL signature type is supported).
+        /// Delegate for the function called back to by the indy_issuer_create_schema function.
+        /// </summary>
+        internal delegate void IssuerCreateSchemaCompletedDelegate(int xcommand_handle, int err, string schema_id, string schema_json);
+
+        /// <summary>
+        /// Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
+        /// and secrets used for credentials revocation.
+        ///
+        /// Credential definition entity contains private and public parts. Private part will be stored in the wallet. Public part
+        /// will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing CRED_DEF transaction
+        /// to Indy distributed ledger.
+        ///
+        /// It is IMPORTANT for current version GET Schema from Ledger with correct seq_no to save compatibility with Ledger.
+        ///
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="issuer_did">a DID of the issuer signing claim_def transaction to the Ledger</param>
         /// <param name="schema_json">schema as a json</param>
-        /// <param name="signature_type">signature type (optional). Currently only 'CL' is supported.</param>
-        /// <param name="create_non_revoc">whether to request non-revocation claim.</param>
+        /// <param name="tag">Allows to distinct between credential definitions for the same issuer and schema</param>
+        /// <param name="type_">Signature type (optional). Currently only 'CL' is supported.</param>
+        /// <param name="config_json">type-specific configuration of credential definition as json:
+        /// - 'CL':
+        ///   - support_revocation: whether to request non-revocation credential (optional, default false)</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_issuer_create_and_store_claim_def(int command_handle, IntPtr wallet_handle, string issuer_did, string schema_json, string signature_type, bool create_non_revoc, IssuerCreateAndStoreClaimDefCompletedDelegate cb);
+        internal static extern int indy_issuer_create_and_store_credential_def(int command_handle, IntPtr wallet_handle, string issuer_did, string schema_json, string tag, string type_, string config_json, IssuerCreateAndStoreCredentialDefCompletedDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the indy_issuer_create_and_store_claim_def function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="claim_def_json">claim definition json containing information about signature type, schema and issuer's public key.</param>
-        internal delegate void IssuerCreateAndStoreClaimDefCompletedDelegate(int xcommand_handle, int err, string claim_def_json);
+        /// <param name="cred_def_id"></param>
+        /// <param name="cred_def_json">claim definition json containing information about signature type, schema and issuer's public key.</param>
+        internal delegate void IssuerCreateAndStoreCredentialDefCompletedDelegate(int xcommand_handle, int err, string cred_def_id, string cred_def_json);
 
         /// <summary>
-        /// Create a new revocation registry for the given claim definition.
+        /// Indies the issuer create and store revoc reg.
         /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
-        /// <param name="issuer_did">a DID of the issuer signing revoc_reg transaction to the Ledger</param>
-        /// <param name="schema_seq_no">seq no of a schema transaction in Ledger</param>
-        /// <param name="max_claim_num">maximum number of claims the new registry can process.</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        /// <returns>The issuer create and store revoc reg.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="wallet_handle">Wallet handle.</param>
+        /// <param name="issuer_did">Issuer did.</param>
+        /// <param name="type_">Type.</param>
+        /// <param name="tag">Tag.</param>
+        /// <param name="cred_def_id">Cred def identifier.</param>
+        /// <param name="config_json">Config json.</param>
+        /// <param name="tails_writer_handle">Tails writer handle.</param>
+        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_issuer_create_and_store_revoc_reg(int command_handle, IntPtr wallet_handle, string issuer_did, int schema_seq_no, int max_claim_num, IssuerCreateAndStoreClaimRevocRegCompletedDelegate cb);
+        internal static extern int indy_issuer_create_and_store_revoc_reg(int command_handle, IntPtr wallet_handle, string issuer_did, string type_, string tag, string cred_def_id, string config_json, int tails_writer_handle, IssuerCreateAndStoreRevocRegCompletedDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the indy_issuer_create_and_store_revoc_reg function.
+        /// Issuer create and store revoc reg completed delegate.
         /// </summary>
-        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
-        /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="revoc_reg_json">Revoc registry json</param>
-        internal delegate void IssuerCreateAndStoreClaimRevocRegCompletedDelegate(int xcommand_handle, int err, string revoc_reg_json);
+        internal delegate void IssuerCreateAndStoreRevocRegCompletedDelegate(int xcommand_handle, int err, string revoc_reg_id, string revoc_reg_def_json, string revoc_reg_entry_json);
 
         /// <summary>
-        /// Create claim offer in Wallet
+        /// Indies the issuer create credential offer.
         /// </summary>
-        /// <returns>The issuer create claim offer.</returns>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="wallet_handle">wallet handler (created by open_wallet).</param>
-        /// <param name="schema_json">Schema as json.</param>
-        /// <param name="issuer_did">a DID of the issuer created Claim definition.</param>
-        /// <param name="prover_did">a DID of the target user.</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        /// <returns>The issuer create credential offer.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="wallet_handle">Wallet handle.</param>
+        /// <param name="credDefId">Cred def identifier.</param>
+        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_issuer_create_claim_offer(int command_handle, IntPtr wallet_handle, string schema_json, string issuer_did, string prover_did, IssuerCreateClaimOfferCompletedDelegate cb);
+        internal static extern int indy_issuer_create_credential_offer(int command_handle, IntPtr wallet_handle, string credDefId, IssuerCreateCredentialOfferCompletedDelegate cb);
 
         /// <summary>
         ///  Delegate for the function called back to by the indy_issuer_create_claim_offer function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="claim_offer_json">Claimn offer json</param>
-        internal delegate void IssuerCreateClaimOfferCompletedDelegate(int xcommand_handle, int err, string claim_offer_json);
+        /// <param name="cred_offer_json">Claimn offer json</param>
+        internal delegate void IssuerCreateCredentialOfferCompletedDelegate(int xcommand_handle, int err, string cred_offer_json);
 
         /// <summary>
-        /// Signs a given claim for the given user by a given key (claim def).
+        /// Indies the issuer create credential.
         /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
-        /// <param name="claim_req_json">a claim request with a blinded secret</param>
-        /// <param name="claim_json">a claim containing attribute values for each of requested attribute names.</param>
-        /// <param name="user_revoc_index">index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        /// <returns>The issuer create credential.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="wallet_handle">Wallet handle.</param>
+        /// <param name="cred_offer_json">Cred offer json.</param>
+        /// <param name="cred_req_json">Cred req json.</param>
+        /// <param name="cred_values_json">Cred values json.</param>
+        /// <param name="rev_reg_id">Rev reg identifier.</param>
+        /// <param name="blob_storage_reader_handle">BLOB storage reader handle.</param>
+        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_issuer_create_claim(int command_handle, IntPtr wallet_handle, string claim_req_json, string claim_json, int user_revoc_index, IssuerCreateClaimCompletedDelegate cb);
+        internal static extern int indy_issuer_create_credential(int command_handle, IntPtr wallet_handle, string cred_offer_json, string cred_req_json, string cred_values_json, string rev_reg_id, int blob_storage_reader_handle, IssuerCreateCredentialCompletedDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the indy_issuer_create_and_store_revoc_reg function.
+        /// Issuer create credential completed delegate.
+        /// </summary>
+        internal delegate void IssuerCreateCredentialCompletedDelegate(int xcommand_handle, int err, string cred_json, string cred_revoc_id, string revoc_reg_delta_json);
+
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_issuer_revoke_credential(int command_handle, IntPtr wallet_handle, int blob_storage_reader_cfg_handle, string rev_reg_id, string cred_revoc_id, IssuerRevokeCredentialCompletedDelegate cb);
+
+        /// <summary>
+        /// Delegate for the function called back to by the indy_issuer_revoke_credential function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="revoc_reg_update_json">Revocation registry update json with a newly issued claim</param>
-        /// <param name="claim_json">Claim json containing issued claim, issuer_did, schema_seq_no, and revoc_reg_seq_no
-        /// used for issuance</param>
-        internal delegate void IssuerCreateClaimCompletedDelegate(int xcommand_handle, int err, string revoc_reg_update_json, string claim_json);
+        /// <param name="revoc_reg_delta_json">Revocation registry update json with a revoked claim</param>
+        internal delegate void IssuerRevokeCredentialCompletedDelegate(int xcommand_handle, int err, string revoc_reg_delta_json);
 
         /// <summary>
-        /// Revokes a user identified by a revoc_id in a given revoc-registry.
+        /// Indies the issuer merge revocation registry deltas.
         /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
-        /// <param name="issuer_did">The DID of the issuer.</param>
-        /// <param name="schema_json">The schema as a json</param>
-        /// <param name="user_revoc_index">index of the user in the revocation registry</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        /// <returns>The issuer merge revocation registry deltas.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="rev_reg_delta_json">Rev reg delta json.</param>
+        /// <param name="other_rev_reg_delta_json">Other rev reg delta json.</param>
+        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_issuer_revoke_claim(int command_handle, IntPtr wallet_handle, string issuer_did, int schema_json, int user_revoc_index, IssuerRevokeClaimCompletedDelegate cb);
+        internal static extern int indy_issuer_merge_revocation_registry_deltas(int command_handle, string rev_reg_delta_json, string other_rev_reg_delta_json, IssuerMergeRevocationRegistryDeltasCompletedDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the indy_issuer_revoke_claim function.
+        /// Issuer merge revocation registry deltas completed delegate.
         /// </summary>
-        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
-        /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="revoc_reg_update_json">Revocation registry update json with a revoked claim</param>
-        internal delegate void IssuerRevokeClaimCompletedDelegate(int xcommand_handle, int err, string revoc_reg_update_json);
-
-        /// <summary>
-        /// Stores a claim offer from the given issuer in a secure storage.
-        /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
-        /// <param name="claim_offer_json">claim offer as a json containing information about the issuer and a claim</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_prover_store_claim_offer(int command_handle, IntPtr wallet_handle, string claim_offer_json, IndyMethodCompletedDelegate cb);
-
-        /// <summary>
-        /// Gets all stored claim offers (see prover_store_claim_offer).
-        /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
-        /// <param name="filter_json">optional filter to get claim offers for specific Issuer, claim_def or schema only only</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
-        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_prover_get_claim_offers(int command_handle, IntPtr wallet_handle, string filter_json, ProverGetClaimOffersCompletedDelegate cb);
-
-        /// <summary>
-        /// Delegate for the function called back to by the indy_prover_get_claim_offers function.
-        /// </summary>
-        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
-        /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="claim_offers_json">A json with a list of claim offers for the filter.</param>
-        internal delegate void ProverGetClaimOffersCompletedDelegate(int xcommand_handle, int err, string claim_offers_json);
+        internal delegate void IssuerMergeRevocationRegistryDeltasCompletedDelegate(int xcommand_handle, int err, string merged_rev_reg_delta);
 
         /// <summary>
         /// Creates a master secret with a given name and stores it in the wallet.
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
-        /// <param name="master_secret_name">a new master secret name</param>
+        /// <param name="master_secret_id">a new master secret name</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_prover_create_master_secret(int command_handle, IntPtr wallet_handle, string master_secret_name, IndyMethodCompletedDelegate cb);
+        internal static extern int indy_prover_create_master_secret(int command_handle, IntPtr wallet_handle, string master_secret_id, ProverCreateMasterSecretCompletedDelegate cb);
+
+        /// <summary>
+        /// Prover create master secret completed delegate.
+        /// </summary>
+        internal delegate void ProverCreateMasterSecretCompletedDelegate(int xcommand_handle, int err, string out_master_secret_id);
 
         /// <summary>
         /// Creates a clam request json for the given claim offer and stores it in a secure wallet.
@@ -162,33 +178,39 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="prover_did">a DID of the prover</param>
-        /// <param name="claim_offer_json">claim offer as a json containing information about the issuer and a claim</param>
-        /// <param name="claim_def_json">claim definition json associated with issuer_did and schema_seq_no in the claim_offer</param>
-        /// <param name="master_secret_name">the name of the master secret stored in the wallet</param>
+        /// <param name="cred_offer_json">claim offer as a json containing information about the issuer and a claim</param>
+        /// <param name="cred_def_json">claim definition json associated with issuer_did and schema_seq_no in the claim_offer</param>
+        /// <param name="master_secret_id">the name of the master secret stored in the wallet</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_prover_create_and_store_claim_req(int command_handle, IntPtr wallet_handle, string prover_did, string claim_offer_json, string claim_def_json, string master_secret_name, ProverCreateAndStoreClaimReqCompletedDelegate cb);
+        internal static extern int indy_prover_create_credential_req(int command_handle, IntPtr wallet_handle, string prover_did, string cred_offer_json, string cred_def_json, string master_secret_id, ProverCreateCredentialReqCompletedDelegate cb);
 
         /// <summary>
-        /// Delegate for the function called back to by the indy_prover_create_and_store_claim_req function.
+        /// Prover create credential req completed delegate.
         /// </summary>
-        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
-        /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="claim_req_json">Claim request json.</param>
-        internal delegate void ProverCreateAndStoreClaimReqCompletedDelegate(int xcommand_handle, int err, string claim_req_json);
+        internal delegate void ProverCreateCredentialReqCompletedDelegate(int xcommand_handle, int err, string cred_req_json, string cred_req_metadata);
 
         /// <summary>
-        /// Updates the claim by a master secret and stores in a secure wallet.
+        /// Indies the prover store credential.
         /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
-        /// <param name="claims_json">claim json</param>
-        /// <param name="rev_reg_json">revocation registry json</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        /// <returns>The prover store credential.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="wallet_handle">Wallet handle.</param>
+        /// <param name="cred_id">Cred identifier.</param>
+        /// <param name="cred_req_json">Cred req json.</param>
+        /// <param name="cred_req_metadata_json">Cred req metadata json.</param>
+        /// <param name="cred_json">Cred json.</param>
+        /// <param name="cred_def_json">Cred def json.</param>
+        /// <param name="rev_reg_def_json">Rev reg def json.</param>
+        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_prover_store_claim(int command_handle, IntPtr wallet_handle, string claims_json, string rev_reg_json, IndyMethodCompletedDelegate cb);
+        internal static extern int indy_prover_store_credential(int command_handle, IntPtr wallet_handle, string cred_id, string cred_req_json, string cred_req_metadata_json, string cred_json, string cred_def_json, string rev_reg_def_json, ProverStoreCredentialCompletedDelegate cb);
+
+        /// <summary>
+        /// Prover store credential completed delegate.
+        /// </summary>
+        internal delegate void ProverStoreCredentialCompletedDelegate(int xcommand_handle, int err, string out_cred_id);
 
         /// <summary>
         /// Gets human readable claims according to the filter.
@@ -199,15 +221,15 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_prover_get_claims(int command_handle, IntPtr wallet_handle, string filter_json, ProverGetClaimsCompletedDelegate cb);
+        internal static extern int indy_prover_get_credentials(int command_handle, IntPtr wallet_handle, string filter_json, ProverGetCredentialsCompletedDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the indy_prover_get_claims function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="claims_json">claims json</param>
-        internal delegate void ProverGetClaimsCompletedDelegate(int xcommand_handle, int err, string claims_json);
+        /// <param name="matched_credentials_json">claims json</param>
+        internal delegate void ProverGetCredentialsCompletedDelegate(int xcommand_handle, int err, string matched_credentials_json);
 
         /// <summary>
         /// Gets human readable claims matching the given proof request.
@@ -218,31 +240,31 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_prover_get_claims_for_proof_req(int command_handle, IntPtr wallet_handle, string proof_request_json, ProverGetClaimsForProofCompletedDelegate cb);
+        internal static extern int indy_prover_get_credentials_for_proof_req(int command_handle, IntPtr wallet_handle, string proof_request_json, ProverGetCredentialsForProofCompletedDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the indy_prover_get_claims_for_proof_req function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="claims_json">json with claims for the given pool request.</param>
-        internal delegate void ProverGetClaimsForProofCompletedDelegate(int xcommand_handle, int err, string claims_json);
+        /// <param name="credentials_json">json with claims for the given pool request.</param>
+        internal delegate void ProverGetCredentialsForProofCompletedDelegate(int xcommand_handle, int err, string credentials_json);
 
         /// <summary>
-        /// Creates a proof according to the given proof request
+        /// Indies the prover create proof.
         /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
-        /// <param name="proof_req_json">proof request json as come from the verifier</param>
-        /// <param name="requested_claims_json">either a claim or self-attested attribute for each requested attribute</param>
-        /// <param name="schemas_json">all schema jsons participating in the proof request</param>
-        /// <param name="master_secret_name">master secret name</param>
-        /// <param name="claim_defs_json">all claim definition jsons participating in the proof request</param>
-        /// <param name="revoc_regs_json">all revocation registry jsons participating in the proof request</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        /// <returns>The prover create proof.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="wallet_handle">Wallet handle.</param>
+        /// <param name="proof_req_json">Proof req json.</param>
+        /// <param name="requested_credentials_json">Requested credentials json.</param>
+        /// <param name="master_secret_id">Master secret identifier.</param>
+        /// <param name="schemas_json">Schemas json.</param>
+        /// <param name="credential_defs_json">Credential defs json.</param>
+        /// <param name="rev_states_json">Rev states json.</param>
+        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_prover_create_proof(int command_handle, IntPtr wallet_handle, string proof_req_json, string requested_claims_json, string schemas_json, string master_secret_name, string claim_defs_json, string revoc_regs_json, ProverCreateProofCompletedDelegate cb);
+        internal static extern int indy_prover_create_proof(int command_handle, IntPtr wallet_handle, string proof_req_json, string requested_credentials_json, string master_secret_id, string schemas_json, string credential_defs_json, string rev_states_json, ProverCreateProofCompletedDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the indy_prover_create_proof function.
@@ -253,18 +275,19 @@ namespace Hyperledger.Indy.AnonCredsApi
         internal delegate void ProverCreateProofCompletedDelegate(int xcommand_handle, int err, string proof_json);
 
         /// <summary>
-        /// Verifies a proof (of multiple claim).
+        /// Indies the verifier verify proof.
         /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="proof_request_json">initial proof request as sent by the verifier</param>
-        /// <param name="proof_json">proof json</param>
-        /// <param name="schemas_json">all schema jsons participating in the proof</param>
-        /// <param name="claim_defs_jsons">all claim definition jsons participating in the proof</param>
-        /// <param name="revoc_regs_json">all revocation registry jsons participating in the proof</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        /// <returns>The verifier verify proof.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="proof_request_json">Proof request json.</param>
+        /// <param name="proof_json">Proof json.</param>
+        /// <param name="schemas_json">Schemas json.</param>
+        /// <param name="credential_defs_json">Credential defs json.</param>
+        /// <param name="rev_reg_defs_json">Rev reg defs json.</param>
+        /// <param name="rev_regs_json">Rev regs json.</param>
+        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_verifier_verify_proof(int command_handle, string proof_request_json, string proof_json, string schemas_json, string claim_defs_jsons, string revoc_regs_json, VerifierVerifyProofCompletedDelegate cb);
+        internal static extern int indy_verifier_verify_proof(int command_handle, string proof_request_json, string proof_json, string schemas_json, string credential_defs_json, string rev_reg_defs_json, string rev_regs_json, VerifierVerifyProofCompletedDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the indy_verifier_verify_proof function.
@@ -273,5 +296,44 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="valid">true if the proof is valid, otherwise false</param>
         internal delegate void VerifierVerifyProofCompletedDelegate(int xcommand_handle, int err, bool valid);
+
+        /// <summary>
+        /// Indies the state of the create revocation.
+        /// </summary>
+        /// <returns>The create revocation state.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="blob_storage_reader_handle">BLOB storage reader handle.</param>
+        /// <param name="rev_reg_def_json">Rev reg def json.</param>
+        /// <param name="rev_reg_delta_json">Rev reg delta json.</param>
+        /// <param name="timestamp">Timestamp.</param>
+        /// <param name="cred_rev_id">Cred rev identifier.</param>
+        /// <param name="cb">Cb.</param>
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_create_revocation_state(int command_handle, int blob_storage_reader_handle, string rev_reg_def_json, string rev_reg_delta_json, long timestamp, string cred_rev_id, CreateRevocationStateCompletedDelegate cb);
+
+        /// <summary>
+        /// Create revocation state completed delegate.
+        /// </summary>
+        internal delegate void CreateRevocationStateCompletedDelegate(int xcommand_handle, int err, string rev_state_json);
+
+        /// <summary>
+        /// Indies the state of the update revocation.
+        /// </summary>
+        /// <returns>The update revocation state.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="blob_storage_reader_handle">BLOB storage reader handle.</param>
+        /// <param name="rev_state_json">Rev state json.</param>
+        /// <param name="rev_reg_def_json">Rev reg def json.</param>
+        /// <param name="rev_reg_delta_json">Rev reg delta json.</param>
+        /// <param name="timestamp">Timestamp.</param>
+        /// <param name="cred_rev_id">Cred rev identifier.</param>
+        /// <param name="cb">Cb.</param>
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_update_revocation_state(int command_handle, int blob_storage_reader_handle, string rev_state_json, string rev_reg_def_json, string rev_reg_delta_json, long timestamp, string cred_rev_id, UpdateRevocationStateCompletedDelegate cb);
+
+        /// <summary>
+        /// Update revocation state completed delegate.
+        /// </summary>
+        internal delegate void UpdateRevocationStateCompletedDelegate(int xcommand_handle, int err, string updated_rev_state_json);
     }
 }

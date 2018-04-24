@@ -52,6 +52,15 @@ impl JsonEncodable for Did {}
 
 impl<'a> JsonDecodable<'a> for Did {}
 
+#[derive(Serialize, Clone, Debug, NamedType)]
+pub struct DidWithMeta {
+    pub did: String,
+    pub verkey: String,
+    pub metadata: Option<String>
+}
+
+impl JsonEncodable for DidWithMeta {}
+
 #[derive(Serialize, Deserialize, Debug, NamedType)]
 pub struct TheirDid {
     pub did: String,
@@ -80,3 +89,4 @@ impl From<TemporaryDid> for Did {
         }
     }
 }
+

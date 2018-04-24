@@ -206,11 +206,11 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::SignRequest(wallet_handle, submitter_did, request_json, cb) => {
                 info!(target: "ledger_command_executor", "SignRequest command received");
-                self.sign_request(wallet_handle, &submitter_did, &request_json, cb);
+                cb(self.sign_request(wallet_handle, &submitter_did, &request_json));
             }
             LedgerCommand::BuildGetDdoRequest(submitter_did, target_did, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetDdoRequest command received");
-                self.build_get_ddo_request(&submitter_did, &target_did, cb);
+                cb(self.build_get_ddo_request(&submitter_did, &target_did));
             }
             LedgerCommand::BuildNymRequest(submitter_did, target_did, verkey, alias, role, cb) => {
                 info!(target: "ledger_command_executor", "BuildNymRequest command received");
@@ -327,16 +327,29 @@ impl LedgerCommandExecutor {
                                cb: Box<Fn(Result<String, IndyError>) + Send>) {
         check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
                                                    wallet_handle, pool_handle, cb);
-        match self._sign_request(wallet_handle, submitter_did, request_json) {
+        match self.sign_request(wallet_handle, submitter_did, request_json) {
             Ok(signed_request) => self.submit_request(pool_handle, signed_request.as_str(), cb),
             Err(err) => cb(Err(err))
         }
     }
 
-    fn _sign_request(&self,
-                     wallet_handle: i32,
-                     submitter_did: &str,
-                     request_json: &str) -> Result<String, IndyError> {
+    fn submit_request(&self,
+                      handle: i32,
+                      request_json: &str,
+                      cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        let x: Result<i32, PoolError> = self.pool_service.send_tx(handle, request_json);
+        match x {
+            Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
+            Err(err) => { cb(Err(IndyError::PoolError(err))); }
+        };
+    }
+
+    fn sign_request(&self,
+                    wallet_handle: i32,
+                    submitter_did: &str,
+                    request_json: &str) -> Result<String, IndyError> {
+        info!("sign_request >>> wallet_handle: {:?},  submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+
         let my_did: Did = self.wallet_service.get_indy_object(wallet_handle, &submitter_did, &RecordOptions::id_value(), &mut String::new())?;
 
         let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_did.verkey, &RecordOptions::id_value(), &mut String::new())?;
@@ -354,39 +367,26 @@ impl LedgerCommandExecutor {
         let signature = self.crypto_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
 
         request["signature"] = Value::String(Base58::encode(&signature));
-        let signed_request: String = serde_json::to_string(&request)
+        let res = serde_json::to_string(&request)
             .map_err(|err|
                 CryptoError::CommonError(
                     CommonError::InvalidState(format!("Can't serialize message after signing: {}", err.description()))))?;
 
-        Ok(signed_request)
-    }
+        info!("sign_request <<< res: {:?}", res);
 
-    fn submit_request(&self,
-                      handle: i32,
-                      request_json: &str,
-                      cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let x: Result<i32, PoolError> = self.pool_service.send_tx(handle, request_json);
-        match x {
-            Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
-            Err(err) => { cb(Err(IndyError::PoolError(err))); }
-        };
-    }
-
-    fn sign_request(&self,
-                    wallet_handle: i32,
-                    submitter_did: &str,
-                    request_json: &str,
-                    cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self._sign_request(wallet_handle, submitter_did, request_json))
+        Ok(res)
     }
 
     fn build_get_ddo_request(&self,
                              submitter_did: &str,
-                             target_did: &str,
-                             cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self.ledger_service.build_get_ddo_request(submitter_did, target_did)
-            .map_err(|err| IndyError::CommonError(err)))
+                             target_did: &str) -> Result<String, IndyError> {
+        info!("build_get_ddo_request >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
+
+        let res =self.ledger_service.build_get_ddo_request(submitter_did, target_did)?;
+
+        info!("build_get_ddo_request <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn build_nym_request(&self,
