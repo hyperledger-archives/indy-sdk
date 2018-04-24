@@ -116,7 +116,7 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
 
     # Prover Stores Credential
     cred_id = 'cred_1_id'
-    await anoncreds.prover_store_credential(prover_wallet_handle, cred_id, cred_req_json, cred_req_metadata_json,
+    await anoncreds.prover_store_credential(prover_wallet_handle, cred_id, cred_req_metadata_json,
                                             cred_json, cred_def_json, revoc_reg_def_json)
 
     #  VERIFYING Prover Credential

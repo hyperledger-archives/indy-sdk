@@ -70,7 +70,7 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 		String revStateJson = Anoncreds.createRevocationState(blobStorageReaderHandleCfg, revRegDef, revRegDelta, timestamp, credRevocId).get();
 
 		// Prover store received Credential
-		Anoncreds.proverStoreCredential(wallet, credentialId1, credentialReqJson, credentialReqMetadataJson, credJson, credDefJson, revRegDef).get();
+		Anoncreds.proverStoreCredential(wallet, credentialId1, credentialReqMetadataJson, credJson, credDefJson, revRegDef).get();
 
 		// Prover gets Credentials for Proof Request
 		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();

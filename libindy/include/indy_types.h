@@ -5,9 +5,7 @@
 
 typedef uint8_t       indy_u8_t;
 typedef uint32_t      indy_u32_t;
-typedef uint64_t      indy_u64_t;
 typedef int32_t       indy_i32_t;
-typedef int64_t       indy_i64_t;
 typedef int32_t       indy_handle_t;
 typedef unsigned int  indy_bool_t;
 typedef long long     indy_i64_t;

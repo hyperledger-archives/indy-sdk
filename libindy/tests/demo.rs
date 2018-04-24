@@ -247,7 +247,6 @@ fn anoncreds_demo_works() {
         indy_prover_store_credential(prover_store_credential_command_handle,
                                      wallet_handle,
                                      CString::new(credential_id).unwrap().as_ptr(),
-                                     CString::new(credential_req_json.clone()).unwrap().as_ptr(),
                                      CString::new(credential_req_metadata_json).unwrap().as_ptr(),
                                      CString::new(credential_json).unwrap().as_ptr(),
                                      CString::new(credential_def_json.clone()).unwrap().as_ptr(),
@@ -576,6 +575,9 @@ fn ledger_demo_works() {
     let nym_resp: Reply = serde_json::from_str(&resp).unwrap();
     info!("nym_resp_raw : {:?}", resp);
     info!("nym_resp     : {:?}", nym_resp);
+
+    // pause for syncronization of all nodes in the ledger
+    ::std::thread::sleep(TimeoutUtils::short_timeout());
 
     // 12. Prepare and send GET_NYM request
     let get_nym_req_id = PoolUtils::get_req_id();

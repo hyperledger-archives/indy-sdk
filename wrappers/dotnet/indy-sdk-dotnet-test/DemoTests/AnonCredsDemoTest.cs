@@ -74,7 +74,7 @@ namespace Hyperledger.Indy.Test.DemoTests
 
             //6. Prover store Claim Offer
             var claimOffer = string.Format("{{\"issuer_did\":\"{0}\", \"schema_seq_no\":{1}}}", issuerDid, 1);
-            await AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer);
+            await AnonCreds.ProverStoreCredentialOfferAsync(_proverWallet, claimOffer);
 
             //7. Prover get Claim Offers
             var claimOfferFilter = string.Format("{{\"issuer_did\":\"{0}\"}}", issuerDid);
@@ -117,7 +117,7 @@ namespace Hyperledger.Indy.Test.DemoTests
                     "                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                     "                  }";
 
-            var claimsForProofJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_proverWallet, proofRequestJson);
+            var claimsForProofJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(_proverWallet, proofRequestJson);
             Assert.IsNotNull(claimsForProofJson);
 
             var claimsForProof = JObject.Parse(claimsForProofJson);
@@ -205,11 +205,11 @@ namespace Hyperledger.Indy.Test.DemoTests
 
             //5. Prover store Claim Offer received from Issuer1
             var claimOffer = string.Format("{{\"issuer_did\":\"{0}\", \"schema_seq_no\":{1}}}", issuerDid, 1);
-            await AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer);
+            await AnonCreds.ProverStoreCredentialOfferAsync(_proverWallet, claimOffer);
 
             //6. Prover store Claim Offer received from Issuer2
             var claimOffer2 = string.Format("{{\"issuer_did\":\"{0}\", \"schema_seq_no\":{1}}}", issuerDid2, 2);
-            await AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer2);
+            await AnonCreds.ProverStoreCredentialOfferAsync(_proverWallet, claimOffer2);
 
             //7. Prover get Claim Offers
             var claimOffersJson = await AnonCreds.ProverGetClaimOffersAsync(_proverWallet, "{}");
@@ -269,7 +269,7 @@ namespace Hyperledger.Indy.Test.DemoTests
                     "                  }";
 
 
-            var claimsForProofJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_proverWallet, proofRequestJson);
+            var claimsForProofJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(_proverWallet, proofRequestJson);
             Assert.IsNotNull(claimsForProofJson);
 
             var claimsForProof = JObject.Parse(claimsForProofJson);
@@ -358,11 +358,11 @@ namespace Hyperledger.Indy.Test.DemoTests
 
             //4. Prover store Claim Offer received from Issuer
             var claimOffer = string.Format("{{\"issuer_did\":\"{0}\", \"schema_seq_no\":{1}}}", issuerDid, 1);
-            await AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer);
+            await AnonCreds.ProverStoreCredentialOfferAsync(_proverWallet, claimOffer);
 
             //5. Prover store Claim Offer received from Issuer
             var claimOffer2 = string.Format("{{\"issuer_did\":\"{0}\", \"schema_seq_no\":{1}}}", issuerDid, 2);
-            await AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer2);
+            await AnonCreds.ProverStoreCredentialOfferAsync(_proverWallet, claimOffer2);
 
             //6. Prover get Claim Offers
             var claimOffersJson = await AnonCreds.ProverGetClaimOffersAsync(_proverWallet, "{}");
@@ -421,7 +421,7 @@ namespace Hyperledger.Indy.Test.DemoTests
                     "                  }";
 
 
-            var claimsForProofJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_proverWallet, proofRequestJson);
+            var claimsForProofJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(_proverWallet, proofRequestJson);
             Assert.IsNotNull(claimsForProofJson);
 
             var claimsForProof = JObject.Parse(claimsForProofJson);
@@ -488,7 +488,7 @@ namespace Hyperledger.Indy.Test.DemoTests
 
             //3. Prover store Claim Offer
             var claimOffer = string.Format("{{\"issuer_did\":\"{0}\", \"schema_seq_no\":{1}}}", issuerDid, 1);
-            await AnonCreds.ProverStoreClaimOfferAsync(_proverWallet, claimOffer);
+            await AnonCreds.ProverStoreCredentialOfferAsync(_proverWallet, claimOffer);
 
             //4. Prover get Claim Offers
             var claimOfferFilter = string.Format("{{\"issuer_did\":\"{0}\"}}", issuerDid);
@@ -532,7 +532,7 @@ namespace Hyperledger.Indy.Test.DemoTests
                     "                          \"requested_predicates\":{}\n" +
                     "                  }";
 
-            var claimsForProofJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_proverWallet, proofRequestJson);
+            var claimsForProofJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(_proverWallet, proofRequestJson);
 
             Assert.IsNotNull(claimsForProofJson);
 
