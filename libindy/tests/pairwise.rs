@@ -225,8 +225,6 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            DidUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
-
             assert!(!PairwiseUtils::pairwise_exists(wallet_handle, DID_TRUSTEE).unwrap());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -282,8 +280,6 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            DidUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
 
             assert_eq!(ErrorCode::WalletNotFoundError, PairwiseUtils::get_pairwise(wallet_handle, DID_TRUSTEE).unwrap_err());
 
