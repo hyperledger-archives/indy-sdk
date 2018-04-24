@@ -5,7 +5,7 @@ extern crate rust_base58;
 
 use errors::common::CommonError;
 use services::blob_storage::BlobStorageService;
-use domain::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 
 use self::indy_crypto::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
 use self::indy_crypto::errors::IndyCryptoError;

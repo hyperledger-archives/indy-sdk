@@ -13,6 +13,10 @@ extern crate lazy_static;
 
 extern crate openssl;
 
+extern crate named_type;
+#[macro_use]
+extern crate named_type_derive;
+
 // Note that to use macroses from util inside of other modules it must me loaded first!
 #[macro_use]
 mod utils;

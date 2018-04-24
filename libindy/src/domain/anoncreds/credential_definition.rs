@@ -5,9 +5,15 @@ extern crate serde_json;
 use super::DELIMITER;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
-use self::indy_crypto::cl::{CredentialPrimaryPublicKey, CredentialRevocationPublicKey};
+use self::indy_crypto::cl::{
+    CredentialPrimaryPublicKey,
+    CredentialRevocationPublicKey,
+    CredentialPrivateKey,
+    CredentialKeyCorrectnessProof
+};
 
 use std::collections::HashMap;
+use named_type::NamedType;
 
 pub const CL_SIGNATURE_TYPE: &'static str = "CL";
 pub const CRED_DEF_MARKER: &'static str = "3";
@@ -54,7 +60,7 @@ pub struct CredentialDefinitionV1 {
 
 impl<'a> JsonDecodable<'a> for CredentialDefinitionV1 {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, NamedType)]
 #[serde(tag = "ver")]
 pub enum CredentialDefinition {
     #[serde(rename = "1.0")]
@@ -62,7 +68,8 @@ pub enum CredentialDefinition {
 }
 
 impl CredentialDefinition {
-    pub fn cred_def_id(did: &str, schema_id: &str, signature_type: &str) -> String { //TODO: FIXME
+    pub fn cred_def_id(did: &str, schema_id: &str, signature_type: &str) -> String {
+        //TODO: FIXME
         format!("{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id)
     }
 }
@@ -88,3 +95,21 @@ pub fn cred_defs_map_to_cred_defs_v1_map(cred_defs: HashMap<String, CredentialDe
 
     cred_defs_v1
 }
+
+#[derive(Debug, Serialize, Deserialize, NamedType)]
+pub struct CredentialDefinitionPrivateKey {
+    pub value: CredentialPrivateKey
+}
+
+impl JsonEncodable for CredentialDefinitionPrivateKey {}
+
+impl<'a> JsonDecodable<'a> for CredentialDefinitionPrivateKey {}
+
+#[derive(Debug, Serialize, Deserialize, NamedType)]
+pub struct CredentialDefinitionCorrectnessProof {
+    pub value: CredentialKeyCorrectnessProof
+}
+
+impl JsonEncodable for CredentialDefinitionCorrectnessProof {}
+
+impl<'a> JsonDecodable<'a> for CredentialDefinitionCorrectnessProof {}

@@ -11,6 +11,9 @@ extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
 extern crate log;
+extern crate named_type;
+#[macro_use]
+extern crate named_type_derive;
 
 #[macro_use]
 mod utils;
@@ -105,6 +108,26 @@ mod high_cases {
             DidUtils::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
             assert_eq!(ErrorCode::WalletInvalidHandle, PairwiseUtils::create_pairwise(wallet_handle + 1, DID_TRUSTEE, &my_did, None).unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_create_pairwise_works_for_twice() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (my_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            DidUtils::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
+
+            PairwiseUtils::create_pairwise(wallet_handle, DID_TRUSTEE, &my_did, Some(METADATA)).unwrap();
+
+            let res = PairwiseUtils::create_pairwise(wallet_handle, DID_TRUSTEE, &my_did, None);
+            assert_eq!(ErrorCode::CommonInvalidState, res.unwrap_err()); // TODO: Replace Error
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 

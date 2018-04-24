@@ -12,6 +12,9 @@ extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
 extern crate indy_crypto;
+extern crate named_type;
+#[macro_use]
+extern crate named_type_derive;
 
 #[macro_use]
 mod utils;
@@ -27,14 +30,14 @@ use indy::api::ErrorCode;
 use utils::inmem_wallet::InmemWallet;
 use utils::constants::*;
 
-use utils::domain::schema::Schema;
-use utils::domain::credential_definition::CredentialDefinition;
-use utils::domain::revocation_registry_definition::RevocationRegistryDefinition;
-use utils::domain::credential::CredentialInfo;
-use utils::domain::credential_for_proof_request::CredentialsForProofRequest;
-use utils::domain::proof::Proof;
-use utils::domain::revocation_state::RevocationState;
-use utils::domain::revocation_registry::RevocationRegistry;
+use utils::domain::anoncreds::schema::Schema;
+use utils::domain::anoncreds::credential_definition::CredentialDefinition;
+use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
+use utils::domain::anoncreds::credential::CredentialInfo;
+use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
+use utils::domain::anoncreds::proof::Proof;
+use utils::domain::anoncreds::revocation_state::RevocationState;
+use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
 
 use std::collections::HashSet;
 
@@ -1968,6 +1971,7 @@ mod demos {
     }
 
     #[test]
+    #[ignore]
     fn anoncreds_works_for_custom_wallet() {
         TestUtils::cleanup_storage();
         InmemWallet::cleanup();

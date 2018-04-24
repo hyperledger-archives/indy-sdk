@@ -3,11 +3,12 @@ extern crate serde;
 extern crate serde_json;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
-use self::indy_crypto::cl::RevocationKeyPublic;
+use self::indy_crypto::cl::{RevocationKeyPublic, RevocationKeyPrivate};
 
 use super::DELIMITER;
 
 use std::collections::HashMap;
+use named_type::NamedType;
 
 pub const CL_ACCUM: &'static str = "CL_ACCUM";
 pub const REV_REG_DEG_MARKER: &'static str = "4";
@@ -77,7 +78,7 @@ pub struct RevocationRegistryDefinitionV1 {
     pub value: RevocationRegistryDefinitionValue
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, NamedType)]
 #[serde(tag = "ver")]
 pub enum RevocationRegistryDefinition {
     #[serde(rename = "1.0")]
@@ -111,3 +112,12 @@ pub fn rev_reg_defs_map_to_rev_reg_defs_v1_map(rev_reg_defs: HashMap<String, Rev
 
     rev_reg_defs_v1
 }
+
+#[derive(Debug, Serialize, Deserialize, NamedType)]
+pub struct RevocationRegistryDefinitionPrivate {
+    pub value: RevocationKeyPrivate
+}
+
+impl JsonEncodable for RevocationRegistryDefinitionPrivate {}
+
+impl<'a> JsonDecodable<'a> for RevocationRegistryDefinitionPrivate {}

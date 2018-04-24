@@ -9,6 +9,7 @@ pub mod pool;
 pub mod did;
 pub mod wallet;
 pub mod pairwise;
+pub mod non_secrets;
 
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
 use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
@@ -18,6 +19,7 @@ use commands::pool::{PoolCommand, PoolCommandExecutor};
 use commands::did::{DidCommand, DidCommandExecutor};
 use commands::wallet::{WalletCommand, WalletCommandExecutor};
 use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
+use commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
 
 use errors::common::CommonError;
 
@@ -43,7 +45,8 @@ pub enum Command {
     Pool(PoolCommand),
     Did(DidCommand),
     Wallet(WalletCommand),
-    Pairwise(PairwiseCommand)
+    Pairwise(PairwiseCommand),
+    NonSecrets(NonSecretsCommand)
 }
 
 pub struct CommandExecutor {
@@ -85,6 +88,7 @@ impl CommandExecutor {
                 let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
                 let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
                 let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());
+                let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());
 
                 loop {
                     match receiver.recv() {
@@ -119,6 +123,10 @@ impl CommandExecutor {
                         Ok(Command::Pairwise(cmd)) => {
                             info!("PairwiseCommand command received");
                             pairwise_command_executor.execute(cmd);
+                        }
+                        Ok(Command::NonSecrets(cmd)) => {
+                            info!("NonSecretCommand command received");
+                            non_secret_command_executor.execute(cmd);
                         }
                         Ok(Command::Exit) => {
                             info!("Exit command received");

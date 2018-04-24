@@ -12,8 +12,9 @@ use super::DELIMITER;
 use super::filter::Filtering;
 
 use std::collections::HashMap;
+use named_type::NamedType;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, NamedType)]
 pub struct Credential {
     pub schema_id: String,
     pub cred_def_id: String,
