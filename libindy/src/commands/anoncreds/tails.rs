@@ -33,6 +33,7 @@ impl SDKTailsAccessor {
         let tails_reader_handle = tails_service.open_blob(tails_reader_handle,
                                                           &rev_reg_def.value.tails_location,
                                                           tails_hash.as_slice())?;
+
         Ok(SDKTailsAccessor {
             tails_service,
             tails_reader_handle
@@ -67,7 +68,7 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
 pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
                                   writer_handle: i32,
                                   rtg: &mut RevocationTailsGenerator) -> Result<(String, String), CommonError> {
-    trace!("store_tails_from_generator ---> start");
+    info!("store_tails_from_generator >>> writer_handle: {:?}, rtg: {:?}", writer_handle, rtg);
 
     let blob_handle = service.create_blob(writer_handle)?;
 
@@ -83,6 +84,7 @@ pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
 
     let res = service.finalize(blob_handle).map(|(location, hash)| (location, hash.to_base58()))?;
 
-    trace!("finalize ---> end");
+    info!("store_tails_from_generator <<< res: {:?}", res);
+
     Ok(res)
 }

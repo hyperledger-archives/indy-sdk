@@ -1104,7 +1104,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let (my_did, my_verkey) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
+            let (my_did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
             DidUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
             DidUtils::replace_keys_apply(wallet_handle, &my_did).unwrap();

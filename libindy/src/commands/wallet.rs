@@ -127,14 +127,19 @@ impl WalletCommandExecutor {
                      get_search_total_count: WalletGetSearchTotalCount,
                      fetch_search_next_record: WalletFetchSearchNextRecord,
                      free_search: WalletFreeSearch) -> Result<(), IndyError> {
-        self
+        info!("register_type >>>");
+
+        let res = self
             .wallet_service
             .register_wallet_storage(
                 type_, create, open, close, delete, add_record, update_record_value, update_record_tags,
                 add_record_tags, delete_record_tags, delete_record, get_record, get_record_id, get_record_type,
                 get_record_value, get_record_tags, free_record, search_records, search_all_records,
-                get_search_total_count, fetch_search_next_record, free_search)
-            .map_err(IndyError::from)
+                get_search_total_count, fetch_search_next_record, free_search)?;
+
+        info!("register_type <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn create(&self,
@@ -143,37 +148,63 @@ impl WalletCommandExecutor {
               storage_type: Option<&str>,
               config: Option<&str>,
               credentials: Option<&str>) -> Result<(), IndyError> {
-        self.wallet_service.create(pool_name, name, storage_type, config, credentials)
-            .map_err(|err| IndyError::WalletError(err))
+        info!("create >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}",
+              pool_name, name, storage_type, config, credentials);
+
+        let res = self.wallet_service.create(pool_name, name, storage_type, config, credentials)?;
+
+        info!("create <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn open(&self,
             name: &str,
             runtime_config: Option<&str>,
             credentials: Option<&str>) -> Result<i32, IndyError> {
-        self.wallet_service.open(name, runtime_config, credentials)
-            .map_err(|err| IndyError::WalletError(err))
+        info!("open >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
+
+        let res = self.wallet_service.open(name, runtime_config, credentials)?;
+
+        info!("open <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn close(&self,
              handle: i32) -> Result<(), IndyError> {
-        self.wallet_service.close(handle)
-            .map_err(|err| IndyError::WalletError(err))
+        info!("close >>> handle: {:?}", handle);
+
+        let res = self.wallet_service.close(handle)?;
+
+        info!("close <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn list_wallets(&self) -> Result<String, IndyError> {
-        self.wallet_service.list_wallets()
+        info!("list_wallets >>>");
+
+        let res = self.wallet_service.list_wallets()
             .and_then(|wallets|
                 serde_json::to_string(&wallets)
                     .map_err(|err|
-                        WalletError::CommonError(CommonError::InvalidState(format!("Can't serialize wallets list {}", err)))))
-            .map_err(IndyError::from)
+                        WalletError::CommonError(CommonError::InvalidState(format!("Can't serialize wallets list {}", err)))))?;
+
+        info!("list_wallets <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn delete(&self,
               name: &str,
               credentials: Option<&str>) -> Result<(), IndyError> {
-        self.wallet_service.delete(name, credentials)
-            .map_err(|err| IndyError::WalletError(err))
+        info!("delete >>> name: {:?}, credentials: {:?}", name, credentials);
+
+        let res = self.wallet_service.delete(name, credentials)?;
+
+        info!("delete <<< res: {:?}", res);
+
+        Ok(res)
     }
 }
