@@ -331,6 +331,7 @@ Another part of calls use assumptions about input parameters format to determine
 ///
 /// #Params
 /// command_handle: command handle to map callback to context
+/// wallet_handle: wallet handle where to save new address
 /// payment_method: Payment method to use (for example, 'sov')
 /// config: payment address config as json:
 ///   {
@@ -340,6 +341,7 @@ Another part of calls use assumptions about input parameters format to determine
 /// #Returns
 /// payment_address - public identifier of payment address in fully resolvable payment address format
 pub extern fn indy_create_payment_address(command_handle: i32,
+                                          wallet_handle: i32,
                                           payment_method: *const c_char,
                                           config: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
