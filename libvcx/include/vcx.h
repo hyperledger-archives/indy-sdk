@@ -58,6 +58,7 @@ vcx_error_t vcx_create_agent(vcx_command_handle_t handle, const char *config, vo
 vcx_error_t vcx_update_agent_info(vcx_command_handle_t handle, const char *info, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
 
 const char *vcx_error_c_message(int);
+const char *vcx_version();
 
 
 /**

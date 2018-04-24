@@ -285,7 +285,7 @@ pub fn set_endpoint(handle: u32, endpoint: &str) -> Result<(), ConnectionError> 
 }
 
 pub fn get_agent_verkey(handle: u32) -> Result<String, ConnectionError> {
-    info!("Getting Agent Verkey for Connection with handle {}", handle);
+    debug!("Getting Agent Verkey for Connection with handle {}", handle);
     CONNECTION_MAP.get(handle, |cxn| {
         Ok(cxn.get_agent_verkey().clone())
     }).or(Err(ConnectionError::InvalidHandle()))
@@ -403,7 +403,7 @@ fn init_connection(handle: u32) -> Result<u32, ConnectionError> {
         },
     };
 
-    info!("handle: {} did: {} verkey: {}, source id: {}", handle, my_did, my_verkey, get_source_id(handle)?);
+    debug!("handle: {} did: {} verkey: {}, source id: {}", handle, my_did, my_verkey, get_source_id(handle)?);
     set_pw_did(handle, &my_did).err();
     set_pw_verkey(handle, &my_verkey).err();
 
