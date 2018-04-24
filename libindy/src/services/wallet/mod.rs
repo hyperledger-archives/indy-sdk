@@ -125,12 +125,12 @@ impl WalletService {
         Ok(())
     }
 
-    pub fn create(&self,
-                  pool_name: &str,
-                  name: &str,
-                  storage_type: Option<&str>,
-                  config: Option<&str>,
-                  credentials: &str) -> Result<(), WalletError> {
+    pub fn create_wallet(&self,
+                         pool_name: &str,
+                         name: &str,
+                         storage_type: Option<&str>,
+                         storage_config: Option<&str>,
+                         credentials: &str) -> Result<(), WalletError> {
         let xtype = storage_type.unwrap_or("default");
 
         let wallet_types = self.types.borrow();
@@ -147,7 +147,7 @@ impl WalletService {
             .create(wallet_path)?;
 
         let wallet_type = wallet_types.get(xtype).unwrap();
-        wallet_type.create_wallet(name, config, credentials)?;
+        wallet_type.create_wallet(name, storage_config, credentials)?;
 
         let mut descriptor_file = File::create(_wallet_descriptor_path(name))?;
         descriptor_file
@@ -158,16 +158,16 @@ impl WalletService {
             })?;
         descriptor_file.sync_all()?;
 
-        if config.is_some() {
+        if storage_config.is_some() {
             let mut config_file = File::create(_wallet_config_path(name))?;
-            config_file.write_all(config.unwrap().as_bytes())?;
+            config_file.write_all(storage_config.unwrap().as_bytes())?;
             config_file.sync_all()?;
         }
 
         Ok(())
     }
 
-    pub fn delete(&self, name: &str, credentials: &str) -> Result<(), WalletError> {
+    pub fn delete_wallet(&self, name: &str, credentials: &str) -> Result<(), WalletError> {
         let mut descriptor_json = String::new();
         let descriptor: WalletDescriptor = WalletDescriptor::from_json({
             let mut file = File::open(_wallet_descriptor_path(name))?; // FIXME: Better error!
@@ -203,7 +203,7 @@ impl WalletService {
         Ok(())
     }
 
-    pub fn open(&self, name: &str, runtime_config: Option<&str>, credentials: &str) -> Result<i32, WalletError> {
+    pub fn open_wallet(&self, name: &str, runtime_config: Option<&str>, credentials: &str) -> Result<i32, WalletError> {
         let mut descriptor_json = String::new();
         let descriptor: WalletDescriptor = WalletDescriptor::from_json({
             let mut file = File::open(_wallet_descriptor_path(name))?; // FIXME: Better error!
@@ -264,7 +264,7 @@ impl WalletService {
         Ok(descriptors)
     }
 
-    pub fn close(&self, handle: i32) -> Result<(), WalletError> {
+    pub fn close_wallet(&self, handle: i32) -> Result<(), WalletError> {
         match self.wallets.borrow_mut().remove(&handle) {
             Some(wallet) => wallet.close_wallet(),
             None => Err(WalletError::InvalidHandle(handle.to_string()))

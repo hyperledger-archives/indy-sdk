@@ -102,7 +102,7 @@ pub enum ErrorCode
     // No concensus during ledger operation
     LedgerNoConsensusError = 303,
 
-    // Attempt to send unknown or incomplete transaction message
+    // Attempt to parse invalid transaction response
     LedgerInvalidTransaction = 304,
 
     // Attempt to send transaction without the necessary privileges

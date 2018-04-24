@@ -1,0 +1,71 @@
+@startuml wallet-components
+
+[Application] as application
+
+package "Indy SDK" {
+    () "Non-secrets API" as i_non_secrets_api
+    application ..> i_non_secrets_api
+
+    note right of i_non_secrets_api
+    An API that allows
+    to store application
+    specific data
+    in a secure way
+    end note
+
+    () "Secrets API" as i_secrets_api
+    application  ..> i_secrets_api
+
+    note left of i_secrets_api
+    An API that allows
+    creation of secrets
+    and wallet-style access.
+    Existing API for creation
+    of DIDs, CredDefs,
+    MasterSecrets and etc...
+    end note
+
+    () "Wallet API" as i_wallet_api
+    application  ..> i_wallet_api
+
+    note left of i_wallet_api
+    An API for wallets management
+    Will be extended to register
+    custom wallet storage
+    implementation
+    end note
+   
+    [API Layer] as indy_api
+    i_secrets_api -- indy_api
+    i_wallet_api -- indy_api
+    i_non_secrets_api -- indy_api    
+
+    () "Wallet Service Interface" as i_wallet_service
+    indy_api ..> i_wallet_service
+
+    note right of i_wallet_service
+    Generic key storage interface
+    with a support of filtering by
+    tags. Consumes unecrypted values
+    and queries.
+    end note
+    
+    [Wallet Service] as wallet_service
+    i_wallet_service -- wallet_service
+
+    note right of wallet_service
+    All values and queries encryption
+    is performed here.
+    end note
+
+    () "Storage Interface" as i_storage_api
+    wallet_service ..> i_storage_api
+
+    [Default Storage] as default_storage
+    default_storage - wallet_service
+}
+
+[Enterprise Storage] as enterprise_storage
+i_storage_api -- enterprise_storage 
+
+@enduml

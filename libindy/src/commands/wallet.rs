@@ -149,7 +149,7 @@ impl WalletCommandExecutor {
         info!("create >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}",
               pool_name, name, storage_type, config, credentials);
 
-        let res = self.wallet_service.create(pool_name, name, storage_type, config, credentials)?;
+        let res = self.wallet_service.create_wallet(pool_name, name, storage_type, config, credentials)?;
 
         info!("create <<< res: {:?}", res);
 
@@ -162,7 +162,7 @@ impl WalletCommandExecutor {
             credentials: &str) -> Result<i32, IndyError> {
         info!("open >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
 
-        let res = self.wallet_service.open(name, runtime_config, credentials)?;
+        let res = self.wallet_service.open_wallet(name, runtime_config, credentials)?;
 
         info!("open <<< res: {:?}", res);
 
@@ -173,7 +173,7 @@ impl WalletCommandExecutor {
              handle: i32) -> Result<(), IndyError> {
         info!("close >>> handle: {:?}", handle);
 
-        let res = self.wallet_service.close(handle)?;
+        let res = self.wallet_service.close_wallet(handle)?;
 
         info!("close <<< res: {:?}", res);
 
@@ -199,7 +199,7 @@ impl WalletCommandExecutor {
               credentials: &str) -> Result<(), IndyError> {
         info!("delete >>> name: {:?}, credentials: {:?}", name, credentials);
 
-        let res = self.wallet_service.delete(name, credentials)?;
+        let res = self.wallet_service.delete_wallet(name, credentials)?;
 
         info!("delete <<< res: {:?}", res);
 
