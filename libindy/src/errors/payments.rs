@@ -18,7 +18,7 @@ impl Error for PaymentsError {
         match *self {
             PaymentsError::CommonError(ref err) => err.description(),
             PaymentsError::UnknownType(ref msg) => msg.as_str(),
-            PaymentsError::PluggedMethodError(error_code) => "Plugged method error. Consider the error code."
+            PaymentsError::PluggedMethodError(_error_code) => "Plugged method error. Consider the error code."
         }
     }
 }

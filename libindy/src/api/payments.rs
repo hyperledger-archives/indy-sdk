@@ -320,6 +320,7 @@ pub extern fn indy_register_payment_method(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to context
+/// wallet_handle: wallet handle where to save new address
 /// payment_method: Payment method to use (for example, 'sov')
 /// config: payment address config as json:
 ///   {
@@ -336,15 +337,42 @@ pub extern fn indy_create_payment_address(command_handle: i32,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
                                                                payment_address: *const c_char) -> ErrorCode>) -> ErrorCode {
-    check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(config, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(config, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance().send(Command::Payments(
         PaymentsCommand::CreateAddress(wallet_handle, payment_method, config, Box::new(move |result| {
             let (err, address) = result_to_err_code_1!(result, String::new());
             let address = CStringUtils::string_to_cstring(address);
             cb(command_handle, err, address.as_ptr());
+        }))
+    ));
+
+    result.to_error_code()
+}
+
+/// Lists all payment addresses that are stored in the wallet
+///
+/// #Params
+/// command_handle: command handle to map callback to context
+/// wallet_handle: wallet to search for payment_addresses in
+///
+/// #Returns
+/// payment_adresses_json - json array of string with json addresses
+#[no_mangle]
+pub extern fn indy_list_addresses(command_handle: i32,
+                                  wallet_handle: i32,
+                                  cb: Option<extern fn(command_handle_: i32,
+                                                       err: ErrorCode,
+                                                       payment_adresses_json: *const c_char) -> ErrorCode>) -> ErrorCode {
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    let result = CommandExecutor::instance().send(Command::Payments(
+        PaymentsCommand::ListAddresses(wallet_handle, Box::new(move |result| {
+            let (err, addresses_json) = result_to_err_code_1!(result, String::new());
+            let addresses_json = CStringUtils::string_to_cstring(addresses_json);
+            cb(command_handle, err, addresses_json.as_ptr());
         }))
     ));
 
