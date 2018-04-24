@@ -11,7 +11,8 @@
       cmake \
       libssl-dev \
       libsqlite3-dev \
-      libsodium-dev
+      libsodium-dev \
+      libzmq3-dev
    ```
 1. Checkout and build the library:
    
