@@ -1,0 +1,35 @@
+@startuml storage-interface
+
+interface WalletStorage {
+    + {static} create(name, config, cred)
+    + {static} delete(name, config, cred)
+    + {static} open(name, config, r_config, cred) -> WalletStorage
+    + add_record(type, id, value, tags)
+    + update_record_value(type, id, value)
+    + update_record_tags(type, id, tags)
+    + add_record_tags(type, id, tags)
+    + delete_record_tags(type, id, tag_names)
+    + delete_record(type, id)    
+    + get_record(type, id, options) -> Record
+    + search_records(type, query, options) -> Search
+    +close()
+}
+
+interface Search {
+    + get_total_count() -> u32
+    + get_count() -> u32
+    + next_wallet_entity() -> Record
+    + free()
+}
+Search --* WalletStorage
+
+interface Record {
+    + get_id() -> str
+    + get_value() -> str
+    + get_tags() -> str
+    + free()
+}
+Record --* WalletStorage
+Record --* Search
+
+@enduml
