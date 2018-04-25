@@ -40,6 +40,6 @@ RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.25.0
-ENV PATH $HOME/.cargo/bin:$PATH
+ENV PATH /home/indy/.cargo/bin:$PATH
 
 WORKDIR /home/indy
