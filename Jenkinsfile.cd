@@ -150,7 +150,7 @@ void getSrcVersion() {
     return version
 }
 
-def linuxTesting(file, env_name, run_interoperability_tests, network_name, stashBuildResults) {
+def linuxTesting(file, env_name, network_name, stashBuildResults) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -168,17 +168,11 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
                 echo "${env_name} Test: Test"
 
                 try {
-                    def featuresArgs = ''
-                    if (run_interoperability_tests) {
-                        sh 'chmod -R 777 /home/indy/indy-anoncreds/'
-                        featuresArgs = '--features "interoperability_tests"'
-                    }
-
                     echo "${env_name} Libindy Test: Build"
-                    sh "RUST_BACKTRACE=1 cargo test --release $featuresArgs --no-run"
+                    sh "RUST_BACKTRACE=1 cargo test --release --no-run"
 
                     echo "${env_name} Libindy Test: Run tests"
-                    sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release $featuresArgs"
+                    sh "RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release"
 
                     if (stashBuildResults) {
                         stash includes: 'target/release/libindy.so,target/release/libindy.a', name: 'LibindyUbuntuBuildResult'
@@ -201,7 +195,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libindy Test: Test java wrapper"
 
-                sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+                sh "RUST_LOG=indy::,zmq=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
             }
         }
 
@@ -212,7 +206,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
 
                 sh '''
                     python3.5 -m pip install --user -e .
-                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::,zmq=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
                 '''
             }
         }
@@ -227,7 +221,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
                 sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run"
 
                 echo "${env_name} Indy Cli Test: Run tests"
-                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
+                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
 
                 if (stashBuildResults) {
                     stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
@@ -277,7 +271,7 @@ def windowsTesting() {
                             echo "Windows Libindy Test: Run tests"
                             withEnv([
                                     "RUST_TEST_THREADS=1",
-                                    "RUST_LOG=trace",
+                                    "RUST_LOG=indy::,zmq=trace",
                                     "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                             ]) {
                                 bat "cargo test --release"
@@ -305,7 +299,7 @@ def windowsTesting() {
                             echo "Windows Indy Cli Test: Run tests"
                             withEnv([
                                     "RUST_TEST_THREADS=1",
-                                    "RUST_LOG=trace",
+                                    "RUST_LOG=indy::,zmq=trace",
                                     "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                             ]) {
                                 bat "cargo test --release"
@@ -337,7 +331,7 @@ def windowsTesting() {
 def ubuntuTesting() {
     node('ubuntu') {
         stage('Ubuntu Test') {
-            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", false, "pool_network", true)
+            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network", true)
         }
     }
 }
@@ -345,7 +339,7 @@ def ubuntuTesting() {
 def rhelTesting() {
     node('ubuntu') {
         stage('RedHat Test') {
-            linuxTesting("ci/amazon.dockerfile ci", "RedHat", false, "pool_network", false)
+            linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network", false)
         }
     }
 }
