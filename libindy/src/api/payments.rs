@@ -270,7 +270,7 @@ pub extern fn indy_register_payment_method(command_handle: i32,
                                            parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
 
                                            cb: Option<extern fn(command_handle_: i32,
-                                                                err: ErrorCode) -> ErrorCode>) -> ErrorCode {
+                                                                err: ErrorCode)>) -> ErrorCode {
 
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(create_payment_address, ErrorCode::CommonInvalidParam3);
@@ -336,7 +336,7 @@ pub extern fn indy_create_payment_address(command_handle: i32,
                                           config: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
-                                                               payment_address: *const c_char) -> ErrorCode>) -> ErrorCode {
+                                                               payment_address: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(config, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
@@ -365,7 +365,7 @@ pub extern fn indy_list_addresses(command_handle: i32,
                                   wallet_handle: i32,
                                   cb: Option<extern fn(command_handle_: i32,
                                                        err: ErrorCode,
-                                                       payment_adresses_json: *const c_char) -> ErrorCode>) -> ErrorCode {
+                                                       payment_adresses_json: *const c_char)>) -> ErrorCode {
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     let result = CommandExecutor::instance().send(Command::Payments(
@@ -417,7 +417,7 @@ pub extern fn indy_add_request_fees(command_handle: i32,
                                     cb: Option<extern fn(command_handle_: i32,
                                                          err: ErrorCode,
                                                          req_with_fees_json: *const c_char,
-                                                         payment_method: *const c_char) -> ErrorCode>) -> ErrorCode {
+                                                         payment_method: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(req_json, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam4);
@@ -456,7 +456,7 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
                                             resp_json: *const c_char,
                                             cb: Option<extern fn(command_handle_: i32,
                                                                  err: ErrorCode,
-                                                                 utxo_json: *const c_char) -> ErrorCode>) -> ErrorCode {
+                                                                 utxo_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
@@ -486,7 +486,7 @@ pub extern fn indy_build_get_utxo_request(command_handle: i32,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
                                                                get_utxo_txn_json: *const c_char,
-                                                               payment_method: *const c_char) -> ErrorCode>) -> ErrorCode {
+                                                               payment_method: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(payment_address, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
@@ -521,7 +521,7 @@ pub extern fn indy_parse_get_utxo_response(command_handle: i32,
                                            resp_json: *const c_char,
                                            cb: Option<extern fn(command_handle_: i32,
                                                                 err: ErrorCode,
-                                                                utxo_json: *const c_char) -> ErrorCode>) -> ErrorCode {
+                                                                utxo_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
@@ -566,7 +566,7 @@ pub extern fn indy_build_payment_req(command_handle: i32,
                                      cb: Option<extern fn(command_handle_: i32,
                                                           err: ErrorCode,
                                                           payment_req_json: *const c_char,
-                                                          payment_method: *const c_char) -> ErrorCode>) -> ErrorCode {
+                                                          payment_method: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
@@ -604,7 +604,7 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
                                           resp_json: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
-                                                               utxo_json: *const c_char) -> ErrorCode>) -> ErrorCode {
+                                                               utxo_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
@@ -640,7 +640,7 @@ pub extern fn indy_build_mint_req(command_handle: i32,
                                   cb: Option<extern fn(command_handle_: i32,
                                                        err: ErrorCode,
                                                        mint_req_json: *const c_char,
-                                                       payment_method: *const c_char) -> ErrorCode>) -> ErrorCode {
+                                                       payment_method: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
@@ -675,7 +675,7 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
                                           fees_json: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
-                                                               set_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode {
+                                                               set_txn_fees_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(fees_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
@@ -704,7 +704,7 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: i32,
                                           payment_method: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
-                                                               get_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode {
+                                                               get_txn_fees_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
@@ -739,7 +739,7 @@ pub extern fn indy_parse_get_txn_fees_response(command_handle: i32,
                                                resp_json: *const c_char,
                                                cb: Option<extern fn(command_handle_: i32,
                                                                     err: ErrorCode,
-                                                                    fees_json: *const c_char) -> ErrorCode>) -> ErrorCode {
+                                                                    fees_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
