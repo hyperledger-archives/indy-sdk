@@ -32,7 +32,7 @@ use self::indy_crypto::bls::Generator;
 const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
     constants::GET_NYM,
     constants::GET_SCHEMA,
-    constants::GET_CLAIM_DEF,
+    constants::GET_CRED_DEF,
     constants::GET_ATTR,
     constants::GET_REVOC_REG,
     constants::GET_REVOC_REG_DEF,
@@ -360,34 +360,36 @@ impl TransactionHandler {
                     parsed_data["revocDefType"].as_str(),
                     parsed_data["tag"].as_str()) {
                     trace!("TransactionHandler::parse_reply_for_proof_checking: GET_REVOC_REG_DEF cred_def_id {:?}, revoc_def_type: {:?}, tag: {:?}", cred_def_id, revoc_def_type, tag);
-                    format!(":\x04:{}:{}:{}", cred_def_id, revoc_def_type, tag)
+                    format!(":4:{}:{}:{}", cred_def_id, revoc_def_type, tag)
                 } else {
                     trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_REVOC_REG_DEF No key suffix");
                     return None;
                 }
             }
-            constants::GET_REVOC_REG => {
+            constants::GET_REVOC_REG | constants::GET_REVOC_REG_DELTA if parsed_data["value"]["accum_from"].is_null() => {
                 //{MARKER}:{REVOC_REG_DEF_ID}
                 if let Some(revoc_reg_def_id) = parsed_data["revocRegDefId"].as_str() {
                     trace!("TransactionHandler::parse_reply_for_proof_checking: GET_REVOC_REG revoc_reg_def_id {:?}", revoc_reg_def_id);
-                    format!("\x05:{}", revoc_reg_def_id)
+                    format!("5:{}", revoc_reg_def_id)
                 } else {
                     trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_REVOC_REG No key suffix");
                     return None;
                 }
             }
-            constants::GET_REVOC_REG_DELTA => {
+            /* TODO add multiproof checking and external verification of indexes
+            constants::GET_REVOC_REG_DELTA if !parsed_data["value"]["accum_from"].is_null() => {
                 //{MARKER}:{REVOC_REG_DEF_ID}
                 if let Some(revoc_reg_def_id) = parsed_data["value"]["accum_to"]["revocRegDefId"].as_str() {
                     trace!("TransactionHandler::parse_reply_for_proof_checking: GET_REVOC_REG_DELTA revoc_reg_def_id {:?}", revoc_reg_def_id);
-                    format!("\x06:{}", revoc_reg_def_id)
+                    format!("6:{}", revoc_reg_def_id)
                 } else {
                     trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_REVOC_REG_DELTA No key suffix");
                     return None;
                 }
             }
+            */
             _ => {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Unknown transaction");
+                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Unsupported transaction");
                 return None;
             }
         };
@@ -467,7 +469,7 @@ impl TransactionHandler {
                     hasher.process(data.as_bytes());
                     value["val"] = SJsonValue::String(hasher.fixed_result().to_hex());
                 }
-                constants::GET_CLAIM_DEF | constants::GET_REVOC_REG_DEF | constants::GET_REVOC_REG => {
+                constants::GET_CRED_DEF | constants::GET_REVOC_REG_DEF | constants::GET_REVOC_REG => {
                     value["val"] = parsed_data;
                 }
                 constants::GET_SCHEMA => {
