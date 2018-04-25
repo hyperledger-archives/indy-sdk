@@ -1,13 +1,24 @@
+//
+//  WalletHighCases.m
+//  Indy-demo
+//
+
 
 #import <XCTest/XCTest.h>
 #import "PoolUtils.h"
 #import "TestUtils.h"
+#import <Indy/Indy.h>
+#import "WalletUtils.h"
+#import "DidUtils.h"
+#import "LedgerUtils.h"
+#import "AnoncredsUtils.h"
+#import "NSDictionary+JSON.h"
 
-@interface WalletHighCases : XCTestCase
+@interface DefaultWallet : XCTestCase
 
 @end
 
-@implementation WalletHighCases
+@implementation DefaultWallet
 
 - (void)setUp {
     [super setUp];

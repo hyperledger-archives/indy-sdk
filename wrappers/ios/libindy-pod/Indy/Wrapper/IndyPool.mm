@@ -15,10 +15,10 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_create_pool_ledger_config(handle,
-                                         [name UTF8String],
-                                         [poolConfig UTF8String],
-                                         IndyWrapperCommon2PCallback
-                                         );
+            [name UTF8String],
+            [poolConfig UTF8String],
+            IndyWrapperCommonCallback
+    );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -38,10 +38,10 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_open_pool_ledger(handle,
-                                [name UTF8String],
-                                [poolConfig UTF8String],
-                                IndyWrapperCommon3PHCallback
-                                );
+            [name UTF8String],
+            [poolConfig UTF8String],
+            IndyWrapperCommonHandleCallback
+    );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -60,9 +60,9 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_refresh_pool_ledger(handle,
-                                   (indy_handle_t) poolHandle,
-                                   IndyWrapperCommon2PCallback
-                                   );
+            (indy_handle_t) poolHandle,
+            IndyWrapperCommonCallback
+    );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -81,9 +81,9 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_close_pool_ledger(handle,
-                                 (indy_handle_t) poolHandle,
-                                 IndyWrapperCommon2PCallback
-                                 );
+            (indy_handle_t) poolHandle,
+            IndyWrapperCommonCallback
+    );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -102,9 +102,9 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_delete_pool_ledger_config(handle,
-                                         [name UTF8String],
-                                         IndyWrapperCommon2PCallback
-                                         );
+            [name UTF8String],
+            IndyWrapperCommonCallback
+    );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
