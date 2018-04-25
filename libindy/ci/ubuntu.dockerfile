@@ -32,13 +32,14 @@ RUN pip3 install -U \
 	plumbum \
 	deb-pkg-tools
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.21.0
-ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.cargo/bin"
-
 RUN apt-get update && apt-get install openjdk-8-jdk -y
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 RUN apt-get update && apt-get install -y maven
 
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
+
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.21.0
+ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.cargo/bin"
+
 WORKDIR /home/indy
