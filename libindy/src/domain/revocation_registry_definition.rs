@@ -71,8 +71,7 @@ pub struct RevocationRegistryDefinitionValuePublicKeys {
 #[serde(rename_all = "camelCase")]
 pub struct RevocationRegistryDefinitionV1 {
     pub id: String,
-    #[serde(rename = "revocDefType")]
-    pub type_: RegistryType,
+    pub revoc_def_type: RegistryType,
     pub tag: String,
     pub cred_def_id: String,
     pub value: RevocationRegistryDefinitionValue

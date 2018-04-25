@@ -90,7 +90,7 @@ typedef enum
     // No concensus during ledger operation
     LedgerNoConsensusError = 303,
 
-    // Attempt to send unknown or incomplete transaction message
+    // Attempt to parse invalid transaction response
     LedgerInvalidTransaction = 304,
 
     // Attempt to send transaction without the necessary privileges
@@ -105,11 +105,7 @@ typedef enum
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 
-    AnoncredsInvalidUserRevocIndex = 401,
-
-    AnoncredsAccumulatorIsFull = 402,
-
-    AnoncredsNotIssuedError = 403,
+    AnoncredsInvalidUserRevocId = 401,
 
     // Attempt to generate master secret with dupplicated name
     AnoncredsMasterSecretDuplicateNameError = 404,

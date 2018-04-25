@@ -86,17 +86,17 @@ impl Error for CommonError {
 
     fn cause(&self) -> Option<&Error> {
         match *self {
-            CommonError::InvalidParam1(ref description) |
-            CommonError::InvalidParam2(ref description) |
-            CommonError::InvalidParam3(ref description) |
-            CommonError::InvalidParam4(ref description) |
-            CommonError::InvalidParam5(ref description) |
-            CommonError::InvalidParam6(ref description) |
-            CommonError::InvalidParam7(ref description) |
-            CommonError::InvalidParam8(ref description) |
-            CommonError::InvalidParam9(ref description) |
-            CommonError::InvalidState(ref description) |
-            CommonError::InvalidStructure(ref description) => None,
+            CommonError::InvalidParam1(_) |
+            CommonError::InvalidParam2(_) |
+            CommonError::InvalidParam3(_) |
+            CommonError::InvalidParam4(_) |
+            CommonError::InvalidParam5(_) |
+            CommonError::InvalidParam6(_) |
+            CommonError::InvalidParam7(_) |
+            CommonError::InvalidParam8(_) |
+            CommonError::InvalidParam9(_) |
+            CommonError::InvalidState(_) |
+            CommonError::InvalidStructure(_) => None,
             CommonError::IOError(ref err) => Some(err)
         }
     }
@@ -105,18 +105,18 @@ impl Error for CommonError {
 impl ToErrorCode for CommonError {
     fn to_error_code(&self) -> ErrorCode {
         match *self {
-            CommonError::InvalidParam1(ref description) => ErrorCode::CommonInvalidParam1,
-            CommonError::InvalidParam2(ref description) => ErrorCode::CommonInvalidParam2,
-            CommonError::InvalidParam3(ref description) => ErrorCode::CommonInvalidParam3,
-            CommonError::InvalidParam4(ref description) => ErrorCode::CommonInvalidParam4,
-            CommonError::InvalidParam5(ref description) => ErrorCode::CommonInvalidParam5,
-            CommonError::InvalidParam6(ref description) => ErrorCode::CommonInvalidParam6,
-            CommonError::InvalidParam7(ref description) => ErrorCode::CommonInvalidParam7,
-            CommonError::InvalidParam8(ref description) => ErrorCode::CommonInvalidParam8,
-            CommonError::InvalidParam9(ref description) => ErrorCode::CommonInvalidParam9,
-            CommonError::InvalidState(ref description) => ErrorCode::CommonInvalidState,
-            CommonError::InvalidStructure(ref description) => ErrorCode::CommonInvalidStructure,
-            CommonError::IOError(ref description) => ErrorCode::CommonIOError
+            CommonError::InvalidParam1(_) => ErrorCode::CommonInvalidParam1,
+            CommonError::InvalidParam2(_) => ErrorCode::CommonInvalidParam2,
+            CommonError::InvalidParam3(_) => ErrorCode::CommonInvalidParam3,
+            CommonError::InvalidParam4(_) => ErrorCode::CommonInvalidParam4,
+            CommonError::InvalidParam5(_) => ErrorCode::CommonInvalidParam5,
+            CommonError::InvalidParam6(_) => ErrorCode::CommonInvalidParam6,
+            CommonError::InvalidParam7(_) => ErrorCode::CommonInvalidParam7,
+            CommonError::InvalidParam8(_) => ErrorCode::CommonInvalidParam8,
+            CommonError::InvalidParam9(_) => ErrorCode::CommonInvalidParam9,
+            CommonError::InvalidState(_) => ErrorCode::CommonInvalidState,
+            CommonError::InvalidStructure(_) => ErrorCode::CommonInvalidStructure,
+            CommonError::IOError(_) => ErrorCode::CommonIOError
         }
     }
 }

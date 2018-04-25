@@ -155,6 +155,11 @@ public enum ErrorCode {
 	LedgerNoConsensusError(303),
 
 	/**
+	 * Attempt to parse invalid transaction response
+	 */
+	LedgerInvalidTransaction(304),
+
+	/**
 	 * Attempt to send transaction without the necessary privileges
 	 */
 	LedgerSecurityError(305),
@@ -179,18 +184,8 @@ public enum ErrorCode {
 	/**
 	 * ???
 	 */
-	AnoncredsInvalidUserRevocIndex(401),
+	AnoncredsInvalidUserRevocId(401),
 
-	/**
-	 * ???
-	 */
-	AnoncredsAccumulatorIsFull(402),
-
-	/**
-	 * ???
-	 */
-	AnoncredsNotIssuedError(403),
- 
 	/**
 	 * Attempt to generate master secret with dupplicated name
 	 */

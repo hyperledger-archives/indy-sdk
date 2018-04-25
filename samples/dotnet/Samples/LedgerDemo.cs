@@ -1,7 +1,7 @@
-﻿using Hyperledger.Indy.LedgerApi;
+﻿using Hyperledger.Indy.DidApi;
+using Hyperledger.Indy.LedgerApi;
 using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.Samples.Utils;
-using Hyperledger.Indy.SignusApi;
 using Hyperledger.Indy.WalletApi;
 using Newtonsoft.Json.Linq;
 using System;
@@ -26,10 +26,10 @@ namespace Hyperledger.Indy.Samples
                 await PoolUtils.CreatePoolLedgerConfig();
 
                 // 2. Create and Open My Wallet
-                await WalletUtils.CreateWalleatAsync(PoolUtils.DEFAULT_POOL_NAME, myWalletName, "default", null, null);
+                await WalletUtils.CreateWalletAsync(PoolUtils.DEFAULT_POOL_NAME, myWalletName, "default", null, null);
 
                 // 3. Create and Open Trustee Wallet
-                await WalletUtils.CreateWalleatAsync(PoolUtils.DEFAULT_POOL_NAME, theirWalletName, "default", null, null);
+                await WalletUtils.CreateWalletAsync(PoolUtils.DEFAULT_POOL_NAME, theirWalletName, "default", null, null);
 
                 //4. Open pool and wallets in using statements to ensure they are closed when finished.
                 using (var pool = await Pool.OpenPoolLedgerAsync(PoolUtils.DEFAULT_POOL_NAME, "{}"))
@@ -37,14 +37,14 @@ namespace Hyperledger.Indy.Samples
                 using (var trusteeWallet = await Wallet.OpenWalletAsync(theirWalletName, null, null))
                 {
                     //5. Create My Did
-                    var createMyDidResult = await Signus.CreateAndStoreMyDidAsync(myWallet, "{}");
+                    var createMyDidResult = await Did.CreateAndStoreMyDidAsync(myWallet, "{}");
                     var myDid = createMyDidResult.Did;
                     var myVerkey = createMyDidResult.VerKey;
 
                     //6. Create Did from Trustee1 seed
                     var theirDidJson = string.Format("{{\"seed\":\"{0}\"}}", trusteeSeed);
 
-                    var createTheirDidResult = await Signus.CreateAndStoreMyDidAsync(trusteeWallet, theirDidJson);
+                    var createTheirDidResult = await Did.CreateAndStoreMyDidAsync(trusteeWallet, theirDidJson);
                     var trusteeDid = createTheirDidResult.Did;
 
                     //7. Build Nym Request

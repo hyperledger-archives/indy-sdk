@@ -252,7 +252,6 @@
  updates the credential by a master secret and stores in a secure wallet.
  
  @param credID: (optional, default is a random one) identifier by which credential will be stored in the wallet
- @param credReqJSON: a credential request created by proverCreateCredentialReqForCredentialOffer
  @param credReqMetadataJSON: a credential request metadata created by proverCreateCredentialReqForCredentialOffer
  @param credJson:  credential json received from issuer
  @param credDefJSON: credential definition json
@@ -262,7 +261,6 @@
  */
 + (void)proverStoreCredential:(NSString *)credJson
                        credID:(NSString *)credID
-                  credReqJSON:(NSString *)credReqJSON
           credReqMetadataJSON:(NSString *)credReqMetadataJSON
                   credDefJSON:(NSString *)credDefJSON
                 revRegDefJSON:(NSString *)revRegDefJSON

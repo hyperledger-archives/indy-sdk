@@ -128,7 +128,6 @@
     // 8. Prover store received Credential
     ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:credentialJson
                                                           credID:[[AnoncredsUtils sharedInstance] credentialId1]
-                                                     credReqJSON:credentialReq
                                              credReqMetadataJSON:credentialReqMetadata
                                                      credDefJSON:credentialDefJSON
                                                    revRegDefJSON:nil
@@ -362,7 +361,6 @@
     //11. Prover store received GVT Credential
     ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:issuer1GvtCredential
                                                           credID:[[AnoncredsUtils sharedInstance] credentialId1]
-                                                     credReqJSON:issuer1GvtCredentialReq
                                              credReqMetadataJSON:issuer1GvtCredentialReqMetadata
                                                      credDefJSON:issuer1GvtCredentialDefJson
                                                    revRegDefJSON:nil
@@ -398,7 +396,6 @@
     // 14. Prover store received XYZ Credential
     ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:issuer2XyzCredential
                                                           credID:[[AnoncredsUtils sharedInstance] credentialId2]
-                                                     credReqJSON:issuer2XyzCredentialReq
                                              credReqMetadataJSON:issuer2XyzCredentialReqMetadata
                                                      credDefJSON:issuer2XyzCredentialDefJson
                                                    revRegDefJSON:nil
@@ -643,7 +640,6 @@
     //11. Prover store received GVT Credential
     ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:gvtCredential
                                                           credID:[[AnoncredsUtils sharedInstance] credentialId1]
-                                                     credReqJSON:gvtCredentialReq
                                              credReqMetadataJSON:gvtCredentialReqMetadata
                                                      credDefJSON:gvtCredentialDefJson
                                                    revRegDefJSON:nil
@@ -679,7 +675,6 @@
     // 14. Prover store received XYZ Credential
     ret = [[AnoncredsUtils sharedInstance] proverStoreCredential:xyzCredential
                                                           credID:[[AnoncredsUtils sharedInstance] credentialId2]
-                                                     credReqJSON:xyzCredentialReq
                                              credReqMetadataJSON:xyzCredentialReqMetadata
                                                      credDefJSON:xyzCredentialDefJson
                                                    revRegDefJSON:nil

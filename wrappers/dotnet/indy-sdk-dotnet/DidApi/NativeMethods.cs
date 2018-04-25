@@ -140,9 +140,9 @@ namespace Hyperledger.Indy.DidApi
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="endpoint">The endpoint address associated with the DID.</param>
+        /// <param name="address">The endpoint address associated with the DID.</param>
         /// <param name="transport_vk">The transport verification key associated with the DID.</param>
-        internal delegate void DidGetEndpointForDidCompletedDelegate(int xcommand_handle, int err, string endpoint, string transport_vk);
+        internal delegate void DidGetEndpointForDidCompletedDelegate(int xcommand_handle, int err, string address, string transport_vk);
 
         /// <summary>
         /// Saves/replaces the meta information for the giving DID in the wallet.
