@@ -84,6 +84,7 @@ Follow to https://http://zeromq.org/intro.
 - execute "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
 - Point path to this directory using environment variables:
   - set INDY_PREBUILT_DEPS_DIR=C:\BIN\x64
+  - set INDY_CRYPTO_PREBUILT_DEPS_DIR=C:\BIN\x64
   - set MILAGRO_DIR=C:\BIN\x64
   - set LIBZMQ_PREFIX=C:\BIN\x64
   - set SODIUM_LIB_DIR=C:\BIN\x64
