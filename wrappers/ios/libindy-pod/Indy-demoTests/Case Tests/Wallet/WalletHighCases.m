@@ -239,14 +239,13 @@
     [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
 
     // 1. register wallet type
-    NSError *ret = [[WalletUtils sharedInstance] registerWalletType:[TestUtils keychainType]];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:registerWalletType failed");
+    [[WalletUtils sharedInstance] registerWalletType:[TestUtils keychainType]];
 
     // 2. create wallet
-    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
-                                                      walletName:[TestUtils wallet]
-                                                           xtype:[TestUtils keychainType]
-                                                          config:nil];
+    NSError *ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
+                                                               walletName:[TestUtils wallet]
+                                                                    xtype:[TestUtils keychainType]
+                                                                   config:nil];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
 
     // 3. open wallet

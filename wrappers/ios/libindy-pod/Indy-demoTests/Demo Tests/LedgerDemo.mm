@@ -243,7 +243,7 @@
     XCTAssertTrue([data[@"dest"] isEqualToString:myDid], @"wrong dest!");
 
     [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
-    [TestUtils cleanupStorage];
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
 }
 
 @end
