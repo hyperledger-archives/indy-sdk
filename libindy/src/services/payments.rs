@@ -16,14 +16,44 @@ pub struct PaymentsService {
 #[derive(Debug)]
 pub struct PaymentsMethod {
     create_address: CreatePaymentAddressCB,
+    add_request_fees: AddRequestFeesCB,
+    parse_response_with_fees: ParseResponseWithFeesCB,
+    build_get_utxo_request: BuildGetUTXORequestCB,
+    parse_get_utxo_response: ParseGetUTXOResponseCB,
+    build_payment_req: BuildPaymentReqCB,
+    parse_payment_response: ParsePaymentResponseCB,
+    build_mint_req: BuildMintReqCB,
+    build_set_txn_fees_req: BuildSetTxnFeesReqCB,
+    build_get_txn_fees_req: BuildGetTxnFeesReqCB,
+    parse_get_txn_fees_response: ParseGetTxnFeesResponseCB
 }
 
 pub type PaymentsMethodCBs = PaymentsMethod;
 
 impl PaymentsMethodCBs {
-    pub fn new(create_address: CreatePaymentAddressCB) -> Self {
+    pub fn new(create_address: CreatePaymentAddressCB,
+               add_request_fees: AddRequestFeesCB,
+               parse_response_with_fees: ParseResponseWithFeesCB,
+               build_get_utxo_request: BuildGetUTXORequestCB,
+               parse_get_utxo_response: ParseGetUTXOResponseCB,
+               build_payment_req: BuildPaymentReqCB,
+               parse_payment_response: ParsePaymentResponseCB,
+               build_mint_req: BuildMintReqCB,
+               build_set_txn_fees_req: BuildSetTxnFeesReqCB,
+               build_get_txn_fees_req: BuildGetTxnFeesReqCB,
+               parse_get_txn_fees_response: ParseGetTxnFeesResponseCB) -> Self {
         PaymentsMethodCBs {
-            create_address
+            create_address,
+            add_request_fees,
+            parse_response_with_fees,
+            build_get_utxo_request,
+            parse_get_utxo_response,
+            build_payment_req,
+            parse_payment_response,
+            build_mint_req,
+            build_set_txn_fees_req,
+            build_get_txn_fees_req,
+            parse_get_txn_fees_response
         }
     }
 }
@@ -42,21 +72,132 @@ impl PaymentsService {
         self.methods.borrow_mut().insert(method_type.to_owned(), method_cbs);
     }
 
-    pub fn create_address(&self, cmd_handle: i32, method_type: &str, config: &str) -> Result<(), PaymentsError> {
+    pub fn create_address(&self, cmd_handle: i32, wallet_handle: i32, method_type: &str, config: &str) -> Result<(), PaymentsError> {
         let create_address: CreatePaymentAddressCB = self.methods.borrow().get(method_type)
-            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", method_type)))?
-            .create_address;
+            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", method_type)))?.create_address;
 
         let config = CString::new(config)?;
 
-        let err = create_address(cmd_handle, config.as_ptr(), cbs::create_address_cb(cmd_handle));
-        let res = if err != ErrorCode::Success {
-            Err(PaymentsError::PluggedMethodError(err))
-        } else {
-            Ok(())
-        };
+        let err = create_address(cmd_handle, config.as_ptr(), cbs::create_address_cb(cmd_handle, wallet_handle));
 
-        res
+        PaymentsService::consume_result(err)
+    }
+
+    pub fn add_request_fees(&self, cmd_handle: i32, method_type: &str, req: &str, inputs: &str, outputs: &str) -> Result<(), PaymentsError> {
+        let add_request_fees: AddRequestFeesCB = self.methods.borrow().get(method_type)
+            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", method_type)))?.add_request_fees;
+
+        let req = CString::new(req)?;
+        let inputs = CString::new(inputs)?;
+        let outputs = CString::new(outputs)?;
+
+        let err = add_request_fees(cmd_handle, req.as_ptr(), inputs.as_ptr(), outputs.as_ptr(), cbs::add_request_fees_cb(cmd_handle));
+
+        PaymentsService::consume_result(err)
+    }
+
+    pub fn parse_response_with_fees(&self, cmd_handle: i32, type_: &str, response: &str) -> Result<(), PaymentsError> {
+        let parse_response_with_fees: ParseResponseWithFeesCB = self.methods.borrow().get(type_)
+            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.parse_response_with_fees;
+        let response = CString::new(response)?;
+
+        let err = parse_response_with_fees(cmd_handle, response.as_ptr(), cbs::parse_response_with_fees_cb(cmd_handle));
+
+        PaymentsService::consume_result(err)
+    }
+
+    pub fn build_get_utxo_request(&self, cmd_handle: i32, type_: &str, address: &str) -> Result<(), PaymentsError> {
+        let build_get_utxo_request: BuildGetUTXORequestCB = self.methods.borrow().get(type_)
+            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_get_utxo_request;
+
+        let address = CString::new(address)?;
+
+        let err = build_get_utxo_request(cmd_handle, address.as_ptr(), cbs::build_get_utxo_request_cb(cmd_handle));
+
+        PaymentsService::consume_result(err)
+    }
+
+    pub fn parse_get_utxo_response(&self, cmd_handle: i32, type_: &str, response: &str) -> Result<(), PaymentsError> {
+        let parse_get_utxo_response: ParseGetUTXOResponseCB = self.methods.borrow().get(type_)
+            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.parse_get_utxo_response;
+
+        let response = CString::new(response)?;
+
+        let err = parse_get_utxo_response(cmd_handle, response.as_ptr(), cbs::parse_get_utxo_response_cb(cmd_handle));
+
+        PaymentsService::consume_result(err)
+    }
+
+    pub fn build_payment_req(&self, cmd_handle: i32, type_: &str, inputs: &str, outputs: &str) -> Result<(), PaymentsError> {
+        let build_payment_req: BuildPaymentReqCB = self.methods.borrow().get(type_)
+            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_payment_req;
+
+        let inputs = CString::new(inputs)?;
+        let outputs = CString::new(outputs)?;
+
+        let err = build_payment_req(cmd_handle, inputs.as_ptr(), outputs.as_ptr(), cbs::build_payment_req_cb(cmd_handle));
+
+        PaymentsService::consume_result(err)
+    }
+
+    pub fn parse_payment_response(&self, cmd_handle: i32, type_: &str, response: &str) -> Result<(), PaymentsError> {
+        let parse_payment_response: ParsePaymentResponseCB = self.methods.borrow().get(type_)
+            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.parse_payment_response;
+
+        let response = CString::new(response)?;
+
+        let err = parse_payment_response(cmd_handle, response.as_ptr(), cbs::parse_payment_response_cb(cmd_handle));
+
+        PaymentsService::consume_result(err)
+    }
+
+    pub fn build_mint_req(&self, cmd_handle: i32, type_: &str, outputs: &str) -> Result<(), PaymentsError> {
+        let build_mint_req: BuildMintReqCB = self.methods.borrow().get(type_)
+            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_mint_req;
+
+        let outputs = CString::new(outputs)?;
+
+        let err = build_mint_req(cmd_handle, outputs.as_ptr(), cbs::build_mint_req_cb(cmd_handle));
+
+        PaymentsService::consume_result(err)
+
+    }
+
+    pub fn build_set_txn_fees_req(&self, cmd_handle: i32, type_: &str, fees: &str) -> Result<(), PaymentsError> {
+        let build_set_txn_fees_req: BuildSetTxnFeesReqCB = self.methods.borrow().get(type_)
+            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_set_txn_fees_req;
+        let fees = CString::new(fees)?;
+
+        let err = build_set_txn_fees_req(cmd_handle, fees.as_ptr(), cbs::build_set_txn_fees_req_cb(cmd_handle));
+
+        PaymentsService::consume_result(err)
+    }
+
+    pub fn build_get_txn_fees_req(&self, cmd_handle:i32, type_: &str) -> Result<(), PaymentsError> {
+        let build_get_txn_fees_req: BuildGetTxnFeesReqCB = self.methods.borrow().get(type_)
+            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_get_txn_fees_req;
+
+        let err = build_get_txn_fees_req(cmd_handle, cbs::build_get_txn_fees_req(cmd_handle));
+
+        PaymentsService::consume_result(err)
+    }
+
+    pub fn parse_get_txn_fees_response(&self, cmd_handle: i32, type_: &str, response: &str) -> Result<(), PaymentsError> {
+        let parse_get_txn_fees_response: ParseGetTxnFeesResponseCB = self.methods.borrow().get(type_)
+            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.parse_get_txn_fees_response;
+
+        let response = CString::new(response)?;
+
+        let err = parse_get_txn_fees_response(cmd_handle, response.as_ptr(), cbs::parse_get_txn_fees_response(cmd_handle));
+
+        PaymentsService::consume_result(err)
+    }
+
+    fn consume_result(err: ErrorCode) -> Result<(), PaymentsError> {
+        match err {
+            ErrorCode::Success => Ok(()),
+            _ => Err(PaymentsError::PluggedMethodError(err))
+        }
     }
 }
 
@@ -81,17 +222,83 @@ mod cbs {
     use commands::payments::PaymentsCommand;
     use errors::ToErrorCode;
 
-    pub fn create_address_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
+    pub fn create_address_cb(cmd_handle: i32, wallet_handle: i32) -> Option<extern fn(command_handle: i32,
                                                                   err: ErrorCode,
                                                                   c_str: *const c_char) -> ErrorCode> {
-        cbs::_closure_to_cb_str(cmd_handle, Box::new(move |err, address| -> ErrorCode {
+        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::CreateAddressAck(cmd_handle, wallet_handle, result)))
+    }
+
+    pub fn add_request_fees_cb(cmd_handle: i32) -> Option<extern fn(command_handle_: i32,
+                                                                    err: ErrorCode,
+                                                                    req_with_fees_json: *const c_char) -> ErrorCode> {
+        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::AddRequestFeesAck(cmd_handle, result)))
+    }
+
+    pub fn parse_response_with_fees_cb(cmd_handle:i32) -> Option<extern fn(command_handle:i32,
+                                                                  err: ErrorCode,
+                                                                  c_str: *const c_char) -> ErrorCode> {
+        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseResponseWithFeesAck(cmd_handle, result)))
+    }
+
+    pub fn build_get_utxo_request_cb(cmd_handle: i32) -> Option<extern fn(command_handle:i32,
+                                                                          err: ErrorCode,
+                                                                          c_str: *const c_char) -> ErrorCode> {
+        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildGetUtxoRequestAck(cmd_handle, result)))
+    }
+
+    pub fn parse_get_utxo_response_cb(cmd_handle: i32) -> Option<extern fn(command_handle:i32,
+                                                                           err: ErrorCode,
+                                                                           c_str: *const c_char) -> ErrorCode> {
+        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseGetUtxoResponseAck(cmd_handle, result)))
+    }
+
+    pub fn build_payment_req_cb(cmd_handle: i32) -> Option<extern fn(command_handle:i32,
+                                                                     err: ErrorCode,
+                                                                     c_str: *const c_char) -> ErrorCode> {
+        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildPaymentReqAck(cmd_handle, result)))
+    }
+
+    pub fn parse_payment_response_cb(cmd_handle: i32) -> Option<extern fn(command_handle:i32,
+                                                                          err: ErrorCode,
+                                                                          c_str: *const c_char) -> ErrorCode> {
+        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParsePaymentResponseAck(cmd_handle, result)))
+    }
+
+    pub fn build_mint_req_cb(cmd_handle: i32) -> Option<extern fn(command_handle:i32,
+                                                                  err: ErrorCode,
+                                                                  c_str: *const c_char) -> ErrorCode> {
+        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildMintReqAck(cmd_handle, result)))
+    }
+
+    pub fn build_set_txn_fees_req_cb(cmd_handle: i32) -> Option<extern fn(command_handle:i32,
+                                                                          err: ErrorCode,
+                                                                          c_str: *const c_char) -> ErrorCode> {
+        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildSetTxnFeesReqAck(cmd_handle, result)))
+    }
+
+    pub fn build_get_txn_fees_req(cmd_handle: i32) -> Option<extern fn(command_handle:i32,
+                                                                       err: ErrorCode,
+                                                                       c_str: *const c_char) -> ErrorCode> {
+        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildGetTxnFeesReqAck(cmd_handle, result)))
+    }
+
+    pub fn parse_get_txn_fees_response(cmd_handle: i32) -> Option<extern fn(command_handle:i32,
+                                                                            err: ErrorCode,
+                                                                            c_str: *const c_char) -> ErrorCode> {
+        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseGetTxnFeesResponseAck(cmd_handle, result)))
+    }
+
+    fn send_ack(cmd_handle: i32, builder: Box<Fn(i32, Result<String, PaymentsError>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle:i32,
+                                                                                                                          err: ErrorCode,
+                                                                                                                          c_str: *const c_char) -> ErrorCode> {
+        cbs::_closure_to_cb_str(cmd_handle, Box::new(move |err, mint_req_json| -> ErrorCode {
             let result = if err == ErrorCode::Success {
-                Ok(address)
+                Ok(mint_req_json)
             } else {
                 Err(PaymentsError::PluggedMethodError(err))
             };
             CommandExecutor::instance().send(Command::Payments(
-                PaymentsCommand::CreateAddressAck(cmd_handle, result))).to_error_code()
+                builder(cmd_handle, result))).to_error_code()
         }))
     }
 
