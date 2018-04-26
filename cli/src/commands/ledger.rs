@@ -627,7 +627,7 @@ pub mod pool_config_command {
 pub mod pool_restart_command {
     use super::*;
 
-    command!(CommandMetadata::build("pool-restart", "Send instructions to nodes to update themselves.")
+    command!(CommandMetadata::build("pool-restart", "Send instructions to nodes to restart themselves.")
                 .add_required_param("action", "Restart type. Either start or cancel.")
                 .add_optional_param("datetime", "Node restart datetime (only for action=start).")
                 .add_example(r#"ledger pool-restart action=start datetime=2020-01-25T12:49:05.258870+00:00"#)
