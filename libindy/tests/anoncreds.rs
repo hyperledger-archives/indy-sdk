@@ -1646,10 +1646,10 @@ mod medium_cases {
             let (wallet_handle, credential_def_json, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
             let (_, cred_req_metadata) = AnoncredsUtils::prover_create_credential_req(wallet_handle,
-                                                                                             DID_MY1,
-                                                                                             &credential_offer,
-                                                                                             &credential_def_json,
-                                                                                             COMMON_MASTER_SECRET).unwrap();
+                                                                                      DID_MY1,
+                                                                                      &credential_offer,
+                                                                                      &credential_def_json,
+                                                                                      COMMON_MASTER_SECRET).unwrap();
 
             let credential_json = format!(r#"{{
                                                        "values":{},
@@ -3938,6 +3938,138 @@ mod demos {
         assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsInvalidUserRevocId);
 
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
+
+        TestUtils::cleanup_storage();
+    }
+
+
+    #[test]
+    fn anoncreds_works_for_multiple_requested_predicates_from_one_credential() {
+        TestUtils::cleanup_storage();
+
+        //1. Create Issuer wallet, gets wallet handle
+        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+        //2. Create Prover wallet, gets wallet handle
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+        //3. Issuer creates Schema and Credential Definition
+        let attr_names = r#"["task1",
+                                  "task2",
+                                  "task3",
+                                  "task4",
+                                  "task5",
+                                  "6*_task",
+                                  "7*_task",
+                                  "bonus",
+                                  "average",
+                                  "aggregated",
+                                  "total"]"#;
+        let (schema_id, schema_json, cred_def_id, cred_def_json) =
+            AnoncredsUtils::multi_steps_issuer_preparation(issuer_wallet_handle,
+                                                           ISSUER_DID,
+                                                           "test",
+                                                           attr_names);
+
+        //4. Prover creates Master Secret
+        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
+
+        //5. Issuance credential for Prover
+        let cred_values = r#"{
+            "task1": {"raw":"8", "encoded": "8"},
+            "task2": {"raw":"8", "encoded": "8"},
+            "task3": {"raw":"10", "encoded": "10"},
+            "task4": {"raw":"9", "encoded": "9"},
+            "task5": {"raw":"7", "encoded": "7"},
+            "6*_task": {"raw":"8", "encoded": "8"},
+            "7*_task": {"raw":"9", "encoded": "9"},
+            "bonus": {"raw":"5", "encoded": "5"},
+            "average": {"raw":"9", "encoded": "9"},
+            "aggregated": {"raw":"9", "encoded": "9"},
+            "total": {"raw":"77", "encoded": "77"}
+        }"#;
+
+        AnoncredsUtils::multi_steps_create_credential(COMMON_MASTER_SECRET,
+                                                      prover_wallet_handle,
+                                                      issuer_wallet_handle,
+                                                      CREDENTIAL1_ID,
+                                                      cred_values,
+                                                      &cred_def_id,
+                                                      &cred_def_json);
+
+        //6. Proof request
+        let proof_req_json = r#"{
+                                       "nonce":"123432421212",
+                                       "name":"proof_req_1",
+                                       "version":"0.1",
+                                       "requested_attributes":{},
+                                       "requested_predicates":{
+                                            "predicate1_referent":{"name":"task1","p_type":">=","p_value":5},
+                                            "predicate2_referent":{"name":"task2","p_type":">=","p_value":7},
+                                            "predicate3_referent":{"name":"task3","p_type":">=","p_value":7},
+                                            "predicate4_referent":{"name":"task4","p_type":">=","p_value":8},
+                                            "predicate5_referent":{"name":"task5","p_type":">=","p_value":5},
+                                            "predicate6_referent":{"name":"6*_task","p_type":">=","p_value":7},
+                                            "predicate7_referent":{"name":"7*_task","p_type":">=","p_value":7},
+                                            "predicate8_referent":{"name":"bonus","p_type":">=","p_value":3},
+                                            "predicate9_referent":{"name":"average","p_type":">=","p_value":8},
+                                            "predicate10_referent":{"name":"aggregated","p_type":">=","p_value":7},
+                                            "predicate11_referent":{"name":"total","p_type":">=","p_value":70}
+                                       }
+                                    }"#;
+
+        //7. Prover gets Credentials for Proof Request
+        let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
+        let credential = AnoncredsUtils::get_credential_for_predicate_referent(&credentials_json, "predicate1_referent");
+
+        //8. Prover creates Proof
+        let requested_credentials_json = format!(r#"{{
+                                                  "self_attested_attributes":{{}},
+                                                  "requested_attributes":{{}},
+                                                  "requested_predicates":{{
+                                                        "predicate1_referent":{{ "cred_id":"{}" }},
+                                                        "predicate2_referent":{{ "cred_id":"{}" }},
+                                                        "predicate3_referent":{{ "cred_id":"{}" }},
+                                                        "predicate4_referent":{{ "cred_id":"{}" }},
+                                                        "predicate5_referent":{{ "cred_id":"{}" }},
+                                                        "predicate6_referent":{{ "cred_id":"{}" }},
+                                                        "predicate7_referent":{{ "cred_id":"{}" }},
+                                                        "predicate8_referent":{{ "cred_id":"{}" }},
+                                                        "predicate9_referent":{{ "cred_id":"{}" }},
+                                                        "predicate10_referent":{{ "cred_id":"{}" }},
+                                                        "predicate11_referent":{{ "cred_id":"{}" }}
+                                                  }}
+                                                }}"#, credential.referent, credential.referent, credential.referent, credential.referent, credential.referent,
+                                                 credential.referent, credential.referent, credential.referent, credential.referent, credential.referent, credential.referent);
+
+        let schemas_json = json!({schema_id: serde_json::from_str::<Schema>(&schema_json).unwrap()}).to_string();
+        let cred_defs_json = json!({cred_def_id: serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()}).to_string();
+        let rev_states_json = json!({}).to_string();
+
+        let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
+                                                             &proof_req_json,
+                                                             &requested_credentials_json,
+                                                             COMMON_MASTER_SECRET,
+                                                             &schemas_json,
+                                                             &cred_defs_json,
+                                                             &rev_states_json).unwrap();
+
+        let proof: Proof = serde_json::from_str(&proof_json).unwrap();
+
+        //9. Verifier verifies proof
+        let rev_reg_defs_json = json!({}).to_string();
+        let rev_regs_json = json!({}).to_string();
+
+        let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
+                                                          &proof_json,
+                                                          &schemas_json,
+                                                          &cred_defs_json,
+                                                          &rev_reg_defs_json,
+                                                          &rev_regs_json).unwrap();
+        assert!(valid);
+
+        WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
+        WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
         TestUtils::cleanup_storage();
     }

@@ -101,3 +101,9 @@ impl From<indy_crypto::errors::IndyCryptoError> for WalletError {
         WalletError::CommonError(CommonError::from(err))
     }
 }
+
+impl From<CommonError> for WalletError {
+    fn from(err: CommonError) -> WalletError {
+        WalletError::CommonError(err)
+    }
+}

@@ -15,6 +15,8 @@ use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
 
+use std::collections::HashMap;
+
 
 use self::indy_crypto::utils::json::JsonDecodable;
 
@@ -87,42 +89,94 @@ impl WalletStorage for DefaultWallet {
     }
 
     fn update_record_value(&self, type_: &str, id: &str, value: &str) -> Result<(), WalletError> {
-        _open_connection(self.name.as_str(), &self.credentials)?
+        let res = _open_connection(self.name.as_str(), &self.credentials)?
             .execute(
                 "UPDATE wallet SET value = ?1 WHERE id = ?2 AND type = ?3",
                 &[&value.to_string(), &id.to_string(), &type_.to_string()])?;
+
+        if res == 0 {
+            return Err(WalletError::NotFound(format!("Record not found by id {}", id)));
+        }
+
         Ok(())
     }
 
     fn update_record_tags(&self, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletError> {
-        _open_connection(self.name.as_str(), &self.credentials)?
+        let res = _open_connection(self.name.as_str(), &self.credentials)?
             .execute(
                 "UPDATE wallet SET tags = ?1 WHERE id = ?2 AND type = ?3",
                 &[&tags_json.to_string(), &id.to_string(), &type_.to_string()])?;
+
+        if res == 0 {
+            return Err(WalletError::NotFound(format!("Record not found by id {}", id)));
+        }
+
         Ok(())
     }
 
     fn add_record_tags(&self, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletError> {
-        _open_connection(self.name.as_str(), &self.credentials)?
+        let conn = _open_connection(self.name.as_str(), &self.credentials)?;
+
+        let mut stmt = conn.prepare("SELECT tags FROM wallet WHERE id = ?1 AND type = ?2 LIMIT 1")?;
+        let current_tags_json: String = stmt.query_row(&[&id.to_string(), &type_.to_string()], |row| row.get("tags"))?;
+
+        let tags: HashMap<String, serde_json::Value> = serde_json::from_str(&tags_json).unwrap();
+        let mut current_tags: HashMap<String, serde_json::Value> = serde_json::from_str(&current_tags_json).unwrap();
+
+        current_tags.extend(tags);
+
+        let new_tags_json = serde_json::to_string(&current_tags).unwrap();
+
+        let res = conn
             .execute(
                 "UPDATE wallet SET tags = ?1 WHERE id = ?2 AND type = ?3",
-                &[&tags_json.to_string(), &id.to_string(), &type_.to_string()])?;
+                &[&new_tags_json, &id.to_string(), &type_.to_string()])?;
+
+        if res == 0 {
+            return Err(WalletError::NotFound(format!("Record not found by id {}", id)));
+        }
+
         Ok(())
     }
 
     fn delete_record_tags(&self, type_: &str, id: &str, tag_names_json: &str) -> Result<(), WalletError> {
-        _open_connection(self.name.as_str(), &self.credentials)?
+        let conn = _open_connection(self.name.as_str(), &self.credentials)?;
+
+        let mut stmt = conn.prepare("SELECT tags FROM wallet WHERE id = ?1 AND type = ?2 LIMIT 1")?;
+        let current_tags_json: String = stmt.query_row(&[&id.to_string(), &type_.to_string()], |row| row.get("tags"))?;
+
+        let tag_names: Vec<String> = serde_json::from_str(&tag_names_json).unwrap();
+        let mut current_tags: HashMap<String, serde_json::Value> = serde_json::from_str(&current_tags_json).unwrap();
+
+        for tag_name in tag_names {
+            current_tags.remove(&tag_name)
+                .ok_or(WalletError::NotFound(format!("Tag not found by name: {:?}", tag_name)))?;
+        }
+
+        let new_tags_json = serde_json::to_string(&current_tags).unwrap();
+
+        let res = conn
             .execute(
-                "UPDATE wallet SET tags = null WHERE id = ?1 AND type = ?2",
-                &[&id.to_string(), &type_.to_string()])?;
+                "UPDATE wallet SET tags = ?1 WHERE id = ?2 AND type = ?3",
+                &[&new_tags_json, &id.to_string(), &type_.to_string()])?;
+
+        if res == 0 {
+            return Err(WalletError::NotFound(format!("Record not found by id {}", id)));
+        }
+
         Ok(())
     }
 
     fn delete_record(&self, type_: &str, id: &str) -> Result<(), WalletError> {
-        _open_connection(self.name.as_str(), &self.credentials)?
+        let res = _open_connection(self.name.as_str(), &self.credentials)?
             .execute(
                 "DELETE FROM wallet WHERE id = ?1 AND type = ?2",
                 &[&id.to_string(), &type_.to_string()])?;
+
+        if res == 0 {
+            return Err(WalletError::NotFound(format!("Record not found by id {}", id)));
+        }
+
         Ok(())
     }
 
@@ -197,8 +251,13 @@ impl WalletStorage for DefaultWallet {
             wallet_records.push(record?);
         }
 
+        let total_count = match options.retrieve_total_count {
+            Some(false) => None,
+            _ => Some(wallet_records.len())
+        };
+
         let wallet_search = WalletSearch {
-            total_count: Some(wallet_records.len()),
+            total_count,
             iter: Some(Box::new(wallet_records.into_iter()))
         };
 
@@ -231,8 +290,7 @@ impl WalletStorage for DefaultWallet {
         Ok(wallet_search)
     }
 
-    fn close_search(&self, search_handle: u32) -> Result<(), WalletError> { Ok(()) }
-
+    fn close_search(&self, search_handle: i32) -> Result<(), WalletError> { Ok(()) }
 }
 
 pub struct DefaultWalletType {}
@@ -374,6 +432,8 @@ fn _export_unencrypted_to_encrypted(conn: Connection, name: &str, key: &str) -> 
 impl From<rusqlcipher::Error> for WalletError {
     fn from(err: rusqlcipher::Error) -> WalletError {
         match err {
+            rusqlcipher::Error::SqliteFailure(err, _) if err.code == rusqlcipher::ErrorCode::ConstraintViolation =>
+                WalletError::AlreadyExists(format!("Wallet record already exists: {}", err.description())),
             rusqlcipher::Error::QueryReturnedNoRows => WalletError::NotFound(format!("Wallet record is not found: {}", err.description())),
             rusqlcipher::Error::SqliteFailure(err, _) if err.code == rusqlcipher::ErrorCode::NotADatabase =>
                 WalletError::AccessFailed(format!("Wallet security error: {}", err.description())),
