@@ -2,155 +2,221 @@ extern crate libc;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use indy::api::payments::CreatePaymentAddressCB;
 use indy::api::ErrorCode;
 use std::os::raw::c_char;
-use indy::api::payments::AddRequestFeesCB;
-use indy::api::payments::ParseResponseWithFeesCB;
-use indy::api::payments::BuildGetUTXORequestCB;
+use indy::api::payments::*;
+use std::sync::mpsc::Receiver;
+use std::sync::mpsc::channel;
+use std::sync::atomic::Ordering;
 
-pub struct PaymentCallbacks {
-    str_params: RefCell<HashMap<String, *const char>>,
-    int_params: RefCell<HashMap<String, i32>>,
-    cb_params: RefCell<HashMap<String, Option<extern fn(command_handle: i32,
-                                                        err: ErrorCode,
-                                                        c_str: *const c_char) -> ErrorCode>>>
+lazy_static! {
+    static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 }
+
+pub struct PaymentCallbacks {}
+
+type CommonResponseCallback = extern fn(command_handle_: i32,
+                                        err: ErrorCode,
+                                        res1: *const c_char) -> ErrorCode;
 
 impl PaymentCallbacks {
-    pub fn new() -> PaymentCallbacks {
-        PaymentCallbacks {
-            str_params: RefCell::new(HashMap::new()),
-            int_params: RefCell::new(HashMap::new()),
-            cb_params: RefCell::new(HashMap::new())
-        }
+
+    pub fn get_create_payment_address_cb() -> (Receiver<(i32, *const c_char, Option<CommonResponseCallback>)>, i32, CreatePaymentAddressCB) {
+        PaymentCallbacks::get_str_to_str_cb()
     }
 
-    pub fn get_create_payment_address_cb(&self) -> (i32, CreatePaymentAddressCB) {
-        let cb_handle = ::utils::sequence::SequenceUtils::get_next_id();
-        let me = self;
+    pub fn parse_response_with_fees_cb() -> (Receiver<(i32, *const c_char, Option<CommonResponseCallback>)>, i32, ParseResponseWithFeesCB) {
+        PaymentCallbacks::get_str_to_str_cb()
+    }
+
+    pub fn build_get_utxo_request_cb() -> (Receiver<(i32, *const c_char, Option<CommonResponseCallback>)>, i32, BuildGetUTXORequestCB) {
+        PaymentCallbacks::get_str_to_str_cb()
+    }
+
+    pub fn parse_get_utxo_response_cb() -> (Receiver<(i32, *const c_char, Option<CommonResponseCallback>)>, i32, ParseGetUTXOResponseCB) {
+        PaymentCallbacks::get_str_to_str_cb()
+    }
+
+    pub fn parse_payment_response_cb() -> (Receiver<(i32, *const c_char, Option<CommonResponseCallback>)>, i32, ParsePaymentResponseCB) {
+        PaymentCallbacks::get_str_to_str_cb()
+    }
+
+    pub fn build_mint_req() -> (Receiver<(i32, *const c_char, Option<CommonResponseCallback>)>, i32, BuildMintReqCB) {
+        PaymentCallbacks::get_str_to_str_cb()
+    }
+
+    pub fn build_set_txn_fees_req() -> (Receiver<(i32, *const c_char, Option<CommonResponseCallback>)>, i32, BuildSetTxnFeesReqCB) {
+        PaymentCallbacks::get_str_to_str_cb()
+    }
+
+    pub fn parse_get_txn_fees_response() -> (Receiver<(i32, *const c_char, Option<CommonResponseCallback>)>, i32, ParseGetTxnFeesResponseCB) {
+        PaymentCallbacks::get_str_to_str_cb()
+    }
+
+    pub fn add_request_fees() -> (Receiver<(i32, *const c_char, *const c_char, *const c_char, Option<CommonResponseCallback>)>, i32, AddRequestFeesCB) {
+        PaymentCallbacks::get_str_str_str_to_str_cb()
+    }
+
+    pub fn build_payment_req() -> (Receiver<(i32, *const c_char, *const c_char, Option<CommonResponseCallback>)>, i32, BuildPaymentReqCB) {
+        PaymentCallbacks::get_str_str_to_str_cb()
+    }
+
+    pub fn build_get_txn_fees_req() -> (Receiver<(i32, Option<CommonResponseCallback>)>, i32, BuildGetTxnFeesReqCB) {
+        PaymentCallbacks::get_to_str_cb()
+    }
+
+    ///
+    /// Callback used by:
+    /// create_payment_address
+    /// parse_response_with_fees
+    /// build_get_utxo_request
+    /// parse_get_utxo_response
+    /// parse_payment_response
+    /// build_mint_req
+    /// build_set_txn_fees_req
+    /// parse_get_txn_fees_response
+    ///
+    fn get_str_to_str_cb() -> (Receiver<(i32, *const c_char, F)>, i32, E)
+        where
+            F: Option<CommonResponseCallback>,
+            E: Option(extern fn(command_handle: i32,
+                            arg1: *const c_char,
+                            cb: F) -> ErrorCode) {
+        let (sender, receiver) = channel();
+
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(i32, *const c_char, F) + Send>>> = Default::default();
+        }
+
+        let closure = Box::new(move |cmd_handle, arg1, cb| {
+            sender.send((cmd_handle, arg1, cb)).unwrap();
+        });
 
         extern "C" fn _callback(command_handle: i32,
-                                config: *const c_char,
-                                cb: Option<extern fn(command_handle_: i32,
-                                                     err: ErrorCode,
-                                                     payment_address: *const c_char) -> ErrorCode>) -> ErrorCode {
-            me.put(format!("{}_command_handle", cb_handle), command_handle);
-            me.put(format!("{}_config", cb_handle), config);
-            me.put(format!("{}_cb", cb_handle), cb);
+                                arg1: *const c_char,
+                                cb: F) -> ErrorCode {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut _cb = callbacks.remove(&command_handle).unwrap();
+            _cb(command_handle, arg1, cb);
             ErrorCode::Success
         }
 
-        (cb_handle, _callback)
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (receiver, cb_handle, Some(_callback))
     }
 
-    pub fn get_add_request_fees_cb(&self) -> (i32, AddRequestFeesCB) {
-        let cb_handle = ::utils::sequence::SequenceUtils::get_next_id();
-        let me = self;
+    ///
+    /// Callback used for add_request_fees
+    ///
+    fn get_str_str_str_to_str_cb() -> (Receiver<(i32, *const c_char, *const c_char, *const c_char, F)>, i32, E)
+        where
+            F: Option<CommonResponseCallback>,
+            E: Option<extern fn(command_handle: i32,
+                                arg1: *const c_char,
+                                arg2: *const c_char,
+                                arg3: *const c_char,
+                                cb:E) -> ErrorCode> {
+        let (sender, receiver) = channel();
+
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(i32, *const c_char, *const c_char, *const c_char, F) + Send>>> = Default::default();
+        }
+
+        let closure =
+            Box::new(move |cmd_handle, arg1, arg2, arg3, cb| {
+                sender.send((cmd_handle, arg1, arg2, arg3, cb)).unwrap();
+            });
 
         extern "C" fn _callback(command_handle: i32,
-                                req_json: *const c_char,
-                                inputs_json: *const c_char,
-                                outputs_json: *const c_char,
-                                cb: Option<extern fn(command_handle_: i32,
-                                                     err: ErrorCode,
-                                                     req_with_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode {
-            me.put(format!("{}_command_handle", cb_handle), command_handle);
-            me.put(format!("{}_req_json", cb_handle), req_json);
-            me.put(format!("{}_inputs_json", cb_handle), inputs_json);
-            me.put(format!("{}_outputs_json", cb_handle), outputs_json);
-            me.put(format!("{}_cb", cb_handle), cb);
+                                arg1: *const c_char,
+                                arg2: *const c_char,
+                                arg3: *const c_char,
+                                cb: F) -> ErrorCode {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut _cb = callbacks.remove(&command_handle).unwrap();
+            _cb(command_handle, arg1, arg2, arg3, cb);
             ErrorCode::Success
         }
 
-        (cb_handle, _callback)
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (receiver, cb_handle, Some(_callback))
     }
 
-    pub fn get_parse_response_with_fees_cb(&self) -> (i32, ParseResponseWithFeesCB) {
-        let cb_handle = ::utils::sequence::SequenceUtils::get_next_id();
-        let me = self;
+    ///
+    /// Callback used by build_payment_req
+    ///
+    fn get_str_str_to_str_cb() -> (Receiver<(i32, *const c_char, *const c_char, F)>, i32, E)
+        where
+            F: Option<CommonResponseCallback>,
+            E: Option<extern fn(command_handle: i32,
+                                arg1: *const c_char,
+                                arg2: *const c_char,
+                                cb: F) -> ErrorCode> {
+        let (sender, receiver) = channel();
+
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(i32, *const c_char, *const c_char, F) + Send>>> = Default::default();
+        }
+
+        let closure =
+            Box::new(move |cmd_handle, arg1, arg2, cb| {
+                sender.send((cmd_handle, arg1, arg2, cb)).unwrap();
+            });
 
         extern "C" fn _callback(command_handle: i32,
-                                resp_json: *const c_char,
-                                cb: Option<extern fn(command_handle_: i32,
-                                                     err: ErrorCode,
-                                                     utxo_json: *const c_char) -> ErrorCode>) -> ErrorCode {
-            me.put(format!("{}_command_handle", cb_handle), command_handle);
-            me.put(format!("{}_resp_json", cb_handle), resp_json);
-            me.put(format!("{}_cb", cb_handle), cb);
+                                arg1: *const c_char,
+                                arg2: *const c_char,
+                                cb: F) -> ErrorCode {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut _cb = callbacks.remove(&command_handle).unwrap();
+            _cb(command_handle, arg1, arg2, cb);
             ErrorCode::Success
         }
 
-        (cb_handle, _callback)
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (receiver, cb_handle, Some(_callback))
     }
 
-    pub fn get_build_get_utxo_request_cb(&self) -> (i32, BuildGetUTXORequestCB) {
-        let cb_handle = ::utils::sequence::SequenceUtils::get_next_id();
-        let me = self;
+    ///
+    /// Callback used by build_get_txn_fees_req
+    ///
+    fn get_to_str_cb() -> (Receiver<(i32, F)>, i32, E)
+        where
+            F: Option<CommonResponseCallback>,
+            E: Option<extern fn(command_handle: i32,
+                                cb: F) -> ErrorCode> {
+        let (sender, receiver) = channel();
+
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(i32, F) + Send>>> = Default::default();
+        }
+
+        let closure =
+            Box::new(move |cmd_handle, cb| {
+                sender.send((cmd_handle, cb)).unwrap();
+            });
 
         extern "C" fn _callback(command_handle: i32,
-                                payment_address: *const c_char,
-                                cb: Option<extern fn(command_handle_: i32,
-                                                     err: ErrorCode,
-                                                     get_utxo_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode {
-            me.put(format!("{}_command_handle", cb_handle), command_handle);
-            me.put(format!("{}_payment_address", cb_handle), payment_address);
-            me.put(format!("{}_cb", cb_handle), cb);
+                                cb: F) -> ErrorCode {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut _cb = callbacks.remove(&command_handle).unwrap();
+            _cb(command_handle, cb);
             ErrorCode::Success
         }
 
-        (cb_handle, _callback)
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (receiver, cb_handle, Some(_callback))
     }
-
-
-}
-
-impl Capture for PaymentCallbacks {
-    type Val = i32;
-    type Key = String;
-    fn put(self, key: String, value: i32) {
-        self.int_params.borrow().insert(key, value);
-    }
-    fn get(self, key: String) -> Option<i32> {
-        self.int_params.borrow().remove(key.as_str())
-    }
-}
-
-impl Capture for PaymentCallbacks {
-    type Val = *const char;
-    type Key = String;
-
-    fn put(self, key: String, value: *const char) {
-        self.str_params.borrow().insert(key, value);
-    }
-    fn get(self, key: String) -> Option<*const char>  {
-        self.str_params.borrow().remove(key.as_str())
-    }
-}
-
-impl Capture for PaymentCallbacks {
-    type Val = Option<extern fn(command_handle: i32,
-                                  err: ErrorCode,
-                                  c_str: *const c_char) -> ErrorCode>;
-
-    type Key = String;
-
-    fn put(self, key: String, value: Option<extern fn(command_handle: i32,
-                                                      err: ErrorCode,
-                                                      c_str: *const c_char) -> ErrorCode>) {
-        self.cb_params.borrow().insert(key, value);
-    }
-    fn get(self, key: String) -> Option<Option<extern fn(command_handle: i32,
-                                             err: ErrorCode,
-                                             c_str: *const c_char) -> ErrorCode>> {
-        self.cb_params.borrow().remove(key.as_str())
-    }
-
-}
-
-trait Capture {
-    type Val;
-    type Key;
-    fn put(self, key: Key, value: Val);
-    fn get(self, key: Key) -> Val;
 }
