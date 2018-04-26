@@ -20,9 +20,9 @@ public class Payments extends IndyJava.API {
      */
 
     /**
-     * Callback used when createPaymentAddress completes.
+     * Callback usedwhen method with string result completes
      */
-    private static Callback createPaymentAddressCb = new Callback() {
+    private static Callback stringCompleteCb = new Callback() {
 
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int xcommandHandle, int err, String paymentAddress) {
@@ -30,19 +30,6 @@ public class Payments extends IndyJava.API {
             if (!checkCallback(future, err)) return;
 
             future.complete(paymentAddress);
-        }
-    };
-
-    /**
-     * Callback used when listAddresses completes.
-     */
-    private static Callback listAddressesCb = new Callback() {
-        @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int xcommandHandle, int err, String paymentAddressesJson) {
-            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommandHandle);
-            if (!checkCallback(future, err)) return;
-
-            future.complete(paymentAddressesJson);
         }
     };
 
@@ -62,19 +49,6 @@ public class Payments extends IndyJava.API {
     };
 
     /**
-     * Callback used when parseResponseWithFees completes.
-     */
-    private static Callback parseResponseWithFeesCb = new Callback() {
-        @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int xcommandHandle, int err, String utxoJson) {
-            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommandHandle);
-            if (!checkCallback(future, err)) return;
-
-            future.complete(utxoJson);
-        }
-    };
-
-    /**
      * Callback used when buildGetUtxoRequest completes.
      */
     private static Callback buildGetUtxoRequestCb = new Callback() {
@@ -86,19 +60,6 @@ public class Payments extends IndyJava.API {
             BuildGetUtxoRequestResult addRequestFeesResult = new BuildGetUtxoRequestResult(utxoJson, paymentMethod);
 
             future.complete(addRequestFeesResult);
-        }
-    };
-
-    /**
-     * Callback used when parseGetUtxoResponse completes.
-     */
-    private static Callback parseGetUtxoResponseCb = new Callback() {
-        @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int xcommandHandle, int err, String utxoJson) {
-            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommandHandle);
-            if (!checkCallback(future, err)) return;
-
-            future.complete(utxoJson);
         }
     };
 
@@ -118,19 +79,6 @@ public class Payments extends IndyJava.API {
     };
 
     /**
-     * Callback used when parsePaymentResponse completes.
-     */
-    private static Callback parsePaymentResponseCb = new Callback() {
-        @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int xcommandHandle, int err, String utxoJson) {
-            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommandHandle);
-            if (!checkCallback(future, err)) return;
-
-            future.complete(utxoJson);
-        }
-    };
-
-    /**
      * Callback used when buildMintReq completes.
      */
     private static Callback buildMintReqCb = new Callback() {
@@ -142,19 +90,6 @@ public class Payments extends IndyJava.API {
             BuildMintReqResult addRequestFeesResult = new BuildMintReqResult(mintReqJson, paymentMethod);
 
             future.complete(addRequestFeesResult);
-        }
-    };
-
-    /**
-     * Callback used when buildSetTxnFeesReq completes.
-     */
-    private static Callback buildSetTxnFeesReqCb = new Callback() {
-        @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int xcommandHandle, int err, String setTxnFeesJson) {
-            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommandHandle);
-            if (!checkCallback(future, err)) return;
-
-            future.complete(setTxnFeesJson);
         }
     };
 
@@ -196,7 +131,7 @@ public class Payments extends IndyJava.API {
                 walletHandle,
                 paymentMethod,
                 config,
-                createPaymentAddressCb
+                stringCompleteCb
         );
 
         checkResult(result);
@@ -220,7 +155,7 @@ public class Payments extends IndyJava.API {
         int result = LibIndy.api.indy_list_addresses(
                 commandHandle,
                 walletHandle,
-                listAddressesCb
+                stringCompleteCb
         );
 
         checkResult(result);
@@ -297,22 +232,7 @@ public class Payments extends IndyJava.API {
             String paymentMethod,
             String respJson
     ) throws IndyException {
-        ParamGuard.notNullOrWhiteSpace(paymentMethod, "paymentMethod");
-        ParamGuard.notNullOrWhiteSpace(respJson, "respJson");
-
-        CompletableFuture<String> future = new CompletableFuture<>();
-        int commandHandle = addFuture(future);
-
-        int result = LibIndy.api.indy_parse_response_with_fees(
-                commandHandle,
-                paymentMethod,
-                respJson,
-                parseResponseWithFeesCb
-        );
-
-        checkResult(result);
-
-        return future;
+        return parseResponse(paymentMethod, respJson, LibIndy.api::indy_parse_response_with_fees);
     }
 
     /**
@@ -358,22 +278,7 @@ public class Payments extends IndyJava.API {
             String paymentMethod,
             String respJson
     ) throws IndyException {
-        ParamGuard.notNullOrWhiteSpace(paymentMethod, "paymentMethod");
-        ParamGuard.notNullOrWhiteSpace(respJson, "respJson");
-
-        CompletableFuture<String> future = new CompletableFuture<>();
-        int commandHandle = addFuture(future);
-
-        int result = LibIndy.api.indy_parse_get_utxo_response(
-                commandHandle,
-                paymentMethod,
-                respJson,
-                parseGetUtxoResponseCb
-        );
-
-        checkResult(result);
-
-        return future;
+        return parseResponse(paymentMethod, respJson, LibIndy.api::indy_parse_get_utxo_response);
     }
 
     /**
@@ -438,22 +343,7 @@ public class Payments extends IndyJava.API {
             String paymentMethod,
             String respJson
     ) throws IndyException {
-        ParamGuard.notNullOrWhiteSpace(paymentMethod, "paymentMethod");
-        ParamGuard.notNullOrWhiteSpace(respJson, "respJson");
-
-        CompletableFuture<String> future = new CompletableFuture<>();
-        int commandHandle = addFuture(future);
-
-        int result = LibIndy.api.indy_parse_payment_response(
-                commandHandle,
-                paymentMethod,
-                respJson,
-                parsePaymentResponseCb
-        );
-
-        checkResult(result);
-
-        return future;
+        return parseResponse(paymentMethod, respJson, LibIndy.api::indy_parse_payment_response);
     }
 
     /**
@@ -514,7 +404,7 @@ public class Payments extends IndyJava.API {
                 commandHandle,
                 paymentMethod,
                 feesJson,
-                buildSetTxnFeesReqCb
+                stringCompleteCb
         );
 
         checkResult(result);
@@ -522,5 +412,71 @@ public class Payments extends IndyJava.API {
         return future;
     }
 
+    /**
+     * Builds Indy get request for getting fees for transactions in the ledger
+     *
+     * @param paymentMethod
+     * @return Indy request for getting fees for transactions in the ledger
+     * @throws IndyException
+     */
+    public static CompletableFuture<String> buildGetTxnFeesReq(
+            String paymentMethod
+    ) throws IndyException {
+        ParamGuard.notNullOrWhiteSpace(paymentMethod, "paymentMethod");
 
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibIndy.api.indy_build_get_txn_fees_req(
+                commandHandle,
+                paymentMethod,
+                stringCompleteCb
+        );
+
+        checkResult(result);
+
+        return future;
+    }
+
+    /**
+     * Parses response for Indy request for getting fees
+     * @param paymentMethod
+     * @param respJson response for Indy request for getting fees
+     * @return fees_json {
+     *   txnType1: amount1,
+     *   txnType2: amount2,
+     *   .................
+     *   txnTypeN: amountN,
+     * }
+     * @throws IndyException
+     */
+    public static CompletableFuture<String> parseGetTxnFeesResponse(
+            String paymentMethod,
+            String respJson
+    ) throws IndyException {
+        return parseResponse(paymentMethod, respJson, LibIndy.api::indy_parse_get_txn_fees_response);
+    }
+
+    private static CompletableFuture<String> parseResponse(
+            String paymentMethod,
+            String respJson,
+            QuadFunction<Integer, String, String, Callback, Integer> method
+    ) throws IndyException {
+        ParamGuard.notNullOrWhiteSpace(paymentMethod, "paymentMethod");
+        ParamGuard.notNullOrWhiteSpace(respJson, "respJson");
+
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = method.apply(commandHandle, paymentMethod, respJson, stringCompleteCb);
+
+        checkResult(result);
+
+        return future;
+    }
+
+    @FunctionalInterface
+    interface QuadFunction<Arg1, Arg2, Arg3, Arg4, Res> {
+        Res apply(Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4);
+    }
 }
