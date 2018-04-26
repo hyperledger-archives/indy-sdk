@@ -206,6 +206,7 @@ impl<'a> StorageIterator for SQLiteStorageIterator<'a> {
 
 #[derive(Debug,Deserialize)]
 struct FetchOptions {
+    fetch_type: bool,
     fetch_value: bool,
     fetch_tags: bool,
 }
@@ -214,6 +215,7 @@ struct FetchOptions {
 impl Default for FetchOptions {
     fn default() -> FetchOptions {
         FetchOptions {
+            fetch_type: false,
             fetch_value: true,
             fetch_tags: false,
         }
@@ -273,7 +275,13 @@ impl WalletStorage for SQLiteStorage {
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
     fn get(&self, class: &Vec<u8>, name: &Vec<u8>, options: &str) -> Result<StorageEntity, WalletStorageError> {
-        let options: FetchOptions = serde_json::from_str(options)?;
+        println!("{}", options);
+        let options: FetchOptions = if options == "{}" {
+            FetchOptions::default()
+        } else {
+            serde_json::from_str(options)?
+        };
+        println!("Querying");
         let res: Result<(i64, Vec<u8>, Vec<u8>), rusqlite::Error> = self.conn.query_row(
             "SELECT id, value, key FROM items where type = ?1 AND name = ?2",
             &[class, name],
@@ -431,6 +439,7 @@ impl WalletStorage for SQLiteStorage {
     fn get_all<'a>(&'a self) -> Result<Box<StorageIterator + 'a>, WalletStorageError> {
         let statement = self.conn.prepare("SELECT id, name, value, key, type FROM items;")?;
         let fetch_options = FetchOptions {
+            fetch_type: false,
             fetch_value: true,
             fetch_tags: true,
         };
@@ -626,7 +635,7 @@ impl WalletStorageType for SQLiteStorageType {
         )
     }
 }
-//
+
 
 #[cfg(test)]
 mod tests {
@@ -814,7 +823,7 @@ mod tests {
         tags.insert(vec![1, 5, 8], TagValue::Encrypted(vec![3, 5, 6]));
 
         storage.add(&class, &name, &value, &value_key, &tags).unwrap();
-        let entity = storage.get(&class, &name, r##"{"fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let entity = storage.get(&class, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
 
         let entity_value = entity.value.unwrap();
 
@@ -843,7 +852,7 @@ mod tests {
         tags.insert(vec![1, 5, 8], TagValue::Encrypted(vec![3, 5, 6]));
 
         storage.add(&class, &name, &value, &value_key, &tags).unwrap();
-        let entity = storage.get(&class, &name, r##"{"fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let entity = storage.get(&class, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
         let entity_value = entity.value.unwrap();
 
         assert_eq!(value, entity_value.data);
@@ -875,7 +884,7 @@ mod tests {
         }
 
         let (storage, keys) = storage_type.open_storage("test_wallet", None, "").unwrap();
-        let entity = storage.get(&class, &name, r##"{"fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let entity = storage.get(&class, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
         let entity_value = entity.value.unwrap();
 
         assert_eq!(value, entity_value.data);
@@ -900,7 +909,7 @@ mod tests {
         tags.insert(vec![1, 5, 8], TagValue::Encrypted(vec![3, 5, 6]));
 
         storage.add(&class, &name, &value, &value_key, &tags).unwrap();
-        let res = storage.get(&class, &vec![5, 6, 6], r##"{"fetch_value": true, "fetch_tags": true}"##);
+        let res = storage.get(&class, &vec![5, 6, 6], r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##);
 
         assert_match!(Err(WalletStorageError::ItemNotFound), res)
     }
@@ -924,7 +933,7 @@ mod tests {
 
         storage.add(&class, &name, &value, &value_key, &tags).unwrap();
 
-        let entity = storage.get(&class, &name, r##"{"fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let entity = storage.get(&class, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
 
         let entity_value = entity.value.unwrap();
         assert_eq!(value, entity_value.data);
@@ -955,7 +964,7 @@ mod tests {
         tags.insert(vec![1, 5, 8], TagValue::Encrypted(vec![3, 5, 6]));
 
         storage.add(&class, &name, &value, &value_key, &tags).unwrap();
-        let entity = storage.get(&class, &name, r##"{"fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let entity = storage.get(&class, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
 
         let entity_value = entity.value.unwrap();
 
@@ -964,7 +973,7 @@ mod tests {
         assert_eq!(tags, entity.tags.unwrap());
 
         storage.delete(&class, &name).unwrap();
-        let res = storage.get(&class, &name, r##"{"fetch_value": true, "fetch_tags": true}"##);
+        let res = storage.get(&class, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##);
         assert_match!(Err(WalletStorageError::ItemNotFound), res);
     }
 

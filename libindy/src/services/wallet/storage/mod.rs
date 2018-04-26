@@ -2,13 +2,10 @@ pub mod default;
 pub mod plugged;
 
 use std::collections::HashMap;
-use std::string;
 
 use errors::wallet::WalletStorageError;
 use services::wallet::language;
 use services::wallet::wallet::WalletRuntimeConfig;
-
-use rusqlite;
 
 
 #[derive(Clone, Debug, PartialEq)]
