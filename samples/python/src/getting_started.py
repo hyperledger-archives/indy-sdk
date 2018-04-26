@@ -8,7 +8,7 @@ from typing import Optional
 
 from indy.error import ErrorCode, IndyError
 
-from utils import get_pool_genesis_txn_path, run_coroutine
+from src.utils import get_pool_genesis_txn_path, run_coroutine
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
