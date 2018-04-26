@@ -126,7 +126,7 @@ public abstract class LibIndy {
 
 		// payments.rs
 		int indy_create_payment_address(int command_handle, int wallet_handle, String payment_method, String config, Callback cb);
-		int indy_list_addresses(int command_handle, int wallet_handle, Callback cb);
+		int indy_list_payment_addresses(int command_handle, int wallet_handle, Callback cb);
 		int indy_add_request_fees(int command_handle, String req_json, String inputs_json, String outputs_json, Callback cb);
 		int indy_parse_response_with_fees(int command_handle, String payment_method, String resp_json, Callback cb);
 		int indy_build_get_utxo_request(int command_handle, String payment_method, Callback cb);

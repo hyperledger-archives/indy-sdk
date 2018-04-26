@@ -361,7 +361,7 @@ pub extern fn indy_create_payment_address(command_handle: i32,
 /// #Returns
 /// payment_adresses_json - json array of string with json addresses
 #[no_mangle]
-pub extern fn indy_list_addresses(command_handle: i32,
+pub extern fn indy_list_payment_addresses(command_handle: i32,
                                   wallet_handle: i32,
                                   cb: Option<extern fn(command_handle_: i32,
                                                        err: ErrorCode,
