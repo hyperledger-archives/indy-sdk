@@ -3,6 +3,9 @@ package org.hyperledger.indy.sdk.anoncreds;
 import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
+import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreCredentialDefResult;
+import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.ProverCreateCredentialRequestResult;
+import org.json.JSONObject;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
@@ -17,38 +20,61 @@ public class AnoncredsIntegrationTest {
 	@Rule
 	public Timeout globalTimeout = new Timeout(2, TimeUnit.MINUTES);
 
-	static Wallet wallet;
-	static String claimDef;
-
 	private static Boolean walletOpened = false;
 
-	String masterSecretName = "master_secret_name";
+	static Wallet wallet;
+	static String gvtSchemaId;
+	static String gvtSchema;
+	static String xyzSchemaId;
+	static String xyzSchema;
+	static String issuer1gvtCredDefId;
+	static String issuer1gvtCredDef;
+	static String issuer1xyzCredDefId;
+	static String issuer1xyzCredDef;
+	static String issuer1GvtCredOffer;
+	static String issuer2GvtCredOffer;
+	static String issuer1GvtCredReq;
+	static String issuer1GvtCredReqMetadata;
+	static String issuer1GvtCredential;
+	String masterSecretId = "master_secret_name";
 	String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
-	String issuerDid2 = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 	String proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-	String claimOfferTemplate = "{\"issuer_did\":\"%s\",\"schema_seq_no\":%d}";
-	String schema = "{\"seqNo\":1,\"data\": {\"name\":\"gvt\",\"version\":\"1.0\",\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}}";
-	String claimRequestTemplate = "{\"blinded_ms\":" +
-			"{\"prover_did\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"," +
-			"\"u\":\"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038\"," +
-			"\"ur\":null}," +
-			"\"issuer_did\":\"%s\",\"schema_seq_no\":%d}";
+	String defaultCredentialDefitionConfig = "{\"support_revocation\":false}";
+	String tag = "tag1";
+	String gvtSchemaName = "gvt";
+	String schemaVersion = "1.0";
+	String gvtSchemaAttributes = "[\"name\", \"age\", \"sex\", \"height\"]";
+	String credentialId1 = "id1";
+	String credentialId2 = "id2";
+	String gvtCredentialValuesJson = new JSONObject("{\n" +
+			"               \"sex\":{\"raw\":\"male\",\"encoded\":\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"},\n" +
+			"               \"name\":{\"raw\":\"Alex\",\"encoded\":\"1139481716457488690172217916278103335\"},\n" +
+			"               \"height\":{\"raw\":\"175\",\"encoded\":\"175\"},\n" +
+			"               \"age\":{\"raw\":\"28\",\"encoded\":\"28\"}\n" +
+			"        }").toString();
+	String xyzCredentialValuesJson = new JSONObject("{\n" +
+			"               \"status\":{\"raw\":\"partial\",\"encoded\":\"51792877103171595686471452153480627530895\"},\n" +
+			"               \"period\":{\"raw\":\"8\",\"encoded\":\"8\"}\n" +
+			"        }").toString();
+	String proofRequest = new JSONObject("{\n" +
+			"                   \"nonce\":\"123432421212\",\n" +
+			"                   \"name\":\"proof_req_1\",\n" +
+			"                   \"version\":\"0.1\", " +
+			"                   \"requested_attributes\":{" +
+			"                          \"attr1_referent\":{\"name\":\"name\"}" +
+			"                    },\n" +
+			"                    \"requested_predicates\":{" +
+			"                          \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
+			"                    }" +
+			"               }").toString();
 
-	@BeforeClass
-	public static void  setUp() throws Exception{
+	@Before
+	public void setUp() throws Exception {
 		InitHelper.init();
-	}
-	
-	@AfterClass
-	public static void cleanUp() throws Exception{
-		
-		if (walletOpened){
-			wallet.closeWallet().get();			
-			walletOpened = false;
-		}
+		initCommonWallet();
 	}
 
-	void initCommonWallet() throws Exception {
+	private void initCommonWallet() throws Exception {
 
 		if (walletOpened) {
 			return;
@@ -61,28 +87,78 @@ public class AnoncredsIntegrationTest {
 		Wallet.createWallet("default", walletName, "default", null, null).get();
 		wallet = Wallet.openWallet(walletName, null, null).get();
 
-		claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, schema, null, false).get();
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult =
+				Anoncreds.issuerCreateSchema(issuerDid, gvtSchemaName, schemaVersion, gvtSchemaAttributes).get();
+		gvtSchemaId = createSchemaResult.getSchemaId();
+		gvtSchema = createSchemaResult.getSchemaJson();
 
-		Anoncreds.proverStoreClaimOffer(wallet, String.format(claimOfferTemplate, issuerDid, 1)).get();
-		Anoncreds.proverStoreClaimOffer(wallet, String.format(claimOfferTemplate, issuerDid, 2)).get();
-		Anoncreds.proverStoreClaimOffer(wallet, String.format(claimOfferTemplate, issuerDid2, 2)).get();
+		String xyzSchemaAttributes = "[\"status\", \"period\"]";
+		String xyzSchemaName = "xyz";
+		createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, xyzSchemaName, schemaVersion, xyzSchemaAttributes).get();
+		xyzSchemaId = createSchemaResult.getSchemaId();
+		xyzSchema = createSchemaResult.getSchemaJson();
 
-		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
+		//Issue GVT issuer1GvtCredential by Issuer1
+		IssuerCreateAndStoreCredentialDefResult issuer1CreateGvtCredDefResult =
+				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, tag, null, defaultCredentialDefitionConfig).get();
+		issuer1gvtCredDefId = issuer1CreateGvtCredDefResult.getCredDefId();
+		issuer1gvtCredDef = issuer1CreateGvtCredDefResult.getCredDefJson();
 
-		String claimOffer = String.format("{\"issuer_did\":\"%s\",\"schema_seq_no\":%d}", issuerDid, 1);
+		//Issue XYZ issuer1GvtCredential by Issuer1
+		IssuerCreateAndStoreCredentialDefResult issuer1CreateXyzCredDefResult =
+				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, xyzSchema, tag, null, defaultCredentialDefitionConfig).get();
+		issuer1xyzCredDefId = issuer1CreateXyzCredDefResult.getCredDefId();
+		issuer1xyzCredDef = issuer1CreateXyzCredDefResult.getCredDefJson();
 
-		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", claimOffer, claimDef, masterSecretName).get();
+		//Issue GVT issuer1GvtCredential by Issuer2
+		String issuerDid2 = "VsKV7grR1BUE29mG2Fm2kX";
+		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult issuer2CreateGvtCredDefResult =
+				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid2, gvtSchema, tag, null, defaultCredentialDefitionConfig).get();
+		String issuer2gvtCredDefId = issuer2CreateGvtCredDefResult.getCredDefId();
+		String issuer2gvtCredDef = issuer2CreateGvtCredDefResult.getCredDefJson();
 
-		String claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
-				"                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
-				"                 \"height\":[\"175\",\"175\"],\n" +
-				"                 \"age\":[\"28\",\"28\"]\n" +
-				"        }";
+		issuer1GvtCredOffer = Anoncreds.issuerCreateCredentialOffer(wallet, issuer1gvtCredDefId).get();
+		String issuer1XyzCredOffer = Anoncreds.issuerCreateCredentialOffer(wallet, issuer1xyzCredDefId).get();
+		issuer2GvtCredOffer = Anoncreds.issuerCreateCredentialOffer(wallet, issuer2gvtCredDefId).get();
 
-		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
-		String claimJson = createClaimResult.getClaimJson();
+		Anoncreds.proverCreateMasterSecret(wallet, masterSecretId).get();
 
-		Anoncreds.proverStoreClaim(wallet, claimJson).get();
+		ProverCreateCredentialRequestResult createCredReqResult =
+				Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretId).get();
+		issuer1GvtCredReq = createCredReqResult.getCredentialRequestJson();
+		issuer1GvtCredReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
+
+		AnoncredsResults.IssuerCreateCredentialResult createCredResult =
+				Anoncreds.issuerCreateCredential(wallet, issuer1GvtCredOffer, issuer1GvtCredReq, gvtCredentialValuesJson, null, - 1).get();
+		issuer1GvtCredential = createCredResult.getCredentialJson();
+
+		Anoncreds.proverStoreCredential(wallet, credentialId1, issuer1GvtCredReqMetadata, issuer1GvtCredential, issuer1gvtCredDef, null).get();
+
+		createCredReqResult = Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer1XyzCredOffer, issuer1xyzCredDef, masterSecretId).get();
+		String issuer1XyzCredReq = createCredReqResult.getCredentialRequestJson();
+		String issuer1XyzCredReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
+
+		createCredResult = Anoncreds.issuerCreateCredential(wallet, issuer1XyzCredOffer, issuer1XyzCredReq, xyzCredentialValuesJson, null, - 1).get();
+		String issuer1XyzCredential = createCredResult.getCredentialJson();
+
+		Anoncreds.proverStoreCredential(wallet, credentialId2, issuer1XyzCredReqMetadata, issuer1XyzCredential, issuer1xyzCredDef, null).get();
+
+		createCredReqResult = Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer2GvtCredOffer, issuer2gvtCredDef, masterSecretId).get();
+		String issuer2GvtCredReq = createCredReqResult.getCredentialRequestJson();
+		String issuer2GvtCredReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
+
+		String gvt2CredValues = "{" +
+				"           \"sex\":{\"raw\":\"male\",\"encoded\":\"2142657394558967239210949258394838228692050081607692519917028371144233115103\"},\n" +
+				"           \"name\":{\"raw\":\"Alexander\",\"encoded\":\"21332817548165488690172217217278169335\"},\n" +
+				"           \"height\":{\"raw\":\"170\",\"encoded\":\"170\"},\n" +
+				"           \"age\":{\"raw\":\"28\",\"encoded\":\"28\"}\n" +
+				"   }";
+
+		createCredResult = Anoncreds.issuerCreateCredential(wallet, issuer2GvtCredOffer, issuer2GvtCredReq, gvt2CredValues, null, - 1).get();
+		String issuer2GvtCredential = createCredResult.getCredentialJson();
+
+		String credentialId3 = "id3";
+		Anoncreds.proverStoreCredential(wallet, credentialId3, issuer2GvtCredReqMetadata, issuer2GvtCredential, issuer2gvtCredDef, null).get();
 
 		walletOpened = true;
 	}

@@ -1,10 +1,11 @@
+extern crate indy_crypto;
+extern crate rmp_serde;
 extern crate serde;
 extern crate serde_json;
-extern crate rmp_serde;
-extern crate indy_crypto;
+extern crate time;
 
 use std::cmp::Eq;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use super::zmq;
 use errors::common::CommonError;
@@ -13,7 +14,7 @@ use utils::crypto::verkey_builder::build_full_verkey;
 use self::indy_crypto::bls;
 
 use services::ledger::merkletree::merkletree::MerkleTree;
-use utils::json::{JsonDecodable, JsonEncodable};
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -66,10 +67,6 @@ impl JsonEncodable for NodeTransaction {}
 impl<'a> JsonDecodable<'a> for NodeTransaction {}
 
 impl NodeTransaction {
-    pub fn to_msg_pack(&self) -> Result<Vec<u8>, rmp_serde::encode::Error> {
-        rmp_serde::to_vec_named(self)
-    }
-
     pub fn update(&mut self, other: &mut NodeTransaction) -> Result<(), CommonError> {
         assert_eq!(self.dest, other.dest);
         assert_eq!(self.data.alias, other.data.alias);
@@ -207,11 +204,11 @@ pub enum Message {
 }
 
 impl Message {
-    pub fn from_raw_str(str: &str) -> Result<Message, serde_json::Error> {
+    pub fn from_raw_str(str: &str) -> Result<Message, CommonError> {
         match str {
             "po" => Ok(Message::Pong),
             "pi" => Ok(Message::Ping),
-            _ => Message::from_json(str),
+            _ => Message::from_json(str).map_err(CommonError::from),
         }
     }
 }
@@ -249,6 +246,7 @@ pub struct RemoteNode {
 pub struct CatchUpProcess {
     pub merkle_tree: MerkleTree,
     pub pending_reps: Vec<(CatchupRep, usize)>,
+    pub resp_not_received_node_idx: HashSet<usize>,
 }
 
 pub trait MinValue {
@@ -261,7 +259,7 @@ impl MinValue for Vec<(CatchupRep, usize)> {
         for (index, &(ref catchup_rep, _)) in self.iter().enumerate() {
             match res {
                 None => { res = Some((catchup_rep, index)); }
-                Some((min_rep, i)) => if catchup_rep.min_tx()? < min_rep.min_tx()? {
+                Some((min_rep, _)) => if catchup_rep.min_tx()? < min_rep.min_tx()? {
                     res = Some((catchup_rep, index));
                 }
             }
@@ -289,11 +287,22 @@ impl PartialEq for HashableValue {
     }
 }
 
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct ResendableRequest {
+    pub request: String,
+    pub start_node: usize,
+    pub next_node: usize,
+    pub next_try_send_time: Option<time::Tm>,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct CommandProcess {
     pub nack_cnt: usize,
     pub replies: HashMap<HashableValue, usize>,
-    pub cmd_ids: Vec<i32>,
+    pub parent_cmd_ids: Vec<i32>,
+    pub resendable_request: Option<ResendableRequest>,
+    pub full_cmd_timeout: Option<time::Tm>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -302,6 +311,7 @@ pub enum ZMQLoopAction {
     MessageToProcess(MessageToProcess),
     Terminate(i32),
     Refresh(i32),
+    Timeout,
 }
 
 #[derive(Debug, PartialEq, Eq)]

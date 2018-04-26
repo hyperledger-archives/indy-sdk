@@ -10,9 +10,9 @@
 #import "AnoncredsUtils.h"
 #import "LedgerUtils.h"
 #import "PoolUtils.h"
-#import "SignusUtils.h"
+#import "CryptoUtils.h"
+#import "DidUtils.h"
 #import "WalletUtils.h"
-#import "AgentUtils.h"
 #import "SequenceUtils.h"
 
 #import "NSDictionary+JSON.h"
@@ -21,35 +21,84 @@
 
 @interface TestUtils : NSObject
 
-+ (NSMutableString*) getUserDocumentDir;
-+ (NSMutableString*) getUserTmpDir;
-+ (NSTimeInterval) defaultTimeout;
-+ (NSTimeInterval) shortTimeout;
-+ (NSTimeInterval) longTimeout;
++ (NSMutableString *)getUserDocumentDir;
 
-+ (void) cleanupStorage;
++ (NSMutableString *)getUserTmpDir;
 
-+ (NSString *) testPoolIp;
++ (NSTimeInterval)defaultTimeout;
+
++ (NSTimeInterval)shortTimeout;
+
++ (NSTimeInterval)longTimeout;
+
++ (void)cleanupStorage;
+
++ (NSString *)testPoolIp;
+
 + (NSString *)tmpFilePathAppending:(NSString *)fileName;
+
 + (NSString *)pool;
+
++ (NSString *)wallet;
+
 + (NSData *)message;
+
 + (NSData *)encryptedMessage;
+
 + (NSData *)nonce;
+
 + (NSData *)signature;
+
 + (NSString *)trusteeSeed;
+
++ (NSString *)trusteeDid;
+
 + (NSString *)trusteeVerkey;
+
 + (NSString *)mySeed;
+
 + (NSString *)endpoint;
 
 + (NSString *)commonMasterSecretName;
+
 + (NSString *)issuerDid;
+
++ (NSString *)issuer2Did;
+
++ (NSString *)proverDid;
+
 + (IndyHandle)walletHandle;
 
 + (NSString *)mySeed1;
+
 + (NSString *)mySeed2;
+
++ (NSString *)myDid1;
+
 + (NSString *)myVerkey1;
+
 + (NSString *)invalidBase58Verkey;
+
 + (NSString *)someMetadata;
+
 + (NSString *)unknownDid;
+
++ (NSString *)defaultType;
+
++ (NSString *)keychainType;
+
++ (NSString *)gvtSchema;
+
++ (NSString *)gvtSchemaName;
+
++ (NSString *)schemaVersion;
+
++ (NSString *)gvtSchemaAttrs;
+
++ (NSString *)xyzSchemaName;
+
++ (NSString *)xyzSchemaAttrs;
+
++ (NSString *)tag;
 
 @end

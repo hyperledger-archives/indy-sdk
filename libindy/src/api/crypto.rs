@@ -151,7 +151,7 @@ pub  extern fn indy_get_key_metadata(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handler (created by open_wallet).
-/// my_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
+/// signer_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
 /// message_raw: a pointer to first byte of message to be signed
 /// message_len: a message length
 /// cb: Callback that takes command result as parameter.
@@ -166,19 +166,19 @@ pub  extern fn indy_get_key_metadata(command_handle: i32,
 #[no_mangle]
 pub  extern fn indy_crypto_sign(command_handle: i32,
                                 wallet_handle: i32,
-                                my_vk: *const c_char,
+                                signer_vk: *const c_char,
                                 message_raw: *const u8,
                                 message_len: u32,
                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                      signature_raw: *const u8, signature_len: u32)>) -> ErrorCode {
-    check_useful_c_str!(my_vk, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(signer_vk, ErrorCode::CommonInvalidParam3);
     check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
         .send(Command::Crypto(CryptoCommand::CryptoSign(
             wallet_handle,
-            my_vk,
+            signer_vk,
             message_raw,
             Box::new(move |result| {
                 let (err, signature) = result_to_err_code_1!(result, Vec::new());
@@ -197,10 +197,10 @@ pub  extern fn indy_crypto_sign(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
-/// their_vk: verkey to use
-/// message_raw: a pointer to first byte of message to be signed
+/// signer_vk: verkey of signer of the message
+/// message_raw: a pointer to first byte of message that has been signed
 /// message_len: a message length
-/// signature_raw: a a pointer to first byte of signature to be verified
+/// signature_raw: a pointer to first byte of signature to be verified
 /// signature_len: a signature length
 /// cb: Callback that takes command result as parameter.
 ///
@@ -214,21 +214,21 @@ pub  extern fn indy_crypto_sign(command_handle: i32,
 /// Crypto*
 #[no_mangle]
 pub  extern fn indy_crypto_verify(command_handle: i32,
-                                  their_vk: *const c_char,
+                                  signer_vk: *const c_char,
                                   message_raw: *const u8,
                                   message_len: u32,
                                   signature_raw: *const u8,
                                   signature_len: u32,
                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                        valid: bool)>) -> ErrorCode {
-    check_useful_c_str!(their_vk, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(signer_vk, ErrorCode::CommonInvalidParam2);
     check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam3, ErrorCode::CommonInvalidParam4);
     check_useful_c_byte_array!(signature_raw, signature_len, ErrorCode::CommonInvalidParam5, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Crypto(CryptoCommand::CryptoVerify(
-            their_vk,
+            signer_vk,
             message_raw,
             signature_raw,
             Box::new(move |result| {
@@ -248,23 +248,20 @@ pub  extern fn indy_crypto_verify(command_handle: i32,
 /// That shared secret key can be used to verify that the encrypted message was not tampered with,
 /// before eventually decrypting it.
 ///
-/// Recipient only needs Sender's public key, the nonce and the ciphertext to peform decryption.
-/// The nonce doesn't have to be confidential.
-///
 /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
 /// for specific DID.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handle (created by open_wallet).
-/// my_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
-/// their_vk: id (verkey) of their key
+/// sender_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
+/// recipient_vk: id (verkey) of their key
 /// message_raw: a pointer to first byte of message that to be encrypted
 /// message_len: a message length
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// an encrypted message and nonce
+/// an encrypted message as a pointer to array of bytes.
 ///
 /// #Errors
 /// Common*
@@ -272,31 +269,31 @@ pub  extern fn indy_crypto_verify(command_handle: i32,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_box(command_handle: i32,
-                               wallet_handle: i32,
-                               my_vk: *const c_char,
-                               their_vk: *const c_char,
-                               message_raw: *const u8,
-                               message_len: u32,
-                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                    encrypted_msg_raw: *const u8, encrypted_msg_len: u32,
-                                                    nonce_raw: *const u8, nonce_len: u32)>) -> ErrorCode {
-    check_useful_c_str!(my_vk, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(their_vk, ErrorCode::CommonInvalidParam4);
-    check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam5, ErrorCode::CommonInvalidParam6);
+pub  extern fn indy_crypto_auth_crypt(command_handle: i32,
+                                      wallet_handle: i32,
+                                      sender_vk: *const c_char,
+                                      recipient_vk: *const c_char,
+                                      msg_data: *const u8,
+                                      msg_len: u32,
+                                      cb: Option<extern fn(command_handle_: i32,
+                                                           err: ErrorCode,
+                                                           encrypted_msg: *const u8,
+                                                           encrypted_len: u32)>) -> ErrorCode {
+    check_useful_c_str!(sender_vk, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam4);
+    check_useful_c_byte_array!(msg_data, msg_len, ErrorCode::CommonInvalidParam5, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
-        .send(Command::Crypto(CryptoCommand::CryptoBox(
+        .send(Command::Crypto(CryptoCommand::AuthenticatedEncrypt(
             wallet_handle,
-            my_vk,
-            their_vk,
-            message_raw,
+            sender_vk,
+            recipient_vk,
+            msg_data,
             Box::new(move |result| {
-                let (err, encrypted_msg, nonce) = result_to_err_code_2!(result, Vec::new(), Vec::new());
+                let (err, encrypted_msg) = result_to_err_code_1!(result, Vec::new());
                 let (encrypted_msg_raw, encrypted_msg_len) = vec_to_pointer(&encrypted_msg);
-                let (nonce_raw, nonce_len) = vec_to_pointer(&nonce);
-                cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len, nonce_raw, nonce_len)
+                cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
             })
         )));
 
@@ -311,58 +308,49 @@ pub  extern fn indy_crypto_box(command_handle: i32,
 /// That shared secret key can be used to verify that the encrypted message was not tampered with,
 /// before eventually decrypting it.
 ///
-/// Recipient only needs Sender's public key, the nonce and the ciphertext to peform decryption.
-/// The nonce doesn't have to be confidential.
-///
 /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
 /// for specific DID.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handler (created by open_wallet).
-/// my_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
-/// their_vk: id (verkey) of their key
+/// recipient_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
 /// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
 /// encrypted_msg_len: a message length
-/// nonce_raw: a pointer to first byte of nonce that encrypted message
-/// nonce_len: a nonce length
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// decrypted message
+/// sender verkey and decrypted message as a pointer to array of bytes
 ///
 /// #Errors
 /// Common*
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_box_open(command_handle: i32,
-                                    wallet_handle: i32,
-                                    my_vk: *const c_char,
-                                    their_vk: *const c_char,
-                                    encrypted_msg_raw: *const u8,
-                                    encrypted_msg_len: u32,
-                                    nonce_raw: *const u8,
-                                    nonce_len: u32,
-                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                         decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) -> ErrorCode {
-    check_useful_c_str!(my_vk, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(their_vk, ErrorCode::CommonInvalidParam4);
-    check_useful_c_byte_array!(encrypted_msg_raw, encrypted_msg_len, ErrorCode::CommonInvalidParam5, ErrorCode::CommonInvalidParam6);
-    check_useful_c_byte_array!(nonce_raw, nonce_len, ErrorCode::CommonInvalidParam7, ErrorCode::CommonInvalidParam8);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
+pub  extern fn indy_crypto_auth_decrypt(command_handle: i32,
+                                        wallet_handle: i32,
+                                        recipient_vk: *const c_char,
+                                        encrypted_msg: *const u8,
+                                        encrypted_len: u32,
+                                        cb: Option<extern fn(command_handle_: i32,
+                                                             err: ErrorCode,
+                                                             sender_vk: *const c_char,
+                                                             msg_data: *const u8,
+                                                             msg_len: u32)>) -> ErrorCode {
+    check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam3);
+    check_useful_c_byte_array!(encrypted_msg, encrypted_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Crypto(CryptoCommand::CryptoBoxOpen(
+        .send(Command::Crypto(CryptoCommand::AuthenticatedDecrypt(
             wallet_handle,
-            my_vk,
-            their_vk,
-            encrypted_msg_raw,
-            nonce_raw,
+            recipient_vk,
+            encrypted_msg,
             Box::new(move |result| {
-                let (err, decrypted_msg) = result_to_err_code_1!(result, Vec::new());
-                let (decrypted_msg_raw, decrypted_msg_len) = vec_to_pointer(&decrypted_msg);
-                cb(command_handle, err, decrypted_msg_raw, decrypted_msg_len)
+                let (err, sender_vk, msg) = result_to_err_code_2!(result, String::new(), Vec::new());
+                let (msg_data, msg_len) = vec_to_pointer(&msg);
+                let sender_vk = CStringUtils::string_to_cstring(sender_vk);
+                cb(command_handle, err, sender_vk.as_ptr(), msg_data, msg_len)
             })
         )));
 
@@ -380,13 +368,13 @@ pub  extern fn indy_crypto_box_open(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
-/// their_vk: id (verkey) of their key
+/// recipient_vk: verkey of message recipient
 /// message_raw: a pointer to first byte of message that to be encrypted
 /// message_len: a message length
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// an encrypted message
+/// an encrypted message as a pointer to array of bytes
 ///
 /// #Errors
 /// Common*
@@ -394,20 +382,22 @@ pub  extern fn indy_crypto_box_open(command_handle: i32,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_box_seal(command_handle: i32,
-                                    their_vk: *const c_char,
-                                    message_raw: *const u8,
-                                    message_len: u32,
-                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                         encrypted_msg_raw: *const u8, encrypted_msg_len: u32)>) -> ErrorCode {
-    check_useful_c_str!(their_vk, ErrorCode::CommonInvalidParam2);
-    check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam3, ErrorCode::CommonInvalidParam4);
+pub  extern fn indy_crypto_anon_crypt(command_handle: i32,
+                                      recipient_vk: *const c_char,
+                                      msg_data: *const u8,
+                                      msg_len: u32,
+                                      cb: Option<extern fn(command_handle_: i32,
+                                                           err: ErrorCode,
+                                                           encrypted_msg: *const u8,
+                                                           encrypted_len: u32)>) -> ErrorCode {
+    check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam2);
+    check_useful_c_byte_array!(msg_data, msg_len, ErrorCode::CommonInvalidParam3, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
-        .send(Command::Crypto(CryptoCommand::CryptoBoxSeal(
-            their_vk,
-            message_raw,
+        .send(Command::Crypto(CryptoCommand::AnonymousEncrypt(
+            recipient_vk,
+            msg_data,
             Box::new(move |result| {
                 let (err, encrypted_msg) = result_to_err_code_1!(result, Vec::new());
                 let (encrypted_msg_raw, encrypted_msg_len) = vec_to_pointer(&encrypted_msg);
@@ -430,39 +420,41 @@ pub  extern fn indy_crypto_box_seal(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handler (created by open_wallet).
-/// my_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
+/// recipient_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
 /// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
 /// encrypted_msg_len: a message length
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// decrypted message
+/// decrypted message as a pointer to an array of bytes
 ///
 /// #Errors
 /// Common*
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_crypto_box_seal_open(command_handle: i32,
-                                         wallet_handle: i32,
-                                         my_vk: *const c_char,
-                                         encrypted_msg_raw: *const u8,
-                                         encrypted_msg_len: u32,
-                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                              decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) -> ErrorCode {
-    check_useful_c_str!(my_vk, ErrorCode::CommonInvalidParam3);
-    check_useful_c_byte_array!(encrypted_msg_raw, encrypted_msg_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
+pub  extern fn indy_crypto_anon_decrypt(command_handle: i32,
+                                        wallet_handle: i32,
+                                        recipient_vk: *const c_char,
+                                        encrypted_msg: *const u8,
+                                        encrypted_len: u32,
+                                        cb: Option<extern fn(command_handle_: i32,
+                                                             err: ErrorCode,
+                                                             msg_data: *const u8,
+                                                             msg_len: u32)>) -> ErrorCode {
+    check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam3);
+    check_useful_c_byte_array!(encrypted_msg, encrypted_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Crypto(CryptoCommand::CryptoBoxSealOpen(
+        .send(Command::Crypto(CryptoCommand::AnonymousDecrypt(
             wallet_handle,
-            my_vk,
-            encrypted_msg_raw,
+            recipient_vk,
+            encrypted_msg,
             Box::new(move |result| {
-                let (err, decrypted_msg) = result_to_err_code_1!(result, Vec::new());
-                let (decrypted_msg_raw, decrypted_msg_len) = vec_to_pointer(&decrypted_msg);
-                cb(command_handle, err, decrypted_msg_raw, decrypted_msg_len)
+                let (err, msg) = result_to_err_code_1!(result, Vec::new());
+                let (msg_data, msg_len) = vec_to_pointer(&msg);
+                cb(command_handle, err, msg_data, msg_len)
             })
         )));
 

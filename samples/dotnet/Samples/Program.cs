@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Samples
@@ -16,8 +17,9 @@ namespace Hyperledger.Indy.Samples
         static async Task ExecuteDemos()
         {
             await AnonCredsDemo.Execute();
+            await AnonCredsRevocationDemo.Execute();
             await LedgerDemo.Execute();
-            await SignusDemo.Execute();
+            await CryptoDemo.Execute();
         }
     }
 }

@@ -7,7 +7,7 @@ def testing() {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
                 'macos-test'  : { macosTesting() },
-//                'ios-test'    : { iosTesting() },
+                'ios-test'    : { iosTesting() },
                 'redhat-test' : { rhelTesting() },
                 'windows-test': { windowsTesting() }
         ])
@@ -17,55 +17,86 @@ def testing() {
 def windowsTesting() {
     node('win2016') {
         stage('Windows Test') {
-            echo "Windows Test: Checkout scm"
-            checkout scm
+            def ws_path = "workspace/${env.JOB_NAME}".replace(' ', '_')
+            ws(ws_path) {
+                try {
+                    echo "Windows Test: Checkout scm"
+                    checkout scm
 
-            try {
-                echo "Windows Test: Run Indy pool"
-                bat "docker -H $INDY_SDK_SERVER_IP build --build-arg pool_ip=$INDY_SDK_SERVER_IP -f ci/indy-pool.dockerfile -t indy_pool ci"
-                bat "docker -H $INDY_SDK_SERVER_IP run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+                    echo "Windows Test: Run Indy pool"
+                    bat "docker -H $INDY_SDK_SERVER_IP build --build-arg pool_ip=$INDY_SDK_SERVER_IP -f ci/indy-pool.dockerfile -t indy_pool ci"
+                    bat "docker -H $INDY_SDK_SERVER_IP run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 
-                dir('libindy') {
-                    echo "Windows Test: Download prebuilt dependencies"
-                    bat 'wget -O prebuilt.zip "https://repo.sovrin.org/windows/libindy/deps/indy-sdk-deps.zip"'
-                    bat 'unzip prebuilt.zip -d prebuilt'
+                    setupRust()
 
-                    echo "Windows Test: Build"
-                    withEnv([
-                            "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "MILAGRO_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "ZMQPW_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "SODIUM_LIB_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
-                            "RUST_BACKTRACE=1"
-                    ]) {
-                        bat "cargo test --no-run"
+                    dir('libindy') {
+                        echo "Windows Test: Download prebuilt dependencies"
+                        bat 'wget -O prebuilt.zip "https://repo.sovrin.org/windows/libindy/deps/indy-sdk-deps.zip"'
+                        bat 'unzip prebuilt.zip -d prebuilt'
 
-                        echo "Windows Test: Run tests"
+                        echo "Windows Libindy Test: Build"
                         withEnv([
-                                "RUST_TEST_THREADS=1",
-                                "RUST_LOG=trace",
-                                "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
+                                "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "INDY_CRYPTO_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "MILAGRO_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "LIBZMQ_PREFIX=$WORKSPACE\\libindy\\prebuilt",
+                                "SODIUM_LIB_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
+                                "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo test"
+                            bat "cargo test --no-run"
+
+                            echo "Windows Libindy Test: Run tests"
+                            withEnv([
+                                    "RUST_TEST_THREADS=1",
+                                    "RUST_LOG=indy::,zmq=trace",
+                                    "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
+                            ]) {
+                                bat "cargo test"
+                            }
                         }
                     }
-                }
 
-                //TODO wrappers testing
+                    dir('cli') {
+                        bat "sed -i -e \"s/10\\.0\\.0\\.2/${INDY_SDK_SERVER_IP}/g\" docker_pool_transactions_genesis"
 
-            } finally {
-                try {
-                    bat "docker -H $INDY_SDK_SERVER_IP stop indy_pool"
-                } catch (ignore) {
+                        bat "copy $WORKSPACE\\libindy\\target\\debug\\indy.dll $WORKSPACE\\libindy\\prebuilt\\lib"
+                        bat "copy $WORKSPACE\\libindy\\target\\debug\\indy.lib $WORKSPACE\\libindy\\prebuilt\\lib"
+
+                        echo "Windows Indy Cli Test: Build"
+                        withEnv([
+                                "INDY_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "RUST_BACKTRACE=1"
+                        ]) {
+                            bat "cargo test --no-run"
+
+                            echo "Windows Indy Cli Test: Run tests"
+                            withEnv([
+                                    "RUST_TEST_THREADS=1",
+                                    "RUST_LOG=indy::,zmq=trace",
+                                    "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
+                            ]) {
+                                bat "cargo test"
+                            }
+                        }
+                    }
+
+                    //TODO wrappers testing
+
+                } finally {
+                    try {
+                        bat "docker -H $INDY_SDK_SERVER_IP stop indy_pool"
+                    } catch (ignore) {
+                    }
+                    try {
+                        bat "docker -H $INDY_SDK_SERVER_IP rm indy_pool"
+                    } catch (ignore) {
+                    }
+                    cleanWs()
                 }
-                try {
-                    bat "docker -H $INDY_SDK_SERVER_IP rm indy_pool"
-                } catch (ignore) {
-                }
-                step([$class: 'WsCleanup'])
             }
+            cleanWs()
         }
     }
 }
@@ -79,8 +110,9 @@ def macosTesting() {
 
                 dir('libindy') {
                     echo "MacOS Test: Build"
+                    setupRust()
+                    setupBrewPackages()
                     sh "cargo build"
-
                     // TODO testing
                 }
 
@@ -100,17 +132,22 @@ def iosTesting() {
                 checkout scm
 
                 echo "iOS Test: Running pool"
+                sh "docker rm -f indy_pool || true"
                 sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
-                sh "docker run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+                sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+
+                setupRust()
+                setupRustIOS()
+                setupBrewPackages()
 
                 dir('libindy') {
                     echo 'iOS Test: build libindy pod'
-                    sh './build-libindy-ios.sh'
+                    sh './build-libindy-ios.sh x86_64-apple-ios'
                 }
 
                 dir('wrappers/ios/libindy-pod') {
                     echo "iOS Test: Installing dependencies (pods)"
-                    sh "pod install"
+                    sh "pod install --repo-update"
                 }
 
                 // FIXME replace this hack (manually rewrite installed pod)
@@ -119,7 +156,7 @@ def iosTesting() {
 
                 dir('wrappers/ios/libindy-pod') {
                     echo "iOS Test: Testing"
-                    sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone 7 Plus,OS=10.3.1'"
+                    sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
                 }
             } finally {
                 try {
@@ -139,7 +176,7 @@ def iosTesting() {
 def ubuntuTesting() {
     node('ubuntu') {
         stage('Ubuntu Test') {
-            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", true, "pool_network")
+            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network")
         }
     }
 }
@@ -147,12 +184,12 @@ def ubuntuTesting() {
 def rhelTesting() {
     node('ubuntu') {
         stage('RedHat Test') {
-            linuxTesting("ci/amazon.dockerfile ci", "RedHat", false, "pool_network")
+            linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network")
         }
     }
 }
 
-def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
+def linuxTesting(file, env_name, network_name) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -163,57 +200,112 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
         def testEnv
 
         dir('libindy') {
-            echo "${env_name} Test: Build docker image"
+            echo "${env_name} Libindy Test: Build docker image"
             testEnv = dockerBuild('libindy', file)
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Test: Test"
-
-                def featuresArgs = ''
-                if (run_interoperability_tests) {
-                    sh 'chmod -R 777 /home/indy/indy-anoncreds/'
-                    featuresArgs = '--features "interoperability_tests"'
-                }
-
-                echo "${env_name} Test: Build"
-                sh "RUST_BACKTRACE=1 cargo test $featuresArgs --no-run"
-
-                echo "${env_name} Test: Run tests"
-                sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test $featuresArgs"
+                echo "${env_name} Libindy Test: Build"
+                sh "cargo build"
             }
         }
 
         sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
-        dir('wrappers/java') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Test: Test java wrapper"
-
-                sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
-            }
-        }
-
         sh "cp libindy/target/debug/libindy.so wrappers/python"
-        dir('wrappers/python') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Test: Test python wrapper"
+        sh "cp libindy/target/debug/libindy.so cli"
 
-                sh '''
-                    python3.5 -m pip install --user -e .
-                    LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
-                '''
-            }
-        }
+        stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
+        stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
+        stash includes: 'cli/libindy.so', name: "LibindyCliSO${env_name}"
+
+        parallel([
+                "${env_name}-libindy-test": {
+                    dir('libindy') {
+                        testEnv.inside("--network=${network_name}") {
+                            echo "${env_name} Libindy Test: Test"
+
+                            echo "${env_name} Libindy Test: Build Test"
+                            sh "RUST_BACKTRACE=1 cargo test --no-run"
+
+                            echo "${env_name} Libindy Test: Run tests"
+                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
+                        }
+                    }
+                },
+                "${env_name}-java-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
+                "${env_name}-python-test" : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
+                "${env_name}-cli-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) }
+        ])
     }
     finally {
         closePool(env_name, network_name, poolInst)
     }
 }
 
+def linuxModuleTesting(file, env_name, network_name, module_tester) {
+    node('ubuntu') {
+        def poolInst
+        try {
+            echo "${env_name} Test: Checkout csm"
+            checkout scm
+
+            poolInst = openPool(env_name, network_name)
+
+            def testEnv
+
+            dir('libindy') {
+                echo "${env_name} Libindy Test: Build docker image"
+                testEnv = dockerBuild('libindy', file)
+            }
+
+            module_tester(env_name, network_name, testEnv)
+        } finally {
+            closePool(env_name, network_name, poolInst)
+        }
+    }
+}
+
+def linuxJavaTesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyJavaSO${env_name}"
+    dir('wrappers/java') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Libindy Test: Test java wrapper"
+
+            sh "RUST_LOG=indy::,zmq=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+        }
+    }
+}
+
+def linuxPythonTesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyPythonSO${env_name}"
+    dir('wrappers/python') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Libindy Test: Test python wrapper"
+
+            sh '''
+                python3.5 -m pip install --user -e .
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::,zmq=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+            '''
+        }
+    }
+}
+
+def linuxCLITesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyCliSO${env_name}"
+    dir('cli') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Indy Cli Test: Build"
+            sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
+
+            echo "${env_name} Indy Cli Test: Run tests"
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
+        }
+    }
+}
+
 def getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver) {
     if (pool_type != null && plenum_ver != null && anoncreds_ver != null && node_ver != null) {
         return "--build-arg=indy_stream=${pool_type} --build-arg indy_plenum_ver=${plenum_ver} --build-arg indy_anoncreds_ver=${anoncreds_ver} --build-arg indy_node_ver=${node_ver}"
-    }
-    else {
+    } else {
         return ""
     }
 }
@@ -222,49 +314,70 @@ def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
-def dockerBuild(name, file='ci/ubuntu.dockerfile ci', customParams='') {
-  return docker.build("$name-test", "--build-arg uid=${getUserUid()} ${customParams} -f $file")
+def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
+    return docker.build("$name-test", "--build-arg uid=${getUserUid()} ${customParams} -f $file")
+}
+
+def dockerClean(env_name, network_name) {
+    try {
+        try {
+            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f || true" //TODO: FIXME
+        } catch (error) {
+            echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
+        }
+        try {
+            echo "${env_name} Test: remove pool network ${network_name}"
+            sh "docker network rm ${network_name} || true" //TODO: FIXME
+        } catch (error) {
+            echo "${env_name} Test: error while delete ${network_name} - ${error}"
+        }
+    }
+    finally {
+        sh "docker container prune -f"
+        sh "docker network prune -f"
+    }
 }
 
 def openPool(env_name, network_name, pool_type = null, pool_ver = null, plenum_ver = null, anoncreds_ver = null, node_ver = null) {
+    echo "${env_name} Test: Clean docker"
+    dockerClean(env_name, network_name)
+
     echo "${env_name} Test: Create docker network (${network_name}) for nodes pool and test image"
     sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
 
     echo "${env_name} Test: Build docker image for nodes pool ver. ${pool_ver}"
     echo "${env_name} Test: Building nodes pool for versions: plenum ${plenum_ver}, anoncreds ${anoncreds_ver}, node ${node_ver}"
     verOptions = getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver)
-    def poolEnv = dockerBuild("indy_pool_${pool_ver}", 'ci/indy-pool.dockerfile ci',"--build-arg pool_ip=10.0.0.2 ${verOptions}")
+    def poolEnv = dockerBuild("indy_pool_${pool_ver}", 'ci/indy-pool.dockerfile ci', "--build-arg pool_ip=10.0.0.2 ${verOptions}")
     echo "${env_name} Test: Run nodes pool"
     return poolEnv.run("--ip=\"10.0.0.2\" --network=${network_name}")
 }
 
 def closePool(env_name, network_name, poolInst) {
     echo "${env_name} Test: Cleanup"
-    if (network_name != null) {
-        try {
-            sh "docker network inspect ${network_name}"
-        } catch (error) {
-            echo "${env_name} Tests: error while inspect network ${network_name} - ${error}"
-        }
-    }
     try {
         echo "${env_name} Test: stop pool"
         poolInst.stop()
     } catch (error) {
         echo "${env_name} Tests: error while stop pool ${error}"
     }
-    if (network_name != null) {
-        try {
-            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f"
-        } catch (error) {
-            echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
-        }
-        try {
-            echo "${env_name} Test: remove pool network ${network_name}"
-            sh "docker network rm ${network_name}"
-        } catch (error) {
-            echo "${env_name} Test: error while delete ${network_name} - ${error}"
-        }
+    finally {
+        dockerClean(env_name, network_name)
     }
     step([$class: 'WsCleanup'])
 }
+
+def setupRust() {
+    sh "rustup default 1.25.0"
+}
+
+def setupRustIOS() {
+    sh "rustup target add x86_64-apple-ios"
+}
+
+def setupBrewPackages() {
+    sh "brew switch libsodium 1.0.12"
+    sh "brew switch openssl 1.0.2l"
+    sh "brew switch zeromq 4.2.3"
+}
+

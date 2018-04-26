@@ -42,7 +42,7 @@
 
 +(NSTimeInterval) longTimeout
 {
-    return  100;
+    return  200;
 }
 
 + (NSString *)tmpFilePathAppending:(NSString *)fileName
@@ -58,6 +58,11 @@
 + (NSString *)pool
 {
     return @"pool_1";
+}
+
++ (NSString *)wallet
+{
+    return @"wallet_1";
 }
 
 + (NSData *)message
@@ -89,6 +94,11 @@
     return @"000000000000000000000000Trustee1";
 }
 
++ (NSString *)trusteeDid
+{
+    return @"V4SGRU86Z58d6TV7PBUe6f";
+}
+
 + (NSString *)trusteeVerkey
 {
     return @"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL";
@@ -114,6 +124,16 @@
     return @"NcYxiDXkpYi6ov5FcYDi1e";
 }
 
++ (NSString *)issuer2Did
+{
+    return @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
+}
+
++ (NSString *)proverDid
+{
+    return @"VsKV7grR1BUE29mG2Fm2kX";
+}
+
 + (IndyHandle)walletHandle
 {
     return 0;
@@ -127,6 +147,11 @@
 + (NSString *)mySeed2
 {
     return @"00000000000000000000000000000My2";
+}
+
++ (NSString *)myDid1
+{
+    return @"VsKV7grR1BUE29mG2Fm2kX";
 }
 
 + (NSString *)myVerkey1
@@ -148,4 +173,46 @@
 {
     return @"NcYxiDXkpYi6ov5FcYDi1e";
 }
+
++ (NSString *)defaultType
+{
+    return @"default";
+}
+
++ (NSString *)keychainType
+{
+    return @"keychain";
+}
+
++ (NSString *)gvtSchema {
+    return @"{\"id\":\"id\", \"name\":\"gvt\",\"version\":\"1.0\",\"attrNames\":[\"name\"],\"ver\":\"1.0\"}";
+}
+
++ (NSString *)gvtSchemaName {
+    return @"gvt";
+}
+
++ (NSString *)schemaVersion {
+    return @"1.0";
+}
+
++ (NSString *)gvtSchemaAttrs {
+    return @"[\"age\",\"sex\",\"height\",\"name\"]";
+}
+
+
++ (NSString *)xyzSchemaName {
+    return @"xyz";
+}
+
++ (NSString *)xyzSchemaAttrs {
+    return @"[\"status\",\"period\"]";
+}
+
++ (NSString *)tag {
+    return @"TAG1";
+}
+
+
+
 @end

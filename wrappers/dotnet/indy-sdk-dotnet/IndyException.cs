@@ -1,7 +1,7 @@
 ﻿using Hyperledger.Indy.AnonCredsApi;
 using Hyperledger.Indy.LedgerApi;
 using Hyperledger.Indy.PoolApi;
-using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.WalletApi;
 using System;
 

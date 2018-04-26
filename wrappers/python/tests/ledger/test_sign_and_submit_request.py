@@ -1,6 +1,6 @@
 import json
 
-from indy import wallet, signus, ledger
+from indy import wallet, did, ledger
 from indy.error import ErrorCode, IndyError
 import pytest
 
@@ -55,8 +55,8 @@ async def test_sign_and_submit_request_works_for_incompatible_wallet_and_pool(po
     await wallet.create_wallet(pool_name, wallet_name, None, None, None)
     wallet_handle = await wallet.open_wallet(wallet_name, None, None)
 
-    (my_did, _) = await signus.create_and_store_my_did(wallet_handle, json.dumps({"seed": seed_my1}))
-    (trustee_did, _) = await signus.create_and_store_my_did(wallet_handle, json.dumps({"seed": seed_trustee1}))
+    (my_did, _) = await did.create_and_store_my_did(wallet_handle, json.dumps({"seed": seed_my1}))
+    (trustee_did, _) = await did.create_and_store_my_did(wallet_handle, json.dumps({"seed": seed_trustee1}))
 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, None, None, None)
 

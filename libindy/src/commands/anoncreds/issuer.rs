@@ -1,302 +1,686 @@
 extern crate serde_json;
+extern crate indy_crypto;
 
-use errors::anoncreds::AnoncredsError;
 use errors::indy::IndyError;
+use errors::anoncreds::AnoncredsError;
 use errors::common::CommonError;
 
 use services::anoncreds::AnoncredsService;
+use services::anoncreds::helpers::parse_cred_rev_id;
+use services::blob_storage::BlobStorageService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
-use services::anoncreds::types::{
-    ClaimDefinition,
-    ClaimDefinitionPrivate,
-    ClaimJson,
-    ClaimRequestJson,
-    RevocationRegistry,
-    RevocationRegistryPrivate,
-    Schema
-};
-use services::anoncreds::helpers::get_composite_id;
+use services::crypto::CryptoService;
 use std::rc::Rc;
-use std::collections::HashMap;
-use utils::json::{JsonDecodable, JsonEncodable};
-use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
+use self::indy_crypto::cl::{
+    CredentialKeyCorrectnessProof,
+    CredentialPrivateKey,
+    RevocationKeyPrivate,
+    RevocationRegistryDelta as CryptoRevocationRegistryDelta,
+    Witness,
+    new_nonce
+};
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use super::tails::{SDKTailsAccessor, store_tails_from_generator};
+use domain::schema::{Schema, SchemaV1};
+use domain::credential_definition::{
+    CredentialDefinition,
+    CredentialDefinitionV1,
+    CredentialDefinitionConfig,
+    SignatureType
+};
+use domain::revocation_registry_definition::{
+    RevocationRegistryConfig,
+    IssuanceType,
+    RegistryType,
+    RevocationRegistryDefinitionValue,
+    RevocationRegistryDefinition,
+    RevocationRegistryDefinitionV1
+};
+use domain::revocation_registry::{
+    RevocationRegistry,
+    RevocationRegistryV1
+};
+use domain::revocation_registry_delta::{
+    RevocationRegistryDelta,
+    RevocationRegistryDeltaV1
+};
+use domain::credential::{AttributeValues, Credential};
+use domain::credential_offer::CredentialOffer;
+use domain::credential_request::CredentialRequest;
 
 pub enum IssuerCommand {
-    CreateAndStoreClaimDefinition(
+    CreateSchema(
+        String, // issuer did
+        String, // name
+        String, // version
+        String, // attribute names
+        Box<Fn(Result<(String, String), IndyError>) + Send>),
+    CreateAndStoreCredentialDefinition(
         i32, // wallet handle
         String, // issuer did
         String, // schema json
-        Option<String>, // signature type
-        bool,
-        Box<Fn(Result<String, IndyError>) + Send>),
+        String, // tag
+        Option<String>, // type
+        String, // config_json
+        Box<Fn(Result<(String, String), IndyError>) + Send>),
     CreateAndStoreRevocationRegistry(
         i32, // wallet handle
         String, // issuer did
-        i32, // schema seq no
-        i32, // max claim num
-        Box<Fn(Result<String, IndyError>) + Send>),
-    CreateClaim(
+        Option<String>, // type
+        String, // tag
+        String, // credential definition id
+        String, // config
+        i32, // tails writer handle
+        Box<Fn(Result<(String, String, String), IndyError>) + Send>),
+    CreateCredentialOffer(
         i32, // wallet handle
-        String, // claim req json
-        String, // claim json
-        Option<i32>, // user revoc index
-        Box<Fn(Result<(String, String), IndyError>) + Send>),
-    RevokeClaim(
-        i32, // wallet handle
-        String, // issuer did
-        i32, // schema seq no
-        i32, // user revoc index
+        String, // credential definition id
         Box<Fn(Result<String, IndyError>) + Send>),
+    CreateCredential(
+        i32, // wallet handle
+        String, // credential offer json
+        String, // credential request json
+        String, // credential values json
+        Option<String>, // revocation registry id
+        Option<i32>, // blob storage reader config handle
+        Box<Fn(Result<(String, Option<String>, Option<String>), IndyError>) + Send>),
+    RevokeCredential(
+        i32, // wallet handle
+        i32, // blob storage reader config handle
+        String, //revocation revoc id
+        String, //credential revoc id
+        Box<Fn(Result<String, IndyError>) + Send>),
+    /*    RecoverCredential(
+            i32, // wallet handle
+            i32, // blob storage reader config handle
+            String, //revocation revoc id
+            String, //credential revoc id
+            Box<Fn(Result<String, IndyError>) + Send>),*/
+    MergeRevocationRegistryDeltas(
+        String, //revocation registry delta json
+        String, //other revocation registry delta json
+        Box<Fn(Result<String, IndyError>) + Send>)
 }
 
 pub struct IssuerCommandExecutor {
     pub anoncreds_service: Rc<AnoncredsService>,
+    pub blob_storage_service: Rc<BlobStorageService>,
     pub pool_service: Rc<PoolService>,
-    pub wallet_service: Rc<WalletService>
+    pub wallet_service: Rc<WalletService>,
+    pub crypto_service: Rc<CryptoService>
 }
 
 impl IssuerCommandExecutor {
     pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
-               wallet_service: Rc<WalletService>) -> IssuerCommandExecutor {
+               blob_storage_service: Rc<BlobStorageService>,
+               wallet_service: Rc<WalletService>,
+               crypto_service: Rc<CryptoService>) -> IssuerCommandExecutor {
         IssuerCommandExecutor {
-            anoncreds_service: anoncreds_service,
-            pool_service: pool_service,
-            wallet_service: wallet_service,
+            anoncreds_service,
+            pool_service,
+            blob_storage_service,
+            wallet_service,
+            crypto_service,
         }
     }
 
     pub fn execute(&self, command: IssuerCommand) {
         match command {
-            IssuerCommand::CreateAndStoreClaimDefinition(wallet_handle, issuer_did, schema_json, signature_type, create_non_revoc, cb) => {
-                info!(target: "issuer_command_executor", "CreateAndStoreClaim command received");
-                self.create_and_store_claim_definition(wallet_handle, &issuer_did, &schema_json,
-                                                       signature_type.as_ref().map(String::as_str), create_non_revoc, cb);
+            IssuerCommand::CreateSchema(issuer_did, name, version, attrs, cb) => {
+                trace!(target: "issuer_command_executor", "CreateSchema command received");
+                cb(self.create_schema(&issuer_did, &name, &version, &attrs));
             }
-            IssuerCommand::CreateAndStoreRevocationRegistry(wallet_handle, issuer_did, schema_seq_no, max_claim_num, cb) => {
-                info!(target: "issuer_command_executor", "CreateAndStoreRevocationRegistryRegistry command received");
-                self.create_and_store_revocation_registry(wallet_handle, &issuer_did, schema_seq_no, max_claim_num, cb);
+            IssuerCommand::CreateAndStoreCredentialDefinition(wallet_handle, issuer_did, schema_json, tag, type_, config_json, cb) => {
+                trace!(target: "issuer_command_executor", "CreateAndStoreCredentialDefinition command received");
+                cb(self.create_and_store_credential_definition(wallet_handle, &issuer_did, &schema_json, &tag,
+                                                               type_.as_ref().map(String::as_str), &config_json));
             }
-            IssuerCommand::CreateClaim(wallet_handle, claim_req_json, claim_json, user_revoc_index, cb) => {
-                info!(target: "issuer_command_executor", "CreateClaim command received");
-                self.create_claim(wallet_handle, &claim_req_json, &claim_json,
-                                  user_revoc_index, cb);
+            IssuerCommand::CreateAndStoreRevocationRegistry(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json,
+                                                            tails_writer_handle, cb) => {
+                trace!(target: "issuer_command_executor", "CreateAndStoreRevocationRegistryRegistry command received");
+                cb(self.create_and_store_revocation_registry(wallet_handle,
+                                                             &issuer_did,
+                                                             type_.as_ref().map(String::as_str),
+                                                             &tag,
+                                                             &cred_def_id,
+                                                             &config_json,
+                                                             tails_writer_handle));
             }
-            IssuerCommand::RevokeClaim(wallet_handle, issuer_did, schema_seq_no,
-                                       user_revoc_index, cb) => {
-                info!(target: "issuer_command_executor", "RevokeClaim command received");
-                self.revoke_claim(wallet_handle, &issuer_did, schema_seq_no, user_revoc_index, cb);
+            IssuerCommand::CreateCredentialOffer(wallet_handle, cred_def_id, cb) => {
+                trace!(target: "issuer_command_executor", "CreateCredentialOffer command received");
+                cb(self.create_credential_offer(wallet_handle, &cred_def_id));
+            }
+            IssuerCommand::CreateCredential(wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle, cb) => {
+                info!(target: "issuer_command_executor", "CreateCredential command received");
+                cb(self.new_credential(wallet_handle, &cred_offer_json, &cred_req_json, &cred_values_json, rev_reg_id.as_ref().map(String::as_str), blob_storage_reader_handle));
+            }
+            IssuerCommand::RevokeCredential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id, cb) => {
+                trace!(target: "issuer_command_executor", "RevokeCredential command received");
+                cb(self.revoke_credential(wallet_handle, blob_storage_reader_handle, &rev_reg_id, &cred_revoc_id));
+            }
+            /*            IssuerCommand::RecoverCredential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id, cb) => {
+                            trace!(target: "issuer_command_executor", "RecoverCredential command received");
+                            cb(self.recovery_credential(wallet_handle, blob_storage_reader_handle, &rev_reg_id, &cred_revoc_id));
+                        }*/
+            IssuerCommand::MergeRevocationRegistryDeltas(rev_reg_delta_json, other_rev_reg_delta_json, cb) => {
+                trace!(target: "issuer_command_executor", "MergeRevocationRegistryDeltas command received");
+                cb(self.merge_revocation_registry_deltas(&rev_reg_delta_json, &other_rev_reg_delta_json));
             }
         };
     }
 
-    fn create_and_store_claim_definition(&self,
-                                         wallet_handle: i32,
-                                         issuer_did: &str,
-                                         schema_json: &str,
-                                         signature_type: Option<&str>,
-                                         create_non_revoc: bool,
-                                         cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let result = self._create_and_store_claim_definition(wallet_handle, issuer_did, schema_json,
-                                                             signature_type, create_non_revoc);
-        cb(result)
+    fn create_schema(&self,
+                     issuer_did: &str,
+                     name: &str,
+                     version: &str,
+                     attrs: &str) -> Result<(String, String), IndyError> {
+        trace!("create_schema >>> issuer_did: {:?}, name: {:?}, version: {:?}, attrs: {:?}", issuer_did, name, version, attrs);
+
+        self.crypto_service.validate_did(issuer_did)?;
+
+        let attrs: HashSet<String> = serde_json::from_str(attrs)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize AttributeNames: {:?}", err)))?;
+
+        if attrs.is_empty() {
+            return Err(IndyError::CommonError(CommonError::InvalidStructure(format!("List of Schema attributes is empty"))));
+        }
+
+        let schema_id = Schema::schema_id(issuer_did, name, version);
+
+        let schema = Schema::SchemaV1(SchemaV1 {
+            id: schema_id.clone(),
+            name: name.to_string(),
+            version: version.to_string(),
+            attr_names: attrs,
+            seq_no: None
+        });
+
+        let schema_json = schema.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize Schema: {:?}", err)))?;
+
+        trace!("create_schema <<< schema_id: {:?}, schema_json: {:?}", schema_id, schema_json);
+
+        Ok((schema_id, schema_json))
     }
 
-    fn _create_and_store_claim_definition(&self,
-                                          wallet_handle: i32,
-                                          issuer_did: &str,
-                                          schema_json: &str,
-                                          signature_type: Option<&str>,
-                                          create_non_revoc: bool) -> Result<String, IndyError> {
-        let schema = Schema::from_json(schema_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid schema json: {}", err.to_string())))?;
+    fn create_and_store_credential_definition(&self,
+                                              wallet_handle: i32,
+                                              issuer_did: &str,
+                                              schema_json: &str,
+                                              tag: &str,
+                                              type_: Option<&str>,
+                                              config_json: &str) -> Result<(String, String), IndyError> {
+        trace!("create_and_store_credential_definition >>> wallet_handle: {:?}, issuer_did: {:?}, schema_json: {:?}, tag: {:?}, \
+              type_: {:?}, config_json: {:?}", wallet_handle, issuer_did, schema_json, tag, type_, config_json);
 
-        let (claim_definition, claim_definition_private) =
-            self.anoncreds_service.issuer.generate_claim_definition(issuer_did, schema.clone(), signature_type, create_non_revoc)?;
+        self.crypto_service.validate_did(issuer_did)?;
 
-        let claim_definition_json = ClaimDefinition::to_json(&claim_definition)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid claim definition json: {}", err.to_string())))?;
+        let schema: SchemaV1 = SchemaV1::from(Schema::from_json(schema_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Schema: {:?}", err)))?);
 
-        let claim_definition_private_json = ClaimDefinitionPrivate::to_json(&claim_definition_private)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid claim definition private json: {}", err.to_string())))?;
+        let cred_def_config: CredentialDefinitionConfig = CredentialDefinitionConfig::from_json(config_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinitionConfig: {:?}", err)))?;
 
-        self.wallet_service.set(wallet_handle, &format!("claim_definition::{}", &get_composite_id(issuer_did, schema.seq_no)), &claim_definition_json)?;
-        self.wallet_service.set(wallet_handle, &format!("claim_definition_private::{}", &get_composite_id(issuer_did, schema.seq_no)), &claim_definition_private_json)?;
+        let signature_type = match type_ {
+            Some(type_) =>
+                SignatureType::from_json(&format!("\"{}\"", type_))
+                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize SignatureType: {:?}", err)))?,
+            None => SignatureType::CL,
+        };
 
-        Ok(claim_definition_json)
+        let schema_id = schema.seq_no.map(|n| n.to_string()).unwrap_or(schema.id.clone());
+
+        let cred_def_id = CredentialDefinition::cred_def_id(issuer_did, &schema_id, &signature_type.to_str()); // TODO: FIXME
+
+        if self.wallet_service.get(wallet_handle, &format!("credential_definition::{}", cred_def_id)).is_ok() {
+            return Err(IndyError::AnoncredsError(AnoncredsError::CredDefAlreadyExists(format!("CredentialDefinition for cred_def_id: {:?} already exists", cred_def_id))));
+        };
+
+        let (credential_definition_value, credential_priv_key, credential_key_correctness_proof) =
+            self.anoncreds_service.issuer.new_credential_definition(issuer_did, &schema, cred_def_config.support_revocation)?;
+
+        let credential_definition =
+            CredentialDefinition::CredentialDefinitionV1(
+                CredentialDefinitionV1 {
+                    id: cred_def_id.clone(),
+                    schema_id,
+                    signature_type,
+                    tag: tag.to_string(),
+                    value: credential_definition_value
+                });
+
+        let credential_definition_json = self.wallet_service.set_object(wallet_handle,
+                                                                        &format!("credential_definition::{}", cred_def_id),
+                                                                        &credential_definition,
+                                                                        "CredentialDefinition")?;
+        self.wallet_service.set_object(wallet_handle,
+                                       &format!("credential_private_key::{}", cred_def_id),
+                                       &credential_priv_key,
+                                       "CredentialPrivateKey")?;
+        self.wallet_service.set_object(wallet_handle,
+                                       &format!("credential_key_correctness_proof::{}", cred_def_id),
+                                       &credential_key_correctness_proof,
+                                       "CredentialKeyCorrectnessProof")?;
+
+        self.wallet_service.set(wallet_handle, &format!("full_schema_id::{}", cred_def_id), &schema.id)?; // TODO: FIXME
+
+        trace!("create_and_store_credential_definition <<< cred_def_id: {:?}, credential_definition_json: {:?}", cred_def_id, credential_definition_json);
+        Ok((cred_def_id, credential_definition_json))
     }
 
     fn create_and_store_revocation_registry(&self,
                                             wallet_handle: i32,
                                             issuer_did: &str,
-                                            schema_seq_no: i32,
-                                            max_claim_num: i32,
-                                            cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let result = self._create_and_store_revocation_registry(wallet_handle, issuer_did, schema_seq_no, max_claim_num);
-        cb(result)
-    }
+                                            type_: Option<&str>,
+                                            tag: &str,
+                                            cred_def_id: &str,
+                                            config_json: &str,
+                                            tails_writer_handle: i32) -> Result<(String, String, String), IndyError> {
+        trace!("create_and_store_revocation_registry >>> wallet_handle: {:?}, issuer_did: {:?}, type_: {:?}, tag: {:?}, cred_def_id: {:?}, config_json: {:?}, \
+               tails_handle: {:?}", wallet_handle, issuer_did, type_, tag, cred_def_id, config_json, tails_writer_handle);
 
-    fn _create_and_store_revocation_registry(&self,
-                                             wallet_handle: i32,
-                                             issuer_did: &str,
-                                             schema_seq_no: i32,
-                                             max_claim_num: i32) -> Result<String, IndyError> {
-        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &get_composite_id(issuer_did, schema_seq_no)))?;
-        let claim_def = ClaimDefinition::from_json(&claim_def_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid claim definition json: {}", err.to_string())))?;
+        let rev_reg_config: RevocationRegistryConfig = RevocationRegistryConfig::from_json(config_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryConfig: {:?}", err)))?;
 
-        let pk_r = claim_def.data.public_key_revocation
-            .ok_or(IndyError::AnoncredsError(AnoncredsError::NotIssuedError("Revocation Public Key for this claim definition".to_string())))?;
-
-        let (revocation_registry, revocation_registry_private) =
-            self.anoncreds_service.issuer.issue_accumulator(&pk_r, max_claim_num, issuer_did, schema_seq_no)?;
-
-        let revocation_registry_json = RevocationRegistry::to_json(&revocation_registry)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid revocation registry: {}", err.to_string())))?;
-
-        let revocation_registry_private_json = RevocationRegistryPrivate::to_json(&revocation_registry_private)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid revocation registry private: {}", err.to_string())))?;
-
-        self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &get_composite_id(issuer_did, schema_seq_no)), &revocation_registry_json)?;
-        self.wallet_service.set(wallet_handle, &format!("revocation_registry_private::{}", &get_composite_id(issuer_did, schema_seq_no)), &revocation_registry_private_json)?;
-        // TODO: change it
-        let tails_dash = serde_json::to_string(&revocation_registry_private.tails_dash)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid revocation registry private: {}", err.to_string())))?;
-
-        self.wallet_service.set(wallet_handle, &format!("tails"), &tails_dash)?;
-
-        Ok(revocation_registry_json)
-    }
-
-    fn create_claim(&self,
-                    wallet_handle: i32,
-                    claim_req_json: &str,
-                    claim_json: &str,
-                    user_revoc_index: Option<i32>,
-                    cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        let result = self._create_claim(wallet_handle, claim_req_json, claim_json, user_revoc_index);
-        cb(result)
-    }
-
-    fn _create_claim(&self,
-                     wallet_handle: i32,
-                     claim_req_json: &str,
-                     claim_json: &str,
-                     user_revoc_index: Option<i32>) -> Result<(String, String), IndyError> {
-        let claim_req_json: ClaimRequestJson = ClaimRequestJson::from_json(claim_req_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_req_json: {}", err.to_string())))?;
-
-        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &get_composite_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)))?;
-        let claim_def_private_json = self.wallet_service.get(wallet_handle, &format!("claim_definition_private::{}", &get_composite_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)))?;
-
-        let claim_def = ClaimDefinition::from_json(&claim_def_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid claim_def_json: {}", err.to_string())))?;
-
-        let claim_def_private = ClaimDefinitionPrivate::from_json(&claim_def_private_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid claim_def_private_json: {}", err.to_string())))?;
-
-        if claim_def.data.public_key_revocation.is_some() && claim_req_json.blinded_ms.ur.is_none() {
-            return Err(IndyError::AnoncredsError(AnoncredsError::NotIssuedError(
-                format!("Claim_request.ur are required for this claim"))));
-        }
-
-        let (revocation_registry, revocation_registry_private,
-            mut revocation_registry_json) = match claim_def.data.public_key_revocation {
-            Some(_) => {
-                let revocation_registry_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", &get_composite_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)))?;
-                let revocation_registry_private_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry_private::{}", &get_composite_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)))?;
-
-                let revocation_registry = Some(RefCell::new(RevocationRegistry::from_json(&revocation_registry_json)
-                    .map_err(map_err_trace!())
-                    .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_registry_json: {}", err.to_string())))?));
-
-                let revocation_registry_private = Some(RevocationRegistryPrivate::from_json(&revocation_registry_private_json)
-                    .map_err(map_err_trace!())
-                    .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_registry_private_json: {}", err.to_string())))?);
-
-                (revocation_registry, revocation_registry_private, revocation_registry_json)
-            }
-            _ => (None, None, String::new())
+        let rev_reg_type = match type_ {
+            Some(type_) =>
+                RegistryType::from_json(&format!("\"{}\"", type_))
+                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryType: {:?}", err)))?,
+            None => RegistryType::CL_ACCUM,
         };
 
-        let attributes: HashMap<String, Vec<String>> = serde_json::from_str(claim_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_json: {}", err.to_string())))?;
+        let issuance_type = match rev_reg_config.issuance_type {
+            Some(type_) =>
+                IssuanceType::from_json(&format!("\"{}\"", type_))
+                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize IssuanceType: {:?}", err)))?,
+            None => IssuanceType::ISSUANCE_ON_DEMAND,
+        };
 
-        let claims = self.anoncreds_service.issuer.create_claim(&claim_def,
-                                                                &claim_def_private,
-                                                                &revocation_registry,
-                                                                &revocation_registry_private,
-                                                                &claim_req_json.blinded_ms,
-                                                                &attributes,
-                                                                user_revoc_index)?;
+        let max_cred_num = rev_reg_config.max_cred_num.unwrap_or(100000);
 
-        if let Some(x) = revocation_registry {
-            revocation_registry_json = RevocationRegistry::to_json(&x.borrow())
-                .map_err(map_err_trace!())
-                .map_err(|err| CommonError::InvalidState(format!("Invalid revocation registry: {}", err.to_string())))?;
+        let rev_reg_id = RevocationRegistryDefinition::rev_reg_id(issuer_did, cred_def_id, &rev_reg_type, tag);
 
-            self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &get_composite_id(&claim_req_json.issuer_did.clone(), claim_req_json.schema_seq_no)), &revocation_registry_json)?;
+        let cred_def: CredentialDefinition =
+            self.wallet_service.get_object(wallet_handle, &format!("credential_definition::{}", &cred_def_id), "CredentialDefinition", &mut String::new())?;
+
+        let (revoc_public_keys, revoc_key_private, revoc_registry, mut revoc_tails_generator) =
+            self.anoncreds_service.issuer.new_revocation_registry(&CredentialDefinitionV1::from(cred_def),
+                                                                  max_cred_num,
+                                                                  issuance_type.to_bool(),
+                                                                  issuer_did)?;
+
+        let (tails_location, tails_hash) =
+            store_tails_from_generator(self.blob_storage_service.clone(), tails_writer_handle, &mut revoc_tails_generator)?;
+
+        let revoc_reg_def_value = RevocationRegistryDefinitionValue {
+            max_cred_num,
+            issuance_type: issuance_type.clone(),
+            public_keys: revoc_public_keys,
+            tails_location,
+            tails_hash,
+        };
+
+        let revoc_reg_def =
+            RevocationRegistryDefinition::RevocationRegistryDefinitionV1(
+                RevocationRegistryDefinitionV1 {
+                    id: rev_reg_id.clone(),
+                    revoc_def_type: rev_reg_type,
+                    tag: tag.to_string(),
+                    cred_def_id: cred_def_id.to_string(),
+                    value: revoc_reg_def_value
+                });
+
+        let revoc_registry =
+            RevocationRegistry::RevocationRegistryV1(
+                RevocationRegistryV1 {
+                    value: revoc_registry
+                }
+            );
+
+        let revoc_reg_def_json =
+            self.wallet_service.set_object(wallet_handle, &format!("revocation_registry_definition::{}", rev_reg_id), &revoc_reg_def, "RevocationRegistryDefinition")?;
+
+        let revoc_reg_json =
+            self.wallet_service.set_object(wallet_handle, &format!("revocation_registry::{}", rev_reg_id), &revoc_registry, "RevocationRegistry")?;
+
+        self.wallet_service.set_object(wallet_handle, &format!("revocation_key_private::{}", rev_reg_id), &revoc_key_private, "RevocationKeyPrivate")?;
+
+        let rev_reg_info = RevocationRegistryInfo {
+            id: rev_reg_id.clone(),
+            curr_id: 0,
+            used_ids: HashSet::new(),
+        };
+
+        self.wallet_service.set_object(wallet_handle, &format!("revocation_registry_info::{}", rev_reg_id), &rev_reg_info, "RegistryRevocationInfo")?;
+
+        trace!("create_and_store_revocation_registry <<< rev_reg_id: {:?}, revoc_reg_def_json: {:?}, revoc_reg_json: {:?}",
+               rev_reg_id, revoc_reg_def_json, revoc_reg_json);
+
+        Ok((rev_reg_id, revoc_reg_def_json, revoc_reg_json))
+    }
+
+    fn create_credential_offer(&self,
+                               wallet_handle: i32,
+                               cred_def_id: &str) -> Result<String, IndyError> {
+        trace!("create_credential_offer >>> wallet_handle: {:?}, cred_def_id: {:?}", wallet_handle, cred_def_id);
+
+        let key_correctness_proof: CredentialKeyCorrectnessProof =
+            self.wallet_service.get_object(wallet_handle, &format!("credential_key_correctness_proof::{}", cred_def_id), "CredentialKeyCorrectnessProof", &mut String::new())?;
+
+        let nonce = new_nonce()
+            .map_err(|err| IndyError::AnoncredsError(AnoncredsError::from(err)))?;
+
+        let schema_id = self.wallet_service.get(wallet_handle, &format!("full_schema_id::{}", &cred_def_id))?; // TODO: FIXME
+
+        let credential_offer = CredentialOffer {
+            schema_id: schema_id.to_string(),
+            cred_def_id: cred_def_id.to_string(),
+            key_correctness_proof,
+            nonce
+        };
+
+        let credential_offer_json = credential_offer.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize CredentialOffer: {:?}", err)))?;
+
+        trace!("create_credential_offer <<< credential_offer_json: {:?}", credential_offer_json);
+
+        Ok(credential_offer_json)
+    }
+
+    fn new_credential(&self,
+                      wallet_handle: i32,
+                      cred_offer_json: &str,
+                      cred_req_json: &str,
+                      cred_values_json: &str,
+                      rev_reg_id: Option<&str>,
+                      blob_storage_reader_handle: Option<i32>) -> Result<(String, Option<String>, Option<String>), IndyError> {
+        trace!("new_credential >>> wallet_handle: {:?}, cred_offer_json: {:?}, cred_req_json: {:?}, cred_values_json: {:?}, rev_reg_id: {:?}, blob_storage_reader_handle: {:?}",
+               wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle);
+
+        let cred_offer: CredentialOffer = CredentialOffer::from_json(cred_offer_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialOffer: {:?}", err)))?;
+
+        let cred_request: CredentialRequest = CredentialRequest::from_json(cred_req_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialRequest: {:?}", err)))?;
+
+        let cred_values: HashMap<String, AttributeValues> = serde_json::from_str(cred_values_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialValues: {:?}", err)))?;
+
+        let cred_def: CredentialDefinitionV1 =
+            CredentialDefinitionV1::from(
+                self.wallet_service.get_object::<CredentialDefinition>(wallet_handle, &format!("credential_definition::{}", &cred_offer.cred_def_id), "CredentialDefinition", &mut String::new())?);
+
+        let cred_priv_key: CredentialPrivateKey =
+            self.wallet_service.get_object(wallet_handle, &format!("credential_private_key::{}", cred_request.cred_def_id), "CredentialPrivateKey", &mut String::new())?;
+
+        let schema_id = self.wallet_service.get(wallet_handle, &format!("full_schema_id::{}", &cred_offer.cred_def_id))?; // TODO: FIXME
+
+        let (rev_reg_def, mut rev_reg,
+            rev_key_priv, sdk_tails_accessor, rev_reg_info) = match rev_reg_id {
+            Some(ref r_reg_id) => {
+                let rev_reg_def: RevocationRegistryDefinitionV1 =
+                    RevocationRegistryDefinitionV1::from(
+                        self.wallet_service.get_object::<RevocationRegistryDefinition>(wallet_handle, &format!("revocation_registry_definition::{}", r_reg_id), "RevocationRegistryDefinition", &mut String::new())?);
+
+                let rev_reg: RevocationRegistryV1 =
+                    RevocationRegistryV1::from(
+                        self.wallet_service.get_object::<RevocationRegistry>(wallet_handle, &format!("revocation_registry::{}", r_reg_id), "RevocationRegistry", &mut String::new())?);
+
+                let rev_key_priv: RevocationKeyPrivate =
+                    self.wallet_service.get_object(wallet_handle, &format!("revocation_key_private::{}", r_reg_id), "RevocationKeyPrivate", &mut String::new())?;
+
+                let mut rev_reg_info =
+                    self.wallet_service.get_object::<RevocationRegistryInfo>(wallet_handle, &format!("revocation_registry_info::{}", r_reg_id), "RegistryRevocationInfo", &mut String::new())?;
+
+                rev_reg_info.curr_id = 1 + rev_reg_info.curr_id;
+
+                if rev_reg_info.curr_id > rev_reg_def.value.max_cred_num {
+                    return Err(IndyError::AnoncredsError(AnoncredsError::RevocationRegistryFull(format!("RevocationRegistryAccumulator is full"))));
+                }
+
+                if rev_reg_def.value.issuance_type == IssuanceType::ISSUANCE_ON_DEMAND {
+                    rev_reg_info.used_ids.insert(rev_reg_info.curr_id.clone());
+                }
+
+                let blob_storage_reader_handle = blob_storage_reader_handle
+                    .ok_or(IndyError::CommonError(CommonError::InvalidStructure(format!("TailsReaderHandle not found"))))?;
+
+                let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
+                                                               blob_storage_reader_handle,
+                                                               &rev_reg_def)?;
+
+                (Some(rev_reg_def), Some(rev_reg), Some(rev_key_priv), Some(sdk_tails_accessor), Some(rev_reg_info))
+            }
+            None => (None, None, None, None, None)
+        };
+
+        let (credential_signature, signature_correctness_proof, rev_reg_delta) =
+            self.anoncreds_service.issuer.new_credential(&cred_def,
+                                                         &cred_priv_key,
+                                                         &cred_offer.nonce,
+                                                         &cred_request,
+                                                         &cred_values,
+                                                         rev_reg_info.as_ref().map(|r_reg_info| r_reg_info.curr_id),
+                                                         rev_reg_def.as_ref(),
+                                                         rev_reg.as_mut().map(|r_reg| &mut r_reg.value),
+                                                         rev_key_priv.as_ref(),
+                                                         sdk_tails_accessor.as_ref())?;
+
+        let witness =
+            if let (&Some(ref r_reg_def), &Some(ref r_reg), &Some(ref rev_tails_accessor), &Some(ref rev_reg_info)) =
+            (&rev_reg_def, &rev_reg, &sdk_tails_accessor, &rev_reg_info) {
+                let (issued, revoked) = match r_reg_def.value.issuance_type {
+                    IssuanceType::ISSUANCE_ON_DEMAND => (rev_reg_info.used_ids.clone(), HashSet::new()),
+                    IssuanceType::ISSUANCE_BY_DEFAULT => (HashSet::new(), rev_reg_info.used_ids.clone())
+                };
+
+                let rev_reg_delta = CryptoRevocationRegistryDelta::from_parts(None, &r_reg.value, &issued, &revoked);
+
+                let witness = Some(Witness::new(rev_reg_info.curr_id, r_reg_def.value.max_cred_num, r_reg_def.value.issuance_type.to_bool(), &rev_reg_delta, rev_tails_accessor)
+                    .map_err(|err| IndyError::CommonError(CommonError::from(err)))?);
+
+                witness
+            } else {
+                None
+            };
+
+        let credential = Credential {
+            schema_id,
+            cred_def_id: cred_request.cred_def_id.clone(),
+            rev_reg_id: rev_reg_id.map(String::from),
+            values: cred_values,
+            signature: credential_signature,
+            signature_correctness_proof,
+            rev_reg: rev_reg.map(|r_reg| r_reg.value),
+            witness
+        };
+
+        let cred_json = credential.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize Credential: {:?}", err)))?;
+
+        let rev_reg_delta_json = match rev_reg_delta {
+            Some(r_reg_delta) => {
+                Some(RevocationRegistryDelta::RevocationRegistryDeltaV1(RevocationRegistryDeltaV1 { value: r_reg_delta })
+                    .to_json()
+                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta: {:?}", err)))?)
+            }
+            None => None
+        };
+
+        if let (Some(r_reg), Some(r_reg_id), Some(r_reg_info)) = (credential.rev_reg, rev_reg_id, rev_reg_info.clone()) {
+            let revocation_registry = RevocationRegistry::RevocationRegistryV1(RevocationRegistryV1 { value: r_reg });
+
+            self.wallet_service.set_object(wallet_handle, &format!("revocation_registry::{}", r_reg_id), &revocation_registry, "RevocationRegistry")?;
+            self.wallet_service.set_object(wallet_handle, &format!("revocation_registry_info::{}", r_reg_id), &r_reg_info, "RegistryRevocationInfo")?;
+        };
+
+        let cred_rev_id = rev_reg_info.map(|r_reg_info| r_reg_info.curr_id.to_string());
+        trace!("new_credential <<< cred_json: {:?}, cred_rev_id: {:?}, rev_reg_delta_json: {:?}", cred_json, cred_rev_id, rev_reg_delta_json);
+
+        Ok((cred_json, cred_rev_id, rev_reg_delta_json))
+    }
+
+    fn revoke_credential(&self,
+                         wallet_handle: i32,
+                         blob_storage_reader_handle: i32,
+                         rev_reg_id: &str,
+                         cred_revoc_id: &str) -> Result<String, IndyError> {
+        trace!("revoke_credential >>> wallet_handle: {:?}, blob_storage_reader_handle:  {:?}, rev_reg_id: {:?}, cred_revoc_id: {:?}",
+               wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id);
+
+        let cred_revoc_id = parse_cred_rev_id(cred_revoc_id)?;
+
+        let revocation_registry_definition: RevocationRegistryDefinitionV1 =
+            RevocationRegistryDefinitionV1::from(
+                self.wallet_service.get_object::<RevocationRegistryDefinition>(wallet_handle, &format!("revocation_registry_definition::{}", rev_reg_id), "RevocationRegistryDefinition", &mut String::new())?);
+
+        let mut revocation_registry: RevocationRegistryV1 =
+            RevocationRegistryV1::from(
+                self.wallet_service.get_object::<RevocationRegistry>(wallet_handle, &format!("revocation_registry::{}", rev_reg_id), "RevocationRegistry", &mut String::new())?);
+
+        let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
+                                                       blob_storage_reader_handle,
+                                                       &revocation_registry_definition)?;
+
+        if cred_revoc_id > revocation_registry_definition.value.max_cred_num + 1 {
+            return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocId(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
         }
 
-        let claim_json = ClaimJson::new(attributes, claims, claim_def.schema_seq_no, claim_req_json.issuer_did);
+        let mut rev_reg_info =
+            self.wallet_service.get_object::<RevocationRegistryInfo>(wallet_handle, &format!("revocation_registry_info::{}", rev_reg_id), "RegistryRevocationInfo", &mut String::new())?;
 
-        let claim_json = ClaimJson::to_json(&claim_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid claim_json: {}", err.to_string())))?;
+        match revocation_registry_definition.value.issuance_type {
+            IssuanceType::ISSUANCE_ON_DEMAND => {
+                if !rev_reg_info.used_ids.remove(&cred_revoc_id) {
+                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocId(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+                };
+            }
+            IssuanceType::ISSUANCE_BY_DEFAULT => {
+                if !rev_reg_info.used_ids.insert(cred_revoc_id) {
+                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocId(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+                }
+            }
+        };
 
-        Ok((revocation_registry_json, claim_json))
+        let revocation_registry_delta =
+            self.anoncreds_service.issuer.revoke(&mut revocation_registry.value, revocation_registry_definition.value.max_cred_num, cred_revoc_id, &sdk_tails_accessor)?;
+
+        let revocation_registry_delta = RevocationRegistryDelta::RevocationRegistryDeltaV1(RevocationRegistryDeltaV1 { value: revocation_registry_delta });
+
+        let revocation_registry_delta_json = revocation_registry_delta.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta: {:?}", err)))?;
+
+        let revocation_registry = RevocationRegistry::RevocationRegistryV1(revocation_registry);
+
+        self.wallet_service.set_object(wallet_handle, &format!("revocation_registry_info::{}", rev_reg_id), &rev_reg_info, "RegistryRevocationInfo")?;
+
+        self.wallet_service.set_object(wallet_handle, &format!("revocation_registry::{}", rev_reg_id), &revocation_registry, "RevocationRegistry")?;
+
+        trace!("revoke_credential <<< revocation_registry_delta_json: {:?}", revocation_registry_delta_json);
+
+        Ok(revocation_registry_delta_json)
     }
 
-    fn revoke_claim(&self,
-                    wallet_handle: i32,
-                    issuer_did: &str,
-                    schema_seq_no: i32,
-                    user_revoc_index: i32,
-                    cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let result = self._revoke_claim(wallet_handle, issuer_did, schema_seq_no, user_revoc_index);
-        cb(result)
+    fn _recovery_credential(&self,
+                            wallet_handle: i32,
+                            blob_storage_reader_handle: i32,
+                            rev_reg_id: &str,
+                            cred_revoc_id: &str) -> Result<String, IndyError> {
+        trace!("recovery_credential >>> wallet_handle: {:?}, blob_storage_reader_handle: {:?}, rev_reg_id: {:?}, cred_revoc_id: {:?}",
+               wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id);
+
+        let cred_revoc_id = parse_cred_rev_id(cred_revoc_id)?;
+
+        let revocation_registry_definition: RevocationRegistryDefinitionV1 =
+            RevocationRegistryDefinitionV1::from(
+                self.wallet_service.get_object::<RevocationRegistryDefinition>(wallet_handle, &format!("revocation_registry_definition::{}", rev_reg_id), "RevocationRegistryDefinition", &mut String::new())?);
+
+        let mut revocation_registry: RevocationRegistryV1 =
+            RevocationRegistryV1::from(
+                self.wallet_service.get_object::<RevocationRegistry>(wallet_handle, &format!("revocation_registry::{}", rev_reg_id), "RevocationRegistry", &mut String::new())?);
+
+        let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
+                                                       blob_storage_reader_handle,
+                                                       &revocation_registry_definition)?;
+
+        if cred_revoc_id > revocation_registry_definition.value.max_cred_num + 1 {
+            return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocId(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+        }
+
+        let mut rev_reg_info =
+            self.wallet_service.get_object::<RevocationRegistryInfo>(wallet_handle, &format!("revocation_registry_info::{}", rev_reg_id), "RegistryRevocationInfo", &mut String::new())?;
+
+        match revocation_registry_definition.value.issuance_type {
+            IssuanceType::ISSUANCE_ON_DEMAND => {
+                if !rev_reg_info.used_ids.insert(cred_revoc_id) {
+                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocId(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+                }
+            }
+            IssuanceType::ISSUANCE_BY_DEFAULT => {
+                if !rev_reg_info.used_ids.remove(&cred_revoc_id) {
+                    return Err(IndyError::AnoncredsError(AnoncredsError::InvalidUserRevocId(format!("Revocation id: {:?} not found in RevocationRegistry", cred_revoc_id))));
+                }
+            }
+        };
+
+        let revocation_registry_delta =
+            self.anoncreds_service.issuer.recovery(&mut revocation_registry.value, revocation_registry_definition.value.max_cred_num, cred_revoc_id, &sdk_tails_accessor)?;
+
+        let revocation_registry_delta = RevocationRegistryDelta::RevocationRegistryDeltaV1(RevocationRegistryDeltaV1 { value: revocation_registry_delta });
+
+        let revocation_registry_delta_json = revocation_registry_delta.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta: {:?}", err)))?;
+
+        let revocation_registry = RevocationRegistry::RevocationRegistryV1(revocation_registry);
+
+        self.wallet_service.set_object(wallet_handle, &format!("revocation_registry_info::{}", rev_reg_id), &rev_reg_info, "RegistryRevocationInfo")?;
+
+        self.wallet_service.set_object(wallet_handle, &format!("revocation_registry::{}", rev_reg_id), &revocation_registry, "RevocationRegistry")?;
+
+        trace!("recovery_credential <<< revocation_registry_delta_json: {:?}", revocation_registry_delta_json);
+
+        Ok(revocation_registry_delta_json)
     }
 
-    fn _revoke_claim(&self,
-                     wallet_handle: i32,
-                     issuer_did: &str,
-                     schema_seq_no: i32,
-                     user_revoc_index: i32) -> Result<String, IndyError> {
-        let revocation_registry_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", &get_composite_id(&issuer_did.clone(), schema_seq_no)))?;
-        let revocation_registry_private_json = self.wallet_service.get(wallet_handle, &format!("revocation_registry_private::{}", &get_composite_id(&issuer_did.clone(), schema_seq_no)))?;
+    fn merge_revocation_registry_deltas(&self,
+                                        rev_reg_delta_json: &str,
+                                        other_rev_reg_delta_json: &str) -> Result<String, IndyError> {
+        trace!("merge_revocation_registry_deltas >>> rev_reg_delta_json: {:?}, other_rev_reg_delta_json: {:?}", rev_reg_delta_json, other_rev_reg_delta_json);
 
-        let revocation_registry = RevocationRegistry::from_json(&revocation_registry_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_registry_json: {}", err.to_string())))?;
+        let mut rev_reg_delta: RevocationRegistryDeltaV1 =
+            RevocationRegistryDeltaV1::from(
+                RevocationRegistryDelta::from_json(rev_reg_delta_json)
+                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDelta: {:?}", err)))?);
 
-        let revocation_registry_private = RevocationRegistryPrivate::from_json(&revocation_registry_private_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_registry_private_json: {}", err.to_string())))?;
+        let other_rev_reg_delta: RevocationRegistryDeltaV1 =
+            RevocationRegistryDeltaV1::from(
+                RevocationRegistryDelta::from_json(other_rev_reg_delta_json)
+                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize other RevocationRegistryDelta: {:?}", err)))?);
 
-        let revocation_registry = RefCell::new(revocation_registry);
+        rev_reg_delta.value.merge(&other_rev_reg_delta.value)
+            .map_err(|err| IndyError::CommonError(CommonError::from(err)))?;
 
-        self.anoncreds_service.issuer.revoke(&revocation_registry,
-                                             &revocation_registry_private.tails_dash,
-                                             user_revoc_index)?;
+        let rev_reg_delta = RevocationRegistryDelta::RevocationRegistryDeltaV1(rev_reg_delta);
 
-        let revoc_reg_update_json = RevocationRegistry::to_json(&revocation_registry.borrow())
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid revocation registry: {}", err.to_string())))?;
+        let merged_rev_reg_delta_json = rev_reg_delta.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta: {:?}", err)))?;
 
-        self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", &get_composite_id(&issuer_did.clone(), schema_seq_no)), &revoc_reg_update_json)?;
+        trace!("merge_revocation_registry_deltas <<< merged_rev_reg_delta: {:?}", merged_rev_reg_delta_json);
 
-        Ok(revoc_reg_update_json)
+        Ok(merged_rev_reg_delta_json)
     }
 }
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+struct RevocationRegistryInfo {
+    id: String,
+    curr_id: u32,
+    used_ids: HashSet<u32>
+}
+
+impl JsonEncodable for RevocationRegistryInfo {}
+
+impl<'a> JsonDecodable<'a> for RevocationRegistryInfo {}

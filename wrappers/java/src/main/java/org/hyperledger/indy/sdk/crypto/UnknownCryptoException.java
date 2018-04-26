@@ -16,6 +16,6 @@ public class UnknownCryptoException extends IndyException
 	 */
 	public UnknownCryptoException() 
     {
-    	super(message, ErrorCode.SignusUnknownCryptoError.value());
+    	super(message, ErrorCode.UnknownCryptoTypeError.value());
     }
 }

@@ -2,8 +2,8 @@ package org.hyperledger.indy.sdk.pairwise;
 
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
-import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusResults;
+import org.hyperledger.indy.sdk.did.Did;
+import org.hyperledger.indy.sdk.did.DidResults;
 import org.junit.Before;
 
 public class PairwiseIntegrationTest extends IndyIntegrationTestWithSingleWallet {
@@ -16,12 +16,12 @@ public class PairwiseIntegrationTest extends IndyIntegrationTestWithSingleWallet
 
 	@Before
 	public void createDids() throws Exception {
-		SignusResults.CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(wallet, "{}").get();
+		DidResults.CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, "{}").get();
 		myDid = result.getDid();
 
-		result = Signus.createAndStoreMyDid(wallet, "{}").get();
+		result = Did.createAndStoreMyDid(wallet, "{}").get();
 		theirDid = result.getDid();
 
-		Signus.storeTheirDid(wallet, String.format("{\"did\":\"%s\"}", theirDid)).get();
+		Did.storeTheirDid(wallet, String.format("{\"did\":\"%s\"}", theirDid)).get();
 	}
 }

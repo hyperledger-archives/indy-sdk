@@ -1,18 +1,23 @@
 extern crate rmp_serde;
+extern crate time;
 
 use std::cmp;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::ops::Add;
 
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
 use errors::common::CommonError;
 use errors::pool::PoolError;
+use self::time::Duration;
 use super::{
     MerkleTree,
     RemoteNode,
 };
 use super::rust_base58::{FromBase58, ToBase58};
 use super::types::*;
+
+pub const CATCHUP_ROUND_TIMEOUT: i64 = 50;
 
 enum CatchupStepResult {
     Finished,
@@ -38,6 +43,7 @@ pub struct CatchupHandler {
     pub initiate_cmd_id: i32,
     pub is_refresh: bool,
     pub pending_catchup: Option<CatchUpProcess>,
+    pub timeout: time::Tm,
     pub pool_id: i32,
     pub nodes_votes: Vec<Option<(String, usize)>>,
 }
@@ -57,12 +63,13 @@ impl Default for CatchupHandler {
             is_refresh: false,
             pool_id: 0,
             nodes_votes: Vec::new(),
+            timeout: time::now_utc(),
         }
     }
 }
 
 impl CatchupHandler {
-    pub fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
+    pub fn process_msg(&mut self, msg: Message, _raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         let catchup_status: CatchupProgress = match msg {
             Message::Pong => {
                 //sending ledger status
@@ -116,7 +123,7 @@ impl CatchupHandler {
             }
         }
         if let Some((most_popular_vote, votes_cnt)) = votes.iter().max_by_key(|entry| entry.1) {
-            if *votes_cnt == self.nodes.len() - self.f /* TODO N-f consensus */ {
+            if *votes_cnt == self.nodes.len() - self.f {
                 let &(ref target_mt_root, target_mt_size) = most_popular_vote;
                 let cur_mt_size = self.merkle_tree.count();
                 let cur_mt_hash = self.merkle_tree.root_hash().to_base58();
@@ -154,14 +161,16 @@ impl CatchupHandler {
                 CommonError::InvalidState(
                     "CatchUp already started for the pool".to_string())));
         }
-        if self.merkle_tree.count() != self.nodes.len() {
-            return Err(PoolError::CommonError(
-                CommonError::InvalidState(
-                    "Merkle tree doesn't equal nodes count".to_string())));
+
+        let active_node_cnt = self.nodes.iter().filter(|node| !node.is_blacklisted).count();
+
+        if active_node_cnt == 0 {
+            // TODO FIXME
+            return Err(PoolError::Terminate);
         }
 
-        let node_cnt = self.nodes.iter().filter(|node| !node.is_blacklisted).count();
-        let cnt_to_catchup = self.target_mt_size - self.merkle_tree.count();
+        let txns_cnt_in_cur_mt = self.merkle_tree.count();
+        let cnt_to_catchup = self.target_mt_size - txns_cnt_in_cur_mt;
         if cnt_to_catchup <= 0 {
             return Err(PoolError::CommonError(CommonError::InvalidState(
                 "Nothing to CatchUp, but started".to_string())));
@@ -170,23 +179,35 @@ impl CatchupHandler {
         self.pending_catchup = Some(CatchUpProcess {
             merkle_tree: self.merkle_tree.clone(),
             pending_reps: Vec::new(),
+            resp_not_received_node_idx: HashSet::new(),
         });
+        self.timeout = time::now_utc().add(Duration::seconds(CATCHUP_ROUND_TIMEOUT));
 
-        let portion = (cnt_to_catchup + node_cnt - 1) / node_cnt; //TODO check standard round up div
+        let portion = (cnt_to_catchup + active_node_cnt - 1) / active_node_cnt; //TODO check standard round up div
         let mut catchup_req = CatchupReq {
             ledgerId: 0,
-            seqNoStart: node_cnt + 1,
-            seqNoEnd: node_cnt + 1 + portion - 1,
+            seqNoStart: txns_cnt_in_cur_mt + 1,
+            seqNoEnd: txns_cnt_in_cur_mt + 1 + portion - 1,
             catchupTill: self.target_mt_size,
         };
-        for node in &self.nodes {
+        for idx in 0..self.nodes.len() {
+            let node = &self.nodes[idx];
+            //TODO do not perform duplicate requests, update resp_not_received_node_idx
             if node.is_blacklisted {
                 continue;
             }
+            self.pending_catchup.as_mut().map(|pc| {
+                pc.resp_not_received_node_idx.insert(idx);
+            });
             node.send_msg(&Message::CatchupReq(catchup_req.clone()))?;
             catchup_req.seqNoStart += portion;
             catchup_req.seqNoEnd = cmp::min(catchup_req.seqNoStart + portion - 1,
                                             catchup_req.catchupTill);
+
+            if catchup_req.seqNoStart > catchup_req.seqNoEnd {
+                // We don't have more portions to ask
+                break;
+            }
         }
         Ok(())
     }
@@ -212,6 +233,7 @@ impl CatchupHandler {
         let process = self.pending_catchup.as_mut()
             .ok_or(CommonError::InvalidState("Process non-existing CatchUp".to_string()))?;
         process.pending_reps.push((catchup, node_idx));
+        process.resp_not_received_node_idx.remove(&node_idx);
 
         while !process.pending_reps.is_empty() {
             let index = process.pending_reps.get_min_index()?;
@@ -273,15 +295,34 @@ impl CatchupHandler {
     }
 
     pub fn flush_requests(&mut self, status: Result<(), PoolError>) -> Result<(), PoolError> {
+        if self.initiate_cmd_id == -1 {
+            return Ok(());
+        }
         let cmd = if self.is_refresh {
             PoolCommand::RefreshAck(self.initiate_cmd_id, status)
         } else {
-            PoolCommand::OpenAck(self.initiate_cmd_id, status.map(|()| self.pool_id))
+            PoolCommand::OpenAck(self.initiate_cmd_id, self.pool_id, status)
         };
+        self.initiate_cmd_id = -1;
         CommandExecutor::instance()
             .send(Command::Pool(cmd))
             .map_err(|err|
                 PoolError::CommonError(
-                    CommonError::InvalidState("Can't send ACK cmd".to_string())))
+                    CommonError::InvalidState(format!("Can't send ACK cmd: {:?}", err))))
+    }
+
+    pub fn get_upcoming_timeout(&self) -> Option<time::Tm> {
+        Some(self.timeout)
+    }
+
+    pub fn process_timeout(&mut self) -> Result<(), PoolError> {
+        let pc = if let Some(pc) = self.pending_catchup.take() { pc } else {
+            return Err(PoolError::Timeout);
+        };
+        warn!("Fail to continue catch-up response(s) not received from nodes with idx {:?}. Node will be blacklisted and catchup will be restarted", pc.resp_not_received_node_idx);
+        pc.resp_not_received_node_idx.iter()
+            .for_each(|idx| self.nodes[*idx].is_blacklisted = true);
+        // TODO may be send ledger status again and re-obtain target MerkleTree params
+        self.start_catchup()
     }
 }

@@ -1,5 +1,5 @@
 ﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.DidApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
@@ -28,7 +28,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod] //This test fails here and in the Java version.
         public async Task TestGetTxnRequestWorks()
         {
-            var didResult = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var didResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var did = didResult.Did;
 
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, SCHEMA_DATA);
@@ -52,7 +52,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod] 
         public async Task TestGetTxnRequestWorksForInvalidSeqNo()
         {
-            var didResult = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var didResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var did = didResult.Did;
 
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, SCHEMA_DATA);

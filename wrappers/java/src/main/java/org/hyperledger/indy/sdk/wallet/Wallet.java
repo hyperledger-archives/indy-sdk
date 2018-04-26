@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
@@ -18,7 +19,7 @@ import com.sun.jna.Callback;
 /**
  * High level wrapper for wallet SDK functions.
  */
-public class Wallet extends IndyJava.API {
+public class Wallet extends IndyJava.API implements AutoCloseable {
 
 	private final int walletHandle;
 
@@ -307,5 +308,10 @@ public class Wallet extends IndyJava.API {
 			) throws IndyException {
 
 		return closeWallet(this);
+	}
+
+	@Override
+	public void close() throws InterruptedException, ExecutionException, IndyException {
+		closeWallet().get();
 	}
 }

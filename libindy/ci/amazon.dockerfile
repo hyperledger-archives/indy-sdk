@@ -17,9 +17,8 @@ RUN \
            libsodium-devel \
            spectool
 
-
 RUN cd /tmp && \
-   curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.12.tar.gz | tar -xz && \
+   curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.12.tar.gz | tar -xz && \
     cd /tmp/libsodium-1.0.12 && \
     ./configure && \
     make && \
@@ -36,7 +35,7 @@ RUN wget https://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-mav
 RUN sed -i s/\$releasever/6/g /etc/yum.repos.d/epel-apache-maven.repo
 RUN yum install -y apache-maven
 
-ENV RUST_ARCHIVE=rust-1.20.0-x86_64-unknown-linux-gnu.tar.gz
+ENV RUST_ARCHIVE=rust-1.25.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
 
 RUN mkdir -p /rust
@@ -56,6 +55,17 @@ RUN cd /usr/src && \
     cd Python-3.5.2 && \
     ./configure && \
     make altinstall
+
+RUN yum install -y ncurses-devel
+
+RUN cd /tmp && \
+    wget https://github.com/zeromq/libzmq/releases/download/v4.2.2/zeromq-4.2.2.tar.gz && \
+    tar xfz zeromq-4.2.2.tar.gz && rm zeromq-4.2.2.tar.gz && \
+    cd /tmp/zeromq-4.2.2 && \
+    ./configure && \
+    make && \
+    make install && \
+    rm -rf /tmp/zeromq-4.2.2
 
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy

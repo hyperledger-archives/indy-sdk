@@ -19,24 +19,24 @@
                                    walletHandle:(IndyHandle)walletHandle
                                    submitterDid:(NSString *)submitterDid
                                     requestJson:(NSString *)requestJson
-                                outResponseJson:(NSString**)responseJson;
+                                outResponseJson:(NSString **)responseJson;
 
 - (NSError *)submitRequest:(NSString *)request
             withPoolHandle:(IndyHandle)poolHandle
-                resultJson:(NSString**)resultJson;
+                resultJson:(NSString **)resultJson;
 
 
 // MARK: - Nym request
-- (NSError *) buildNymRequestWithSubmitterDid:(NSString *)submitterDid
-                                    targetDid:(NSString *)targetDid
-                                       verkey:(NSString *)verkey
-                                        alias:(NSString *)alias
-                                         role:(NSString *)role
-                                   outRequest:(NSString**)resultJson;
+- (NSError *)buildNymRequestWithSubmitterDid:(NSString *)submitterDid
+                                   targetDid:(NSString *)targetDid
+                                      verkey:(NSString *)verkey
+                                       alias:(NSString *)alias
+                                        role:(NSString *)role
+                                  outRequest:(NSString **)resultJson;
 
-- (NSError *) buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
-                                       targetDid:(NSString *)targetDid
-                                      outRequest:(NSString**)requestJson;
+- (NSError *)buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
+                                      targetDid:(NSString *)targetDid
+                                     outRequest:(NSString **)requestJson;
 
 // MARK: - Attrib request
 - (NSError *)buildAttribRequestWithSubmitterDid:(NSString *)submitterDid
@@ -48,46 +48,120 @@
 
 - (NSError *)buildGetAttribRequestWithSubmitterDid:(NSString *)submitterDid
                                          targetDid:(NSString *)targetDid
-                                              data:(NSString *)data
+                                               raw:(NSString *)raw
+                                              hash:(NSString *)hash
+                                               enc:(NSString *)enc
                                         resultJson:(NSString **)resultJson;
+
 // MARK: - Schema request
 - (NSError *)buildSchemaRequestWithSubmitterDid:(NSString *)submitterDid
                                            data:(NSString *)data
                                      resultJson:(NSString **)resultJson;
 
 - (NSError *)buildGetSchemaRequestWithSubmitterDid:(NSString *)submitterDid
-                                              dest:(NSString *)dest
-                                              data:(NSString *)data
+                                                id:(NSString *)id
                                         resultJson:(NSString **)resultJson;
+
+- (NSError *)parseGetSchemaResponse:(NSString *)getSchemaResponse
+                           schemaId:(NSString **)schemaId
+                         schemaJson:(NSString **)schemaJson;
 
 // MARK: - Node request
 - (NSError *)buildNodeRequestWithSubmitterDid:(NSString *)submitterDid
                                     targetDid:(NSString *)targetDid
                                          data:(NSString *)data
                                    resultJson:(NSString **)resultJson;
-// MARK: - ClaimDefTxn
-- (NSError *)buildClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                         xref:(NSNumber *)xref
-                                signatureType:(NSString *)signatureType
-                                         data:(NSString *)data
-                                   resultJson:(NSString**)resultJson;
 
-- (NSError *)buildGetClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                            xref:(NSNumber *)xref
-                                   signatureType:(NSString *)signatureType
-                                          origin:(NSString *)origin
-                                      resultJson:(NSString**)resultJson;
+// MARK: - CredDef Request
+- (NSError *)buildCredDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                            data:(NSString *)data
+                                      resultJson:(NSString **)resultJson;
+
+- (NSError *)buildGetCredDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                                 id:(NSString *)id
+                                         resultJson:(NSString **)resultJson;
+
+- (NSError *)parseGetCredDefResponse:(NSString *)getCredDefResponse
+                           credDefId:(NSString **)credDefId
+                         credDefJson:(NSString **)credDefJson;
 
 // MARK: - Get Txn request
 - (NSError *)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
                                            data:(NSNumber *)data
-                                     resultJson:(NSString**)resultJson;
+                                     resultJson:(NSString **)resultJson;
+
+// MARK: - Pool Config request
+- (NSError *)buildPoolConfigRequestWithSubmitterDid:(NSString *)submitterDid
+                                             writes:(BOOL)writes
+                                              force:(BOOL)force
+                                         resultJson:(NSString **)resultJson;
+
+// MARK: - Pool Restart request
+- (NSError *)buildPoolRestartRequestWithSubmitterDid:(NSString *)submitterDid
+                                              action:(NSString *)action
+                                            datetime:(NSString *)datetime
+                                          resultJson:(NSString **)resultJson;
+
+// MARK: - Pool Upgrade request
+- (NSError *)buildPoolUpgradeRequestWithSubmitterDid:(NSString *)submitterDid
+                                                name:(NSString *)name
+                                             version:(NSString *)version
+                                              action:(NSString *)action
+                                              sha256:(NSString *)sha256
+                                             timeout:(NSNumber *)timeout
+                                            schedule:(NSString *)schedule
+                                       justification:(NSString *)justification
+                                           reinstall:(BOOL)reinstall
+                                               force:(BOOL)force
+                                          resultJson:(NSString **)resultJson;
+
+// MARK: - Revocation registry definition request
+- (NSError *)buildRevocRegDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                                data:(NSString *)data
+                                          resultJson:(NSString **)resultJson;
+
+- (NSError *)buildGetRevocRegDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                                     id:(NSString *)id
+                                             resultJson:(NSString **)resultJson;
+
+- (NSError *)parseGetRevocRegDefResponse:(NSString *)getRevocRegDefResponse
+                           revocRegDefId:(NSString **)revocRegDefId
+                         revocRegDefJson:(NSString **)revocRegDefJson;
+
+
+// MARK: - Revocation registry entry request
+- (NSError *)buildRevocRegEntryRequestWithSubmitterDid:(NSString *)submitterDid
+                                                  type:(NSString *)type
+                                         revocRegDefId:(NSString *)revocRegDefId
+                                                 value:(NSString *)value
+                                            resultJson:(NSString **)resultJson;
+
+- (NSError *)buildGetRevocRegRequestWithSubmitterDid:(NSString *)submitterDid
+                                       revocRegDefId:(NSString *)revocRegDefId
+                                           timestamp:(NSNumber *)timestamp
+                                          resultJson:(NSString **)resultJson;
+
+- (NSError *)parseGetRevocRegResponse:(NSString *)getRevocRegResponse
+                        revocRegDefId:(NSString **)revocRegDefId
+                         revocRegJson:(NSString **)revocRegJson
+                            timestamp:(NSNumber **)timestamp;
+
+- (NSError *)buildGetRevocRegDeltaRequestWithSubmitterDid:(NSString *)submitterDid
+                                            revocRegDefId:(NSString *)revocRegDefId
+                                                     from:(NSNumber *)from
+                                                       to:(NSNumber *)to
+                                               resultJson:(NSString **)resultJson;
+
+- (NSError *)parseGetRevocRegDeltaResponse:(NSString *)getRevocRegDeltaResponse
+                             revocRegDefId:(NSString **)revocRegDefId
+                         revocRegDeltaJson:(NSString **)revocRegDeltaJson
+                                 timestamp:(NSNumber **)timestamp;
 
 // MARK: - Sign Request
 - (NSError *)signRequestWithWalletHandle:(IndyHandle)walletHandle
                             submitterdid:(NSString *)submitterDid
                              requestJson:(NSString *)requestJson
-                              resultJson:(NSString**)resultJson;
+                              resultJson:(NSString **)resultJson;
 
 
 @end

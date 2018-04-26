@@ -8,8 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Hyperledger.Indy.Sdk" Version="0.0.3-alpha" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="Hyperledger.Indy.Sdk">
+      <HintPath>..\..\..\wrappers\dotnet\indy-sdk-dotnet\bin\Release\netstandard2.0\Hyperledger.Indy.Sdk.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>

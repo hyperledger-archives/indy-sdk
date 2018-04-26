@@ -1,9 +1,9 @@
 extern crate libc;
 extern crate time;
+extern crate indy_crypto;
 
 use api::ErrorCode;
 use utils::cstring::CStringUtils;
-use utils::json::{JsonDecodable, JsonEncodable};
 use utils::sequence::SequenceUtils;
 
 use self::libc::c_char;
@@ -13,6 +13,8 @@ use std::collections::HashMap;
 use std::ffi::CString;
 use std::sync::Mutex;
 use std::ops::Sub;
+
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 #[derive(Deserialize)]
 struct InmemWalletRuntimeConfig {
@@ -169,9 +171,9 @@ impl InmemWallet {
         ErrorCode::Success
     }
 
-    pub extern "C" fn get_not_expied(xhandle: i32,
-                                     key: *const c_char,
-                                     value_ptr: *mut *const c_char) -> ErrorCode {
+    pub extern "C" fn get_not_expired(xhandle: i32,
+                                      key: *const c_char,
+                                      value_ptr: *mut *const c_char) -> ErrorCode {
         check_useful_c_str!(key, ErrorCode::CommonInvalidStructure);
 
         let handles = INMEM_WALLET_HANDLES.lock().unwrap();

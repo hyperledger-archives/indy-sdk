@@ -1,7 +1,10 @@
 extern crate libc;
+extern crate serde_json;
 
 use api::ErrorCode;
 use errors::indy::IndyError;
+use errors::common::CommonError;
+use errors::wallet::WalletError;
 use services::wallet::WalletService;
 use std::rc::Rc;
 
@@ -47,6 +50,7 @@ pub enum WalletCommand {
          Box<Fn(Result<i32, IndyError>) + Send>),
     Close(i32, // handle
           Box<Fn(Result<(), IndyError>) + Send>),
+    ListWallets(Box<Fn(Result<String, IndyError>) + Send>),
     Delete(String, // name
            Option<String>, // wallet credentials
            Box<Fn(Result<(), IndyError>) + Send>)
@@ -85,6 +89,10 @@ impl WalletCommandExecutor {
             WalletCommand::Close(handle, cb) => {
                 info!(target: "wallet_command_executor", "Close command received");
                 self.close(handle, cb);
+            }
+            WalletCommand::ListWallets(cb) => {
+                info!(target: "wallet_command_executor", "ListWallets command received");
+                self.list_wallets(cb);
             }
             WalletCommand::Delete(name, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Delete command received");
@@ -156,6 +164,16 @@ impl WalletCommandExecutor {
              cb: Box<Fn(Result<(), IndyError>) + Send>) {
         cb(self.wallet_service.close(handle)
             .map_err(|err| IndyError::WalletError(err)));
+    }
+
+    fn list_wallets(&self, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        let result = self.wallet_service.list_wallets()
+            .and_then(|wallets|
+                serde_json::to_string(&wallets)
+                    .map_err(|err|
+                        WalletError::CommonError(CommonError::InvalidState(format!("Can't serialize wallets list {}", err)))))
+            .map_err(IndyError::from);
+        cb(result)
     }
 
     fn delete(&self,

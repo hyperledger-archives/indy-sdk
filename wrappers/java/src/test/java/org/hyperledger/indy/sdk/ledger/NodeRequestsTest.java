@@ -2,9 +2,9 @@ package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
-import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
-import org.hyperledger.indy.sdk.signus.SignusResults;
+import org.hyperledger.indy.sdk.did.Did;
+import org.hyperledger.indy.sdk.did.DidJSONParameters;
+import org.hyperledger.indy.sdk.did.DidResults;
 import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
@@ -21,10 +21,10 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 			"\"client_port\":911," +
 			"\"alias\":\"some\"," +
 			"\"services\":[\"VALIDATOR\"]," +
-			"\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
+			"\"blskey\":\"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba\"}";
 
-	private SignusJSONParameters.CreateAndStoreMyDidJSONParameter stewardDidJson =
-			new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Steward1", null, null);
+	private DidJSONParameters.CreateAndStoreMyDidJSONParameter stewardDidJson =
+			new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Steward1", null, null);
 
 	@Test
 	public void testBuildNodeRequestWorks() throws Exception {
@@ -42,14 +42,12 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 
 	@Test
 	public void testSendNodeRequestWorksWithoutSignature() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
-
-		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, stewardDidJson.toJson()).get();
+		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, stewardDidJson.toJson()).get();
 		String did = didResult.getDid();
 
 		String nodeRequest = Ledger.buildNodeRequest(did, did, data).get();
-		Ledger.submitRequest(pool, nodeRequest).get();
+		String response = Ledger.submitRequest(pool, nodeRequest).get();
+		checkResponseType(response,"REQNACK" );
 	}
 
 	@Test
@@ -63,44 +61,38 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 				"\"client_port\":911," +
 				"\"alias\":\"some\"," +
 				"\"services\":[\"SERVICE\"]" +
-				"\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
+				"\"blskey\":\"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba\"}";
 
 		Ledger.buildNodeRequest(DID, dest, data).get();
 	}
 
 	@Test
-	public void testBuildNodeRequestWorksForMissedField() throws Exception {
+	public void testBuildNodeRequestWorksForMissedFields() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String data = "{\"node_ip\":\"10.0.0.100\"," +
-				"\"node_port\":910," +
-				"\"client_ip\":\"10.0.0.100\"," +
-				"\"client_port\":910," +
-				"\"services\":[\"VALIDATOR\"]}";
+		String data = "{ }";
 
 		Ledger.buildNodeRequest(DID, dest, data).get();
 	}
 
 	@Test
 	public void testSendNodeRequestWorksForWrongRole() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
-
-		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();
 
 		String nodeRequest = Ledger.buildNodeRequest(did, did, data).get();
-		Ledger.signAndSubmitRequest(pool, wallet, did, nodeRequest).get();
+		String response = Ledger.signAndSubmitRequest(pool, wallet, did, nodeRequest).get();
+		checkResponseType(response,"REJECT" );
 	}
 
 	@Test
 	@Ignore
 	public void testSendNodeRequestWorksForNewSteward() throws Exception {
-		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = didResult.getDid();
 
-		SignusResults.CreateAndStoreMyDidResult myDidResult = Signus.createAndStoreMyDid(wallet, "{}").get();
+		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
 		String myDid = myDidResult.getDid();
 		String myVerkey = myDidResult.getVerkey();
 

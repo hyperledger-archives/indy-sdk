@@ -21,7 +21,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             
             var claimOffer = string.Format(claimOfferTemplate, issuerDid, 1);
 
-            var claimRequest = await AnonCreds.ProverCreateAndStoreClaimReqAsync(proverWallet, proverDid, claimOffer, claimDef, masterSecretName);
+            var claimRequest = await AnonCreds.ProverCreateCredentialReqAsync(proverWallet, proverDid, claimOffer, claimDef, masterSecretName);
 
             var claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
                     "                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
@@ -29,10 +29,10 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                     "                 \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var createClaimResult = await AnonCreds.IssuerCreateClaimAsync(commonWallet, claimRequest, claim, -1);
+            var createClaimResult = await AnonCreds.IssuerCreateCredentialAsync(commonWallet, claimRequest, claim, -1);
             var claimJson = createClaimResult.ClaimJson;
 
-            await AnonCreds.ProverStoreClaimAsync(proverWallet, claimJson);
+            await AnonCreds.ProverStoreClaimAsync(proverWallet, claimJson, createClaimResult.RevocRegUpdateJson);
 
             await proverWallet.CloseAsync();
             await Wallet.DeleteWalletAsync(proverWalletName, null);
@@ -51,7 +51,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "                          \"non_revocation_claim\":null}}}}", issuerDid2);
 
             var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-                AnonCreds.ProverStoreClaimAsync(commonWallet, claimJson)
+                AnonCreds.ProverStoreClaimAsync(commonWallet, claimJson, string.Empty)
             );
 
         }
@@ -63,7 +63,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
             var claimOffer = string.Format(claimOfferTemplate, issuerDid, 1);
 
-            await AnonCreds.ProverCreateAndStoreClaimReqAsync(commonWallet, proverDid, claimOffer, claimDef, masterSecretName);
+            await AnonCreds.ProverCreateCredentialReqAsync(commonWallet, proverDid, claimOffer, claimDef, masterSecretName);
 
             var claimJson = "{\"claim\":{\"sex\":[\"male\",\"1\"],\"age\":[\"28\",\"28\"],\"name\":[\"Alex\",\"1\"],\"height\":[\"175\",\"175\"]},\n" +
                     "            \"issuer_did\":1,\"\n" +
@@ -71,7 +71,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                     "            \"schema_seq_no\":1}";
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.ProverStoreClaimAsync(commonWallet, claimJson)
+                AnonCreds.ProverStoreClaimAsync(commonWallet, claimJson, string.Empty)
             );
         }
     }

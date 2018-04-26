@@ -2,8 +2,11 @@ cargo-registry
 target
 build
 .idea
+*.iml
 .venv
 .cache
 .DS_Store
 Podfile.lock
 
+
+/wrappers/python/venv/

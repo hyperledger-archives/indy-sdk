@@ -17,7 +17,7 @@ impl LoggerUtils {
                 format!("{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.location().file(), record.location().line(), record.args())
             };
             let mut builder = LogBuilder::new();
-            builder.format(format).filter(None, LogLevelFilter::Info);
+            builder.format(format).filter(None, LogLevelFilter::Off);
 
             if env::var("RUST_LOG").is_ok() {
                 builder.parse(&env::var("RUST_LOG").unwrap());

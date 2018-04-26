@@ -33,4 +33,4 @@ async def test_crypto_verify_works_for_verkey_with_correct_crypto_type(verkey_my
     verkey = verkey_my1 + ':unknown_crypto'
     with pytest.raises(IndyError) as e:
         await crypto.crypto_verify(verkey, message, signature)
-    assert ErrorCode.SignusUnknownCryptoError == e.value.error_code
+    assert ErrorCode.UnknownCryptoTypeError == e.value.error_code

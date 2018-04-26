@@ -24,7 +24,7 @@
  Will map theirDid to myDid and store in wallet.
  
  @param theirDid Their DID
- @param myDid Pairwise did. Create it by IndySignus:createAndStoreMyDid.
+ @param myDid Pairwise did. Create it by IndyDid:createAndStoreMyDid.
  @param metadata Additional information about theirDid.
  @param walletHandle Handle of wallet, where pairwise will be stored.
  @param completion Completion block, returns error.

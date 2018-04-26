@@ -9,7 +9,7 @@ use utils::crypto::hash::Hash;
 
 pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
     match v {
-        Value::Bool(value) => Ok(value.to_string()),
+        Value::Bool(value) => Ok(if value { "True".to_string() } else { "False".to_string() }),
         Value::Number(value) => Ok(value.to_string()),
         Value::String(value) => Ok(value),
         Value::Array(array) => {
@@ -22,13 +22,13 @@ pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
                 }
             }
             Ok(result)
-        },
+        }
         Value::Object(map) => {
             let mut result = "".to_string();
             let length = map.len();
             for (index, key) in map.keys().enumerate() {
                 let mut value = map[key].clone();
-                if key == "raw" {
+                if key == "raw" || key == "hash" || key == "enc" {
                     let mut ctx = Hash::new_context()?;
                     ctx.update(&value.as_str().ok_or(CommonError::InvalidState("Cannot update hash context".to_string()))?.as_bytes())?;
                     value = Value::String(ctx.finish2()?.as_ref().to_hex());
@@ -39,7 +39,7 @@ pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
                 }
             }
             Ok(result)
-        },
+        }
         _ => Ok("".to_string())
     }
 }
@@ -66,7 +66,7 @@ mod tests {
                     }"#;
         let msg: Value = serde_json::from_str(data).unwrap();
 
-        let result = "age:43|name:John Doe|operation:dest:54|hash:cool hash|phones:1234567,2345678,age:1|rust:5,3";
+        let result = "age:43|name:John Doe|operation:dest:54|hash:46aa0c92129b33ee72ee1478d2ae62fa6e756869dedc6c858af3214a6fcf1904|phones:1234567,2345678,age:1|rust:5,3";
 
         assert_eq!(serialize_signature(msg).unwrap(), result)
     }
@@ -90,7 +90,7 @@ mod tests {
                     }"#;
         let msg: Value = serde_json::from_str(data).unwrap();
 
-        let result = "age:43|name:John Doe|operation:dest:54|hash:cool hash|raw:1dcd0759ce38f57049344a6b3c5fc18144fca1724713090c2ceeffa788c02711|phones:1234567,2345678,age:1|rust:5,3";
+        let result = "age:43|name:John Doe|operation:dest:54|hash:46aa0c92129b33ee72ee1478d2ae62fa6e756869dedc6c858af3214a6fcf1904|raw:1dcd0759ce38f57049344a6b3c5fc18144fca1724713090c2ceeffa788c02711|phones:1234567,2345678,age:1|rust:5,3";
 
         assert_eq!(serialize_signature(msg).unwrap(), result)
     }

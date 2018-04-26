@@ -48,8 +48,7 @@ git clone https://github.com/hyperledger/indy-sdk.git
 ### Source deps
 
 - http://www.sqlite.org/2017/sqlite-amalgamation-3180000.zip
-- https://github.com/miracl/milagro-crypto-c/
-- https://github.com/evernym/libzmq-pw
+- https://github.com/zeromq/libzmq
 
 ### Build sqlite
 
@@ -58,22 +57,16 @@ Download http://www.sqlite.org/2017/sqlite-amalgamation-3180000.zip
 Create empty static library project and add sqlite.c file and 2 headers from exctraced
 archive. Then just build it.
 
-### Build milagro-crypto-c
+### Build libzmq
 
-Checkout https://github.com/miracl/milagro-crypto-c/ repository.
-- cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -G "Visual Studio 15 2017 Win64" .
-- open AMCL.sln
-- disable custom build steps
-- build it
-
-### Build libzmq-pw
-
-Checkout https://github.com/evernym/libzmq-pw repository.
-- open builds/msvc/vs2017/libzmq.sln
-- switch "draft API" and "libsodium" options on
-- change "output file name" to $(TargetName)-pw
-- build (it may print errors while
-  building tests which can be ignored)
+Follow to https://http://zeromq.org/intro.
+- Download sources from last stable release for Windows. 
+- launch zeromq-x.x.x/builds/msvc/vs2015/libzmq.sln.
+- if necessary change solution platforms on x64(if you are working on x64 arch).
+- on main menu bar choose build->build libzmq.
+- if build project was succeed, in path zeromq-x.x.x/bin/x64/Debug/vXXX/dynamic has appeared
+    two files libzmq.dll and libzmq.lib.
+- rename libzmq.lib to zmq.lib.
 
 ## Build
 
@@ -91,8 +84,9 @@ Checkout https://github.com/evernym/libzmq-pw repository.
 - execute "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
 - Point path to this directory using environment variables:
   - set INDY_PREBUILT_DEPS_DIR=C:\BIN\x64
+  - set INDY_CRYPTO_PREBUILT_DEPS_DIR=C:\BIN\x64
   - set MILAGRO_DIR=C:\BIN\x64
-  - set ZMQPW_DIR=C:\BIN\x64
+  - set LIBZMQ_PREFIX=C:\BIN\x64
   - set SODIUM_LIB_DIR=C:\BIN\x64
   - set OPENSSL_DIR=C:\BIN\x64
 - set PATH to find .dlls:

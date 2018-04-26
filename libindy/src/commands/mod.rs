@@ -1,31 +1,31 @@
 #[macro_use]
 mod utils;
 
-pub mod agent;
-#[allow(unused_variables)] /* FIXME */
 pub mod anoncreds;
+pub mod blob_storage;
 pub mod crypto;
 pub mod ledger;
 pub mod pool;
-pub mod signus;
+pub mod did;
 pub mod wallet;
 pub mod pairwise;
 
-use commands::agent::{AgentCommand, AgentCommandExecutor};
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
+use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
 use commands::crypto::{CryptoCommand, CryptoCommandExecutor};
 use commands::ledger::{LedgerCommand, LedgerCommandExecutor};
 use commands::pool::{PoolCommand, PoolCommandExecutor};
-use commands::signus::{SignusCommand, SignusCommandExecutor};
+use commands::did::{DidCommand, DidCommandExecutor};
 use commands::wallet::{WalletCommand, WalletCommandExecutor};
 use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 
 use errors::common::CommonError;
 
 use services::anoncreds::AnoncredsService;
+use services::blob_storage::BlobStorageService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
-use services::signus::SignusService;
+use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 
 use std::error::Error;
@@ -36,12 +36,12 @@ use std::sync::{Mutex, MutexGuard};
 
 pub enum Command {
     Exit,
-    Agent(AgentCommand),
     Anoncreds(AnoncredsCommand),
+    BlobStorage(BlobStorageCommand),
     Crypto(CryptoCommand),
     Ledger(LedgerCommand),
     Pool(PoolCommand),
-    Signus(SignusCommand),
+    Did(DidCommand),
     Wallet(WalletCommand),
     Pairwise(PairwiseCommand)
 }
@@ -66,34 +66,35 @@ impl CommandExecutor {
         let (sender, receiver) = channel();
 
         CommandExecutor {
-            sender: sender,
+            sender,
             worker: Some(thread::spawn(move || {
                 info!(target: "command_executor", "Worker thread started");
 
                 let anoncreds_service = Rc::new(AnoncredsService::new());
+                let blob_storage_service = Rc::new(BlobStorageService::new());
+                let crypto_service = Rc::new(CryptoService::new());
+                let ledger_service = Rc::new(LedgerService::new());
                 let pool_service = Rc::new(PoolService::new());
                 let wallet_service = Rc::new(WalletService::new());
-                let signus_service = Rc::new(SignusService::new());
-                let ledger_service = Rc::new(LedgerService::new());
 
-                let agent_command_executor = AgentCommandExecutor::new(signus_service.clone(), wallet_service.clone());
-                let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone());
-                let crypto_command_executor = CryptoCommandExecutor::new(wallet_service.clone(), signus_service.clone());
-                let ledger_command_executor = LedgerCommandExecutor::new(pool_service.clone(), signus_service.clone(), wallet_service.clone(), ledger_service.clone());
+                let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), blob_storage_service.clone(), pool_service.clone(), wallet_service.clone(), crypto_service.clone());
+                let crypto_command_executor = CryptoCommandExecutor::new(wallet_service.clone(), crypto_service.clone());
+                let ledger_command_executor = LedgerCommandExecutor::new(pool_service.clone(), crypto_service.clone(), wallet_service.clone(), ledger_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
-                let signus_command_executor = SignusCommandExecutor::new(pool_service.clone(), wallet_service.clone(), signus_service.clone(), ledger_service.clone());
+                let did_command_executor = DidCommandExecutor::new(pool_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone());
                 let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
                 let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
+                let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());
 
                 loop {
                     match receiver.recv() {
-                        Ok(Command::Agent(cmd)) => {
-                            info!("AgentCommand command received");
-                            agent_command_executor.execute(cmd);
-                        }
                         Ok(Command::Anoncreds(cmd)) => {
                             info!("AnoncredsCommand command received");
                             anoncreds_command_executor.execute(cmd);
+                        }
+                        Ok(Command::BlobStorage(cmd)) => {
+                            info!("BlobStorageCommand command received");
+                            blob_storage_command_executor.execute(cmd);
                         }
                         Ok(Command::Crypto(cmd)) => {
                             info!("CryptoCommand command received");
@@ -107,9 +108,9 @@ impl CommandExecutor {
                             info!("PoolCommand command received");
                             pool_command_executor.execute(cmd);
                         }
-                        Ok(Command::Signus(cmd)) => {
-                            info!("SignusCommand command received");
-                            signus_command_executor.execute(cmd);
+                        Ok(Command::Did(cmd)) => {
+                            info!("DidCommand command received");
+                            did_command_executor.execute(cmd);
                         }
                         Ok(Command::Wallet(cmd)) => {
                             info!("WalletCommand command received");
@@ -154,17 +155,15 @@ mod tests {
     use super::*;
 
     #[test]
-    #[allow(unused_variables)]
     fn command_executor_can_be_created() {
-        let command_executor = CommandExecutor::new();
+        let _command_executor = CommandExecutor::new();
         assert!(true, "No crashes on CommandExecutor::new");
     }
 
     #[test]
     fn command_executor_can_be_dropped() {
-        #[allow(unused_variables)]
         fn drop_test() {
-            let command_executor = CommandExecutor::new();
+            let _command_executor = CommandExecutor::new();
         }
 
         drop_test();
@@ -172,9 +171,8 @@ mod tests {
     }
 
     #[test]
-    #[allow(unused_variables)]
     fn command_executor_can_get_instance() {
-        let ref command_executor: CommandExecutor = *CommandExecutor::instance();
+        let ref _command_executor: CommandExecutor = *CommandExecutor::instance();
         // Deadlock if another one instance will be requested (try to uncomment the next line)
         // let ref other_ce: CommandExecutor = *CommandExecutor::instance();
     }

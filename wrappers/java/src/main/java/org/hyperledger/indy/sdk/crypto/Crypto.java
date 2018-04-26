@@ -6,7 +6,7 @@ import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.ParamGuard;
-import org.hyperledger.indy.sdk.crypto.CryptoResults.EncryptResult;
+import org.hyperledger.indy.sdk.crypto.CryptoResults.AuthDecryptResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import java.util.concurrent.CompletableFuture;
@@ -112,21 +112,17 @@ public class Crypto extends IndyJava.API {
 	/**
 	 * Callback used when cryptoBox completes.
 	 */
-	private static Callback cryptoBoxCb = new Callback() {
+	private static Callback authCrypCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, Pointer encrypted_msg_raw, int encrypted_msg_len, Pointer nonce_raw, int nonce_len) {
 
-			CompletableFuture<EncryptResult> future = (CompletableFuture<EncryptResult>) removeFuture(xcommand_handle);
+			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			byte[] encryptedMsg = new byte[encrypted_msg_len];
-			encrypted_msg_raw.read(0, encryptedMsg, 0, encrypted_msg_len);
+			byte[] result = new byte[encrypted_msg_len];
+			encrypted_msg_raw.read(0, result, 0, encrypted_msg_len);
 
-			byte[] nonce = new byte[nonce_len];
-			nonce_raw.read(0, nonce, 0, nonce_len);
-
-			EncryptResult result = new EncryptResult(encryptedMsg, nonce);
 			future.complete(result);
 		}
 	};
@@ -134,16 +130,19 @@ public class Crypto extends IndyJava.API {
 	/**
 	 * Callback used when cryptoBoxOpen completes.
 	 */
-	private static Callback cryptoBoxOpenCb = new Callback() {
+	private static Callback authDecryptCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, Pointer decrypted_msg_raw, int decrypted_msg_len) {
+		public void callback(int xcommand_handle, int err, String their_vk, Pointer decrypted_msg_raw, int decrypted_msg_len) {
 
-			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
+			CompletableFuture<AuthDecryptResult> future = (CompletableFuture<AuthDecryptResult>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			byte[] result = new byte[decrypted_msg_len];
-			decrypted_msg_raw.read(0, result, 0, decrypted_msg_len);
+			byte[] decryptedMsg = new byte[decrypted_msg_len];
+			decrypted_msg_raw.read(0, decryptedMsg, 0, decrypted_msg_len);
+
+			AuthDecryptResult result = new AuthDecryptResult(their_vk, decryptedMsg);
+
 			future.complete(result);
 		}
 	};
@@ -151,7 +150,7 @@ public class Crypto extends IndyJava.API {
 	/**
 	 * Callback used when cryptoBoxSeal encrypt completes.
 	 */
-	private static Callback cryptoBoxSealCb = new Callback() {
+	private static Callback anonCryptCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, Pointer encrypted_msg_raw, int encrypted_msg_len) {
@@ -169,7 +168,7 @@ public class Crypto extends IndyJava.API {
 	/**
 	 * Callback used when cryptoBoxSealOpen completes.
 	 */
-	private static Callback cryptoBoxSealOpenCb = new Callback() {
+	private static Callback anonDecryptCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, Pointer decrypted_msg_raw, int decrypted_msg_len) {
@@ -193,8 +192,8 @@ public class Crypto extends IndyJava.API {
 	 * @param wallet  The wallet.
 	 * @param keyJson Key information as json.
 	 *                {
-	 *                "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
-	 *                "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
+	 *                  "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+	 *                  "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
 	 *                }
 	 * @return A future resolving to a verkey
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -291,22 +290,22 @@ public class Crypto extends IndyJava.API {
 
 	/**
 	 * Signs a message with a key.
-	 * <p>
-	 * Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey) for specific DID.
 	 *
-	 * @param wallet  The wallet.
-	 * @param myVk    id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
-	 * @param message a message to be signed
-	 * @return A future that resolves to a a signature string.
+	 * Note to use DID keys with this function you can call keyForDid to get key id (verkey) for specific DID.
+	 *
+	 * @param wallet    The wallet.
+	 * @param signerVk  Id (verkey) of my key. The key must be created by calling createKey or createAndStoreMyDid
+	 * @param message   The message to be signed
+	 * @return A future that resolves to a signature string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<byte[]> cryptoSign(
 			Wallet wallet,
-			String myVk,
+			String signerVk,
 			byte[] message) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNullOrWhiteSpace(myVk, "myVk");
+		ParamGuard.notNullOrWhiteSpace(signerVk, "signerVk");
 		ParamGuard.notNull(message, "message");
 
 		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
@@ -317,7 +316,7 @@ public class Crypto extends IndyJava.API {
 		int result = LibIndy.api.indy_crypto_sign(
 				commandHandle,
 				walletHandle,
-				myVk,
+				signerVk,
 				message,
 				message.length,
 				cryptoSignCb);
@@ -329,21 +328,21 @@ public class Crypto extends IndyJava.API {
 
 	/**
 	 * Verify a signature with a verkey.
-	 * <p>
-	 * Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey) for specific DID.
 	 *
-	 * @param theirVk   verkey to use
-	 * @param message   message
-	 * @param signature a signature to be verified
+	 *  Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey) for specific DID.
+	 *
+	 * @param signerVk  Verkey of signer of the message
+	 * @param message   Message that has been signed
+	 * @param signature A signature to be verified
 	 * @return A future that resolves to true if signature is valid, otherwise false.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<Boolean> cryptoVerify(
-			String theirVk,
+			String signerVk,
 			byte[] message,
 			byte[] signature) throws IndyException {
 
-		ParamGuard.notNullOrWhiteSpace(theirVk, "theirVk");
+		ParamGuard.notNullOrWhiteSpace(signerVk, "theirVk");
 		ParamGuard.notNull(message, "message");
 		ParamGuard.notNull(signature, "signature");
 
@@ -352,7 +351,7 @@ public class Crypto extends IndyJava.API {
 
 		int result = LibIndy.api.indy_crypto_verify(
 				commandHandle,
-				theirVk,
+				signerVk,
 				message,
 				message.length,
 				signature,
@@ -366,50 +365,50 @@ public class Crypto extends IndyJava.API {
 
 	/**
 	 * Encrypt a message by authenticated-encryption scheme.
-	 * <p>
+	 *
 	 * Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
 	 * Using Recipient's public key, Sender can compute a shared secret key.
 	 * Using Sender's public key and his secret key, Recipient can compute the exact same shared secret key.
 	 * That shared secret key can be used to verify that the encrypted message was not tampered with,
 	 * before eventually decrypting it.
-	 * <p>
+	 *
 	 * Recipient only needs Sender's public key, the nonce and the ciphertext to peform decryption.
 	 * The nonce doesn't have to be confidential.
-	 * <p>
+	 *
 	 * Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
 	 * for specific DID.
 	 *
 	 * @param wallet  The wallet.
-	 * @param myVk    id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
-	 * @param theirVk id (verkey) of their key
+	 * @param senderVk    id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
+	 * @param recipientVk id (verkey) of their key
 	 * @param message a message to be signed
-	 * @return A future that resolves to a JSON string containing an encrypted message and nonce.
+	 * @return A future that resolves to a encrypted message as an array of bytes.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<EncryptResult> cryptoBox(
+	public static CompletableFuture<byte[]> authCrypt(
 			Wallet wallet,
-			String myVk,
-			String theirVk,
+			String senderVk,
+			String recipientVk,
 			byte[] message) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNullOrWhiteSpace(myVk, "myVk");
-		ParamGuard.notNullOrWhiteSpace(theirVk, "theirVk");
+		ParamGuard.notNullOrWhiteSpace(senderVk, "myVk");
+		ParamGuard.notNullOrWhiteSpace(recipientVk, "theirVk");
 		ParamGuard.notNull(message, "message");
 
-		CompletableFuture<EncryptResult> future = new CompletableFuture<EncryptResult>();
+		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibIndy.api.indy_crypto_box(
+		int result = LibIndy.api.indy_crypto_auth_crypt(
 				commandHandle,
 				walletHandle,
-				myVk,
-				theirVk,
+				senderVk,
+				recipientVk,
 				message,
 				message.length,
-				cryptoBoxCb);
+				authCrypCb);
 
 		checkResult(result);
 
@@ -418,55 +417,46 @@ public class Crypto extends IndyJava.API {
 
 	/**
 	 * Decrypt a message by authenticated-encryption scheme.
-	 * <p>
+	 *
 	 * Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
 	 * Using Recipient's public key, Sender can compute a shared secret key.
 	 * Using Sender's public key and his secret key, Recipient can compute the exact same shared secret key.
 	 * That shared secret key can be used to verify that the encrypted message was not tampered with,
 	 * before eventually decrypting it.
-	 * <p>
+	 *
 	 * Recipient only needs Sender's public key, the nonce and the ciphertext to peform decryption.
 	 * The nonce doesn't have to be confidential.
-	 * <p>
+	 *
 	 * Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
 	 * for specific DID.
 	 *
 	 * @param wallet       The wallet.
-	 * @param myVk         id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
-	 * @param theirVk      id (verkey) of their key
-	 * @param encryptedMsg encrypted message
-	 * @param nonce        nonce that encrypted message
-	 * @return A future that resolves to a JSON string containing the decrypted message.
+	 * @param recipientVk  Id (verkey) of my key. The key must be created by calling createKey or createAndStoreMyDid
+	 * @param encryptedMsg Encrypted message
+	 * @return A future that resolves to a object containing sender verkey and decrypted message.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<byte[]> cryptoBoxOpen(
+	public static CompletableFuture<AuthDecryptResult> authDecrypt(
 			Wallet wallet,
-			String myVk,
-			String theirVk,
-			byte[] encryptedMsg,
-			byte[] nonce) throws IndyException {
+			String recipientVk,
+			byte[] encryptedMsg) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNullOrWhiteSpace(myVk, "myVk");
-		ParamGuard.notNullOrWhiteSpace(theirVk, "theirVk");
+		ParamGuard.notNullOrWhiteSpace(recipientVk, "myVk");
 		ParamGuard.notNull(encryptedMsg, "encryptedMsg");
-		ParamGuard.notNull(nonce, "nonce");
 
-		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
+		CompletableFuture<AuthDecryptResult> future = new CompletableFuture<AuthDecryptResult>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibIndy.api.indy_crypto_box_open(
+		int result = LibIndy.api.indy_crypto_auth_decrypt(
 				commandHandle,
 				walletHandle,
-				myVk,
-				theirVk,
+				recipientVk,
 				encryptedMsg,
 				encryptedMsg.length,
-				nonce,
-				nonce.length,
-				cryptoBoxOpenCb);
+				authDecryptCb);
 
 		checkResult(result);
 
@@ -475,36 +465,35 @@ public class Crypto extends IndyJava.API {
 
 	/**
 	 * Encrypts a message by anonymous-encryption scheme.
-	 * <p>
+	 *
 	 * Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
 	 * Only the Recipient can decrypt these messages, using its private key.
 	 * While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
-	 * <p>
-	 * Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
+	 *
+	 * Note to use DID keys with this function you can call keyForDid to get key id (verkey)
 	 * for specific DID.
 	 *
-	 * @param theirVk id (verkey) of their key
+	 * @param recipientVk verkey of message recipient
 	 * @param message a message to be signed
-	 * @return A future that resolves to a JSON string containing an encrypted message and nonce.
+	 * @return A future that resolves to an encrypted message as an array of bytes.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<byte[]> cryptoBoxSeal(
-			String theirVk,
+	public static CompletableFuture<byte[]> anonCrypt(
+			String recipientVk,
 			byte[] message) throws IndyException {
 
-		ParamGuard.notNullOrWhiteSpace(theirVk, "theirVk");
+		ParamGuard.notNullOrWhiteSpace(recipientVk, "theirVk");
 		ParamGuard.notNull(message, "message");
 
 		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
 		int commandHandle = addFuture(future);
-
-
-		int result = LibIndy.api.indy_crypto_box_seal(
+		
+		int result = LibIndy.api.indy_crypto_anon_crypt(
 				commandHandle,
-				theirVk,
+				recipientVk,
 				message,
 				message.length,
-				cryptoBoxSealCb);
+				anonCryptCb);
 
 		checkResult(result);
 
@@ -513,27 +502,27 @@ public class Crypto extends IndyJava.API {
 
 	/**
 	 * Decrypts a message by anonymous-encryption scheme.
-	 * <p>
+	 *
 	 * Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
 	 * Only the Recipient can decrypt these messages, using its private key.
 	 * While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
-	 * <p>
+	 *
 	 * Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
 	 * for specific DID.
 	 *
 	 * @param wallet       The wallet.
-	 * @param myVk         id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
+	 * @param recipientVk  Id (verkey) of my key. The key must be created by calling createKey or createAndStoreMyDid
 	 * @param encryptedMsg encrypted message
-	 * @return A future that resolves to a JSON string containing the decrypted message.
+	 * @return A future that resolves to a decrypted message as an array of bytes.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<byte[]> cryptoBoxSealOpen(
+	public static CompletableFuture<byte[]> anonDecrypt(
 			Wallet wallet,
-			String myVk,
+			String recipientVk,
 			byte[] encryptedMsg) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNullOrWhiteSpace(myVk, "myVk");
+		ParamGuard.notNullOrWhiteSpace(recipientVk, "myVk");
 		ParamGuard.notNull(encryptedMsg, "encryptedMsg");
 
 		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
@@ -541,13 +530,13 @@ public class Crypto extends IndyJava.API {
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibIndy.api.indy_crypto_box_seal_open(
+		int result = LibIndy.api.indy_crypto_anon_decrypt(
 				commandHandle,
 				walletHandle,
-				myVk,
+				recipientVk,
 				encryptedMsg,
 				encryptedMsg.length,
-				cryptoBoxSealOpenCb);
+				anonDecryptCb);
 
 		checkResult(result);
 

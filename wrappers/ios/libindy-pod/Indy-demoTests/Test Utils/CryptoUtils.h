@@ -34,27 +34,25 @@
                          key:(NSString *)key
                   outIsValid:(BOOL *)outIsValid;
 
-- (NSError *)cryptoBox:(NSData *)message
+- (NSError *)authCrypt:(NSData *)message
                  myKey:(NSString *)myKey
               theirKey:(NSString *)theirKey
           walletHandle:(IndyHandle)walletHandle
-          outEncrypted:(NSData **)outEncrypted
-              outNonce:(NSData **)outNonce;
+          outEncrypted:(NSData **)outEncrypted;
 
-- (NSError *)cryptoBoxOpen:(IndyHandle)walletHandle
-                     myKey:(NSString *)myKey
-                  theirKey:(NSString *)theirKey
-          encryptedMessage:(NSData *)encryptedMessage
-                     nonce:(NSData *)nonce
-       outDecryptedMessage:(NSData **)decryptedMessage;
+- (NSError *)authDecrypt:(NSData *)encryptedMessage
+        myKey:(NSString *)myKey
+        walletHandle: (IndyHandle) walletHandle
+        outTheirKey:(NSString **)outTheirKey
+       outDecryptedMessage:(NSData **)outDecryptedMessage;
 
-- (NSError *)cryptoBoxSeal:(NSData *)message
+- (NSError *)anonCrypt:(NSData *)message
                   theirKey:(NSString *)theirKey
               outEncrypted:(NSData **)outEncrypted;
 
-- (NSError *)cryptoBoxSealOpen:(NSData *)encryptedMessage
+- (NSError *)anonDecrypt:(NSData *)encryptedMessage
                          myKey:(NSString *)myKey
                   walletHandle:(IndyHandle)walletHandle
-           outDecryptedMessage:(NSData **)decryptedMessage;
+           outDecryptedMessage:(NSData **)outDecryptedMessage;
 
 @end
