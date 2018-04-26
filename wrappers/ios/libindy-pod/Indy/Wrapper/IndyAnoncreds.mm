@@ -25,7 +25,7 @@
             [name UTF8String],
             [version UTF8String],
             [attrs UTF8String],
-            IndyWrapperCommon4PCallback);
+            IndyWrapperCommonStringStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -53,7 +53,7 @@
             [tag UTF8String],
             [type UTF8String],
             [configJSON UTF8String],
-            IndyWrapperCommon4PCallback);
+            IndyWrapperCommonStringStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -83,7 +83,7 @@
             [credDefId UTF8String],
             [configJSON UTF8String],
             tailsWriterHandle,
-            IndyWrapperCommon5PCallback);
+            IndyWrapperCommonStringStringStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -103,7 +103,7 @@
     ret = indy_issuer_create_credential_offer(handle,
             walletHandle,
             [credDefId UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -132,7 +132,7 @@
             [credValuesJSON UTF8String],
             [revRegId UTF8String],
             blobStorageReaderHandle ? [blobStorageReaderHandle intValue] : -1,
-            IndyWrapperCommon5PStrOpStrOpStrCallback);
+            IndyWrapperCommonStringOptStringOptStringCallback);
 
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -157,7 +157,7 @@
             [blobStorageReaderHandle intValue],
             [revRegId UTF8String],
             [credRevocId UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
 
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -182,7 +182,7 @@
             [blobStorageReaderHandle intValue],
             [revRegId UTF8String],
             [credRevocId UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
 
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -203,7 +203,7 @@
     ret = indy_issuer_merge_revocation_registry_deltas(handle,
             [revRegDelta UTF8String],
             [otherRevRegDelta UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -223,7 +223,7 @@
     ret = indy_prover_create_master_secret(handle,
             walletHandle,
             [masterSecretID UTF8String],
-            IndyWrapperCommon3PSCallback
+            IndyWrapperCommonStringCallback
     );
 
     if (ret != Success) {
@@ -251,7 +251,7 @@
             [credOfferJSON UTF8String],
             [credentialDefJSON UTF8String],
             [masterSecretID UTF8String],
-            IndyWrapperCommon4PCallback
+            IndyWrapperCommonStringStringCallback
     );
 
     if (ret != Success) {
@@ -281,7 +281,7 @@
             [credJson UTF8String],
             [credDefJSON UTF8String],
             [revRegDefJSON UTF8String],
-            IndyWrapperCommon3PSCallback
+            IndyWrapperCommonStringCallback
     );
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -302,7 +302,7 @@
     ret = indy_prover_get_credentials(handle,
             walletHandle,
             [filterJSON UTF8String],
-            IndyWrapperCommon3PSCallback
+            IndyWrapperCommonStringCallback
     );
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -323,7 +323,7 @@
     ret = indy_prover_get_credentials_for_proof_req(handle,
             walletHandle,
             [proofReqJSON UTF8String],
-            IndyWrapperCommon3PSCallback
+            IndyWrapperCommonStringCallback
     );
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -354,7 +354,7 @@
             [schemasJSON UTF8String],
             [credentialDefsJSON UTF8String],
             [revocStatesJSON UTF8String],
-            IndyWrapperCommon3PSCallback
+            IndyWrapperCommonStringCallback
     );
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -383,7 +383,7 @@
             [credentialDefsJSON UTF8String],
             [revocRegDefsJSON UTF8String],
             [revocRegsJSON UTF8String],
-            IndyWrapperCommon3PBCallback
+            IndyWrapperCommonBoolCallback
     );
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -410,7 +410,7 @@
             [revRegDeltaJSON UTF8String],
             [timestamp unsignedIntValue],
             [credRevID UTF8String],
-            IndyWrapperCommon3PSCallback
+            IndyWrapperCommonStringCallback
     );
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -439,7 +439,7 @@
             [revRegDeltaJSON UTF8String],
             [timestamp unsignedIntValue],
             [credRevID UTF8String],
-            IndyWrapperCommon3PSCallback
+            IndyWrapperCommonStringCallback
     );
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];

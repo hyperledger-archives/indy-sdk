@@ -16,7 +16,7 @@
     ret = indy_open_blob_storage_reader(handle,
             [type_ UTF8String],
             [config UTF8String],
-            IndyWrapperCommon3TRHCallback
+            IndyWrapperCommonNumberCallback
     );
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -37,7 +37,7 @@
     ret = indy_open_blob_storage_writer(handle,
             [type_ UTF8String],
             [config UTF8String],
-            IndyWrapperCommon3TRHCallback
+            IndyWrapperCommonNumberCallback
     );
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];

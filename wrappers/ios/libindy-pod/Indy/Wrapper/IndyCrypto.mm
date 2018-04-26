@@ -15,7 +15,7 @@
        completion:(void (^)(NSError *error, NSString *verkey))completion
 {
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
-    indy_error_t ret = indy_create_key(handle, walletHandle, [keyJson UTF8String], IndyWrapperCommon3PSCallback);
+    indy_error_t ret = indy_create_key(handle, walletHandle, [keyJson UTF8String], IndyWrapperCommonStringCallback);
 
     [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
 }
@@ -30,7 +30,7 @@
             walletHandle,
             [verkey UTF8String],
             [metadata UTF8String],
-            IndyWrapperCommon2PCallback);
+            IndyWrapperCommonCallback);
 
     [[IndyCallbacks sharedInstance] complete:completion forHandle:handle ifError:ret];
 }
@@ -40,7 +40,7 @@
                completion:(void (^)(NSError *error, NSString *metadata))completion
 {
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
-    indy_error_t ret = indy_get_key_metadata(handle, walletHandle, [key UTF8String], IndyWrapperCommon3PSCallback);
+    indy_error_t ret = indy_get_key_metadata(handle, walletHandle, [key UTF8String], IndyWrapperCommonStringCallback);
 
     [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
 }
@@ -59,7 +59,7 @@
             [key UTF8String],
             messageRaw,
             messageLen,
-            IndyWrapperCommon4PDataCallback);
+            IndyWrapperCommonDataCallback);
 
     [[IndyCallbacks sharedInstance] completeData:completion forHandle:handle ifError:ret];
 }
@@ -82,7 +82,7 @@
             messageLen,
             signatureRaw,
             signatureLen,
-            IndyWrapperCommon3PBCallback);
+            IndyWrapperCommonBoolCallback);
 
     [[IndyCallbacks sharedInstance] completeBool:completion forHandle:handle ifError:ret];
 }
@@ -104,7 +104,7 @@
             [theirKey UTF8String],
             messageRaw,
             messageLen,
-            IndyWrapperCommon4PDataCallback);
+            IndyWrapperCommonDataCallback);
 
     [[IndyCallbacks sharedInstance] completeData:completion forHandle:handle ifError:ret];
 }
@@ -125,7 +125,7 @@
             [myKey UTF8String],
             messageRaw,
             messageLen,
-            IndyWrapperCommon5PSDataCallback);
+            IndyWrapperCommonStringDataCallback);
 
     [[IndyCallbacks sharedInstance] completeStringAndData:completion forHandle:handle ifError:ret];
 }
@@ -143,7 +143,7 @@
             [theirKey UTF8String],
             messageRaw,
             messageLen,
-            IndyWrapperCommon4PDataCallback);
+            IndyWrapperCommonDataCallback);
 
     [[IndyCallbacks sharedInstance] completeData:completion forHandle:handle ifError:ret];
 }
@@ -164,7 +164,7 @@
             [myKey UTF8String],
             messageRaw,
             messageLen,
-            IndyWrapperCommon4PDataCallback);
+            IndyWrapperCommonDataCallback);
 
     [[IndyCallbacks sharedInstance] completeData:completion forHandle:handle ifError:ret];
 }
