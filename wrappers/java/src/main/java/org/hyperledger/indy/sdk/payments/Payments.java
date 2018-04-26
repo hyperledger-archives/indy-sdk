@@ -146,13 +146,13 @@ public class Payments extends IndyJava.API {
      * @return json array of string with json addresses
      * @throws IndyException
      */
-    public static CompletableFuture<String> listAddresses(
+    public static CompletableFuture<String> listPaymentAddresses(
             int walletHandle
     ) throws IndyException {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
-        int result = LibIndy.api.indy_list_addresses(
+        int result = LibIndy.api.indy_list_payment_addresses(
                 commandHandle,
                 walletHandle,
                 stringCompleteCb
