@@ -16,7 +16,6 @@ pub mod pairwise;
 pub mod constants;
 pub mod blob_storage;
 pub mod results;
-pub mod payment_callbacks;
 
 #[macro_use]
 #[allow(unused_macros)]

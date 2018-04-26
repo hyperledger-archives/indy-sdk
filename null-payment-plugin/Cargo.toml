@@ -1,0 +1,13 @@
+[package]
+name = "null-payment-plugin"
+version = "0.1.0"
+authors = ["Nikita Khateev <nikita.khateev@dsr-corporation.com>"]
+
+[lib]
+name = "nullpaymentplugin"
+crate-type = ["dylib"]
+
+[dependencies]
+indy = { path = "../libindy" }
+libc = "0.2.21"
+lazy_static = "1.0"
