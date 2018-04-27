@@ -19,7 +19,10 @@
 * Extend DID API: added some methods for iteration over entities in the wallet. 
 * Bugfixes.
 
-There is [migration guide](doc/migration-guide.md) about API changes.
+Notes:
+* There is [migration guide](doc/migration-guide.md) about API changes.
+* The changes for Credential Revocation invalidates any Anoncreds made with SDK 1.3. They must be reissued.
+* This release is intended for development purposes only. The 1.5.0 release of the SDK will contain changes to the wallet format. If you plan to put durable artifacts in the wallet, let us know so we can discuss migration to the future format.
 
 # 1.3.0
 
