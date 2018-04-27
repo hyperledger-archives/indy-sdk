@@ -2,22 +2,26 @@ extern crate libc;
 extern crate indy_crypto;
 extern crate serde_json;
 
-use super::{WalletStorage, WalletStorageType, WalletRecord, WalletSearch, RecordOptions};
-
-use api::ErrorCode;
-use errors::common::CommonError;
-use errors::wallet::WalletError;
-
-use self::libc::c_char;
-
 use std::error::Error;
 use std::ffi::{CString, CStr, NulError};
 use std::ptr;
 use std::str::Utf8Error;
 use std::{slice, str};
+use std::collections::HashMap;
 
-use self::indy_crypto::utils::json::JsonDecodable;
 use api::wallet::*;
+use api::ErrorCode;
+use errors::common::CommonError;
+use errors::wallet::WalletStorageError;
+use services::wallet::wallet::WalletRuntimeConfig;
+use services::wallet::language;
+
+
+use super::{StorageIterator, WalletStorageType, WalletStorage, StorageEntity, StorageValue, TagValue};
+
+use self::libc::c_char;
+use self::indy_crypto::utils::json::JsonDecodable;
+
 
 #[derive(Debug, Deserialize)]
 pub struct PluggedWalletJSONValue {
@@ -32,9 +36,8 @@ pub struct PluggedWalletJSONValues {
 
 impl<'a> JsonDecodable<'a> for PluggedWalletJSONValues {}
 
-struct PluggedWallet {
-    name: String,
-    pool_name: String,
+
+struct PluggedStorage {
     handle: i32,
     add_record_handler: WalletAddRecord,
     update_record_value_handler: WalletUpdateRecordValue,
@@ -56,7 +59,7 @@ struct PluggedWallet {
     close_handler: WalletClose
 }
 
-impl PluggedWallet {
+impl PluggedStorage {
     fn new(name: &str,
            pool_name: &str,
            handle: i32,
@@ -77,10 +80,8 @@ impl PluggedWallet {
            get_search_total_count_handler: WalletGetSearchTotalCount,
            fetch_search_next_record_handler: WalletFetchSearchNextRecord,
            free_search_handler: WalletFreeSearch,
-           close_handler: WalletClose) -> PluggedWallet {
-        PluggedWallet {
-            name: name.to_string(),
-            pool_name: pool_name.to_string(),
+           close_handler: WalletClose) -> PluggedStorage {
+        PluggedStorage {
             handle,
             add_record_handler,
             update_record_value_handler,
@@ -104,296 +105,281 @@ impl PluggedWallet {
     }
 }
 
-impl WalletStorage for PluggedWallet {
-    fn get_pool_name(&self) -> String {
-        self.pool_name.clone()
+impl WalletStorage for PluggedStorage {
+    fn add(&self, type_: &Vec<u8>, name: &Vec<u8>, value: &Vec<u8>, value_key: &Vec<u8>, tags: &HashMap<Vec<u8>, TagValue>)
+        -> Result<(), WalletStorageError> {
+//        let type_ = CString::new(type_)?;
+//        let id = CString::new(id)?;
+//
+//        let value = value.as_bytes();
+//        let value_p = value.as_ptr();
+//        let value_len = value.len();
+//
+//        let tags_json = CString::new(tags_json)?;
+//
+//        let err = (self.add_record_handler)(self.handle,
+//                                            type_.as_ptr(),
+//                                            id.as_ptr(),
+//                                            value_p,
+//                                            value_len,
+//                                            tags_json.as_ptr());
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletError::PluggedWallerError(err));
+//        }
+//
+//        Ok(())
+        unimplemented!();
     }
 
-    fn get_name(&self) -> String {
-        self.name.clone()
-    }
-    fn add_record(&self, type_: &str, id: &str, value: &str, tags_json: &str) -> Result<(), WalletError> {
-        let type_ = CString::new(type_)?;
-        let id = CString::new(id)?;
+//    fn update_record_value(&self, type_: &str, id: &str, value: &str) -> Result<(), WalletError> {
+//        let type_ = CString::new(type_)?;
+//        let id = CString::new(id)?;
+//        let value = value.as_bytes();
+//        let value_p = value.as_ptr();
+//        let value_len = value.len();
+//
+//        let err = (self.update_record_value_handler)(self.handle,
+//                                                     type_.as_ptr(),
+//                                                     id.as_ptr(),
+//                                                     value_p,
+//                                                     value_len);
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletError::PluggedWallerError(err));
+//        }
+//
+//        Ok(())
+//    }
 
-        let value = value.as_bytes();
-        let value_p = value.as_ptr();
-        let value_len = value.len();
+//    fn add_record_tags(&self, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletStorageError> {
+//        let type_ = CString::new(type_)?;
+//        let id = CString::new(id)?;
+//        let tags_json = CString::new(tags_json)?;
+//
+//        let err = (self.add_record_tags_handler)(self.handle,
+//                                                 type_.as_ptr(),
+//                                                 id.as_ptr(),
+//                                                 tags_json.as_ptr());
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletError::PluggedWallerError(err));
+//        }
+//
+//        Ok(())
+//    }
 
-        let tags_json = CString::new(tags_json)?;
+//    fn delete_record_tags(&self, type_: &str, id: &str, tag_names_json: &str) -> Result<(), WalletStorageError> {
+//        let type_ = CString::new(type_)?;
+//        let id = CString::new(id)?;
+//        let tag_names_json = CString::new(tag_names_json)?;
+//
+//        let err = (self.delete_record_tags_handler)(self.handle,
+//                                                    type_.as_ptr(),
+//                                                    id.as_ptr(),
+//                                                    tag_names_json.as_ptr());
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletError::PluggedWallerError(err));
+//        }
+//
+//        Ok(())
+//    }
 
-        let err = (self.add_record_handler)(self.handle,
-                                            type_.as_ptr(),
-                                            id.as_ptr(),
-                                            value_p,
-                                            value_len,
-                                            tags_json.as_ptr());
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        Ok(())
-    }
-
-    fn update_record_value(&self, type_: &str, id: &str, value: &str) -> Result<(), WalletError> {
-        let type_ = CString::new(type_)?;
-        let id = CString::new(id)?;
-        let value = value.as_bytes();
-        let value_p = value.as_ptr();
-        let value_len = value.len();
-
-        let err = (self.update_record_value_handler)(self.handle,
-                                                     type_.as_ptr(),
-                                                     id.as_ptr(),
-                                                     value_p,
-                                                     value_len);
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        Ok(())
-    }
-
-    fn update_record_tags(&self, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletError> {
-        let type_ = CString::new(type_)?;
-        let id = CString::new(id)?;
-        let tags_json = CString::new(tags_json)?;
-
-        let err = (self.update_record_tags_handler)(self.handle,
-                                                    type_.as_ptr(),
-                                                    id.as_ptr(),
-                                                    tags_json.as_ptr());
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        Ok(())
-    }
-
-    fn add_record_tags(&self, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletError> {
-        let type_ = CString::new(type_)?;
-        let id = CString::new(id)?;
-        let tags_json = CString::new(tags_json)?;
-
-        let err = (self.add_record_tags_handler)(self.handle,
-                                                 type_.as_ptr(),
-                                                 id.as_ptr(),
-                                                 tags_json.as_ptr());
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        Ok(())
+    fn delete(&self, type_: &Vec<u8>, name: &Vec<u8>) -> Result<(), WalletStorageError> {
+//        let type_ = CString::new(type_)?;
+//        let id = CString::new(id)?;
+//
+//        let err = (self.delete_record_handler)(self.handle,
+//                                               type_.as_ptr(),
+//                                               id.as_ptr());
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletError::PluggedWallerError(err));
+//        }
+//
+//        Ok(())
+        unimplemented!();
     }
 
-    fn delete_record_tags(&self, type_: &str, id: &str, tag_names_json: &str) -> Result<(), WalletError> {
-        let type_ = CString::new(type_)?;
-        let id = CString::new(id)?;
-        let tag_names_json = CString::new(tag_names_json)?;
-
-        let err = (self.delete_record_tags_handler)(self.handle,
-                                                    type_.as_ptr(),
-                                                    id.as_ptr(),
-                                                    tag_names_json.as_ptr());
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        Ok(())
+    fn get(&self, type_: &Vec<u8>, name: &Vec<u8>, options: &str) -> Result<StorageEntity, WalletStorageError> {
+//        let options: RecordOptions = RecordOptions::from_json(options_json)
+//            .map_err(|err|
+//                WalletError::CommonError(
+//                    CommonError::InvalidStructure(format!("Cannot deserialize RecordRetrieveOptions: {:?}", err))))?;
+//
+//        let type_ = CString::new(type_)?;
+//        let id = CString::new(id)?;
+//        let options_json = CString::new(options_json)?;
+//        let mut record_handle_p: u32 = 0;
+//        let err = (self.get_record_handler)(self.handle,
+//                                            type_.as_ptr(),
+//                                            id.as_ptr(),
+//                                            options_json.as_ptr(),
+//                                            &mut record_handle_p);
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletError::PluggedWallerError(err));
+//        }
+//
+//        let mut id_ptr: *const c_char = ptr::null_mut();
+//        let err = (self.get_record_id_handler)(self.handle,
+//                                               record_handle_p,
+//                                               &mut id_ptr);
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletError::PluggedWallerError(err));
+//        }
+//
+//        let id = unsafe { CStr::from_ptr(id_ptr).to_str()?.to_string() };
+//
+//        let type_ = if let Some(true) = options.retrieve_type {
+//            let mut type_ptr: *const c_char = ptr::null_mut();
+//            let err = (self.get_record_type_handler)(self.handle,
+//                                                     record_handle_p,
+//                                                     &mut type_ptr);
+//
+//            if err != ErrorCode::Success {
+//                return Err(WalletError::PluggedWallerError(err));
+//            }
+//
+//            Some(unsafe { CStr::from_ptr(type_ptr).to_str()?.to_string() })
+//        } else { None };
+//
+//        let value = if let Some(false) = options.retrieve_value {
+//            None
+//        } else {
+//            let mut value_bytes: *const u8 = ptr::null();
+//            let mut value_bytes_len: usize = 0;
+//            let err = (self.get_record_value_handler)(self.handle,
+//                                                      record_handle_p,
+//                                                      &mut value_bytes,
+//                                                      &mut value_bytes_len);
+//
+//            if err != ErrorCode::Success {
+//                return Err(WalletError::PluggedWallerError(err));
+//            }
+//
+//            let value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
+//            Some(str::from_utf8(&value).unwrap().to_string())
+//        };
+//
+//        let tags = if let Some(false) = options.retrieve_tags {
+//            None
+//        } else {
+//            let mut tags_ptr: *const c_char = ptr::null_mut();
+//            let err = (self.get_record_tags_handler)(self.handle,
+//                                                     record_handle_p,
+//                                                     &mut tags_ptr);
+//
+//            if err != ErrorCode::Success {
+//                return Err(WalletError::PluggedWallerError(err));
+//            }
+//
+//            Some(unsafe { CStr::from_ptr(tags_ptr).to_str()?.to_string() })
+//        };
+//
+//        let result = WalletRecord {
+//            id,
+//            type_,
+//            value,
+//            tags
+//        };
+//
+//        let err = (self.free_record_handler)(self.handle, record_handle_p);
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletError::PluggedWallerError(err));
+//        }
+//
+//        Ok(result)
+        unimplemented!();
     }
 
-    fn delete_record(&self, type_: &str, id: &str) -> Result<(), WalletError> {
-        let type_ = CString::new(type_)?;
-        let id = CString::new(id)?;
-
-        let err = (self.delete_record_handler)(self.handle,
-                                               type_.as_ptr(),
-                                               id.as_ptr());
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        Ok(())
+    fn get_all<'a>(&'a self) -> Result<Box<StorageIterator + 'a>, WalletStorageError> {
+        unimplemented!();
     }
 
-    fn get_record(&self, type_: &str, id: &str, options_json: &str) -> Result<WalletRecord, WalletError> {
-        let options: RecordOptions = RecordOptions::from_json(options_json)
-            .map_err(|err|
-                WalletError::CommonError(
-                    CommonError::InvalidStructure(format!("Cannot deserialize RecordRetrieveOptions: {:?}", err))))?;
-
-        let type_ = CString::new(type_)?;
-        let id = CString::new(id)?;
-        let options_json = CString::new(options_json)?;
-        let mut record_handle_p: u32 = 0;
-        let err = (self.get_record_handler)(self.handle,
-                                            type_.as_ptr(),
-                                            id.as_ptr(),
-                                            options_json.as_ptr(),
-                                            &mut record_handle_p);
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        let mut id_ptr: *const c_char = ptr::null_mut();
-        let err = (self.get_record_id_handler)(self.handle,
-                                               record_handle_p,
-                                               &mut id_ptr);
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        let id = unsafe { CStr::from_ptr(id_ptr).to_str()?.to_string() };
-
-        let type_ = if let Some(true) = options.retrieve_type {
-            let mut type_ptr: *const c_char = ptr::null_mut();
-            let err = (self.get_record_type_handler)(self.handle,
-                                                     record_handle_p,
-                                                     &mut type_ptr);
-
-            if err != ErrorCode::Success {
-                return Err(WalletError::PluggedWallerError(err));
-            }
-
-            Some(unsafe { CStr::from_ptr(type_ptr).to_str()?.to_string() })
-        } else { None };
-
-        let value = if let Some(false) = options.retrieve_value {
-            None
-        } else {
-            let mut value_bytes: *const u8 = ptr::null();
-            let mut value_bytes_len: usize = 0;
-            let err = (self.get_record_value_handler)(self.handle,
-                                                      record_handle_p,
-                                                      &mut value_bytes,
-                                                      &mut value_bytes_len);
-
-            if err != ErrorCode::Success {
-                return Err(WalletError::PluggedWallerError(err));
-            }
-
-            let value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
-            Some(str::from_utf8(&value).unwrap().to_string())
-        };
-
-        let tags = if let Some(false) = options.retrieve_tags {
-            None
-        } else {
-            let mut tags_ptr: *const c_char = ptr::null_mut();
-            let err = (self.get_record_tags_handler)(self.handle,
-                                                     record_handle_p,
-                                                     &mut tags_ptr);
-
-            if err != ErrorCode::Success {
-                return Err(WalletError::PluggedWallerError(err));
-            }
-
-            Some(unsafe { CStr::from_ptr(tags_ptr).to_str()?.to_string() })
-        };
-
-        let result = WalletRecord {
-            id,
-            type_,
-            value,
-            tags
-        };
-
-        let err = (self.free_record_handler)(self.handle, record_handle_p);
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        Ok(result)
+    fn search<'a>(&'a self, type_: &Vec<u8>, query: &language::Operator, options: Option<&str>)
+        -> Result<Box<StorageIterator + 'a>, WalletStorageError> {
+//        let type_ = CString::new(type_)?;
+//        let query_json = CString::new(query_json)?;
+//        let options_json = CString::new(options_json)?;
+//        let mut search_handle_p: u32 = 0;
+//
+//        let err = (self.search_records_handler)(self.handle,
+//                                                type_.as_ptr(),
+//                                                query_json.as_ptr(),
+//                                                options_json.as_ptr(),
+//                                                &mut search_handle_p);
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletError::PluggedWallerError(err));
+//        }
+//
+//        //TODO:
+//        let records: Vec<WalletRecord> = Vec::new();
+//        let result = WalletSearch {
+//            total_count: Some(0),
+//            iter: Some(Box::new(records.into_iter())),
+//        };
+//
+//        let err = (self.free_search_handler)(self.handle, search_handle_p);
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletError::PluggedWallerError(err));
+//        }
+//
+//        Ok(result)
+        unimplemented!();
     }
 
-    fn search_records(&self, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> {
-        let type_ = CString::new(type_)?;
-        let query_json = CString::new(query_json)?;
-        let options_json = CString::new(options_json)?;
-        let mut search_handle_p: u32 = 0;
+//    fn search_all_records(&self) -> Result<WalletSearch, WalletStorageError> {
+//        let mut search_handle_p: u32 = 0;
+//
+//        let err = (self.search_all_records_handler)(self.handle,
+//                                                    &mut search_handle_p);
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletError::PluggedWallerError(err));
+//        }
+//
+//        //TODO:
+//        let records: Vec<WalletRecord> = Vec::new();
+//        let result = WalletSearch {
+//            total_count: Some(0),
+//            iter: Some(Box::new(records.into_iter())),
+//        };
+//
+//        let err = (self.free_search_handler)(self.handle, search_handle_p);
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletError::PluggedWallerError(err));
+//        }
+//
+//        Ok(result)
+//    }
 
-        let err = (self.search_records_handler)(self.handle,
-                                                type_.as_ptr(),
-                                                query_json.as_ptr(),
-                                                options_json.as_ptr(),
-                                                &mut search_handle_p);
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        //TODO:
-        let records: Vec<WalletRecord> = Vec::new();
-        let result = WalletSearch {
-            total_count: Some(0),
-            iter: Some(Box::new(records.into_iter())),
-        };
-
-        let err = (self.free_search_handler)(self.handle, search_handle_p);
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        Ok(result)
+    fn clear(&self) -> Result<(), WalletStorageError> {
+        unimplemented!();
     }
 
-    fn search_all_records(&self) -> Result<WalletSearch, WalletError> {
-        let mut search_handle_p: u32 = 0;
-
-        let err = (self.search_all_records_handler)(self.handle,
-                                                    &mut search_handle_p);
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        //TODO:
-        let records: Vec<WalletRecord> = Vec::new();
-        let result = WalletSearch {
-            total_count: Some(0),
-            iter: Some(Box::new(records.into_iter())),
-        };
-
-        let err = (self.free_search_handler)(self.handle, search_handle_p);
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        Ok(result)
+    fn close(&mut self) -> Result<(), WalletStorageError> {
+        unimplemented!();
     }
-
-    fn close_wallet(&self) -> Result<(), WalletError> {
-        let err = (self.close_handler)(self.handle);
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        Ok(())
-    }
-    fn close_search(&self, search_handle: u32) -> Result<(), WalletError> {
-        let err = (self.free_search_handler)(self.handle, search_handle);
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        Ok(())
-    }
+//    fn close_search(&self, search_handle: u32) -> Result<(), WalletStorageError> {
+//        let err = (self.free_search_handler)(self.handle, search_handle);
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletStorageError::PluggedStorageError(err));
+//        }
+//
+//        Ok(())
+//    }
 }
 
-pub struct PluggedWalletType {
+
+pub struct PluggedStorageType {
     create_handler: WalletCreate,
     open_handler: WalletOpen,
     close_handler: WalletClose,
@@ -417,7 +403,8 @@ pub struct PluggedWalletType {
     free_search_handler: WalletFreeSearch
 }
 
-impl PluggedWalletType {
+
+impl PluggedStorageType {
     pub fn new(create_handler: WalletCreate,
                open_handler: WalletOpen,
                close_handler: WalletClose,
@@ -438,8 +425,8 @@ impl PluggedWalletType {
                search_all_records_handler: WalletSearchAllRecords,
                get_search_total_count_handler: WalletGetSearchTotalCount,
                fetch_search_next_record_handler: WalletFetchSearchNextRecord,
-               free_search_handler: WalletFreeSearch) -> PluggedWalletType {
-        PluggedWalletType {
+               free_search_handler: WalletFreeSearch) -> PluggedStorageType {
+        PluggedStorageType {
             create_handler,
             open_handler,
             close_handler,
@@ -465,113 +452,109 @@ impl PluggedWalletType {
     }
 }
 
-impl WalletStorageType for PluggedWalletType {
-    fn create_wallet(&self, name: &str, config: Option<&str>, credentials: &str) -> Result<(), WalletError> {
-        let name = CString::new(name)?;
-
-        let config = match config {
-            Some(config) => Some(CString::new(config)?),
-            None => None
-        };
-
-        let credentials = CString::new(credentials)?;
-
-        let err = (self.create_handler)(name.as_ptr(),
-                                        config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
-                                        credentials.as_ptr());
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        Ok(())
+impl WalletStorageType for PluggedStorageType {
+    fn create_storage(&self, name: &str, config: Option<&str>, credentials: &str, keys: &Vec<u8>) -> Result<(), WalletStorageError> {
+//        let name = CString::new(name)?;
+//
+//        let config = match config {
+//            Some(config) => Some(CString::new(config)?),
+//            None => None
+//        };
+//
+//        let credentials = CString::new(credentials)?;
+//
+//        let err = (self.create_handler)(name.as_ptr(),
+//                                        config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
+//                                        credentials.as_ptr());
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletStorageError::PluggedStorageError(err));
+//        }
+//
+//        Ok(())
+        unimplemented!()
     }
 
-    fn delete_wallet(&self, name: &str, config: Option<&str>, credentials: &str) -> Result<(), WalletError> {
-        let name = CString::new(name)?;
-
-        let config = match config {
-            Some(config) => Some(CString::new(config)?),
-            None => None
-        };
-
-        let credentials = CString::new(credentials)?;
-
-        let err = (self.delete_handler)(name.as_ptr(),
-                                        config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
-                                        credentials.as_ptr());
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        Ok(())
+    fn delete_storage(&self, name: &str, config: Option<&str>, credentials: &str) -> Result<(), WalletStorageError> {
+//        let name = CString::new(name)?;
+//
+//        let config = match config {
+//            Some(config) => Some(CString::new(config)?),
+//            None => None
+//        };
+//
+//        let credentials = CString::new(credentials)?;
+//
+//        let err = (self.delete_handler)(name.as_ptr(),
+//                                        config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
+//                                        credentials.as_ptr());
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletStorageError::PluggedStorageError(err));
+//        }
+//
+//        Ok(())
+        unimplemented!()
     }
 
-    fn open_wallet(&self, name: &str, pool_name: &str, config: Option<&str>, runtime_config: Option<&str>, credentials: &str) -> Result<Box<WalletStorage>, WalletError> {
-        let mut handle: i32 = 0;
-        let cname = CString::new(name)?;
-
-        let config = match config {
-            Some(config) => Some(CString::new(config)?),
-            None => None
-        };
-
-        let runtime_config = match runtime_config {
-            Some(runtime_config) => Some(CString::new(runtime_config)?),
-            None => None
-        };
-
-        let credentials = CString::new(credentials)?;
-
-        let err = (self.open_handler)(cname.as_ptr(),
-                                      config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
-                                      runtime_config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
-                                      credentials.as_ptr(),
-                                      &mut handle);
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        Ok(Box::new(
-            PluggedWallet::new(
-                name,
-                pool_name,
-                handle,
-                self.add_record_handler,
-                self.update_record_value_handler,
-                self.update_record_tags_handler,
-                self.add_record_tags_handler,
-                self.delete_record_tags_handler,
-                self.delete_record_handler,
-                self.get_record_handler,
-                self.get_record_id_handler,
-                self.get_record_type_handler,
-                self.get_record_value_handler,
-                self.get_record_tags_handler,
-                self.free_record_handler,
-                self.search_records_handler,
-                self.search_all_records_handler,
-                self.get_search_total_count_handler,
-                self.fetch_search_next_record_handler,
-                self.free_search_handler,
-                self.close_handler)))
+    fn open_storage(&self, name: &str, config: Option<&str>, credentials: &str) -> Result<(Box<WalletStorage>, Vec<u8>), WalletStorageError> {
+//        let mut handle: i32 = 0;
+//        let cname = CString::new(name)?;
+//
+//        let config = match config {
+//            Some(config) => Some(CString::new(config)?),
+//            None => None
+//        };
+//
+//        let credentials = CString::new(credentials)?;
+//
+//        let err = (self.open_handler)(cname.as_ptr(),
+//                                      config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
+//                                      "".as_ptr(), // TODO!!!
+//                                      credentials.as_ptr(),
+//                                      &mut handle);
+//
+//        if err != ErrorCode::Success {
+//            return Err(WalletStorageError::PluggedStorageError(err));
+//        }
+//
+//        Ok(Box::new(
+//            PluggedStorage::new(
+//                handle,
+//                self.add_record_handler,
+//                self.update_record_value_handler,
+//                self.update_record_tags_handler,
+//                self.add_record_tags_handler,
+//                self.delete_record_tags_handler,
+//                self.delete_record_handler,
+//                self.get_record_handler,
+//                self.get_record_id_handler,
+//                self.get_record_type_handler,
+//                self.get_record_value_handler,
+//                self.get_record_tags_handler,
+//                self.free_record_handler,
+//                self.search_records_handler,
+//                self.search_all_records_handler,
+//                self.get_search_total_count_handler,
+//                self.fetch_search_next_record_handler,
+//                self.free_search_handler,
+//                self.close_handler)))
+        unimplemented!()
     }
 }
 
-
-impl From<NulError> for WalletError {
-    fn from(err: NulError) -> WalletError {
-        WalletError::CommonError(CommonError::InvalidState(format!("Null symbols in wallet keys or values: {}", err.description())))
-    }
-}
-
-impl From<Utf8Error> for WalletError {
-    fn from(err: Utf8Error) -> WalletError {
-        WalletError::CommonError(CommonError::InvalidState(format!("Incorrect utf8 symbols in wallet keys or values: {}", err.description())))
-    }
-}
+//
+//impl From<NulError> for WalletError {
+//    fn from(err: NulError) -> WalletError {
+//        WalletError::CommonError(CommonError::InvalidState(format!("Null symbols in wallet keys or values: {}", err.description())))
+//    }
+//}
+//
+//impl From<Utf8Error> for WalletError {
+//    fn from(err: Utf8Error) -> WalletError {
+//        WalletError::CommonError(CommonError::InvalidState(format!("Incorrect utf8 symbols in wallet keys or values: {}", err.description())))
+//    }
+//}
 
 //
 //#[cfg(test)]
