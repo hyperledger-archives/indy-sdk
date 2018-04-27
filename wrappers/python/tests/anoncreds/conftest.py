@@ -4,8 +4,8 @@ import pytest
 
 from indy import anoncreds
 from tests.conftest import path_home as x_path_home, pool_name as x_pool_name, wallet_type as x_wallet_type, \
-    wallet_runtime_config as x_wallet_runtime_config, wallet_handle_cleanup as x_wallet_handle_cleanup, \
-    wallet_handle as x_wallet_handle, xwallet as x_xwallet
+    wallet_runtime_config as x_wallet_runtime_config, credentials as x_credentials, \
+    wallet_handle_cleanup as x_wallet_handle_cleanup, wallet_handle as x_wallet_handle, xwallet as x_xwallet
 
 
 @pytest.fixture(scope="session")
@@ -36,14 +36,19 @@ def wallet_runtime_config():
 
 
 @pytest.fixture(scope="session")
+def credential():
+    return x_credentials()
+
+
+@pytest.fixture(scope="session")
 def xwallet_cleanup():
     return False
 
 
 # noinspection PyUnusedLocal
 @pytest.fixture(scope="session")
-def xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home):
-    xwallet_gen = x_xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home, None)
+def xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home,credential):
+    xwallet_gen = x_xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home, credential)
     yield next(xwallet_gen)
     next(xwallet_gen)
 
@@ -54,9 +59,9 @@ def wallet_handle_cleanup():
 
 
 @pytest.fixture(scope="session")
-def wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, wallet_handle_cleanup):
+def wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, credential, wallet_handle_cleanup):
     wallet_handle_gen = \
-        x_wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, None, wallet_handle_cleanup)
+        x_wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, credential, wallet_handle_cleanup)
     yield next(wallet_handle_gen)
     next(wallet_handle_gen)
 

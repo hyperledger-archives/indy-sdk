@@ -13,8 +13,8 @@ public class DeleteRecordTest extends NonSecretsIntegrationTest {
 	@Test
 	public void testDeleteRecordWorks() throws Exception {
 		WalletRecord.add(wallet, type, id, value, tags).get();
-
 		WalletRecord.delete(wallet, type, id).get();
+		WalletRecord.add(wallet, type, id, value, tags).get();
 	}
 
 	@Test

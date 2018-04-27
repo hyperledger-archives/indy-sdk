@@ -62,21 +62,12 @@ mod high_cases {
 
         #[test]
         fn issuer_create_and_store_credential_def_works() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let (cred_def_id, credential_def_json) = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
-                                                                                                         ISSUER_DID,
-                                                                                                         &AnoncredsUtils::gvt_schema_json(),
-                                                                                                         TAG_1,
-                                                                                                         None,
-                                                                                                         &AnoncredsUtils::default_cred_def_config()).unwrap();
-            assert_eq!(AnoncredsUtils::issuer_1_gvt_cred_def_id().to_string(), cred_def_id);
-            serde_json::from_str::<CredentialDefinition>(&credential_def_json).unwrap();
+            AnoncredsUtils::init_common_wallet();
         }
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_invalid_wallet() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::issuer_create_credential_definition(invalid_wallet_handle,
@@ -94,18 +85,12 @@ mod high_cases {
 
         #[test]
         fn issuer_create_credential_offer_works() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
-
-            let cred_offer = AnoncredsUtils::issuer_create_credential_offer(wallet_handle,
-                                                                            &AnoncredsUtils::issuer_1_gvt_cred_def_id()).unwrap();
-
-            assert_eq!(AnoncredsUtils::issuer_1_gvt_cred_offer_info(),
-                       serde_json::from_str::<CredentialOfferInfo>(&cred_offer).unwrap());
+            AnoncredsUtils::init_common_wallet();
         }
 
         #[test]
         fn issuer_create_credential_offer_works_for_invalid_wallet_handle() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::issuer_create_credential_offer(invalid_wallet_handle,
@@ -119,13 +104,12 @@ mod high_cases {
 
         #[test]
         fn prover_create_master_secret_works() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-            AnoncredsUtils::prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET).unwrap();
+            AnoncredsUtils::init_common_wallet();
         }
 
         #[test]
         fn prover_create_master_secret_works_invalid_wallet_handle() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_create_master_secret(invalid_wallet_handle, COMMON_MASTER_SECRET);
@@ -138,13 +122,7 @@ mod high_cases {
 
         #[test]
         fn prover_create_credential_req_works() {
-            let (wallet_handle, credential_def, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
-
-            AnoncredsUtils::prover_create_credential_req(wallet_handle,
-                                                         DID_MY1,
-                                                         &credential_offer,
-                                                         &credential_def,
-                                                         COMMON_MASTER_SECRET).unwrap();
+            AnoncredsUtils::init_common_wallet();
         }
 
         #[test]
@@ -183,14 +161,7 @@ mod high_cases {
 
         #[test]
         fn issuer_create_credential_works() {
-            let (wallet_handle, _, credential_offer, credential_req, _) = AnoncredsUtils::init_common_wallet();
-
-            AnoncredsUtils::issuer_create_credential(wallet_handle,
-                                                     &credential_offer,
-                                                     &credential_req,
-                                                     &AnoncredsUtils::gvt_credential_values_json(),
-                                                     None,
-                                                     None).unwrap();
+            AnoncredsUtils::init_common_wallet();
         }
 
         #[test]
@@ -226,7 +197,7 @@ mod high_cases {
 
         #[test]
         fn prover_store_credential_works() {
-            // This case already has been executed in Before
+            AnoncredsUtils::init_common_wallet();
         }
 
         #[test]
@@ -1399,7 +1370,8 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_invalid_schema() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+
             let schema = r#"{"name":"name","version":"1.0", "attr_names":["name"]}"#;
 
             let res = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
@@ -1413,7 +1385,7 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_invalid_did() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let res = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
                                                                           INVALID_IDENTIFIER,
@@ -1426,7 +1398,7 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_empty_schema_attr_names() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let mut schema = AnoncredsUtils::gvt_schema();
             schema.attr_names = HashSet::new();
@@ -1454,7 +1426,7 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_invalid_signature_type() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let res = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
                                                                           ISSUER_DID,
@@ -1467,7 +1439,7 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_invalid_config() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let res = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
                                                                           ISSUER_DID,
@@ -1480,14 +1452,7 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_duplicate() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
-                                                                ISSUER_DID,
-                                                                &AnoncredsUtils::gvt_schema_json(),
-                                                                TAG_1,
-                                                                Some(SIGNATURE_TYPE),
-                                                                &AnoncredsUtils::default_cred_def_config()).unwrap();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let res = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
                                                                           ISSUER_DID,
@@ -1517,9 +1482,8 @@ mod medium_cases {
 
         #[test]
         fn prover_create_master_secret_works_for_duplicate_name() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
-            AnoncredsUtils::prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET).unwrap();
             let res = AnoncredsUtils::prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsMasterSecretDuplicateNameError);
         }
