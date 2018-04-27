@@ -17,6 +17,9 @@ extern crate named_type;
 #[macro_use]
 extern crate named_type_derive;
 
+extern crate rusqlite;
+extern crate sodiumoxide;
+
 // Note that to use macroses from util inside of other modules it must me loaded first!
 #[macro_use]
 mod utils;
