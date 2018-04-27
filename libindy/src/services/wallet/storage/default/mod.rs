@@ -453,6 +453,7 @@ impl WalletStorage for SQLiteStorage {
             Some(option_str) => serde_json::from_str(option_str)?
         };
         let (query_string, query_arguments) = query::wql_to_sql(class, query, options);
+        println!("Query string: {:?}", query_string);
 
         let statement = self.conn.prepare(&query_string)?;
         let tag_retriever = if fetch_options.fetch_tags {
