@@ -20,14 +20,14 @@ public class IssuerCreateAndStoreCredentialDefinitionTest extends AnoncredsInteg
 
 	@Before
 	public void createWallet() throws Exception {
-		Wallet.createWallet("default", walletName, "default", null, null).get();
-		wallet = Wallet.openWallet(walletName, null, null).get();
+		Wallet.createWallet("default", walletName, "default", null, CREDENTIALS).get();
+		wallet = Wallet.openWallet(walletName, null, CREDENTIALS).get();
 	}
 
 	@After
 	public void deleteWallet() throws Exception {
 		wallet.closeWallet().get();
-		Wallet.deleteWallet(walletName, null).get();
+		Wallet.deleteWallet(walletName, CREDENTIALS).get();
 	}
 
 	@Test

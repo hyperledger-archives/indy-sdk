@@ -59,21 +59,21 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
 		// Issuer Create and Open Wallet
-		Wallet.createWallet(poolName, "issuerWallet", TYPE, null, null).get();
-		issuerWallet = Wallet.openWallet("issuerWallet", null, null).get();
+		Wallet.createWallet(poolName, "issuerWallet", TYPE, null, CREDENTIALS).get();
+		issuerWallet = Wallet.openWallet("issuerWallet", null, CREDENTIALS).get();
 
 		// Prover Create and Open Wallet
-		Wallet.createWallet(poolName, "proverWallet", TYPE, null, null).get();
-		proverWallet = Wallet.openWallet("proverWallet", null, null).get();
+		Wallet.createWallet(poolName, "proverWallet", TYPE, null, CREDENTIALS).get();
+		proverWallet = Wallet.openWallet("proverWallet", null, CREDENTIALS).get();
 	}
 
 	@After
 	public void deleteWallet() throws Exception {
 		issuerWallet.closeWallet().get();
-		Wallet.deleteWallet("issuerWallet", null).get();
+		Wallet.deleteWallet("issuerWallet", CREDENTIALS).get();
 
 		proverWallet.closeWallet().get();
-		Wallet.deleteWallet("proverWallet", null).get();
+		Wallet.deleteWallet("proverWallet", CREDENTIALS).get();
 
 		pool.closePoolLedger().get();
 	}
@@ -177,8 +177,8 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Wallet issuerGvtWallet = issuerWallet;
 
 		// Issuer2 Create and Open Wallet
-		Wallet.createWallet(poolName, "issuer2Wallet", "default", null, null).get();
-		Wallet issuerXyzWallet = Wallet.openWallet("issuer2Wallet", null, null).get();
+		Wallet.createWallet(poolName, "issuer2Wallet", "default", null, CREDENTIALS).get();
+		Wallet issuerXyzWallet = Wallet.openWallet("issuer2Wallet", null, CREDENTIALS).get();
 
 		// Issuer1 create GVT Schema
 		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
@@ -303,7 +303,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		// Close and delete Issuer2 Wallet
 		issuerXyzWallet.closeWallet().get();
-		Wallet.deleteWallet("issuer2Wallet", null).get();
+		Wallet.deleteWallet("issuer2Wallet", CREDENTIALS).get();
 	}
 
 	@Test

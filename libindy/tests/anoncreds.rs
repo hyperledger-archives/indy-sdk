@@ -226,30 +226,7 @@ mod high_cases {
 
         #[test]
         fn prover_store_credential_works() {
-            let (wallet_handle, credential_def_json, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
-            let prover_wallet_handle = WalletUtils::create_and_open_wallet("proverWallet", None).unwrap();
-
-            AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
-
-            let (credential_req, credential_req_meta) = AnoncredsUtils::prover_create_credential_req(prover_wallet_handle,
-                                                                                                     DID_MY1,
-                                                                                                     &credential_offer,
-                                                                                                     credential_def_json,
-                                                                                                     COMMON_MASTER_SECRET).unwrap();
-
-            let (credential_json, _, _) = AnoncredsUtils::issuer_create_credential(wallet_handle,
-                                                                                   &credential_offer,
-                                                                                   &credential_req,
-                                                                                   &AnoncredsUtils::gvt_credential_values_json(),
-                                                                                   None,
-                                                                                   None).unwrap();
-
-            AnoncredsUtils::prover_store_credential(prover_wallet_handle,
-                                                    CREDENTIAL1_ID,
-                                                    &credential_req_meta,
-                                                    &credential_json,
-                                                    &credential_def_json,
-                                                    None).unwrap();
+            // This case already has been executed in Before
         }
 
         #[test]

@@ -16,14 +16,14 @@ public class ProverCreateMasterSecretTest extends AnoncredsIntegrationTest {
 
 	@Before
 	public void createWallet() throws Exception {
-		Wallet.createWallet("default", walletName, "default", null, null).get();
-		this.wallet = Wallet.openWallet(walletName, null, null).get();
+		Wallet.createWallet("default", walletName, "default", null, CREDENTIALS).get();
+		this.wallet = Wallet.openWallet(walletName, null, CREDENTIALS).get();
 	}
 
 	@After
 	public void deleteWallet() throws Exception {
 		this.wallet.closeWallet().get();
-		Wallet.deleteWallet(walletName, null).get();
+		Wallet.deleteWallet(walletName, CREDENTIALS).get();
 	}
 
 	@Test
