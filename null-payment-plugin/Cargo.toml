@@ -2,13 +2,13 @@
 name = "null-payment-plugin"
 version = "0.1.0"
 authors = ["Nikita Khateev <nikita.khateev@dsr-corporation.com>"]
+build = "build.rs"
 
 [lib]
 name = "nullpaymentplugin"
-crate-type = ["dylib"]
+crate-type = ["dylib", "rlib"]
 
 [dependencies]
-indy = { path = "../libindy" }
 libc = "0.2.21"
 lazy_static = "1.0"
 rand = "0.3"
