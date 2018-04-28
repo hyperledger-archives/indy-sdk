@@ -20,7 +20,6 @@ use serde_json;
 use base64;
 
 use api::wallet::*;
-use errors::indy::IndyError;
 use errors::wallet::WalletError;
 use errors::common::CommonError;
 use utils::environment::EnvironmentUtils;
@@ -312,7 +311,7 @@ impl WalletService {
         }
     }
 
-    pub fn add_indy_object<T>(&self, wallet_handle: i32, name: &str, object: &T, tags_json: &str) -> Result<String, IndyError> where T: JsonEncodable, T: NamedType {
+    pub fn add_indy_object<T>(&self, wallet_handle: i32, name: &str, object: &T, tags_json: &str) -> Result<String, WalletError> where T: JsonEncodable, T: NamedType {
         let type_ = T::short_type_name();
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
@@ -322,7 +321,7 @@ impl WalletService {
                 self.add_record(wallet_handle, &self.add_prefix(type_), name, &object_json, tags_json)?;
                 Ok(object_json)
             }
-            None => Err(IndyError::WalletError(WalletError::InvalidHandle(wallet_handle.to_string())))
+            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         }
     }
 
@@ -334,7 +333,7 @@ impl WalletService {
         unimplemented!()
     }
 
-    pub fn update_indy_object<T>(&self, wallet_handle: i32, id: &str, object: &T) -> Result<String, IndyError> where T: JsonEncodable, T: NamedType {
+    pub fn update_indy_object<T>(&self, wallet_handle: i32, id: &str, object: &T) -> Result<String, WalletError> where T: JsonEncodable, T: NamedType {
 //        let type_ = T::short_type_name();
 //        match self.wallets.borrow().get(&wallet_handle) {
 //            Some(wallet) => {
@@ -344,7 +343,7 @@ impl WalletService {
 //                wallet.update_record_value(&self.add_prefix(type_), id, &object_json)?;
 //                Ok(object_json)
 //            }
-//            None => Err(IndyError::WalletError(WalletError::InvalidHandle(wallet_handle.to_string())))
+//            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
 //        }
         unimplemented!()
     }
@@ -406,7 +405,7 @@ impl WalletService {
     }
 
     // Dirty hack. json must live longer then result T
-    pub fn get_indy_object<'a, T>(&self, wallet_handle: i32, name: &str, options_json: &str, json: &'a mut String) -> Result<T, IndyError> where T: JsonDecodable<'a>, T: NamedType {
+    pub fn get_indy_object<'a, T>(&self, wallet_handle: i32, name: &str, options_json: &str, json: &'a mut String) -> Result<T, WalletError> where T: JsonDecodable<'a>, T: NamedType {
         let type_ = T::short_type_name();
 
         let record: WalletRecord = match self.wallets.borrow().get(&wallet_handle) {
@@ -419,7 +418,7 @@ impl WalletService {
         T::from_json(json)
             .map_err(map_err_trace!())
             .map_err(|err|
-                IndyError::CommonError(CommonError::InvalidState(format!("Cannot deserialize {:?}: {:?}", type_, err))))
+                WalletError::CommonError(CommonError::InvalidState(format!("Cannot deserialize {:?}: {:?}", type_, err))))
     }
 
     pub fn search_records(&self, wallet_handle: i32, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> {
@@ -458,7 +457,7 @@ impl WalletService {
         }
     }
 
-    pub fn upsert_indy_object<'a, T>(&self, wallet_handle: i32, id: &str, object: &T) -> Result<(), IndyError> where T: JsonEncodable,
+    pub fn upsert_indy_object<'a, T>(&self, wallet_handle: i32, id: &str, object: &T) -> Result<(), WalletError> where T: JsonEncodable,
                                                                                                                      T: JsonDecodable<'a>,
                                                                                                                      T: NamedType {
 //        if self.record_exists::<T>(wallet_handle, id)? {
@@ -938,6 +937,104 @@ mod tests {
     }
 
     #[test]
+    fn wallet_service_update_record_works() {
+        TestUtils::cleanup_indy_home();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
+
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS_EMPTY).unwrap();
+        let record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+        assert_eq!(VALUE_1, record.value.unwrap());
+
+        wallet_service.update_record_value(wallet_handle, TYPE_1, ID_1, VALUE_2).unwrap();
+        let updated_record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+        assert_eq!(VALUE_2, updated_record.value.unwrap());
+
+        TestUtils::cleanup_indy_home();
+    }
+
+    #[test]
+    fn wallet_service_update_record_tags_works() {
+        TestUtils::cleanup_indy_home();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
+
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS_EMPTY).unwrap();
+        let record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+        assert_eq!(TAGS_EMPTY, record.tags.unwrap());
+
+        wallet_service.update_record_tags(wallet_handle, TYPE_1, ID_1, TAGS).unwrap();
+        let updated_record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+        assert_eq!(TAGS, updated_record.tags.unwrap());
+
+        TestUtils::cleanup_indy_home();
+    }
+
+    #[test]
+    fn wallet_service_add_record_tags_works() {
+        TestUtils::cleanup_indy_home();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
+
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS).unwrap();
+        let record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+        assert_eq!(TAGS, record.tags.unwrap());
+
+        let tags_json = r#"{"tagName2":"tagValue2"}"#;
+        wallet_service.add_record_tags(wallet_handle, TYPE_1, ID_1, tags_json).unwrap();
+        let updated_record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+
+        let expected_result = r#"{"tagName1":"tagValue1", "tagName2":"tagValue2"}"#;
+
+        assert_eq!(serde_json::from_str::<serde_json::Value>(&expected_result).unwrap(),
+                   serde_json::from_str::<serde_json::Value>(&updated_record.tags.unwrap()).unwrap());
+
+        TestUtils::cleanup_indy_home();
+    }
+
+    #[test]
+    fn wallet_service_delete_record_tags_works() {
+        TestUtils::cleanup_indy_home();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
+
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS).unwrap();
+        let record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+        assert_eq!(TAGS, record.tags.unwrap());
+
+        wallet_service.delete_record_tags(wallet_handle, TYPE_1, ID_1, r#"["tagName1"]"#).unwrap();
+        let updated_record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+        assert_eq!(TAGS_EMPTY, updated_record.tags.unwrap());
+
+        TestUtils::cleanup_indy_home();
+    }
+
+    #[test]
+    fn wallet_service_delete_record_works() {
+        TestUtils::cleanup_indy_home();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
+
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS_EMPTY).unwrap();
+
+        wallet_service.delete_record(wallet_handle, TYPE_1, ID_1).unwrap();
+        let res = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY);
+        assert_match!(Err(WalletError::NotFound(_)), res);
+
+        TestUtils::cleanup_indy_home();
+    }
+
+    #[test]
     fn wallet_service_get_record_works_for_id_only() {
         _cleanup();
 
@@ -945,8 +1042,8 @@ mod tests {
         wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
         let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
 
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", "{}").unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &RecordOptions::id()).unwrap();
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS_EMPTY).unwrap();
+        let record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, &RecordOptions::id()).unwrap();
         assert!(record.get_value().is_none());
 //        assert!(record.get_type().is_none()); // TODO - fix when FetchOptions are moved from storage layer to wallet layer
         assert!(record.get_tags().is_none());

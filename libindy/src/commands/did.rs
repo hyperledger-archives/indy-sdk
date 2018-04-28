@@ -104,7 +104,7 @@ pub enum DidCommand {
 macro_rules! ensure_their_did {
     ($self_:ident, $wallet_handle:ident, $pool_handle:ident, $their_did:ident, $deferred_cmd:expr, $cb:ident) => (match $self_._wallet_get_their_did($wallet_handle, &$their_did) {
           Ok(val) => val,
-          Err(IndyError::WalletError(WalletError::NotFound(_))) => {
+          Err(WalletError::NotFound(_)) => {
 
               check_wallet_and_pool_handles_consistency!($self_.wallet_service, $self_.pool_service,
                                                          $wallet_handle, $pool_handle, $cb);
@@ -112,7 +112,7 @@ macro_rules! ensure_their_did {
               // No their their_did present in the wallet. Deffer this command until it is fetched from ledger.
               return $self_._fetch_their_did_from_ledger($wallet_handle, $pool_handle, &$their_did, $deferred_cmd);
             }
-            Err(err) => return $cb(Err(err))
+            Err(err) => return $cb(Err(IndyError::from(err)))
         });
 }
 
@@ -377,8 +377,8 @@ impl DidCommandExecutor {
         // Look to my did
         match self._wallet_get_my_did(wallet_handle, &did) {
             Ok(my_did) => return cb(Ok(my_did.verkey)),
-            Err(IndyError::WalletError(WalletError::NotFound(_))) => {}
-            Err(err) => return cb(Err(err))
+            Err(WalletError::NotFound(_)) => {}
+            Err(err) => return cb(Err(IndyError::from(err)))
         };
 
         // look to their did
@@ -410,8 +410,8 @@ impl DidCommandExecutor {
         // Look to my did
         match self._wallet_get_my_did(wallet_handle, &did) {
             Ok(my_did) => return Ok(my_did.verkey),
-            Err(IndyError::WalletError(WalletError::NotFound(_))) => {}
-            Err(err) => return Err(err)
+            Err(WalletError::NotFound(_)) => {}
+            Err(err) => return Err(IndyError::from(err))
         };
 
         // look to their did
@@ -458,7 +458,7 @@ impl DidCommandExecutor {
 
         match endpoint {
             Ok(endpoint) => cb(Ok((endpoint.ha, endpoint.verkey))),
-            Err(IndyError::WalletError(WalletError::NotFound(_))) => {
+            Err(WalletError::NotFound(_)) => {
                 check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
                                                            wallet_handle, pool_handle, cb);
 
@@ -471,7 +471,7 @@ impl DidCommandExecutor {
                                                           did.clone(),
                                                           cb));
             }
-            Err(err) => cb(Err(err))
+            Err(err) => cb(Err(IndyError::from(err)))
         };
     }
 
@@ -687,11 +687,11 @@ impl DidCommandExecutor {
             ))).unwrap();
     }
 
-    fn _wallet_get_my_did(&self, wallet_handle: i32, my_did: &str) -> Result<Did, IndyError> {
+    fn _wallet_get_my_did(&self, wallet_handle: i32, my_did: &str) -> Result<Did, WalletError> {
         self.wallet_service.get_indy_object(wallet_handle, &my_did, &RecordOptions::id_value(), &mut String::new())
     }
 
-    fn _wallet_get_their_did(&self, wallet_handle: i32, their_did: &str) -> Result<TheirDid, IndyError> {
+    fn _wallet_get_their_did(&self, wallet_handle: i32, their_did: &str) -> Result<TheirDid, WalletError> {
         self.wallet_service.get_indy_object(wallet_handle, &their_did, &RecordOptions::id_value(), &mut String::new())
     }
 

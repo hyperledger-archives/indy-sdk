@@ -271,3 +271,9 @@ impl From<serde_json::Error> for WalletQueryError {
         WalletQueryError::ParsingErr(err.to_string())
     }
 }
+
+impl From<CommonError> for WalletError {
+    fn from(err: CommonError) -> WalletError {
+        WalletError::CommonError(err)
+    }
+}

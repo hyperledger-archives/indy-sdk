@@ -1,7 +1,5 @@
-from indy import IndyError
 from indy import anoncreds
 from indy import did, ledger
-from indy.error import ErrorCode
 
 import pytest
 import json
