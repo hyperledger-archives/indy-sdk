@@ -125,7 +125,7 @@ impl PaymentsCommandExecutor {
                 self.create_address(wallet_handle, &type_, &config, cb);
             }
             PaymentsCommand::CreateAddressAck(handle, wallet_handle, result) => {
-                self.create_address_ack(handle, wallet_handle,result);
+                self.create_address_ack(handle, wallet_handle, result);
             }
             PaymentsCommand::ListAddresses(wallet_handle, cb) => {
                 self.list_addresses(wallet_handle, cb);
@@ -210,15 +210,11 @@ impl PaymentsCommandExecutor {
 
     fn create_address_ack(&self, handle: i32, wallet_handle: i32, result: Result<String, PaymentsError>) {
         let total_result: Result<String, IndyError> = match result {
-            Ok(_) => {
-                //TODO: think about deleting payment_address on wallet save failure
-                let res = result.unwrap();
-                self.wallet_service.set(wallet_handle, &format!("pay_addr::{}", &res), "")
-                    .map_err(IndyError::from).map(|_| res)
-            }
-            Err(_) => {
-                result.map_err(IndyError::from)
-            }
+            Ok(res) =>
+            //TODO: think about deleting payment_address on wallet save failure
+                self.wallet_service.set(wallet_handle, &format!("pay_addr::{}", &res), &res)
+                    .map_err(IndyError::from).map(|_| res),
+            Err(err) => IndyError::from(err)
         };
 
         self.common_ack(handle, total_result, "CreateAddressAck")
@@ -227,15 +223,18 @@ impl PaymentsCommandExecutor {
     fn list_addresses(&self, wallet_handle: i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
         match self.wallet_service.list(wallet_handle, "pay_addr::") {
             Ok(vec) => {
-                let list_addresses = vec.iter()
-                    .map(
-                        |&(ref key, _)| {
-                            key.matches("pay_addr::(.*)").next().unwrap().to_string()
-                        })
-                    .collect::<Vec<String>>();
+                let list_addresses =
+                    vec.iter()
+                        .map(|&(_, ref value)|
+                            json!({
+                            "address": value.to_string()
+                        }))
+                        .collect::<Vec<serde_json::Value>>();
                 let json_string =
                     serde_json::to_string(&list_addresses)
-                        .map_err(|err| IndyError::CommonError(CommonError::InvalidStructure(err.to_string())));
+                        .map_err(|err|
+                            IndyError::CommonError(
+                                CommonError::InvalidState(format!("Cannot deserialize List of Payment Addresses: {:?}", err))));
                 cb(json_string);
             }
             Err(err) => cb(Err(IndyError::from(err)))
@@ -267,13 +266,13 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "ParseResponseWithFeesFeesAck")
     }
 
-    fn build_get_utxo_request(&self, payment_address: &str, cb: Box<Fn(Result<(String,String), IndyError>) + Send>) {
+    fn build_get_utxo_request(&self, payment_address: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         let method = payment_address.matches("[^:]+:([^:]+):.*").next().unwrap().to_string();
         let method_copy = method.to_string();
 
         self.process_method(
             Box::new(move |get_utxo_txn_json| cb(get_utxo_txn_json.map(|s| (s, method.to_string())))),
-            & |i| self.payments_service.build_get_utxo_request(i, &method_copy, payment_address)
+            &|i| self.payments_service.build_get_utxo_request(i, &method_copy, payment_address)
         );
     }
 
@@ -406,9 +405,9 @@ impl PaymentsCommandExecutor {
     }
 
     fn parse_method(raw: &str, unwrapper: Box<Fn(serde_json::Value) -> Option<String> + Send>) -> Result<String, IndyError> {
-        let inputs_json : Vec<serde_json::Value> = serde_json::from_str(raw).unwrap();
+        let inputs_json: Vec<serde_json::Value> = serde_json::from_str(raw).unwrap();
 
-        let result_set : HashSet<String> =
+        let result_set: HashSet<String> =
             inputs_json.into_iter()
                 .filter_map(|v| unwrapper(v))
                 .filter_map(|input_str| input_str.matches("[^:]+:([^:]+):.*").next().map(|s| s.to_string()))

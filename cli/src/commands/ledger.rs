@@ -6,12 +6,13 @@ use commands::*;
 
 use libindy::ErrorCode;
 use libindy::ledger::Ledger;
+use libindy::payment::Payment;
 
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
 use std::collections::HashSet;
-use utils::table::print_table;
+use utils::table::{print_table, print_list_table};
 
 use self::regex::Regex;
 use self::chrono::prelude::*;
@@ -813,6 +814,52 @@ pub mod custom_command {
             Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
                 Err(println_err!("Transaction has been rejected: {}", extract_error_message(&reason))),
             _ => Err(println_err!("Invalid data has been received"))
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+pub mod get_utxo_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-utxo", "Get UTXO list for payment address according to payment method.") //TODO: Example
+                .add_required_param("payment_address","Target payment address")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+
+        let payment_address = get_str_param("payment_address", params).map_err(error_err!())?;
+
+        let (request, payment_method) = match Payment::build_get_utxo_request(payment_address) {
+            Ok(response) => Ok(response),
+            Err(ErrorCode::UnknownPaymentMethod) => Err(println_err!("Unknown payment method")),
+            err => Err(println_err!("Indy SDK error occurred {:?}", err))
+        }?;
+        
+        let response = match Ledger::submit_request(pool_handle, &request) {
+            Ok(response) => Ok(response),
+            Err(err) => handle_transaction_error(err, None, Some(&pool_name), None)
+        }?;
+
+        let res = match Payment::parse_get_utxo_response(&payment_method, &response) {
+            Ok(utxo_json) => {
+                let mut utxo: Vec<serde_json::Value> = serde_json::from_str(&utxo_json)
+                    .map_err(|_| println_err!("Wrong data has been received"))?;
+
+                print_list_table(&utxo,
+                                 &vec![("input", "Input"),
+                                       ("amount", "Amount"),
+                                       ("extra", "Extra Data")],
+                                 "There are no utxo's");
+                Ok(())
+            }
+            Err(err) => Err(println_err!("Invalid data has been received: {:?}", err)),
         };
 
         trace!("execute << {:?}", res);
