@@ -7,7 +7,6 @@ mod plugged;
 use self::default::DefaultWalletType;
 use self::plugged::PluggedWalletType;
 
-use errors::indy::IndyError;
 use errors::wallet::WalletError;
 use errors::common::CommonError;
 use utils::environment::EnvironmentUtils;
@@ -35,7 +34,6 @@ pub trait WalletStorage {
     fn search_records(&self, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError>;
     fn search_all_records(&self) -> Result<WalletSearch, WalletError>;
     fn close_wallet(&self) -> Result<(), WalletError>;
-    fn close_search(&self, search_handle: u32) -> Result<(), WalletError>;
     fn get_pool_name(&self) -> String;
     fn get_name(&self) -> String;
 }
@@ -278,7 +276,7 @@ impl WalletService {
         }
     }
 
-    pub fn add_indy_object<T>(&self, wallet_handle: i32, id: &str, object: &T, tags_json: &str) -> Result<String, IndyError> where T: JsonEncodable, T: NamedType {
+    pub fn add_indy_object<T>(&self, wallet_handle: i32, id: &str, object: &T, tags_json: &str) -> Result<String, WalletError> where T: JsonEncodable, T: NamedType {
         let type_ = T::short_type_name();
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
@@ -288,7 +286,7 @@ impl WalletService {
                 wallet.add_record(&self.add_prefix(type_), &id, &object_json, tags_json)?;
                 Ok(object_json)
             }
-            None => Err(IndyError::WalletError(WalletError::InvalidHandle(wallet_handle.to_string())))
+            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         }
     }
 
@@ -299,7 +297,7 @@ impl WalletService {
         }
     }
 
-    pub fn update_indy_object<T>(&self, wallet_handle: i32, id: &str, object: &T) -> Result<String, IndyError> where T: JsonEncodable, T: NamedType {
+    pub fn update_indy_object<T>(&self, wallet_handle: i32, id: &str, object: &T) -> Result<String, WalletError> where T: JsonEncodable, T: NamedType {
         let type_ = T::short_type_name();
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
@@ -309,7 +307,7 @@ impl WalletService {
                 wallet.update_record_value(&self.add_prefix(type_), id, &object_json)?;
                 Ok(object_json)
             }
-            None => Err(IndyError::WalletError(WalletError::InvalidHandle(wallet_handle.to_string())))
+            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         }
     }
 
@@ -365,7 +363,7 @@ impl WalletService {
     }
 
     // Dirty hack. json must live longer then result T
-    pub fn get_indy_object<'a, T>(&self, wallet_handle: i32, id: &str, options_json: &str, json: &'a mut String) -> Result<T, IndyError> where T: JsonDecodable<'a>, T: NamedType {
+    pub fn get_indy_object<'a, T>(&self, wallet_handle: i32, id: &str, options_json: &str, json: &'a mut String) -> Result<T, WalletError> where T: JsonDecodable<'a>, T: NamedType {
         let type_ = T::short_type_name();
 
         let record: WalletRecord = match self.wallets.borrow().get(&wallet_handle) {
@@ -378,7 +376,7 @@ impl WalletService {
         T::from_json(json)
             .map_err(map_err_trace!())
             .map_err(|err|
-                IndyError::CommonError(CommonError::InvalidState(format!("Cannot deserialize {:?}: {:?}", type_, err))))
+                WalletError::CommonError(CommonError::InvalidState(format!("Cannot deserialize {:?}: {:?}", type_, err))))
     }
 
     pub fn search_records(&self, wallet_handle: i32, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> {
@@ -399,13 +397,6 @@ impl WalletService {
         }
     }
 
-    pub fn close_search(&self, wallet_handle: i32, search_handle: u32) -> Result<(), WalletError> {
-        match self.wallets.borrow().get(&wallet_handle) {
-            Some(wallet) => wallet.close_search(search_handle),
-            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
-        }
-    }
-
     pub fn get_pool_name(&self, wallet_handle: i32) -> Result<String, WalletError> {
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => Ok(wallet.get_pool_name()),
@@ -413,7 +404,7 @@ impl WalletService {
         }
     }
 
-    pub fn upsert_indy_object<'a, T>(&self, wallet_handle: i32, id: &str, object: &T) -> Result<(), IndyError> where T: JsonEncodable,
+    pub fn upsert_indy_object<'a, T>(&self, wallet_handle: i32, id: &str, object: &T) -> Result<(), WalletError> where T: JsonEncodable,
                                                                                                                      T: JsonDecodable<'a>,
                                                                                                                      T: NamedType {
         if self.record_exists::<T>(wallet_handle, id)? {
@@ -443,9 +434,10 @@ impl WalletService {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WalletRecord {
     id: String,
+    #[serde(rename = "type")]
     type_: Option<String>,
     value: Option<String>,
     tags: Option<String>
@@ -583,6 +575,9 @@ fn _wallet_config_path(name: &str) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    extern crate serde_json;
+
     use api::ErrorCode;
     use errors::wallet::WalletError;
     use utils::inmem_wallet::InmemWallet;
@@ -590,6 +585,21 @@ mod tests {
 
     use std::time::Duration;
     use std::thread;
+
+    const POOL: &'static str = "pool";
+    const WALLET: &'static str = "wallet";
+    const DEFAULT: &'static str = "default";
+    const CREDENTIALS: &'static str = r#"{"key":"key"}"#;
+    const ID_1: &'static str = "id1";
+    const ID_2: &'static str = "id2";
+    const TYPE_1: &'static str = "type1";
+    const TYPE_2: &'static str = "type2";
+    const VALUE_1: &'static str = "value1";
+    const VALUE_2: &'static str = "value2";
+    const TAGS_EMPTY: &'static str = "{}";
+    const TAGS: &'static str = r#"{"tagName1":"tagValue1"}"#;
+    const QUERY_EMPTY: &'static str = "{}";
+    const OPTIONS_EMPTY: &'static str = "{}";
 
     #[test]
     fn wallet_service_new_works() {
@@ -626,7 +636,7 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet("pool1", "wallet1", Some("default"), None, r#"{"key":"key"}"#).unwrap();
+        wallet_service.create_wallet(POOL, WALLET, Some(DEFAULT), None, CREDENTIALS).unwrap();
 
         TestUtils::cleanup_indy_home();
     }
@@ -652,7 +662,7 @@ mod tests {
     //            )
     //            .unwrap();
     //
-    //        wallet_service.create("pool1", "wallet1", Some("inmem"), None, None).unwrap();
+    //        wallet_service.create(POOL, WALLET, Some("inmem"), None, None).unwrap();
     //
     //        TestUtils::cleanup_indy_home();
     //        InmemWallet::cleanup();
@@ -663,7 +673,7 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
 
         TestUtils::cleanup_indy_home();
     }
@@ -673,7 +683,7 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        let res = wallet_service.create_wallet("pool1", "wallet1", Some("unknown"), None, r#"{"key":"key"}"#);
+        let res = wallet_service.create_wallet(POOL, WALLET, Some("unknown"), None, CREDENTIALS);
         assert_match!(Err(WalletError::UnknownType(_)), res);
 
         TestUtils::cleanup_indy_home();
@@ -684,9 +694,9 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
 
-        let res = wallet_service.create_wallet("pool1", "wallet1", None, None, r#"{"key":"key"}"#);
+        let res = wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS);
         assert_match!(Err(WalletError::AlreadyExists(_)), res);
 
         TestUtils::cleanup_indy_home();
@@ -697,9 +707,9 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
-        wallet_service.delete_wallet("wallet1", r#"{"key":"key"}"#).unwrap();
-        wallet_service.create_wallet("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        wallet_service.delete_wallet(WALLET, CREDENTIALS).unwrap();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
 
         TestUtils::cleanup_indy_home();
     }
@@ -725,9 +735,9 @@ mod tests {
     //            )
     //            .unwrap();
     //
-    //        wallet_service.create("pool1", "wallet1", Some("inmem"), None, None).unwrap();
-    //        wallet_service.delete("wallet1", None).unwrap();
-    //        wallet_service.create("pool1", "wallet1", Some("inmem"), None, None).unwrap();
+    //        wallet_service.create(POOL, WALLET, Some("inmem"), None, None).unwrap();
+    //        wallet_service.delete(WALLET, None).unwrap();
+    //        wallet_service.create(POOL, WALLET, Some("inmem"), None, None).unwrap();
     //
     //        TestUtils::cleanup_indy_home();
     //        InmemWallet::cleanup();
@@ -738,8 +748,8 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
-        wallet_service.open_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
 
         TestUtils::cleanup_indy_home();
     }
@@ -765,8 +775,8 @@ mod tests {
     //            )
     //            .unwrap();
     //
-    //        wallet_service.create("pool1", "wallet1", Some("inmem"), None, None).unwrap();
-    //        wallet_service.open("wallet1", None, None).unwrap();
+    //        wallet_service.create(POOL, WALLET, Some("inmem"), None, None).unwrap();
+    //        wallet_service.open(WALLET, None, None).unwrap();
     //
     //        TestUtils::cleanup_indy_home();
     //        InmemWallet::cleanup();
@@ -794,7 +804,7 @@ mod tests {
     //        let w1_meta = WalletDescriptor {
     //            name: "w1".to_string(),
     //            pool_name: "p1".to_string(),
-    //            xtype: "default".to_string(),
+    //            xtype: DEFAULT.to_string(),
     //        };
     //        let w2_meta = WalletDescriptor {
     //            name: "w2".to_string(),
@@ -804,7 +814,7 @@ mod tests {
     //        let w3_meta = WalletDescriptor {
     //            name: "w3".to_string(),
     //            pool_name: "p1".to_string(),
-    //            xtype: "default".to_string(),
+    //            xtype: DEFAULT.to_string(),
     //        };
     //        wallet_service.create(&w1_meta.associated_pool_name,
     //                              &w1_meta.name,
@@ -834,8 +844,8 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
-        let wallet_handle = wallet_service.open_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
         wallet_service.close_wallet(wallet_handle).unwrap();
 
         TestUtils::cleanup_indy_home();
@@ -862,8 +872,8 @@ mod tests {
     //            )
     //            .unwrap();
     //
-    //        wallet_service.create("pool1", "wallet1", Some("inmem"), None, None).unwrap();
-    //        let wallet_handle = wallet_service.open("wallet1", None, None).unwrap();
+    //        wallet_service.create(POOL, WALLET, Some("inmem"), None, None).unwrap();
+    //        let wallet_handle = wallet_service.open(WALLET, None, None).unwrap();
     //        wallet_service.close(wallet_handle).unwrap();
     //
     //        TestUtils::cleanup_indy_home();
@@ -875,11 +885,109 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
-        let wallet_handle = wallet_service.open_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
 
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", "{}").unwrap();
-        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS_EMPTY).unwrap();
+        wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+
+        TestUtils::cleanup_indy_home();
+    }
+
+    #[test]
+    fn wallet_service_update_record_works() {
+        TestUtils::cleanup_indy_home();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
+
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS_EMPTY).unwrap();
+        let record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+        assert_eq!(VALUE_1, record.value.unwrap());
+
+        wallet_service.update_record_value(wallet_handle, TYPE_1, ID_1, VALUE_2).unwrap();
+        let updated_record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+        assert_eq!(VALUE_2, updated_record.value.unwrap());
+
+        TestUtils::cleanup_indy_home();
+    }
+
+    #[test]
+    fn wallet_service_update_record_tags_works() {
+        TestUtils::cleanup_indy_home();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
+
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS_EMPTY).unwrap();
+        let record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+        assert_eq!(TAGS_EMPTY, record.tags.unwrap());
+
+        wallet_service.update_record_tags(wallet_handle, TYPE_1, ID_1, TAGS).unwrap();
+        let updated_record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+        assert_eq!(TAGS, updated_record.tags.unwrap());
+
+        TestUtils::cleanup_indy_home();
+    }
+
+    #[test]
+    fn wallet_service_add_record_tags_works() {
+        TestUtils::cleanup_indy_home();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
+
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS).unwrap();
+        let record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+        assert_eq!(TAGS, record.tags.unwrap());
+
+        let tags_json = r#"{"tagName2":"tagValue2"}"#;
+        wallet_service.add_record_tags(wallet_handle, TYPE_1, ID_1, tags_json).unwrap();
+        let updated_record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+
+        let expected_result = r#"{"tagName1":"tagValue1", "tagName2":"tagValue2"}"#;
+
+        assert_eq!(serde_json::from_str::<serde_json::Value>(&expected_result).unwrap(),
+                   serde_json::from_str::<serde_json::Value>(&updated_record.tags.unwrap()).unwrap());
+
+        TestUtils::cleanup_indy_home();
+    }
+
+    #[test]
+    fn wallet_service_delete_record_tags_works() {
+        TestUtils::cleanup_indy_home();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
+
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS).unwrap();
+        let record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+        assert_eq!(TAGS, record.tags.unwrap());
+
+        wallet_service.delete_record_tags(wallet_handle, TYPE_1, ID_1, r#"["tagName1"]"#).unwrap();
+        let updated_record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY).unwrap();
+        assert_eq!(TAGS_EMPTY, updated_record.tags.unwrap());
+
+        TestUtils::cleanup_indy_home();
+    }
+
+    #[test]
+    fn wallet_service_delete_record_works() {
+        TestUtils::cleanup_indy_home();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
+
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS_EMPTY).unwrap();
+
+        wallet_service.delete_record(wallet_handle, TYPE_1, ID_1).unwrap();
+        let res = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, OPTIONS_EMPTY);
+        assert_match!(Err(WalletError::NotFound(_)), res);
 
         TestUtils::cleanup_indy_home();
     }
@@ -889,11 +997,11 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
-        let wallet_handle = wallet_service.open_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
 
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", "{}").unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &RecordOptions::id()).unwrap();
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS_EMPTY).unwrap();
+        let record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, &RecordOptions::id()).unwrap();
         assert!(record.get_value().is_none());
         assert!(record.get_type().is_none());
         assert!(record.get_tags().is_none());
@@ -906,12 +1014,12 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
-        let wallet_handle = wallet_service.open_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
 
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", "{}").unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &RecordOptions::id_value()).unwrap();
-        assert_eq!("value1", record.get_value().unwrap());
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS_EMPTY).unwrap();
+        let record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, &RecordOptions::id_value()).unwrap();
+        assert_eq!(VALUE_1, record.get_value().unwrap());
         assert!(record.get_type().is_none());
         assert!(record.get_tags().is_none());
 
@@ -923,14 +1031,14 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
-        let wallet_handle = wallet_service.open_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
 
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", r#"{"1":"some"}"#).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &RecordOptions::full()).unwrap();
-        assert_eq!("type", record.get_type().unwrap());
-        assert_eq!("value1", record.get_value().unwrap());
-        assert_eq!(r#"{"1":"some"}"#, record.get_tags().unwrap());
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS).unwrap();
+        let record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, &RecordOptions::full()).unwrap();
+        assert_eq!(TYPE_1, record.get_type().unwrap());
+        assert_eq!(VALUE_1, record.get_value().unwrap());
+        assert_eq!(TAGS, record.get_tags().unwrap());
 
         TestUtils::cleanup_indy_home();
     }
@@ -956,12 +1064,12 @@ mod tests {
     //            )
     //            .unwrap();
     //
-    //        wallet_service.create("pool1", "wallet1", Some("inmem"), None, None).unwrap();
-    //        let wallet_handle = wallet_service.open("wallet1", None, None).unwrap();
+    //        wallet_service.create(POOL, WALLET, Some("inmem"), None, None).unwrap();
+    //        let wallet_handle = wallet_service.open(WALLET, None, None).unwrap();
     //
-    //        wallet_service.set(wallet_handle, "key1", "value1").unwrap();
-    //        let value = wallet_service.get(wallet_handle, "key1").unwrap();
-    //        assert_eq!("value1", value);
+    //        wallet_service.set(wallet_handle, ID_1, VALUE_1).unwrap();
+    //        let value = wallet_service.get(wallet_handle, ID_1).unwrap();
+    //        assert_eq!(VALUE_1, value);
     //
     //        TestUtils::cleanup_indy_home();
     //        InmemWallet::cleanup();
@@ -972,15 +1080,15 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
 
-        let wallet_handle = wallet_service.open_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", "{}").unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS_EMPTY).unwrap();
         wallet_service.close_wallet(wallet_handle).unwrap();
 
-        let wallet_handle = wallet_service.open_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &RecordOptions::id_value()).unwrap();
-        assert_eq!("value1", record.get_value().unwrap());
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
+        let record = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, &RecordOptions::id_value()).unwrap();
+        assert_eq!(VALUE_1, record.get_value().unwrap());
 
         TestUtils::cleanup_indy_home();
     }
@@ -990,10 +1098,10 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
-        let wallet_handle = wallet_service.open_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
 
-        let res = wallet_service.get_record(wallet_handle, "type", "key1", &RecordOptions::id_value());
+        let res = wallet_service.get_record(wallet_handle, TYPE_1, ID_1, &RecordOptions::id_value());
         assert_match!(Err(WalletError::NotFound(_)), res);
 
         TestUtils::cleanup_indy_home();
@@ -1020,10 +1128,10 @@ mod tests {
     //            )
     //            .unwrap();
     //
-    //        wallet_service.create("pool1", "wallet1", Some("inmem"), None, None).unwrap();
-    //        let wallet_handle = wallet_service.open("wallet1", None, None).unwrap();
+    //        wallet_service.create(POOL, WALLET, Some("inmem"), None, None).unwrap();
+    //        let wallet_handle = wallet_service.open(WALLET, None, None).unwrap();
     //
-    //        let res = wallet_service.get(wallet_handle, "key1");
+    //        let res = wallet_service.get(wallet_handle, ID_1);
     //        assert_match!(Err(WalletError::PluggedWallerError(ErrorCode::WalletNotFoundError)), res);
     //
     //        TestUtils::cleanup_indy_home();
@@ -1050,15 +1158,15 @@ mod tests {
     //            )
     //            .unwrap();
     //
-    //        wallet_service.create("pool1", "wallet1", Some("inmem"), None, None).unwrap();
-    //        let wallet_handle = wallet_service.open("wallet1", None, None).unwrap();
+    //        wallet_service.create(POOL, WALLET, Some("inmem"), None, None).unwrap();
+    //        let wallet_handle = wallet_service.open(WALLET, None, None).unwrap();
     //
-    //        wallet_service.set(wallet_handle, "key1", "value1").unwrap();
-    //        let value = wallet_service.get(wallet_handle, "key1").unwrap();
-    //        assert_eq!("value1", value);
+    //        wallet_service.set(wallet_handle, ID_1, VALUE_1).unwrap();
+    //        let value = wallet_service.get(wallet_handle, ID_1).unwrap();
+    //        assert_eq!(VALUE_1, value);
     //
-    //        wallet_service.set(wallet_handle, "key1", "value2").unwrap();
-    //        let value = wallet_service.get(wallet_handle, "key1").unwrap();
+    //        wallet_service.set(wallet_handle, ID_1, "value2").unwrap();
+    //        let value = wallet_service.get(wallet_handle, ID_1).unwrap();
     //        assert_eq!("value2", value);
     //
     //        TestUtils::cleanup_indy_home();
@@ -1070,15 +1178,15 @@ mod tests {
     //        InmemWallet::cleanup();
     //
     //        let wallet_service = WalletService::new();
-    //        wallet_service.create("pool1", "wallet1", None, None, None).unwrap();
-    //        let wallet_handle = wallet_service.open("wallet1", None, None).unwrap();
+    //        wallet_service.create(POOL, WALLET, None, None, None).unwrap();
+    //        let wallet_handle = wallet_service.open(WALLET, None, None).unwrap();
     //
-    //        wallet_service.set(wallet_handle, "key1", "value1").unwrap();
-    //        let value = wallet_service.get(wallet_handle, "key1").unwrap();
-    //        assert_eq!("value1", value);
+    //        wallet_service.set(wallet_handle, ID_1, VALUE_1).unwrap();
+    //        let value = wallet_service.get(wallet_handle, ID_1).unwrap();
+    //        assert_eq!(VALUE_1, value);
     //
-    //        wallet_service.set(wallet_handle, "key1", "value2").unwrap();
-    //        let value = wallet_service.get(wallet_handle, "key1").unwrap();
+    //        wallet_service.set(wallet_handle, ID_1, "value2").unwrap();
+    //        let value = wallet_service.get(wallet_handle, ID_1).unwrap();
     //        assert_eq!("value2", value);
     //
     //        TestUtils::cleanup_indy_home();
@@ -1090,18 +1198,18 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
-        let wallet_handle = wallet_service.open_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
 
-        wallet_service.add_record(wallet_handle, "type1", "id1", "value1", "{}").unwrap();
-        wallet_service.add_record(wallet_handle, "type2", "id2", "value2", "{}").unwrap();
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS_EMPTY).unwrap();
+        wallet_service.add_record(wallet_handle, TYPE_2, ID_2, VALUE_2, TAGS_EMPTY).unwrap();
 
-        let mut search = wallet_service.search_records(wallet_handle, "type1", "{}", "{}").unwrap();
+        let mut search = wallet_service.search_records(wallet_handle, TYPE_1, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
         assert_eq!(1, search.get_total_count().unwrap().unwrap());
 
         let record = search.fetch_next_record().unwrap().unwrap();
-        assert_eq!("id1", record.get_id());
-        assert_eq!("value1", record.get_value().unwrap());
+        assert_eq!(ID_1, record.get_id());
+        assert_eq!(VALUE_1, record.get_value().unwrap());
 
         TestUtils::cleanup_indy_home();
     }
@@ -1111,20 +1219,20 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
-        let wallet_handle = wallet_service.open_wallet("wallet1", None, r#"{"key":"key"}"#).unwrap();
+        wallet_service.create_wallet(POOL, WALLET, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(WALLET, None, CREDENTIALS).unwrap();
 
-        wallet_service.add_record(wallet_handle, "type1", "id1", "value1", "{}").unwrap();
-        wallet_service.add_record(wallet_handle, "type2", "id2", "value2", "{}").unwrap();
+        wallet_service.add_record(wallet_handle, TYPE_1, ID_1, VALUE_1, TAGS_EMPTY).unwrap();
+        wallet_service.add_record(wallet_handle, TYPE_2, ID_2, VALUE_2, TAGS_EMPTY).unwrap();
 
         let mut search = wallet_service.search_all_records(wallet_handle).unwrap();
         assert_eq!(2, search.get_total_count().unwrap().unwrap());
 
         let record = search.fetch_next_record().unwrap().unwrap();
-        assert_eq!("value1", record.get_value().unwrap());
+        assert_eq!(VALUE_1, record.get_value().unwrap());
 
         let record = search.fetch_next_record().unwrap().unwrap();
-        assert_eq!("value2", record.get_value().unwrap());
+        assert_eq!(VALUE_2, record.get_value().unwrap());
 
         TestUtils::cleanup_indy_home();
     }
@@ -1151,10 +1259,10 @@ mod tests {
     //            )
     //            .unwrap();
     //
-    //        wallet_service.create("pool1", "wallet1", Some("inmem"), None, None).unwrap();
-    //        let wallet_handle = wallet_service.open("wallet1", Some("{\"freshness_time\": 1}"), None).unwrap();
+    //        wallet_service.create(POOL, WALLET, Some("inmem"), None, None).unwrap();
+    //        let wallet_handle = wallet_service.open(WALLET, Some("{\"freshness_time\": 1}"), None).unwrap();
     //
-    //        wallet_service.set(wallet_handle, "key1::subkey1", "value1").unwrap();
+    //        wallet_service.set(wallet_handle, "key1::subkey1", VALUE_1).unwrap();
     //        wallet_service.set(wallet_handle, "key1::subkey2", "value2").unwrap();
     //
     //        let mut key_values = wallet_service.list(wallet_handle, "key1::").unwrap();
@@ -1167,7 +1275,7 @@ mod tests {
     //
     //        let (key, value) = key_values.pop().unwrap();
     //        assert_eq!("key1::subkey1", key);
-    //        assert_eq!("value1", value);
+    //        assert_eq!(VALUE_1, value);
     //
     //        TestUtils::cleanup_indy_home();
     //        InmemWallet::cleanup();
@@ -1178,10 +1286,10 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        let wallet_name = "wallet1";
-        let pool_name = "pool1";
-        wallet_service.create_wallet(pool_name, wallet_name, None, None, r#"{"key":"key"}"#).unwrap();
-        let wallet_handle = wallet_service.open_wallet(wallet_name, None, r#"{"key":"key"}"#).unwrap();
+        let wallet_name = WALLET;
+        let pool_name = POOL;
+        wallet_service.create_wallet(pool_name, wallet_name, None, None, CREDENTIALS).unwrap();
+        let wallet_handle = wallet_service.open_wallet(wallet_name, None, CREDENTIALS).unwrap();
 
         assert_eq!(wallet_service.get_pool_name(wallet_handle).unwrap(), pool_name);
 
@@ -1209,10 +1317,10 @@ mod tests {
     //            )
     //            .unwrap();
     //
-    //        wallet_service.create("pool1", "wallet1", Some("inmem"), None, None).unwrap();
-    //        let wallet_handle = wallet_service.open("wallet1", None, None).unwrap();
+    //        wallet_service.create(POOL, WALLET, Some("inmem"), None, None).unwrap();
+    //        let wallet_handle = wallet_service.open(WALLET, None, None).unwrap();
     //
-    //        assert_eq!(wallet_service.get_pool_name(wallet_handle).unwrap(), "pool1");
+    //        assert_eq!(wallet_service.get_pool_name(wallet_handle).unwrap(), POOL);
     //
     //        TestUtils::cleanup_indy_home();
     //        InmemWallet::cleanup();
@@ -1223,9 +1331,9 @@ mod tests {
         TestUtils::cleanup_indy_home();
 
         let wallet_service = WalletService::new();
-        let wallet_name = "wallet1";
-        let pool_name = "pool1";
-        wallet_service.create_wallet(pool_name, wallet_name, None, None, r#"{"key":"key"}"#).unwrap();
+        let wallet_name = WALLET;
+        let pool_name = POOL;
+        wallet_service.create_wallet(pool_name, wallet_name, None, None, CREDENTIALS).unwrap();
 
         let get_pool_name_res = wallet_service.get_pool_name(1);
         assert_match!(Err(WalletError::InvalidHandle(_)), get_pool_name_res);

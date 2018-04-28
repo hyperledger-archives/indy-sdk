@@ -81,9 +81,9 @@ public class CredDefRequestsTest extends LedgerIntegrationTest {
 
 	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testCredDefRequestsWorks() throws Exception {
-		String myDid = createStoreAndPublishDidFromTrustee();
+		postEntities();
 
-		String getCredDefRequest = Ledger.buildGetCredDefRequest(myDid, credDefId).get();
+		String getCredDefRequest = Ledger.buildGetCredDefRequest(DID, credDefId).get();
 		String getCredDefResponse = PoolUtils.ensurePreviousRequestApplied(pool, getCredDefRequest, response -> {
 			JSONObject responseObject = new JSONObject(response);
 			return !responseObject.getJSONObject("result").isNull("seqNo");

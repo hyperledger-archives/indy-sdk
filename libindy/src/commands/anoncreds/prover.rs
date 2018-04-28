@@ -3,6 +3,7 @@ extern crate indy_crypto;
 extern crate uuid;
 
 use errors::common::CommonError;
+use errors::wallet::WalletError;
 use errors::indy::IndyError;
 use errors::anoncreds::AnoncredsError;
 use services::anoncreds::AnoncredsService;
@@ -502,7 +503,7 @@ impl ProverCommandExecutor {
         Ok(rev_state_json)
     }
 
-    fn _wallet_get_master_secret(&self, wallet_handle: i32, key: &str) -> Result<MasterSecret, IndyError> {
+    fn _wallet_get_master_secret(&self, wallet_handle: i32, key: &str) -> Result<MasterSecret, WalletError> {
         self.wallet_service.get_indy_object(wallet_handle, &key, &RecordOptions::id_value(), &mut String::new())
     }
 }

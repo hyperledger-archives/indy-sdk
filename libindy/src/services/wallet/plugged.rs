@@ -231,7 +231,7 @@ impl WalletStorage for PluggedWallet {
         let type_ = CString::new(type_)?;
         let id = CString::new(id)?;
         let options_json = CString::new(options_json)?;
-        let mut record_handle_p: u32 = 0;
+        let mut record_handle_p: i32 = 0;
         let err = (self.get_record_handler)(self.handle,
                                             type_.as_ptr(),
                                             id.as_ptr(),
@@ -319,7 +319,7 @@ impl WalletStorage for PluggedWallet {
         let type_ = CString::new(type_)?;
         let query_json = CString::new(query_json)?;
         let options_json = CString::new(options_json)?;
-        let mut search_handle_p: u32 = 0;
+        let mut search_handle_p: i32 = 0;
 
         let err = (self.search_records_handler)(self.handle,
                                                 type_.as_ptr(),
@@ -348,7 +348,7 @@ impl WalletStorage for PluggedWallet {
     }
 
     fn search_all_records(&self) -> Result<WalletSearch, WalletError> {
-        let mut search_handle_p: u32 = 0;
+        let mut search_handle_p: i32 = 0;
 
         let err = (self.search_all_records_handler)(self.handle,
                                                     &mut search_handle_p);
@@ -375,15 +375,6 @@ impl WalletStorage for PluggedWallet {
 
     fn close_wallet(&self) -> Result<(), WalletError> {
         let err = (self.close_handler)(self.handle);
-
-        if err != ErrorCode::Success {
-            return Err(WalletError::PluggedWallerError(err));
-        }
-
-        Ok(())
-    }
-    fn close_search(&self, search_handle: u32) -> Result<(), WalletError> {
-        let err = (self.free_search_handler)(self.handle, search_handle);
 
         if err != ErrorCode::Success {
             return Err(WalletError::PluggedWallerError(err));
