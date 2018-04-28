@@ -3,9 +3,6 @@ extern crate rand;
 
 use self::rand::Rng;
 use std::sync::Mutex;
-use std::sync::atomic::Ordering;
-use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::ATOMIC_USIZE_INIT;
 use std::collections::HashMap;
 use std::ffi::CString;
 use std::os::raw::c_char;
@@ -18,17 +15,13 @@ type CommonResponseCallback = extern fn(command_handle_: i32,
                                         err: ErrorCode,
                                         res1: *const c_char) -> ErrorCode;
 
-lazy_static! {
-    static ref IDS_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT; //TODO use AtomicI32
-}
-
-pub extern fn nullpayment_init(cb: Option<extern fn(cmd_handle: i32, err: ErrorCode)>) {
-    let _cmd_handle = get_next_id();
+#[no_mangle]
+pub extern fn nullpayment_init(cmd_handle:i32, cb: Option<extern fn(_cmd_handle: i32, err: ErrorCode)>) {
     let payment_method_name = CString::new("null_payment_plugin").unwrap();
 
     unsafe {
         indy_register_payment_method(
-            _cmd_handle,
+            cmd_handle,
             payment_method_name.as_ptr(),
             Some(_create_payment_address_handler),
             Some(_add_request_fees_handler),
@@ -415,8 +408,4 @@ fn _build_get_txn_request(
             ErrorCode::Success
         }
     }
-}
-
-fn get_next_id() -> i32 {
-    (IDS_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32
 }
