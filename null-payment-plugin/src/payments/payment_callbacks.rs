@@ -1,9 +1,6 @@
 extern crate libc;
 extern crate rand;
 
-use indy::api::payments::indy_register_payment_method;
-use indy::api::ledger::indy_build_get_txn_request;
-use indy::api::ErrorCode;
 use self::rand::Rng;
 use std::sync::Mutex;
 use std::sync::atomic::Ordering;
@@ -13,6 +10,9 @@ use std::collections::HashMap;
 use std::ffi::CString;
 use std::os::raw::c_char;
 use std::ffi::CStr;
+use payments::ErrorCode;
+use payments::libindy::indy_build_get_txn_request;
+use payments::libindy::indy_register_payment_method;
 
 type CommonResponseCallback = extern fn(command_handle_: i32,
                                         err: ErrorCode,
@@ -26,22 +26,24 @@ pub extern fn nullpayment_init(cb: Option<extern fn(cmd_handle: i32, err: ErrorC
     let _cmd_handle = get_next_id();
     let payment_method_name = CString::new("null_payment_plugin").unwrap();
 
-    indy_register_payment_method(
-        _cmd_handle,
-        payment_method_name.as_ptr(),
-        Some(_create_payment_address_handler),
-        Some(_add_request_fees_handler),
-        Some(_parse_response_with_fees_handler),
-        Some(_build_get_utxo_request_handler),
-        Some(_parse_get_utxo_response_handler),
-        Some(_build_payment_req_handler),
-        Some(_parse_payment_response_handler),
-        Some(_build_mint_req_handler),
-        Some(_build_set_txn_fees_req_handler),
-        Some(_build_get_txn_fees_req_handler),
-        Some(_parse_get_txn_fees_response_handler),
-        cb
-    );
+    unsafe {
+        indy_register_payment_method(
+            _cmd_handle,
+            payment_method_name.as_ptr(),
+            Some(_create_payment_address_handler),
+            Some(_add_request_fees_handler),
+            Some(_parse_response_with_fees_handler),
+            Some(_build_get_utxo_request_handler),
+            Some(_parse_get_utxo_response_handler),
+            Some(_build_payment_req_handler),
+            Some(_parse_payment_response_handler),
+            Some(_build_mint_req_handler),
+            Some(_build_set_txn_fees_req_handler),
+            Some(_build_get_txn_fees_req_handler),
+            Some(_parse_get_txn_fees_response_handler),
+            cb
+        );
+    }
 }
 
 lazy_static! {
@@ -72,12 +74,14 @@ extern fn _create_payment_address_handler(
     _execute_cb(cb, cmd_handle, res, err)
 }
 
+#[no_mangle]
 pub extern fn nullpayment_inject_create_payment_address_result(err: ErrorCode, res: *const c_char) {
     let mut results = CREATE_ADDRESS_RESULT_INJECTIONS.lock().unwrap();
     let res = CString::from(unsafe { CStr::from_ptr(res) });
     results.push((err, res));
 }
 
+#[no_mangle]
 pub extern fn nullpayment_clear_create_payment_address_injections() {
     let mut vec = CREATE_ADDRESS_RESULT_INJECTIONS.lock().unwrap();
 	vec.clear();
@@ -98,12 +102,14 @@ extern fn _add_request_fees_handler(
     _execute_cb(cb, command_handle, res, err)
 }
 
+#[no_mangle]
 pub extern fn nullpayment_inject_add_request_fees_result(err: ErrorCode, res: *const c_char) {
     let mut results = ADD_REQUEST_FEES_RESULT_INJECTIONS.lock().unwrap();
     let res = CString::from(unsafe { CStr::from_ptr(res) });
     results.push((err, res));
 }
 
+#[no_mangle]
 pub extern fn nullpayment_clear_add_request_fees_injections() {
     let mut vec = ADD_REQUEST_FEES_RESULT_INJECTIONS.lock().unwrap();
 	vec.clear();
@@ -122,12 +128,14 @@ extern fn _parse_response_with_fees_handler(
     _execute_cb(cb, command_handle, res, err)
 }
 
+#[no_mangle]
 pub extern fn nullpayment_inject_parse_response_with_fees_result(err: ErrorCode, res: *const c_char) {
     let mut results = PARSE_RESPONSE_WITH_FEES_RESULT_INJECTIONS.lock().unwrap();
     let res = CString::from(unsafe { CStr::from_ptr(res) });
     results.push((err, res));
 }
 
+#[no_mangle]
 pub extern fn nullpayment_clear_parse_response_with_fees_injections() {
     let mut vec = PARSE_RESPONSE_WITH_FEES_RESULT_INJECTIONS.lock().unwrap();
 	vec.clear();
@@ -145,12 +153,15 @@ extern fn _build_get_utxo_request_handler(
     };
     _build_get_txn_request(command_handle, cb, res)
 }
+
+#[no_mangle]
 pub extern fn nullpayment_inject_build_get_utxo_request_result(err: ErrorCode, res: *const c_char) {
     let mut results = BUILD_GET_UTXO_REQUEST_RESULT_INJECTIONS.lock().unwrap();
     let res = CString::from(unsafe { CStr::from_ptr(res) });
     results.push((err, res));
 }
 
+#[no_mangle]
 pub extern fn nullpayment_clear_build_get_utxo_request_injections() {
     let mut vec = BUILD_GET_UTXO_REQUEST_RESULT_INJECTIONS.lock().unwrap();
 	vec.clear();
@@ -178,12 +189,14 @@ extern fn _parse_get_utxo_response_handler(
     _execute_cb(cb, command_handle, res, err)
 }
 
+#[no_mangle]
 pub extern fn nullpayment_inject_parse_get_utxo_response_result(err: ErrorCode, res: *const c_char) {
     let mut results = PARSE_GET_UTXO_RESPONSE_RESULT_INJECTIONS.lock().unwrap();
     let res = CString::from(unsafe { CStr::from_ptr(res) });
     results.push((err, res));
 }
 
+#[no_mangle]
 pub extern fn nullpayment_clear_parse_get_utxo_response_injections() {
     let mut vec = PARSE_GET_UTXO_RESPONSE_RESULT_INJECTIONS.lock().unwrap();
 	vec.clear();
@@ -204,12 +217,14 @@ extern fn _build_payment_req_handler(
     _execute_cb(cb, command_handle, res, err)
 }
 
+#[no_mangle]
 pub extern fn nullpayment_inject_build_payment_req_result(err: ErrorCode, res: *const c_char) {
     let mut results = BUILD_PAYMENT_REQ_RESULT_INJECTIONS.lock().unwrap();
     let res = CString::from(unsafe { CStr::from_ptr(res) });
     results.push((err, res));
 }
 
+#[no_mangle]
 pub extern fn nullpayment_clear_build_payment_req_injections() {
     let mut vec = BUILD_PAYMENT_REQ_RESULT_INJECTIONS.lock().unwrap();
 	vec.clear();
@@ -229,12 +244,14 @@ extern fn _parse_payment_response_handler(
     _execute_cb(cb, command_handle, res, err)
 }
 
+#[no_mangle]
 pub extern fn nullpayment_inject_parse_payment_response_result(err: ErrorCode, res: *const c_char){
     let mut results = PARSE_PAYMENT_RESPONSE_RESULT_INJECTIONS.lock().unwrap();
     let res = CString::from(unsafe { CStr::from_ptr(res) });
     results.push((err, res));
 }
 
+#[no_mangle]
 pub extern fn nullpayment_clear_parse_payment_response_injections() {
     let mut vec = PARSE_PAYMENT_RESPONSE_RESULT_INJECTIONS.lock().unwrap();
 	vec.clear();
@@ -253,12 +270,14 @@ extern fn _build_mint_req_handler(
     _build_get_txn_request(command_handle, cb, res)
 }
 
+#[no_mangle]
 pub extern fn nullpayment_inject_build_mint_req_result(err: ErrorCode, res: *const c_char) {
     let mut results = BUILD_MINT_REQ_RESULT_INJECTIONS.lock().unwrap();
     let res = CString::from(unsafe { CStr::from_ptr(res) });
     results.push((err, res));
 }
 
+#[no_mangle]
 pub extern fn nullpayment_clear_build_mint_req_injections() {
     let mut vec = BUILD_MINT_REQ_RESULT_INJECTIONS.lock().unwrap();
 	vec.clear();
@@ -278,12 +297,14 @@ extern fn _build_set_txn_fees_req_handler(
     _execute_cb(cb, command_handle, res, err)
 }
 
+#[no_mangle]
 pub extern fn nullpayment_inject_build_set_txn_fees_req_result(err: ErrorCode, res: *const c_char) {
     let mut results = BUILD_SET_TXN_FEES_REQ_RESULT_INJECTIONS.lock().unwrap();
     let res = CString::from(unsafe { CStr::from_ptr(res) });
     results.push((err, res));
 }
 
+#[no_mangle]
 pub extern fn nullpayment_clear_build_set_txn_fees_req_injections() {
     let mut vec = BUILD_SET_TXN_FEES_REQ_RESULT_INJECTIONS.lock().unwrap();
 	vec.clear();
@@ -301,12 +322,14 @@ extern fn _build_get_txn_fees_req_handler(
     _build_get_txn_request(command_handle, cb, res)
 }
 
+#[no_mangle]
 pub extern fn nullpayment_inject_build_get_txn_fees_req_result(err: ErrorCode, res: *const c_char) {
     let mut results = BUILD_GET_TXN_FEES_REQ_RESULT_INJECTIONS.lock().unwrap();
     let res = CString::from(unsafe { CStr::from_ptr(res) });
     results.push((err, res));
 }
 
+#[no_mangle]
 pub extern fn nullpayment_clear_build_get_txn_fees_req_injections() {
     let mut vec = BUILD_GET_TXN_FEES_REQ_RESULT_INJECTIONS.lock().unwrap();
 	vec.clear();
@@ -328,12 +351,14 @@ extern fn _parse_get_txn_fees_response_handler(
     _execute_cb(cb, command_handle, res, err)
 }
 
+#[no_mangle]
 pub extern fn nullpayment_inject_parse_get_txn_fees_response_result(err: ErrorCode, res: *const c_char) {
     let mut results = PARSE_GET_TXN_FEES_RESPONSE_RESULT_INJECTIONS.lock().unwrap();
     let res = CString::from(unsafe { CStr::from_ptr(res) });
     results.push((err, res));
 }
 
+#[no_mangle]
 pub extern fn nullpayment_clear_parse_get_txn_fees_response_injections() {
     let mut vec = PARSE_GET_TXN_FEES_RESPONSE_RESULT_INJECTIONS.lock().unwrap();
 	vec.clear();
@@ -379,12 +404,14 @@ fn _build_get_txn_request(
 
             let submitter_did = CString::new("null_payment_plugin").unwrap();
 
-            indy_build_get_txn_request(
-                command_handle,
-                submitter_did.as_ptr(),
-                1,
-                Some(_callback)
-            );
+            unsafe {
+                indy_build_get_txn_request(
+                    command_handle,
+                    submitter_did.as_ptr(),
+                    1,
+                    Some(_callback)
+                );
+            }
             ErrorCode::Success
         }
     }

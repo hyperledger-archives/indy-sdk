@@ -58,6 +58,7 @@ time = "0.1.36"
 zmq = "0.8.2"
 lazy_static = "1.0"
 byteorder = "1.0.0"
+null-payment-plugin = {path = "../null-payment-plugin"}
 [dependencies.uuid]
 version = "0.5.0"
 default-features = false
