@@ -1,8 +1,10 @@
 extern crate libc;
+extern crate rand;
 
 use indy::api::payments::indy_register_payment_method;
 use indy::api::ledger::indy_build_get_txn_request;
 use indy::api::ErrorCode;
+use self::rand::Rng;
 use std::sync::Mutex;
 use std::sync::atomic::Ordering;
 use std::sync::atomic::AtomicUsize;
@@ -61,7 +63,7 @@ extern fn _create_payment_address_handler(
     _config: *const c_char,
     cb: Option<CommonResponseCallback>) -> ErrorCode {
 
-    let addr = CString::new("pay:null:_payment_plugin:null").unwrap();
+    let addr = CString::new(format!("pay:null:{}", _get_rand_string(15))).unwrap();
     let mut results = CREATE_ADDRESS_RESULT_INJECTIONS.lock().unwrap();
     let (err, res) = match results.is_empty() {
         false => results.remove(0),
@@ -159,7 +161,12 @@ extern fn _parse_get_utxo_response_handler(
     _resp_json: *const c_char,
     cb: Option<CommonResponseCallback>
 ) -> ErrorCode {
-    let utxo_example = r#"[{"input":"pov:null:1", "amount":1, "extra":"1"}, {"input":"pov:null:2", "amount":2, "extra":"2"}]"#;
+    let utxo_example =
+        format!(
+            r#"[{{"input":"pov:null:1", "amount":1, "extra":"{}"}}, {{"input":"pov:null:2", "amount":2, "extra":"{}"}}]"#,
+            _get_rand_string(15),
+            _get_rand_string(15)
+        );
     let utxo_json = CString::new(utxo_example).unwrap();
     let mut results = PARSE_GET_UTXO_RESPONSE_RESULT_INJECTIONS.lock().unwrap();
 
@@ -330,6 +337,10 @@ pub extern fn nullpayment_inject_parse_get_txn_fees_response_result(err: ErrorCo
 pub extern fn nullpayment_clear_parse_get_txn_fees_response_injections() {
     let mut vec = PARSE_GET_TXN_FEES_RESPONSE_RESULT_INJECTIONS.lock().unwrap();
 	vec.clear();
+}
+
+fn _get_rand_string(len: usize) -> String {
+    rand::thread_rng().gen_ascii_chars().take(len).collect()
 }
 
 fn _execute_cb(
