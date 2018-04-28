@@ -56,11 +56,6 @@ lazy_static! {
       static ref PARSE_GET_TXN_FEES_RESPONSE_RESULT_INJECTIONS: Mutex<Vec<(ErrorCode, CString)>> = Default::default();
 }
 
-extern fn _clear_vec(vec: Mutex<Vec<(ErrorCode, CString)>>) {
-    let mut vec = vec.lock().unwrap();
-    vec.clear();
-}
-
 extern fn _create_payment_address_handler(
     cmd_handle:i32,
     _config: *const c_char,
