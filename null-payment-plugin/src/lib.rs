@@ -1,4 +1,5 @@
 extern crate indy;
+extern crate rand;
 
 pub mod payments;
 

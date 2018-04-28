@@ -11,3 +11,4 @@ crate-type = ["dylib"]
 indy = { path = "../libindy" }
 libc = "0.2.21"
 lazy_static = "1.0"
+rand = "0.3"
