@@ -930,7 +930,7 @@ mod high_cases {
                                                            NonSecretsUtils::record_4(),
                                                            NonSecretsUtils::record_5()]);
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -948,7 +948,7 @@ mod high_cases {
                 check_search_records(&search_records, vec![NonSecretsUtils::record_1(),
                                                            NonSecretsUtils::record_3()]);
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -967,7 +967,7 @@ mod high_cases {
                                                            NonSecretsUtils::record_4(),
                                                            NonSecretsUtils::record_5()]);
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -984,7 +984,7 @@ mod high_cases {
 
                 check_search_records(&search_records, vec![NonSecretsUtils::record_1()]);
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -1002,7 +1002,7 @@ mod high_cases {
                 check_search_records(&search_records, vec![NonSecretsUtils::record_1(),
                                                            NonSecretsUtils::record_5()]);
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -1019,7 +1019,7 @@ mod high_cases {
 
                 check_search_records(&search_records, vec![NonSecretsUtils::record_4()]);
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -1037,7 +1037,7 @@ mod high_cases {
                 check_search_records(&search_records, vec![NonSecretsUtils::record_4(),
                                                            NonSecretsUtils::record_5()]);
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -1055,7 +1055,7 @@ mod high_cases {
                 check_search_records(&search_records, vec![NonSecretsUtils::record_2(),
                                                            NonSecretsUtils::record_5()]);
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -1074,7 +1074,7 @@ mod high_cases {
                                                            NonSecretsUtils::record_2(),
                                                            NonSecretsUtils::record_3()]);
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -1092,7 +1092,7 @@ mod high_cases {
 
                 check_search_records(&search_records, vec![NonSecretsUtils::record_3()]);
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -1113,7 +1113,7 @@ mod high_cases {
                 check_search_records(&search_records, vec![NonSecretsUtils::record_2(),
                                                            NonSecretsUtils::record_3()]);
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -1137,7 +1137,7 @@ mod high_cases {
 
                 check_search_records(&search_records, vec![NonSecretsUtils::record_3()]);
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -1156,7 +1156,7 @@ mod high_cases {
                 assert_eq!(0, search_records.total_count.unwrap());
                 assert!(search_records.records.is_none());
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
         }
 
@@ -1183,7 +1183,7 @@ mod high_cases {
                                          NonSecretsUtils::record_4(),
                                          NonSecretsUtils::record_5()]);
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -1211,7 +1211,7 @@ mod high_cases {
                 assert_eq!(5, records.len());
                 assert_eq!(records[0], WalletRecord { id: ID.to_string(), type_: None, value: Some(VALUE.to_string()), tags: None });
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -1239,7 +1239,7 @@ mod high_cases {
                 assert_eq!(5, records.len());
                 assert_eq!(records[0], WalletRecord { id: ID.to_string(), type_: None, value: Some(VALUE.to_string()), tags: Some(TAGS.to_string()) });
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -1267,7 +1267,7 @@ mod high_cases {
                 assert_eq!(5, records.len());
                 assert_eq!(records[0], WalletRecord { id: ID.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE.to_string()), tags: Some(TAGS.to_string()) });
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -1290,7 +1290,7 @@ mod high_cases {
                 assert_eq!(5, search_records.total_count.unwrap());
                 assert_eq!(None, search_records.records);
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -1313,7 +1313,7 @@ mod high_cases {
                 assert!(search_records.total_count.is_none());
                 assert!(search_records.records.is_some());
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
         }
 
@@ -1335,7 +1335,7 @@ mod high_cases {
             assert_eq!(5, search_records.total_count.unwrap());
             assert_eq!(2, search_records.records.unwrap().len());
 
-            NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+            NonSecretsUtils::close_wallet_search(search_handle).unwrap();
         }
 
         #[test]
@@ -1350,7 +1350,7 @@ mod high_cases {
             assert_eq!(0, search_records.total_count.unwrap());
             assert!(search_records.records.is_none());
 
-            NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+            NonSecretsUtils::close_wallet_search(search_handle).unwrap();
         }
 
         #[test]
@@ -1390,7 +1390,7 @@ mod high_cases {
 
                 let search_handle = NonSecretsUtils::open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             }
 
             #[test]
@@ -1400,7 +1400,7 @@ mod high_cases {
                 let search_handle = NonSecretsUtils::open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 
                 let invalid_search_handle = search_handle + 1;
-                let res = NonSecretsUtils::close_wallet_search(wallet_handle, invalid_search_handle);
+                let res = NonSecretsUtils::close_wallet_search(invalid_search_handle);
                 assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
             }
 
@@ -1410,9 +1410,9 @@ mod high_cases {
 
                 let search_handle = NonSecretsUtils::open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 
-                NonSecretsUtils::close_wallet_search(wallet_handle, search_handle).unwrap();
+                NonSecretsUtils::close_wallet_search(search_handle).unwrap();
 
-                let res = NonSecretsUtils::close_wallet_search(wallet_handle, search_handle);
+                let res = NonSecretsUtils::close_wallet_search(search_handle);
                 assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
             }
         }

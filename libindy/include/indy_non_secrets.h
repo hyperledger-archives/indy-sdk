@@ -249,11 +249,9 @@ extern "C" {
     /// Close wallet search (make search handle invalid)
     ///
     /// #Params
-    /// wallet_handle: opened storage handle (See open handler)
     /// wallet_search_handle: wallet search handle
 
     extern indy_error_t indy_close_wallet_search(indy_handle_t  command_handle,
-                                                 indy_handle_t  wallet_handle,
                                                  indy_handle_t  wallet_search_handle,
                                                  void           (*fn)(indy_handle_t xcommand_handle,
                                                                       indy_error_t  err)

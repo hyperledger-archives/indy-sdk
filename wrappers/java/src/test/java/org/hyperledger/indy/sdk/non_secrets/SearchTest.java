@@ -33,7 +33,7 @@ public class SearchTest extends NonSecretsIntegrationTest {
 
 		assertTrue(expected.similar(records.get(0)));
 
-		search.close(wallet).get();
+		search.close();
 	}
 
 	@Test
@@ -66,7 +66,7 @@ public class SearchTest extends NonSecretsIntegrationTest {
 
 		assertTrue(expected.similar(records.get(0)));
 
-		search.close(wallet).get();
+		search.close();
 	}
 
 	@Test
@@ -94,6 +94,6 @@ public class SearchTest extends NonSecretsIntegrationTest {
 
 		assertTrue(expected.similar(records.get(0)));
 
-		search.close(wallet).get();
+		search.close();
 	}
 }

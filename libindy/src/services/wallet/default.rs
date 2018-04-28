@@ -289,8 +289,6 @@ impl WalletStorage for DefaultWallet {
 
         Ok(wallet_search)
     }
-
-    fn close_search(&self, search_handle: i32) -> Result<(), WalletError> { Ok(()) }
 }
 
 pub struct DefaultWalletType {}

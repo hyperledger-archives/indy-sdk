@@ -426,30 +426,25 @@ async def fetch_wallet_search_next_records(wallet_handle: int,
     return res
 
 
-async def close_wallet_search(wallet_handle: int,
-                              wallet_search_handle: int) -> None:
+async def close_wallet_search(wallet_search_handle: int) -> None:
     """
     Close wallet search (make search handle invalid)
 
-    :param wallet_handle: wallet handler (created by open_wallet).
     :param wallet_search_handle: wallet wallet handle (created by open_wallet_search)
     :return: None
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("close_wallet_search: >>> wallet_handle: %r, wallet_search_handle: %r",
-                 wallet_handle,
+    logger.debug("close_wallet_search: >>> wallet_search_handle: %r",
                  wallet_search_handle)
 
     if not hasattr(close_wallet_search, "cb"):
         logger.debug("close_wallet_search: Creating callback")
         close_wallet_search.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
 
-    c_wallet_handle = c_int32(wallet_handle)
     c_wallet_search_handle = c_int32(wallet_search_handle)
 
     res = await do_call('indy_close_wallet_search',
-                        c_wallet_handle,
                         c_wallet_search_handle,
                         close_wallet_search.cb)
 

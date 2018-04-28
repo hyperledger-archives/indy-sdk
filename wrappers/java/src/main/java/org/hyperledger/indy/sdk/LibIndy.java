@@ -139,7 +139,7 @@ public abstract class LibIndy {
 		public int indy_get_wallet_record(int command_handle, int wallet_handle, String type, String id, String options_json, Callback cb);
 		public int indy_open_wallet_search(int command_handle, int wallet_handle, String type, String query_json, String options_json, Callback cb);
 		public int indy_fetch_wallet_search_next_records(int command_handle, int wallet_handle, int wallet_search_handle, int count, Callback cb);
-		public int indy_close_wallet_search(int command_handle, int wallet_handle, int wallet_search_handle, Callback cb);
+		public int indy_close_wallet_search(int command_handle, int wallet_search_handle, Callback cb);
 
 	}
 

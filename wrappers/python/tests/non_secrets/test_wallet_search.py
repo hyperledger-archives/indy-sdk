@@ -1,7 +1,5 @@
 import pytest
 
-from indy import IndyError
-from indy.error import ErrorCode
 from tests.non_secrets.constants import *
 
 
@@ -20,7 +18,7 @@ async def test_add_wallet_record_works(wallet_handle):
     assert {'id': id1, 'value': value1, 'tags': tags1, 'type': None} in search_records['records']
     assert {'id': id2, 'value': value2, 'tags': tags2, 'type': None} in search_records['records']
 
-    await non_secrets.close_wallet_search(wallet_handle, search_handle)
+    await non_secrets.close_wallet_search(search_handle)
 
 
 @pytest.mark.asyncio
@@ -45,7 +43,7 @@ async def test_add_wallet_record_works_for_options(wallet_handle):
     assert {'id': id1, 'value': value1, 'tags': None, 'type': None} in search_records['records']
     assert {'id': id2, 'value': value2, 'tags': None, 'type': None} in search_records['records']
 
-    await non_secrets.close_wallet_search(wallet_handle, search_handle)
+    await non_secrets.close_wallet_search(search_handle)
 
 
 @pytest.mark.asyncio
@@ -65,4 +63,4 @@ async def test_add_wallet_record_works_for_query(wallet_handle):
 
     assert {'id': id2, 'value': value2, 'tags': None, 'type': None} in search_records['records']
 
-    await non_secrets.close_wallet_search(wallet_handle, search_handle)
+    await non_secrets.close_wallet_search(search_handle)

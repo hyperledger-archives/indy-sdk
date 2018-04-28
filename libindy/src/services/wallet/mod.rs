@@ -34,7 +34,6 @@ pub trait WalletStorage {
     fn search_records(&self, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError>;
     fn search_all_records(&self) -> Result<WalletSearch, WalletError>;
     fn close_wallet(&self) -> Result<(), WalletError>;
-    fn close_search(&self, search_handle: i32) -> Result<(), WalletError>;
     fn get_pool_name(&self) -> String;
     fn get_name(&self) -> String;
 }
@@ -394,13 +393,6 @@ impl WalletService {
     pub fn search_all_records(&self, wallet_handle: i32) -> Result<WalletSearch, WalletError> {
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => wallet.search_all_records(),
-            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
-        }
-    }
-
-    pub fn close_search(&self, wallet_handle: i32, search_handle: i32) -> Result<(), WalletError> {
-        match self.wallets.borrow().get(&wallet_handle) {
-            Some(wallet) => wallet.close_search(search_handle),
             None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         }
     }

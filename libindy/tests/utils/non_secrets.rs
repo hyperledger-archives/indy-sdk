@@ -196,12 +196,11 @@ impl NonSecretsUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn close_wallet_search(wallet_handle: i32, wallet_search_handle: i32) -> Result<(), ErrorCode> {
+    pub fn close_wallet_search(wallet_search_handle: i32) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let err =
             indy_close_wallet_search(command_handle,
-                                     wallet_handle,
                                      wallet_search_handle,
                                      cb);
 

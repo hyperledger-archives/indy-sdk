@@ -16,7 +16,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * High level wrapper around did SDK functions.
  */
-public class WalletSearch extends IndyJava.API {
+public class WalletSearch extends IndyJava.API implements AutoCloseable {
 
 	private final int searchHandle;
 
@@ -187,24 +187,20 @@ public class WalletSearch extends IndyJava.API {
 	/**
 	 * Close wallet search (make search handle invalid)
 	 *
-	 * @param wallet The wallet.
 	 * @param search The wallet search.
 	 * @return A future resolving to no value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<Void> closeSearch(
-			Wallet wallet,
 			WalletSearch search) throws IndyException {
 
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
-		int walletHandle = wallet.getWalletHandle();
 		int searchHandle = search.getSearchHandle();
 
 		int result = LibIndy.api.indy_close_wallet_search(
 				commandHandle,
-				walletHandle,
 				searchHandle,
 				voidCb);
 
@@ -236,14 +232,15 @@ public class WalletSearch extends IndyJava.API {
 	/**
 	 * Closes opened wallet search.
 	 *
-	 * @param wallet The wallet.
 	 * @return A future that does not resolve a value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public CompletableFuture<Void> close(
-			Wallet wallet
-	) throws IndyException {
+	public CompletableFuture<Void> closeSearch() throws IndyException {
+		return closeSearch(this);
+	}
 
-		return closeSearch(wallet, this);
+	@Override
+	public void close() throws Exception {
+		closeSearch().get();
 	}
 }

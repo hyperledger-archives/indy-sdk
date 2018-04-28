@@ -58,8 +58,7 @@ pub enum NonSecretsCommand {
                            i32, // wallet search handle
                            usize, // count
                            Box<Fn(Result<String, IndyError>) + Send>),
-    CloseSearch(i32, // wallet handle
-                i32, // wallet search handle
+    CloseSearch(i32, // wallet search handle
                 Box<Fn(Result<(), IndyError>) + Send>)
 }
 
@@ -114,9 +113,9 @@ impl NonSecretsCommandExecutor {
                 info!(target: "non_secrets_command_executor", "SearchNextRecords command received");
                 cb(self.fetch_search_next_records(wallet_handle, wallet_search_handle, count));
             }
-            NonSecretsCommand::CloseSearch(wallet_handle, wallet_search_handle, cb) => {
+            NonSecretsCommand::CloseSearch(wallet_search_handle, cb) => {
                 info!(target: "non_secrets_command_executor", "CloseSearch command received");
-                cb(self.close_search(wallet_handle, wallet_search_handle));
+                cb(self.close_search(wallet_search_handle));
             }
         };
     }
@@ -288,18 +287,17 @@ impl NonSecretsCommandExecutor {
     }
 
     fn close_search(&self,
-                    wallet_handle: i32,
                     wallet_search_handle: i32) -> Result<(), IndyError> {
-        trace!("close_search >>> wallet_handle: {:?}, wallet_search_handle: {:?}", wallet_handle, wallet_search_handle);
+        trace!("close_search >>> wallet_search_handle: {:?}", wallet_search_handle);
 
-        match self.searches.borrow_mut().remove(&wallet_search_handle) {
-            Some(_) => self.wallet_service.close_search(wallet_handle, wallet_search_handle),
+        let res = match self.searches.borrow_mut().remove(&wallet_search_handle) {
+            Some(_) => Ok(()),
             None => Err(WalletError::InvalidHandle(format!("Wallet Search Handle is invalid: {}", wallet_search_handle)))
         }?;
 
-        trace!("close_search <<< ");
+        trace!("close_search <<< res: {:?}", res);
 
-        Ok(())
+        Ok(res)
     }
 
     fn _check_type(&self, type_: &str) -> Result<(), IndyError> {
