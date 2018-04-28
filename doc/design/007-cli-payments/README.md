@@ -131,3 +131,11 @@ indy> ledger sign-multi txn=<txn-json>
 Returns:
 
 * Transaction json with added signature
+
+## Existing commands update
+
+All commands to send domain transactions require new optional params to add transactions fees:
+
+```indy-cli
+[fees_inputs=<utxo-1>,..,<utxo-n>] [fees_outputs=<pay-addr-0>:<amount>:<extra>,..,<pay-addr-n>:<amount>:<extra>]
+```
