@@ -12,96 +12,58 @@
 
 @end
 
-@implementation CryptoHighCases
+@implementation CryptoHighCases {
+    IndyHandle walletHandle;
+    NSError *ret;
+}
+
+- (void)setUp {
+    [super setUp];
+    [TestUtils cleanupStorage];
+
+    [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
+                                                            xtype:nil
+                                                           handle:&walletHandle];
+    // Put setup code here. This method is called before the invocation of each test method in the class.
+}
+
+- (void)tearDown {
+    // Put teardown code here. This method is called after the invocation of each test method in the class.
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    [TestUtils cleanupStorage];
+    [super tearDown];
+}
 
 // MARK: - Create key
 
-- (void)testCreateKeyWorksWithSeed
-{
-    [TestUtils cleanupStorage];
-
-    IndyHandle walletHandle = 0;
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                           xtype:nil
-                                                                          handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
-
+- (void)testCreateKeyWorksWithSeed {
     NSString *verkey = nil;
     ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandle
                                                           keyJson:[NSString stringWithFormat:@"{\"seed\":\"%@\"}", [TestUtils mySeed1]]
                                                         outVerkey:&verkey];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:createKeyWithWalletHandle failed");
     XCTAssertEqualObjects(verkey, [TestUtils myVerkey1]);
-
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
 }
 
-- (void)testCreateKeyWorksWithoutSeed
-{
-    [TestUtils cleanupStorage];
-
-    IndyHandle walletHandle = 0;
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                           xtype:nil
-                                                                          handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
-
+- (void)testCreateKeyWorksWithoutSeed {
     NSString *verkey = nil;
     ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandle
                                                           keyJson:@"{}"
                                                         outVerkey:&verkey];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:createKeyWithWalletHandle failed");
     XCTAssertNotNil(verkey);
-
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
-}
-
-- (void)testCreateKeyWorksForInvalidWalletHandle
-{
-    [TestUtils cleanupStorage];
-
-    int invalidWalletHandle = -1;
-    NSError *ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:invalidWalletHandle
-                                                                   keyJson:@"{}"
-                                                                 outVerkey:nil];
-    XCTAssertEqual(ret.code, WalletInvalidHandle);
-
-    [TestUtils cleanupStorage];
 }
 
 // MARK: - Set key metadata
 
-- (void)testSetKeyMetadataWorks
-{
-    [TestUtils cleanupStorage];
-
-    IndyHandle walletHandle = 0;
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                           xtype:nil
-                                                                          handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
-
+- (void)testSetKeyMetadataWorks {
     ret = [[CryptoUtils sharedInstance] setMetadata:[TestUtils someMetadata]
                                              forKey:[TestUtils myVerkey1]
                                        walletHandle:walletHandle];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:setMetadata failed");
-
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
 }
 
-- (void)testSetKeyMetadataWorksForReplace
-{
-    [TestUtils cleanupStorage];
-
-    IndyHandle walletHandle = 0;
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                           xtype:nil
-                                                                          handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
-
+- (void)testSetKeyMetadataWorksForReplace {
     ret = [[CryptoUtils sharedInstance] setMetadata:[TestUtils someMetadata]
                                              forKey:[TestUtils myVerkey1]
                                        walletHandle:walletHandle];
@@ -125,75 +87,18 @@
                                               outMetadata:&outMetadata];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:getMetadata failed");
     XCTAssertEqualObjects(outMetadata, newMetadata);
-
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
 }
 
-- (void)testSetKeyMetadataWorksForInvalidHandle
-{
-    [TestUtils cleanupStorage];
-
-    IndyHandle invalidWalletHandle = -1;
-    NSError *ret = [[CryptoUtils sharedInstance] setMetadata:[TestUtils someMetadata]
-                                                      forKey:[TestUtils myVerkey1]
-                                                walletHandle:invalidWalletHandle];
-    XCTAssertEqual(ret.code, WalletInvalidHandle, @"CryptoUtils:setMetadata failed with unexpected error code");
-
-    [[WalletUtils sharedInstance] closeWalletWithHandle:invalidWalletHandle];
-    [TestUtils cleanupStorage];
-}
-
-- (void)testSetKeyMetadataWorksForEmptyString
-{
-    [TestUtils cleanupStorage];
-
-    IndyHandle walletHandle = 0;
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                           xtype:nil
-                                                                          handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
-
-    ret = [[CryptoUtils sharedInstance] setMetadata:@""
-                                             forKey:[TestUtils myVerkey1]
-                                       walletHandle:walletHandle];
-    XCTAssertEqual(ret.code, Success, @"CryptoUtils:setMetadata failed");
-
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
-}
-
-- (void)testSetKeyMetadataWorksForInvalidKey
-{
-    [TestUtils cleanupStorage];
-
-    IndyHandle walletHandle = 0;
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                           xtype:nil
-                                                                          handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
-
+- (void)testSetKeyMetadataWorksForInvalidKey {
     ret = [[CryptoUtils sharedInstance] setMetadata:[TestUtils someMetadata]
                                              forKey:[TestUtils invalidBase58Verkey]
                                        walletHandle:walletHandle];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"CryptoUtils:setMetadata failed with unexpected error code");
-
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
 }
 
 // MARK: - Get key metadata
 
-- (void)testGetKeyMetadataWorks
-{
-    [TestUtils cleanupStorage];
-
-    IndyHandle walletHandle = 0;
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                           xtype:nil
-                                                                          handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
-
+- (void)testGetKeyMetadataWorks {
     ret = [[CryptoUtils sharedInstance] setMetadata:[TestUtils someMetadata]
                                              forKey:[TestUtils myVerkey1]
                                        walletHandle:walletHandle];
@@ -205,21 +110,9 @@
                                               outMetadata:&outMetadata];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:getMetadata failed");
     XCTAssertEqualObjects(outMetadata, [TestUtils someMetadata]);
-
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
 }
 
-- (void)testGetKeyMetadataWorksForEmptyString
-{
-    [TestUtils cleanupStorage];
-
-    IndyHandle walletHandle = 0;
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                           xtype:nil
-                                                                          handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
-
+- (void)testGetKeyMetadataWorksForEmptyString {
     ret = [[CryptoUtils sharedInstance] setMetadata:@""
                                              forKey:[TestUtils myVerkey1]
                                        walletHandle:walletHandle];
@@ -231,68 +124,19 @@
                                               outMetadata:&outMetadata];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:getMetadata failed");
     XCTAssertEqualObjects(outMetadata, @"");
-
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
 }
 
-- (void)testGetKeyMetadataWorksForNoMetadata
-{
-    [TestUtils cleanupStorage];
-
-    IndyHandle walletHandle = 0;
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                           xtype:nil
-                                                                          handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
-
+- (void)testGetKeyMetadataWorksForNoMetadata {
     NSString *outMetadata = nil;
     ret = [[CryptoUtils sharedInstance] getMetadataForKey:[TestUtils myVerkey1]
                                              walletHandle:walletHandle
                                               outMetadata:&outMetadata];
     XCTAssertEqual(ret.code, WalletNotFoundError, @"CryptoUtils:getMetadata failed with unexpected error code");
-
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
-}
-
-- (void)testGetKeyMetadataWorksForInvalidHandle
-{
-    [TestUtils cleanupStorage];
-
-    IndyHandle walletHandle = 0;
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                           xtype:nil
-                                                                          handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
-
-    ret = [[CryptoUtils sharedInstance] setMetadata:[TestUtils someMetadata]
-                                             forKey:[TestUtils myVerkey1]
-                                       walletHandle:walletHandle];
-    XCTAssertEqual(ret.code, Success, @"CryptoUtils:setMetadata failed");
-
-    NSString *outMetadata = nil;
-    ret = [[CryptoUtils sharedInstance] getMetadataForKey:[TestUtils myVerkey1]
-                                             walletHandle:walletHandle + 1
-                                              outMetadata:&outMetadata];
-    XCTAssertEqual(ret.code, WalletInvalidHandle, @"CryptoUtils:getMetadata failed");
-
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
 }
 
 // MARK: - Crypto sign
 
-- (void)testCryptoSignWorks
-{
-    [TestUtils cleanupStorage];
-
-    IndyHandle walletHandle = 0;
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                           xtype:nil
-                                                                          handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
-
+- (void)testCryptoSignWorks {
     NSString *verkey = nil;
     ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandle
                                                           keyJson:[NSString stringWithFormat:@"{\"seed\":\"%@\"}", [TestUtils mySeed1]]
@@ -303,17 +147,11 @@
     [[CryptoUtils sharedInstance] signMessage:[TestUtils message] key:verkey walletHandle:walletHandle outSignature:&signature];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:signMessage failed");
     XCTAssertEqualObjects(signature, [TestUtils signature]);
-
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
 }
 
 // MARK: - Crypto verify
 
-- (void)testCryptoVerifyWorks
-{
-    [TestUtils cleanupStorage];
-
+- (void)testCryptoVerifyWorks {
     BOOL isValid = NO;
     NSError *ret = [[CryptoUtils sharedInstance] verifySignature:[TestUtils signature]
                                                       forMessage:[TestUtils message]
@@ -321,22 +159,11 @@
                                                       outIsValid:&isValid];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:verifySignature failed");
     XCTAssert(isValid);
-
-    [TestUtils cleanupStorage];
 }
 
 // MARK: - Auth crypt
 
-- (void)testAuthCryptWorks
-{
-    [TestUtils cleanupStorage];
-
-    IndyHandle walletHandle = 0;
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                           xtype:nil
-                                                                          handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
-
+- (void)testAuthCryptWorks {
     NSString *verkey = nil;
     ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandle
                                                           keyJson:[NSString stringWithFormat:@"{\"seed\":\"%@\"}", [TestUtils mySeed1]]
@@ -350,23 +177,11 @@
                                walletHandle:walletHandle
                                outEncrypted:&encrypted];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:authCrypt failed");
-    XCTAssertNotNil(encrypted);
-
-    [TestUtils cleanupStorage];
 }
 
 // MARK: - Auth decrypt
 
-- (void)testAuthDecryptWorks
-{
-    [TestUtils cleanupStorage];
-
-    IndyHandle walletHandle = 0;
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                           xtype:nil
-                                                                          handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
-
+- (void)testAuthDecryptWorks {
     NSString *myVerkey = nil;
     ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandle
                                                           keyJson:[NSString stringWithFormat:@"{\"seed\":\"%@\"}", [TestUtils mySeed1]]
@@ -381,56 +196,39 @@
 
     NSData *encryptedMessage = nil;
     ret = [[CryptoUtils sharedInstance] authCrypt:[TestUtils message]
-                                      myKey:myVerkey
-                                   theirKey:theirVerkey
-                               walletHandle:walletHandle
-                               outEncrypted:&encryptedMessage];
+                                            myKey:myVerkey
+                                         theirKey:theirVerkey
+                                     walletHandle:walletHandle
+                                     outEncrypted:&encryptedMessage];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:createKeyWithWalletHandle failed");
     XCTAssertNotNil(encryptedMessage);
 
     NSData *decryptedMessage = nil;
     NSString *outTheirKey = nil;
     ret = [[CryptoUtils sharedInstance] authDecrypt:encryptedMessage
-                                         myKey:theirVerkey
-                                         walletHandle:walletHandle
-                                   outTheirKey: &outTheirKey
-                           outDecryptedMessage:&decryptedMessage];
+                                              myKey:theirVerkey
+                                       walletHandle:walletHandle
+                                        outTheirKey:&outTheirKey
+                                outDecryptedMessage:&decryptedMessage];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:authDecrypt failed");
     XCTAssertEqualObjects(outTheirKey, myVerkey);
     XCTAssertEqualObjects(decryptedMessage, [TestUtils message]);
-
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
 }
 
 // MARK: - Anon crypt
 
-- (void)testAnonCryptWorks
-{
-    [TestUtils cleanupStorage];
-
+- (void)testAnonCryptWorks {
     NSData *encrypted = nil;
     NSError *ret = [[CryptoUtils sharedInstance] anonCrypt:[TestUtils message]
-                                                      theirKey:[TestUtils myVerkey1]
-                                                  outEncrypted:&encrypted];
+                                                  theirKey:[TestUtils myVerkey1]
+                                              outEncrypted:&encrypted];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:anonCrypt failed");
     XCTAssertNotNil(encrypted);
-
-    [TestUtils cleanupStorage];
 }
 
 // MARK: - Anon decrypt
 
-- (void)testAnonDecryptWorks
-{
-    [TestUtils cleanupStorage];
-
-    IndyHandle walletHandle = 0;
-    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                           xtype:nil
-                                                                          handle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
-
+- (void)testAnonDecryptWorks {
     NSString *verkey = nil;
     ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandle
                                                           keyJson:[NSString stringWithFormat:@"{\"seed\":\"%@\"}", [TestUtils mySeed1]]
@@ -440,10 +238,9 @@
 
     NSData *encrypted = nil;
     ret = [[CryptoUtils sharedInstance] anonCrypt:[TestUtils message]
-                                             theirKey:verkey
-                                         outEncrypted:&encrypted];
+                                         theirKey:verkey
+                                     outEncrypted:&encrypted];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:anonCrypt failed");
-    XCTAssertNotNil(encrypted);
 
     NSData *decryptedMessage = nil;
     [[CryptoUtils sharedInstance] anonDecrypt:encrypted
@@ -452,9 +249,6 @@
                           outDecryptedMessage:&decryptedMessage];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:anonDecrypt failed");
     XCTAssertEqualObjects(decryptedMessage, [TestUtils message]);
-
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
 }
 
 @end

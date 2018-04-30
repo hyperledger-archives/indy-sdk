@@ -1,6 +1,7 @@
-﻿using Hyperledger.Indy.PoolApi;
+﻿using Hyperledger.Indy.CryptoApi;
+using Hyperledger.Indy.DidApi;
+using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.Samples.Utils;
-using Hyperledger.Indy.SignusApi;
 using Hyperledger.Indy.WalletApi;
 using System;
 using System.Diagnostics;
@@ -9,11 +10,11 @@ using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Samples
 {
-    static class SignusDemo
+    static class CryptoDemo
     {
         public static async Task Execute()
         {
-            Console.WriteLine("Ledger sample -> started");
+            Console.WriteLine("Crypto sample -> started");
 
             var myWalletName = "myWallet";
             var theirWalletName = "theirWallet";
@@ -24,10 +25,10 @@ namespace Hyperledger.Indy.Samples
                 await PoolUtils.CreatePoolLedgerConfig();
 
                 //2. Create and Open My Wallet
-                await WalletUtils.CreateWalleatAsync(PoolUtils.DEFAULT_POOL_NAME, myWalletName, "default", null, null);
+                await WalletUtils.CreateWalletAsync(PoolUtils.DEFAULT_POOL_NAME, myWalletName, "default", null, null);
 
                 // 3. Create and Open Trustee Wallet
-                await WalletUtils.CreateWalleatAsync(PoolUtils.DEFAULT_POOL_NAME, theirWalletName, "default", null, null);
+                await WalletUtils.CreateWalletAsync(PoolUtils.DEFAULT_POOL_NAME, theirWalletName, "default", null, null);
 
                 //4. Open pool and wallets in using statements to ensure they are closed when finished.
                 using (var pool = await Pool.OpenPoolLedgerAsync(PoolUtils.DEFAULT_POOL_NAME, "{}"))
@@ -35,16 +36,16 @@ namespace Hyperledger.Indy.Samples
                 using (var theirWallet = await Wallet.OpenWalletAsync(theirWalletName, null, null))
                 {
                     //5. Create My Did
-                    var createMyDidResult = await Signus.CreateAndStoreMyDidAsync(myWallet, "{}");
+                    var createMyDidResult = await Did.CreateAndStoreMyDidAsync(myWallet, "{}");
 
                     //6. Create Their Did
-                    var createTheirDidResult = await Signus.CreateAndStoreMyDidAsync(theirWallet, "{}");
+                    var createTheirDidResult = await Did.CreateAndStoreMyDidAsync(theirWallet, "{}");
                     var theirDid = createTheirDidResult.Did;
                     var theirVerkey = createTheirDidResult.VerKey;
 
                     //7. Store Their DID
                     var identityJson = string.Format("{{\"did\":\"{0}\", \"verkey\":\"{1}\"}}", theirDid, theirVerkey);
-                    await Signus.StoreTheirDidAsync(myWallet, identityJson);
+                    await Did.StoreTheirDidAsync(myWallet, identityJson);
 
                     //8. Their sign message
                     var msgBytes = Encoding.UTF8.GetBytes("{\n" +
@@ -56,10 +57,10 @@ namespace Hyperledger.Indy.Samples
                             "   }\n" +
                             "}");
 
-                    var signatureBytes = await Signus.SignAsync(theirWallet, theirDid, msgBytes);
+                    var signatureBytes = await Crypto.SignAsync(theirWallet, theirVerkey, msgBytes);
 
                     //9. Verify message
-                    var valid = await Signus.VerifySignatureAsync(myWallet, pool, theirDid, msgBytes, signatureBytes);
+                    var valid = await Crypto.VerifyAsync(theirVerkey, msgBytes, signatureBytes);
                     Debug.Assert(valid == true);
 
                     //10. Close wallets and pool
@@ -70,13 +71,13 @@ namespace Hyperledger.Indy.Samples
             }
             finally
             {
-                // 12. Delete wallets and Pool ledger config
+                // 11. Delete wallets and Pool ledger config
                 await WalletUtils.DeleteWalletAsync(myWalletName, null);
                 await WalletUtils.DeleteWalletAsync(theirWalletName, null);
                 await PoolUtils.DeletePoolLedgerConfigAsync(PoolUtils.DEFAULT_POOL_NAME);
             }            
 
-            Console.WriteLine("Ledger sample -> completed");
+            Console.WriteLine("Crypto sample -> completed");
         }
     }
 }

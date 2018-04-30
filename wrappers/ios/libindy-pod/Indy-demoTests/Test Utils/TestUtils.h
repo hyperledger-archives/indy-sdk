@@ -39,6 +39,8 @@
 
 + (NSString *)pool;
 
++ (NSString *)wallet;
+
 + (NSData *)message;
 
 + (NSData *)encryptedMessage;
@@ -48,6 +50,8 @@
 + (NSData *)signature;
 
 + (NSString *)trusteeSeed;
+
++ (NSString *)trusteeDid;
 
 + (NSString *)trusteeVerkey;
 
@@ -69,6 +73,8 @@
 
 + (NSString *)mySeed2;
 
++ (NSString *)myDid1;
+
 + (NSString *)myVerkey1;
 
 + (NSString *)invalidBase58Verkey;
@@ -78,6 +84,10 @@
 + (NSString *)unknownDid;
 
 + (NSString *)defaultType;
+
++ (NSString *)keychainType;
+
++ (NSString *)gvtSchema;
 
 + (NSString *)gvtSchemaName;
 

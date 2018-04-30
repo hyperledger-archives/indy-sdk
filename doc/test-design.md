@@ -144,7 +144,9 @@ The following interoperability cases are needed:
 
 * libindy - Node
   * Interoperability with latest Node version. We test it already with functional tests.
-  * Backward compatibility of Node will be tested as part of Indy Node acceptance. 
+  * Backward compatibility of Node will be tested as part of Indy Node acceptance. (See
+    [these notes](release-workflow.md#compatibility-with-indy-node) for a discussion about
+    how compatibility relates to branches of indy-node and indy-sdk.)
 * libindy - pyindy:
   * Anoncreds protocol interoperability. It is already implemented as part of functional tests.
 * libindy - libindy

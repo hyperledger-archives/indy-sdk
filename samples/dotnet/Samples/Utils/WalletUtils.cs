@@ -5,7 +5,7 @@ namespace Hyperledger.Indy.Samples.Utils
 {
     static class WalletUtils
     {
-        public static async Task CreateWalleatAsync(string poolName, string name, string type, string config, string credentials)
+        public static async Task CreateWalletAsync(string poolName, string name, string type, string config, string credentials)
         {
             try
             {

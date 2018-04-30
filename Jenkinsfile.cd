@@ -150,7 +150,7 @@ void getSrcVersion() {
     return version
 }
 
-def linuxTesting(file, env_name, run_interoperability_tests, network_name, stashBuildResults) {
+def linuxTesting(file, env_name, network_name, stashBuildResults) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -168,17 +168,11 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
                 echo "${env_name} Test: Test"
 
                 try {
-                    def featuresArgs = ''
-                    if (run_interoperability_tests) {
-                        sh 'chmod -R 777 /home/indy/indy-anoncreds/'
-                        featuresArgs = '--features "interoperability_tests"'
-                    }
-
                     echo "${env_name} Libindy Test: Build"
-                    sh "RUST_BACKTRACE=1 cargo test --release $featuresArgs --no-run"
+                    sh "RUST_BACKTRACE=1 cargo test --release --no-run"
 
                     echo "${env_name} Libindy Test: Run tests"
-                    sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release $featuresArgs"
+                    sh "RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release"
 
                     if (stashBuildResults) {
                         stash includes: 'target/release/libindy.so,target/release/libindy.a', name: 'LibindyUbuntuBuildResult'
@@ -201,7 +195,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libindy Test: Test java wrapper"
 
-                sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+                sh "RUST_LOG=indy::,zmq=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
             }
         }
 
@@ -212,7 +206,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
 
                 sh '''
                     python3.5 -m pip install --user -e .
-                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::,zmq=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
                 '''
             }
         }
@@ -240,7 +234,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
                 sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run"
 
                 echo "${env_name} Indy Cli Test: Run tests"
-                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
+                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
 
                 if (stashBuildResults) {
                     stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
@@ -256,88 +250,93 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
 def windowsTesting() {
     node('win2016') {
         stage('Windows Test') {
-            echo "Windows Test: Checkout scm"
-            checkout scm
+            def ws_path = "workspace/${env.JOB_NAME}".replace(' ', '_')
+            ws(ws_path) {
+                try {
+                    echo "Windows Test: Checkout scm"
+                    checkout scm
 
-            try {
-                echo "Windows Test: Run Indy pool"
-                bat "docker -H $INDY_SDK_SERVER_IP build --build-arg pool_ip=$INDY_SDK_SERVER_IP -f ci/indy-pool.dockerfile -t indy_pool ci"
-                bat "docker -H $INDY_SDK_SERVER_IP run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 
-                setupRust()
+                    echo "Windows Test: Run Indy pool"
+                    bat "docker -H $INDY_SDK_SERVER_IP build --build-arg pool_ip=$INDY_SDK_SERVER_IP -f ci/indy-pool.dockerfile -t indy_pool ci"
+                    bat "docker -H $INDY_SDK_SERVER_IP run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 
-                dir('libindy') {
-                    echo "Windows Test: Download prebuilt dependencies"
-                    bat 'wget -O prebuilt.zip "https://repo.sovrin.org/windows/libindy/deps/indy-sdk-deps.zip"'
-                    bat 'unzip prebuilt.zip -d prebuilt'
+                    setupRust()
 
-                    echo "Windows Libindy Test: Build"
-                    withEnv([
-                            "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "INDY_CRYPTO_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "MILAGRO_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "LIBZMQ_PREFIX=$WORKSPACE\\libindy\\prebuilt",
-                            "SODIUM_LIB_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
-                            "RUST_BACKTRACE=1"
-                    ]) {
-                        bat "cargo test --release --no-run"
+                    dir('libindy') {
+                        echo "Windows Test: Download prebuilt dependencies"
+                        bat 'wget -O prebuilt.zip "https://repo.sovrin.org/windows/libindy/deps/indy-sdk-deps.zip"'
+                        bat 'unzip prebuilt.zip -d prebuilt'
 
-                        echo "Windows Libindy Test: Run tests"
+                        echo "Windows Libindy Test: Build"
                         withEnv([
-                                "RUST_TEST_THREADS=1",
-                                "RUST_LOG=trace",
-                                "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
+                                "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "INDY_CRYPTO_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "MILAGRO_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "LIBZMQ_PREFIX=$WORKSPACE\\libindy\\prebuilt",
+                                "SODIUM_LIB_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
+                                "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo test --release"
+                            bat "cargo test --release --no-run"
+
+                            echo "Windows Libindy Test: Run tests"
+                            withEnv([
+                                    "RUST_TEST_THREADS=1",
+                                    "RUST_LOG=indy::,zmq=trace",
+                                    "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
+                            ]) {
+                                bat "cargo test --release"
+                            }
                         }
-                    }
-                    stash includes: 'target/release/*.dll', name: 'LibindyWindowsBuildResult'
-                }
-
-                dir('cli') {
-                    bat "sed -i -e \"s/10\\.0\\.0\\.2/${INDY_SDK_SERVER_IP}/g\" docker_pool_transactions_genesis"
-
-                    bat "copy $WORKSPACE\\libindy\\target\\release\\indy.dll $WORKSPACE\\libindy\\prebuilt\\lib"
-                    bat "copy $WORKSPACE\\libindy\\target\\release\\indy.lib $WORKSPACE\\libindy\\prebuilt\\lib"
-
-                    echo "Windows Indy Cli Test: Build"
-                    withEnv([
-                            "INDY_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "RUST_BACKTRACE=1"
-                    ]) {
-                        bat "cargo build --release"
-
-                        echo "Windows Indy Cli Test: Build tests"
-                        bat "cargo test --release --no-run"
-
-                        echo "Windows Indy Cli Test: Run tests"
-                        withEnv([
-                                "RUST_TEST_THREADS=1",
-                                "RUST_LOG=trace",
-                                "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
-                        ]) {
-                            bat "cargo test --release"
-                        }
+                        stash includes: 'target/release/*.dll', name: 'LibindyWindowsBuildResult'
                     }
 
-                    stash includes: 'target/release/indy-cli.exe,target/release/*.dll', name: 'IndyCliWindowsBuildResult'
-                }
+                    dir('cli') {
+                        bat "sed -i -e \"s/10\\.0\\.0\\.2/${INDY_SDK_SERVER_IP}/g\" docker_pool_transactions_genesis"
 
-                //TODO wrappers testing
+                        bat "copy $WORKSPACE\\libindy\\target\\release\\indy.dll $WORKSPACE\\libindy\\prebuilt\\lib"
+                        bat "copy $WORKSPACE\\libindy\\target\\release\\indy.lib $WORKSPACE\\libindy\\prebuilt\\lib"
 
-            } finally {
-                try {
-                    bat "docker -H $INDY_SDK_SERVER_IP stop indy_pool"
-                } catch (ignore) {
+                        echo "Windows Indy Cli Test: Build"
+                        withEnv([
+                                "INDY_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "RUST_BACKTRACE=1"
+                        ]) {
+                            bat "cargo build --release"
+
+                            echo "Windows Indy Cli Test: Build tests"
+                            bat "cargo test --release --no-run"
+
+                            echo "Windows Indy Cli Test: Run tests"
+                            withEnv([
+                                    "RUST_TEST_THREADS=1",
+                                    "RUST_LOG=indy::,zmq=trace",
+                                    "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
+                            ]) {
+                                bat "cargo test --release"
+                            }
+                        }
+
+                        stash includes: 'target/release/indy-cli.exe,target/release/*.dll', name: 'IndyCliWindowsBuildResult'
+                    }
+
+                    //TODO wrappers testing
+
+                } finally {
+                    try {
+                        bat "docker -H $INDY_SDK_SERVER_IP stop indy_pool"
+                    } catch (ignore) {
+                    }
+                    try {
+                        bat "docker -H $INDY_SDK_SERVER_IP rm indy_pool"
+                    } catch (ignore) {
+                    }
+                    cleanWs()
                 }
-                try {
-                    bat "docker -H $INDY_SDK_SERVER_IP rm indy_pool"
-                } catch (ignore) {
-                }
-                step([$class: 'WsCleanup'])
             }
+            cleanWs()
         }
     }
 }
@@ -345,7 +344,7 @@ def windowsTesting() {
 def ubuntuTesting() {
     node('ubuntu') {
         stage('Ubuntu Test') {
-            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", false, "pool_network", true)
+            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network", true)
         }
     }
 }
@@ -353,7 +352,7 @@ def ubuntuTesting() {
 def rhelTesting() {
     node('ubuntu') {
         stage('RedHat Test') {
-            linuxTesting("ci/amazon.dockerfile ci", "RedHat", false, "pool_network", false)
+            linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network", false)
         }
     }
 }
@@ -672,5 +671,5 @@ def downloadPackagingUtils() {
 }
 
 def setupRust() {
-    sh "rustup default 1.21.0"
+    sh "rustup default 1.25.0"
 }

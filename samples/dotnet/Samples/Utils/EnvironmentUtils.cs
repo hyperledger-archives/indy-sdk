@@ -16,6 +16,21 @@ namespace Hyperledger.Indy.Samples.Utils
             return Path.Combine(Path.GetTempPath(), "indy");
         }
 
+        public static string GetUserPath()
+        {
+            return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        }
+
+        public static string GetIndyHomePath()
+        {
+            return Path.Combine(GetUserPath(), ".indy_client");
+        }
+
+        public static string GetIndyHomePath(string filename)
+        {
+            return Path.Combine(GetIndyHomePath(), filename);
+        }
+
         public static string GetTmpPath(string filename)
         {
             return GetTmpPath() + filename;

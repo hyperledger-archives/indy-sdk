@@ -19,9 +19,9 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_is_pairwise_exists(handle,
-                                  walletHandle,
-                                  [theirDid UTF8String],
-                                  IndyWrapperCommon3PBCallback);
+            walletHandle,
+            [theirDid UTF8String],
+            IndyWrapperCommonBoolCallback);
     
     if( ret != Success )
     {
@@ -45,11 +45,11 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_create_pairwise(handle,
-                               walletHandle,
-                               [theirDid UTF8String],
-                               [myDid UTF8String],
-                               [metadata UTF8String],
-                               IndyWrapperCommon2PCallback);
+            walletHandle,
+            [theirDid UTF8String],
+            [myDid UTF8String],
+            [metadata UTF8String],
+            IndyWrapperCommonCallback);
     
     if( ret != Success )
     {
@@ -70,8 +70,8 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_list_pairwise(handle,
-                             walletHandle,
-                             IndyWrapperCommon3PSCallback);
+            walletHandle,
+            IndyWrapperCommonStringCallback);
     
     if( ret != Success )
     {
@@ -92,9 +92,9 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_get_pairwise(handle,
-                            walletHandle,
-                            [theirDid UTF8String],
-                            IndyWrapperCommon3PSCallback);
+            walletHandle,
+            [theirDid UTF8String],
+            IndyWrapperCommonStringCallback);
 
     if( ret != Success )
     {
@@ -116,10 +116,10 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_set_pairwise_metadata(handle,
-                                     walletHandle,
-                                     [theirDid UTF8String],
-                                     [metadata UTF8String],
-                                     IndyWrapperCommon2PCallback);
+            walletHandle,
+            [theirDid UTF8String],
+            [metadata UTF8String],
+            IndyWrapperCommonCallback);
     
     if( ret != Success )
     {
