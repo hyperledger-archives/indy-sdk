@@ -19,9 +19,10 @@
    ```
    git clone https://github.com/hyperledger/indy-sdk.git
    cd ./indy-sdk/libindy
-   cargo build
+   cargo build 
    cd ..
    ```
+
 1. Run integration tests:
    * Start local nodes pool on `127.0.0.1:9701-9708` with Docker:
      
