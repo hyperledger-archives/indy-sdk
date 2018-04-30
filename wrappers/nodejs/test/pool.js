@@ -17,7 +17,7 @@ test('pool', async function (t) {
 
   t.is(await indy.createPoolLedgerConfig(pool.name, {
     'genesis_txn': pool.file
-  }), void 0)
+  }), null)
 
   var poolH = await indy.openPoolLedger(pool.name, 'null')
   t.truthy(poolH >= 0)

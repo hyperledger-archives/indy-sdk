@@ -179,14 +179,12 @@ class IndyCallback : public Nan::AsyncResource {
         IndyCallback* icb = static_cast<IndyCallback*>(async->data);
         icbmap.erase(icb->handle);
 
-        int argc = icb->type == CB_NONE ? 1 : 2;
-
         v8::Local<v8::Array> tuple;
-        v8::Local<v8::Value> argv[argc];
+        v8::Local<v8::Value> argv[2];
         argv[0] = Nan::New<v8::Number>(icb->err);
         switch(icb->type){
             case CB_NONE:
-                // nothing
+                argv[1] = Nan::Null();
                 break;
             case CB_STRING:
                 argv[1] = Nan::New<v8::String>(icb->str0).ToLocalChecked();
@@ -233,7 +231,7 @@ class IndyCallback : public Nan::AsyncResource {
 
         v8::Local<v8::Object> target = Nan::New<v8::Object>();
         v8::Local<v8::Function> callback = Nan::New(icb->callback);
-        icb->runInAsyncScope(target, callback, argc, argv);
+        icb->runInAsyncScope(target, callback, 2, argv);
 
         uv_close(reinterpret_cast<uv_handle_t*>(&icb->uvHandle), onUvHandleClose);
     }
