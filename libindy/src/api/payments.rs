@@ -256,7 +256,6 @@ pub type ParseGetTxnFeesResponseCB = extern fn(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_register_payment_method(command_handle: i32,
                                            payment_method: *const c_char,
-
                                            create_payment_address: Option<CreatePaymentAddressCB>,
                                            add_request_fees: Option<AddRequestFeesCB>,
                                            parse_response_with_fees: Option<ParseResponseWithFeesCB>,
@@ -268,10 +267,8 @@ pub extern fn indy_register_payment_method(command_handle: i32,
                                            build_set_txn_fees_req: Option<BuildSetTxnFeesReqCB>,
                                            build_get_txn_fees_req: Option<BuildGetTxnFeesReqCB>,
                                            parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
-
                                            cb: Option<extern fn(command_handle_: i32,
                                                                 err: ErrorCode)>) -> ErrorCode {
-
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(create_payment_address, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(add_request_fees, ErrorCode::CommonInvalidParam4);
@@ -753,4 +750,14 @@ pub extern fn indy_parse_get_txn_fees_response(command_handle: i32,
     ));
 
     result.to_error_code()
+}
+
+#[no_mangle]
+pub extern fn indy_sign_multi_request(command_handle: i32,
+                                      wallet_handle: i32,
+                                      submitter_did: *const c_char,
+                                      request_json: *const c_char,
+                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                           signed_request_json: *const c_char)>) -> ErrorCode {
+    unimplemented!()
 }

@@ -11,7 +11,7 @@ use libindy::payment::Payment;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use std::collections::HashSet;
+use std::collections::{ HashMap};
 use utils::table::{print_table, print_list_table};
 
 use self::regex::Regex;
@@ -263,6 +263,8 @@ pub mod schema_command {
                 .add_required_param("name", "Schema name")
                 .add_required_param("version", "Schema version")
                 .add_required_param("attr_names", "Schema attributes split by comma")
+                .add_optional_param("fees_inputs","The list of UTXO inputs")
+                .add_optional_param("fees_outputs","The list of UTXO outputs")
                 .add_example("ledger schema name=gvt version=1.0 attr_names=name,age")
                 .finalize()
     );
@@ -277,6 +279,8 @@ pub mod schema_command {
         let name = get_str_param("name", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
         let attr_names = get_str_array_param("attr_names", params).map_err(error_err!())?;
+        let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
+        let fees_outputs = get_opt_str_array_param("fees_outputs", params).map_err(error_err!())?;
 
         let id = build_id(&submitter_did, name, version);
 
@@ -290,10 +294,15 @@ pub mod schema_command {
             JSONValue::from(json).to_string()
         };
 
-        let response = Ledger::build_schema_request(&submitter_did, &schema_data)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
+        let mut request = match Ledger::build_schema_request(&submitter_did, &schema_data) {
+            Ok(request) => Ok(request),
+            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
+        }?;
 
-        let response = match response {
+        set_request_fees(&mut request, &fees_inputs, &fees_outputs)?;
+
+        let response = match Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request) {
             Ok(response) => Ok(response),
             Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
@@ -315,6 +324,20 @@ pub mod schema_command {
         trace!("execute << {:?}", res);
         res
     }
+}
+
+fn set_request_fees(request: &mut String, fees_inputs: &Option<Vec<&str>>, fees_outputs: &Option<Vec<&str>>) -> Result<(), ()> {
+    if let (&Some(ref inputs), &Some(ref outputs)) = (fees_inputs, fees_outputs) {
+        let inputs = parse_payment_inputs(&inputs)?;
+        let outputs = parse_payment_outputs(&outputs)?;
+
+        *request = match Payment::add_request_fees(request, &inputs, &outputs) {
+            Ok((request, _)) => Ok(request),
+            Err(ErrorCode::UnknownPaymentMethod) => Err(println_err!("Unknown payment method")),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
+        }?
+    }
+    Ok(())
 }
 
 pub mod get_schema_command {
@@ -382,6 +405,8 @@ pub mod cred_def_command {
                 .add_required_param("signature_type", "Signature type (only CL supported now)")
                 .add_required_param("primary", "Primary key in json format")
                 .add_optional_param("revocation", "Revocation key in json format")
+                .add_optional_param("fees_inputs","The list of UTXO inputs")
+                .add_optional_param("fees_outputs","The list of UTXO outputs")
                 .add_example(r#"ledger cred-def schema_id=1 signature_type=CL primary={"n":"1","s":"2","rms":"3","r":{"age":"4","name":"5"},"rctxt":"6","z":"7"}"#)
                 .finalize()
     );
@@ -397,6 +422,8 @@ pub mod cred_def_command {
         let signature_type = get_str_param("signature_type", params).map_err(error_err!())?;
         let primary = get_object_param("primary", params).map_err(error_err!())?;
         let revocation = get_opt_str_param("revocation", params).map_err(error_err!())?;
+        let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
+        let fees_outputs = get_opt_str_array_param("fees_outputs", params).map_err(error_err!())?;
 
         let id = build_id(&submitter_did, schema_id, signature_type);
 
@@ -418,10 +445,15 @@ pub mod cred_def_command {
             JSONValue::from(json).to_string()
         };
 
-        let response = Ledger::build_cred_def_request(&submitter_did, &cred_def_data)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
+        let mut request = match Ledger::build_cred_def_request(&submitter_did, &cred_def_data) {
+            Ok(request) => Ok(request),
+            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
+        }?;
 
-        let response = match response {
+        set_request_fees(&mut request, &fees_inputs, &fees_outputs)?;
+
+        let response = match Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request) {
             Ok(response) => Ok(response),
             Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
@@ -826,6 +858,7 @@ pub mod get_utxo_command {
 
     command!(CommandMetadata::build("get-utxo", "Get UTXO list for payment address according to payment method.") //TODO: Example
                 .add_required_param("payment_address","Target payment address")
+                .add_example("ledger get-utxo payment_address=sov:12345")
                 .finalize()
     );
 
@@ -837,11 +870,11 @@ pub mod get_utxo_command {
         let payment_address = get_str_param("payment_address", params).map_err(error_err!())?;
 
         let (request, payment_method) = match Payment::build_get_utxo_request(payment_address) {
-            Ok(response) => Ok(response),
+            Ok(res) => Ok(res),
             Err(ErrorCode::UnknownPaymentMethod) => Err(println_err!("Unknown payment method")),
             err => Err(println_err!("Indy SDK error occurred {:?}", err))
         }?;
-        
+
         let response = match Ledger::submit_request(pool_handle, &request) {
             Ok(response) => Ok(response),
             Err(err) => handle_transaction_error(err, None, Some(&pool_name), None)
@@ -866,6 +899,250 @@ pub mod get_utxo_command {
         res
     }
 }
+
+pub mod payment_command {
+    use super::*;
+
+    command!(CommandMetadata::build("payment", "Send request for doing tokens payment.") //TODO: Example
+                .add_required_param("inputs","The list of UTXO inputs")
+                .add_required_param("outputs","The list of UTXO outputs")
+                .add_example("ledger get-utxo inputs=<utxo-1>,..,<utxo-n> outputs=<pay-addr-0>:<amount>:<extra>,..,<pay-addr-n>:<amount>:<extra>")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+
+        let inputs = get_str_array_param("inputs", params).map_err(error_err!())?;
+        let outputs = get_str_array_param("outputs", params).map_err(error_err!())?;
+
+        let inputs = parse_payment_inputs(&inputs).map_err(error_err!())?;
+        let outputs = parse_payment_outputs(&outputs).map_err(error_err!())?;
+
+        let (request, payment_method) = match Payment::build_payment_req(&inputs, &outputs) {
+            Ok(res) => Ok(res),
+            Err(ErrorCode::UnknownPaymentMethod) => Err(println_err!("Unknown payment method")),
+            err => Err(println_err!("Indy SDK error occurred {:?}", err))
+        }?;
+
+        let response = match Ledger::submit_request(pool_handle, &request) {
+            Ok(response) => Ok(response),
+            Err(err) => handle_transaction_error(err, None, Some(&pool_name), None)
+        }?;
+
+        let res = match Payment::parse_payment_response(&payment_method, &response) {
+            Ok(utxo_json) => {
+                let mut utxo: Vec<serde_json::Value> = serde_json::from_str(&utxo_json)
+                    .map_err(|_| println_err!("Wrong data has been received"))?;
+
+                print_list_table(&utxo,
+                                 &vec![("input", "Input"),
+                                       ("amount", "Amount"),
+                                       ("extra", "Extra Data")],
+                                 "There are no utxo's");
+                Ok(())
+            }
+            Err(err) => Err(println_err!("Invalid data has been received: {:?}", err)),
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+pub mod get_fees_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-fees", "Get fees for transaction.") //TODO: Example
+                .add_required_param("payment_method","The list of UTXO inputs")
+                .add_example("ledger get-fees payment_address=sov:12345")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+
+        let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
+
+        let request = match Payment::build_get_txn_fees_req(payment_method) {
+            Ok(response) => Ok(response),
+            Err(ErrorCode::UnknownPaymentMethod) => Err(println_err!("Unknown payment method")),
+            err => Err(println_err!("Indy SDK error occurred {:?}", err))
+        }?;
+
+        let response = match Ledger::submit_request(pool_handle, &request) {
+            Ok(response) => Ok(response),
+            Err(err) => handle_transaction_error(err, None, Some(&pool_name), None)
+        }?;
+
+        let res = match Payment::parse_get_txn_fees_response(&payment_method, &response) {
+            Ok(fees_json) => {
+                let mut fees: HashMap<String, i32> = serde_json::from_str(&fees_json)
+                    .map_err(|_| println_err!("Wrong data has been received"))?;
+
+                let mut fees =
+                    fees
+                        .iter()
+                        .map(|(key, value)|
+                            json!({
+                            "type": key,
+                            "amount": value
+                        }))
+                        .collect::<Vec<serde_json::Value>>();
+
+                print_list_table(&fees,
+                                 &vec![("type", "Type"),
+                                       ("amount", "Amount")],
+                                 "There are no fees");
+
+                Ok(())
+            }
+            Err(err) => Err(println_err!("Invalid data has been received: {:?}", err)),
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+pub mod mint_prepare_command {
+    use super::*;
+
+    command!(CommandMetadata::build("mint-prepare", "Prepare MINT transaction.") //TODO: Example
+                .add_required_param("outputs","The list of UTXO outputs")
+                .add_example("ledger mint-prepare outputs=<pay-addr-0>:<amount>:<extra>,..,<pay-addr-n>:<amount>:<extra>")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let outputs = get_str_array_param("outputs", params).map_err(error_err!())?;
+        let outputs = parse_payment_outputs(&outputs).map_err(error_err!())?;
+
+        let res = match Payment::build_mint_req(&outputs) {
+            Ok((request, payment_method)) => {
+                println_succ!("MINT transaction has been created");
+                println_succ!("{}", request);
+                println_succ!("For payment method: {}", payment_method);
+                Ok(())
+            }
+            Err(ErrorCode::UnknownPaymentMethod) => Err(println_err!("Unknown payment method")),
+            err => Err(println_err!("Indy SDK error occurred {:?}", err))
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+pub mod set_fees_prepare_command {
+    use super::*;
+
+    command!(CommandMetadata::build("set-fees-prepare", "Prepare MINT transaction.") //TODO: Example
+                .add_required_param("payment_method","")
+                .add_required_param("fees","The list of UTXO outputs")
+                .add_example("ledger set-fees-prepare payment_method=sov:12345 fees=<txn-type-1>:<amount-1>,...,<txn-type-n>:<amount-n>")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
+        let fees = get_str_array_param("fees", params).map_err(error_err!())?;
+
+        let fees: HashMap<String, i32> =
+            fees
+                .iter()
+                .map(|fee| {
+                    let parts = fee.split(":").collect::<Vec<&str>>();
+                    (parts[0].to_string(), parts[1].parse::<i32>().unwrap())
+                })
+                .collect();
+
+        let fees_json = serde_json::to_string(&fees)
+            .map_err(|_| println_err!("Wrong data has been received"))?;
+
+        let res = match Payment::build_set_txn_fees_req(&payment_method, &fees_json) {
+            Ok(request) => {
+                println_succ!("SET_FEES transaction has been created");
+                println_succ!("{}", request);
+                Ok(())
+            }
+            Err(ErrorCode::UnknownPaymentMethod) => Err(println_err!("Unknown payment method")),
+            err => Err(println_err!("Indy SDK error occurred {:?}", err))
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+pub mod sign_multi_command {
+    use super::*;
+
+    command!(CommandMetadata::build("sign-multi", "Add signature by current DID to transaction.") //TODO: Example
+                .add_required_param("txn","Transaction to sign.")
+                .add_example("ledger sign-multi txn=<txn-json>")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let submitter_did = ensure_active_did(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
+
+        let txn = get_str_param("txn", params).map_err(error_err!())?;
+
+        let res = match Payment::sign_multi_request(wallet_handle, &submitter_did, txn) {
+            Ok(request) => {
+                println_succ!("Transaction has been signed:");
+                println_succ!("{}", request);
+                Ok(())
+            }
+            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid Transaction JSON")),
+            Err(ErrorCode::WalletInvalidHandle) => Err(println_err!("Wallet: \"{}\" not found", wallet_name)),
+            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Signer DID: \"{}\" not found", submitter_did)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+fn parse_payment_inputs(inputs: &Vec<&str>) -> Result<String, ()> {
+    serde_json::to_string(&inputs)
+        .map_err(|_| println_err!("Wrong data has been received"))
+}
+
+fn parse_payment_outputs(outputs: &Vec<&str>) -> Result<String, ()> {
+    let mut output_objects: Vec<serde_json::Value> = Vec::new();
+
+    for output in outputs {
+        let parts: Vec<&str> = output.split(":").collect::<Vec<&str>>();
+
+        output_objects.push(json!({
+                        "paymentAddress": parts.get(0)
+                                            .ok_or(())
+                                            .map_err(|_| println_err!("Payment Address not found"))?,
+                        "amount": parts.get(1)
+                                    .ok_or(())
+                                    .map_err(|_| println_err!("Amount not found"))?,
+                        "extra": if parts.len() > 1 {Some(parts[2..].join(":"))} else { None }
+                    }));
+    }
+
+    serde_json::to_string(&output_objects)
+        .map_err(|_| println_err!("Wrong data has been received"))
+}
+
 
 fn print_transaction_response(mut result: serde_json::Value, title: &str,
                               metadata_headers: &[(&str, &str)],
@@ -950,26 +1227,6 @@ pub struct ReplyResult<T> {
     #[serde(rename = "seqNo")]
     pub seq_no: u64,
     pub identifier: String
-}
-
-#[derive(Deserialize, Debug)]
-pub struct NymData {
-    pub identifier: Option<String>,
-    pub dest: String,
-    pub role: Option<String>,
-    pub verkey: Option<String>
-}
-
-#[derive(Deserialize, Debug)]
-pub struct AttribData {
-    pub endpoint: Option<serde_json::Value>,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct SchemaData {
-    pub attr_names: HashSet<String>,
-    pub name: String,
-    pub version: String
 }
 
 #[cfg(test)]
@@ -2162,7 +2419,7 @@ pub mod tests {
         let request = Ledger::build_get_nym_request(DID_TRUSTEE, did).unwrap();
         _submit_retry(ctx, &request, |response| {
             serde_json::from_str::<Response<ReplyResult<String>>>(&response)
-                .and_then(|response| serde_json::from_str::<NymData>(&response.result.unwrap().data))
+                .and_then(|response| serde_json::from_str::<serde_json::Value>(&response.result.unwrap().data))
         }).unwrap();
     }
 

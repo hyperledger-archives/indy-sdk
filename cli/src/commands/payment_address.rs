@@ -10,11 +10,7 @@ use libindy::payment::Payment;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use std::collections::HashSet;
 use utils::table::print_list_table;
-
-use self::regex::Regex;
-use self::chrono::prelude::*;
 
 pub mod group {
     use super::*;
@@ -36,8 +32,7 @@ pub mod create {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let submitter_did = ensure_active_did(&ctx)?;
-        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
         let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;

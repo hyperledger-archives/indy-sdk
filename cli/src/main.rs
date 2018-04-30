@@ -22,7 +22,7 @@ mod libindy;
 
 use command_executor::CommandExecutor;
 
-use commands::{common, did, ledger, pool, wallet};
+use commands::{common, did, ledger, pool, wallet, payment_address};
 
 use linefeed::{Reader, ReadResult, Terminal};
 use linefeed::complete::{Completer, Completion};
@@ -91,6 +91,16 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::pool_restart_command::new())
         .add_command(ledger::pool_upgrade_command::new())
         .add_command(ledger::custom_command::new())
+        .add_command(ledger::get_utxo_command::new())
+        .add_command(ledger::payment_command::new())
+        .add_command(ledger::get_fees_command::new())
+        .add_command(ledger::mint_prepare_command::new())
+        .add_command(ledger::set_fees_prepare_command::new())
+        .add_command(ledger::sign_multi_command::new())
+        .finalize_group()
+        .add_group(payment_address::group::new())
+        .add_command(payment_address::create::new())
+        .add_command(payment_address::list_command::new())
         .finalize_group()
         .finalize()
 }

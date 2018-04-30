@@ -214,7 +214,7 @@ impl PaymentsCommandExecutor {
             //TODO: think about deleting payment_address on wallet save failure
                 self.wallet_service.set(wallet_handle, &format!("pay_addr::{}", &res), &res)
                     .map_err(IndyError::from).map(|_| res),
-            Err(err) => IndyError::from(err)
+            Err(err) => Err(IndyError::from(err))
         };
 
         self.common_ack(handle, total_result, "CreateAddressAck")
