@@ -30,10 +30,6 @@ First, please take a look at our contributing guidelines: [how to contribute to 
 1. Add the hyperledger/indy-sdk as the remote upstream:  
    `git remote add upstream https://github.com/hyperledger/indy-sdk.git`
 
-1. Set up DCO commits
-
-  - We use developer certificate oforigin (DCO) in all hyperledger repositories, so to get your pull requests accepted, you must certify you created your commits by signing off on each commit with a GPG key.
-
-  - The easiest way to do this is to configure your local repository to automatically sign all of your commits.
+1. Set up Developer Certificate of Origin to sign your commits with GPG  
 
 1. Take a look at our [release workflow](release-workflow.md)
