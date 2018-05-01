@@ -1,5 +1,6 @@
 extern crate config;
 extern crate url;
+extern crate serde_json;
 
 use std::collections::HashMap;
 use config::Config;
@@ -8,6 +9,9 @@ use utils::error;
 use std::path::Path;
 use url::Url;
 use messages::validation;
+use std::fs;
+use std::io::prelude::*;
+use serde_json::Value;
 
 
 pub static CONFIG_POOL_NAME: &'static str = "pool_name";
@@ -80,6 +84,7 @@ pub fn set_to_defaults() -> u32 {
     settings.set(CONFIG_INSTITUTION_NAME,"default");
     settings.set(CONFIG_INSTITUTION_LOGO_URL,"http://www.evernym.com");
     settings.set(CONFIG_ENABLE_TEST_MODE,"false");
+    settings.set(CONFIG_SDK_TO_REMOTE_DID,"8xUi3QNchFXzfhCgbALpBr");
     settings.set(CONFIG_SDK_TO_REMOTE_VERKEY,"2zoa6G7aMfX8GnUEpDxxunFHE7fZktRiiHk1vgMRH2tm");
     settings.set(CONFIG_GENESIS_PATH, DEFAULT_GENESIS_PATH);
     settings.set(CONFIG_WALLET_KEY,UNINITIALIZED_WALLET_KEY);
@@ -155,6 +160,56 @@ pub fn validate_config() -> Result<u32, String> {
         }
     };
 
+    /* check for required settings */
+
+    match get_config_value(CONFIG_AGENCY_DID) {
+        Err(x) => {
+            let msg = format!("missing parameter: {}", CONFIG_AGENCY_DID);
+            error.push_str(&msg);
+        },
+        Ok(_) => (),
+    };
+
+    match get_config_value(CONFIG_AGENCY_VERKEY) {
+        Err(x) => {
+            let msg = format!("missing parameter: {}", CONFIG_AGENCY_VERKEY);
+            error.push_str(&msg);
+        },
+        Ok(_) => (),
+    };
+
+    match get_config_value(CONFIG_REMOTE_TO_SDK_DID) {
+        Err(x) => {
+            let msg = format!("missing parameter: {}", CONFIG_REMOTE_TO_SDK_DID);
+            error.push_str(&msg);
+        },
+        Ok(_) => (),
+    };
+
+    match get_config_value(CONFIG_REMOTE_TO_SDK_VERKEY) {
+        Err(x) => {
+            let msg = format!("missing parameter: {}", CONFIG_REMOTE_TO_SDK_VERKEY);
+            error.push_str(&msg);
+        },
+        Ok(_) => (),
+    };
+
+    match get_config_value(CONFIG_SDK_TO_REMOTE_DID) {
+        Err(x) => {
+            let msg = format!("missing parameter: {}", CONFIG_SDK_TO_REMOTE_DID);
+            error.push_str(&msg);
+        },
+        Ok(_) => (),
+    };
+
+    match get_config_value(CONFIG_SDK_TO_REMOTE_VERKEY) {
+        Err(x) => {
+            let msg = format!("missing parameter: {}", CONFIG_SDK_TO_REMOTE_VERKEY);
+            error.push_str(&msg);
+        },
+        Ok(_) => (),
+    };
+
     if !error.is_empty() {
         Err(error.to_owned())
     } else {
@@ -180,6 +235,20 @@ pub fn test_agency_mode_enabled() -> bool {
         Err(_) => false,
         Ok(value) => if value == "true" { true } else { if value == "agency" { true } else {false }},
     }
+}
+
+pub fn process_config_string(config: &str) -> Result<u32, String> {
+    let configuration: Value = serde_json::from_str(config)
+        .or(Err("Invalid json"))?;
+
+    if let Value::Object(ref map) = configuration {
+        for (key, value) in map {
+            if value.is_string() {
+                set_config_value(key, value.as_str().unwrap());
+            }
+        }
+    }
+    Ok(error::SUCCESS.code_num)
 }
 
 pub fn process_config_file(path: &str) -> Result<u32, String> {
@@ -214,12 +283,25 @@ pub fn get_wallet_credentials() -> Option<String> {
     if key == UNINITIALIZED_WALLET_KEY { None } else { Some(format!("{{\"key\":\"{}\"}}", key)) }
 }
 
+pub fn write_config_to_file(config: &str, path_string: &str) -> Result<(), u32> {
+    let config_path = "settings.json";
+    let path = Path::new(path_string);
+
+    let mut file = match fs::File::create(&path) {
+        Err(why) => return Err(error::UNKNOWN_ERROR.code_num),
+        Ok(file) => file,
+    };
+
+    match file.write_all(config.as_bytes()) {
+        Err(why) => return Err(error::UNKNOWN_ERROR.code_num),
+        Ok(_) => (),
+    };
+
+    Ok(())
+}
 
 #[cfg(test)]
 pub mod tests {
-    use std::error::Error;
-    use std::io::prelude::*;
-    use std::fs;
     use super::*;
 
     pub fn remove_default_genesis_file(){
@@ -292,20 +374,10 @@ pub mod tests {
         let b = "b";
 
         let config_path = "/tmp/test_settings.json";
-        let path = Path::new(config_path);
-
-        let mut file = match fs::File::create(&path) {
-            Err(why) => panic!("couldn't create sample config file: {}", why.description()),
-            Ok(file) => file,
-        };
+        let content = "{ \"a\" : \"a\", \"b\":\"b\", \"pool_name\":\"*98*\" }";
+        write_config_to_file(content, config_path).unwrap();
 
         //throw in some invalid content to test the validation code
-        let content = "{ \"a\" : \"a\", \"b\":\"b\", \"pool_name\":\"*98*\" }";
-
-        match file.write_all(content.as_bytes()) {
-            Err(why) => panic!("couldn't write to sample config file: {}", why.description()),
-            Ok(_) => println!("sample config ready"),
-        }
 
         match process_config_file(&config_path) {
             Err(_) => println!("expected invalid setting"),
@@ -332,30 +404,17 @@ pub mod tests {
 
         remove_file_if_exists(DEFAULT_GENESIS_PATH);
 
-        // add the genesis.txn file
         fs::File::create(DEFAULT_GENESIS_PATH).unwrap();
 
         let config_path = "/tmp/test_settings.json";
-        let path = Path::new(config_path);
-
-        let mut file = match fs::File::create(&path) {
-            Err(why) => panic!("couldn't create sample config file: {}", why.description()),
-            Ok(file) => file,
-        };
-
-        //throw in some invalid content to test the validation code
         let content = "{ \"institution_logo_url\" : \"wrong_url\" }";
 
-        match file.write_all(content.as_bytes()) {
-            Err(why) => panic!("couldn't write to sample config file: {}", why.description()),
-            Ok(_) => println!("sample config ready"),
-        }
+        write_config_to_file(content, config_path).unwrap();
 
         match process_config_file(&config_path) {
             Err(v) => assert_eq!(v, "institution_logo_url has invalid setting: wrong_url"),
             Ok(_) => println!("expected invalid URL"), //fail if we get here
         }
-        //        assert!(process_config_file(&config_path) == Err(ParseError::InvalidIpv6Address));
 
         remove_file_if_exists(DEFAULT_GENESIS_PATH);
     }
@@ -363,27 +422,14 @@ pub mod tests {
     #[test]
     fn test_process_file_with_pairwise_configs() {
         set_defaults();
-        let a = "agency_did";
-        let a_rtn = "72x8p4HubxzUK1dwxcc5FU";
-        let b = "remote_to_sdk_verkey";
-        let b_rtn = "U22jM6Cea2YVixjWwHN9wq";
         let config_path = "/tmp/test_init.json";
-        let path = Path::new(config_path);
-
-        let mut file = match fs::File::create(&path) {
-            Err(why) => panic!("couldn't create sample config file: {}", why.description()),
-            Ok(file) => file,
-        };
 
         let content = "{ \"agency_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"remote_to_sdk_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
         \"sdk_to_remote_did\" : \"AB3JM851T4EQmhh8CdagSP\", \"institution_name\" : \"enterprise\",\
         \"institution_logo_url\" : \"https://s19.postimg.org/ykyz4x8jn/evernym.png\", \"agency_verkey\" : \"7118p4HubxzUK1dwxcc5FU\",\
         \"remote_to_sdk_verkey\" : \"U22jM6Cea2YVixjWwHN9wq\"}";
 
-        match file.write_all(content.as_bytes()) {
-            Err(why) => panic!("couldn't write to sample config file: {}", why.description()),
-            Ok(_) => println!("sample config ready"),
-        }
+        write_config_to_file(content, config_path).unwrap();
 
         match process_config_file(&config_path) {
             Err(_) => println!("expected invalid setting"),

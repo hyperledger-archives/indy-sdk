@@ -16,10 +16,11 @@ extern crate libc;
 use std::ffi::CString;
 use std::ptr::null;
 use self::libc::c_char;
-
+use settings;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::fmt;
 use std::sync::Mutex;
+use std::path::Path;
 
 use utils::error;
 
@@ -82,6 +83,58 @@ fn check_str(str_opt: Option<String>) -> Result<String, u32>{
     }
 }
 
+pub fn init_pool_and_wallet() -> Result<(), u32>  {
+    if settings::test_indy_mode_enabled() {return Ok (()); }
+
+    let pool_name = match settings::get_config_value(settings::CONFIG_POOL_NAME) {
+        Err(x) => return Err(error::INVALID_CONFIGURATION.code_num),
+        Ok(v) => v,
+    };
+
+    let wallet_name = match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
+        Err(x) => return Err(error::INVALID_CONFIGURATION.code_num),
+        Ok(v) => v,
+    };
+
+    let path: String = match settings::get_config_value(settings::CONFIG_GENESIS_PATH) {
+        Err(e) => return Err(error::INVALID_CONFIGURATION.code_num),
+        Ok(p) => p,
+    };
+
+    info!("opening pool {} with genesis_path: {}", pool_name, path);
+    let option_path = Some(Path::new(&path));
+    match pool::create_pool_ledger_config(&pool_name, option_path.to_owned()) {
+        Err(e) => {
+            warn!("Pool Config Creation Error: {}", e);
+            return Err(e);
+        },
+        Ok(_) => {
+            debug!("Pool Config Created Successfully");
+            match pool::open_pool_ledger(&pool_name, None) {
+                Err(e) => {
+                    warn!("Open Pool Error: {}", e);
+                    return Err(e);
+                },
+                Ok(handle) => {
+                    debug!("Open Pool Successful");
+                }
+            }
+        }
+    }
+
+    match wallet::open_wallet(&wallet_name) {
+        Err(e) => {
+            warn!("Init Wallet Error {}.", e);
+            return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
+        },
+        Ok(_) => {
+            debug!("Init Wallet Successful");
+        },
+    };
+
+    Ok(())
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -92,5 +145,18 @@ mod tests {
         assert!(indy_function_eval(0).is_ok());
         assert!(indy_function_eval(-1).is_err());
         assert!(indy_function_eval(1).is_err());
+    }
+
+    #[test]
+    fn test_init_pool_and_wallet() {
+        let wallet_name = "test_init_pool_and_wallet";
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        // make sure there's a valid wallet and pool before trying to use them.
+        ::utils::devsetup::setup_dev_env(wallet_name);
+        wallet::close_wallet().unwrap();
+        pool::close().unwrap();
+        init_pool_and_wallet().unwrap();
+        ::utils::devsetup::cleanup_dev_env(wallet_name);
     }
 }

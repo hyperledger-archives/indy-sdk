@@ -32,3 +32,27 @@ export async function initVcx (configPath: string, options: IInitVCXOptions = {}
     throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_init')
   }
 }
+
+export async function initVcxWithConfig (config: string, options: IInitVCXOptions = {}): Promise<void> {
+  initRustAPI(options.libVCXPath)
+  let rc = null
+  try {
+    return await createFFICallbackPromise<void>(
+      (resolve, reject, cb) => {
+        rc = rustAPI().vcx_init_with_config(0, config, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback('void', ['uint32', 'uint32', 'string'], (xhandle, err) => {
+        if (err) {
+          reject(err)
+          return
+        }
+        resolve(err)
+      })
+    )
+  } catch (err) {
+    throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_init_with_config')
+  }
+}

@@ -244,6 +244,7 @@ fn setup_new_wallet_with_new_credential(wallet_name: &str) {
 
 fn setup_wallet(wallet_name: &str) {
     use std::path::Path;
+    use self::rusqlite::bypass_sqlite_version_check;
     use self::rusqlite::Connection;
     use std::env::home_dir;
 
@@ -253,6 +254,7 @@ fn setup_wallet(wallet_name: &str) {
     let wallet_db = home.join(wallet_dir);
 
     wallet::init_wallet(wallet_name).unwrap();
+    unsafe { bypass_sqlite_version_check(); }
     let connection = Connection::open(wallet_db.as_path()).unwrap();
 
     for entry in DEV_ENTRIES {
