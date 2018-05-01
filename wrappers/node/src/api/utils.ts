@@ -54,3 +54,7 @@ export async function updateAgentInfo (options: string): Promise<string> {
 export function getVersion (): string {
   return rustAPI().vcx_version()
 }
+
+export function shutdownVcx (deleteWallet: boolean): number {
+  return rustAPI().vcx_shutdown(deleteWallet)
+}

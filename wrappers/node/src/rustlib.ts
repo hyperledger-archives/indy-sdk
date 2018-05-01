@@ -43,6 +43,7 @@ export type rust_connection_handle = rust_object_handle
 export interface IFFIEntryPoint {
   vcx_init: (commandId: number, configPath: string, cb: any) => number,
   vcx_init_with_config: (commandId: number, config: string, cb: any) => number,
+  vcx_shutdown: (deleteIndyInfo: boolean) => number,
   vcx_error_c_message: (errorCode: number) => string,
   vcx_version: () => string,
   vcx_agent_provision_async: (commandId: number, config: string, cb: any) => number,
@@ -130,6 +131,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
 
   vcx_init: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONFIG_PATH, FFI_CALLBACK_PTR]],
   vcx_init_with_config: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONFIG_PATH, FFI_CALLBACK_PTR]],
+  vcx_shutdown: [FFI_ERROR_CODE, [FFI_BOOL]],
   vcx_error_c_message: [FFI_STRING, [FFI_ERROR_CODE]],
   vcx_version: [FFI_STRING, []],
   vcx_agent_provision_async: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],

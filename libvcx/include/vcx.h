@@ -59,6 +59,7 @@ vcx_error_t vcx_update_agent_info(vcx_command_handle_t handle, const char *info,
 
 const char *vcx_error_c_message(int);
 const char *vcx_version();
+vcx_error_t vcx_shutdown(vcx_bool_t delete_wallet);
 
 
 /**
