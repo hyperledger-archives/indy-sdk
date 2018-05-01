@@ -7,6 +7,9 @@ from vcx.common import error_message
 async def test_vcx_init(vcx_init_test_mode):
     pass
 
+@pytest.mark.asyncio
+async def test_vcx_init_with_config(vcx_init_test_mode):
+    pass
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')

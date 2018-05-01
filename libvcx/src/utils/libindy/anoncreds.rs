@@ -365,13 +365,11 @@ mod tests {
         issuer_credential.credential_request = Some(credential_req.clone());
         let encoded_credential_data = issuer_credential.create_attributes_encodings().unwrap();
         util_put_credential_def_in_issuer_wallet(15, wallet_handle);
-        let result = libindy_issuer_create_credential(get_wallet_handle(),
+        let (str1, str2) = libindy_issuer_create_credential(get_wallet_handle(),
                                                       &serde_json::to_string(&credential_req).unwrap(),
                                                       &encoded_credential_data,
-                                                      -1);
+                                                      -1).unwrap();
         delete_wallet("test_wallet").unwrap();
-        assert!(result.is_ok());
-        let (str1, str2) = result.unwrap();
         println!("{}, {}", str1, str2);
     }
 

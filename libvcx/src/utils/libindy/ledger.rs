@@ -193,36 +193,37 @@ pub fn libindy_build_create_credential_def_txn(submitter_did: &str,
 #[cfg(test)]
 mod tests {
     use super::*;
+    use settings;
     use utils::constants::{CREDENTIAL_DEF_DATA};
     #[test]
     fn simple_libindy_build_get_txn_request_test() {
-        let result = libindy_build_get_txn_request("GGBDg1j8bsKmr4h5T9XqYf",15);
-        assert!(result.is_ok());
-        println!("{}",result.unwrap());
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        let result = libindy_build_get_txn_request("GGBDg1j8bsKmr4h5T9XqYf", 15).unwrap();
+        println!("{}", result);
     }
 
     #[test]
     fn simple_libindy_build_get_credential_def_txn_test() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         let result = libindy_build_get_credential_def_txn("GGBDg1j8bsKmr4h5T9XqYf",
                                                           15,
                                                           None,
-                                                          "GGBDg1j8bsKmr4h5T9XqYf");
-        assert!(result.is_ok());
-        println!("{}",result.unwrap());
+                                                          "GGBDg1j8bsKmr4h5T9XqYf").unwrap();
+        println!("{}",result);
     }
 
     #[test]
     fn simple_libindy_build_create_txn_request_test() {
-        let result = libindy_build_create_credential_def_txn("GGBDg1j8bsKmr4h5T9XqYf",15, None, CREDENTIAL_DEF_DATA);
-        assert!(result.is_ok());
-        println!("{}",result.unwrap());
+        let result = libindy_build_create_credential_def_txn("GGBDg1j8bsKmr4h5T9XqYf",15, None, CREDENTIAL_DEF_DATA).unwrap();
+        println!("{}",result);
     }
 
     #[test]
     fn simple_libindy_build_schema_request_test() {
         let request = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#;
-        let result = libindy_build_schema_request("GGBDg1j8bsKmr4h5T9XqYf",request);
-        assert!(result.is_ok());
-        println!("{}",result.unwrap());
+        let result = libindy_build_schema_request("GGBDg1j8bsKmr4h5T9XqYf",request).unwrap();
+        println!("{}",result);
     }
 }

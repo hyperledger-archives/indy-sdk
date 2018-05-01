@@ -1,4 +1,5 @@
 extern crate libc;
+extern crate serde_json;
 
 use utils::version_constants;
 use self::libc::c_char;
@@ -7,37 +8,46 @@ use utils::libindy::{wallet, pool};
 use utils::error;
 use settings;
 use std::thread;
-use std::path::Path;
 use std::ffi::CString;
 
 
+/// Initializes VCX with config settings
+///
+/// example configuration is in libvcx/sample_config/config.json
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// config_path: path to a config file to populate config attributes
+///
+/// cb: Callback that provides error status of initialization
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_init_with_config(command_handle: u32,
+                                   config: *const c_char,
+                                   cb: Option<extern fn(xcommand_handle: u32, err:u32)>) -> u32 {
+
+    check_useful_c_str!(config,error::INVALID_OPTION.code_num);
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    if config == "ENABLE_TEST_MODE" {
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+    } else {
+        match settings::process_config_string(&config) {
+            Err(e) => {
+                println!("Invalid configuration specified: {}", e);
+                return error::INVALID_CONFIGURATION.code_num;
+            },
+            Ok(_) => (),
+        }
+    };
+
+    _finish_init(command_handle, cb)
+}
+
 /// Initializes VCX with config file
-///
-/// Possible values in the Config file: ->
-///
-/// pool_name:
-///
-/// config_name
-///
-/// wallet_name:
-///
-/// wallet_type
-///
-/// agency_endpoint: the url to interact with the agency environment
-///
-/// agency_did: public did for the agency
-///
-/// agency_verkey: public verkey for the agency
-///
-/// sdk_to_remote_did: did for enterprise pairwise relationship with an agent
-///
-/// remote_to_sdk_did: did for the agent pairwise relationship with an enterprise
-///
-/// remote_to_sdk_verkey: verkey for the agent pairwise relationship with an enterprise
-///
-/// institution_name: enterprise's name
-///
-/// institution_logo_url: url for enterprise's logo
 ///
 /// An example file is at libvcx/sample_config/config.json
 ///
@@ -54,6 +64,8 @@ use std::ffi::CString;
 pub extern fn vcx_init (command_handle: u32,
                         config_path:*const c_char,
                         cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
     if !config_path.is_null() {
         check_useful_c_str!(config_path,error::INVALID_OPTION.code_num);
@@ -76,6 +88,13 @@ pub extern fn vcx_init (command_handle: u32,
         return error::INVALID_CONFIGURATION.code_num;
     }
 
+    _finish_init(command_handle, cb)
+}
+
+fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u32)) -> u32 {
+
+    ::utils::logger::LoggerUtils::init();
+
     settings::set_defaults();
 
     if wallet::get_wallet_handle() > 0 {
@@ -83,89 +102,10 @@ pub extern fn vcx_init (command_handle: u32,
         return error::ALREADY_INITIALIZED.code_num;
     }
 
-    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-
-    let pool_name = match settings::get_config_value(settings::CONFIG_POOL_NAME) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
-
-    let wallet_name = match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
-
-    let wallet_type = match settings::get_config_value(settings::CONFIG_WALLET_TYPE) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
-
-        let agency_did = match settings::get_config_value(settings::CONFIG_AGENCY_DID) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
-
-    let remote_to_sdk_did = match settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
-
-    let agency_ver_key = match settings::get_config_value(settings::CONFIG_AGENCY_VERKEY) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
-
-    let agent_ver_key = match settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
-
-    let institution_name = match settings::get_config_value(settings::CONFIG_INSTITUTION_NAME) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
-
-    let logo_url = match settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
-
     info!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
 
-    info!("Initializing wallet with name: {} and pool: {}", &wallet_name, &pool_name);
-
-    if !settings::test_indy_mode_enabled() {
-        let path: String = match settings::get_config_value(settings::CONFIG_GENESIS_PATH) {
-            Ok(p) => p.clone(),
-            Err(e) => {
-                error!("Invalid Configuration Genesis Path given");
-                return e;
-            },
-        };
-
-        let option_path = Some(Path::new(&path));
-        match pool::create_pool_ledger_config(&pool_name, option_path.to_owned()) {
-            Err(e) => {
-                warn!("Pool Config Creation Error: {}", e);
-                return e;
-            },
-            Ok(_) => {
-                debug!("Pool Config Created Successfully");
-                match pool::open_pool_ledger(&pool_name, None) {
-                    Err(e) => {
-                    warn!("Open Pool Error: {}", e);
-                        return e;
-                    },
-                    Ok(handle) => {
-                        debug!("Open Pool Successful");
-                    }
-                }
-            }
-        }
-    }
-
     thread::spawn(move|| {
-        match wallet::open_wallet(&wallet_name) {
+        match ::utils::libindy::init_pool_and_wallet() {
             Err(e) => {
                 warn!("Init Wallet Error {}.", e);
                 cb(command_handle, e);
@@ -222,11 +162,7 @@ pub extern fn vcx_error_c_message(error_code: u32) -> *const c_char {
 mod tests {
 
     use super::*;
-    use std::path::Path;
-    use std::error::Error;
-    use std::io::prelude::*;
     use std::time::Duration;
-    use std::fs;
     use std::ptr;
     use error::*;
     use error::proof::ProofError;
@@ -244,35 +180,44 @@ mod tests {
         settings::tests::create_default_genesis_file();
 
         let config_path = "/tmp/test_init.json";
-        let path = Path::new(config_path);
-
-        let mut file = match fs::File::create(&path) {
-            Err(why) => panic!("couldn't create sample config file: {}", why.description()),
-            Ok(file) => file,
-        };
-
         let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"config1\", \"wallet_name\":\"my_wallet\", \
         \"agency_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"remote_to_sdk_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
         \"sdk_to_remote_did\" : \"AB3JM851T4EQmhh8CdagSP\", \"institution_name\" : \"evernym enterprise\",\
-        \"agency_verkey\" : \"7118p4HubxzUK1dwxcc5FU\", \"remote_to_sdk_verkey\" : \"U22jM6Cea2YVixjWwHN9wq\"}";
-        match file.write_all(content.as_bytes()) {
-            Err(why) => panic!("couldn't write to sample config file: {}", why.description()),
-            Ok(_) => println!("sample config ready"),
-        }
+        \"agency_verkey\" : \"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE\", \"remote_to_sdk_verkey\" : \"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE\"}";
+
+        settings::write_config_to_file(content, config_path).unwrap();
 
         let result = vcx_init(0,CString::new(config_path).unwrap().into_raw(),Some(init_cb));
         assert_eq!(result,0);
         thread::sleep(Duration::from_secs(1));
         // Leave file around or other concurrent tests will fail
-        //fs::remove_file(config_path).unwrap();
-
 
         // cleanup
         wallet::delete_wallet("my_wallet").unwrap();
         settings::tests::remove_file_if_exists(settings::DEFAULT_GENESIS_PATH);
-
     }
 
+    #[test]
+    fn test_init_with_config() {
+        let wallet_name = "test_init_with_config";
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        // make sure there's a valid wallet and pool before trying to use them.
+        ::utils::devsetup::setup_dev_env(wallet_name);
+        wallet::close_wallet().unwrap();
+        pool::close().unwrap();
+
+        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"config1\", \"wallet_name\":\"test_init_with_config\", \
+        \"agency_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"remote_to_sdk_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
+        \"sdk_to_remote_did\" : \"AB3JM851T4EQmhh8CdagSP\", \"institution_name\" : \"evernym enterprise\",\
+        \"agency_verkey\" : \"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE\", \"remote_to_sdk_verkey\" : \"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE\"}";
+
+        let result = vcx_init_with_config(0,CString::new(content).unwrap().into_raw(),Some(init_cb));
+        assert_eq!(result,0);
+        thread::sleep(Duration::from_secs(1));
+
+        ::utils::devsetup::cleanup_dev_env(wallet_name);
+    }
 
     #[test]
     fn test_init_bad_path() {
@@ -295,7 +240,6 @@ mod tests {
         assert_eq!(result,error::INVALID_CONFIGURATION.code_num);
         thread::sleep(Duration::from_secs(1));
         wallet::delete_wallet(settings::DEFAULT_WALLET_NAME).unwrap();
-
     }
 
     #[test]
