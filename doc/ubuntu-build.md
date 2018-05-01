@@ -12,16 +12,19 @@
       libssl-dev \
       libsqlite3-dev \
       libsodium-dev \
-      libzmq3-dev
+      libzmq3-dev \ 
+      libncursesw5-dev
    ```
-1. Checkout and build the library:
+  
+1. Build `libindy`
    
    ```
    git clone https://github.com/hyperledger/indy-sdk.git
    cd ./indy-sdk/libindy
-   cargo build
+   cargo build 
    cd ..
    ```
+   
 1. Run integration tests:
    * Start local nodes pool on `127.0.0.1:9701-9708` with Docker:
      
@@ -60,4 +63,22 @@
      RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test
      ```
      
+1. Build `indy-cli` (Optional)
+
+   `indy-cli` is dependent on `libindy` and should be built after it. 
+   
+   ```
+   cd cli/
+   RUSTFLAGS=" -L ../libindy/target/debug" cargo build
+   ```
+   If you have followed the instructions to build libindy above, the default build type will be `debug`
+  
+   Make sure to add the libindy to the path. Using bash:
+   ```
+   echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/libindy/target/{BUILD TYPE}" >> ~/.bashrc
+   sudo ldconfig 
+   source ~/.bashrc
+   ```
+   To run indy-cli, navigate to `cli/target/debug` and run `./indy-cli`
+   
 See [libindy/ci/ubuntu.dockerfile](https://github.com/hyperledger/indy-sdk/tree/master/libindy/ci/ubuntu.dockerfile) for example of Ubuntu based environment creation in Docker.
