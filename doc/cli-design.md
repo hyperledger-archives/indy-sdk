@@ -48,7 +48,7 @@ CLI will support 2 execution modes:
 * Each command will be implemented as Rust module with one public "new" function that returns configured "Command" instance
 * All commands will share one "CommandContext". "CommandContext" will hold application state and contain 2 parts:
   * Pre-defined application part. Part that holds application-level state like command prompt, isExit flag and etc...
-  * Generic command specific part. This part will be key-value storage that will allow commands to store command-speficic data like Indy SDK handles, used DID and etc... 
+  * Generic command specific part. This part will be key-value storage that will allow commands to store command-speficic data like Indy SDK handles, used DID and etc...
 * "Executor" and "Cleaner" functions will get CommandContext as parameter
 * Actual execution of commands will be performed by CommandExecutor class. This class will:
   * Instantiation of shared "CommandContext"
@@ -123,7 +123,7 @@ Create new wallet with specified name and pool:
 ```
 indy> wallet create [name=]<wallet name> pool_name=<pool name> [key=<key>]
 ```
-TODO: Think about custom wallet types support. Now we force default wallet security model.. 
+TODO: Think about custom wallet types support. Now we force default wallet security model..
 
 #### Wallet open
 Open the wallet with specified name and make it available for commands that require wallet. If there was opened wallet it will be closed:
@@ -151,7 +151,7 @@ indy> pool <subcommand>
 #### Create config
 Create name pool (network) configuration
 ```
-indy> pool create [name=]<pool name> gen_txn_file=<gen txn file path> 
+indy> pool create [name=]<pool name> gen_txn_file=<gen txn file path>
 ```
 
 #### Connect
@@ -253,16 +253,16 @@ ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-v
 ledger get-schema did=<did-value> name=<name-value> version=<version-value>
 ```
 
-#### CRED_DEF transaction
-Send CRED_DEF transaction
+#### CLAIM_DEF transaction
+Send CLAIM_DEF transaction
 ```
-ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> primary=<primary-value> [revocation=<revocation-value>]
+ledger claim-def schema_no=<schema_no-value> signature_type=<signature_type-value> primary=<primary-value> [revocation=<revocation-value>]
 ```
 
-#### GET_CRED_DEF transaction
-Send GET_CRED_DEF transaction
+#### GET_CLAIM_DEF transaction
+Send GET_CLAIM_DEF transaction
 ```
-ledger get-cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> origin=<origin-value>
+ledger get-claim-def schema_no=<schema_no-value> signature_type=<signature_type-value> origin=<origin-value>
 ```
 
 #### POOL_CONFIG transaction

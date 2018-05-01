@@ -34,7 +34,7 @@ If the concepts of cryptography and blockchain details feel mysterious, fear not
 
 Our goal is to introduce you to many of the concepts of Indy and give you some idea of what happens behind the scenes to make it all work.
 
-We're going to frame the exploration with a story. Alice, a graduate of the fictional Faber College, wants to apply for a job at the fictional company Acme Corp. As soon as she has the job, she wants to apply for a loan in Thrift Bank so she can buy a car. She would like to use her college transcript as proof of her education on the job application and once hired, Alice would like to use the fact of employment as evidence of her creditworthiness for the loan.
+We're going to frame the exploration with a story. Alice, a graduate of the fictional Faber College, wants to apply for a job at the fictional company Acme Corp. As soon as she has the job she wants to apply for a loan in Thrift Bank so she can buy a car. She would like to use her college transcript as proof of her education on the job application and once hired, Alice would like to use the fact of employment as evidence of her creditworthiness for the loan.
 
 The sorts of identity and trust interactions required to pull this off are messy in the world today; they are slow, they violate privacy, and they are susceptible to fraud. We’ll show you how Indy is a quantum leap forward.
 
@@ -58,17 +58,17 @@ For this guide, however, we’ll be using an **Indy SDK API** (as provided by li
 
 ### Step 1: Getting Trust Anchor Credentials for Faber, Acme, Thrift and Government
 
-Faber College and other actors have done some preparation to offer this service to Alice. To understand these steps let's start with some definitions.
+Faber College and another actors have done some preparation to offer this service to Alice. To understand these steps let's start with some definitions.
 
-The ledger is intended to store **Identity Records** that describe a **Ledger Entity**. Identity Records are public data and may include Public Keys, Service Endpoints, Credential Schemas, and Credential Definitions. Every **Identity Record** is associated with exactly one **DID** (Decentralized Identifier) that is globally unique and resolvable (via a ledger) without requiring any centralized resolution authority. To maintain privacy each **Identity Owner** can own multiple DIDs.
+The ledger is intended to store **Identity Records** that describe a **Ledger Entity**. Identity Records are public data and may include Public Keys, Service Endpoints, Credential Schemas, Credential Definitions. Every **Identity Record** is associated with exactly one **DID** (Decentralized Identifier) that is globally unique and resolvable (via a ledger) without requiring any centralized resolution authority. To maintain privacy each **Identity Owner** can own multiple DIDs.
 
-In this tutorial we will use two types of DIDs. The first one is a **Verinym**. A **Verinym** is associated with the **Legal Identity** of the **Identity Owner**. For example, all parties should be able to verify that some DID is used by a Government to publish schemas for some document type. The second type is a **Pseudonym** - a **Blinded Identifier** used to maintain privacy in the context of an ongoing digital relationship (**Connection**). If the Pseudonym is used to maintain only one digital relationship we will call it a Pairwise-Unique Identifier. We will use Pairwise-Unique Identifiers to maintain secure connections between actors in this tutorial.
+In this tutorial we will use two types of DIDs. The first one is a **Verinym**. **Verinym** is associated with the **Legal Identity** of the **Identity Owner**. For example, all parties should be able to verify that some DID is used by a Government to publish schemas for some document type. The second type is a **Pseudonym** - a **Blinded Identifier** used to maintain privacy in the context on an ongoing digital relationship (**Connection**). If the Pseudonym is used to maintain only one digital relationship we will call it a Pairwise-Unique Identifier. We will use Pairwise-Unique Identifiers to maintain secure connections between actors in this tutorial.
 
 The creation of a DID known to the Ledger is an **Identity Record** itself (NYM transaction). The NYM transaction can be used for creation of new DIDs that is known to that ledger, the setting and rotation of a verification key, and the setting and changing of roles. The most important fields of this transaction are `dest` (target DID), `role` (role of a user NYM record being created for) and the `verkey` (target verification key). See [Requests](https://github.com/hyperledger/indy-node/blob/master/docs/requests.md) to get more information about supported ledger transactions.
 
-Publishing with a DID verification key allows a person, organization or thing, to verify that someone owns this DID as that person, organization or thing is the only one who knows the corresponding signing key and any DID-related operations requiring signing with this key.
+Publishing with a DID verification key allows a person, organization or thing, to verify that someone owns this DID as he is the only one who knows the corresponding signing key and any DID-related operations require signing with this key.
 
-Our ledger is public permissioned and anyone who wants to publish DIDs needs to get the role of **Trust Anchor** on the ledger. A **Trust Anchor** is a person or organization that the ledger already knows about, that is able to help bootstrap others. (It is *not* the same as what cybersecurity experts call a "trusted third party"; think of it more like a facilitator). See [Roles](https://docs.google.com/spreadsheets/d/1TWXF7NtBjSOaUIBeIH77SyZnawfo91cJ_ns4TR-wsq4/edit#gid=0) to get more information about roles.
+Our ledger is public permissioned and anyone who wants to publish DIDs need to get the role of **Trust Anchor** on the ledger. A **Trust Anchor** is a person or organization that the ledger already knows about, that is able to help bootstrap others. (It is *not* the same as what cybersecurity experts call a "trusted third party"; think of it more like a facilitator). See [Roles](https://docs.google.com/spreadsheets/d/1TWXF7NtBjSOaUIBeIH77SyZnawfo91cJ_ns4TR-wsq4/edit#gid=0) to get more information about roles.
 
 **The first step towards being able to place transactions on the ledger involves getting the role of Trust Anchor on the ledger. Faber College, Acme Corp and Thrift Bank will need to get the role of Trust Anchor on the ledger so they can create Verinyms and Pairwise-Unique Identifiers to provide the service to Alice.**
 
@@ -82,7 +82,7 @@ The first code block will contain the code of the **Steward's** agent.
 
 **To write and read the ledger's transactions after gaining the proper role, you'll need to make a connection to the Indy nodes pool. To make a connection to the different pools that exist, like the Sovrin pool or the local pool we started by ourself as part of this tutorial, you'll need to set up a pool configuration.**
 
-The list of nodes in the pool is stored in the ledger as NODE transactions. Libindy allows you to restore the actual list of NODE transactions by a few known transactions that we call genesis transactions. Each **Pool Configuration** is defined as a pair of pool configuration name and pool configuration JSON. The most important field in pool configuration json is the path to the file with the list of genesis transactions. Make sure this path is correct.
+The list of nodes in the pool is stored in the ledger as NODE transactions. Libindy allows you to restore the actual list of NODE transactions by a few known transactions that we call genesis transactions. Each **Pool Configuration** is defined as a pair of pool configuration name and pool configuration JSON. The most important field in pool configuration json is path to the file with the list of genesis transactions. Make sure this path is correct.
 
 The ``pool.create_pool_ledger_config`` call allows you to create a named pool configuration. After the pool configuration is created we can connect to the nodes pool that this configuration describes by calling ``pool.open_pool_ledger``. This call returns the pool handle that can be used to reference this opened connection in future libindy calls.
 
@@ -101,11 +101,11 @@ The below code block below contains each of these items. Note how the comments d
 
 **Next, the Steward's agent should get the ownership for the DID that has corresponding NYM transactions with the Steward role on the ledger.**
 
-The test ledger we use was pre-configured to store some known **Steward** NYMs. Also we know **seed** values for the random number generator that were used to generate keys for these NYMs. These **seed** values allow us to restore signing keys for these DIDs on the **Steward's** agent side and as a result get the DID ownership.
+The test ledger we use was pre-configured to store some known **Steward** NYMs. Also we know **seed** values for the random number generator that were used to generate keys for this NYMs. These **seed** values allow us to restore signing keys for these DIDs on **Steward's** agent side and as result get the DID ownership.
 
-Libindy has a concept of the **Wallet**. The wallet is secure storage for crypto materials like DIDs, keys, etc... To store the **Steward's** DID and corresponding signkey, the agent should create a named wallet first by calling ``wallet.create_wallet``. After this the named wallet can be opened by calling ``wallet.open_wallet``. This call returns the wallet handle that can be used to reference this opened wallet in future libindy calls.
+Libindy has a concept of the **Wallet**. The wallet is secure storage for crypto materials like DIDs, keys and etc... To store the **Steward's** DID and corresponding signkey, the agent should create a named wallet first by calling ``wallet.create_wallet``. After this the named wallet can be opened by calling ``wallet.open_wallet``. This call returns the wallet handle that can be used to reference this opened wallet in future libindy calls.
 
-After the wallet is opened we can create a DID record in this wallet by calling ``did.create_and_store_my_did`` that returns the generated DID and verkey part of the generated key. The signkey part for this DID will be stored in the wallet too, but it is impossible to read it directly.
+After the wallet is opened we can create a DID record in this wallet by calling ``did.create_and_store_my_did`` that returns the generated DID and verkey part of generated key. The signkey part for this DID will be stored in the wallet too, but it is impossible to read it directly.
 
 ```python
   # Steward Agent
@@ -121,7 +121,7 @@ After the wallet is opened we can create a DID record in this wallet by calling 
 
 #### Step 4: Onboarding Faber, Acme, Thrift and Government by Steward
 
-**Faber, Acme, Thrift and Government should now establish a Connection with the Steward.**
+**Now, Faber, Acme, Thrift and Government should establish a Connection with the Steward.**
 
 Each connection is actually a pair of Pairwise-Unique Identifiers (DIDs). The one DID is owned by one party to the connection and the second by another.
 
@@ -174,7 +174,7 @@ Let's look the process of connection establishment between **Steward** and **Fab
     faber_wallet = await wallet.open_wallet('faber_wallet', None, None)
     ```
 
-8. **Faber** creates a new DID record in its wallet by calling ``did.create_and_store_my_did`` that it will use only for secure interactions with the **Steward**.
+8. **Faber** creates a new DID record in his wallet by calling ``did.create_and_store_my_did`` that he will use only for secure interactions with the **Steward**.
     ```python
     # Faber Agent
     (faber_steward_did, faber_steward_key) = await did.create_and_store_my_did(faber_wallet, "{}")
@@ -226,11 +226,11 @@ Please note that despite the fact that the Steward is the sender of this transac
     await ledger.sign_and_submit_request(pool_handle, steward_wallet, steward_did, nym_request)
     ```
 
-At this point **Faber** is connected to the **Steward** and can interact in a secure peer-to-peer way. **Faber** can trust the response is from **Steward** because:
+At this point **Faber** is connected to the **Steward** and can interact in a secure peer-to-peer way. **Faber** and can trust the response is from **Steward** because:
 
-* it connects to the current endpoint
+* he connects to the current endpoint
 * no replay - attack is possible, due to her random challenge
-* it knows the verification key used to verify **Steward** digital signature is the correct one because it just confirmed it on the ledger
+* he knows the verification key used to verify **Steward** digital signature is the correct one because he just confirmed it on the ledger
 
 **Note:** All parties must not use the same DID's to establish other relationships.
 By having independent pairwise relationships, you're reducing the ability for others to correlate your activities across multiple interactions.
@@ -240,7 +240,7 @@ By having independent pairwise relationships, you're reducing the ability for ot
 It is important to understand that earlier created **Faber** DID is not, in and of itself, the same thing as self-sovereign identity. This DID must be used only for secure interaction with the **Steward**.
 After the connection is established **Faber** must create new DID record that he will use as Verinym in the Ledger.
 
-1. **Faber** creates a new DID in its wallet by calling ``did.create_and_store_my_did``.
+1. **Faber** creates a new DID in his wallet by calling ``did.create_and_store_my_did``.
     ```python        
     # Faber Agent
     (faber_did, faber_key) = await did.create_and_store_my_did(faber_wallet, "{}")
@@ -285,7 +285,7 @@ After the connection is established **Faber** must create new DID record that he
     ```
 
 8. **Steward** sends the corresponded NYM transaction to the Ledger with `TRUST ANCHOR` role.
-Please note that despite the fact that the Steward is the sender of this transaction the owner of DID will be Faber as it uses Verkey provided by Faber.
+Please note that despite the fact that the Steward is sender of this transaction the owner of DID will be Faber as it uses Verkey provided by Faber.
     ```python    
     # Steward Agen
     nym_request = await ledger.build_nym_request(steward_did, decrypted_faber_did_info_json['did'],
@@ -298,7 +298,7 @@ At this point **Faber** has a DID related to his identity in the Ledger.
 
 #### Step 5: Credential Schemas Setup
 
-**Credential Schema** is the base semantic structure that describes the list of attributes which one particular Credential can contain.
+**Credential Schema** is the base semantic structure that describes the list of attributes which one particular Claim can contain.
 
 **Note:** It's not possible to update an existing Schema. So, if the Schema needs to be evolved, a new Schema with a new version or name needs to be created.
 
@@ -306,80 +306,113 @@ A **Credential Schema** can be created and saved in the Ledger by any **Trust An
 
 Here is where the **Government** creates and publishes the **Transcript** Credential Schema to the Ledger:
 
-1. The **Trust Anchor** creates the **Credential Schema** by calling the ``anoncreds.issuer_create_schema`` that returns the generated **Credential Schema**.
+1. The **Trust Anchor** optionally creates a new DID record in his wallet and sends the corresponding NYM transaction to the Ledger.
     ```python
     # Government Agent
-    (transcript_schema_id, transcript_schema) = \
-        await anoncreds.issuer_create_schema(government_did,
-                                             'Transcript',
-                                             '1.2',
-                                             json.dumps(['first_name', 'last_name', 'degree', 'status', 'year', 'average', 'ssn']))
+    (government_issuer_did, government_issuer_key) = await did.create_and_store_my_did(government_wallet, "{}")
+    nym_request = await ledger.build_nym_request(government_did, government_issuer_did, government_issuer_key, None, None)
+    await ledger.sign_and_submit_request(pool_handle, government_handle, government_did, nym_request)
     ```
 
-2. The **Trust Anchor** sends the corresponding Schema transaction to the Ledger by consistently calling the ``ledger.build_schema_request`` to build the Schema request and ``ledger.sign_and_submit_request`` to send the created request.
+2. The **Trust Anchor** prepares the **Credential Schema**.
     ```python
     # Government Agent
-    schema_request = await ledger.build_schema_request(government_did, transcript_schema)
-    await ledger.sign_and_submit_request(pool_handle, government_wallet, government_did, schema_request)
+    transcript_schema = {
+        'name': 'Transcript',
+        'version': '1.2',
+        'attr_names': ['first_name', 'last_name', 'degree', 'status', 'year', 'average', 'ssn']
+    }
+    ```
+
+3. The **Trust Anchor** sends the corresponding Schema transaction to the Ledger by consistently calling the ``ledger.build_schema_request`` to build the Schema request and ``ledger.sign_and_submit_request`` to send the created request.
+    ```python
+    # Government Agent
+    schema_request = await ledger.build_schema_request(government_issuer_did, json.dumps(transcript_schema))
+    await ledger.sign_and_submit_request(pool_handle, government_wallet, government_issuer_did, schema_request)
     ```
 
 In the same way **Government** creates and publishes the **Job-Certificate** Credential Schema to the Ledger:
 ```python    
   # Government Agent
-    (job_certificate_schema_id, job_certificate_schema) = \
-        await anoncreds.issuer_create_schema(government_did,
-                                             'Job-Certificate',
-                                             '0.2',
-                                             json.dumps(['first_name', 'last_name', 'salary', 'employee_status', 'experience']))
-  schema_request = await ledger.build_schema_request(government_did, json.dumps(to the Ledger))
-  await ledger.sign_and_submit_request(pool_handle, government_wallet, government_did, schema_request)
+  job_certificate_schema = {
+      'name': 'Job-Certificate',
+      'version': '0.2',
+      'attr_names': ['first_name', 'last_name', 'salary', 'employee_status', 'experience']
+  }
+  schema_request = await ledger.build_schema_request(government_issuer_did, json.dumps(to the Ledger))
+  await ledger.sign_and_submit_request(pool_handle, government_wallet, government_issuer_did, schema_request)
 ```
 
 At this point we have the **Transcript** and the **Job-Certificate** Credential Schemas published by **Government** to the Ledger.
 
 #### Step 6: Credential Definition Setup
 
-**Credential Definition** is similar in that the keys that the Issuer uses for the signing of Credentials also satisfies a specific Credential Schema.
+**Credential Definition** is similar in that the keys that the Issuer uses for the signing of Claims also satisfies a specific Credential Schema.
 
-**Note** It's not possible to update data in an existing Credential Definition. So, if a `CredDef` needs to be evolved (for example, a key needs to be rotated), then a new Credential Definition needs to be created by a new Issuer DID.
+**Note** It's not possible to update data in an existing Credential Definition. So, if a `ClaimDef` needs to be evolved (for example, a key needs to be rotated), then a new Credential Definition needs to be created by a new Issuer DID.
 
 A Credential Definition can be created and saved in the Ledger by any **Trust Anchor**. Here **Faber** creates and publishes a Credential Definition for the known **Transcript** Credential Schema to the Ledger.
 
-1. The **Trust Anchor** gets the specific **Credential Schema** from the Ledger by consistently calling the ``ledger.build_get_schema_request`` to build the `GetSchema` request, ``ledger.sign_and_submit_request`` to send the created request and the ``ledger.parse_get_schema_response`` to get the `Schema` in the format required by Anoncreds API from the `GetSchema` response.
+1. The **Trust Anchor** optionally creates new DID record in his wallet and sends the corresponding NYM transaction to the Ledger.
     ```python
     # Faber Agent
-    get_schema_request = await ledger.build_get_schema_request(faber_did, transcript_schema_id)
-    get_schema_response = await ledger.submit_request(pool_handle, get_schema_request)
-    (transcript_schema_id, transcript_schema) = await ledger.parse_get_schema_response(get_schema_response)
+    (faber_issuer_did, faber_issuer_key) = await did.create_and_store_my_did(faber_wallet, "{}")
+    nym_request = await ledger.build_nym_request(faber_did, faber_issuer_did, faber_issuer_key, None, None)
+    await ledger.sign_and_submit_request(pool_handle, faber_wallet, faber_did, nym_request)  
     ```
 
-2. The **Trust Anchor** creates the **Credential Definition** related to the received **Credential Schema** by calling ``anoncreds.issuer_create_and_store_credential_def`` that returns the generated public **Credential Definition**.
+2. The **Trust Anchor** gets the specific **Credential Schema** from the Ledger by consistently calling the ``ledger.build_get_schema_request`` to build the `GetSchema` request and ``ledger.sign_and_submit_request`` to send the created request.
+    ```python
+    # Faber Agent
+    get_schema_data = json.dumps({
+        'name': 'Transcript',
+        'version': '1.2'
+    })
+    get_schema_request = await ledger.build_get_schema_request(faber_issuer_did, government_issuer_did, get_schema_data)
+    get_schema_response = await ledger.submit_request(pool_handle, get_schema_request)
+    transcript_schema = json.loads(get_schema_response)['result']
+    ```
+
+3. The **Trust Anchor** creates the **Credential Definition** related to the received **Credential Schema** by calling ``anoncreds.issuer_create_and_store_claim_def`` that returns the generated public **Credential Definition**.
    The private Credential Definition part for this **Credential Schema** will be stored in the wallet too, but it is impossible to read it directly.
     ```python
     # Faber Agent
-    (faber_transcript_cred_def_id, faber_transcript_cred_def_json) = \
-        await anoncreds.issuer_create_and_store_credential_def(faber_wallet, faber_did, transcript_schema, 'TAG1', 'CL', '{"support_revocation": false}')
+    faber_transcript_claim_def_json = \
+        await anoncreds.issuer_create_and_store_claim_def(faber_wallet, faber_issuer_did, json.dumps(transcript_schema), 'CL', False)
+    faber_transcript_claim_def = json.loads(faber_transcript_claim_def_json)
     ```
 
-3. The **Trust Anchor** sends the corresponding `CredDef` transaction to the Ledger by consistently calling the ``ledger.build_cred_def_request`` to build the `CredDef` request and the ``ledger.sign_and_submit_request`` to send the created request.
+4. The **Trust Anchor** sends the corresponding `ClaimDef` transaction to the Ledger by consistently calling the ``ledger.build_claim_def_txn`` to build the `ClaimDef` request and the ``ledger.sign_and_submit_request`` to send the created request.
     ```python
     # Faber Agent     
-    cred_def_request = await ledger.build_cred_def_request(faber_did, faber_transcript_cred_def_json)
-    await ledger.sign_and_submit_request(pool_handle, faber_wallet, faber_did, cred_def_request)
+    claim_def_request = \
+        await ledger.build_claim_def_txn(faber_issuer_did, faber_transcript_claim_def['ref'],
+                                         faber_transcript_claim_def['signature_type'], json.faber_transcript_claim_def(claim_def['data']))
+    await ledger.sign_and_submit_request(pool_handle, faber_wallet, faber_issuer_did, claim_def_request)
     ```
 
 The same way **Acme** creates and publishes a **Credential Definition** for the known **Job-Certificate** Credential Schema to the Ledger.
 ```python
   # Acme Agent
-  get_schema_request = await ledger.build_get_schema_request(acme_did, job_certificate_schema_id)
+  (acme_issuer_did, acme_issuer_key) = await did.create_and_store_my_did(acme_wallet, "{}")
+  await send_nym(pool_handle, acme_wallet, acme_did, acme_issuer_did, acme_issuer_key, None)
+
+  get_schema_data = json.dumps({
+      'name': 'Job-Certificate',
+      'version': '0.2'
+  })
+  get_schema_request = await ledger.build_get_schema_request(acme_issuer_did, government_issuer_did, get_schema_data)
   get_schema_response = await ledger.submit_request(pool_handle, get_schema_request)
-  (job_certificate_schema_id, job_certificate_schema) = await ledger.parse_get_schema_response(get_schema_response)
+  job_certificate_schema = json.loads(get_schema_response)['result']
 
-  (acme_job_certificate_cred_def_id, acme_job_certificate_cred_def_json) = \
-      await anoncreds.issuer_create_and_store_credential_def(acme_wallet, acme_did, job_certificate_schema, 'TAG1', 'CL', '{"support_revocation": false}')
+  acme_job_certificate_claim_def_json = \
+      await anoncreds.issuer_create_and_store_claim_def(acme_wallet, acme_issuer_did, json.dumps(job_certificate_schema), 'CL', False)
+  acme_transcript_claim_def = json.loads(acme_job_certificate_claim_def_json)
 
-    cred_def_request = await ledger.build_cred_def_request(acme_did, acme_job_certificate_cred_def_json)
-    await ledger.sign_and_submit_request(pool_handle, acme_wallet, acme_did, cred_def_request)
+  claim_def_request = \
+      await ledger.build_claim_def_txn(acme_issuer_did, acme_transcript_claim_def['ref'],
+                                       acme_transcript_claim_def['signature_type'], acme_transcript_claim_def.dumps(claim_def['data']))
+  await ledger.sign_and_submit_request(pool_handle, acme_wallet, acme_issuer_did, claim_def_request)
 ```
 
 At this point we have a **Credential Definition** for the **Job-Certificate** Credential Schema published by **Acme** and a
@@ -387,34 +420,45 @@ At this point we have a **Credential Definition** for the **Job-Certificate** Cr
 
 ## Alice Gets a Transcript
 
-A credential is a piece of information about an identity — a name, an age, a credit score… It is information claimed to be true. In this case, the credential is named, "Transcript".
+A claim is a piece of information about an identity — a name, an age, a credit score… It is information claimed to be true. In this case, the claim is named, "Transcript".
 
-Credentials are offered by an issuer.
+Claims are offered by an issuer.
 
-An issuer may be any identity owner known to the Ledger and any issuer may issue a credential about any identity owner it can identify.
+An issuer may be any identity owner known to the Ledger and any issuer may issue a claim about any identity owner it can identify.
 
-The usefulness and reliability of a credential are tied to the reputation of the issuer with respect to the credential at hand.
-For Alice to self-issue a credential that she likes chocolate ice cream may be perfectly reasonable, but for her to self-issue a credential that she graduated from Faber College should not impress anyone.
-
+The usefulness and reliability of a claim are tied to the reputation of the issuer with respect to the claim at hand.
+For Alice to self-issue a claim that she likes chocolate ice cream may be perfectly reasonable, but for her to self-issue a claim that she graduated from Faber College should not impress anyone.
 
 As we mentioned in [About Alice](#about-alice) **Alice** graduated from **Faber College**.
-After **Faber College** had established a connection with Alice, it created for her a Credential Offer about the issuance of the **Transcript** Credential.
+After **Faber College** had established a connection with Alice, he created for her a Credential Offer about the issuance of the **Transcript** Claim.
 ```python
   # Faber Agent
-  transcript_cred_offer_json = await anoncreds.issuer_create_credential_offer(faber_wallet, faber_transcript_cred_def_id)
+    transcript_claim_offer_json = \
+        await anoncreds.issuer_create_claim_offer(faber_wallet, json.dumps(transcript_schema),
+                                                  faber_issuer_did, alice_faber_did)
+```
+
+Alice stores the **Transcript** Credential Offer in her wallet.
+```python
+  # Alice Agent
+  await anoncreds.prover_store_claim_offer(alice_wallet, transcript_claim_offer_json)
 ```
 
 **Note:** All messages sent between actors are encrypted using `Authenticated-encryption` scheme.
 
-The value of this **Transcript** Credential is that it is provably issued by **Faber College**.
+The value of this **Transcript** Claim is that it is provably issued by **Faber College**.
 
-**Alice** wants to see the attributes that the **Transcript** Credential contains.
+**Alice** wants to see the attributes that the **Transcript** Claim contains.
 These attributes are known because a Credential Schema for **Transcript** has been written to the Ledger.
 ```python
   # Alice Agent
-  get_schema_request = await ledger.build_get_schema_request(alice_faber_did, transcript_cred_offer['schema_id'])
+  get_schema_data = json.dumps({
+      'name': transcript_claim_offer['transcript_claim_offer']['name'],
+      'version': transcript_claim_offer['transcript_claim_offer']['version']
+  })
+  get_schema_request = await ledger.build_get_schema_request(alice_faber_did, transcript_claim_offer['transcript_claim_offer']['did'], get_schema_data)
   get_schema_response = await ledger.submit_request(pool_handle, get_schema_request)
-  transcript_schema = await ledger.parse_get_schema_response(get_schema_response)
+  transcript_schema = json.loads(get_schema_response)['result']
 
   print(transcript_schema['data'])
   # Transcript Schema:
@@ -425,57 +469,56 @@ These attributes are known because a Credential Schema for **Transcript** has be
   }
 ```
 
-However, the **Transcript** Credential has not been delivered to Alice yet in a usable form. Alice wants to use that Credential.
+However, the **Transcript** Claim has not been delivered to Alice yet in a usable form. Alice wants to use that Claim.
 To get it, Alice needs to request it, but first she must create a **Master Secret**.
 
-**Note:** A Master Secret is an item of Private Data used by a Prover to guarantee that a credential uniquely applies to them. The Master Secret is an input that combines data from multiple Credentials in order to prove that the Credentials have a common subject (the Prover). A Master Secret should be known only to the Prover.
+**Note:** A Master Secret is an item of Private Data used by a Prover to guarantee that a claim uniquely applies to them. The Master Secret is an input that combines data from multiple Claims in order to prove that the Claims have a common subject (the Prover). A Master Secret should be known only to the Prover.
 
 Alice creates Master Secret in her wallet.
 ```python
   # Alice Agent
-  alice_master_secret_id = await anoncreds.prover_create_master_secret(alice_wallet, None)
+  alice_master_secret_name = 'alice_master_secret'
+  await anoncreds.prover_create_master_secret(alice_wallet, alice_master_secret_name)
 ```
 
-Alice also needs to get the Credential Definition corresponding to the `cred_def_id` in the **Transcript** Credential Offer.
+Alice also needs to get the Credential Definition corresponding to the `issuer_did` and the `schema_key` in the **Transcript** Credential Offer.
 ```python
   # Alice Agent
-  get_cred_def_request = await ledger.build_get_cred_def_request(alice_faber_did, transcript_cred_offer['cred_def_id'])
-  get_cred_def_response = await ledger.submit_request(pool_handle, get_cred_def_request)
-  faber_transcript_cred_def = await ledger.parse_get_cred_def_response(get_cred_def_response)
+  get_claim_def_request = await ledger.build_get_claim_def_txn(alice_faber_did, transcript_schema['seqNo'], 'CL', faber_issuer_did)
+  get_claim_def_response = await ledger.submit_request(pool_handle, get_claim_def_request)
+  transcript_claim_def = json.loads(get_claim_def_response)['result']
 ```
 
-Now Alice has everything to create a Credential Request of the issuance of the **Faber Transcript** Credential.
+Now Alice has everything to create a Claim Request of the issuance of the **Faber Transcript** Claim.
 ```python   
   # Alice Agent
-    (transcript_cred_request_json, transcript_cred_request_metadata_json) = \
-        await anoncreds.prover_create_credential_req(alice_wallet, alice_faber_did, transcript_cred_offer_json,
-                                                     faber_transcript_cred_def, alice_master_secret_id)
+  transcript_claim_request_json = \
+          await anoncreds.prover_create_and_store_claim_req(alice_wallet, alice_faber_did, transcript_claim_offer,
+                                                            json.dumps(transcript_claim_def), alice_master_secret)
 ```
 
 **Faber** prepares both raw and encoded values for each attribute in the **Transcript** Credential Schema.
-**Faber** creates the **Transcript** Credential for Alice.
+**Faber** creates the **Transcript** Claim for Alice.
 ```python
   # Faber Agent
-  transcript_cred_values = json.dumps({
-      "first_name": {"raw": "Alice", "encoded": "1139481716457488690172217916278103335"},
-      "last_name": {"raw": "Garcia", "encoded": "5321642780241790123587902456789123452"},
-      "degree": {"raw": "Bachelor of Science, Marketing", "encoded": "12434523576212321"},
-      "status": {"raw": "graduated", "encoded": "2213454313412354"},
-      "ssn": {"raw": "123-45-6789", "encoded": "3124141231422543541"},
-      "year": {"raw": "2015", "encoded": "2015"},
-      "average": {"raw": "5", "encoded": "5"}
+  transcript_claim_values = json.dumps({
+      'first_name': ['Alice', '1139481716457488690172217916278103335'], #
+      'last_name': ['Garcia', '5321642780241790123587902456789123452'],
+      'degree': ['Bachelor of Science, Marketing', '12434523576212321'],
+      'status': ['graduated', '2213454313412354'],
+      'ssn': ['123-45-6789', '3124141231422543541'],
+      'year': ['2015', '2015'],
+      'average': ['5', '5']
   })
 
-  transcript_cred_json, _, _ = \
-      await anoncreds.issuer_create_credential(faber_wallet, transcript_cred_offer_json, transcript_cred_request_json,
-                                               transcript_cred_values, None, None)
+  (_, transcript_claim_json) = \
+      await anoncreds.issuer_create_claim(faber_wallet, transcript_claim_request_json, transcript_claim_values, -1)
 ```
 
-Now the **Transcript** Credential has been issued. Alice stores it in her wallet.
+Now the **Transcript** Claim has been issued. Alice stores it in her wallet.
 ```python
   # Alice Agent
-  await anoncreds.prover_store_credential(alice_wallet, None, transcript_cred_request_json, transcript_cred_request_metadata_json,
-                                          transcript_cred_json, faber_transcript_cred_def, None)
+  await anoncreds.prover_store_claim(alice_wallet, transcript_claim_json, None)
 ```
 
 Alice has it in her possession, in much the same way that she would hold a physical transcript that had been mailed to her.
@@ -489,7 +532,7 @@ Because we’re using an Indy-SDK, the process is different, but the steps are t
 The process of the connection establishment is the same as when Faber was accepting the Steward connection request.
 
 After Alice had established connection with Acme, she got the **Job-Application** Proof Request.
-A proof request is a request made by the party who needs verifiable proof of having certain attributes and the solving of predicates that can be provided by other verified credentials.
+A proof request is a request made by the party who needs verifiable proof of having certain attributes and the solving of predicates that can be provided by other verified claims.
 
 In this case, Acme Corp is requesting that Alice provide a **Job Application**.
 The Job Application requires a name, degree, status, SSN and also the satisfaction of the condition about the average mark or grades.
@@ -501,8 +544,8 @@ In this case, **Job-Application** Proof Request looks like:
       'nonce': '1432422343242122312411212',
       'name': 'Job-Application',
       'version': '0.1',
-      'requested_attributes': {
-          'attr1_referent': {
+      'requested_attrs': {
+        'attr1_referent': {
               'name': 'first_name'
           },
           'attr2_referent': {
@@ -510,15 +553,15 @@ In this case, **Job-Application** Proof Request looks like:
           },
           'attr3_referent': {
               'name': 'degree',
-              'restrictions': [{'cred_def_id': faber_transcript_cred_def_id}]
+              'restrictions': [{'issuer_did': faber_issuer_did, 'schema_key': transcript_schema_key}]
           },
           'attr4_referent': {
               'name': 'status',
-              'restrictions': [{'cred_def_id': faber_transcript_cred_def_id}]
+              'restrictions': [{'issuer_did': faber_issuer_did, 'schema_key': transcript_schema_key}]
           },
           'attr5_referent': {
               'name': 'ssn',
-              'restrictions': [{'cred_def_id': faber_transcript_cred_def_id}]
+              'restrictions': [{'issuer_did': faber_issuer_did, 'schema_key': transcript_schema_key}]
           },
           'attr6_referent': {
               'name': 'phone_number'
@@ -526,10 +569,10 @@ In this case, **Job-Application** Proof Request looks like:
       },
       'requested_predicates': {
           'predicate1_referent': {
-              'name': 'average',
+              'attr_name': 'average',
               'p_type': '>=',
-              'p_value': 4,
-              'restrictions': [{'cred_def_id': faber_transcript_cred_def_id}]
+              'value': 4,
+              'restrictions': [{'issuer_did': faber_issuer_did, 'schema_key': transcript_schema_key}]
           }
       }
   })
@@ -537,21 +580,22 @@ In this case, **Job-Application** Proof Request looks like:
 
 Notice that some attributes are verifiable and some are not.
 
-The proof request says that SSN, degree, and graduation status in the Credential must be formally asserted by an issuer and schema_key. Notice also that the first_name, last_name and phone_number are not required to be verifiable.
-By not tagging these credentials with a verifiable status, Acme’s credential request is saying it will accept Alice’s own credential about her names and phone numbers.
+The proof request says that SSN, degree, and graduation status in the Claim must be formally asserted by an issuer and schema_key. Notice also that the first_name, last_name and phone_number are not required to be verifiable.
+By not tagging these claims with a verifiable status, Acme’s claim request is saying it will accept Alice’s own claim about her names and phone numbers.
 
-To show Credentials that Alice can use for the creating of Proof for the **Job-Application** Proof Request Alice calls `anoncreds.prover_get_credentials_for_proof_req`.
+To show Claims that Alice can use for the creating of Proof for the **Job-Application** Proof Request Alice calls `anoncreds.prover_get_claims_for_proof_req`.
 ```python
   # Alice Agent
-    creds_for_job_application_proof_request = json.loads(
-        await anoncreds.prover_get_credentials_for_proof_req(alice_wallet, job_application_proof_request_json))
+  claims_for_proof_request = \
+      json.loads(await anoncreds.prover_get_claims_for_proof_req(alice_wallet, job_application_proof_request_json))
 ```
 
-Alice has only one credential that meets proof the requirements for this **Job Application**.
+Alice has only one claim that meets proof the requirements for this **Job Application**.
 ```python
   # Alice Agent
   {
-    'referent': 'Transcript Credential Referent',
+    'referent': 'Transcript Claim Referent',
+    'schema_key': transcript_schema_key,
     'attrs': {
         'first_name': 'Alice',
         'last_name': 'Garcia',
@@ -561,10 +605,8 @@ Alice has only one credential that meets proof the requirements for this **Job A
         'year': '2015',
         'average': '5'
     },
-    'schema_id': job_certificate_schema_id,
-    'cred_def_id': faber_transcript_cred_def_id,
-    'rev_reg_id': None,
-    'cred_rev_id': None
+    'issuer_did': faber_issuer_did,
+    'revoc_reg_seq_no': None,
   }
 ```
 
@@ -578,29 +620,29 @@ Now Alice can divide these attributes into the three groups:
 For the **Job-Application** Proof Request Alice divided the attributes as follows:
 ```python
   # Alice Agent
-    job_application_requested_creds_json = json.dumps({
-        'self_attested_attributes': {
-            'attr1_referent': 'Alice',
-            'attr2_referent': 'Garcia',
-            'attr6_referent': '123-45-6789'
-        },
-        'requested_attributes': {
-            'attr3_referent': {'cred_id': cred_for_attr3['referent'], 'revealed': True},
-            'attr4_referent': {'cred_id': cred_for_attr4['referent'], 'revealed': True},
-            'attr5_referent': {'cred_id': cred_for_attr5['referent'], 'revealed': True},
-        },
-        'requested_predicates': {'predicate1_referent': {'cred_id': cred_for_predicate1['referent']}}
-    })
+  job_application_requested_claims_json = json.dumps({
+      'self_attested_attributes': {
+          'attr1_referent': 'Alice',
+          'attr2_referent': 'Garcia',
+          'attr6_referent': '123-45-6789'
+      },
+      'requested_attrs': {
+          'attr3_referent': ['Transcript Claim Referent', True],
+          'attr4_referent': ['Transcript Claim Referent', True],
+          'attr5_referent': ['Transcript Claim Referent', True]
+      },
+      'requested_predicates': {'predicate1_referent': 'Transcript Claim Referent'}
+  })
 ```
 
-In addition, Alice must get the Credential Schema and corresponding Credential Definition for each used Credential, the same way, as on the step used to in the creation of the Credential Request.
+In addition, Alice must get the Credential Schema and corresponding Credential Definition for each used Claim, the same way, as on the step used to in the creation of the Claim Request.
 
 Now Alice has everything to create the Proof for **Acme Job-Application** Proof Request.
 ```python
   # Alice Agent
   apply_job_proof_json = \
-        await anoncreds.prover_create_proof(alice_wallet, job_application_proof_request_json, job_application_requested_creds_json,
-                                            alice_master_secret_id, schemas_json, cred_defs_json, revoc_states_json)
+      await anoncreds.prover_create_proof(alice_wallet, job_application_proof_request_json, job_application_requested_claims_json,
+                                          schemas_json, alice_master_secret_name, claim_defs_json, revoc_regs_json)
 ```
 
 When **Acme** inspects the received Proof he will see following structure:
@@ -609,9 +651,9 @@ When **Acme** inspects the received Proof he will see following structure:
   {
       'requested_proof': {
           'revealed_attrs': {
-              'attr4_referent': {'sub_proof_index': 0, 'raw':'graduated', 'encoded':'2213454313412354'},
-              'attr5_referent': ['sub_proof_index': 0, 'raw':'123-45-6789', 'encoded':'3124141231422543541'},
-              'attr3_referent': ['sub_proof_index': 0, 'raw':'Bachelor of Science, Marketing', 'encoded':'12434523576212321'}
+              'attr4_referent': ['Transcript Claim Referent', 'graduated', '2213454313412354'],
+              'attr5_referent': ['Transcript Claim Referent', '123-45-6789', '3124141231422543541'],
+              'attr3_referent': ['Transcript Claim Referent', 'Bachelor of Science, Marketing', '12434523576212321']
           },
           'self_attested_attrs': {
               'attr1_referent': 'Alice',
@@ -620,16 +662,15 @@ When **Acme** inspects the received Proof he will see following structure:
           },
           'unrevealed_attrs': {},
           'predicates': {
-              'predicate1_referent': {'sub_proof_index': 0}
+              'predicate1_referent': 'Transcript Claim Referent'
           }
       },
-      'proof' : [] # Validity Proof that Acme can check
-      'identifiers' : [ # Identifiers of credentials were used for Proof building
-          {
-            'schema_id': job_certificate_schema_id,
-            'cred_def_id': faber_transcript_cred_def_id,
-            'rev_reg_id': None,
-            'timestamp': None
+      'proof' : {} # Validity Proof that Acme can check
+      'identifiers' : { # Identifiers of claims were used for Proof building
+          'Transcript Claim Referent': {
+              'issuer_did': faber_issuer_did,
+              'rev_reg_seq_no': None,
+              'schema_key': transcript_schema_key
           }
       }
   }
@@ -641,57 +682,61 @@ Now **Acme** has everything to check **Job-Application** Proof from Alice.
  ```python
   # Acme Agent
   assert await anoncreds.verifier_verify_proof(job_application_proof_request_json, apply_job_proof_json,
-                                               schemas_json, cred_defs_json, revoc_ref_defs_json, revoc_regs_json)
+                                               schemas_json, claim_defs_json, revoc_regs_json)
 ```
 
 Here, we’ll assume the application is accepted and Alice ends up getting the job.
 **Acme** creates new Credential Offer for Alice.
 ```python
   # Acme Agent
-  job_certificate_cred_offer_json = await anoncreds.issuer_create_credential_offer(acme_wallet, acme_job_certificate_cred_def_id)
+    job_certificate_claim_offer_json = \
+        await anoncreds.issuer_create_claim_offer(acme_wallet, json.dumps(job_certificate_schema),
+                                                  acme_issuer_did, alice_acme_did)
 ```
 
 When Alice inspects her connection with Acme, she sees that a new Credential Offer is available.
+```python
+  # Alice Agent
+  await anoncreds.prover_store_claim_offer(alice_wallet, job_certificate_claim_offer_json)
+```
 
 ## Apply for a Loan
 
-Now that Alice has a job, she’d like to apply for a loan. That will require a proof of employment.
+Now that Alice has a job, she’d like to apply for a loan. That will require proof of employment.
 She can get this from the **Job-Certificate** credential offered by Acme.
 Alice goes through a familiar sequence of interactions.
 
-1. First she creates a Credential Request.
+1. First she creates a Claim Request.
  ```python  
   # Alice Agent
-    (job_certificate_cred_request_json, job_certificate_cred_request_metadata_json) = \
-        await anoncreds.prover_create_credential_req(alice_wallet, alice_acme_did, job_certificate_cred_offer_json,
-                                                     acme_job_certificate_cred_def, alice_master_secret_id)
+  job_certificate_claim_request_json = \
+      await anoncreds.prover_create_and_store_claim_req(alice_wallet, alice_acme_did, job_certificate_claim_offer,
+                                                        json.dumps(job_certificate_claim_def), alice_master_secret)
  ```
 
- 2. Acme issues a **Job-Certificate** Credential for Alice.
+ 2. Acme issues a **Job-Certificate** Claim for Alice.
  ```python
   # Acme Agent
-  alice_job_certificate_cred_values_json = json.dumps({
-      "first_name": {"raw": "Alice", "encoded": "245712572474217942457235975012103335"},
-      "last_name": {"raw": "Garcia", "encoded": "312643218496194691632153761283356127"},
-      "employee_status": {"raw": "Permanent", "encoded": "2143135425425143112321314321"},
-      "salary": {"raw": "2400", "encoded": "2400"},
-      "experience": {"raw": "10", "encoded": "10"}
+  job_certificate_claim_values_json = json.dumps({
+      'first_name': ['Alice', '245712572474217942457235975012103335'],
+      'last_name': ['Garcia', '312643218496194691632153761283356127'],
+      'employee_status': ['Permanent', '2143135425425143112321314321'],
+      'salary': ['2400', '2400'],
+      'experience': ['10', '10']
   })
-  job_certificate_cred_json, _, _ = \
-      await anoncreds.issuer_create_credential(acme_wallet, job_certificate_cred_offer_json,job_certificate_cred_request_json,
-                                               alice_job_certificate_cred_values_json, None, None)
+  _, job_certificate_claim_json = \
+      await anoncreds.issuer_create_claim(acme_wallet, job_certificate_claim_request_json, job_certificate_claim_values_json, -1)
 ```
 
-Now the **Job-Certificate** Credential has been issued and Alice now has it in her possession. Alice stores **Job-Certificate** Credential in her wallet.
+Now the **Job-Certificate** Claim has been issued and Alice now has it in her possession. Alice stores **Job-Certificate** Claim in her wallet.
 ```python
   # Alice Agent
-  await anoncreds.prover_store_credential(alice_wallet, None, job_certificate_cred_request_json, job_certificate_cred_request_metadata_json,
-                                          job_certificate_cred_request_json, acme_job_certificate_cred_def_json, None)
+  await anoncreds.prover_store_claim(alice_wallet, job_certificate_claim_json, None)
 ```
 
 She can use it when she applies for her loan, in much the same way that she used her transcript when applying for a job.
 
-There is a disadvantage in this approach to data sharing though, — it may disclose more data than what is strictly necessary. If all Alice needs to do is provide proof of employment, this can be done with an anonymous credential instead. Anonymous credentials may prove certain predicates without disclosing actual values (e.g., Alice is employed full-time, with a salary greater than X, along with her hire date, but her actually salary remains hidden). A compound proof can be created, drawing from credentials from both Faber College and Acme Corp, that discloses only what is necessary.
+There is a disadvantage in this approach to data sharing though, — it may disclose more data than what is strictly necessary. If all Alice needs to do is provide proof of employment, this can be done with an anonymous credential instead. Anonymous credentials may prove certain predicates without disclosing actual values (e.g., Alice is employed full-time, with a salary greater than X, along with her hire date, but her actually salary remains hidden). A compound proof can be created, drawing from claims from both Faber College and Acme Corp, that discloses only what is necessary.
 
 Alice now establishes connection with Thrift Bank.
 
@@ -702,58 +747,58 @@ Alice gets a **Loan-Application-Basic** Proof Request from Thrift Bank that look
       'nonce': '123432421212',
       'name': 'Loan-Application-Basic',
       'version': '0.1',
-      'requested_attributes': {
+      'requested_attrs': {
           'attr1_referent': {
               'name': 'employee_status',
-              'restrictions': [{'cred_def_id': acme_job_certificate_cred_def_id}]
+              'restrictions': [{'issuer_did': acme_issuer_did, 'schema_key': job_certificate_schema_key}]
           }
       },
       'requested_predicates': {
           'predicate1_referent': {
-              'name': 'salary',
+              'attr_name': 'salary',
               'p_type': '>=',
-              'p_value': 2000,
-              'restrictions': [{'cred_def_id': acme_job_certificate_cred_def_id}]
+              'value': 2000,
+              'restrictions': [{'issuer_did': acme_issuer_did, 'schema_key': job_certificate_schema_key}]
           },
           'predicate2_referent': {
-              'name': 'experience',
+              'attr_name': 'experience',
               'p_type': '>=',
-              'p_value': 1,
-              'restrictions': [{'cred_def_id': acme_job_certificate_cred_def_id}]
+              'value': 1,
+              'restrictions': [{'issuer_did': acme_issuer_did, 'schema_key': job_certificate_schema_key}]
           }
       }
   })
 ```
 
-Alice has only one credential that meets the proof requirements for this **Loan-Application-Basic** Proof Request.
+Alice has only one claim that meets the proof requirements for this **Loan-Application-Basic** Proof Request.
 ```python
   # Alice Agent
   {
-      'referent': 'Job-Certificate Credential Referent',
+      'referent': 'Job-Certificate Claim Referent',
       'revoc_reg_seq_no': None,
-      'schema_id': job_certificate_schema_id,
-      'cred_def_id': acme_job_certificate_cred_def_id,
+      'schema_key': job_certificate_schema_key,
       'attrs': {
           'employee_status': 'Permanent',
           'last_name': 'Garcia',
           'experience': '10',
           'first_name': 'Alice',
            'salary': '2400'
-      }
+      },
+      'issuer_did': acme_issuer_did
   }
 ```
 
 For the **Loan-Application-Basic** Proof Request Alice divided attributes as follows:
 ```python
   # Alice Agent
-  apply_loan_requested_creds_json = json.dumps({
+  apply_loan_requested_claims_json = json.dumps({
       'self_attested_attributes': {},
-      'requested_attributes': {
-          'attr1_referent': {'cred_id': cred_for_attr1['referent'], 'revealed': True}
+      'requested_attrs': {
+          'attr1_referent': ['Job-Certificate Claim Referent', True]
       },
       'requested_predicates': {
-          'predicate1_referent': {'cred_id': cred_for_predicate1['referent']},
-          'predicate2_referent': {'cred_id': cred_for_predicate2['referent']}
+          'predicate1_referent': 'Job-Certificate Claim Referent',
+          'predicate2_referent': 'Job-Certificate Claim Referent'
       }
   })
 ```
@@ -761,9 +806,9 @@ For the **Loan-Application-Basic** Proof Request Alice divided attributes as fol
 Alice creates the Proof for the **Loan-Application-Basic** Proof Request.
 ```python
   # Alice Agent
-  alice_apply_loan_proof_json = \
-      await anoncreds.prover_create_proof(alice_wallet, authdecrypted_apply_loan_proof_request_json, apply_loan_requested_creds_json,
-                                          alice_master_secret_id, schemas_json, cred_defs_json, revoc_states_json)
+  apply_loan_proof_json = \
+      await anoncreds.prover_create_proof(alice_wallet, apply_loan_proof_request_json, apply_loan_requested_claims_json,
+                                          schemas_json, alice_master_secret_name, claim_defs_json, revoc_regs_json)
 ```
 
 Alice sends just the **Loan-Application-Basic** proof to the bank.
@@ -774,31 +819,32 @@ When **Thrift** inspects the received Proof he will see following structure:
   # Thrift Agent
   {
       'requested_proof': {
-          'revealed_attributess': {
-              'attr1_referent': {'sub_proof_index': 0, 'raw':'Permanent', 'encoded':'2143135425425143112321314321'},
+          'revealed_attrs': {
+              'attr1_referent': ['Job-Certificate Claim Referent', 'Permanent', '2143135425425143112321314321'],
           },
           'self_attested_attrs': {},
           'unrevealed_attrs': {},
           'predicates': {
-              'predicate1_referent': {'sub_proof_index': 0},
-              'predicate2_referent': {'sub_proof_index': 0}
+              'predicate1_referent': 'Job-Certificate Claim Referent',
+              'predicate2_referent': 'Job-Certificate Claim Referent'
           }
       },
-      'proof' : [] # Validity Proof that Thrift can check
-      'identifiers' : [ # Identifiers of credentials were used for Proof building
-          'schema_id': job_certificate_schema_id,
-          'cred_def_id': acme_job_certificate_cred_def_id,
-          'revoc_reg_seq_no': None,
-          'timestamp': None
-      ]
+      'proof' : {} # Validity Proof that Thrift can check
+      'identifiers' : { # Identifiers of claims were used for Proof building
+          'Transcript Claim Referent': {
+              'issuer_did': faber_issuer_did,
+              'rev_reg_seq_no': None,
+              'schema_key': transcript_schema_key
+          }
+      }
   }
 ```
 
 **Thrift Bank** successfully verified the **Loan-Application-Basic** Proof from Alice.
 ```python
   # Thrift Agent
-  assert await anoncreds.verifier_verify_proof(apply_loan_proof_request_json, alice_apply_loan_proof_json,
-                                               schemas_json, cred_defs_json, revoc_defs_json, revoc_regs_json)
+    assert await anoncreds.verifier_verify_proof(apply_loan_proof_request_json, apply_loan_proof_json,
+                                                 schemas_json, claim_defs_json, revoc_regs_json)
 ```
 
 Thrift Bank sends the second Proof Request where Alice needs to share her personal information with the bank.
@@ -808,7 +854,7 @@ Thrift Bank sends the second Proof Request where Alice needs to share her person
       'nonce': '123432421212',
       'name': 'Loan-Application-KYC',
       'version': '0.1',
-      'requested_attributes': {
+      'requested_attrs': {
           'attr1_referent': {'name': 'first_name'},
           'attr2_referent': {'name': 'last_name'},
           'attr3_referent': {'name': 'ssn'}
@@ -817,13 +863,12 @@ Thrift Bank sends the second Proof Request where Alice needs to share her person
   })
 ```
 
-Alice has two credentials that meets the proof requirements for this **Loan-Application-KYC** Proof Request.
+Alice has two claims that meets the proof requirements for this **Loan-Application-KYC** Proof Request.
 ```python
   # Alice Agent
   {
-    'referent': 'Transcript Credential Referent',
-    'schema_id': transcript_schema_id,
-    'cred_def_id': faber_transcript_cred_def_id,
+    'referent': 'Transcript Claim Referent',
+    'schema_key': transcript_schema_key,
     'attrs': {
         'first_name': 'Alice',
         'last_name': 'Garcia',
@@ -833,13 +878,13 @@ Alice has two credentials that meets the proof requirements for this **Loan-Appl
         'year': '2015',
         'average': '5'
     },
-    'rev_reg_id': None,
-    'cred_rev_id': None
+    'issuer_did': faber_issuer_did,
+    'revoc_reg_seq_no': None,
   },
   {
-      'referent': 'Job-Certificate Credentail Referent',
-      'schema_key': job_certificate_schema_id,
-      'cred_def_id': acme_job_certificate_cred_def_id,
+      'referent': 'Job-Certificate Claim Referent',
+      'revoc_reg_seq_no': None,
+      'schema_key': job_certificate_schema_key,
       'attrs': {
           'employee_status': 'Permanent',
           'last_name': 'Garcia',
@@ -847,20 +892,19 @@ Alice has two credentials that meets the proof requirements for this **Loan-Appl
           'first_name': 'Alice',
           'salary': '2400'
       },
-      'rev_reg_id': None,
-      'revoc_reg_seq_no': None
+      'issuer_did': acme_issuer_did
   }
 ```
 
 For the **Loan-Application-KYC** Proof Request Alice divided attributes as follows:
 ```python
   # Alice Agent
-  apply_loan_kyc_requested_creds_json = json.dumps({
+  apply_loan_kyc_requested_claims_json = json.dumps({
       'self_attested_attributes': {},
-      'requested_attributes': {
-          'attr1_referent': {'cred_id': cred_for_attr1['referent'], 'revealed': True},
-          'attr2_referent': {'cred_id': cred_for_attr2['referent'], 'revealed': True},
-          'attr3_referent': {'cred_id': cred_for_attr3['referent'], 'revealed': True}
+      'requested_attrs': {
+          'attr1_referent': ['Job-Certificate Claim Referent', True],
+          'attr2_referent': ['Job-Certificate Claim Referent', True],
+          'attr3_referent': ['Transcript Claim Referent', True]
       },
       'requested_predicates': {}
   })
@@ -869,9 +913,9 @@ For the **Loan-Application-KYC** Proof Request Alice divided attributes as follo
 Alice creates the Proof for **Loan-Application-KYC** Proof Request.
 ```python
   # Alice Agent
-  alice_apply_loan_kyc_proof_json = \
-      await anoncreds.prover_create_proof(alice_wallet, apply_loan_kyc_proof_request_json, apply_loan_kyc_requested_creds_json,
-                                          alice_master_secret_id, schemas_json, cred_defs_json, revoc_states_json)
+  apply_loan_kyc_proof_json = \
+      await anoncreds.prover_create_proof(alice_wallet, apply_loan_kyc_proof_request_json, apply_loan_kyc_requested_claims_json,
+                                          schemas_json, alice_master_secret_name, claim_defs_json, revoc_regs_json)
 ```
 
 When **Thrift** inspects the received Proof he will see following structure:
@@ -879,38 +923,36 @@ When **Thrift** inspects the received Proof he will see following structure:
   # Thrift Agent
   {
       'requested_proof': {
-          'revealed_attributes': {
-              'attr1_referent': {'sub_proof_index': 0, 'raw':'123-45-6789', 'encoded':'3124141231422543541'},
-              'attr1_referent': {'sub_proof_index': 1, 'raw':'Alice', 'encoded':'245712572474217942457235975012103335'},
-              'attr1_referent': {'sub_proof_index': 1, 'raw':'Garcia', 'encoded':'312643218496194691632153761283356127'},
+          'revealed_attrs': {
+              'attr1_referent': ['Transcript Claim Referent', '123-45-6789', '3124141231422543541'],
+              'attr1_referent': ['Job-Certificate Claim Referent', 'Alice', '245712572474217942457235975012103335'],
+              'attr1_referent': ['Job-Certificate Claim Referent', 'Garcia', '312643218496194691632153761283356127'],
           },
           'self_attested_attrs': {},
           'unrevealed_attrs': {},
           'predicates': {}
       },
-      'proof' : [] # Validity Proof that Thrift can check
-      'identifiers' : [ # Identifiers of credentials were used for Proof building
-          {
-            'schema_id': transcript_schema_id,
-            'cred_def_id': faber_transcript_cred_def_id,
-            'rev_reg_id': None,
-            'timestamp': None
+      'proof' : {} # Validity Proof that Thrift can check
+      'identifiers' : { # Identifiers of claims were used for Proof building
+          'Transcript Claim Referent': {
+              'issuer_did': faber_issuer_did,
+              'rev_reg_seq_no': None,
+              'schema_key': transcript_schema_key
           },
-          {
-            'schema_key': job_certificate_schema_id,
-            'cred_def_id': acme_job_certificate_cred_def_id,
-            'rev_reg_id': None,
-            'timestamp': None
+          'Job-Certificate Claim Referent': {
+              'issuer_did': acme_issuer_did,
+              'rev_reg_seq_no': None,
+              'schema_key': job_certificate_schema_key
           }
-      ]
+      }
   }
 ```
 
 **Thrift Bank** has successfully validated the **Loan-Application-KYC** Proof from Alice.
 ```python
   # Thrift Agent
-  assert await anoncreds.verifier_verify_proof(apply_loan_kyc_proof_request_json, alice_apply_loan_kyc_proof_json,
-                                               schemas_json, cred_defs_json, revoc_defs_json, revoc_regs_json)
+  assert await anoncreds.verifier_verify_proof(apply_loan_kyc_proof_request_json, apply_loan_kyc_proof_json,
+                                               schemas_json, claim_defs_json, revoc_regs_json)
 ```
 
 Both of Alice's Proofs have been successfully verified and she got loan from **Thrift Bank**.
