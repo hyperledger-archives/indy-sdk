@@ -16,6 +16,7 @@ use std::sync::RwLock;
 use std::time::Duration;
 use utils::timeout::TimeoutUtils;
 use utils::constants::{POOL, GENESIS_PATH, DEV_GENESIS_NODE_TXNS};
+use settings;
 
 lazy_static! {
     static ref POOL_HANDLE: RwLock<Option<i32>> = RwLock::new(None);
@@ -183,6 +184,11 @@ pub fn close() -> Result<(), u32> {
 }
 
 pub fn delete(pool_name: &str) -> Result<(), u32> {
+    if settings::test_indy_mode_enabled() {
+        change_pool_handle(None);
+        return Ok(())
+    }
+
     let pool_name = CString::new(pool_name).map_err(map_string_error)?;
 
     let rtn_obj = Return_I32::new()?;

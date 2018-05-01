@@ -384,6 +384,13 @@ pub fn release(handle: u32) -> Result<(), u32> {
     HANDLE_MAP.release(handle).map_err(handle_err)
 }
 
+pub fn release_all() {
+    match HANDLE_MAP.drain() {
+        Ok(_) => (),
+        Err(_) => (),
+    };
+}
+
 pub fn send_proof(handle: u32, connection_handle: u32) -> Result<u32, ProofError> {
     HANDLE_MAP.get_mut(handle, |obj|{
         obj.send_proof(connection_handle).map_err(|e| e.to_error_code())

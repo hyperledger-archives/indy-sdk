@@ -375,6 +375,13 @@ pub fn release(handle: u32) -> Result<(), CredentialError> {
     HANDLE_MAP.release(handle).map_err(handle_err)
 }
 
+pub fn release_all() {
+    match HANDLE_MAP.drain() {
+        Ok(_) => (),
+        Err(_) => (),
+    };
+}
+
 pub fn is_valid_handle(handle: u32) -> bool {
     HANDLE_MAP.has_handle(handle)
 }

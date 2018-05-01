@@ -129,14 +129,26 @@ pub extern fn vcx_version() -> *const c_char {
     VERSION_STRING.as_ptr()
 }
 
+/// Reset libvcx to a pre-configured state, releasing/deleting any handles and freeing memory
+///
+/// libvcx will be inoperable and must be initialized again with vcx_init_with_config
+///
+/// #Params
+/// delete: specify whether wallet/pool should be deleted
+///
+/// #Returns
+/// Success
+
 #[no_mangle]
-pub extern fn vcx_reset() -> u32 {
+pub extern fn vcx_shutdown(delete: bool) -> u32 {
 
     ::schema::release_all();
     ::connection::release_all();
     ::issuer_credential::release_all();
     ::credential_def::release_all();
     ::proof::release_all();
+    ::disclosed_proof::release_all();
+    ::credential::release_all();
 
     match wallet::close_wallet() {
         Ok(_) => {},
@@ -147,6 +159,24 @@ pub extern fn vcx_reset() -> u32 {
         Ok(_) => {},
         Err(_) => {},
     };
+
+    if delete {
+        match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
+            Ok(w) => match wallet::delete_wallet(&w) {
+                Ok(_) => (),
+                Err(_) => (),
+            },
+            Err(_) => (),
+        };
+
+        match settings::get_config_value(settings::CONFIG_POOL_NAME) {
+            Ok(p) => match pool::delete(&p) {
+                Ok(_) => (),
+                Err(_) => (),
+            }
+            Err(_) => (),
+        }
+    }
 
     settings::set_defaults();
     error::SUCCESS.code_num
@@ -243,7 +273,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reset() {
+    fn test_shutdown() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let data = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#;
@@ -252,16 +282,20 @@ mod tests {
 
         wallet::init_wallet("wallet1").unwrap();
         let connection = ::connection::build_connection("h1").unwrap();
-        let credential = ::issuer_credential::issuer_credential_create(0,"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
+        let issuer_credential = ::issuer_credential::issuer_credential_create(0,"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
         let proof = ::proof::create_proof("1".to_string(),req_attr.to_owned(),req_predicates.to_owned(),"Optional".to_owned()).unwrap();
         let credentialdef = ::credential_def::create_new_credentialdef("SID".to_string(),"NAME".to_string(),15,"4fUDR9R7fjwELRvH9JT6HH".to_string(),false).unwrap();
         let schema = ::schema::create_new_schema("5", "name".to_string(), "VsKV7grR1BUE29mG2Fm2kX".to_string(), data.to_string()).unwrap();
-        vcx_reset();
+        let disclosed_proof = ::disclosed_proof::create_proof("disclosed_proof".to_string(), ::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
+        let credential = ::credential::credential_create_with_offer("name", ::utils::constants::CREDENTIAL_OFFER_JSON).unwrap();
+        vcx_shutdown(true);
         assert_eq!(::connection::release(connection),Err(connection::ConnectionError::CommonError(error::INVALID_CONNECTION_HANDLE.code_num)));
-        assert_eq!(::issuer_credential::release(credential),Err(issuer_cred::IssuerCredError::InvalidHandle()));
+        assert_eq!(::issuer_credential::release(issuer_credential),Err(issuer_cred::IssuerCredError::InvalidHandle()));
         assert_eq!(::schema::release(schema).err(),Some(schema::SchemaError::InvalidHandle()));
         assert_eq!(::proof::release(proof).err(),Some(ProofError::InvalidHandle()));
         assert_eq!(::credential_def::release(credentialdef),error::INVALID_CREDENTIAL_DEF_HANDLE.code_num);
+        assert_eq!(::credential::release(credential), Err(credential::CredentialError::CommonError(error::INVALID_CREDENTIAL_HANDLE.code_num)));
+        assert_eq!(::disclosed_proof::release(disclosed_proof), Result::Err(error::INVALID_DISCLOSED_PROOF_HANDLE.code_num));
         assert_eq!(wallet::get_wallet_handle(), 0);
     }
 

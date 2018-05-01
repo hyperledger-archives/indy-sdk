@@ -71,6 +71,15 @@ def get_version() -> str:
     return version
 
 
+def shutdown(delete_wallet: bool):
+    c_delete = c_bool(delete_wallet)
+    name = 'vcx_shutdown'
+    err = getattr(_cdll(), name)(c_delete)
+
+    if err != ErrorCode.Success:
+        raise VcxError(ErrorCode(err))
+
+
 def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
 
     def _cb(command_handle: int, err: int, *args):
