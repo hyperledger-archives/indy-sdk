@@ -36,7 +36,7 @@ Below we have made a simple walkthrough to do this, with links to Github's docum
   - [optional, but recommended] To configure your Git client to sign commits by default for  this local repository, run `git config commit.gpgsign true`.
 
 
-* Sign your commits
+* Sign your commit
   - `$ git commit -S -m your commit message`
   - To see if your commits have been signed off, run `$ git log --show-signature`
   -
