@@ -1,21 +1,42 @@
-
-## Before you Continue
-
-If you haven't done so already, please visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/projects/indy).
-
 # Indy SDK
-
+![logo](https://raw.githubusercontent.com/hyperledger/indy-node/master/collateral/logos/indy-logo.png)
 This is the official SDK for [Hyperledger Indy](https://www.hyperledger.org/projects),
-which provides a distributed-ledger-based foundation for [self-sovereign identity](https://sovrin.org).
+which provides a distributed-ledger-based foundation for [self-sovereign identity](https://sovrin.org). Indy provides a software ecosystem for private, secure, and powerful identity, and the Indy SDK enables clients for it.
 The major artifact of the SDK is a c-callable
 library; there are also convenience wrappers for various programming languages and Indy CLI tool.
 
-All bugs, stories, and backlog for this project are managed through [Hyperledger's Jira](https://jira.hyperledger.org)
-in project IS (note that regular Indy tickets are in the INDY project instead...). Also, join
-us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to discuss.
+All bugs, stories, and backlog for this project are managed through [Hyperledger's Jira](https://jira.hyperledger.org/secure/RapidBoard.jspa)
+in project IS (note that regular Indy tickets are in the INDY project instead...). Also, make sure to join
+us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to discuss. You will need a Linux Foundation login to get access to these channels
 
+## Understanding Hyperledger Indy
 
-## Installation
+If you have just started learning about self-sovereign identity, here are some resources to increase your understanding:
+
+* This extended tutorial introduces Indy, explains how the whole ecosystem works, and how the
+functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-Started Guide](doc/getting-started/getting-started.md)
+
+* A recent webinar explaining self-sovereign identity using Hyperledger Indy and Sovrin: [SSI Meetup Webinar](https://youtu.be/RllH91rcFdE?t=4m30s)
+
+* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/projects/indy).
+
+* You may also want to look at the [older guide](https://github.com/hyperledger/indy-node/blob/stable/getting-started.md)
+that explored the ecosystem via command line. That material is being
+rewritten but still contains some useful ideas.
+
+## How-To Tutorials
+
+Short, simple tutorials that demonstrate how to accomplish common tasks
+are also available. See the [doc/how-tos](doc/how-tos) folder.
+
+1. [Write a DID and Query Its Verkey](doc/how-tos/write-did-and-query-verkey/README.md)
+2. [Rotate a Key](doc/how-tos/rotate-key/README.md)
+3. [Save a Schema and Cred Def](doc/how-tos/save-schema-and-cred-def/README.md)
+4. [Issue a Credential](doc/how-tos/issue-credential/README.md)
+5. [Negotiate a Proof](doc/how-tos/negotiate-proof/README.md)
+6. [Send a Secure Message](doc/how-tos/send-secure-msg/README.md)
+
+## Installing the SDK
 ### Release channels
 Indy SDK release process defines the following release channels:
 
@@ -87,7 +108,7 @@ After successfully compiling `libindy`, you will need to add the path containing
 `LD_LIBRARY_PATH` environment variable. This is required for your application to link to
 `libindy`.
 
-## How to build
+## How to build Indy SDK from source
 
 * [Ubuntu based distributions (Ubuntu 16.04)](doc/ubuntu-build.md)
 * [RHEL based distributions (Amazon Linux 2017.03)](doc/rhel-build.md)
@@ -115,7 +136,7 @@ docker run -itd -p 9701-9708:9701-9708 indy_pool
  ```
  Note that for Windows and MacOS this approach has some issues. Docker for these OS run in
  their virtual environment. First command creates network for container and host can't
- get access to that network because container placed on virtual machine. You must appropriate set up 
+ get access to that network because container placed on virtual machine. You must appropriate set up
  networking on your virtual environment. See the instructions for MacOS below.
 
 ### Docker port mapping on MacOS
@@ -159,23 +180,9 @@ details.
 * [iOS](wrappers/ios/README.md)
 
 ## Indy CLI documentation
-* [Indy CLI](cli/README.md)
-
-## Getting started
-
-This extended tutorial shows how the whole ecosystem works, and how
-functions in the SDK can be used to construct rich clients. (You may also
-want to look at the [older guide](https://github.com/hyperledger/indy-node/blob/stable/getting-started.md)
-that explored the ecosystem via command line. That material is being
-rewritten but still contains some useful ideas.)
-
-* [Libindy Getting-Started Guide](doc/getting-started/getting-started.md)
-
-## How Tos
-
-Short, simple tutorials that demonstrate how to accomplish common tasks
-are also available. See [the doc/how-tos folder](doc/how-tos).
+* An explanation of how to install the official command line interface for that provides commands to manage wallets and interactions with the ledger: [Indy CLI](cli/README.md)
 
 ## How to migrate
-The documents that provide necessary information for Libindy migration.
+The documents that provide necessary information for Libindy migration. This document is written for developers using Libindy 1.3.0 to provide necessary information and
+to simplify their transition to API of Libindy 1.4.0.
 * [v1.3.0 → v1.4.0](doc/migration-guide.md)
