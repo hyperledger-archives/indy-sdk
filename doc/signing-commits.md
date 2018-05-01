@@ -1,4 +1,7 @@
 # Signing commits
+
+If you are here because you forgot to sign your commits, fear not. Check out [how to resign previous commits](#how-to-resign-previous-commits)
+
 We use developer certificate of origin (DCO) in all hyperledger repositories, so to get your pull requests accepted, you must certify you created your commits by signing off on each commit with a GPG key.
 
 The easiest way to do this is to configure your local repository to automatically sign all of your commits.
@@ -36,7 +39,7 @@ Below we have made a simple walkthrough to do this, with links to Github's docum
   - [optional, but recommended] To configure your Git client to sign commits by default for  this local repository, run `git config commit.gpgsign true`.
 
 
-* Sign your commits
+* Sign your commit
   - `$ git commit -S -m your commit message`
   - To see if your commits have been signed off, run `$ git log --show-signature`
   -
