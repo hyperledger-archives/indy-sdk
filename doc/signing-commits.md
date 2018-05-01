@@ -33,7 +33,12 @@ Below we have made a simple walkthrough to do this, with links to Github's docum
   - add the key to your local installation of git: `git config --global user.signingkey <key-id>`
   - To add your GPG key to your bash profile, paste the text below:
       `echo 'export GPG_TTY=$(tty)' >> ~/.bashrc`
+  - [optional] To configure your Git client to sign commits by default for a local repository, run `git config commit.gpgsign true`.
+  - [optional] To sign all commits by default in any local repository on your computer, run `git config --global commit.gpgsign true`.
 
+
+* Sign your commits
+  - `$ git commit -S -m your commit message`
 
 
 
