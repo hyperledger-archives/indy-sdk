@@ -30,6 +30,6 @@ First, please take a look at our contributing guidelines: [how to contribute to 
 1. Add the hyperledger/indy-sdk as the remote upstream:  
    `git remote add upstream https://github.com/hyperledger/indy-sdk.git`
 
-1. Set up Developer Certificate of Origin to sign your commits with GPG  
+1. Set up Developer Certificate of Origin to [sign your commits with GPG](signing-commits.md)  
 
 1. Take a look at our [release workflow](release-workflow.md)
