@@ -38,16 +38,16 @@ are also available. See the [doc/how-tos](doc/how-tos) folder.
 
 ## Installing the SDK
 ### Release channels
-Indy SDK release process defines the following release channels:
+The Indy SDK release process defines the following release channels:
 
 * `master` - development builds for each push to master branch.
 * `rc` - release candidates.
 * `stable` - stable releases.
 
-Please refer to [release workflow](doc/release-workflow.md) for more details.
+Please refer to our [release workflow](doc/release-workflow.md) for more details.
 
 ### Ubuntu based distributions (Ubuntu 16.04)
-It is recommended to install packages with APT:
+It is recommended to install the SDK packages with APT:
 
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
     sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial {release channel}"
@@ -55,13 +55,13 @@ It is recommended to install packages with APT:
     sudo apt-get install -y libindy
 
 {release channel} must be replaced with master, rc or stable to define corresponded release channel.
-See section "Release channels" for more details.
+Please See the section "Release channels" above for more details.
 
 ### Windows
 
-1. follow to https://repo.sovrin.org/windows/libindy/{release-channel}.
-2. download last version of libindy.
-3. unzip archives to directory, where you want to save working library.
+1. Go to https://repo.sovrin.org/windows/libindy/{release-channel}.
+2. Download last version of libindy.
+3. Unzip archives to the directory where you want to save working library.
 4. After unzip you will get next structure of files:
 
 * `Your working directory`
@@ -92,7 +92,7 @@ See [wrapper iOS install documentation](wrappers/ios/README.md "How to install")
 Pre-built libraries are not provided for MacOS. Please look [here](doc/mac-build.md)
 for details on building from source for MacOS.
 
-After building `libindy`, add the path containing the library the `LD_LIBRARY_PATH` and
+ **Note:** After building `libindy`, add the path containing the library the `LD_LIBRARY_PATH` and
 `DYLD_LIBRARY_PATH` environment variables. This is necessary for dynamically linking
 your application with `libindy`. The dynamic linker will first check for the library in
 `LD_LIBRARY_PATH` if the library in your application doesn't include directory names.
@@ -116,15 +116,16 @@ After successfully compiling `libindy`, you will need to add the path containing
 * [MacOS](doc/mac-build.md)
 
 ## How to start local nodes pool with docker
+To test the SDK codebase with a virtual Indy node network, you can start a pool of local nodes using docker:
 
-Start local nodes pool on `127.0.0.1:9701-9708` with Docker:
+Start the pool of local nodes on `127.0.0.1:9701-9708` with Docker by running:
 
 ```
 docker build -f ci/indy-pool.dockerfile -t indy_pool .
 docker run -itd -p 9701-9708:9701-9708 indy_pool
 ```
 
- Dockerfile `ci/indy-pool.dockerfile` supports optional pool_ip param that allows
+ Dockerfile `ci/indy-pool.dockerfile` supports an optional pool_ip param that allows
  changing ip of pool nodes in generated pool configuration. The following commands
  allow to start local nodes pool in custom docker network and access this pool
  by custom ip in docker network:
