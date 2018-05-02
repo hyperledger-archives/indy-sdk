@@ -1,7 +1,7 @@
 # Contributing to Indy SDK
 
 
-Before contributing to Indy SDK, there a couple steps that will help your process go much more smoothly.
+Before contributing to Indy SDK, there are a couple steps that will help your process go much more smoothly.
 
 First, please take a look at our contributing guidelines: [how to contribute to Hyperledger Indy](http://bit.ly/2ugd0bq).
 
