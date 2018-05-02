@@ -213,10 +213,13 @@ pub fn validate_config() -> Result<u32, String> {
     if !error.is_empty() {
         Err(error.to_owned())
     } else {
-        let settings = SETTINGS.read().unwrap();
-        info!("loaded settings: {:?}", settings.deserialize::<HashMap<String, String>>().unwrap());
         Ok(error::SUCCESS.code_num)
     }
+}
+
+pub fn log_settings() {
+    let settings = SETTINGS.read().unwrap();
+    info!("loaded settings: {:?}", settings.deserialize::<HashMap<String, String>>().unwrap());
 }
 
 pub fn test_indy_mode_enabled() -> bool {

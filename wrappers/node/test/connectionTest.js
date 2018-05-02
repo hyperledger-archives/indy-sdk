@@ -193,7 +193,7 @@ describe('A Connection object with ', function () {
 
   it('call to connection_release with no connection should return unknown error', async () => {
     const connection = new Connection()
-    assert.equal(await connection.release(), Error.INVALID_CONNECTION_HANDLE)
+    assert.equal(await connection.release(), Error.SUCCESS)
   })
 
   it('serialize() should return VcxStateType as an integer', async () => {

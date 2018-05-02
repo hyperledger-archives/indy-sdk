@@ -371,22 +371,17 @@ pub extern fn vcx_disclosed_proof_deserialize(command_handle: u32,
 /// handle: Proof handle that was provided during creation. Used to access proof object
 ///
 /// #Returns
-/// Error code as a u32
+/// Success
 #[no_mangle]
 pub extern fn vcx_disclosed_proof_release(handle: u32) -> u32 {
     let source_id = disclosed_proof::get_source_id(handle).unwrap_or_default();
     match disclosed_proof::release(handle) {
-        Ok(_) => {
-            info!("vcx_disclosed_proof_release(handle: {}, rc: {}), source_id: {:?}",
-                  handle, error_string(0), source_id);
-            error::SUCCESS.code_num
-        },
-        Err(e) => {
-            error!("vcx_disclosed_proof_release(handle: {}, rc: {}), source_id: {:?}",
-                   handle, error_string(e), source_id);
-            e
-        }
-    }
+        Ok(_) => info!("vcx_disclosed_proof_release(handle: {}, rc: {}), source_id: {:?}",
+                       handle, error_string(0), source_id),
+        Err(e) => error!("vcx_disclosed_proof_release(handle: {}, rc: {}), source_id: {:?}",
+                         handle, error_string(e), source_id),
+    };
+    error::SUCCESS.code_num
 }
 
 #[cfg(test)]

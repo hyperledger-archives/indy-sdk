@@ -356,16 +356,18 @@ pub extern fn vcx_issuer_credential_deserialize(command_handle: u32,
 /// credential_handle: Credential handle that was provided during creation. Used to identify credential object
 ///
 /// #Returns
-/// Error code as a u32
+/// Success
 #[no_mangle]
 pub extern fn vcx_issuer_credential_release(credential_handle: u32) -> u32 {
-    info!("(vcx_issuer_credential_release credential_handle: {}, source_id: {:?})", credential_handle, issuer_credential::get_source_id(credential_handle).unwrap_or_default());
+    let source_id = issuer_credential::get_source_id(credential_handle).unwrap_or_default();
     match issuer_credential::release(credential_handle) {
-        Ok(x) => x,
-        Err(e) => e.to_error_code(),
-    }
+        Ok(_) => info!("(vcx_issuer_credential_release credential_handle: {}, rc: {}), source_id: {:?}",
+                       credential_handle, error_string(0), source_id),
+        Err(e) => warn!("(vcx_issuer_credential_release credential_handle: {}, rc: {}), source_id: {:?}",
+                       credential_handle, error_string(e.to_error_code()), source_id),
+    };
+    error::SUCCESS.code_num
 }
-
 
 #[cfg(test)]
 mod tests {

@@ -80,8 +80,6 @@ pub extern fn vcx_init (command_handle: u32,
                 },
                 Ok(_) => (),
             };
-            ::utils::logger::LoggerUtils::init();
-            info!("config_path: {}", config_path);
         }
     } else {
         error!("Cannot initialize with given config path: config path is null.");
@@ -96,6 +94,7 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
     ::utils::logger::LoggerUtils::init();
 
     settings::set_defaults();
+    settings::log_settings();
 
     if wallet::get_wallet_handle() > 0 {
         error!("Library was already initialized");
@@ -138,17 +137,8 @@ pub extern fn vcx_version() -> *const c_char {
 ///
 /// #Returns
 /// Success
-
 #[no_mangle]
 pub extern fn vcx_shutdown(delete: bool) -> u32 {
-
-    ::schema::release_all();
-    ::connection::release_all();
-    ::issuer_credential::release_all();
-    ::credential_def::release_all();
-    ::proof::release_all();
-    ::disclosed_proof::release_all();
-    ::credential::release_all();
 
     match wallet::close_wallet() {
         Ok(_) => {},
@@ -179,6 +169,7 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
     }
 
     settings::set_defaults();
+    info!("vcx_shutdown(delete: {})", delete);
     error::SUCCESS.code_num
 }
 
@@ -194,8 +185,6 @@ mod tests {
     use super::*;
     use std::time::Duration;
     use std::ptr;
-    use error::*;
-    use error::proof::ProofError;
 
     extern "C" fn init_cb(command_handle: u32, err: u32) {
         if err != 0 {panic!("create_cb failed: {}", err)}
@@ -274,29 +263,10 @@ mod tests {
 
     #[test]
     fn test_shutdown() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let data = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#;
-        let req_attr = "[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]";
-        let req_predicates = "[{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\"}]";
-
-        wallet::init_wallet("wallet1").unwrap();
-        let connection = ::connection::build_connection("h1").unwrap();
-        let issuer_credential = ::issuer_credential::issuer_credential_create(0,"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
-        let proof = ::proof::create_proof("1".to_string(),req_attr.to_owned(),req_predicates.to_owned(),"Optional".to_owned()).unwrap();
-        let credentialdef = ::credential_def::create_new_credentialdef("SID".to_string(),"NAME".to_string(),15,"4fUDR9R7fjwELRvH9JT6HH".to_string(),false).unwrap();
-        let schema = ::schema::create_new_schema("5", "name".to_string(), "VsKV7grR1BUE29mG2Fm2kX".to_string(), data.to_string()).unwrap();
-        let disclosed_proof = ::disclosed_proof::create_proof("disclosed_proof".to_string(), ::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
-        let credential = ::credential::credential_create_with_offer("name", ::utils::constants::CREDENTIAL_OFFER_JSON).unwrap();
+        ::utils::devsetup::setup_dev_env("test_shutdown");
         vcx_shutdown(true);
-        assert_eq!(::connection::release(connection),Err(connection::ConnectionError::CommonError(error::INVALID_CONNECTION_HANDLE.code_num)));
-        assert_eq!(::issuer_credential::release(issuer_credential),Err(issuer_cred::IssuerCredError::InvalidHandle()));
-        assert_eq!(::schema::release(schema).err(),Some(schema::SchemaError::InvalidHandle()));
-        assert_eq!(::proof::release(proof).err(),Some(ProofError::InvalidHandle()));
-        assert_eq!(::credential_def::release(credentialdef),error::INVALID_CREDENTIAL_DEF_HANDLE.code_num);
-        assert_eq!(::credential::release(credential), Err(credential::CredentialError::CommonError(error::INVALID_CREDENTIAL_HANDLE.code_num)));
-        assert_eq!(::disclosed_proof::release(disclosed_proof), Result::Err(error::INVALID_DISCLOSED_PROOF_HANDLE.code_num));
-        assert_eq!(wallet::get_wallet_handle(), 0);
+        ::utils::devsetup::setup_dev_env("test_shutdown");
+        vcx_shutdown(true);
     }
 
     #[test]

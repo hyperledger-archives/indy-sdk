@@ -124,6 +124,6 @@ describe('Using the vcx ffi directly ', async () => {
   })
 
   it('a call to vcx_connection_release without ability to release should return 1', function () {
-    assert.equal(run.ffi.vcx_connection_release(2), 1003)
+    assert.equal(run.ffi.vcx_connection_release(2), 0)
   })
 })

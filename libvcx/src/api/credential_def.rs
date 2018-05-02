@@ -167,11 +167,23 @@ pub extern fn vcx_credentialdef_deserialize(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Releases the credentialdef object by de-allocating memory
+///
+/// #Params
+/// handle: Proof handle that was provided during creation. Used to access credential object
+///
+/// #Returns
+/// Success
 #[no_mangle]
 pub extern fn vcx_credentialdef_release(credentialdef_handle: u32) -> u32 {
-    info!("vcx_credentialdef_release(credentialdef_handle: {}), source_id: {:?}",
-          credentialdef_handle, credential_def::get_source_id(credentialdef_handle).unwrap_or_default());
-    credential_def::release(credentialdef_handle)
+    let source_id = credential_def::get_source_id(credentialdef_handle).unwrap_or_default();
+    match credential_def::release(credentialdef_handle) {
+        Ok(_) => info!("vcx_credentialdef_release(credentialdef_handle: {}, rc: {}), source_id: {:?}",
+                      credentialdef_handle, error_string(0), source_id),
+        Err(x) => warn!("vcx_credentialdef_release(credentialdef_handle: {}, rc: {}), source_id: {:?}",
+                        credentialdef_handle, error_string(x), source_id),
+    };
+    error::SUCCESS.code_num
 }
 
 #[allow(unused_variables, unused_mut)]

@@ -335,10 +335,10 @@ pub fn get_source_id(handle: u32) -> Result<String, u32> {
     }
 }
 
-pub fn release(handle: u32) -> u32 {
+pub fn release(handle: u32) -> Result<(), u32> {
     match CREDENTIALDEF_MAP.lock().unwrap().remove(&handle) {
-        Some(t) => error::SUCCESS.code_num,
-        None => error::INVALID_CREDENTIAL_DEF_HANDLE.code_num,
+        Some(t) => Ok(()),
+        None => Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num),
     }
 }
 
@@ -521,7 +521,7 @@ pub mod tests {
                                                false).unwrap();
         let credentialdef_data = to_string(handle).unwrap();
         assert!(!credentialdef_data.is_empty());
-        release(handle);
+        release(handle).unwrap();
         let new_handle = from_string(&credentialdef_data).unwrap();
         let new_credentialdef_data = to_string(new_handle).unwrap();
         let mut credentialdef1: CreateCredentialDef = serde_json::from_str(&credentialdef_data).unwrap();
@@ -540,11 +540,11 @@ pub mod tests {
         let h4 = create_new_credentialdef("SID".to_string(),"NAME".to_string(),15,ISSUER_DID.to_string(),false).unwrap();
         let h5 = create_new_credentialdef("SID".to_string(),"NAME".to_string(),15,ISSUER_DID.to_string(),false).unwrap();
         release_all();
-        assert_eq!(release(h1),error::INVALID_CREDENTIAL_DEF_HANDLE.code_num);
-        assert_eq!(release(h2),error::INVALID_CREDENTIAL_DEF_HANDLE.code_num);
-        assert_eq!(release(h3),error::INVALID_CREDENTIAL_DEF_HANDLE.code_num);
-        assert_eq!(release(h4),error::INVALID_CREDENTIAL_DEF_HANDLE.code_num);
-        assert_eq!(release(h5),error::INVALID_CREDENTIAL_DEF_HANDLE.code_num);
+        assert_eq!(release(h1),Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num));
+        assert_eq!(release(h2),Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num));
+        assert_eq!(release(h3),Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num));
+        assert_eq!(release(h4),Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num));
+        assert_eq!(release(h5),Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num));
     }
 
     #[test]
