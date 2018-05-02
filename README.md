@@ -5,20 +5,22 @@ which provides a distributed-ledger-based foundation for [self-sovereign identit
 The major artifact of the SDK is a c-callable
 library; there are also convenience wrappers for various programming languages and Indy CLI tool.
 
-All bugs, stories, and backlog for this project are managed through [Hyperledger's Jira](https://jira.hyperledger.org/secure/RapidBoard.jspa)
-in project IS (note that regular Indy tickets are in the INDY project instead...). Also, make sure to join
-us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to discuss. You will need a Linux Foundation login to get access to these channels
+* All bugs, stories, and backlog for this project are managed through [Hyperledger's Jira](https://jira.hyperledger.org/secure/RapidBoard.jspa)
+in project IS
+* Also, make sure to join
+us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to discuss. You will need a Linux Foundation login to get access to both Jira and Rocket.Chat
+* If you are interested in contributing to the SDK, please see our [contributor resources](doc/contributor-resources.md).
+* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/projects/indy).
 
-## Understanding Hyperledger Indy
 
-If you have just started learning about self-sovereign identity, here are some resources to increase your understanding:
+## Introduction to Hyperledger Indy
+
+If you have just started learning about self-sovereign identity and the Indy project, here are some resources to increase your understanding:
 
 * This extended tutorial introduces Indy, explains how the whole ecosystem works, and how the
 functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-Started Guide](doc/getting-started/getting-started.md)
 
 * A recent webinar explaining self-sovereign identity using Hyperledger Indy and Sovrin: [SSI Meetup Webinar](https://youtu.be/RllH91rcFdE?t=4m30s)
-
-* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/projects/indy).
 
 * You may also want to look at the [older guide](https://github.com/hyperledger/indy-node/blob/stable/getting-started.md)
 that explored the ecosystem via command line. That material is being
