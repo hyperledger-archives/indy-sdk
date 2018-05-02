@@ -132,7 +132,8 @@ communicates two other pieces of vital information:
   lets the holder look up their private factor, which we could map to
   `a` in the simple equation from the accumulator background section
   at the top of the doc.
-* The product of the other factors contributing to the accumulator.
+* The product of the _other_ factors contributing to the accumulator (all
+  factors except the private one for this credential).
   This value is like `b * c * d` from the simple equation above, and
   is called a <font color="blue">witness</font>.
 
