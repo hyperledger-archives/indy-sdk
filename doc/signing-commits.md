@@ -52,7 +52,7 @@ Below we have made a simple walkthrough to do this, with the link to Github's do
     pick 67890 commit message
     exec git commit --amend --no-edit -S
     ```
-  1. If you need to re-sign a bunch of previous commits at once, find the most recent unsigned commit using `git log` and use that commit's HASH in this command: `git rebase --exec 'git commit --amend --no-edit -n -S' -i HASH`  
+  1. If you need to re-sign a bunch of previous commits at once, find the earliest unsigned commit using `git log` and use that commit's HASH in this command: `git rebase --exec 'git commit --amend --no-edit -n -S' -i HASH`. This will sign every commit from most recent to HASH.
 
 
 For more information, see: [Github - Signing Commits with GPG](https://help.github.com/articles/signing-commits-with-gpg/)
