@@ -5,7 +5,7 @@ Before contributing to Indy SDK, there are a couple steps that will help your pr
 
 First, please take a look at our contributing guidelines: [how to contribute to Hyperledger Indy](http://bit.ly/2ugd0bq).
 
-If you are looking for how to sign your commits, go here: [signing your commits with GPG](signing-commits.md)
+If you are looking for how to sign current or previous commits, go here: [signing your commits](signing-commits.md)
 
 ## Connect with the Community
 
@@ -34,7 +34,7 @@ You will find the best and most update resources on chat board here: [Hyperledge
 - Make sure that a new feature or fix is covered by tests (try following TDD)
 - Make sure that documentation is updated according to your changes
 - Provide a full description of changes in the PR including Jira ticket number if any  
-- Make sure that all your commits have a DCO sign-off from the author (Steps to set this up are below)
+- Make sure that all your commits have a DCO sign-off from the author. (add the `-s` flag to all commits)
 - Put the link to the PR into `#indy-pr-review` channel in Rocket.Chat
 - A reviewer needs to start your tests first (add `test this please` comment to the PR)
 - You need to make sure that all the tests pass
