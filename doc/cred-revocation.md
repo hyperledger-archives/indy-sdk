@@ -39,19 +39,20 @@ value is to know the factors.
 We accomplish this by using modular arithmetic (where division is undefined),
 and by using massive numbers for the factors and accumulators.
 
-A <font color="blue">tails file</font> is a binary file that contains an
+A <font color="blue">tails file</font> is associated with an accumulator
+and its factors. It is a binary file that contains an
 array of randomly generated factors for an accumulator. Instead of small
 numbers like 2 and 3 and 7, these factors are massive numbers, far too
 big to display conveniently on a screen. Typically the quantity of these
 numeric factors in a tails file is large--hundreds of thousands to tens of
 millions.
 
-The tails file is not secret; it is published as plain text to the world
+A tails file is not secret; it is published as plain text to the world
 and freely downloadable by anyone. The contents of this file never change.
 
 Each potential or actual credential issued by a particular issuer is
 assigned an index to an accumulator factor in a tails file. However,
-only credentials that have not revoked contribute to the value of the
+only credentials that have not been revoked contribute to the value of the
 accumulator. We will see how this works, below.
 
 ![tails file and accumulator](tails.png)
