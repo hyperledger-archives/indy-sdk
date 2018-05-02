@@ -370,15 +370,18 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
 /// connection_handle: was provided during creation. Used to identify connection object
 ///
 /// #Returns
-/// Error code as a u32
+/// Success
 #[no_mangle]
 pub extern fn vcx_connection_release(connection_handle: u32) -> u32 {
     let source_id = get_source_id(connection_handle).unwrap_or_default();
-    info!("vcx_connection_release(connection_handle: {}), source_id: {:?}", connection_handle, source_id);
     match release(connection_handle) {
-        Ok(s) => s,
-        Err(e) => e.to_error_code(),
-    }
+        Ok(_) => info!("vcx_connection_release(connection_handle: {}, rc: {}), source_id: {:?}",
+                       connection_handle, error_string(0), source_id),
+        Err(e) => warn!("vcx_connection_release(connection_handle: {}), rc: {}), source_id: {:?}",
+                        connection_handle, error_string(e.to_error_code()), source_id),
+    };
+
+    error::SUCCESS.code_num
 }
 
 #[cfg(test)]

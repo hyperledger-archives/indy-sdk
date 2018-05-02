@@ -101,7 +101,7 @@ pub fn init_pool_and_wallet() -> Result<(), u32>  {
         Ok(p) => p,
     };
 
-    info!("opening pool {} with genesis_path: {}", pool_name, path);
+    debug!("opening pool {} with genesis_path: {}", pool_name, path);
     let option_path = Some(Path::new(&path));
     match pool::create_pool_ledger_config(&pool_name, option_path.to_owned()) {
         Err(e) => {
@@ -150,8 +150,6 @@ mod tests {
     #[test]
     fn test_init_pool_and_wallet() {
         let wallet_name = "test_init_pool_and_wallet";
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         // make sure there's a valid wallet and pool before trying to use them.
         ::utils::devsetup::setup_dev_env(wallet_name);
         wallet::close_wallet().unwrap();

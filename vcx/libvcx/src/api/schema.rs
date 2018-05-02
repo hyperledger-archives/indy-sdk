@@ -159,15 +159,17 @@ pub extern fn vcx_schema_deserialize(command_handle: u32,
 /// schema_handle: Schema handle that was provided during creation. Used to access schema object
 ///
 /// #Returns
-/// Error code as a u32
+/// Success
 #[no_mangle]
 pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
-    info!("vcx_schema_release(schema_handle: {}), source_id: {:?}",
-          schema_handle, schema::get_source_id(schema_handle).unwrap_or_default());
+    let source_id = schema::get_source_id(schema_handle).unwrap_or_default();
     match schema::release(schema_handle) {
-        Ok(x) => x,
-        Err(e) => e.to_error_code(),
-    }
+        Ok(x) => info!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {:?}",
+                       schema_handle, error_string(0), source_id),
+        Err(e) => warn!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {:?}",
+                       schema_handle, error_string(e.to_error_code()), source_id),
+    };
+    error::SUCCESS.code_num
 }
 
 /// Retrieves schema's sequence number

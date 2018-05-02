@@ -219,15 +219,17 @@ pub extern fn vcx_proof_deserialize(command_handle: u32,
 /// proof_handle: Proof handle that was provided during creation. Used to access proof object
 ///
 /// #Returns
-/// Error code as a u32
+/// Success
 #[no_mangle]
 pub extern fn vcx_proof_release(proof_handle: u32) -> u32 {
-    info!("vcx_proof_release(proof_handle: {}), source_id: {:?}",
-          proof_handle, proof::get_source_id(proof_handle).unwrap_or_default());
+    let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
     match proof::release(proof_handle) {
-        Ok(x) => x,
-        Err(e) => e.to_error_code(),
-    }
+        Ok(x) => info!("vcx_proof_release(proof_handle: {}, rc: {}), source_id: {:?}",
+                       proof_handle, error_string(0), source_id),
+        Err(e) => warn!("vcx_proof_release(proof_handle: {}, rc: {}), source_id: {:?}",
+                       proof_handle, error_string(e.to_error_code()), source_id),
+    };
+    error::SUCCESS.code_num
 }
 
 /// Sends a proof request to pairwise connection
