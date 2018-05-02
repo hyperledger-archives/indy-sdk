@@ -69,6 +69,8 @@ apiFunctions.forEach(function (fn) {
   fn.jsParams.forEach(function (arg) {
     if (arg.json) {
       js += 'toJson(' + arg.jsName + '), '
+    } else if (arg.optional && arg.type === 'indy_i32_t') {
+      js += arg.jsName + ' == null ? -1 : ' + arg.jsName + ', '
     } else {
       js += arg.jsName + ', '
     }

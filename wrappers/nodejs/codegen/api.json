@@ -138,7 +138,7 @@
         {"name": "cred_req_json", "type": "const char*", "json": true},
         {"name": "cred_values_json", "type": "const char*", "json": true},
         {"name": "rev_reg_id", "type": "const char*"},
-        {"name": "blob_storage_reader_handle", "type": "indy_i32_t"},
+        {"name": "blob_storage_reader_handle", "type": "indy_i32_t", "optional": true},
         {
           "name": "cb",
           "params": [
