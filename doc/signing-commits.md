@@ -20,16 +20,16 @@ Below we have made a simple walkthrough to do this, with the link to Github's do
 ## Configure your key with Git:
   -  The terminal should print something like this:
 
-    ```
+
     gpg --list-secret-keys --keyid-format LONG
     /Users/hubot/.gnupg/secring.gpg
     ------------------------------------
     sec   4096R/<<<<key-id>>>> 2016-03-10 [expires: 2017-03-10]
     uid                          Hubot
     ssb   4096R/42B317FD4BA89E7A 2016-03-10
-    ```
 
-  - Export the key: `$ gpg --armor --export <key-id>`
+
+  - Export the key using the key-id above: `$ gpg --armor --export <key-id>`
   - Copy the terminal output beginning with `-----BEGIN PGP PUBLIC KEY BLOCK-----` and ending with `-----END PGP PUBLIC KEY BLOCK-----`.
   - Add the key to github by navigating to github.com -> settings -> ssh and gpg keys
   - Add the key to your local installation of git: `git config --global user.signingkey <key-id>`
@@ -44,7 +44,7 @@ Below we have made a simple walkthrough to do this, with the link to Github's do
 
 ## How to Sign Previous Commits
  1. Use `git-log --show-signature` to see which commits need to be signed.
- 1. Go into interactive rebase mode `$ git rebase -i HEAD~X` where X is the number of commits up to the most current commit you would like to see.
+ 1. Go into interactive rebase mode using `$ git rebase -i HEAD~X` where X is the number of commits up to the most current commit you would like to see.
  1. You will see a list of the commits in a text file. On the line after each commit you need to sign, add `exec git commit --amend --no-edit -S`
     ```
     pick 12345 commit message
