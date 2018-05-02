@@ -41,6 +41,12 @@ fn main() {
 
     let command_executor = build_executor();
 
+    if env::args().find(|a| a == "-l" || a == "--load").is_some() {
+        let mut args = env::args();
+        args.next(); //skip 0 param
+        return load_plugin(command_executor, Some(&args.next().unwrap()));
+    }
+
     if env::args().len() == 1 {
         execute_stdin(command_executor);
     } else {
@@ -56,6 +62,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(common::exit_command::new())
         .add_command(common::prompt_command::new())
         .add_command(common::show_command::new())
+        .add_command(common::load_command::new())
         .add_group(did::group::new())
         .add_command(did::new_command::new())
         .add_command(did::import_command::new())
@@ -107,7 +114,7 @@ fn build_executor() -> CommandExecutor {
 
 fn execute_stdin(command_executor: CommandExecutor) {
     #[cfg(target_os = "windows")]
-        ansi_term::enable_ansi_support().is_ok();
+    ansi_term::enable_ansi_support().is_ok();
 
     match Reader::new("indy-cli") {
         Ok(reader) => execute_interactive(command_executor, reader),
@@ -146,6 +153,14 @@ fn execute_batch(command_executor: CommandExecutor, script_path: Option<&str>) {
     } else {
         let stdin = std::io::stdin();
         _iter_batch(command_executor, stdin.lock());
+    };
+}
+
+fn load_plugin(command_executor: CommandExecutor, plugin_name: Option<&str>) {
+    if let Some(plugin_name) = plugin_name {
+        command_executor.execute(&format!("load {}", plugin_name)).is_ok()
+    } else {
+        return println_err!("Plugin name not found");
     };
 }
 

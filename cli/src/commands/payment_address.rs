@@ -22,7 +22,7 @@ pub mod create {
     use super::*;
 
     command!(CommandMetadata::build("create", "Create the payment address for specified payment method.")
-                .add_required_param("payment_method", "Payment method to use (for example, 'sov')")
+                .add_required_param("payment_method", "Payment method to use")
                 .add_optional_param("seed", "Seed for creating payment address")
                 .add_example("payment-address create payment_method=sov")
                 .add_example("payment-address create payment_method=sov seed=000000000000000000000000000Seed1")
@@ -43,9 +43,7 @@ pub mod create {
             JSONValue::from(json).to_string()
         };
 
-        let res = Payment::create_payment_address(wallet_handle, payment_method, &config);
-
-        let res = match res {
+        let res = match Payment::create_payment_address(wallet_handle, payment_method, &config) {
             Ok(payment_address) =>
                 Ok(println_succ!("Payment Address \"{}\" has been created for \"{}\" payment method", payment_address, payment_method)),
             Err(ErrorCode::UnknownPaymentMethod) => Err(println_err!("Unknown payment method {}", payment_method)),
@@ -70,11 +68,23 @@ pub mod list_command {
 
         let res = match Payment::list_addresses(wallet_handle) {
             Ok(payment_addresses_json) => {
-                let mut payment_addresses: Vec<serde_json::Value> = serde_json::from_str(&payment_addresses_json)
+                let mut payment_addresses: Vec<String> = serde_json::from_str(&payment_addresses_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                print_list_table(&payment_addresses,
-                                 &vec![("address", "Payment Address")],
+                let list_addresses =
+                    payment_addresses.iter()
+                        .map(|payment_address| {
+                            let parts = payment_address.split(":").collect::<Vec<&str>>();
+                            json!({
+                                "method": parts[1],
+                                "address": parts[2],
+                            })
+                        })
+                        .collect::<Vec<serde_json::Value>>();
+
+                print_list_table(&list_addresses,
+                                 &vec![("address", "Payment Address"),
+                                       ("method", "Payment Method")],
                                  "There are no payment addresses");
                 Ok(())
             }

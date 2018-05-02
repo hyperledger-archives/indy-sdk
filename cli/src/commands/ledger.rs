@@ -11,7 +11,7 @@ use libindy::payment::Payment;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use std::collections::{ HashMap};
+use std::collections::HashMap;
 use utils::table::{print_table, print_list_table};
 
 use self::regex::Regex;
@@ -56,12 +56,8 @@ pub mod nym_command {
         let role = get_opt_empty_str_param("role", params).map_err(error_err!())?;
 
         let response = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
-
-        let response = match response {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
-        }?;
+            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
+            .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
         let mut response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -101,13 +97,9 @@ pub mod get_nym_command {
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
 
-        let res = Ledger::build_get_nym_request(&submitter_did, target_did)
-            .and_then(|request| Ledger::submit_request(pool_handle, &request));
-
-        let response = match res {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, None, None, None),
-        }?;
+        let response = Ledger::build_get_nym_request(&submitter_did, target_did)
+            .and_then(|request| Ledger::submit_request(pool_handle, &request))
+            .map_err(|err| handle_transaction_error(err, None, None, None))?;
 
         let mut response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -166,12 +158,8 @@ pub mod attrib_command {
         let enc = get_opt_str_param("enc", params).map_err(error_err!())?;
 
         let response = Ledger::build_attrib_request(&submitter_did, target_did, hash, raw, enc)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
-
-        let response = match response {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
-        }?;
+            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
+            .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -223,13 +211,9 @@ pub mod get_attrib_command {
         let hash = get_opt_str_param("hash", params).map_err(error_err!())?;
         let enc = get_opt_str_param("enc", params).map_err(error_err!())?;
 
-        let res = Ledger::build_get_attrib_request(&submitter_did, target_did, raw, hash, enc)
-            .and_then(|request| Ledger::submit_request(pool_handle, &request));
-
-        let response = match res {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, None, None, None),
-        }?;
+        let response = Ledger::build_get_attrib_request(&submitter_did, target_did, raw, hash, enc)
+            .and_then(|request| Ledger::submit_request(pool_handle, &request))
+            .map_err(|err| handle_transaction_error(err, None, None, None))?;
 
         let mut response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -302,10 +286,8 @@ pub mod schema_command {
 
         set_request_fees(&mut request, &fees_inputs, &fees_outputs)?;
 
-        let response = match Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request) {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
-        }?;
+        let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
+            .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -331,11 +313,9 @@ fn set_request_fees(request: &mut String, fees_inputs: &Option<Vec<&str>>, fees_
         let inputs = parse_payment_inputs(&inputs)?;
         let outputs = parse_payment_outputs(&outputs)?;
 
-        *request = match Payment::add_request_fees(request, &inputs, &outputs) {
-            Ok((request, _)) => Ok(request),
-            Err(ErrorCode::UnknownPaymentMethod) => Err(println_err!("Unknown payment method")),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
-        }?
+        *request = Payment::add_request_fees(request, &inputs, &outputs)
+            .map(|(request, _)| request)
+            .map_err(|err| handle_payment_error(err))?;
     }
     Ok(())
 }
@@ -363,13 +343,9 @@ pub mod get_schema_command {
 
         let id = build_id(target_did, name, version);
 
-        let res = Ledger::build_get_schema_request(&submitter_did, &id)
-            .and_then(|request| Ledger::submit_request(pool_handle, &request));
-
-        let response = match res {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, None, None, None),
-        }?;
+        let response = Ledger::build_get_schema_request(&submitter_did, &id)
+            .and_then(|request| Ledger::submit_request(pool_handle, &request))
+            .map_err(|err| handle_transaction_error(err, None, None, None))?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -453,10 +429,8 @@ pub mod cred_def_command {
 
         set_request_fees(&mut request, &fees_inputs, &fees_outputs)?;
 
-        let response = match Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request) {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
-        }?;
+        let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
+            .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -499,13 +473,9 @@ pub mod get_cred_def_command {
 
         let id = build_id(origin, signature_type, schema_id);
 
-        let res = Ledger::build_get_cred_def_request(&submitter_did, &id)
-            .and_then(|request| Ledger::submit_request(pool_handle, &request));
-
-        let response = match res {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, None, None, None),
-        }?;
+        let response = Ledger::build_get_cred_def_request(&submitter_did, &id)
+            .and_then(|request| Ledger::submit_request(pool_handle, &request))
+            .map_err(|err| handle_transaction_error(err, None, None, None))?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -580,12 +550,8 @@ pub mod node_command {
         };
 
         let response = Ledger::build_node_request(&submitter_did, target_did, &node_data)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
-
-        let response = match response {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
-        }?;
+            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
+            .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -632,12 +598,8 @@ pub mod pool_config_command {
         let force = get_opt_bool_param("force", params).map_err(error_err!())?.unwrap_or(false);
 
         let response = Ledger::indy_build_pool_config_request(&submitter_did, writes, force)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
-
-        let response = match response {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
-        }?;
+            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
+            .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -679,12 +641,8 @@ pub mod pool_restart_command {
         let datetime = get_str_param("datetime", params).map_err(error_err!())?;
 
         let response = Ledger::indy_build_pool_restart_request(&submitter_did, action, datetime)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
-
-        let response = match response {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
-        }?;
+            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
+            .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -747,12 +705,8 @@ pub mod pool_upgrade_command {
 
         let response = Ledger::indy_build_pool_upgrade_request(&submitter_did, name, version, action, sha256,
                                                                timeout, schedule, justification, reinstall, force)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
-
-        let response = match response {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
-        }?;
+            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
+            .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -831,10 +785,8 @@ pub mod custom_command {
             Ledger::submit_request(pool_handle, txn)
         };
 
-        let response_json = match response {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, Some(&submitter), Some(&pool_name), Some(&wallet))
-        }?;
+        let response_json =
+            response.map_err(|err| handle_transaction_error(err, Some(&submitter), Some(&pool_name), Some(&wallet)))?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -869,16 +821,11 @@ pub mod get_utxo_command {
 
         let payment_address = get_str_param("payment_address", params).map_err(error_err!())?;
 
-        let (request, payment_method) = match Payment::build_get_utxo_request(payment_address) {
-            Ok(res) => Ok(res),
-            Err(ErrorCode::UnknownPaymentMethod) => Err(println_err!("Unknown payment method")),
-            err => Err(println_err!("Indy SDK error occurred {:?}", err))
-        }?;
+        let (request, payment_method) = Payment::build_get_utxo_request(payment_address)
+            .map_err(|err| handle_payment_error(err))?;
 
-        let response = match Ledger::submit_request(pool_handle, &request) {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, None, Some(&pool_name), None)
-        }?;
+        let response = Ledger::submit_request(pool_handle, &request)
+            .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), None))?;
 
         let res = match Payment::parse_get_utxo_response(&payment_method, &response) {
             Ok(utxo_json) => {
@@ -921,16 +868,11 @@ pub mod payment_command {
         let inputs = parse_payment_inputs(&inputs).map_err(error_err!())?;
         let outputs = parse_payment_outputs(&outputs).map_err(error_err!())?;
 
-        let (request, payment_method) = match Payment::build_payment_req(&inputs, &outputs) {
-            Ok(res) => Ok(res),
-            Err(ErrorCode::UnknownPaymentMethod) => Err(println_err!("Unknown payment method")),
-            err => Err(println_err!("Indy SDK error occurred {:?}", err))
-        }?;
+        let (request, payment_method) = Payment::build_payment_req(&inputs, &outputs)
+            .map_err(|err| handle_payment_error(err))?;
 
-        let response = match Ledger::submit_request(pool_handle, &request) {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, None, Some(&pool_name), None)
-        }?;
+        let response = Ledger::submit_request(pool_handle, &request)
+            .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), None))?;
 
         let res = match Payment::parse_payment_response(&payment_method, &response) {
             Ok(utxo_json) => {
@@ -956,7 +898,7 @@ pub mod get_fees_command {
     use super::*;
 
     command!(CommandMetadata::build("get-fees", "Get fees for transaction.") //TODO: Example
-                .add_required_param("payment_method","The list of UTXO inputs")
+                .add_required_param("payment_method","Payment method to use")
                 .add_example("ledger get-fees payment_address=sov:12345")
                 .finalize()
     );
@@ -968,16 +910,11 @@ pub mod get_fees_command {
 
         let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
 
-        let request = match Payment::build_get_txn_fees_req(payment_method) {
-            Ok(response) => Ok(response),
-            Err(ErrorCode::UnknownPaymentMethod) => Err(println_err!("Unknown payment method")),
-            err => Err(println_err!("Indy SDK error occurred {:?}", err))
-        }?;
+        let request = Payment::build_get_txn_fees_req(payment_method)
+            .map_err(|err| handle_payment_error(err))?;
 
-        let response = match Ledger::submit_request(pool_handle, &request) {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, None, Some(&pool_name), None)
-        }?;
+        let response = Ledger::submit_request(pool_handle, &request)
+            .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), None))?;
 
         let res = match Payment::parse_get_txn_fees_response(&payment_method, &response) {
             Ok(fees_json) => {
@@ -1024,17 +961,14 @@ pub mod mint_prepare_command {
         let outputs = get_str_array_param("outputs", params).map_err(error_err!())?;
         let outputs = parse_payment_outputs(&outputs).map_err(error_err!())?;
 
-        let res = match Payment::build_mint_req(&outputs) {
-            Ok((request, payment_method)) => {
-                println_succ!("MINT transaction has been created");
+        Payment::build_mint_req(&outputs)
+            .map(|(request, payment_method)| {
+                println_succ!("MINT transaction for payment method \"{}\" has been created:", payment_method);
                 println_succ!("{}", request);
-                println_succ!("For payment method: {}", payment_method);
-                Ok(())
-            }
-            Err(ErrorCode::UnknownPaymentMethod) => Err(println_err!("Unknown payment method")),
-            err => Err(println_err!("Indy SDK error occurred {:?}", err))
-        };
+            })
+            .map_err(|err| handle_payment_error(err))?;
 
+        let res = Ok(());
         trace!("execute << {:?}", res);
         res
     }
@@ -1043,9 +977,9 @@ pub mod mint_prepare_command {
 pub mod set_fees_prepare_command {
     use super::*;
 
-    command!(CommandMetadata::build("set-fees-prepare", "Prepare MINT transaction.") //TODO: Example
-                .add_required_param("payment_method","")
-                .add_required_param("fees","The list of UTXO outputs")
+    command!(CommandMetadata::build("set-fees-prepare", " Prepare SET_FEES transaction.") //TODO: Example
+                .add_required_param("payment_method","Payment method to use")
+                .add_required_param("fees","The list of fees")
                 .add_example("ledger set-fees-prepare payment_method=sov:12345 fees=<txn-type-1>:<amount-1>,...,<txn-type-n>:<amount-n>")
                 .finalize()
     );
@@ -1056,28 +990,16 @@ pub mod set_fees_prepare_command {
         let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
         let fees = get_str_array_param("fees", params).map_err(error_err!())?;
 
-        let fees: HashMap<String, i32> =
-            fees
-                .iter()
-                .map(|fee| {
-                    let parts = fee.split(":").collect::<Vec<&str>>();
-                    (parts[0].to_string(), parts[1].parse::<i32>().unwrap())
-                })
-                .collect();
+        let fees = parse_payment_fees(&fees).map_err(error_err!())?;
 
-        let fees_json = serde_json::to_string(&fees)
-            .map_err(|_| println_err!("Wrong data has been received"))?;
-
-        let res = match Payment::build_set_txn_fees_req(&payment_method, &fees_json) {
-            Ok(request) => {
-                println_succ!("SET_FEES transaction has been created");
+        Payment::build_set_txn_fees_req(&payment_method, &fees)
+            .map(|request| {
+                println_succ!("SET_FEES transaction has been created:");
                 println_succ!("{}", request);
-                Ok(())
-            }
-            Err(ErrorCode::UnknownPaymentMethod) => Err(println_err!("Unknown payment method")),
-            err => Err(println_err!("Indy SDK error occurred {:?}", err))
-        };
+            })
+            .map_err(|err| handle_payment_error(err))?;
 
+        let res = Ok(());
         trace!("execute << {:?}", res);
         res
     }
@@ -1143,6 +1065,19 @@ fn parse_payment_outputs(outputs: &Vec<&str>) -> Result<String, ()> {
         .map_err(|_| println_err!("Wrong data has been received"))
 }
 
+fn parse_payment_fees(fees: &Vec<&str>) -> Result<String, ()> {
+    let fees: HashMap<String, i32> =
+        fees
+            .iter()
+            .map(|fee| {
+                let parts = fee.split(":").collect::<Vec<&str>>();
+                (parts[0].to_string(), parts[1].parse::<i32>().unwrap())
+            })
+            .collect();
+
+    serde_json::to_string(&fees)
+        .map_err(|_| println_err!("Wrong data has been received"))
+}
 
 fn print_transaction_response(mut result: serde_json::Value, title: &str,
                               metadata_headers: &[(&str, &str)],
@@ -1174,13 +1109,23 @@ pub fn handle_transaction_response(response: Response<serde_json::Value>) -> Res
     }
 }
 
-pub fn handle_transaction_error(err: ErrorCode, submitter_did: Option<&str>, pool_name: Option<&str>, wallet_name: Option<&str>) -> Result<String, ()> {
+pub fn handle_transaction_error(err: ErrorCode, submitter_did: Option<&str>, pool_name: Option<&str>, wallet_name: Option<&str>) {
     match err {
-        ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
-        ErrorCode::WalletNotFoundError => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did.unwrap_or(""))),
-        ErrorCode::WalletIncompatiblePoolError => Err(println_err!("Wallet \"{}\" is incompatible with pool \"{}\".", wallet_name.unwrap_or(""), pool_name.unwrap_or(""))),
-        ErrorCode::PoolLedgerTimeout => Err(println_err!("Transaction response has not been received")),
-        err => Err(println_err!("Indy SDK error occurred {:?}", err))
+        ErrorCode::CommonInvalidStructure => println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc..."),
+        ErrorCode::PoolLedgerInvalidPoolHandle => println_err!("Pool: \"{}\" not found", pool_name.unwrap_or("")),
+        ErrorCode::WalletInvalidHandle => println_err!("Wallet: \"{}\" not found", wallet_name.unwrap_or("")),
+        ErrorCode::WalletNotFoundError => println_err!("Submitter DID: \"{}\" not found", submitter_did.unwrap_or("")),
+        ErrorCode::WalletIncompatiblePoolError =>
+            println_err!("Wallet \"{}\" is incompatible with pool \"{}\".", wallet_name.unwrap_or(""), pool_name.unwrap_or("")),
+        ErrorCode::PoolLedgerTimeout => println_err!("Transaction response has not been received"),
+        err => println_err!("Indy SDK error occurred {:?}", err)
+    }
+}
+
+pub fn handle_payment_error(err: ErrorCode) {
+    match err {
+        ErrorCode::UnknownPaymentMethod => println_err!("Unknown payment method"),
+        err => println_err!("Indy SDK error occurred {:?}", err)
     }
 }
 

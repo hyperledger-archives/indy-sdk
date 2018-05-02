@@ -225,11 +225,8 @@ impl PaymentsCommandExecutor {
             Ok(vec) => {
                 let list_addresses =
                     vec.iter()
-                        .map(|&(_, ref value)|
-                            json!({
-                            "address": value.to_string()
-                        }))
-                        .collect::<Vec<serde_json::Value>>();
+                        .map(|&(_, ref value)| value.to_string())
+                        .collect::<Vec<String>>();
                 let json_string =
                     serde_json::to_string(&list_addresses)
                         .map_err(|err|
@@ -267,7 +264,12 @@ impl PaymentsCommandExecutor {
     }
 
     fn build_get_utxo_request(&self, payment_address: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        let method = payment_address.matches("[^:]+:([^:]+):.*").next().unwrap().to_string();
+        let method = payment_address.matches("[^:]+:([^:]+):.*").next(); // TODO: IS regex required here?
+        if method.is_none() {
+            cb(Err(IndyError::CommonError(CommonError::InvalidStructure(format!("Payment Method not found in Payment Address")))));
+        }
+
+        let method = method.unwrap().to_string();
         let method_copy = method.to_string();
 
         self.process_method(

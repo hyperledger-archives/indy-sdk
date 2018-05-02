@@ -84,6 +84,26 @@ pub mod prompt_command {
     }
 }
 
+pub mod load_command {
+    use super::*;
+
+    command!(CommandMetadata::build("load", "Load plugin")
+                            .add_main_param("name", "The plugin name to load")
+                            .add_example("load test_plugin")
+                            .finalize());
+
+    fn execute(_ctx: &CommandContext, params: &CommandParams) -> CommandResult {
+        trace!("execute >> params: {:?}", params);
+
+        let _name = get_str_param("name", params).map_err(error_err!())?;
+
+        let res = Ok(());
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
 pub mod exit_command {
     use super::*;
 
