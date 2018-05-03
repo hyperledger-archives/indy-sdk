@@ -1,7 +1,7 @@
 # Issue a Credential
 Indy-SDK Developer Walkthrough #4, Java Edition
 
-[ [Python](../python/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
+[ [Python](../python/README.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
 
 
 ## Prerequisites
@@ -76,7 +76,7 @@ advanced workflow here.
 
 One other note: the sample code in this step uses the word "claim" in
 places where you might expect "credential." These used to be synonyms,
-but usage has evolved in the [W3C](https://github.com/TechWritingWhiz/indy-sdk/blob/master/doc/how-tos/issue-credential/dotnet/README.md) since the Indy SDK was built. "Credential"
+but usage has evolved in the [W3C](https://github.com/TechWritingWhiz/indy-sdk/blob/master/doc/how-tos/issue-credential/../not-yet-written.md) since the Indy SDK was built. "Credential"
 is the newer word, and function and parameter names that refer to "claims"
 are now deprecated. Eventually, all usage will show "credential."
 
