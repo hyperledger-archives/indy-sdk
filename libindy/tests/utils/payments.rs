@@ -1,20 +1,21 @@
 use indy::api::ErrorCode;
+use indy::api::payments::*;
 use utils::callback::CallbackUtils;
+use std::ffi::CString;
+use utils::timeout::TimeoutUtils;
 
 pub struct PaymentsUtils {}
 
 impl PaymentsUtils {
-    pub fn create_payment_address(wallet_handle: i32) -> Result<> {
+    pub fn create_payment_address(wallet_handle: i32, config: CString, payment_method: CString) -> Result<String, ErrorCode> {
         let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
-        let pname = CString::new("null_payment_plugin").unwrap();
-        let cfg = CString::new("{}").unwrap();
         let errc = indy_create_payment_address(
             cmd_handle,
-            wallet.unwrap(),
-            pname.as_ptr(),
-            cfg.as_ptr(),
+            wallet_handle,
+            payment_method.as_ptr(),
+            config.as_ptr(),
             cb
         );
-        let res = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        super::results::result_to_string(errc, receiver)
     }
 }
