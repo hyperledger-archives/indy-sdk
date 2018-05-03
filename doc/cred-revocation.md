@@ -7,20 +7,20 @@ introductory video](https://drive.google.com/open?id=1FxdgkYwwLfpln6MnsZJAwnYjM6
 ## Background: Cryptographic Accumulators
 
 Before explaining the mechanism in detail, it's necessary to understand
-<u style="color:blue">cryptographic accumulators</u> at a very high level.
+__cryptographic accumulators__ at a very high level.
 We will try to avoid daunting math in our explanation.
 
 You can think of an accumulator as the product of multiplying many numbers
-together. In the equation `a * b * c * d = ` <u style="color:blue">`e`</u>,
-the accumulator would be <u style="color:blue">`e`</u>;
+together. In the equation `a * b * c * d = ` __`e`__,
+the accumulator would be __`e`__;
 it _accumulates_ a value as each new factor is multiplied in. We could
 plug in numbers; if `a`=2 and `b`=3 and `c`=5 and `d`=7, then our accumulator
-<u style="color:blue">`e`</u> has a value of 210. If `e` has this value, we
+__`e`__ has a value of 210. If `e` has this value, we
 say that 3 is "in" `e` because it is a factor. If we want to take 3 out
 of the accumulator, we divide 210 by 3 and get 70 (=2*5*7); 3 has now been
 "removed".
 
-Notice that you can also produce <u style="color:blue">`e`</u> by multiplying any single
+Notice that you can also produce __`e`__ by multiplying any single
 factor such as `a` by the product of all the other factors (`b * c * d`).
 This is a useful characteristic; it means you can tell someone else
 the value of `a` and _the product of all the other inputs to the accumulator,
@@ -39,7 +39,7 @@ value is to know the factors.
 We accomplish this by using modular arithmetic (where division is undefined),
 and by using massive numbers for the factors and accumulators.
 
-A <u style="color:blue">tails file</u> is associated with an accumulator
+A __tails file__ is associated with an accumulator
 and its factors. It is a binary file that contains an
 array of randomly generated factors for an accumulator. Instead of small
 numbers like 2 and 3 and 7, these factors are massive numbers, far too
@@ -62,7 +62,7 @@ accumulator. We will see how this works, below.
 Before revocable credentials can be issued, a number of things must be
 true about the ecosystem:
 
-1. A <u style="color:blue">schema</u> for each credential type
+1. A __schema__ for each credential type
    must be written to the ledger.
    For example, if companies wish to issue proof of employment, then
    a "Employee Credential" schema would need to be published. Similarly,
@@ -72,8 +72,8 @@ true about the ecosystem:
    evolved over time. Any individual or institution can write a schema
    to the ledger; it does not require special privileges.
 
-2. Each issuer must publish on the ledger one <u style="color:blue">
-   credential definition</u> for each credential type they intend
+2. Each issuer must publish on the ledger one __
+   credential definition__ for each credential type they intend
    to create. The definition announces the issuer's intention to
    create credentials that match a particular schema, and specifies the
    keys that the issuer will use to sign such credentials. (The verkey+
@@ -83,12 +83,12 @@ true about the ecosystem:
    rotated a DID keypair and accidentally invalidated all credentials
    issued by an institution...)
 
-3. Each issuer must also publish on the ledger a <u style="color:blue">
-   revocation registry</u>. This metadata references a credential definition and
+3. Each issuer must also publish on the ledger a __
+   revocation registry__. This metadata references a credential definition and
    specifies how revocation for that credential type will be handled.
-   The revocation registry tells which cryptographic <u style="color:blue">
-   accumulator</u> can be used to test revocation, and gives the URI and
-   hash of the associated <u style="color:blue">tails file</u>.
+   The revocation registry tells which cryptographic __
+   accumulator__ can be used to test revocation, and gives the URI and
+   hash of the associated __tails file__.
 
 4. Each issuer must publish on the ledger an accumulator value that
    describes the revocation status for all associated credentials. This
@@ -108,11 +108,11 @@ true about the ecosystem:
 Let us now skip ahead to think about what needs to happen much later.
 When a prover gives proof to a verifier, we normally think about the proof
 as focusing on core information demands: _What is your birthdate?_ _Please
-disclose your address_. This is <u style="color:blue">primary proof</u>.
+disclose your address_. This is __primary proof__.
 
 But there is another dimension of proof that's also necessary: _The prover
 must demonstrate that the credentials behind the primary proof have not
-been revoked._ This is called <u style="color:blue">proof of non-revocation</u>.
+been revoked._ This is called __proof of non-revocation__.
 
 In Indy, proof of non-revocation is accomplished by having provers show
 that they can derive the value of the accumulator for their credential
@@ -136,7 +136,7 @@ communicates two other pieces of vital information:
 * The product of the _other_ factors contributing to the accumulator (all
   factors except the private one for this credential).
   This value is like `b * c * d` from the simple equation above, and
-  is called a <u style="color:blue">witness</u>.
+  is called a __witness__.
 
 ## Presenting Proof of Non-Revocation
 
@@ -151,7 +151,7 @@ since the time the credential was issued? In this case, the private
 factor times the witness will not equal the accumulator...
 
 This is handled by requiring accumulator updates to also publish a
-<u style="color:blue">witness delta</u> as part of the same transaction.
+__witness delta__ as part of the same transaction.
 This tells provers how to adjust their witness (referencing other indexes
 in the public tails file) to bring it back into
 harmony with the current value of the accumulator. Updating witnesses
