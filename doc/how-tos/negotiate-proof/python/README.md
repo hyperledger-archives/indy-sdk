@@ -2,7 +2,7 @@
 
 Indy-SDK Developer Walkthrough #5, Python Edition
 
-[ [Java](../java/README.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
+[ [Java](../../not-yet-written.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
 
 
 ## Prerequisites
@@ -25,7 +25,7 @@ you'll be writing.
 
 ### Step 2
 
-This how-to builds on the work in ["Issue Credential"](../issue-credential/python/README.md).
+This how-to builds on the work in ["Issue Credential"](../issue-credential/../not-yet-written.md).
 Rather than duplicate our explanation of those steps here, we will simply
 copy that code as our starting point.
 
@@ -92,5 +92,5 @@ Run the [finished code](negotiate_proof.py) and observe the whole sequence.
 
 ## More experiments
 
-You might try the ["Send a Secure Message"](../../send-secure-msg/python/README.md)
+You might try the ["Send a Secure Message"](../../send-secure-msg/../not-yet-written.md)
 how-to.

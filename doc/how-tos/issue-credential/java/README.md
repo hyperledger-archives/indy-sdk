@@ -1,7 +1,7 @@
 # Issue a Credential
 Indy-SDK Developer Walkthrough #4, Java Edition
 
-[ [Python](../python/README.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
+[ [Python](../../not-yet-written.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
 
 
 ## Prerequisites
@@ -24,7 +24,7 @@ you'll be writing.
 
 ### Step 2
 
-This how-to builds on the work in ["Save Schema and Cred Def"](../save-schema-and-cred-def/java/README.md).
+This how-to builds on the work in ["Save Schema and Cred Def"](../save-schema-and-cred-def/../not-yet-written.md).
 Rather than duplicate our explanation of those steps here, we will simply
 copy that code as our starting point.
 
@@ -91,5 +91,5 @@ Run the [finished code](IssueCredential.java) and observe the whole sequence.
 
 ## More experiments
 
-You might try the ["Negotiate a Proof"](../../negotiate-proof/java/README.md)
+You might try the ["Negotiate a Proof"](../../negotiate-proof/../not-yet-written.md)
 how-to, which can be done in only one step once you complete this one.
