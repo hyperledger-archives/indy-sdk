@@ -2,8 +2,6 @@
 const indy = require('indy-sdk');
 const util = require('./util');
 const assert = require('assert');
-const path = require('path');
-const indyHomeDir = require('home-dir')('.indy_client');
 
 run();
 
@@ -574,8 +572,6 @@ async function run() {
 
     [schemasJson, credDefsJson, revocDefsJson, revocRegsJson] = await verifierGetEntitiesFromLedger(poolHandle, thriftDid, authdecryptedAliceApplyLoanKycProof['identifiers'], 'Thrift');
 
-    console.log('after return');
-
     console.log("\"Thrift\" -> Verify \"Loan-Application-KYC\" Proof from Alice");
     assert('Alice' === authdecryptedAliceApplyLoanKycProof['requested_proof']['revealed_attrs']['attr1_referent']['raw']);
     assert('Garcia' === authdecryptedAliceApplyLoanKycProof['requested_proof']['revealed_attrs']['attr2_referent']['raw']);
@@ -774,7 +770,6 @@ async function verifierGetEntitiesFromLedger(poolHandle, did, identifiers, actor
         }
     }
 
-    console.log('before return');
     return [schemas, credDefs, revRegDefs, revRegs];
 }
 
