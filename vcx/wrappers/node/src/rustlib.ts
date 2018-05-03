@@ -48,6 +48,8 @@ export interface IFFIEntryPoint {
   vcx_version: () => string,
   vcx_agent_provision_async: (commandId: number, config: string, cb: any) => number,
   vcx_agent_update_info: (commandId: number, config: string, cb: any) => number,
+  vcx_update_institution_info: (institutionName: string, institutionLogoUrl: string) => number,
+
   // connection
   vcx_connection_connect: (commandId: number, handle: string, data: string, cb: any) => number,
   vcx_connection_create: (commandId: number, data: string, cb: any) => number,
@@ -136,6 +138,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_version: [FFI_STRING, []],
   vcx_agent_provision_async: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_agent_update_info: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_update_institution_info: [FFI_ERROR_CODE, [FFI_STRING_DATA, FFI_STRING_DATA]],
 
   // connection
   vcx_connection_connect: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CONNECTION_DATA,
