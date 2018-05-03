@@ -7,7 +7,7 @@ Indy-SDK Developer Walkthrough #2, Java Edition
 
 ## Prerequisites
 
-Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../prerequisites.md).
+Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../prerequisites.md.md).
 
 ## Steps
 

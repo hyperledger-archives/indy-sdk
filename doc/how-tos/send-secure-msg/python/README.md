@@ -6,7 +6,7 @@ Indy-SDK Developer Walkthrough #3, Python Edition
 
 ## Prerequisites
 
-Setup your workstation and indy development virtual machine. See [prerequisites](../prerequisites.md).
+Setup your workstation and indy development virtual machine. See [prerequisites](../prerequisites.md.md).
 
 ## Steps
 
