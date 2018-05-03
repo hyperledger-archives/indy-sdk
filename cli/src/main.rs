@@ -106,7 +106,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::sign_multi_command::new())
         .finalize_group()
         .add_group(payment_address::group::new())
-        .add_command(payment_address::create::new())
+        .add_command(payment_address::create_command::new())
         .add_command(payment_address::list_command::new())
         .finalize_group()
         .finalize()

@@ -42,6 +42,6 @@ impl PaymentsUtils {
             wallet_handle,
             cb
         );
-        super::results::result_to_string(errc, receiver)
+        super::results::result_to_string(ec, receiver)
     }
 }

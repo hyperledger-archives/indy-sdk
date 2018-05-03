@@ -18,7 +18,7 @@ pub mod group {
     command_group!(CommandGroupMetadata::new("payment-address", "Payment address management commands"));
 }
 
-pub mod create {
+pub mod create_command {
     use super::*;
 
     command!(CommandMetadata::build("create", "Create the payment address for specified payment method.")
@@ -93,5 +93,78 @@ pub mod list_command {
 
         trace!("execute << {:?}", res);
         res
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    use commands::common::load_command;
+    use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
+
+    pub const NULL_PAYMENT_METHOD: &'static str = "null_payment_plugin";
+
+    mod create {
+        use super::*;
+
+        #[test]
+        pub fn create_works() {
+            let ctx = CommandContext::new();
+
+            let wallet_handle = create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let addresses = get_payment_addresses(wallet_handle);
+            assert_eq!(1, addresses.len());
+
+            close_and_delete_wallet(&ctx);
+        }
+    }
+
+    mod list {
+        use super::*;
+
+        #[test]
+        pub fn list_works() {
+            let ctx = CommandContext::new();
+
+            let wallet_handle = create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            create_payment_address(&ctx);
+            {
+                let cmd = list_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let addresses = get_payment_addresses(wallet_handle);
+            assert_eq!(1, addresses.len());
+
+            close_and_delete_wallet(&ctx);
+        }
+    }
+
+    fn get_payment_addresses(wallet_handle: i32) -> Vec<String> {
+        let payment_addresses = Payment::list_payment_addresses(wallet_handle).unwrap();
+        serde_json::from_str(&payment_addresses).unwrap()
+    }
+
+    pub fn load_null_payment_plugin(ctx: &CommandContext) -> () {
+        let cmd = load_command::new();
+        let mut params = CommandParams::new();
+        params.insert("path", "libnullpaymentplugin.so".to_string());
+        cmd.execute(&ctx, &params).unwrap();
+    }
+
+    pub fn create_payment_address(ctx: &CommandContext) {
+        let cmd = create_command::new();
+        let mut params = CommandParams::new();
+        params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
+        cmd.execute(&ctx, &params).unwrap();
     }
 }

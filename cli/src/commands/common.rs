@@ -1,3 +1,7 @@
+extern crate libloading;
+
+use libindy::ErrorCode;
+
 use command_executor::{Command, CommandContext, CommandParams, CommandMetadata, CommandResult};
 use commands::get_str_param;
 
@@ -88,19 +92,33 @@ pub mod load_command {
     use super::*;
 
     command!(CommandMetadata::build("load", "Load plugin")
-                            .add_main_param("name", "The plugin name to load")
+                            .add_main_param("path", "The path to loading plugin")
                             .add_example("load test_plugin")
                             .finalize());
 
     fn execute(_ctx: &CommandContext, params: &CommandParams) -> CommandResult {
         trace!("execute >> params: {:?}", params);
 
-        let _name = get_str_param("name", params).map_err(error_err!())?;
+        let path = get_str_param("path", params).map_err(error_err!())?;
 
-        let res = Ok(());
+        let lib = libloading::Library::new(path)
+            .map_err(|_| println_err!("Plugin not found: \"{:?}\"", path))?;
+
+        unsafe {
+            let init_func: libloading::Symbol<unsafe extern fn() -> ErrorCode> = lib.get(b"init")
+                .map_err(|_| println_err!("Init function not found"))?;
+
+            match init_func() {
+                ErrorCode::Success => println_succ!("Plugin has been loaded: \"{}\"", path),
+                _ => println_err!("Plugin has not been loaded: \"{}\"", path)
+            }
+        }
+
+        let res = _ctx.add_plugin(lib);
 
         trace!("execute << {:?}", res);
-        res
+
+        Ok(res)
     }
 }
 
