@@ -10,13 +10,32 @@ use std::ffi::CStr;
 use payments::ErrorCode;
 use payments::libindy::indy_build_get_txn_request;
 use payments::libindy::indy_register_payment_method;
+use std::sync::mpsc::channel;
+use std::sync::atomic::Ordering;
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::ATOMIC_USIZE_INIT;
+use std::sync::mpsc::Receiver;
 
 type CommonResponseCallback = extern fn(command_handle_: i32,
                                         err: ErrorCode,
                                         res1: *const c_char) -> ErrorCode;
 
+lazy_static! {
+    static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+}
+
 #[no_mangle]
-pub extern fn nullpayment_init(cmd_handle:i32, cb: Option<extern fn(_cmd_handle: i32, err: ErrorCode)>) {
+pub extern fn init() -> ErrorCode {
+    let (receiver, command_handle, cb) = _closure_to_cb_ec();
+
+    _init(command_handle, cb);
+
+    let err = receiver.recv().unwrap();
+
+    err
+}
+
+fn _init(cmd_handle:i32, cb: Option<extern fn(_cmd_handle: i32, err: ErrorCode)>) {
     let payment_method_name = CString::new("null_payment_plugin").unwrap();
 
     unsafe {
@@ -37,6 +56,32 @@ pub extern fn nullpayment_init(cmd_handle:i32, cb: Option<extern fn(_cmd_handle:
             cb
         );
     }
+}
+
+fn _closure_to_cb_ec() -> (Receiver<ErrorCode>, i32,
+                           Option<extern fn(command_handle: i32,
+                                            err: ErrorCode)>) {
+    let (sender, receiver) = channel();
+
+    lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+    let closure = Box::new(move |err| {
+        sender.send(err).unwrap();
+    });
+
+    extern "C" fn _callback(command_handle: i32, err: ErrorCode) {
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let mut cb = callbacks.remove(&command_handle).unwrap();
+        cb(err)
+    }
+
+    let mut callbacks = CALLBACKS.lock().unwrap();
+    let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+    callbacks.insert(command_handle, closure);
+
+    (receiver, command_handle, Some(_callback))
 }
 
 lazy_static! {
@@ -82,6 +127,7 @@ pub extern fn nullpayment_clear_create_payment_address_injections() {
 
 extern fn _add_request_fees_handler(
     command_handle: i32,
+    _wallet_handle: i32,
     req_json: *const c_char,
     _inputs_json: *const c_char,
     _outputs_json: *const c_char,
@@ -136,6 +182,7 @@ pub extern fn nullpayment_clear_parse_response_with_fees_injections() {
 
 extern fn _build_get_utxo_request_handler(
     command_handle: i32,
+    _wallet_handle: i32,
     _payment_address: *const c_char,
     cb: Option<CommonResponseCallback>
 ) -> ErrorCode {
@@ -197,6 +244,7 @@ pub extern fn nullpayment_clear_parse_get_utxo_response_injections() {
 
 extern fn _build_payment_req_handler(
     command_handle: i32,
+    _wallet_handle: i32,
     _inputs_json: *const c_char,
     outputs_json: *const c_char,
     cb: Option<CommonResponseCallback>
@@ -252,6 +300,7 @@ pub extern fn nullpayment_clear_parse_payment_response_injections() {
 
 extern fn _build_mint_req_handler(
     command_handle: i32,
+    _wallet_handle: i32,
     _outputs_json: *const c_char,
     cb: Option<CommonResponseCallback>
 ) -> ErrorCode {
@@ -278,6 +327,7 @@ pub extern fn nullpayment_clear_build_mint_req_injections() {
 
 extern fn _build_set_txn_fees_req_handler(
     command_handle: i32,
+    _wallet_handle: i32,
     outputs_json: *const c_char,
     cb: Option<CommonResponseCallback>
 ) -> ErrorCode {
@@ -305,6 +355,7 @@ pub extern fn nullpayment_clear_build_set_txn_fees_req_injections() {
 
 extern fn _build_get_txn_fees_req_handler(
     command_handle: i32,
+    _wallet_handle: i32,
     cb: Option<CommonResponseCallback>
 ) -> ErrorCode {
     let mut results = BUILD_GET_TXN_FEES_REQ_RESULT_INJECTIONS.lock().unwrap();
