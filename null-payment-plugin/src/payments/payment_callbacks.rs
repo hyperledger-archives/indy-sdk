@@ -101,6 +101,7 @@ lazy_static! {
 extern fn _create_payment_address_handler(
     cmd_handle:i32,
     _config: *const c_char,
+    wallet_handle: i32,
     cb: Option<CommonResponseCallback>) -> ErrorCode {
 
     let addr = CString::new(format!("pay:null:{}", _get_rand_string(15))).unwrap();
