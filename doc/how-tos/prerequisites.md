@@ -8,8 +8,8 @@ language of choice
 system path.
 3. A running indy pool.
 
-Instructions for #2 (building and installing libindy) can be found [here](../../#installation). Note that we
+Instructions for #2 (building and installing libindy) can be found [here](../../README.md#installation). Note that we
 recommend building the SDK to eliminate versioning problems; pre-built binaries
 may be slightly stale.
 
-Instructions for running an indy pool can be found [here](../../#how-to-start-local-nodes-pool-with-docker).
+Instructions for running an indy pool can be found [here](../../README.md#how-to-start-local-nodes-pool-with-docker).
