@@ -269,7 +269,7 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "ParseResponseWithFeesFeesAck")
     }
 
-    fn build_get_utxo_request(&self, payment_address: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+    fn build_get_utxo_request(&self, payment_address: &str, wallet_handle:i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         let method = payment_address.matches("[^:]+:([^:]+):.*").next(); // TODO: IS regex required here?
         if method.is_none() {
             cb(Err(IndyError::CommonError(CommonError::InvalidStructure(format!("Payment Method not found in Payment Address")))));

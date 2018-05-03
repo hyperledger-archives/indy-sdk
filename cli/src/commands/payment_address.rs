@@ -66,7 +66,7 @@ pub mod list_command {
 
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
-        let res = match Payment::list_addresses(wallet_handle) {
+        let res = match Payment::list_payment_addresses(wallet_handle) {
             Ok(payment_addresses_json) => {
                 let mut payment_addresses: Vec<String> = serde_json::from_str(&payment_addresses_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;

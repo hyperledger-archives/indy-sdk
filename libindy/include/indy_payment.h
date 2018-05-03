@@ -117,6 +117,7 @@ extern "C" {
     /// with at least one output that corresponds to payment address that user owns.
     ///
     /// #Params
+    /// wallet_handle: wallet handle where keys for signature are stored
     /// req_json: initial transaction request as json
     /// inputs_json: The list of UTXO inputs as json array:
     ///   ["input1", ...]
@@ -135,6 +136,7 @@ extern "C" {
     /// payment_method
 
     extern indy_error_t indy_add_request_fees(indy_handle_t command_handle,
+                                              indy_handle_t wallet_handle,
                                               const char *  req_json,
                                               const char *  inputs_json,
                                               const char *  outputs_json,
@@ -149,6 +151,7 @@ extern "C" {
     /// according to this payment method.
     ///
     /// #Params
+    /// wallet_handle: wallet handle where keys for signature are stored
     /// payment_address: target payment address
     ///
     /// #Returns
@@ -156,6 +159,7 @@ extern "C" {
     /// payment_method
 
     extern indy_error_t indy_build_get_utxo_request(indy_handle_t command_handle,
+                                                    indy_handle_t wallet_handle,
                                                     const char *  payment_address,
 
                                                     void           (*cb)(indy_handle_t xcommand_handle,
@@ -196,6 +200,7 @@ extern "C" {
     /// with at least one output that corresponds to payment address that user owns.
     ///
     /// #Params
+    /// wallet_handle: wallet handle where keys for signature are stored
     /// inputs_json: The list of UTXO inputs as json array:
     ///   ["input1", ...]
     ///   Note that each input should reference paymentAddress
@@ -211,6 +216,7 @@ extern "C" {
     /// payment_method
 
     extern indy_error_t indy_build_payment_req(indy_handle_t command_handle,
+                                               indy_handle_t wallet_handle,
                                                const char *  inputs_json,
                                                const char *  outputs_json,
 
@@ -249,6 +255,7 @@ extern "C" {
     /// according to this payment method.
     ///
     /// #Params
+    /// wallet_handle: wallet handle where keys for signature are stored
     /// outputs_json: The list of UTXO outputs as json array:
     ///   [{
     ///     paymentAddress: <str>, // payment address used as output
@@ -261,6 +268,7 @@ extern "C" {
     /// payment_method
 
     extern indy_error_t indy_build_mint_req(indy_handle_t command_handle,
+                                            indy_handle_t wallet_handle,
                                             const char *  outputs_json,
 
                                             void           (*cb)(indy_handle_t xcommand_handle,
@@ -273,6 +281,7 @@ extern "C" {
     ///
     /// # Params
     /// command_handle
+    /// wallet_handle: wallet handle where keys for signature are stored
     /// payment_method
     /// fees_json {
     ///   txnType1: amount1,
@@ -284,6 +293,7 @@ extern "C" {
     /// set_txn_fees_json - Indy request for setting fees for transactions in the ledger
 
     extern indy_error_t indy_build_set_txn_fees_req(indy_handle_t command_handle,
+                                                    indy_handle_t wallet_handle,
                                                     const char *  payment_method,
                                                     const char *  fees_json,
 
@@ -296,12 +306,14 @@ extern "C" {
     ///
     /// # Params
     /// command_handle
+    /// wallet_handle: wallet handle where keys for signature are stored
     /// payment_method
     ///
     /// # Return
     /// get_txn_fees_json - Indy request for getting fees for transactions in the ledger
 
     extern indy_error_t indy_build_get_txn_fees_req(indy_handle_t command_handle,
+                                                    indy_handle_t wallet_handle,
                                                     const char *  payment_method,
 
                                                     void           (*cb)(indy_handle_t xcommand_handle,

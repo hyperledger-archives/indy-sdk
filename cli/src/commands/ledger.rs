@@ -284,7 +284,7 @@ pub mod schema_command {
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
         }?;
 
-        set_request_fees(&mut request, &fees_inputs, &fees_outputs)?;
+        set_request_fees(wallet_handle,&mut request, &fees_inputs, &fees_outputs)?;
 
         let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
@@ -308,12 +308,12 @@ pub mod schema_command {
     }
 }
 
-fn set_request_fees(request: &mut String, fees_inputs: &Option<Vec<&str>>, fees_outputs: &Option<Vec<&str>>) -> Result<(), ()> {
+fn set_request_fees(wallet_handle: i32, request: &mut String, fees_inputs: &Option<Vec<&str>>, fees_outputs: &Option<Vec<&str>>) -> Result<(), ()> {
     if let (&Some(ref inputs), &Some(ref outputs)) = (fees_inputs, fees_outputs) {
         let inputs = parse_payment_inputs(&inputs)?;
         let outputs = parse_payment_outputs(&outputs)?;
 
-        *request = Payment::add_request_fees(request, &inputs, &outputs)
+        *request = Payment::add_request_fees(wallet_handle, request, &inputs, &outputs)
             .map(|(request, _)| request)
             .map_err(|err| handle_payment_error(err))?;
     }
@@ -427,7 +427,7 @@ pub mod cred_def_command {
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
         }?;
 
-        set_request_fees(&mut request, &fees_inputs, &fees_outputs)?;
+        set_request_fees(wallet_handle, &mut request, &fees_inputs, &fees_outputs)?;
 
         let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
@@ -818,14 +818,15 @@ pub mod get_utxo_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let payment_address = get_str_param("payment_address", params).map_err(error_err!())?;
 
-        let (request, payment_method) = Payment::build_get_utxo_request(payment_address)
+        let (request, payment_method) = Payment::build_get_utxo_request(wallet_handle, payment_address)
             .map_err(|err| handle_payment_error(err))?;
 
         let response = Ledger::submit_request(pool_handle, &request)
-            .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), None))?;
+            .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), Some(&wallet_name)))?;
 
         let res = match Payment::parse_get_utxo_response(&payment_method, &response) {
             Ok(utxo_json) => {
@@ -861,6 +862,7 @@ pub mod payment_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let inputs = get_str_array_param("inputs", params).map_err(error_err!())?;
         let outputs = get_str_array_param("outputs", params).map_err(error_err!())?;
@@ -868,11 +870,11 @@ pub mod payment_command {
         let inputs = parse_payment_inputs(&inputs).map_err(error_err!())?;
         let outputs = parse_payment_outputs(&outputs).map_err(error_err!())?;
 
-        let (request, payment_method) = Payment::build_payment_req(&inputs, &outputs)
+        let (request, payment_method) = Payment::build_payment_req(wallet_handle, &inputs, &outputs)
             .map_err(|err| handle_payment_error(err))?;
 
         let response = Ledger::submit_request(pool_handle, &request)
-            .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), None))?;
+            .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), Some(&wallet_name)))?;
 
         let res = match Payment::parse_payment_response(&payment_method, &response) {
             Ok(utxo_json) => {
@@ -907,14 +909,15 @@ pub mod get_fees_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
 
-        let request = Payment::build_get_txn_fees_req(payment_method)
+        let request = Payment::build_get_txn_fees_req(wallet_handle, payment_method)
             .map_err(|err| handle_payment_error(err))?;
 
         let response = Ledger::submit_request(pool_handle, &request)
-            .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), None))?;
+            .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), Some(&wallet_name)))?;
 
         let res = match Payment::parse_get_txn_fees_response(&payment_method, &response) {
             Ok(fees_json) => {
@@ -958,10 +961,12 @@ pub mod mint_prepare_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
+        let wallet_handle = ensure_opened_wallet_handle(ctx)?;
+
         let outputs = get_str_array_param("outputs", params).map_err(error_err!())?;
         let outputs = parse_payment_outputs(&outputs).map_err(error_err!())?;
 
-        Payment::build_mint_req(&outputs)
+        Payment::build_mint_req(wallet_handle, &outputs)
             .map(|(request, payment_method)| {
                 println_succ!("MINT transaction for payment method \"{}\" has been created:", payment_method);
                 println_succ!("{}", request);
@@ -987,12 +992,14 @@ pub mod set_fees_prepare_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
+        let wallet_handle = ensure_opened_wallet_handle(ctx)?;
+
         let payment_method = get_str_param("payment_method", params).map_err(error_err!())?;
         let fees = get_str_array_param("fees", params).map_err(error_err!())?;
 
         let fees = parse_payment_fees(&fees).map_err(error_err!())?;
 
-        Payment::build_set_txn_fees_req(&payment_method, &fees)
+        Payment::build_set_txn_fees_req(wallet_handle, &payment_method, &fees)
             .map(|request| {
                 println_succ!("SET_FEES transaction has been created:");
                 println_succ!("{}", request);
