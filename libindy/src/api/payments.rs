@@ -488,8 +488,8 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
 /// according to this payment method.
 ///
 /// #Params
-/// payment_address: target payment address
 /// wallet_handle: wallet handle where keys for signature are stored
+/// payment_address: target payment address
 ///
 /// #Returns
 /// get_utxo_txn_json - Indy request for getting UTXO list for payment address
