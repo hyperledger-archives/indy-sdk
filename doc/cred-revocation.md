@@ -72,8 +72,8 @@ true about the ecosystem:
    evolved over time. Any individual or institution can write a schema
    to the ledger; it does not require special privileges.
 
-2. Each issuer must publish on the ledger one __
-   credential definition__ for each credential type they intend
+2. Each issuer must publish on the ledger one __credential
+   definition__ for each credential type they intend
    to create. The definition announces the issuer's intention to
    create credentials that match a particular schema, and specifies the
    keys that the issuer will use to sign such credentials. (The verkey+
@@ -83,11 +83,11 @@ true about the ecosystem:
    rotated a DID keypair and accidentally invalidated all credentials
    issued by an institution...)
 
-3. Each issuer must also publish on the ledger a __
-   revocation registry__. This metadata references a credential definition and
+3. Each issuer must also publish on the ledger a __revocation
+   registry__. This metadata references a credential definition and
    specifies how revocation for that credential type will be handled.
-   The revocation registry tells which cryptographic __
-   accumulator__ can be used to test revocation, and gives the URI and
+   The revocation registry tells which cryptographic __accumulator__
+   can be used to test revocation, and gives the URI and
    hash of the associated __tails file__.
 
 4. Each issuer must publish on the ledger an accumulator value that
