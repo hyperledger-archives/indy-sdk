@@ -188,13 +188,15 @@ public class Payments extends IndyJava.API {
      *                      amount: <int>, // amount of tokens to transfer to this payment address
      *                      extra: <str>, // optional data
      *                    }]
+     * @param walletHandle wallet handle where keys for signature are stored
      * @return modified Indy request with added fees info
      * @throws IndyException
      */
     public static CompletableFuture<AddRequestFeesResult> addRequestFees(
             String reqJson,
             String inputsJson,
-            String outputsJson
+            String outputsJson,
+            int walletHandle
     ) throws IndyException {
         ParamGuard.notNullOrWhiteSpace(reqJson, "reqJson");
         ParamGuard.notNullOrWhiteSpace(inputsJson, "inputsJson");
@@ -208,6 +210,7 @@ public class Payments extends IndyJava.API {
                 reqJson,
                 inputsJson,
                 outputsJson,
+                walletHandle,
                 addRequestFeesCb
         );
 
@@ -239,11 +242,13 @@ public class Payments extends IndyJava.API {
      * Builds Indy request for getting UTXO list for payment address
      * according to this payment method.
      * @param paymentAddress target payment address
+     * @param walletHandle wallet handle where keys for signature are stored
      * @return Indy request for getting UTXO list for payment address
      * @throws IndyException
      */
     public static CompletableFuture<BuildGetUtxoRequestResult> buildGetUtxoRequest(
-            String paymentAddress
+            String paymentAddress,
+            int walletHandle
     ) throws IndyException {
         ParamGuard.notNullOrWhiteSpace(paymentAddress, "paymentAddress");
 
@@ -253,6 +258,7 @@ public class Payments extends IndyJava.API {
         int result = LibIndy.api.indy_build_get_utxo_request(
                 commandHandle,
                 paymentAddress,
+                walletHandle,
                 buildGetUtxoRequestCb
         );
 
@@ -299,6 +305,7 @@ public class Payments extends IndyJava.API {
      *                        amount: <int>, // amount of tokens to transfer to this payment address
      *                        extra: <str>, // optional data
      *                      }]
+     * @param walletHandle wallet handle where keys for signature are stored
      * @return
      * payment_req_json - Indy request for doing tokens payment
      * payment_method
@@ -306,7 +313,8 @@ public class Payments extends IndyJava.API {
      */
     public static CompletableFuture<BuildPaymentReqResult> buildPaymentReq(
             String inputsJson,
-            String outputsJson
+            String outputsJson,
+            int walletHandle
     ) throws IndyException {
         ParamGuard.notNullOrWhiteSpace(inputsJson, "inputsJson");
         ParamGuard.notNullOrWhiteSpace(outputsJson, "outputsJson");
@@ -318,6 +326,7 @@ public class Payments extends IndyJava.API {
                 commandHandle,
                 inputsJson,
                 outputsJson,
+                walletHandle,
                 buildPaymentReqCb
         );
 
@@ -356,11 +365,13 @@ public class Payments extends IndyJava.API {
      *                        amount: <int>, // amount of tokens to transfer to this payment address
      *                        extra: <str>, // optional data
      *                      }]
+     * @param walletHandle wallet handle where keys for signature are stored
      * @return Indy request for doing tokens minting
      * @throws IndyException
      */
     public static CompletableFuture<BuildMintReqResult> buildMintReq (
-            String outputsJson
+            String outputsJson,
+            int walletHandle
     ) throws IndyException {
         ParamGuard.notNullOrWhiteSpace(outputsJson, "outputsJson");
 
@@ -370,6 +381,7 @@ public class Payments extends IndyJava.API {
         int result = LibIndy.api.indy_build_mint_req(
                 commandHandle,
                 outputsJson,
+                walletHandle,
                 buildMintReqCb
         );
 
@@ -387,12 +399,14 @@ public class Payments extends IndyJava.API {
      *   .................
      *   txnTypeN: amountN,
      * }
+     * @param walletHandle wallet handle where keys for signature are stored
      * @return Indy request for setting fees for transactions in the ledger
      * @throws IndyException
      */
     public static CompletableFuture<String> buildSetTxnFeesReq(
             String paymentMethod,
-            String feesJson
+            String feesJson,
+            int walletHandle
     ) throws IndyException {
         ParamGuard.notNullOrWhiteSpace(paymentMethod, "paymentMethod");
         ParamGuard.notNullOrWhiteSpace(feesJson, "feesJson");
@@ -404,6 +418,7 @@ public class Payments extends IndyJava.API {
                 commandHandle,
                 paymentMethod,
                 feesJson,
+                walletHandle,
                 stringCompleteCb
         );
 
@@ -416,11 +431,13 @@ public class Payments extends IndyJava.API {
      * Builds Indy get request for getting fees for transactions in the ledger
      *
      * @param paymentMethod
+     * @param walletHandle wallet handle where keys for signature are stored
      * @return Indy request for getting fees for transactions in the ledger
      * @throws IndyException
      */
     public static CompletableFuture<String> buildGetTxnFeesReq(
-            String paymentMethod
+            String paymentMethod,
+            int walletHandle
     ) throws IndyException {
         ParamGuard.notNullOrWhiteSpace(paymentMethod, "paymentMethod");
 
@@ -430,6 +447,7 @@ public class Payments extends IndyJava.API {
         int result = LibIndy.api.indy_build_get_txn_fees_req(
                 commandHandle,
                 paymentMethod,
+                walletHandle,
                 stringCompleteCb
         );
 
