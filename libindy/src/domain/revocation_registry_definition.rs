@@ -7,7 +7,7 @@ use self::indy_crypto::cl::RevocationKeyPublic;
 
 use super::DELIMITER;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub const CL_ACCUM: &'static str = "CL_ACCUM";
 pub const REV_REG_DEG_MARKER: &'static str = "4";
@@ -111,3 +111,15 @@ pub fn rev_reg_defs_map_to_rev_reg_defs_v1_map(rev_reg_defs: HashMap<String, Rev
 
     rev_reg_defs_v1
 }
+
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct RevocationRegistryInfo {
+    pub id: String,
+    pub curr_id: u32,
+    pub used_ids: HashSet<u32>
+}
+
+impl JsonEncodable for RevocationRegistryInfo {}
+
+impl<'a> JsonDecodable<'a> for RevocationRegistryInfo {}
