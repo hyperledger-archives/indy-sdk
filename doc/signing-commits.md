@@ -1,26 +1,8 @@
 # Signing commits
 
-
-The easiest way to sign commits is to add the the `-s` flag to each commit:  
-
-`$ git commit -s -m "first commit"`
-## How to Sign Previous Commits
- 1. Use `git-log --show-signature` to see which commits need to be signed.
- 1. Go into interactive rebase mode using `$ git rebase -i HEAD~X` where X is the number of commits up to the most current commit you would like to see.
- 1. You will see a list of the commits in a text file. On the line after each commit you need to sign, add `exec git commit --amend --no-edit -S` with a capital `-S` for a GPG signature, or lowercase `-s` for just the signature
-    ```
-    pick 12345 commit message
-    exec git commit --amend --no-edit -S
-    pick 67890 commit message
-    exec git commit --amend --no-edit -S
-    ```
-  1. If you need to re-sign a bunch of previous commits at once, find the earliest unsigned commit using `git log` and use that commit's HASH in this command: `git rebase --exec 'git commit --amend --no-edit -n -S' -i HASH`. This will sign every commit from most recent to HASH.
-  1. You may need to do a force push `git push -f` if you had previously pushed unsigned commits
-
-
 If you are here because you forgot to sign your commits, fear not. Check out [how to sign previous commits](#how-to-sign-previous-commits)
 
-We use developer certificate of origin (DCO) in all hyperledger repositories, so to get your pull requests accepted, you must certify your commits by signing off on each commit. Using a GPG signature is optional, but recommended.
+We use developer certificate of origin (DCO) in all hyperledger repositories, so to get your pull requests accepted, you must certify your commits by signing off on each commit. Using a GPG signature is the best way to certify that your commits have come directly from you.
 
 Below we have made a simple walkthrough to do this, with the link to Github's documentation at the bottom.
 
@@ -52,11 +34,28 @@ Below we have made a simple walkthrough to do this, with the link to Github's do
   - Add the key to your local installation of git: `git config --global user.signingkey <key-id>`
   - To add your GPG key to your bash profile, paste the text below:
       `echo 'export GPG_TTY=$(tty)' >> ~/.bashrc`
-  - [optional, but recommended] To configure your Git client to sign commits by default for  this local repository, run `git config commit.gpgsign true`.
+  - [optional, but recommended] To configure your Git client to sign commits by default for  this local repository, run `git config commit.gpgsign true`. If you do this, you no longer need to add the `-S` flag to commits, but you will still need to add the `-s` flag to sign the commit body.
+  - [optional] you can also set up a GPG agent to manage your password so you don't need to enter it in after each commit.
 
 
-* Sign your commit
-  - `$ git commit -S -m your commit message`
+## Signing your current commit
+  - `$ git commit -S -s -m "your commit message"`
   - To see if your commits have been signed off, run `$ git log --show-signature`
+  - If you need to re-sign the most current commit, use `$ git commit --amend --no-edit -S -s`.
+
+The `-S` flag signs your commit with GPG. the `-s` flag signs the commit message with your name and email. Both are required for the DCO check to succeed.
+
+## How to Sign Previous Commits
+   1. Use `git-log --show-signature` to see which commits need to be signed.
+   1. Go into interactive rebase mode using `$ git rebase -i HEAD~X` where X is the number of commits up to the most current commit you would like to see.
+   1. You will see a list of the commits in a text file. **On the line after each commit you need to sign**, add `exec git commit --amend --no-edit -S -s` with a capital `-S` for a GPG signature, and lowercase `-s` for a text signature in the commit body. Example that signs both commits:
+      ```
+      pick 12345 commit message
+      exec git commit --amend --no-edit -S -s
+      pick 67890 commit message
+      exec git commit --amend --no-edit -S -s
+      ```
+    1. If you need to re-sign a bunch of previous commits at once, find the earliest unsigned commit using `git log --show-signature` and use that the HASH of the commit before it in this command: `git rebase --exec 'git commit --amend --no-edit -n -S' -i HASH`. This will sign every commit from most recent to right before the HASH.
+    1. You will probably need to do a force push `git push -f` if you had previously pushed unsigned commits to remote.
 
 For more information, see: [Github - Signing Commits with GPG](https://help.github.com/articles/signing-commits-with-gpg/)
