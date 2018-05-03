@@ -35,6 +35,7 @@ pub enum PaymentsCommand {
         String, //req
         String, //inputs
         String, //outputs
+        i32, //wallet_handle
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     AddRequestFeesAck(
         i32, //handle
@@ -48,6 +49,7 @@ pub enum PaymentsCommand {
         Result<String, PaymentsError>),
     BuildGetUtxoRequest(
         String, //payment_address
+        i32, //wallet_handle
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     BuildGetUtxoRequestAck(
         i32, //handle
@@ -62,6 +64,7 @@ pub enum PaymentsCommand {
     BuildPaymentReq(
         String, //inputs
         String, //outputs
+        i32, //wallet_handle
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     BuildPaymentReqAck(
         i32,
@@ -75,6 +78,7 @@ pub enum PaymentsCommand {
         Result<String, PaymentsError>),
     BuildMintReq(
         String, //outputs
+        i32, //wallet_handle
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     BuildMintReqAck(
         i32,
@@ -82,12 +86,14 @@ pub enum PaymentsCommand {
     BuildSetTxnFeesReq(
         String, //method
         String, //fees
+        i32, //wallet_handle
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildSetTxnFeesReqAck(
         i32,
         Result<String, PaymentsError>),
     BuildGetTxnFeesReq(
         String, //method
+        i32, //wallet_handle
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetTxnFeesReqAck(
         i32,
@@ -130,8 +136,8 @@ impl PaymentsCommandExecutor {
             PaymentsCommand::ListAddresses(wallet_handle, cb) => {
                 self.list_addresses(wallet_handle, cb);
             }
-            PaymentsCommand::AddRequestFees(req, inputs, outputs, cb) => {
-                self.add_request_fees(&req, &inputs, &outputs, cb);
+            PaymentsCommand::AddRequestFees(req, inputs, outputs, wallet_handle, cb) => {
+                self.add_request_fees(&req, &inputs, &outputs, wallet_handle, cb);
             }
             PaymentsCommand::AddRequestFeesAck(cmd_handle, result) => {
                 self.add_request_fees_ack(cmd_handle, result);
@@ -142,8 +148,8 @@ impl PaymentsCommandExecutor {
             PaymentsCommand::ParseResponseWithFeesAck(cmd_handle, result) => {
                 self.parse_response_with_fees_ack(cmd_handle, result);
             }
-            PaymentsCommand::BuildGetUtxoRequest(payment_address, cb) => {
-                self.build_get_utxo_request(&payment_address, cb);
+            PaymentsCommand::BuildGetUtxoRequest(payment_address, wallet_handle, cb) => {
+                self.build_get_utxo_request(&payment_address, wallet_handle, cb);
             }
             PaymentsCommand::BuildGetUtxoRequestAck(cmd_handle, result) => {
                 self.build_get_utxo_request_ack(cmd_handle, result);
@@ -154,8 +160,8 @@ impl PaymentsCommandExecutor {
             PaymentsCommand::ParseGetUtxoResponseAck(cmd_handle, result) => {
                 self.parse_get_utxo_response_ack(cmd_handle, result);
             }
-            PaymentsCommand::BuildPaymentReq(inputs, outputs, cb) => {
-                self.build_payment_req(&inputs, &outputs, cb);
+            PaymentsCommand::BuildPaymentReq(inputs, outputs, wallet_handle, cb) => {
+                self.build_payment_req(&inputs, &outputs, wallet_handle, cb);
             }
             PaymentsCommand::BuildPaymentReqAck(cmd_handle, result) => {
                 self.build_payment_req_ack(cmd_handle, result);
@@ -166,20 +172,20 @@ impl PaymentsCommandExecutor {
             PaymentsCommand::ParsePaymentResponseAck(cmd_handle, result) => {
                 self.parse_payment_response_ack(cmd_handle, result);
             }
-            PaymentsCommand::BuildMintReq(outputs, cb) => {
-                self.build_mint_req(&outputs, cb);
+            PaymentsCommand::BuildMintReq(outputs, wallet_handle, cb) => {
+                self.build_mint_req(&outputs, wallet_handle, cb);
             }
             PaymentsCommand::BuildMintReqAck(cmd_handle, result) => {
                 self.build_mint_req_ack(cmd_handle, result);
             }
-            PaymentsCommand::BuildSetTxnFeesReq(type_, fees, cb) => {
-                self.build_set_txn_fees_req(&type_, &fees, cb);
+            PaymentsCommand::BuildSetTxnFeesReq(type_, fees, wallet_handle, cb) => {
+                self.build_set_txn_fees_req(&type_, &fees, wallet_handle, cb);
             }
             PaymentsCommand::BuildSetTxnFeesReqAck(cmd_handle, result) => {
                 self.build_set_txn_fees_req_ack(cmd_handle, result);
             }
-            PaymentsCommand::BuildGetTxnFeesReq(type_, cb) => {
-                self.build_get_txn_fees_req(&type_, cb);
+            PaymentsCommand::BuildGetTxnFeesReq(type_, wallet_handle, cb) => {
+                self.build_get_txn_fees_req(&type_, wallet_handle, cb);
             }
             PaymentsCommand::BuildGetTxnFeesReqAck(cmd_handle, result) => {
                 self.build_get_txn_fees_req_ack(cmd_handle, result);
@@ -238,13 +244,13 @@ impl PaymentsCommandExecutor {
         }
     }
 
-    fn add_request_fees(&self, req: &str, inputs: &str, outputs: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+    fn add_request_fees(&self, req: &str, inputs: &str, outputs: &str, wallet_handle: i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         match PaymentsCommandExecutor::parse_method_from_inputs(inputs) {
             Ok(type_) => {
                 let type_copy = type_.to_string();
                 self.process_method(
                     Box::new(move |result| cb(result.map(|e| (e, type_.to_string())))),
-                    &|i| self.payments_service.add_request_fees(i, &type_copy, req, inputs, outputs)
+                    &|i| self.payments_service.add_request_fees(i, &type_copy, req, inputs, outputs, wallet_handle)
                 );
             }
             Err(error) => cb(Err(error)),
@@ -274,7 +280,7 @@ impl PaymentsCommandExecutor {
 
         self.process_method(
             Box::new(move |get_utxo_txn_json| cb(get_utxo_txn_json.map(|s| (s, method.to_string())))),
-            &|i| self.payments_service.build_get_utxo_request(i, &method_copy, payment_address)
+            & |i| self.payments_service.build_get_utxo_request(i, &method_copy, payment_address, wallet_handle)
         );
     }
 
@@ -290,13 +296,13 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "ParseGetUtxoResponseAck")
     }
 
-    fn build_payment_req(&self, inputs: &str, outputs: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+    fn build_payment_req(&self, inputs: &str, outputs: &str, wallet_handle:i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         match PaymentsCommandExecutor::parse_method_from_inputs(inputs) {
             Ok(type_) => {
                 let type_copy = type_.to_string();
                 self.process_method(
                     Box::new(move |result| cb(result.map(|s| (s, type_.to_string())))),
-                    &|i| self.payments_service.build_payment_req(i, &type_copy, inputs, outputs)
+                    &|i| self.payments_service.build_payment_req(i, &type_copy, inputs, outputs, wallet_handle)
                 );
             }
             Err(error) => cb(Err(error))
@@ -315,13 +321,13 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "ParsePaymentResponseAck")
     }
 
-    fn build_mint_req(&self, outputs: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+    fn build_mint_req(&self, outputs: &str, wallet_handle: i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         match PaymentsCommandExecutor::parse_method_from_outputs(outputs) {
             Ok(type_) => {
                 let type_copy = type_.to_string();
                 self.process_method(
                     Box::new(move |result| cb(result.map(|s| (s, type_.to_string())))),
-                    &|i| self.payments_service.build_mint_req(i, &type_copy, outputs)
+                    &|i| self.payments_service.build_mint_req(i, &type_copy, outputs, wallet_handle)
                 );
             }
             Err(error) => cb(Err(error))
@@ -332,16 +338,16 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "BuildMintReqAck");
     }
 
-    fn build_set_txn_fees_req(&self, type_: &str, fees: &str, cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        self.process_method(cb, &|i| self.payments_service.build_set_txn_fees_req(i, type_, fees))
+    fn build_set_txn_fees_req(&self, type_: &str, fees: &str, wallet_handle:i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        self.process_method(cb, &|i| self.payments_service.build_set_txn_fees_req(i, type_, fees, wallet_handle))
     }
 
     fn build_set_txn_fees_req_ack(&self, cmd_handle: i32, result: Result<String, PaymentsError>) {
         self.common_ack_payments(cmd_handle, result, "BuildSetTxnFeesReq");
     }
 
-    fn build_get_txn_fees_req(&self, type_: &str, cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        self.process_method(cb, &|i| self.payments_service.build_get_txn_fees_req(i, type_))
+    fn build_get_txn_fees_req(&self, type_: &str, wallet_handle:i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        self.process_method(cb, &|i| self.payments_service.build_get_txn_fees_req(i, type_, wallet_handle))
     }
 
     fn build_get_txn_fees_req_ack(&self, cmd_handle: i32, result: Result<String, PaymentsError>) {
