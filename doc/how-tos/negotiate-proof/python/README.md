@@ -39,7 +39,7 @@ Save the updated version of `negotiate_proof.py`.
 Proof negotiation typically begins when a *verifier* (also called a *relying party*)
 requests proof. (As with credential issuance, the process has three logical
 phases, but it is rare to begin with a proof offer. However, if an initial
-proof request is met with a [counter-offer](https://github.com/TechWritingWhiz/indy-sdk/tree/master/doc/how-tos/negotiate-proof/python), the offering phase of the
+proof request is met with a counter-offer, the offering phase of the
 sequence becomes relevant.)
 
 ![3 phases of proof negotiation; first phase is uncommon](../3-phases.png)

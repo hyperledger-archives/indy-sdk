@@ -76,7 +76,7 @@ advanced workflow here.
 
 One other note: the sample code in this step uses the word "claim" in
 places where you might expect "credential." These used to be synonyms,
-but usage has evolved in the [W3C](https://github.com/TechWritingWhiz/indy-sdk/blob/master/doc/how-tos/issue-credential/../not-yet-written.md) since the Indy SDK was built. "Credential"
+but usage has evolved in the W3C since the Indy SDK was built. "Credential"
 is the newer word, and function and parameter names that refer to "claims"
 are now deprecated. Eventually, all usage will show "credential."
 
