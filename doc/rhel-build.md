@@ -42,12 +42,12 @@ dnf install -y \
 For Amazon Linux 2017.03 or other distributions without `libsodium` available in system repositories:
 ```
 cd /tmp
-curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.12.tar.gz | tar -xz
-cd /tmp/libsodium-1.0.12
+curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.14.tar.gz | tar -xz
+cd /tmp/libsodium-1.0.14
 ./configure
 make
 make install
-rm -rf /tmp/libsodium-1.0.12
+rm -rf /tmp/libsodium-1.0.14
 
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
@@ -57,6 +57,10 @@ For Fedora 26/27/28, `libsodium-1.0.14` is already available as a system package
 ```
 dnf install libsodium libsodium-devel
 ```
+
+Versions of `libsodium` from `1.0.15` onwards miss the required `crypto_stream_aes128ctr_*` functions. Because of this:
+- for distributions without `libsodium` in the system repositories: be advised that in the future the archive might be moved to `https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.14.tar.gz`
+- for Fedora and other distribution where `libsodium` is available: make sure that the available version is at most `1.0.14`; if it is more recent, switch to building it from source as explained above
 
 ### 4. Additional dependencies
 For Fedora 26/27/28, you may also need to install `zeromq` (`libzmq`) before being able to successfully

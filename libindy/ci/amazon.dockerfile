@@ -18,12 +18,12 @@ RUN \
            spectool
 
 RUN cd /tmp && \
-   curl https://download.libsodium.org/libsodium/releases/old/libsodium-1.0.12.tar.gz | tar -xz && \
-    cd /tmp/libsodium-1.0.12 && \
+   curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.14.tar.gz | tar -xz && \
+    cd /tmp/libsodium-1.0.14 && \
     ./configure && \
     make && \
     make install && \
-    rm -rf /tmp/libsodium-1.0.12
+    rm -rf /tmp/libsodium-1.0.14
 
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
