@@ -2,7 +2,7 @@ const assert = require('chai').assert
 const vcx = require('../dist')
 const { stubInitVCX } = require('./helpers')
 
-describe('provisioning and updating agents ', function () {
+describe('provisioning and updating agents and updating configs', function () {
   this.timeout(10000)
 
   const provisionString = '{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":null}'
@@ -43,5 +43,10 @@ describe('provisioning and updating agents ', function () {
   it('can get the version', () => {
     let version = vcx.getVersion()
     assert(version)
+  })
+
+  it('can update the name and logo for the config', () => {
+    let rc = vcx.updateInstitutionConfigs('new name', 'http://www.google.com')
+    assert.equal(rc, 0)
   })
 })

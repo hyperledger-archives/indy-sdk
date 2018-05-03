@@ -179,6 +179,18 @@ pub extern fn vcx_error_c_message(error_code: u32) -> *const c_char {
     error::error_c_message(&error_code).as_ptr()
 }
 
+#[no_mangle]
+pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const c_char) -> u32 {
+    check_useful_c_str!(name, error::INVALID_CONFIGURATION.code_num);
+    check_useful_c_str!(logo_url, error::INVALID_CONFIGURATION.code_num);
+    info!("vcx_update_institution_info(name: {}, logo_url: {})", name, logo_url);
+
+    settings::set_config_value(::settings::CONFIG_INSTITUTION_NAME, &name);
+    settings::set_config_value(::settings::CONFIG_INSTITUTION_LOGO_URL, &logo_url);
+
+    error::SUCCESS.code_num
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -289,5 +301,21 @@ mod tests {
     fn test_vcx_version() {
         let return_version = CStringUtils::c_str_to_string(vcx_version()).unwrap().unwrap();
         assert!(return_version.len() > 5);
+    }
+
+    #[test]
+    fn test_vcx_update_institution_info() {
+        settings::set_defaults();
+        let new_name = "new_name";
+        let new_url = "http://www.evernym.com";
+        assert_ne!(new_name, &settings::get_config_value(::settings::CONFIG_INSTITUTION_NAME).unwrap());
+        assert_ne!(new_url, &settings::get_config_value(::settings::CONFIG_INSTITUTION_LOGO_URL).unwrap());
+
+        assert_eq!(error::SUCCESS.code_num, vcx_update_institution_info(CString::new(new_name.to_string()).unwrap().into_raw(),
+                                                                        CString::new(new_url.to_string()).unwrap().into_raw()));
+
+        assert_eq!(new_name, &settings::get_config_value(::settings::CONFIG_INSTITUTION_NAME).unwrap());
+        assert_eq!(new_url, &settings::get_config_value(::settings::CONFIG_INSTITUTION_LOGO_URL).unwrap());
+        ::settings::set_defaults();
     }
 }
