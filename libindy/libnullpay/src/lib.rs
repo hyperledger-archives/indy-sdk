@@ -19,7 +19,7 @@ use std::os::raw::c_char;
     pub extern fn nullpay_init() -> ErrorCode {
         let payment_method_name = CString::new(payment_method::PAYMENT_METHOD_NAME).unwrap();
 
-        libindy::payments::Payments::indy_register_payment_method(
+        libindy::payments::register_payment_method(
             payment_method_name.as_ptr(),
             payment_method::create_payment_address::handle_mocked,
             payment_method::add_request_fees::handle_mocked,
