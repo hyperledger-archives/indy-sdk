@@ -41,19 +41,23 @@ fn main() {
 
     let command_executor = build_executor();
 
-    if env::args().find(|a| a == "-l" || a == "--load").is_some() {
+    if env::args().len() == 2 {
+        //batch mode
         let mut args = env::args();
         args.next(); //skip 0 param
-        return load_plugin(command_executor, Some(&args.next().unwrap()));
+        return execute_batch(command_executor, Some(&args.next().unwrap()));
     }
 
-    if env::args().len() == 1 {
-        execute_stdin(command_executor);
-    } else {
+    if env::args().find(|a| a == "--plugins").is_some() {
+        // load plugins
         let mut args = env::args();
         args.next(); //skip 0 param
-        execute_batch(command_executor, Some(&args.next().unwrap()))
+        args.next(); //skip 1 param
+
+        _load_plugins(&command_executor, Some(&args.next().unwrap()));
     }
+
+    execute_stdin(command_executor);
 }
 
 fn build_executor() -> CommandExecutor {
@@ -62,7 +66,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(common::exit_command::new())
         .add_command(common::prompt_command::new())
         .add_command(common::show_command::new())
-        .add_command(common::load_command::new())
+        .add_command(common::load_plugin_command::new())
         .add_group(did::group::new())
         .add_command(did::new_command::new())
         .add_command(did::import_command::new())
@@ -156,12 +160,28 @@ fn execute_batch(command_executor: CommandExecutor, script_path: Option<&str>) {
     };
 }
 
-fn load_plugin(command_executor: CommandExecutor, plugin_name: Option<&str>) {
-    if let Some(plugin_name) = plugin_name {
-        command_executor.execute(&format!("load {}", plugin_name)).is_ok()
-    } else {
-        return println_err!("Plugin name not found");
-    };
+fn _load_plugins(command_executor: &CommandExecutor, plugins_str: Option<&str>) {
+    if plugins_str.is_none() {
+        return println_err!("Plugins not found");
+    }
+
+    let plugins = plugins_str.unwrap().split(",").collect::<Vec<&str>>();
+
+    for plugin in plugins {
+        let parts: Vec<&str> = plugin.split(":").collect::<Vec<&str>>();
+
+        let name = match parts.get(0) {
+            Some(name) => name,
+            None => return println_err!("Plugin Name not found in {}", plugin)
+        };
+
+        let init_func = match parts.get(1) {
+            Some(name) => name,
+            None => return println_err!("Plugin Init function not found in {}", plugin)
+        };
+
+        common::load_plugin(command_executor.ctx(), name, init_func).ok();
+    }
 }
 
 fn _print_help() {
@@ -173,6 +193,9 @@ fn _print_help() {
     println!();
     println_acc!("\tBatch - all commands will be read from text file or pipe and executed in series.");
     println_acc!("\tUsage: indy-cli <path-to-text-file>");
+    println!();
+    println_acc!("\tLoad plugins in Libindy.");
+    println_acc!("\tUsage: indy-cli --plugins <lib-1-name>:<init-func-1-name>,...,<lib-n-name>:<init-func-n-name>");
     println!();
 }
 

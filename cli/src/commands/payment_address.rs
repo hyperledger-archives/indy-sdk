@@ -45,8 +45,7 @@ pub mod create_command {
         };
 
         let res = match Payment::create_payment_address(wallet_handle, payment_method, &config) {
-            Ok(payment_address) =>
-                Ok(println_succ!("Payment Address \"{}\" has been created for \"{}\" payment method", payment_address, payment_method)),
+            Ok(payment_address) => Ok(println_succ!("Payment Address has been created \"{}\"", payment_address)),
             Err(err) => Err(handle_payment_error(err, Some(payment_method))),
         };
 

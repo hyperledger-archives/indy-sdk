@@ -251,12 +251,11 @@ extern fn _build_payment_req_handler(
     cb: Option<CommonResponseCallback>
 ) -> ErrorCode {
     let mut results = BUILD_PAYMENT_REQ_RESULT_INJECTIONS.lock().unwrap();
-    let outputs_json = CString::from(unsafe { CStr::from_ptr(outputs_json) });
-    let (err, res) = match results.is_empty() {
-        false => results.remove(0),
-        true => (ErrorCode::Success, outputs_json)
+    let res = match results.is_empty() {
+        false => Some(results.remove(0)),
+        true => None
     };
-    _execute_cb(cb, command_handle, res, err)
+    _build_get_txn_request(command_handle, cb, res)
 }
 
 #[no_mangle]
@@ -277,8 +276,14 @@ extern fn _parse_payment_response_handler(
     resp_json: *const c_char,
     cb: Option<CommonResponseCallback>
 ) -> ErrorCode {
+    let payment_response_example =
+        format!(
+            r#"[{{"input":"pov:null_payment:1", "amount":1, "extra":"{}"}}, {{"input":"pov:null_payment:2", "amount":2, "extra":"{}"}}]"#,
+            _get_rand_string(15),
+            _get_rand_string(15)
+        );
     let mut results = PARSE_PAYMENT_RESPONSE_RESULT_INJECTIONS.lock().unwrap();
-    let resp_json = CString::from(unsafe { CStr::from_ptr(resp_json) });
+    let resp_json = CString::new(payment_response_example).unwrap();
     let (err, res) = match results.is_empty() {
         false => results.remove(0),
         true => (ErrorCode::Success, resp_json)

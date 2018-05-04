@@ -88,38 +88,46 @@ pub mod prompt_command {
     }
 }
 
-pub mod load_command {
+pub mod load_plugin_command {
     use super::*;
 
-    command!(CommandMetadata::build("load", "Load plugin")
-                            .add_main_param("path", "The path to loading plugin")
-                            .add_example("load test_plugin")
+    command!(CommandMetadata::build("load-plugin", "Load plugin in Libindy")
+                            .add_required_param("library", "Name of plugin (can be absolute or relative path)")
+                            .add_required_param("initializer", "Name of plugin init function")
+                            .add_example("load-plugin library=libsovtoken initializer=sovtoken_init")
                             .finalize());
 
     fn execute(_ctx: &CommandContext, params: &CommandParams) -> CommandResult {
         trace!("execute >> params: {:?}", params);
 
-        let path = get_str_param("path", params).map_err(error_err!())?;
+        let library = get_str_param("library", params).map_err(error_err!())?;
+        let initializer = get_str_param("initializer", params).map_err(error_err!())?;
 
-        let lib = libloading::Library::new(path)
-            .map_err(|_| println_err!("Plugin not found: \"{:?}\"", path))?;
-
-        unsafe {
-            let init_func: libloading::Symbol<unsafe extern fn() -> ErrorCode> = lib.get(b"init")
-                .map_err(|_| println_err!("Init function not found"))?;
-
-            match init_func() {
-                ErrorCode::Success => println_succ!("Plugin has been loaded: \"{}\"", path),
-                _ => println_err!("Plugin has not been loaded: \"{}\"", path)
-            }
-        }
-
-        let res = _ctx.add_plugin(path, lib);
+        let res = load_plugin(_ctx, library, initializer)?;
 
         trace!("execute << {:?}", res);
 
         Ok(res)
     }
+}
+
+pub fn load_plugin(ctx: &CommandContext, library: &str, initializer: &str) -> Result<(), ()> {
+    let lib = libloading::Library::new(library)
+        .map_err(|_| println_err!("Plugin not found: \"{:?}\"", library))?;
+
+    unsafe {
+        let init_func: libloading::Symbol<unsafe extern fn() -> ErrorCode> = lib.get(initializer.as_bytes())
+            .map_err(|_| println_err!("Init function not found"))?;
+
+        match init_func() {
+            ErrorCode::Success => println_succ!("Plugin has been loaded: \"{}\"", library),
+            _ => println_err!("Plugin has not been loaded: \"{}\"", library)
+        }
+    }
+
+    ctx.add_plugin(library, lib);
+
+    Ok(())
 }
 
 pub mod exit_command {
@@ -144,6 +152,7 @@ pub mod tests {
 
     pub const NULL_PAYMENT_METHOD: &'static str = "null_payment";
     pub const NULL_PAYMENT_PLUGIN: &'static str = "libnullpaymentplugin.so";
+    pub const NULL_PAYMENT_PLUGIN_INIT_FUNCTION: &'static str = "init";
 
     mod load {
         use super::*;
@@ -152,9 +161,10 @@ pub mod tests {
         pub fn load_works() {
             let ctx = CommandContext::new();
 
-            let cmd = load_command::new();
+            let cmd = load_plugin_command::new();
             let mut params = CommandParams::new();
-            params.insert("path", NULL_PAYMENT_PLUGIN.to_string());
+            params.insert("library", NULL_PAYMENT_PLUGIN.to_string());
+            params.insert("initializer", NULL_PAYMENT_PLUGIN_INIT_FUNCTION.to_string());
             cmd.execute(&ctx, &params).unwrap();
         }
     }
@@ -162,7 +172,7 @@ pub mod tests {
     pub fn load_null_payment_plugin(ctx: &CommandContext) -> () {
         let lib = libloading::Library::new(NULL_PAYMENT_PLUGIN).unwrap();
         unsafe {
-            let init_func: libloading::Symbol<unsafe extern fn() -> ErrorCode> = lib.get(b"init").unwrap();
+            let init_func: libloading::Symbol<unsafe extern fn() -> ErrorCode> = lib.get(NULL_PAYMENT_PLUGIN_INIT_FUNCTION.as_bytes()).unwrap();
             init_func();
         }
         ctx.add_plugin(NULL_PAYMENT_PLUGIN, lib)

@@ -820,9 +820,9 @@ pub mod custom_command {
 pub mod get_utxo_command {
     use super::*;
 
-    command!(CommandMetadata::build("get-utxo", "Get UTXO list for payment address according to payment method.") //TODO: Example
+    command!(CommandMetadata::build("get-utxo", "Get UTXO list for payment address.") //TODO: Example
                 .add_required_param("payment_address","Target payment address")
-                .add_example("ledger get-utxo payment_address=sov:12345")
+                .add_example("ledger get-utxo payment_address=pay:sov:12345")
                 .finalize()
     );
 
@@ -866,7 +866,7 @@ pub mod payment_command {
     command!(CommandMetadata::build("payment", "Send request for doing tokens payment.") //TODO: Example
                 .add_required_param("inputs","The list of UTXO inputs")
                 .add_required_param("outputs","The list of UTXO outputs")
-                .add_example("ledger get-utxo inputs=<utxo-1>,..,<utxo-n> outputs=<pay-addr-0>;<amount>;<extra>,..,<pay-addr-n>;<amount>;<extra>")
+                .add_example("ledger get-utxo inputs=<utxo-1>,<utxo-2> outputs=<pay-addr-1>-<amount>-<extra>,<pay-addr-2>-<amount>-<extra>")
                 .finalize()
     );
 
@@ -911,9 +911,9 @@ pub mod payment_command {
 pub mod get_fees_command {
     use super::*;
 
-    command!(CommandMetadata::build("get-fees", "Get fees for transaction.") //TODO: Example
+    command!(CommandMetadata::build("get-fees", "Get fees for transaction.")
                 .add_required_param("payment_method","Payment method to use")
-                .add_example("ledger get-fees payment_address=sov:12345")
+                .add_example("ledger get-fees payment_address=pay:sov:12345")
                 .finalize()
     );
 
@@ -964,9 +964,9 @@ pub mod get_fees_command {
 pub mod mint_prepare_command {
     use super::*;
 
-    command!(CommandMetadata::build("mint-prepare", "Prepare MINT transaction.") //TODO: Example
+    command!(CommandMetadata::build("mint-prepare", "Prepare MINT transaction.")
                 .add_required_param("outputs","The list of UTXO outputs")
-                .add_example("ledger mint-prepare outputs=<pay-addr-0>;<amount>;<extra>,..,<pay-addr-n>;<amount>;<extra>")
+                .add_example("ledger mint-prepare outputs=<pay-addr-1>-<amount>-<extra>,<pay-addr-2>-<amount>-<extra>")
                 .finalize()
     );
 
@@ -979,8 +979,8 @@ pub mod mint_prepare_command {
         let outputs = parse_payment_outputs(&outputs).map_err(error_err!())?;
 
         Payment::build_mint_req(wallet_handle, &outputs)
-            .map(|(request, payment_method)| {
-                println_succ!("MINT transaction for payment method \"{}\" has been created:", payment_method);
+            .map(|(request, _payment_method)| {
+                println_succ!("MINT transaction has been created:");
                 println!("     {}", request);
             })
             .map_err(|err| handle_payment_error(err, None))?;
@@ -994,10 +994,10 @@ pub mod mint_prepare_command {
 pub mod set_fees_prepare_command {
     use super::*;
 
-    command!(CommandMetadata::build("set-fees-prepare", " Prepare SET_FEES transaction.") //TODO: Example
+    command!(CommandMetadata::build("set-fees-prepare", " Prepare SET_FEES transaction.")
                 .add_required_param("payment_method","Payment method to use")
                 .add_required_param("fees","The list of fees")
-                .add_example("ledger set-fees-prepare payment_method=sov:12345 fees=<txn-type-1>:<amount-1>,...,<txn-type-n>:<amount-n>")
+                .add_example("ledger set-fees-prepare payment_method=pay:sov:12345 fees=<txn-type-1>:<amount-1>,<txn-type-2>:<amount-2>")
                 .finalize()
     );
 
@@ -1027,7 +1027,7 @@ pub mod set_fees_prepare_command {
 pub mod sign_multi_command {
     use super::*;
 
-    command!(CommandMetadata::build("sign-multi", "Add signature by current DID to transaction.") //TODO: Example
+    command!(CommandMetadata::build("sign-multi", "Add signature by current DID to transaction.")
                 .add_required_param("txn","Transaction to sign.")
                 .add_example("ledger sign-multi txn=<txn-json>")
                 .finalize()
@@ -1067,7 +1067,7 @@ fn parse_payment_outputs(outputs: &Vec<&str>) -> Result<String, ()> {
     let mut output_objects: Vec<serde_json::Value> = Vec::new();
 
     for output in outputs {
-        let parts: Vec<&str> = output.split(";").collect::<Vec<&str>>();//TODO: Replace Delimetr
+        let parts: Vec<&str> = output.split("-").collect::<Vec<&str>>();//TODO: Replace delimiter
 
         output_objects.push(json!({
                         "paymentAddress": parts.get(0)
@@ -1738,7 +1738,7 @@ pub mod tests {
                 params.insert("version", "1.0".to_string());
                 params.insert("attr_names", "name,age".to_string());
                 params.insert("fees_inputs", r#"pov:null_payment:1"#.to_string());
-                params.insert("fees_outputs", r#"pay:null_payment:v0GQElfjD8gnkli;100"#.to_string());
+                params.insert("fees_outputs", r#"pay:null_payment:v0GQElfjD8gnkli-100"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             _ensure_schema_added(&ctx, &did);
@@ -2400,7 +2400,6 @@ pub mod tests {
         use super::*;
 
         #[test]
-        #[ignore]
         pub fn payment_works() {
             let ctx = CommandContext::new();
 
@@ -2412,7 +2411,7 @@ pub mod tests {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
                 params.insert("inputs", r#"pov:null_payment:1"#.to_string());
-                params.insert("outputs", format!("{};100", payment_address));
+                params.insert("outputs", format!("{}-100", payment_address));
                 cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);
@@ -2431,7 +2430,7 @@ pub mod tests {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
                 params.insert("inputs", r#"null_payment"#.to_string());
-                params.insert("outputs", format!("{};100", payment_address));
+                params.insert("outputs", format!("{}-100", payment_address));
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
@@ -2493,7 +2492,7 @@ pub mod tests {
             {
                 let cmd = mint_prepare_command::new();
                 let mut params = CommandParams::new();
-                params.insert("outputs", format!("{};100", payment_address));
+                params.insert("outputs", format!("{}-100", payment_address));
                 cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);
