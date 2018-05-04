@@ -12,6 +12,7 @@ use serde_json::Map as JSONMap;
 
 use utils::table::print_list_table;
 
+
 pub mod group {
     use super::*;
 
@@ -46,8 +47,7 @@ pub mod create_command {
         let res = match Payment::create_payment_address(wallet_handle, payment_method, &config) {
             Ok(payment_address) =>
                 Ok(println_succ!("Payment Address \"{}\" has been created for \"{}\" payment method", payment_address, payment_method)),
-            Err(ErrorCode::UnknownPaymentMethod) => Err(println_err!("Unknown payment method {}", payment_method)),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+            Err(err) => Err(handle_payment_error(err, Some(payment_method))),
         };
 
         trace!("execute << {:?}", res);
@@ -96,14 +96,19 @@ pub mod list_command {
     }
 }
 
+pub fn handle_payment_error(err: ErrorCode, payment_method: Option<&str>) {
+    match err {
+        ErrorCode::UnknownPaymentMethod => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
+        err => println_err!("Indy SDK error occurred {:?}", err)
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
 
-    use commands::common::load_command;
+    use commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
     use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
-
-    pub const NULL_PAYMENT_METHOD: &'static str = "null_payment_plugin";
 
     mod create {
         use super::*;
@@ -122,7 +127,22 @@ pub mod tests {
             }
             let addresses = get_payment_addresses(wallet_handle);
             assert_eq!(1, addresses.len());
+            assert!(addresses[0].starts_with("pay:null_payment:"));
 
+            close_and_delete_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn create_works_for_unknown_payment_method() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("payment_method", "unknown_payment_method".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
             close_and_delete_wallet(&ctx);
         }
     }
@@ -154,17 +174,8 @@ pub mod tests {
         serde_json::from_str(&payment_addresses).unwrap()
     }
 
-    pub fn load_null_payment_plugin(ctx: &CommandContext) -> () {
-        let cmd = load_command::new();
-        let mut params = CommandParams::new();
-        params.insert("path", "libnullpaymentplugin.so".to_string());
-        cmd.execute(&ctx, &params).unwrap();
-    }
-
-    pub fn create_payment_address(ctx: &CommandContext) {
-        let cmd = create_command::new();
-        let mut params = CommandParams::new();
-        params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-        cmd.execute(&ctx, &params).unwrap();
+    pub fn create_payment_address(ctx: &CommandContext) -> String {
+        let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
+        Payment::create_payment_address(wallet_handle, NULL_PAYMENT_METHOD, "{}").unwrap()
     }
 }

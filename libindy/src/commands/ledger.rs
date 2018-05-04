@@ -585,7 +585,7 @@ impl LedgerCommandExecutor {
         info!("build_get_txn_request >>> submitter_did: {:?}, data: {:?}",
               submitter_did, data);
 
-        self.crypto_service.validate_did(submitter_did)?;
+//        self.crypto_service.validate_did(submitter_did)?; //TODO: recover it
 
         let res = self.ledger_service.build_get_txn_request(submitter_did,
                                                             data)?;

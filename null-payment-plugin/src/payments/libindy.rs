@@ -8,8 +8,8 @@ extern {
         payment_method: *const c_char,
 
         create_payment_address: Option<extern fn(_command_handle: i32,
-                                                 config: *const c_char,
                                                  wallet_handle: i32,
+                                                 config: *const c_char,
                                                  _cb: Option<extern fn(command_handle_: i32,
                                                                        err: ErrorCode,
                                                                        payment_address: *const c_char) -> ErrorCode>) -> ErrorCode>,

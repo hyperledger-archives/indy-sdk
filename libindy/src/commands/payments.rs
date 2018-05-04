@@ -269,18 +269,16 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "ParseResponseWithFeesFeesAck")
     }
 
-    fn build_get_utxo_request(&self, payment_address: &str, wallet_handle:i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        let method = payment_address.matches("[^:]+:([^:]+):.*").next(); // TODO: IS regex required here?
-        if method.is_none() {
-            cb(Err(IndyError::CommonError(CommonError::InvalidStructure(format!("Payment Method not found in Payment Address")))));
-        }
-
-        let method = method.unwrap().to_string();
+    fn build_get_utxo_request(&self, payment_address: &str, wallet_handle: i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        let method = match PaymentsCommandExecutor::extract_payment_method(payment_address) {
+            Some(method) => method,
+            None => return cb(Err(IndyError::PaymentsError(PaymentsError::UnknownType(format!("Payment Method not found in Payment Address")))))
+        };
         let method_copy = method.to_string();
 
         self.process_method(
             Box::new(move |get_utxo_txn_json| cb(get_utxo_txn_json.map(|s| (s, method.to_string())))),
-            & |i| self.payments_service.build_get_utxo_request(i, &method_copy, payment_address, wallet_handle)
+            &|i| self.payments_service.build_get_utxo_request(i, &method_copy, payment_address, wallet_handle)
         );
     }
 
@@ -296,7 +294,7 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "ParseGetUtxoResponseAck")
     }
 
-    fn build_payment_req(&self, inputs: &str, outputs: &str, wallet_handle:i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+    fn build_payment_req(&self, inputs: &str, outputs: &str, wallet_handle: i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         match PaymentsCommandExecutor::parse_method_from_inputs(inputs) {
             Ok(type_) => {
                 let type_copy = type_.to_string();
@@ -338,7 +336,7 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "BuildMintReqAck");
     }
 
-    fn build_set_txn_fees_req(&self, type_: &str, fees: &str, wallet_handle:i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+    fn build_set_txn_fees_req(&self, type_: &str, fees: &str, wallet_handle: i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
         self.process_method(cb, &|i| self.payments_service.build_set_txn_fees_req(i, type_, fees, wallet_handle))
     }
 
@@ -346,7 +344,7 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "BuildSetTxnFeesReq");
     }
 
-    fn build_get_txn_fees_req(&self, type_: &str, wallet_handle:i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+    fn build_get_txn_fees_req(&self, type_: &str, wallet_handle: i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
         self.process_method(cb, &|i| self.payments_service.build_get_txn_fees_req(i, type_, wallet_handle))
     }
 
@@ -418,21 +416,26 @@ impl PaymentsCommandExecutor {
         let result_set: HashSet<String> =
             inputs_json.into_iter()
                 .filter_map(|v| unwrapper(v))
-                .filter_map(|input_str| input_str.matches("[^:]+:([^:]+):.*").next().map(|s| s.to_string()))
+                .filter_map(|input_str| PaymentsCommandExecutor::extract_payment_method(&input_str))
                 .collect();
 
         match result_set.len() {
             0 => {
                 error!("No payment methods found in inputs!");
-                Err(IndyError::from(CommonError::InvalidStructure("No payment methods found in inputs".to_string())))
+                Err(IndyError::from(PaymentsError::UnknownType("No payment methods found in inputs".to_string())))
             }
             1 => {
                 Ok(result_set.into_iter().next().unwrap().to_string())
             }
             _ => {
                 error!("More than one payment method found in inputs!");
-                Err(IndyError::from(CommonError::InvalidStructure("More than one payment method found in inputs!".to_string())))
+                Err(IndyError::from(PaymentsError::UnknownType("More than one payment method found in inputs!".to_string())))
             }
         }
+    }
+
+    fn extract_payment_method(payment_address: &str) -> Option<String> {
+        let parts: Vec<&str> = payment_address.split(":").collect();
+        parts.get(1).map(|method| method.to_string())
     }
 }

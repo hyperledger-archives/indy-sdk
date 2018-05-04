@@ -141,7 +141,7 @@ pub struct CommandContext {
     is_exit: RefCell<bool>,
     int_values: RefCell<HashMap<&'static str, i32>>,
     string_values: RefCell<HashMap<&'static str, String>>,
-    plugins: RefCell<Vec<libloading::Library>>,
+    plugins: RefCell<HashMap<String, libloading::Library>>,
 }
 
 #[allow(dead_code)] //FIXME
@@ -153,7 +153,7 @@ impl CommandContext {
             is_exit: RefCell::new(false),
             int_values: RefCell::new(HashMap::new()),
             string_values: RefCell::new(HashMap::new()),
-            plugins: RefCell::new(Vec::new()),
+            plugins: RefCell::new(HashMap::new()),
         }
     }
 
@@ -214,8 +214,8 @@ impl CommandContext {
         self.string_values.borrow().get(key).map(String::to_owned)
     }
 
-    pub fn add_plugin(&self, plugin: libloading::Library) {
-        self.plugins.borrow_mut().push(plugin);
+    pub fn add_plugin(&self, plugin_name: &str, plugin: libloading::Library) {
+        self.plugins.borrow_mut().insert(plugin_name.to_string(), plugin);
     }
 }
 

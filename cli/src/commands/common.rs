@@ -114,7 +114,7 @@ pub mod load_command {
             }
         }
 
-        let res = _ctx.add_plugin(lib);
+        let res = _ctx.add_plugin(path, lib);
 
         trace!("execute << {:?}", res);
 
@@ -135,5 +135,36 @@ pub mod exit_command {
 
         trace!("execute << {:?}", res);
         res
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    pub const NULL_PAYMENT_METHOD: &'static str = "null_payment";
+    pub const NULL_PAYMENT_PLUGIN: &'static str = "libnullpaymentplugin.so";
+
+    mod load {
+        use super::*;
+
+        #[test]
+        pub fn load_works() {
+            let ctx = CommandContext::new();
+
+            let cmd = load_command::new();
+            let mut params = CommandParams::new();
+            params.insert("path", NULL_PAYMENT_PLUGIN.to_string());
+            cmd.execute(&ctx, &params).unwrap();
+        }
+    }
+
+    pub fn load_null_payment_plugin(ctx: &CommandContext) -> () {
+        let lib = libloading::Library::new(NULL_PAYMENT_PLUGIN).unwrap();
+        unsafe {
+            let init_func: libloading::Symbol<unsafe extern fn() -> ErrorCode> = lib.get(b"init").unwrap();
+            init_func();
+        }
+        ctx.add_plugin(NULL_PAYMENT_PLUGIN, lib)
     }
 }

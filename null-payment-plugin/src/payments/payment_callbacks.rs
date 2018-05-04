@@ -36,7 +36,7 @@ pub extern fn init() -> ErrorCode {
 }
 
 fn _init(cmd_handle:i32, cb: Option<extern fn(_cmd_handle: i32, err: ErrorCode)>) {
-    let payment_method_name = CString::new("null_payment_plugin").unwrap();
+    let payment_method_name = CString::new("null_payment").unwrap();
 
     unsafe {
         indy_register_payment_method(
@@ -100,11 +100,11 @@ lazy_static! {
 
 extern fn _create_payment_address_handler(
     cmd_handle:i32,
-    _config: *const c_char,
     wallet_handle: i32,
+    _config: *const c_char,
     cb: Option<CommonResponseCallback>) -> ErrorCode {
 
-    let addr = CString::new(format!("pay:null:{}", _get_rand_string(15))).unwrap();
+    let addr = CString::new(format!("pay:null_payment:{}", _get_rand_string(15))).unwrap();
     let mut results = CREATE_ADDRESS_RESULT_INJECTIONS.lock().unwrap();
     let (err, res) = match results.is_empty() {
         false => results.remove(0),
@@ -215,7 +215,7 @@ extern fn _parse_get_utxo_response_handler(
 ) -> ErrorCode {
     let utxo_example =
         format!(
-            r#"[{{"input":"pov:null:1", "amount":1, "extra":"{}"}}, {{"input":"pov:null:2", "amount":2, "extra":"{}"}}]"#,
+            r#"[{{"input":"pov:null_payment:1", "amount":1, "extra":"{}"}}, {{"input":"pov:null_payment:2", "amount":2, "extra":"{}"}}]"#,
             _get_rand_string(15),
             _get_rand_string(15)
         );
@@ -329,11 +329,11 @@ pub extern fn nullpayment_clear_build_mint_req_injections() {
 extern fn _build_set_txn_fees_req_handler(
     command_handle: i32,
     _wallet_handle: i32,
-    outputs_json: *const c_char,
+    fees_json: *const c_char,
     cb: Option<CommonResponseCallback>
 ) -> ErrorCode {
     let mut results = BUILD_SET_TXN_FEES_REQ_RESULT_INJECTIONS.lock().unwrap();
-    let outputs_json = CString::from(unsafe { CStr::from_ptr( outputs_json )});
+    let outputs_json = CString::from(unsafe { CStr::from_ptr( fees_json )});
     let (err, res) = match results.is_empty() {
         false => results.remove(0),
         true => (ErrorCode::Success, outputs_json)
@@ -447,7 +447,7 @@ fn _build_get_txn_request(
             let mut map = CALLBACKS.lock().unwrap();
             map.insert(command_handle, Box::new(cb.unwrap()));
 
-            let submitter_did = CString::new("null_payment_plugin").unwrap();
+            let submitter_did = CString::new("null_payment").unwrap();
 
             unsafe {
                 indy_build_get_txn_request(
