@@ -1,11 +1,10 @@
 [package]
-name = "null-payment-plugin"
+name = "null-payment-method"
 version = "0.1.0"
 authors = ["Nikita Khateev <nikita.khateev@dsr-corporation.com>"]
-build = "build.rs"
 
 [lib]
-name = "nullpaymentplugin"
+name = "nullpay"
 crate-type = ["dylib", "rlib"]
 
 [dependencies]
