@@ -1,7 +1,5 @@
-pub mod payment_callbacks;
-mod libindy;
-
-pub type IndyHandle = i32;
+pub mod ledger;
+pub mod payments;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
@@ -132,55 +130,4 @@ pub enum ErrorCode
 
     // Unknown payment method was given
     UnknownPaymentMethod = 700
-}
-
-impl ErrorCode {
-    #[allow(non_snake_case)]
-    #[allow(dead_code)]
-    #[allow(unused)]
-    pub fn description(&self) -> &'static str {
-        match self {
-            CommonInvalidParam1 => "Caller passed invalid value as param 1",
-            CommonInvalidParam2 => "Caller passed invalid value as param 2",
-            CommonInvalidParam3 => "Caller passed invalid value as param 3",
-            CommonInvalidParam4 => "Caller passed invalid value as param 4",
-            CommonInvalidParam5 => "Caller passed invalid value as param 5",
-            CommonInvalidParam6 => "Caller passed invalid value as param 6",
-            CommonInvalidParam7 => "Caller passed invalid value as param 7",
-            CommonInvalidParam8 => "Caller passed invalid value as param 8",
-            CommonInvalidParam9 => "Caller passed invalid value as param 9",
-            CommonInvalidParam10 => "Caller passed invalid value as param 10",
-            CommonInvalidParam11 => "Caller passed invalid value as param 11",
-            CommonInvalidParam12 => "Caller passed invalid value as param 12",
-            CommonInvalidState => "Invalid library state was detected in runtime. It signals library bug",
-            CommonInvalidStructure => "Object (json, config, key, credential and etc...) passed by library caller has invalid structure",
-            CommonIOError => "IO Error",
-            WalletInvalidHandle => "Caller passed invalid wallet handle",
-            WalletUnknownTypeError => "Caller passed invalid wallet handle",
-            WalletTypeAlreadyRegisteredError => "Attempt to register already existing wallet type",
-            WalletAlreadyExistsError => "Attempt to create wallet with name used for another exists wallet",
-            WalletNotFoundError => "Requested entity id isn't present in wallet",
-            WalletIncompatiblePoolError => "Trying to use wallet with pool that has different name",
-            WalletAccessFailed => "Trying to open wallet encrypted wallet with invalid credentials",
-            WalletAlreadyOpenedError => "Trying to open wallet that was opened already",
-            PoolLedgerNotCreatedError => "Trying to open pool ledger that wasn't created before",
-            PoolLedgerInvalidPoolHandle => "Caller passed invalid pool ledger handle",
-            PoolLedgerTerminated => "Pool ledger terminated",
-            LedgerNoConsensusError => "No concensus during ledger operation",
-            LedgerInvalidTransaction => "Attempt to send unknown or incomplete transaction message",
-            LedgerSecurityError => "Attempt to send transaction without the necessary privileges",
-            PoolLedgerConfigAlreadyExistsError => "Attempt to create pool ledger config with name used for another existing pool",
-            AnoncredsRevocationRegistryFullError => "Revocation registry is full and creation of new registry is necessary",
-            AnoncredsInvalidUserRevocIndex => "Invalid user revocation index",
-            AnoncredsAccumulatorIsFull => "Revocation accumulator is full",
-            AnoncredsNotIssuedError => "Not issued",
-            AnoncredsMasterSecretDuplicateNameError => "Attempt to generate master secret with duplicated name",
-            AnoncredsProofRejected => "Proof rejected",
-            AnoncredsCredentialRevoked => "Credential revoked",
-            AnoncredsCredDefAlreadyExistsError => "Credential definition already exists",
-            UnknownCryptoTypeError => "Unknown format of DID entity keys",
-            DidAlreadyExistsError => "Did already exists",
-            UnknownPaymentMethod => "Unknown payment method"
-        }
-    }
 }
