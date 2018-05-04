@@ -1,12 +1,12 @@
 # Issue a Credential
 Indy-SDK Developer Walkthrough #4, Java Edition
 
-[ [Python](../python/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
+[ [Python](../../not-yet-written.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
 
 
 ## Prerequisites
 
-Setup your workstation with an indy development virtual machine(VM). See [prerequisites](../../prerequisites).
+Setup your workstation with an indy development virtual machine(VM). See [prerequisites](../../prerequisites.md).
 
 
 ## Steps
@@ -24,7 +24,7 @@ you'll be writing.
 
 ### Step 2
 
-This how-to builds on the work in ["Save Schema and Cred Def"](../save-schema-and-cred-def/java/README.md).
+This how-to builds on the work in ["Save Schema and Cred Def"](../save-schema-and-cred-def/../not-yet-written.md).
 Rather than duplicate our explanation of those steps here, we will simply
 copy that code as our starting point.
 
@@ -76,7 +76,7 @@ advanced workflow here.
 
 One other note: the sample code in this step uses the word "claim" in
 places where you might expect "credential." These used to be synonyms,
-but usage has evolved in the [W3C](https://github.com/TechWritingWhiz/indy-sdk/blob/master/doc/how-tos/issue-credential/dotnet/README.md) since the Indy SDK was built. "Credential"
+but usage has evolved in the W3C since the Indy SDK was built. "Credential"
 is the newer word, and function and parameter names that refer to "claims"
 are now deprecated. Eventually, all usage will show "credential."
 
@@ -91,5 +91,5 @@ Run the [finished code](IssueCredential.java) and observe the whole sequence.
 
 ## More experiments
 
-You might try the ["Negotiate a Proof"](../../negotiate-proof/java/README.md)
+You might try the ["Negotiate a Proof"](../../negotiate-proof/../not-yet-written.md)
 how-to, which can be done in only one step once you complete this one.

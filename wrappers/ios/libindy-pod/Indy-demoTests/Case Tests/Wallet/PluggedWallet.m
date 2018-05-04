@@ -1,13 +1,24 @@
+//
+//  WalletHighCases.m
+//  Indy-demo
+//
+
 
 #import <XCTest/XCTest.h>
 #import "PoolUtils.h"
 #import "TestUtils.h"
+#import <Indy/Indy.h>
+#import "WalletUtils.h"
+#import "DidUtils.h"
+#import "LedgerUtils.h"
+#import "AnoncredsUtils.h"
+#import "NSDictionary+JSON.h"
 
-@interface WalletHighCases : XCTestCase
+@interface DefaultWallet : XCTestCase
 
 @end
 
-@implementation WalletHighCases
+@implementation DefaultWallet
 
 - (void)setUp {
     [super setUp];
@@ -239,13 +250,14 @@
     [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
 
     // 1. register wallet type
-    [[WalletUtils sharedInstance] registerWalletType:[TestUtils keychainType]];
+    NSError *ret = [[WalletUtils sharedInstance] registerWalletType:[TestUtils keychainType]];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:registerWalletType failed");
 
     // 2. create wallet
-    NSError *ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
-                                                               walletName:[TestUtils wallet]
-                                                                    xtype:[TestUtils keychainType]
-                                                                   config:nil];
+    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
+                                                      walletName:[TestUtils wallet]
+                                                           xtype:[TestUtils keychainType]
+                                                          config:nil];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
 
     // 3. open wallet

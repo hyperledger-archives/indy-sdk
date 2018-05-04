@@ -1,11 +1,3 @@
-//
-//  PairwiseHighCases.m
-//  Indy-demo
-//
-//  Created by Anastasia Tarasova on 04/10/2017.
-//  Copyright © 2017 Hyperledger. All rights reserved.
-//
-
 #import <XCTest/XCTest.h>
 
 #import <Foundation/Foundation.h>
@@ -18,966 +10,288 @@
 
 @end
 
-@implementation PairwiseHighCases
+@implementation PairwiseHighCases {
+    IndyHandle walletHandle;
+    NSError *ret;
+}
 
 - (void)setUp {
     [super setUp];
+    [TestUtils cleanupStorage];
+
+    [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
+                                                            xtype:nil
+                                                           handle:&walletHandle];
     // Put setup code here. This method is called before the invocation of each test method in the class.
 }
 
 - (void)tearDown {
     // Put teardown code here. This method is called after the invocation of each test method in the class.
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    [TestUtils cleanupStorage];
     [super tearDown];
-}
-
-- (void)testExample {
-    // This is an example of a functional test case.
-    // Use XCTAssert and related functions to verify your tests produce the correct results.
-}
-
-- (void)testPerformanceExample {
-    // This is an example of a performance test case.
-    [self measureBlock:^{
-        // Put the code you want to measure the time of here.
-    }];
 }
 
 // MARK: - Create
 
-- (void)testCreatePairwiseWorks
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store my did
-    
+- (void)testCreatePairwiseWorks {
+    // 1. create and store my did
     NSString *myDid;
     ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed1]
-                                                                   outMyDid:&myDid
-                                                                outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
-    
-    // 3. create and store their did
-    
-    NSString *theirDid;
-    NSString *theirVerkey;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed2]
-                                                                   outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
- 
-    // 4. Store their identity json
-    
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                         identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
-    
-    // 5. create pairwise
-    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
+                                                                             seed:[TestUtils mySeed1]
+                                                                         outMyDid:&myDid
+                                                                      outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+
+    // 2. Store their did
+    ret = [[DidUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
+                                                                   theirDid:[TestUtils trusteeDid]
+                                                                theirVerkey:[TestUtils trusteeVerkey]];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
+
+    // 3. create pairwise
+    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:[TestUtils trusteeDid]
                                                           withMyDid:myDid
                                                            metadata:[TestUtils someMetadata]
                                                        walletHandle:walletHandle];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
+    XCTAssertEqual(ret.code, Success, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
 }
 
-- (void)testCreatePairwiseWorksForEmptyMetadata
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store my did
-    
-    NSString *myDid;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed1]
-                                                                   outMyDid:&myDid
-                                                                outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
-    
-    // 3. create and store their did
-    
-    NSString *theirDid;
-    NSString *theirVerkey;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed2]
-                                                                   outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
-    
-    // 4. Store their identity json
-    
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                         identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
-    
-    // 5. create pairwise
-    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
-                                                          withMyDid:myDid
-                                                           metadata:nil
-                                                       walletHandle:walletHandle];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
-}
+- (void)testCreatePairwiseWorksForNotFoundMyDid {
+    // 1. store their did
+   ret = [[DidUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
+                                                                            theirDid:[TestUtils trusteeDid]
+                                                                         theirVerkey:[TestUtils trusteeVerkey]];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
 
-- (void)testCreatePairwiseWorksForNotFoundMyDid
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store their did
-    
-    NSString *theirDid;
-    NSString *theirVerkey;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed2]
-                                                                   outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
-    
-    // 3. Store their identity json
-    
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                         identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
-    
-    // 4. create pairwise
-    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
+    // 2. create pairwise
+    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:[TestUtils trusteeDid]
                                                           withMyDid:[TestUtils unknownDid]
                                                            metadata:[TestUtils someMetadata]
                                                        walletHandle:walletHandle];
-    XCTAssertEqual( ret.code, WalletNotFoundError, @"PairwiseUtils::createPairwiseForTheirDid() returned wrong eror code!");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
+    XCTAssertEqual(ret.code, WalletNotFoundError, @"PairwiseUtils::createPairwiseForTheirDid() returned wrong eror code!");
 }
 
-- (void)testCreatePairwiseWorksForNotFoundTheirDid
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store my did
-    
+- (void)testCreatePairwiseWorksForNotFoundTheirDid {
+    // 1. create and store my did
     NSString *myDid;
     ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed1]
-                                                                   outMyDid:&myDid
-                                                                outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
-    
-    // 3. create pairwise
+                                                                             seed:[TestUtils mySeed1]
+                                                                         outMyDid:&myDid
+                                                                      outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+
+    // 2. create pairwise
     ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:[TestUtils unknownDid]
                                                           withMyDid:myDid
                                                            metadata:[TestUtils someMetadata]
                                                        walletHandle:walletHandle];
-    XCTAssertEqual( ret.code, WalletNotFoundError, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
-}
-
-- (void)testCreatePairwiseWorksForInvalidHandle
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store my did
-    
-    NSString *myDid;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed1]
-                                                                   outMyDid:&myDid
-                                                                outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
-    
-    // 3. create and store their did
-    
-    NSString *theirDid;
-    NSString *theirVerkey;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed2]
-                                                                   outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
-    
-    // 4. Store their identity json
-    
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                         identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
-    
-    // 5. create pairwise
-    IndyHandle invalidWalletHandle = walletHandle + 1;
-    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
-                                                          withMyDid:myDid
-                                                           metadata:[TestUtils someMetadata]
-                                                       walletHandle:invalidWalletHandle];
-    XCTAssertEqual( ret.code, WalletInvalidHandle, @"PairwiseUtils::createPairwiseForTheirDid() returned wrong error code!");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
+    XCTAssertEqual(ret.code, WalletNotFoundError, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
 }
 
 // MARK: - List pairwise
 
-- (void)testListPairwiseWorks
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store my did
-    
+- (void)testListPairwiseWorks {
+    // 1. create and store my did
     NSString *myDid;
     ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed1]
-                                                                   outMyDid:&myDid
-                                                                outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
-    
-    // 3. create and store their did
-    
-    NSString *theirDid;
-    NSString *theirVerkey;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed2]
-                                                                   outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
-    
-    // 4. Store their identity json
-    
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                         identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
-    
-    // 5. create pairwise
-    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
+                                                                             seed:[TestUtils mySeed1]
+                                                                         outMyDid:&myDid
+                                                                      outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+
+    // 2. create and store their did
+    ret = [[DidUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
+                                                                   theirDid:[TestUtils trusteeDid]
+                                                                theirVerkey:[TestUtils trusteeVerkey]];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
+
+    // 3. create pairwise
+    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:[TestUtils trusteeDid]
                                                           withMyDid:myDid
                                                            metadata:[TestUtils someMetadata]
                                                        walletHandle:walletHandle];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
-    
-    // 6. list paiwise
-    
+    XCTAssertEqual(ret.code, Success, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
+
+    // 4. list pairwise
     NSString *pairwiseListJson;
     ret = [[PairwiseUtils sharedInstance] listPairwiseFromWallet:walletHandle
                                                  outPairwiseList:&pairwiseListJson];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::listPairwiseFromWallet() failed!");
-    
-    XCTAssertTrue([pairwiseListJson isValid], @"pairwiseListJson is invalid: %@", pairwiseListJson);
-    
-    NSArray *pairwiseList = (NSArray *)[NSDictionary fromString:pairwiseListJson];
-    XCTAssertTrue([pairwiseList count] == 1, @"pairwiseList count != 1." );
-    
-    NSMutableDictionary *pair = [NSMutableDictionary new];
-    pair[@"my_did"] = myDid;
-    pair[@"their_did"] = theirDid;
-    
-    XCTAssertTrue([pairwiseList contains:pair], @"pairwiseList doesn't contain pair: %@", pair);
-    
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
+    XCTAssertEqual(ret.code, Success, @"PairwiseUtils::listPairwiseFromWallet() failed!");
+
+    NSArray *pairwiseList = (NSArray *) [NSDictionary fromString:pairwiseListJson];
+    XCTAssertTrue([pairwiseList count] == 1, @"pairwiseList count != 1.");
+
+    NSDictionary *expectedResult = @{@"my_did": myDid, @"their_did":[TestUtils trusteeDid]};
+
+    XCTAssertTrue([pairwiseList contains:expectedResult], @"pairwiseList doesn't contain pair: %@", expectedResult);
 }
 
-- (void)testListPairwiseWorksForEmptyResult
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. list paiwise
-    
+- (void)testListPairwiseWorksForEmptyResult {
+    // 1. list pairwise
     NSString *pairwiseListJson;
     ret = [[PairwiseUtils sharedInstance] listPairwiseFromWallet:walletHandle
-                                                 outPairwiseList:&pairwiseListJson];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::listPairwiseFromWallet() failed!");
-    
-    NSArray *pairwiseList = (NSArray *)[NSDictionary fromString:pairwiseListJson];
-    XCTAssertTrue([pairwiseList count] == 0, @"pairwiseList count != 0." );
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
-}
+                                                          outPairwiseList:&pairwiseListJson];
+    XCTAssertEqual(ret.code, Success, @"PairwiseUtils::listPairwiseFromWallet() failed!");
 
-- (void)testIndyListPairwiseWorksForInvalidHandle
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store my did
-    
-    NSString *myDid;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed1]
-                                                                   outMyDid:&myDid
-                                                                outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
-    
-    // 3. create and store their did
-    
-    NSString *theirDid;
-    NSString *theirVerkey;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed2]
-                                                                   outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
-    
-    // 4. Store their identity json
-    
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                         identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
-    
-    // 5. create pairwise
-    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
-                                                          withMyDid:myDid
-                                                           metadata:[TestUtils someMetadata]
-                                                       walletHandle:walletHandle];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
-    
-    // 6. list paiwise
-    
-    NSString *pairwiseListJson;
-    IndyHandle invalidWalletHandle = walletHandle + 1;
-    ret = [[PairwiseUtils sharedInstance] listPairwiseFromWallet:invalidWalletHandle
-                                                 outPairwiseList:&pairwiseListJson];
-    XCTAssertEqual( ret.code, WalletInvalidHandle, @"PairwiseUtils::listPairwiseFromWallet() returned wrong error code!");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
+    NSArray *pairwiseList = (NSArray *) [NSDictionary fromString:pairwiseListJson];
+    XCTAssertTrue([pairwiseList count] == 0, @"pairwiseList count != 0.");
 }
 
 // MARK: - Pairwise exists
 
-- (void)testPairwiseExistsWorks
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store my did
-    
+- (void)testPairwiseExistsWorks {
+    // 1. create and store my did
     NSString *myDid;
     ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed1]
-                                                                   outMyDid:&myDid
-                                                                outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
-    
-    // 3. create and store their did
-    
-    NSString *theirDid;
-    NSString *theirVerkey;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed2]
-                                                                   outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
-    
-    // 4. Store their identity json
-    
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                         identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
-    
-    // 5. create pairwise
-    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
+                                                                             seed:[TestUtils mySeed1]
+                                                                         outMyDid:&myDid
+                                                                      outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+
+    // 2. create and store their did
+    ret = [[DidUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
+                                                                   theirDid:[TestUtils trusteeDid]
+                                                                theirVerkey:[TestUtils trusteeVerkey]];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
+
+    // 3. create pairwise
+    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:[TestUtils trusteeDid]
                                                           withMyDid:myDid
                                                            metadata:[TestUtils someMetadata]
                                                        walletHandle:walletHandle];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
-    
-   
-    // 6. Check if pairwise exists
+    XCTAssertEqual(ret.code, Success, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
+
+    // 4. Check if pairwise exists
     BOOL exists;
-    ret = [[PairwiseUtils sharedInstance] pairwiseExistsForDid:theirDid
+    ret = [[PairwiseUtils sharedInstance] pairwiseExistsForDid:[TestUtils trusteeDid]
                                                   walletHandle:walletHandle
                                                      outExists:&exists];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::pairwiseExistsForDid() failed!");
+    XCTAssertEqual(ret.code, Success, @"PairwiseUtils::pairwiseExistsForDid() failed!");
     XCTAssertTrue(exists, @"pairwise doesn't exist!");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
 }
 
-- (void)testIsPairwiseExistsWorksForNotCreated
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store my did
-    
-    NSString *myDid;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed1]
-                                                                   outMyDid:&myDid
-                                                                outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
-    
-    // 3. create and store their did
-    
-    NSString *theirDid;
-    NSString *theirVerkey;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed2]
-                                                                   outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
-    
-    // 4. Store their identity json
-    
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                         identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
-    
-    // 5. Check if pairwise exists
-    BOOL exists = false ;
-    ret = [[PairwiseUtils sharedInstance] pairwiseExistsForDid:theirDid
-                                                  walletHandle:walletHandle
-                                                     outExists:&exists];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::pairwiseExistsForDid() failed!");
+- (void)testIsPairwiseExistsWorksForNotCreated {
+    // 1. Check if pairwise exists
+    BOOL exists = false;
+    ret = [[PairwiseUtils sharedInstance] pairwiseExistsForDid:[TestUtils trusteeDid]
+                                                           walletHandle:walletHandle
+                                                              outExists:&exists];
+    XCTAssertEqual(ret.code, Success, @"PairwiseUtils::pairwiseExistsForDid() failed!");
     XCTAssertFalse(exists, @"pairwise exists!");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
-}
-
-- (void)testIsPairwiseExistsWorksForInvalidHandle
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store my did
-    
-    NSString *myDid;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed1]
-                                                                   outMyDid:&myDid
-                                                                outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
-    
-    // 3. create and store their did
-    
-    NSString *theirDid;
-    NSString *theirVerkey;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed2]
-                                                                   outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
-    
-    // 4. Store their identity json
-    
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                         identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
-    
-    // 5. create pairwise
-    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
-                                                          withMyDid:myDid
-                                                           metadata:[TestUtils someMetadata]
-                                                       walletHandle:walletHandle];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
-    
-    
-    // 6. Check if pairwise exists
-    IndyHandle invalidWalletHandle = walletHandle + 1;
-    BOOL exists;
-    ret = [[PairwiseUtils sharedInstance] pairwiseExistsForDid:theirDid
-                                                  walletHandle:invalidWalletHandle
-                                                     outExists:&exists];
-    XCTAssertEqual( ret.code, WalletInvalidHandle, @"PairwiseUtils::pairwiseExistsForDid() failed!");
-    XCTAssertFalse(exists, @"pairwise does exist!");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
 }
 
 // MARK: - Get pairwise
 
-- (void)testGetPairwiseWorks
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store my did
-    
+- (void)testGetPairwiseWorks {
+    // 1. create and store my did
     NSString *myDid;
     ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed1]
-                                                                   outMyDid:&myDid
-                                                                outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
-    
-    // 3. create and store their did
-    
-    NSString *theirDid;
-    NSString *theirVerkey;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed2]
-                                                                   outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
-    
-    // 4. Store their identity json
-    
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                         identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
-    
-    // 5. create pairwise
-    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
+                                                                             seed:[TestUtils mySeed1]
+                                                                         outMyDid:&myDid
+                                                                      outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+
+    // 2. create and store their did
+    ret = [[DidUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
+                                                                   theirDid:[TestUtils trusteeDid]
+                                                                theirVerkey:[TestUtils trusteeVerkey]];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
+
+    // 3. create pairwise
+    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:[TestUtils trusteeDid]
                                                           withMyDid:myDid
                                                            metadata:[TestUtils someMetadata]
                                                        walletHandle:walletHandle];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
+    XCTAssertEqual(ret.code, Success, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
 
-    // 6. get pairwise
-    
+    // 4. get pairwise
     NSString *pairwiseInfoJson;
-    ret = [[PairwiseUtils sharedInstance] getPairwiseForDid:theirDid
+    ret = [[PairwiseUtils sharedInstance] getPairwiseForDid:[TestUtils trusteeDid]
                                                walletHandle:walletHandle
                                             outPairwiseJson:&pairwiseInfoJson];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::getPairwiseForDid() failed!");
-    
-    XCTAssertTrue([pairwiseInfoJson isValid], @"pairwiseInfoJson is invalid.");
-    
+    XCTAssertEqual(ret.code, Success, @"PairwiseUtils::getPairwiseForDid() failed!");
+
     NSDictionary *pairwiseInfo = [NSDictionary fromString:pairwiseInfoJson];
-    
-    NSMutableDictionary *expectedResult = [NSMutableDictionary new];
-    expectedResult[@"my_did"] = myDid;
-    expectedResult[@"metadata"] = [TestUtils someMetadata];
-    
+
+    NSDictionary *expectedResult = @{@"my_did": myDid, @"metadata":[TestUtils someMetadata]};
+
     XCTAssertTrue([pairwiseInfo contains:expectedResult], @"expectedResult is not contained in pairwiseInfoJson.");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
 }
 
-- (void)testGetPairwiseWorksForNotCreatedPairwise
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store my did
-    
-    NSString *myDid;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed1]
-                                                                   outMyDid:&myDid
-                                                                outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
-    
-    // 3. create and store their did
-    
-    NSString *theirDid;
-    NSString *theirVerkey;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed2]
-                                                                   outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
-    
-    // 4. Store their identity json
-    
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                         identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
-    
-    // 5. get pairwise
-    
-    NSString *pairwiseInfoJson;
-    ret = [[PairwiseUtils sharedInstance] getPairwiseForDid:theirDid
-                                               walletHandle:walletHandle
-                                            outPairwiseJson:&pairwiseInfoJson];
-    XCTAssertEqual( ret.code, WalletNotFoundError, @"PairwiseUtils::getPairwiseForDid() returned wrong error code!");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
-}
+- (void)testGetPairwiseWorksForNotCreatedPairwise {
+    // 1. get pairwise
 
-- (void)testGetPairwiseWorksForInvalidHandle
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store my did
-    
-    NSString *myDid;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed1]
-                                                                   outMyDid:&myDid
-                                                                outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
-    
-    // 3. create and store their did
-    
-    NSString *theirDid;
-    NSString *theirVerkey;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed2]
-                                                                   outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
-    
-    // 4. Store their identity json
-    
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                         identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
-    
-    // 5. create pairwise
-    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
-                                                          withMyDid:myDid
-                                                           metadata:[TestUtils someMetadata]
-                                                       walletHandle:walletHandle];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
-    
-    // 6. get pairwise
-    
-    IndyHandle invalidWalletHandle = walletHandle + 1;
     NSString *pairwiseInfoJson;
-    ret = [[PairwiseUtils sharedInstance] getPairwiseForDid:theirDid
-                                               walletHandle:invalidWalletHandle
-                                            outPairwiseJson:&pairwiseInfoJson];
-    XCTAssertEqual( ret.code, WalletInvalidHandle, @"PairwiseUtils::getPairwiseForDid() returned wrong error code!");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
+    ret = [[PairwiseUtils sharedInstance] getPairwiseForDid:[TestUtils trusteeDid]
+                                                        walletHandle:walletHandle
+                                                     outPairwiseJson:&pairwiseInfoJson];
+    XCTAssertEqual(ret.code, WalletNotFoundError, @"PairwiseUtils::getPairwiseForDid() returned wrong error code!");
 }
 
 // MARK: - Set pairwise metadata
 
-- (void)testSetPairwiseMetadataWorks
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store my did
-    
+- (void)testSetPairwiseMetadataWorks {
+    // 1. create and store my did
     NSString *myDid;
     ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed1]
-                                                                   outMyDid:&myDid
-                                                                outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
-    
-    // 3. create and store their did
-    
-    NSString *theirDid;
-    NSString *theirVerkey;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed2]
-                                                                   outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
-    
-    // 4. Store their identity json
-    
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                         identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
-    
-    // 5. create pairwise
-    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
+                                                                             seed:[TestUtils mySeed1]
+                                                                         outMyDid:&myDid
+                                                                      outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+
+    // 2. create and store their did
+    ret = [[DidUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
+                                                                   theirDid:[TestUtils trusteeDid]
+                                                                theirVerkey:[TestUtils trusteeVerkey]];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
+
+    // 3. create pairwise
+    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:[TestUtils trusteeDid]
                                                           withMyDid:myDid
-                                                           metadata:nil
+                                                           metadata:[TestUtils someMetadata]
                                                        walletHandle:walletHandle];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
-    
-    // 6. get pairwise info without metadata
-    
+    XCTAssertEqual(ret.code, Success, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
+
+    // 4. get pairwise info without metadata
     NSString *pairwiseInfoWithoutMetadataJson;
-    ret = [[PairwiseUtils sharedInstance] getPairwiseForDid:theirDid
+    ret = [[PairwiseUtils sharedInstance] getPairwiseForDid:[TestUtils trusteeDid]
                                                walletHandle:walletHandle
                                             outPairwiseJson:&pairwiseInfoWithoutMetadataJson];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::getPairwiseForDid() failed!");
-    
-    XCTAssertTrue([pairwiseInfoWithoutMetadataJson isValid], @"pairwiseInfoWithoutMetadataJson is invalid.");
-    
+    XCTAssertEqual(ret.code, Success, @"PairwiseUtils::getPairwiseForDid() failed!");
+
     NSDictionary *pairwiseInfoWithoutMetadata = [NSDictionary fromString:pairwiseInfoWithoutMetadataJson];
-    
-    NSMutableDictionary *expectedResult = [NSMutableDictionary new];
-    expectedResult[@"my_did"] = myDid;
-    
+
+    NSDictionary *expectedResult = @{@"my_did": myDid};
+
     XCTAssertTrue([pairwiseInfoWithoutMetadata contains:expectedResult], @"expectedResult is not contained in pairwiseInfoWithoutMetadata.");
-    
-    // 7. Set pairwise metadata
-    
+
+    // 5. Set pairwise metadata
     ret = [[PairwiseUtils sharedInstance] setPairwiseMetadata:[TestUtils someMetadata]
-                                                  forTheirDid:theirDid
+                                                  forTheirDid:[TestUtils trusteeDid]
                                                  walletHandle:walletHandle];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::setPairwiseMetadata() failed!");
-    
-    // 8. get pairwise info with metadata
-    
+    XCTAssertEqual(ret.code, Success, @"PairwiseUtils::setPairwiseMetadata() failed!");
+
+    // 6. get pairwise info with metadata
     NSString *pairwiseInfoWithMetadataJson;
-    ret = [[PairwiseUtils sharedInstance] getPairwiseForDid:theirDid
+    ret = [[PairwiseUtils sharedInstance] getPairwiseForDid:[TestUtils trusteeDid]
                                                walletHandle:walletHandle
                                             outPairwiseJson:&pairwiseInfoWithMetadataJson];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::getPairwiseForDid() failed!");
-    
-    XCTAssertTrue([pairwiseInfoWithMetadataJson isValid], @"pairwiseInfoWithMetadataJson is invalid.");
-    
+    XCTAssertEqual(ret.code, Success, @"PairwiseUtils::getPairwiseForDid() failed!");
+
     NSDictionary *pairwiseInfoWithMetadata = [NSDictionary fromString:pairwiseInfoWithMetadataJson];
-    
-    expectedResult = [NSMutableDictionary new];
-    expectedResult[@"my_did"] = myDid;
-    expectedResult[@"metadata"] = [TestUtils someMetadata];
-    
+
+    expectedResult = @{@"my_did": myDid, @"metadata":[TestUtils someMetadata]};
+
     XCTAssertTrue([pairwiseInfoWithMetadata contains:expectedResult], @"expectedResult is not contained in pairwiseInfoWithMetadata.");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
 }
 
-- (void)testSetPairwiseMetadataWorksForNotCreatedPairwise
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store my did
-    
-    NSString *myDid;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed1]
-                                                                   outMyDid:&myDid
-                                                                outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
-    
-    // 3. create and store their did
-    
-    NSString *theirDid;
-    NSString *theirVerkey;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed2]
-                                                                   outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
-    
-    // 4. Store their identity json
-    
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                         identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
-    
-    // 5. Set pairwise metadata
-    
+- (void)testSetPairwiseMetadataWorksForNotCreatedPairwise {
+    // 1. Set pairwise metadata
     ret = [[PairwiseUtils sharedInstance] setPairwiseMetadata:[TestUtils someMetadata]
-                                                  forTheirDid:theirDid
-                                                 walletHandle:walletHandle];
-    XCTAssertEqual( ret.code, WalletNotFoundError, @"PairwiseUtils::setPairwiseMetadata() returned wrong error code!");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
-}
-
-- (void)testSetPairwiseMetadataWorksForInvalidWalletHandle
-{
-    [TestUtils cleanupStorage];
-    NSError *ret;
-    
-    // 1. create and open wallet
-    
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&walletHandle];
-    XCTAssertEqual( ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed!");
-    
-    // 2. create and store my did
-    
-    NSString *myDid;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed1]
-                                                                   outMyDid:&myDid
-                                                                outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
-    
-    // 3. create and store their did
-    
-    NSString *theirDid;
-    NSString *theirVerkey;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:[TestUtils mySeed2]
-                                                                   outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
-    
-    // 4. Store their identity json
-    
-    NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
-                                                         identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
-    
-    // 5. create pairwise
-    ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
-                                                          withMyDid:myDid
-                                                           metadata:nil
-                                                       walletHandle:walletHandle];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
-
-    
-    // 6. Set pairwise metadata
-    
-    IndyHandle invalidWalletHandle = walletHandle + 1;
-    ret = [[PairwiseUtils sharedInstance] setPairwiseMetadata:[TestUtils someMetadata]
-                                                  forTheirDid:theirDid
-                                                 walletHandle:invalidWalletHandle];
-    XCTAssertEqual( ret.code, WalletInvalidHandle, @"PairwiseUtils::setPairwiseMetadata() returned wrong error code!");
-    
-    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    [TestUtils cleanupStorage];
+                                                           forTheirDid:[TestUtils trusteeDid]
+                                                          walletHandle:walletHandle];
+    XCTAssertEqual(ret.code, WalletNotFoundError, @"PairwiseUtils::setPairwiseMetadata() returned wrong error code!");
 }
 
 @end
