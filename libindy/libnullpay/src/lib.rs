@@ -8,21 +8,32 @@ mod libindy;
 
 #[macro_use]
 mod payment_method;
-mod payment_register;
 mod utils;
 
 use libindy::ErrorCode;
 
+use std::ffi::CString;
 use std::os::raw::c_char;
-
-pub mod register_payment_method {
-    use super::*;
 
     #[no_mangle]
     pub extern fn nullpay_init() -> ErrorCode {
-        payment_register::payment_register::init()
+        let payment_method_name = CString::new(payment_method::PAYMENT_METHOD_NAME).unwrap();
+
+        libindy::payments::Payments::indy_register_payment_method(
+            payment_method_name.as_ptr(),
+            payment_method::create_payment_address::handle_mocked,
+            payment_method::add_request_fees::handle_mocked,
+            payment_method::parse_response_with_fees::handle_mocked,
+            payment_method::build_get_utxo_request::handle_mocked,
+            payment_method::parse_get_utxo_response::handle_mocked,
+            payment_method::build_payment_req::handle_mocked,
+            payment_method::parse_payment_response::handle_mocked,
+            payment_method::build_mint_req::handle_mocked,
+            payment_method::build_set_txn_fees_req::handle_mocked,
+            payment_method::build_get_txn_fees_req::handle_mocked,
+            payment_method::parse_get_txn_fees_response::handle_mocked
+        )
     }
-}
 
 pub mod create_payment_address {
     use super::*;
