@@ -519,7 +519,9 @@ def nodejsWrapperPublishing(testEnv, isRelease) {
         def suffix = getSuffix(isRelease, "nodejs")
 
         testEnv.inside {
-            # TODO npm user for publishing ~/.npmrc
+            sh 'npm config set registry https://registry.npmjs.org/'
+            sh 'npm config set //registry.npmjs.org/:_authToken ${env.NPM_TOKEN}'
+
             sh 'npm version --no-git-tag-version "$version$suffix"'
             sh 'npm publish'
         }
