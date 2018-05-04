@@ -1,60 +1,130 @@
 use super::ErrorCode;
 use std::os::raw::c_char;
+use utils::callbacks::CallbackUtils;
+use std::sync::mpsc::channel;
+
+pub type IndyPaymentCallback = Option<extern fn(command_handle_: i32,
+                                                err: ErrorCode,
+                                                payment_address: *const c_char) -> ErrorCode>;
+
+pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
+                                            config: *const c_char,
+                                            wallet_handle: i32,
+                                            cb: IndyPaymentCallback) -> ErrorCode;
+
+pub type AddRequestFeesCB = extern fn(command_handle: i32,
+                                      req_json: *const c_char,
+                                      inputs_json: *const c_char,
+                                      outputs_json: *const c_char,
+                                      wallet_handle: i32,
+                                      cb: IndyPaymentCallback) -> ErrorCode;
+
+pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
+                                             resp_json: *const c_char,
+                                             cb: IndyPaymentCallback) -> ErrorCode;
+
+pub type BuildGetUTXORequestCB = extern fn(command_handle: i32,
+                                           payment_address: *const c_char,
+                                           wallet_handle: i32,
+                                           cb: IndyPaymentCallback) -> ErrorCode;
+
+pub type ParseGetUTXOResponseCB = extern fn(command_handle: i32,
+                                            resp_json: *const c_char,
+                                            cb: IndyPaymentCallback) -> ErrorCode;
+
+pub type BuildPaymentReqCB = extern fn(command_handle: i32,
+                                       inputs_json: *const c_char,
+                                       outputs_json: *const c_char,
+                                       wallet_handle: i32,
+                                       cb: IndyPaymentCallback) -> ErrorCode;
+
+pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
+                                            resp_json: *const c_char,
+                                            cb: IndyPaymentCallback) -> ErrorCode;
+
+pub type BuildMintReqCB = extern fn(command_handle: i32,
+                                    outputs_json: *const c_char,
+                                    wallet_handle: i32,
+                                    cb: IndyPaymentCallback) -> ErrorCode;
+
+pub type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
+                                          fees_json: *const c_char,
+                                          wallet_handle: i32,
+                                          cb: IndyPaymentCallback) -> ErrorCode;
+
+pub type BuildGetTxnFeesReqCB = extern fn(command_handle: i32,
+                                          wallet_handle: i32,
+                                          cb: IndyPaymentCallback) -> ErrorCode;
+
+pub type ParseGetTxnFeesResponseCB = extern fn(command_handle: i32,
+                                               resp_json: *const c_char,
+                                               cb: IndyPaymentCallback) -> ErrorCode;
+
+pub struct Payments {}
+
+impl Payments {
+    pub fn indy_register_payment_method(
+        payment_method: *const c_char,
+        create_payment_address: CreatePaymentAddressCB,
+        add_request_fees: AddRequestFeesCB,
+        parse_response_with_fees: ParseResponseWithFeesCB,
+        build_get_utxo_request: BuildGetUTXORequestCB,
+        parse_get_utxo_response: ParseGetUTXOResponseCB,
+        build_payment_req: BuildPaymentReqCB,
+        parse_payment_response: ParsePaymentResponseCB,
+        build_mint_req: BuildMintReqCB,
+        build_set_txn_fees_req: BuildSetTxnFeesReqCB,
+        build_get_txn_fees_req: BuildGetTxnFeesReqCB,
+        parse_get_txn_fees_response: ParseGetTxnFeesResponseCB,
+    ) -> ErrorCode {
+        let (sender, receiver) = channel();
+
+        let closure: Box<FnMut(ErrorCode) + Send> = Box::new(move |err| {
+            sender.send(err).unwrap();
+        });
+
+        let (cmd_handle, cb) = CallbackUtils::closure_to_cb_ec(closure);
+
+        unsafe {
+            indy_register_payment_method(
+                cmd_handle,
+                payment_method,
+                Some(create_payment_address),
+                Some(add_request_fees),
+                Some(parse_response_with_fees),
+                Some(build_get_utxo_request),
+                Some(parse_get_utxo_response),
+                Some(build_payment_req),
+                Some(parse_payment_response),
+                Some(build_mint_req),
+                Some(build_set_txn_fees_req),
+                Some(build_get_txn_fees_req),
+                Some(parse_get_txn_fees_response),
+                cb,
+            );
+        }
+
+        receiver.recv().unwrap()
+    }
+}
 
 extern {
     #[no_mangle]
     pub fn indy_register_payment_method(
         command_handle: i32,
         payment_method: *const c_char,
-//TODO: replace cb to IndyPaymentCallback
-        create_payment_address: Option<extern fn(_command_handle: i32,
-                                                 config: *const c_char,
-                                                 wallet_handle: i32,
-                                                 _cb: IndyPaymentCallback) -> ErrorCode>,
-        add_request_fees: Option<extern fn(_command_handle: i32,
-                                           _wallet_handle: i32,
-                                           req_json: *const c_char,
-                                           inputs_json: *const c_char,
-                                           outputs_json: *const c_char,
-                                           _cb: IndyPaymentCallback) -> ErrorCode>,
-        parse_response_with_fees: Option<extern fn(_command_handle: i32,
-                                                   resp_json: *const c_char,
-                                                   _cb: IndyPaymentCallback) -> ErrorCode>,
-        build_get_utxo_request: Option<extern fn(_command_handle: i32,
-                                                 _wallet_handle: i32,
-                                                 payment_address: *const c_char,
-                                                 _cb: IndyPaymentCallback) -> ErrorCode>,
-        parse_get_utxo_response: Option<extern fn(_command_handle: i32,
-                                                  resp_json: *const c_char,
-                                                  _cb: IndyPaymentCallback) -> ErrorCode>,
-        build_payment_req: Option<extern fn(_command_handle: i32,
-                                            _wallet_handle: i32,
-                                            inputs_json: *const c_char,
-                                            outputs_json: *const c_char,
-                                            _cb: IndyPaymentCallback) -> ErrorCode>,
-        parse_payment_response: Option<extern fn(_command_handle: i32,
-                                                 resp_json: *const c_char,
-                                                 _cb: IndyPaymentCallback) -> ErrorCode>,
-        build_mint_req: Option<extern fn(_command_handle: i32,
-                                         _wallet_handle: i32,
-                                         outputs_json: *const c_char,
-                                         _cb: IndyPaymentCallback) -> ErrorCode>,
-        build_set_txn_fees_req: Option<extern fn(_command_handle: i32,
-                                                 _wallet_handle: i32,
-                                                 fees_json: *const c_char,
-                                                 _cb: IndyPaymentCallback) -> ErrorCode>,
-        build_get_txn_fees_req: Option<extern fn(_command_handle: i32,
-                                                 _wallet_handle: i32,
-                                                 _cb: IndyPaymentCallback) -> ErrorCode>,
-        parse_get_txn_fees_response: Option<extern fn(_command_handle: i32,
-                                                      resp_json: *const c_char,
-                                                      _cb: IndyPaymentCallback) -> ErrorCode>,
-
+        create_payment_address: Option<CreatePaymentAddressCB>,
+        add_request_fees: Option<AddRequestFeesCB>,
+        parse_response_with_fees: Option<ParseResponseWithFeesCB>,
+        build_get_utxo_request: Option<BuildGetUTXORequestCB>,
+        parse_get_utxo_response: Option<ParseGetUTXOResponseCB>,
+        build_payment_req: Option<BuildPaymentReqCB>,
+        parse_payment_response: Option<ParsePaymentResponseCB>,
+        build_mint_req: Option<BuildMintReqCB>,
+        build_set_txn_fees_req: Option<BuildSetTxnFeesReqCB>,
+        build_get_txn_fees_req: Option<BuildGetTxnFeesReqCB>,
+        parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
         cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode;
 }
 
 
-
-pub type IndyPaymentCallback = Option<extern fn(command_handle_: i32,
-                                                err: ErrorCode,
-                                                payment_address: *const c_char) -> ErrorCode>;
