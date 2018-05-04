@@ -519,11 +519,12 @@ def nodejsWrapperPublishing(testEnv, isRelease) {
         def suffix = getSuffix(isRelease, "nodejs")
 
         testEnv.inside {
-            sh 'npm config set registry https://registry.npmjs.org/'
-            sh 'npm config set //registry.npmjs.org/:_authToken ${env.NPM_TOKEN}'
+            withCredentials([file(credentialsId: 'npm_credentials', variable: 'credentialsFile')]) {
+                sh 'cp $credentialsFile ~/.npmrc'
 
-            sh 'npm version --no-git-tag-version "$version$suffix"'
-            sh 'npm publish'
+                sh 'npm version --no-git-tag-version "$version$suffix"'
+                sh 'npm publish'
+            }
         }
     }
 }
