@@ -150,9 +150,9 @@ pub mod exit_command {
 pub mod tests {
     use super::*;
 
-    pub const NULL_PAYMENT_METHOD: &'static str = "null_payment";
-    pub const NULL_PAYMENT_PLUGIN: &'static str = "libnullpaymentplugin.so";
-    pub const NULL_PAYMENT_PLUGIN_INIT_FUNCTION: &'static str = "init";
+    pub const NULL_PAYMENT_METHOD: &'static str = "null";
+    pub const NULL_PAYMENT_PLUGIN: &'static str = "libnullpay.so";
+    pub const NULL_PAYMENT_PLUGIN_INIT_FUNCTION: &'static str = "nullpay_init";
 
     mod load {
         use super::*;

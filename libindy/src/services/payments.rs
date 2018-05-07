@@ -78,7 +78,7 @@ impl PaymentsService {
 
         let config = CString::new(config)?;
 
-        let err = create_address(cmd_handle, config.as_ptr(), wallet_handle, cbs::create_address_cb(cmd_handle, wallet_handle));
+        let err = create_address(cmd_handle, wallet_handle, config.as_ptr(), cbs::create_address_cb(cmd_handle, wallet_handle));
 
         PaymentsService::consume_result(err)
     }

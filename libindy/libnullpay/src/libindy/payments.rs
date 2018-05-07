@@ -8,15 +8,15 @@ pub type IndyPaymentCallback = extern fn(command_handle_: i32,
                                                 payment_address: *const c_char) -> ErrorCode;
 
 pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
-                                            config: *const c_char,
                                             wallet_handle: i32,
+                                            config: *const c_char,
                                             cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type AddRequestFeesCB = extern fn(command_handle: i32,
+                                      wallet_handle: i32,
                                       req_json: *const c_char,
                                       inputs_json: *const c_char,
                                       outputs_json: *const c_char,
-                                      wallet_handle: i32,
                                       cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
@@ -24,8 +24,8 @@ pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
                                              cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type BuildGetUTXORequestCB = extern fn(command_handle: i32,
-                                           payment_address: *const c_char,
                                            wallet_handle: i32,
+                                           payment_address: *const c_char,
                                            cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type ParseGetUTXOResponseCB = extern fn(command_handle: i32,
@@ -33,9 +33,9 @@ pub type ParseGetUTXOResponseCB = extern fn(command_handle: i32,
                                             cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type BuildPaymentReqCB = extern fn(command_handle: i32,
+                                       wallet_handle: i32,
                                        inputs_json: *const c_char,
                                        outputs_json: *const c_char,
-                                       wallet_handle: i32,
                                        cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
@@ -43,13 +43,13 @@ pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
                                             cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type BuildMintReqCB = extern fn(command_handle: i32,
-                                    outputs_json: *const c_char,
                                     wallet_handle: i32,
+                                    outputs_json: *const c_char,
                                     cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
-                                          fees_json: *const c_char,
                                           wallet_handle: i32,
+                                          fees_json: *const c_char,
                                           cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type BuildGetTxnFeesReqCB = extern fn(command_handle: i32,

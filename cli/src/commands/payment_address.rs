@@ -126,7 +126,7 @@ pub mod tests {
             }
             let addresses = get_payment_addresses(wallet_handle);
             assert_eq!(1, addresses.len());
-            assert!(addresses[0].starts_with("pay:null_payment:"));
+            assert!(addresses[0].starts_with("pay:null:"));
 
             close_and_delete_wallet(&ctx);
         }

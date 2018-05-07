@@ -30,8 +30,8 @@ use utils::cstring::CStringUtils;
 /// #Returns
 /// payment_address - public identifier of payment address in fully resolvable payment address format
 pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
-                                            config: *const c_char,
                                             wallet_handle: i32,
+                                            config: *const c_char,
                                             cb: Option<extern fn(command_handle_: i32,
                                                                  err: ErrorCode,
                                                                  payment_address: *const c_char) -> ErrorCode>) -> ErrorCode;
