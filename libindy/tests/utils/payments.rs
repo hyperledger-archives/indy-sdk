@@ -72,4 +72,19 @@ impl PaymentsUtils {
         );
         super::results::result_to_string_string(err, receiver)
     }
+
+    pub fn build_payment_req(wallet_handle: i32, inputs_json: &str, outputs_json: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
+
+        let inputs_json = CString::new(inputs_json).unwrap();
+        let outputs_json = CString::new(outputs_json).unwrap();
+
+        let err = indy_build_payment_req(cmd_handle,
+                                         wallet_handle,
+                                         inputs_json.as_ptr(),
+                                         outputs_json.as_ptr(),
+                                         cb
+        );
+        super::results::result_to_string_string(err, receiver)
+    }
 }

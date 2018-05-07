@@ -134,10 +134,17 @@ pub mod build_payment_req {
 
     mocked_handler!(inputs_json: *const c_char, outputs_json: *const c_char, wallet_handle: i32);
 
-    fn handle(cmd_handle: i32, _inputs_json: *const c_char, outputs_json: *const c_char, _wallet_handle: i32, cb: IndyPaymentCallback) -> ErrorCode {
-        let res = outputs_json;
-        let err = ErrorCode::Success;
-        (cb)(cmd_handle, err, res)
+    fn handle(cmd_handle: i32, _inputs_json: *const c_char, _outputs_json: *const c_char, _wallet_handle: i32, cb: IndyPaymentCallback) -> ErrorCode {
+        let submitter_did = CString::new("Th7MpTaRZVRYnPiabds81Y").unwrap();
+        let submitter_did = submitter_did.to_str().unwrap();
+        ledger::build_get_txn_request(
+            submitter_did,
+            1,
+            Box::new(move |ec, res| {
+                let res = CString::new(res).unwrap();
+                cb(cmd_handle, ec, res.as_ptr());
+            })
+        )
     }
 }
 

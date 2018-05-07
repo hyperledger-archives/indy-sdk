@@ -9,7 +9,6 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use services::wallet::WalletService;
-use std::collections::HashSet;
 use errors::common::CommonError;
 use std::vec::Vec;
 use std::string::String;
@@ -131,7 +130,7 @@ impl PaymentsCommandExecutor {
                 self.create_address(wallet_handle, &type_, &config, cb);
             }
             PaymentsCommand::CreateAddressAck(handle, wallet_handle, result) => {
-                self.create_address_ack(handle, wallet_handle,result);
+                self.create_address_ack(handle, wallet_handle, result);
             }
             PaymentsCommand::ListAddresses(wallet_handle, cb) => {
                 self.list_addresses(wallet_handle, cb);
@@ -273,7 +272,7 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "ParseResponseWithFeesFeesAck")
     }
 
-    fn build_get_utxo_request(&self, payment_address: &str, wallet_handle: i32, cb: Box<Fn(Result<(String,String), IndyError>) + Send>) {
+    fn build_get_utxo_request(&self, payment_address: &str, wallet_handle: i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         match self.payments_service.parse_method_from_payment_address(payment_address) {
             Ok(method) => {
                 let method_copy = method.to_string();
@@ -299,7 +298,12 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "ParseGetUtxoResponseAck")
     }
 
-    fn build_payment_req(&self, inputs: &str, outputs: &str, wallet_handle:i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+    fn build_payment_req(&self, inputs: &str, outputs: &str, wallet_handle: i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        match self.wallet_service.check(wallet_handle) {
+            Ok(_) => (),
+            Err(err) => return cb(Err(IndyError::from(err)))
+        };
+
         match self.payments_service.parse_method_from_inputs_outputs(inputs, outputs) {
             Ok(type_) => {
                 let type_copy = type_.to_string();
@@ -341,7 +345,7 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "BuildMintReqAck");
     }
 
-    fn build_set_txn_fees_req(&self, type_: &str, fees: &str, wallet_handle:i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+    fn build_set_txn_fees_req(&self, type_: &str, fees: &str, wallet_handle: i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
         self.process_method(cb, &|i| self.payments_service.build_set_txn_fees_req(i, type_, fees, wallet_handle))
     }
 
@@ -349,7 +353,7 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "BuildSetTxnFeesReq");
     }
 
-    fn build_get_txn_fees_req(&self, type_: &str, wallet_handle:i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+    fn build_get_txn_fees_req(&self, type_: &str, wallet_handle: i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
         self.process_method(cb, &|i| self.payments_service.build_get_txn_fees_req(i, type_, wallet_handle))
     }
 
