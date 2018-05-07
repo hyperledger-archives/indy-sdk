@@ -27,7 +27,7 @@ pub struct PaymentsMethod {
     build_mint_req: BuildMintReqCB,
     build_set_txn_fees_req: BuildSetTxnFeesReqCB,
     build_get_txn_fees_req: BuildGetTxnFeesReqCB,
-    parse_get_txn_fees_response: ParseGetTxnFeesResponseCB
+    parse_get_txn_fees_response: ParseGetTxnFeesResponseCB,
 }
 
 pub type PaymentsMethodCBs = PaymentsMethod;
@@ -55,7 +55,7 @@ impl PaymentsMethodCBs {
             build_mint_req,
             build_set_txn_fees_req,
             build_get_txn_fees_req,
-            parse_get_txn_fees_response
+            parse_get_txn_fees_response,
         }
     }
 }
@@ -113,7 +113,6 @@ impl PaymentsService {
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_get_utxo_request;
 
         let address = CString::new(address)?;
-        warn!("Before call");
         let err = build_get_utxo_request(cmd_handle, address.as_ptr(), wallet_handle, cbs::build_get_utxo_request_cb(cmd_handle));
 
         PaymentsService::consume_result(err)
@@ -221,14 +220,27 @@ impl PaymentsService {
     fn _parse_method_from_inputs_outputs(&self, json: &str, unwrapper: Box<Fn(serde_json::Value) -> Option<String> + Send>) -> Result<HashSet<String>, PaymentsError> {
         let inputs_json: Vec<serde_json::Value> = serde_json::from_str(json)
             .map_err(|err| PaymentsError::CommonError(CommonError::InvalidStructure(format!("Cannot deserialize Inputs {:?}", err))))?;
-        Ok(inputs_json.into_iter()
-            .filter_map(|v| unwrapper(v))
-            .filter_map(|input_str| self._parse_method_from_payment_address(input_str.as_str()))
-            .collect())
+        let res: Vec<Option<String>> = inputs_json.into_iter()
+            .map(|v| unwrapper(v))
+            .collect();
+        if res.contains(&None) {
+            return Err(PaymentsError::CommonError(CommonError::InvalidStructure(format!("Json contains malformed values: {}", json))));
+        }
+        let res: Vec<Option<String>> = res.into_iter()
+            .map(|input_str| self._parse_method_from_payment_address(input_str?.as_str()))
+            .collect();
+        if res.contains(&None) {
+            return Err(PaymentsError::CommonError(CommonError::InvalidStructure(format!("Json contains incorrect payment address: {}", json))));
+        }
+        Ok(res.into_iter().map(|o| o.unwrap()).collect())
     }
 
     fn _parse_method_from_payment_address(&self, address: &str) -> Option<String> {
-        address.split(":").nth(1).map(|s| s.to_string())
+        let res: Vec<&str> = address.split(":").collect();
+        match res.len() {
+            3 => res.get(1).map(|s| s.to_string()),
+            _ => None
+        }
     }
 
     pub fn parse_method_from_payment_address(&self, address: &str) -> Result<String, PaymentsError> {
