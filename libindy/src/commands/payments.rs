@@ -236,7 +236,7 @@ impl PaymentsCommandExecutor {
                 let list_addresses = vec.iter()
                     .map(
                         |&(ref key, _)| {
-                            key.matches("pay_addr::(.*)").next().unwrap().to_string()
+                            key.split("::").nth(1).unwrap().to_string()
                         })
                     .collect::<Vec<String>>();
                 let json_string =

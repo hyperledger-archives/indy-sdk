@@ -1,4 +1,4 @@
-extern crate nullpaymentplugin;
+extern crate nullpay;
 
 use indy::api::ErrorCode;
 use indy::api::payments::*;
@@ -6,7 +6,7 @@ use std::ffi::CString;
 use std::sync::{Once, ONCE_INIT};
 use utils::callback::CallbackUtils;
 use utils::test::TestUtils;
-use self::nullpaymentplugin::payments::payment_callbacks::init;
+use self::nullpay::nullpay_init;
 
 pub struct PaymentsUtils {}
 
@@ -19,7 +19,7 @@ impl PaymentsUtils {
     pub fn create_payment_method() {
         CREATE_PAYMENT_METHOD_INIT.call_once(|| {
             TestUtils::cleanup_storage();
-            init();
+            nullpay_init();
         });
     }
 
@@ -42,6 +42,8 @@ impl PaymentsUtils {
             wallet_handle,
             cb
         );
-        super::results::result_to_string(errc, receiver)
+        super::results::result_to_string(ec, receiver)
     }
+
+//    pub fn
 }
