@@ -33,7 +33,7 @@ interoperability_tests = []
 revocation_tests = []
 
 [dependencies]
-indy-crypto = { version = "=0.4.0", optional = true }
+indy-crypto = { git="https://github.com/jovfer/indy-crypto.git", branch="hotfix/key_correctness_proof_representation", optional = true }
 int_traits = { version = "0.1.1", optional = true }
 digest = "0.6.2"
 env_logger = "0.4.2"
