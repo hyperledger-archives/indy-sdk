@@ -72,31 +72,31 @@ impl WalletCommandExecutor {
             WalletCommand::RegisterWalletType(xtype, create, open, set, get,
                                               get_not_expired, list, close, delete, free, cb) => {
                 info!(target: "wallet_command_executor", "RegisterWalletType command received");
-                self.register_type(&xtype, create, open, set,
-                                   get, get_not_expired, list, close, delete, free, cb);
+                cb(self.register_type(&xtype, create, open, set,
+                                      get, get_not_expired, list, close, delete, free));
             }
             WalletCommand::Create(pool_name, name, xtype, config, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Create command received");
-                self.create(&pool_name, &name, xtype.as_ref().map(String::as_str),
-                            config.as_ref().map(String::as_str),
-                            credentials.as_ref().map(String::as_str), cb);
+                cb(self.create(&pool_name, &name, xtype.as_ref().map(String::as_str),
+                               config.as_ref().map(String::as_str),
+                               credentials.as_ref().map(String::as_str)));
             }
             WalletCommand::Open(name, runtime_config, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Open command received");
-                self.open(&name, runtime_config.as_ref().map(String::as_str),
-                          credentials.as_ref().map(String::as_str), cb);
+                cb(self.open(&name, runtime_config.as_ref().map(String::as_str),
+                             credentials.as_ref().map(String::as_str)));
             }
             WalletCommand::Close(handle, cb) => {
                 info!(target: "wallet_command_executor", "Close command received");
-                self.close(handle, cb);
+                cb(self.close(handle));
             }
             WalletCommand::ListWallets(cb) => {
                 info!(target: "wallet_command_executor", "ListWallets command received");
-                self.list_wallets(cb);
+                cb(self.list_wallets());
             }
             WalletCommand::Delete(name, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Delete command received");
-                self.delete(&name, credentials.as_ref().map(String::as_str), cb);
+                cb(self.delete(&name, credentials.as_ref().map(String::as_str)));
             }
         };
     }
@@ -128,15 +128,14 @@ impl WalletCommandExecutor {
                                        config: *const c_char,
                                        credentials: *const c_char) -> ErrorCode,
                      free: extern fn(wallet_handle: i32,
-                                     value: *const c_char) -> ErrorCode,
-                     cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self
-            .wallet_service
-            .register_type(
-                xtype, create, open, set,
-                get, get_not_expired,
-                list, close, delete, free)
-            .map_err(IndyError::from));
+                                     value: *const c_char) -> ErrorCode) -> Result<(), IndyError> {
+        debug!("register_type >>> xtype: {:?}", xtype);
+
+        let res = self.wallet_service.register_type(xtype, create, open, set, get, get_not_expired, list, close, delete, free)?;
+
+        debug!("register_type << res: {:?}", res);
+
+        Ok(res)
     }
 
     fn create(&self,
@@ -144,43 +143,63 @@ impl WalletCommandExecutor {
               name: &str,
               xtype: Option<&str>,
               config: Option<&str>,
-              credentials: Option<&str>,
-              cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self.wallet_service.create(pool_name, xtype, name, config, credentials)
-            .map_err(|err| IndyError::WalletError(err)));
+              credentials: Option<&str>) -> Result<(), IndyError> {
+        debug!("create >>> pool_name: {:?}, name: {:?}, xtype: {:?}, config: {:?}, credentials: {:?}", pool_name, name, xtype, config, credentials);
+
+        let res = self.wallet_service.create(pool_name, xtype, name, config, credentials)?;
+
+        debug!("create << res: {:?}", res);
+
+        Ok(res)
     }
 
     fn open(&self,
             name: &str,
             runtime_config: Option<&str>,
-            credentials: Option<&str>,
-            cb: Box<Fn(Result<i32, IndyError>) + Send>) {
-        cb(self.wallet_service.open(name, runtime_config, credentials)
-            .map_err(|err| IndyError::WalletError(err)));
+            credentials: Option<&str>) -> Result<i32, IndyError> {
+        debug!("open >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
+
+        let res = self.wallet_service.open(name, runtime_config, credentials)?;
+
+        debug!("open << res: {:?}", res);
+
+        Ok(res)
     }
 
     fn close(&self,
-             handle: i32,
-             cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self.wallet_service.close(handle)
-            .map_err(|err| IndyError::WalletError(err)));
+             handle: i32) -> Result<(), IndyError> {
+        debug!("close >>> handle: {:?}", handle);
+
+        let res = self.wallet_service.close(handle)?;
+
+        debug!("close << res: {:?}", res);
+
+        Ok(res)
     }
 
-    fn list_wallets(&self, cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let result = self.wallet_service.list_wallets()
+    fn list_wallets(&self) -> Result<String, IndyError> {
+        debug!("list_wallets >>>");
+
+        let res = self.wallet_service.list_wallets()
             .and_then(|wallets|
                 serde_json::to_string(&wallets)
                     .map_err(|err|
-                        WalletError::CommonError(CommonError::InvalidState(format!("Can't serialize wallets list {}", err)))))
-            .map_err(IndyError::from);
-        cb(result)
+                        WalletError::CommonError(CommonError::InvalidState(format!("Can't serialize wallets list {}", err)))))?;
+
+        debug!("list_wallets << res: {:?}", res);
+
+        Ok(res)
     }
 
     fn delete(&self,
               handle: &str,
-              credentials: Option<&str>,
-              cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self.wallet_service.delete(handle, credentials)
-            .map_err(|err| IndyError::WalletError(err)));
+              credentials: Option<&str>) -> Result<(), IndyError> {
+        debug!("delete >>> handle: {:?}, credentials: {:?}", handle, credentials);
+
+        let res = self.wallet_service.delete(handle, credentials)?;
+
+        debug!("delete << res: {:?}", res);
+
+        Ok(res)
     }
 }

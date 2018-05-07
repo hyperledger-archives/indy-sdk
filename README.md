@@ -5,22 +5,20 @@ which provides a distributed-ledger-based foundation for [self-sovereign identit
 The major artifact of the SDK is a c-callable
 library; there are also convenience wrappers for various programming languages and Indy CLI tool.
 
-* All bugs, stories, and backlog for this project are managed through [Hyperledger's Jira](https://jira.hyperledger.org/secure/RapidBoard.jspa)
-in project IS
-* Also, make sure to join
-us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to discuss. You will need a Linux Foundation login to get access to both Jira and Rocket.Chat
-* If you are interested in contributing to the SDK, please see our [contributor resources](doc/contributor-resources.md).
-* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/projects/indy).
+All bugs, stories, and backlog for this project are managed through [Hyperledger's Jira](https://jira.hyperledger.org/secure/RapidBoard.jspa)
+in project IS (note that regular Indy tickets are in the INDY project instead...). Also, make sure to join
+us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to discuss. You will need a Linux Foundation login to get access to these channels
 
+## Understanding Hyperledger Indy
 
-## Introduction to Hyperledger Indy
-
-If you have just started learning about self-sovereign identity and the Indy project, here are some resources to increase your understanding:
+If you have just started learning about self-sovereign identity, here are some resources to increase your understanding:
 
 * This extended tutorial introduces Indy, explains how the whole ecosystem works, and how the
 functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-Started Guide](doc/getting-started/getting-started.md)
 
 * A recent webinar explaining self-sovereign identity using Hyperledger Indy and Sovrin: [SSI Meetup Webinar](https://youtu.be/RllH91rcFdE?t=4m30s)
+
+* Visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/projects/indy).
 
 * You may also want to look at the [older guide](https://github.com/hyperledger/indy-node/blob/stable/getting-started.md)
 that explored the ecosystem via command line. That material is being
@@ -40,16 +38,16 @@ are also available. See the [doc/how-tos](doc/how-tos) folder.
 
 ## Installing the SDK
 ### Release channels
-Indy SDK release process defines the following release channels:
+The Indy SDK release process defines the following release channels:
 
 * `master` - development builds for each push to master branch.
 * `rc` - release candidates.
 * `stable` - stable releases.
 
-Please refer to [release workflow](doc/release-workflow.md) for more details.
+Please refer to our [release workflow](doc/release-workflow.md) for more details.
 
 ### Ubuntu based distributions (Ubuntu 16.04)
-It is recommended to install packages with APT:
+It is recommended to install the SDK packages with APT:
 
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
     sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial {release channel}"
@@ -57,13 +55,13 @@ It is recommended to install packages with APT:
     sudo apt-get install -y libindy
 
 {release channel} must be replaced with master, rc or stable to define corresponded release channel.
-See section "Release channels" for more details.
+Please See the section "Release channels" above for more details.
 
 ### Windows
 
-1. follow to https://repo.sovrin.org/windows/libindy/{release-channel}.
-2. download last version of libindy.
-3. unzip archives to directory, where you want to save working library.
+1. Go to https://repo.sovrin.org/windows/libindy/{release-channel}.
+2. Download last version of libindy.
+3. Unzip archives to the directory where you want to save working library.
 4. After unzip you will get next structure of files:
 
 * `Your working directory`
@@ -94,7 +92,7 @@ See [wrapper iOS install documentation](wrappers/ios/README.md "How to install")
 Pre-built libraries are not provided for MacOS. Please look [here](doc/mac-build.md)
 for details on building from source for MacOS.
 
-After building `libindy`, add the path containing the library the `LD_LIBRARY_PATH` and
+ **Note:** After building `libindy`, add the path containing the library the `LD_LIBRARY_PATH` and
 `DYLD_LIBRARY_PATH` environment variables. This is necessary for dynamically linking
 your application with `libindy`. The dynamic linker will first check for the library in
 `LD_LIBRARY_PATH` if the library in your application doesn't include directory names.
@@ -118,15 +116,16 @@ After successfully compiling `libindy`, you will need to add the path containing
 * [MacOS](doc/mac-build.md)
 
 ## How to start local nodes pool with docker
+To test the SDK codebase with a virtual Indy node network, you can start a pool of local nodes using docker:
 
-Start local nodes pool on `127.0.0.1:9701-9708` with Docker:
+Start the pool of local nodes on `127.0.0.1:9701-9708` with Docker by running:
 
 ```
 docker build -f ci/indy-pool.dockerfile -t indy_pool .
 docker run -itd -p 9701-9708:9701-9708 indy_pool
 ```
 
- Dockerfile `ci/indy-pool.dockerfile` supports optional pool_ip param that allows
+ Dockerfile `ci/indy-pool.dockerfile` supports an optional pool_ip param that allows
  changing ip of pool nodes in generated pool configuration. The following commands
  allow to start local nodes pool in custom docker network and access this pool
  by custom ip in docker network:
