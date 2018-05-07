@@ -2,8 +2,7 @@ use std::collections::HashMap;
 use std::io::{Write,Read};
 
 use serde_json;
-use sodiumoxide::crypto::aead::xchacha20poly1305_ietf;
-use sodiumoxide::crypto::auth::hmacsha256;
+use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 
 use errors::wallet::WalletError;
 
@@ -20,7 +19,7 @@ pub(super) type Tags = HashMap<String, String>;
 
 #[derive(Debug, Default)]
 pub(super) struct Keys {
-   pub type__key: [u8; 32],
+   pub type_key: [u8; 32],
    pub name_key: [u8; 32],
    pub value_key: [u8; 32],
    pub item_hmac_key: [u8; 32],
@@ -34,7 +33,7 @@ impl Keys {
     pub fn new(keys_vector: Vec<u8>) -> Keys {
         let mut keys: Keys = Default::default();
 
-        keys.type__key.clone_from_slice(&keys_vector[0..32]);
+        keys.type_key.clone_from_slice(&keys_vector[0..32]);
         keys.name_key.clone_from_slice(&keys_vector[32..64]);
         keys.value_key.clone_from_slice(&keys_vector[64..96]);
         keys.item_hmac_key.clone_from_slice(&keys_vector[96..128]);
@@ -46,16 +45,16 @@ impl Keys {
     }
 
     pub fn gen_keys(master_key: [u8; 32]) -> Vec<u8>{
-        let xchacha20poly1305_ietf::Key(type__key) = xchacha20poly1305_ietf::gen_key();
-        let xchacha20poly1305_ietf::Key(name_key) = xchacha20poly1305_ietf::gen_key();
-        let xchacha20poly1305_ietf::Key(value_key) = xchacha20poly1305_ietf::gen_key();
-        let xchacha20poly1305_ietf::Key(item_hmac_key) = xchacha20poly1305_ietf::gen_key();
-        let xchacha20poly1305_ietf::Key(tag_name_key) = xchacha20poly1305_ietf::gen_key();
-        let xchacha20poly1305_ietf::Key(tag_value_key) = xchacha20poly1305_ietf::gen_key();
-        let xchacha20poly1305_ietf::Key(tags_hmac_key) = xchacha20poly1305_ietf::gen_key();
+        let type_key = ChaCha20Poly1305IETF::create_key();
+        let name_key = ChaCha20Poly1305IETF::create_key();
+        let value_key = ChaCha20Poly1305IETF::create_key();
+        let item_hmac_key = ChaCha20Poly1305IETF::create_key();
+        let tag_name_key = ChaCha20Poly1305IETF::create_key();
+        let tag_value_key = ChaCha20Poly1305IETF::create_key();
+        let tags_hmac_key = ChaCha20Poly1305IETF::create_key();
 
         let mut keys: Vec<u8> = Vec::new();
-        keys.extend_from_slice(&type__key);
+        keys.extend_from_slice(&type_key);
         keys.extend_from_slice(&name_key);
         keys.extend_from_slice(&value_key);
         keys.extend_from_slice(&item_hmac_key);
@@ -63,7 +62,7 @@ impl Keys {
         keys.extend_from_slice(&tag_value_key);
         keys.extend_from_slice(&tags_hmac_key);
 
-        return encrypt_as_not_searchable(&keys, master_key);
+        return ChaCha20Poly1305IETF::encrypt_as_not_searchable(&keys, &master_key);
     }
 }
 
@@ -104,38 +103,36 @@ impl Wallet {
     }
 
     pub fn add(&self, type_: &str, name: &str, value: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
-        let etype_ = encrypt_as_searchable(type_.as_bytes(), self.keys.type__key, self.keys.item_hmac_key);
-        let ename = encrypt_as_searchable(name.as_bytes(), self.keys.name_key, self.keys.item_hmac_key);
-        let xchacha20poly1305_ietf::Key(value_key) = xchacha20poly1305_ietf::gen_key();
-        let evalue = encrypt_as_not_searchable(value.as_bytes(), value_key);
-        let evalue_key = encrypt_as_not_searchable(&value_key, self.keys.value_key);
+        let etype_ = ChaCha20Poly1305IETF::encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
+        let ename = ChaCha20Poly1305IETF::encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
+        let value_key= ChaCha20Poly1305IETF::create_key();
+        let evalue = ChaCha20Poly1305IETF::encrypt_as_not_searchable(value.as_bytes(), &value_key);
+        let evalue_key = ChaCha20Poly1305IETF::encrypt_as_not_searchable(&value_key, &self.keys.value_key);
 
-        let etags = encrypt_tags(tags, self.keys.tag_name_key, self.keys.tag_value_key, self.keys.tags_hmac_key);
+        let etags = encrypt_tags(tags, &self.keys.tag_name_key, &self.keys.tag_value_key, &self.keys.tags_hmac_key);
 
         self.storage.add(&etype_, &ename, &evalue, &evalue_key, &etags)?;
         Ok(())
     }
 
     pub fn get(&self, type_: &str, name: &str, options: &str) -> Result<WalletRecord, WalletError> {
-        let etype_ = encrypt_as_searchable(type_.as_bytes(), self.keys.type__key, self.keys.item_hmac_key);
-        let ename = encrypt_as_searchable(name.as_bytes(), self.keys.name_key, self.keys.item_hmac_key);
+        let etype_ = ChaCha20Poly1305IETF::encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
+        let ename = ChaCha20Poly1305IETF::encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
 
         let result = self.storage.get(&etype_, &ename, options)?;
 
         let value = match result.value {
             None => None,
             Some(storage_value) => {
-                let value_key = decrypt(&storage_value.key, self.keys.value_key)?;
-                if value_key.len() != 32 {
+                let value_key = ChaCha20Poly1305IETF::decrypt(&storage_value.key, &self.keys.value_key)?;
+                if value_key.len() != ChaCha20Poly1305IETF::key_len() {
                     return Err(WalletError::EncryptionError("Value key is not right size".to_string()));
                 }
-                let mut vkey: [u8; 32] = Default::default();
-                vkey.copy_from_slice(&value_key);
-                Some(String::from_utf8(decrypt(&storage_value.data, vkey)?)?)
+                Some(String::from_utf8(ChaCha20Poly1305IETF::decrypt(&storage_value.data, &value_key)?)?)
             }
         };
 
-        let tags = match decrypt_tags(&result.tags, self.keys.tag_name_key, self.keys.tag_value_key)? {
+        let tags = match decrypt_tags(&result.tags, &self.keys.tag_name_key, &self.keys.tag_value_key)? {
             None => None,
             Some(tags) => Some(serde_json::to_string(&tags)?)
         };
@@ -144,8 +141,8 @@ impl Wallet {
     }
 
     pub fn delete(&self, type_: &str, name: &str) -> Result<(), WalletError> {
-        let etype_ = encrypt_as_searchable(type_.as_bytes(), self.keys.type__key, self.keys.item_hmac_key);
-        let ename = encrypt_as_searchable(name.as_bytes(), self.keys.name_key, self.keys.item_hmac_key);
+        let etype_ = ChaCha20Poly1305IETF::encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
+        let ename = ChaCha20Poly1305IETF::encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
 
         self.storage.delete(&etype_, &ename)?;
         Ok(())
@@ -154,7 +151,7 @@ impl Wallet {
     pub fn search<'a>(&'a self, type_: &str, query: &str, options: Option<&str>) -> Result<WalletIterator, WalletError> {
         let parsed_query = language::parse_from_json(query)?;
         let encrypted_query = encrypt_query(parsed_query, &self.keys);
-        let encrypted_type_ = encrypt_as_searchable(type_.as_bytes(), self.keys.type__key, self.keys.item_hmac_key);
+        let encrypted_type_ = ChaCha20Poly1305IETF::encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let storage_iterator = self.storage.search(&encrypted_type_, &encrypted_query, options)?;
         let wallet_iterator = WalletIterator::new(storage_iterator, &self.keys);
         Ok(wallet_iterator)
