@@ -141,7 +141,7 @@ impl Wallet {
     pub fn delete_tags(&mut self, type_: &str, name: &str, tag_names: &[String]) -> Result<(), WalletError> {
         let encrypted_type = ChaCha20Poly1305IETF::encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let encrypted_name = ChaCha20Poly1305IETF::encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
-        let encrypted_tag_names = encrypt_tag_names(tag_names, &self.keys.tag_name_key, &self.keys.tags_hmac_key)?;
+        let encrypted_tag_names = encrypt_tag_names(tag_names, &self.keys.tag_name_key, &self.keys.tags_hmac_key);
         self.storage.delete_tags(&encrypted_type, &encrypted_name, &encrypted_tag_names[..])?;
         Ok(())
     }

@@ -8,7 +8,7 @@ use super::storage::TagValue;
 use super::wallet::TagName;
 
 
-pub(super) fn encrypt_tag_names(tag_names: &[String], tag_name_key: &[u8], tags_hmac_key: &[u8]) -> Result<Vec<TagName>, WalletError> {
+pub(super) fn encrypt_tag_names(tag_names: &[String], tag_name_key: &[u8], tags_hmac_key: &[u8]) -> Vec<TagName> {
     let mut encrypted_tag_names = Vec::new();
 
     for name in tag_names {
@@ -21,7 +21,7 @@ pub(super) fn encrypt_tag_names(tag_names: &[String], tag_name_key: &[u8], tags_
         encrypted_tag_names.push(tag_name)
     }
 
-    Ok(encrypted_tag_names)
+    encrypted_tag_names
 }
 
 pub(super) fn encrypt_tags(tags: &HashMap<String, String>, tag_name_key: &[u8], tag_value_key: &[u8], tags_hmac_key: &[u8]) -> HashMap<Vec<u8>, TagValue> {
