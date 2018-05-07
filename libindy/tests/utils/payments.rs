@@ -16,13 +16,13 @@ lazy_static! {
 
 impl PaymentsUtils {
 
-    pub fn create_payment_method() {
+    pub fn init_nullpay_plugin() {
         CREATE_PAYMENT_METHOD_INIT.call_once(|| {
             TestUtils::cleanup_storage();
             nullpay_init();
         });
     }
-//
+
 //    pub fn inject_create_address_error(error: ErrorCode) {
 //        nullpay::create_payment_address::nullpay_injmock_create_payment_address(error, CString::new("").unwrap().as_ptr());
 //    }
