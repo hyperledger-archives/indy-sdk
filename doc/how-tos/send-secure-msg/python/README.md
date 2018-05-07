@@ -1,12 +1,12 @@
 # Send a Secure Message
 Indy-SDK Developer Walkthrough #3, Python Edition
 
-[ [Java](../java/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
+[ [Java](../../not-yet-written.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
 
 
 ## Prerequisites
 
-Setup your workstation and indy development virtual machine. See [prerequisites](../prerequisites.md).
+Setup your workstation and indy development virtual machine. See [prerequisites](../../prerequisites.md).
 
 ## Steps
 
