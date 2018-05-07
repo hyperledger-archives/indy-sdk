@@ -327,60 +327,62 @@ impl WalletService {
     }
 
     pub fn update_record_value(&self, wallet_handle: i32, type_: &str, name: &str, value: &str) -> Result<(), WalletError> {
-//        match self.wallets.borrow().get(&wallet_handle) {
-//            Some(wallet) => wallet.update_record_value(type_, name, value),
-//            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
-//        }
-        unimplemented!()
+        match self.wallets.borrow().get(&wallet_handle) {
+            Some(wallet) => wallet.update(type_, name, value),
+            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
+        }
     }
 
     pub fn update_indy_object<T>(&self, wallet_handle: i32, id: &str, object: &T) -> Result<String, IndyError> where T: JsonEncodable, T: NamedType {
-//        let type_ = T::short_type_name();
-//        match self.wallets.borrow().get(&wallet_handle) {
-//            Some(wallet) => {
-//                let object_json = object.to_json()
-//                    .map_err(map_err_trace!())
-//                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize {:?}: {:?}", type_, err)))?;
-//                wallet.update_record_value(&self.add_prefix(type_), id, &object_json)?;
-//                Ok(object_json)
-//            }
-//            None => Err(IndyError::WalletError(WalletError::InvalidHandle(wallet_handle.to_string())))
-//        }
-        unimplemented!()
+        let type_ = T::short_type_name();
+        match self.wallets.borrow().get(&wallet_handle) {
+            Some(wallet) => {
+                let object_json = object.to_json()
+                    .map_err(map_err_trace!())
+                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize {:?}: {:?}", type_, err)))?;
+                wallet.update(&self.add_prefix(type_), id, &object_json)?;
+                Ok(object_json)
+            }
+            None => Err(IndyError::WalletError(WalletError::InvalidHandle(wallet_handle.to_string())))
+        }
     }
 
     pub fn add_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tags_json: &str) -> Result<(), WalletError> {
-//        match self.wallets.borrow().get(&wallet_handle) {
-//            Some(wallet) => wallet.add_record_tags(type_, id, tags_json),
-//            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
-//        }
-        unimplemented!()
+        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
+            Some(wallet) => {
+                let tags: Tags = serde_json::from_str(tags_json)?;
+                wallet.add_tags(type_, name, &tags)
+            },
+            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
+        }
     }
 
     pub fn add_indy_record_tags<T>(&self, wallet_handle: i32, name: &str, tags_json: &str) -> Result<(), WalletError> where T: NamedType {
-//        self.add_record_tags(wallet_handle, &self.add_prefix(T::short_type_name()), id, tags_json)
-        unimplemented!()
+        self.add_record_tags(wallet_handle, &self.add_prefix(T::short_type_name()), name, tags_json)
     }
 
     pub fn update_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tags_json: &str) -> Result<(), WalletError> {
-//        match self.wallets.borrow().get(&wallet_handle) {
-//            Some(wallet) => wallet.update_record_tags(type_, id, tags_json),
-//            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
-//        }
-        unimplemented!()
+        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
+            Some(wallet) => {
+                let tags: Tags = serde_json::from_str(tags_json)?;
+                wallet.update_tags(type_, name, &tags)
+            },
+            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
+        }
     }
 
     pub fn update_indy_record_tags<T>(&self, wallet_handle: i32, name: &str, tags_json: &str) -> Result<(), WalletError> where T: NamedType {
-//        self.update_record_tags(wallet_handle, &self.add_prefix(T::short_type_name()), id, tags_json)
-        unimplemented!()
+        self.update_record_tags(wallet_handle, &self.add_prefix(T::short_type_name()), name, tags_json)
     }
 
     pub fn delete_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tag_names_json: &str) -> Result<(), WalletError> {
-//        match self.wallets.borrow().get(&wallet_handle) {
-//            Some(wallet) => wallet.delete_record_tags(type_, id, tag_names_json),
-//            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
-//        }
-        unimplemented!()
+        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
+            Some(wallet) => {
+                let tag_names: Vec<String> = serde_json::from_str(tag_names_json)?;
+                wallet.delete_tags(type_, name, &tag_names[..])
+            },
+            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
+        }
     }
 
     pub fn delete_record(&self, wallet_handle: i32, type_: &str, name: &str) -> Result<(), WalletError> {
@@ -458,29 +460,27 @@ impl WalletService {
         }
     }
 
-    pub fn upsert_indy_object<'a, T>(&self, wallet_handle: i32, id: &str, object: &T) -> Result<(), IndyError> where T: JsonEncodable,
+    pub fn upsert_indy_object<'a, T>(&self, wallet_handle: i32, name: &str, object: &T) -> Result<(), IndyError> where T: JsonEncodable,
                                                                                                                      T: JsonDecodable<'a>,
                                                                                                                      T: NamedType {
-//        if self.record_exists::<T>(wallet_handle, id)? {
-//            self.update_indy_object::<T>(wallet_handle, id, object)?
-//        } else {
-//            self.add_indy_object::<T>(wallet_handle, id, object, "{}")?
-//        };
-//        Ok(())
-        unimplemented!()
+        if self.record_exists::<T>(wallet_handle, name)? {
+            self.update_indy_object::<T>(wallet_handle, name, object)?
+        } else {
+            self.add_indy_object::<T>(wallet_handle, name, object, "{}")?
+        };
+        Ok(())
     }
 
-    pub fn record_exists<T>(&self, wallet_handle: i32, id: &str) -> Result<bool, WalletError> where T: NamedType {
-//        match self.wallets.borrow().get(&wallet_handle) {
-//            Some(wallet) =>
-//                match wallet.get(&self.add_prefix(T::short_type_name()), id, &RecordOptions::id()) {
-//                    Ok(_) => Ok(true),
-//                    Err(WalletError::NotFound(_)) => Ok(false),
-//                    Err(err) => Err(err),
-//                }
-//            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
-//        }
-        unimplemented!()
+    pub fn record_exists<T>(&self, wallet_handle: i32, name: &str) -> Result<bool, WalletError> where T: NamedType {
+        match self.wallets.borrow().get(&wallet_handle) {
+            Some(wallet) =>
+                match wallet.get(&self.add_prefix(T::short_type_name()), name, &RecordOptions::id()) {
+                    Ok(_) => Ok(true),
+                    Err(WalletError::NotFound(_)) => Ok(false),
+                    Err(err) => Err(err),
+                }
+            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
+        }
     }
 
     pub const PREFIX: &'static str = "Indy::";
@@ -645,6 +645,14 @@ mod tests {
 //    use std::time::Duration;
 //    use std::thread;
 //
+
+    fn _fetch_options(type_: bool, value: bool, tags: bool) -> String {
+        let mut map = HashMap::new();
+        map.insert("fetch_type", type_);
+        map.insert("fetch_value", value);
+        map.insert("fetch_tags", tags);
+        serde_json::to_string(&map).unwrap()
+    }
 
     fn _credentials() -> String {
         String::from(r#"{"key":"MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=", "storage_credentials": {}}"#)
@@ -946,7 +954,7 @@ mod tests {
         let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", "{}").unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &RecordOptions::id()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, false, false)).unwrap();
         assert!(record.get_value().is_none());
 //        assert!(record.get_type().is_none()); // TODO - fix when FetchOptions are moved from storage layer to wallet layer
         assert!(record.get_tags().is_none());
@@ -961,7 +969,7 @@ mod tests {
         let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", "{}").unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &RecordOptions::id_value()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false)).unwrap();
         assert_eq!("value1", record.get_value().unwrap());
 //        assert!(record.get_type().is_none()); // TODO - fix when FetchOptions are moved from storage layer to wallet layer
         assert!(record.get_tags().is_none());
@@ -976,7 +984,7 @@ mod tests {
         let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", r#"{"1":"some"}"#).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &RecordOptions::full()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
         assert_eq!("type", record.get_type().unwrap());
         assert_eq!("value1", record.get_value().unwrap());
         assert_eq!(r#"{"1":"some"}"#, record.get_tags().unwrap());
@@ -1025,7 +1033,7 @@ mod tests {
         wallet_service.close_wallet(wallet_handle).unwrap();
 
         let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &RecordOptions::id_value()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false)).unwrap();
         assert_eq!("value1", record.get_value().unwrap());
     }
 
@@ -1037,7 +1045,7 @@ mod tests {
         wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
         let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
 
-        let res = wallet_service.get_record(wallet_handle, "type", "key1", &RecordOptions::id_value());
+        let res = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false));
 
         assert_match!(Err(WalletError::ItemNotFound), res);
     }
@@ -1127,7 +1135,175 @@ mod tests {
 //    //        TestUtils::cleanup_indy_home();
 //    //        InmemWallet::cleanup();
 //    //    }
-//
+
+    /**
+     * Update tests
+    */
+
+    #[test]
+    fn wallet_service_update() {
+        _cleanup();
+        let type_ = "type";
+        let name = "name";
+        let value = "value";
+        let new_value = "new_value";
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, type_, name, value, "{}").unwrap();
+        let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
+        assert_eq!(value, record.get_value().unwrap());
+        wallet_service.update_record_value(wallet_handle, type_, name, new_value).unwrap();
+        let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
+        assert_eq!(new_value, record.get_value().unwrap());
+    }
+
+    /**
+     * Delete tests
+    */
+
+    #[test]
+    fn wallet_service_delete_record() {
+        _cleanup();
+        let type_ = "type";
+        let name = "name";
+        let value = "value";
+        let new_value = "new_value";
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, type_, name, value, "{}").unwrap();
+        let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
+        assert_eq!(value, record.get_value().unwrap());
+        wallet_service.delete_record(wallet_handle, type_, name).unwrap();
+        let res = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false));
+        assert_match!(Err(WalletError::ItemNotFound), res);
+    }
+
+
+    /**
+     * Add tags tests
+     */
+
+    #[test]
+    fn wallet_service_add_tags() {
+        _cleanup();
+        let type_ = "type";
+        let name = "name";
+        let value = "value";
+        let wallet_service = WalletService::new();
+        let mut tags: Tags = HashMap::new();
+        let tag_name_1 = "tag_name_1";
+        let tag_value_1 = "tag_value_1";
+        tags.insert(tag_name_1.to_string(), tag_value_1.to_string());
+        let tags_json = serde_json::to_string(&tags).unwrap();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, type_, name, value, &tags_json).unwrap();
+
+        let mut new_tags: Tags = HashMap::new();
+        let tag_name_2 = "tag_name_2";
+        let tag_value_2 = "tag_value_2";
+        let tag_name_3 = "~tag_name_3";
+        let tag_value_3 = "tag_value_3";
+        new_tags.insert(tag_name_2.to_string(), tag_value_2.to_string());
+        new_tags.insert(tag_name_3.to_string(),tag_value_3.to_string());
+        let new_tags_json = serde_json::to_string(&new_tags).unwrap();
+        wallet_service.add_record_tags(wallet_handle, type_, name, &new_tags_json).unwrap();
+
+        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
+        let mut expected_tags = new_tags.clone();
+        expected_tags.insert(tag_name_1.to_string(), tag_value_1.to_string());
+        let retrieved_tags = item.tags.unwrap();
+        let retrieved_tags: Tags = serde_json::from_str(&retrieved_tags).unwrap();
+        assert_eq!(expected_tags, retrieved_tags);
+    }
+
+    /**
+     * Update tags tests
+     */
+
+    #[test]
+    fn wallet_service_update_tags() {
+        _cleanup();
+        let type_ = "type";
+        let name = "name";
+        let value = "value";
+        let wallet_service = WalletService::new();
+        let mut tags: Tags = HashMap::new();
+        let tag_name_1 = "tag_name_1";
+        let tag_value_1 = "tag_value_1";
+        let tag_name_2 = "tag_name_2";
+        let tag_value_2 = "tag_value_2";
+        let tag_name_3 = "~tag_name_3";
+        let tag_value_3 = "tag_value_3";
+        tags.insert(tag_name_1.to_string(), tag_value_1.to_string());
+        tags.insert(tag_name_2.to_string(), tag_value_2.to_string());
+        tags.insert(tag_name_3.to_string(), tag_value_3.to_string());
+        let tags_json = serde_json::to_string(&tags).unwrap();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, type_, name, value, &tags_json).unwrap();
+
+        let mut new_tags: Tags = HashMap::new();
+        let new_tag_value_2 = "new_tag_value_2";
+        let new_tag_value_3 = "new_tag_value_3";
+        new_tags.insert(tag_name_2.to_string(), new_tag_value_2.to_string());
+        new_tags.insert(tag_name_3.to_string(), new_tag_value_3.to_string());
+        let new_tags_json = serde_json::to_string(&new_tags).unwrap();
+        wallet_service.update_record_tags(wallet_handle, type_, name, &new_tags_json).unwrap();
+
+        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
+        let mut expected_tags = new_tags.clone();
+        expected_tags.insert(tag_name_1.to_string(), tag_value_1.to_string());
+        let retrieved_tags = item.tags.unwrap();
+        let retrieved_tags: Tags = serde_json::from_str(&retrieved_tags).unwrap();
+        assert_eq!(expected_tags, retrieved_tags);
+    }
+
+    /**
+     * Delete tags tests
+     */
+
+    #[test]
+    fn wallet_service_delete_tags() {
+        _cleanup();
+        let type_ = "type";
+        let name = "name";
+        let value = "value";
+        let wallet_service = WalletService::new();
+        let mut tags: Tags = HashMap::new();
+        let tag_name_1 = "tag_name_1";
+        let tag_value_1 = "tag_value_1";
+        let tag_name_2 = "tag_name_2";
+        let tag_value_2 = "tag_value_2";
+        let tag_name_3 = "~tag_name_3";
+        let tag_value_3 = "tag_value_3";
+        tags.insert(tag_name_1.to_string(), tag_value_1.to_string());
+        tags.insert(tag_name_2.to_string(), tag_value_2.to_string());
+        tags.insert(tag_name_3.to_string(), tag_value_3.to_string());
+        let tags_json = serde_json::to_string(&tags).unwrap();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, type_, name, value, &tags_json).unwrap();
+
+        let tag_names = r##"["tag_name_1", "~tag_name_3"]"##;
+        wallet_service.delete_record_tags(wallet_handle, type_, name, tag_names).unwrap();
+
+        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
+        let mut expected_tags = HashMap::new();
+        expected_tags.insert(tag_name_2.to_string(), tag_value_2.to_string());
+        let retrieved_tags = item.tags.unwrap();
+        let retrieved_tags: Tags = serde_json::from_str(&retrieved_tags).unwrap();
+        assert_eq!(expected_tags, retrieved_tags);
+    }
+
+
 //    #[test]
 //    fn wallet_service_search_records_works() {
 //        TestUtils::cleanup_indy_home();

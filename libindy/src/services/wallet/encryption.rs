@@ -6,6 +6,7 @@ use sodiumoxide::crypto::auth::hmacsha256;
 use errors::wallet::WalletError;
 
 use super::storage::TagValue;
+use super::wallet::TagName;
 
 
 pub(super) fn encrypt_as_searchable(data: &[u8], key1: [u8; 32], key2: [u8; 32]) -> Vec<u8> {
@@ -41,6 +42,22 @@ pub(super) fn decrypt(enc_text: &Vec<u8>, key1: [u8; 32]) -> Result<Vec<u8>, Wal
     }
 }
 
+pub(super) fn encrypt_tag_names(tag_names: &[String], tag_name_key: [u8; 32], tags_hmac_key: [u8; 32]) -> Result<Vec<TagName>, WalletError> {
+    let mut encrypted_tag_names = Vec::new();
+
+    for name in tag_names {
+        let encrypted_name = encrypt_as_searchable(name.as_bytes(), tag_name_key, tags_hmac_key);
+        let tag_name = if name.chars().next() == Some('~') {
+            TagName::OfPlain(encrypted_name)
+        } else {
+            TagName::OfEncrypted(encrypted_name)
+        };
+        encrypted_tag_names.push(tag_name)
+    }
+
+    Ok(encrypted_tag_names)
+}
+
 pub(super) fn encrypt_tags(tags: &HashMap<String, String>, tag_name_key: [u8; 32], tag_value_key: [u8; 32], tags_hmac_key: [u8; 32]) -> HashMap<Vec<u8>, TagValue> {
     let mut etags: HashMap<Vec<u8>, TagValue> = HashMap::new();
 
@@ -70,8 +87,7 @@ pub(super) fn decrypt_tags(etags: &Option<HashMap<Vec<u8>, TagValue>>, tag_name_
 
                 let tag_value = match etag_value {
                     &&TagValue::Plain(ref plain_value) => plain_value.clone(),
-                    &&TagValue::Encrypted(ref evalue) |
-                    &&TagValue::Meta(ref evalue) => match decrypt(&evalue, tag_value_key) {
+                    &&TagValue::Encrypted(ref evalue)  => match decrypt(&evalue, tag_value_key) {
                         Err(_) => return Err(WalletError::EncryptionError("Unable to decrypt tag value".to_string())),
                         Ok(tag_value) => String::from_utf8(tag_value)?
                     }

@@ -5,14 +5,13 @@ use std::collections::HashMap;
 
 use errors::wallet::WalletStorageError;
 use services::wallet::language;
-use services::wallet::wallet::WalletRuntimeConfig;
+use services::wallet::wallet::{TagName, WalletRuntimeConfig};
 
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TagValue {
     Encrypted(Vec<u8>),
     Plain(String),
-    Meta(Vec<u8>),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -25,7 +24,7 @@ pub struct StorageValue {
 pub struct StorageEntity {
     pub name: Vec<u8>,
     pub value: Option<StorageValue>,
-    pub class: Option<Vec<u8>>,
+    pub type_: Option<Vec<u8>>,
     pub tags: Option<HashMap<Vec<u8>, TagValue>>,
 }
 
@@ -39,11 +38,11 @@ impl StorageValue {
 }
 
 impl StorageEntity {
-    fn new(name: Vec<u8>, value: Option<StorageValue>, class: Option<Vec<u8>>, tags: Option<HashMap<Vec<u8>, TagValue>>) -> Self {
+    fn new(name: Vec<u8>, value: Option<StorageValue>, type_: Option<Vec<u8>>, tags: Option<HashMap<Vec<u8>, TagValue>>) -> Self {
         Self {
             name: name,
             value: value,
-            class: class,
+            type_: type_,
             tags: tags,
         }
     }
@@ -58,6 +57,10 @@ pub trait StorageIterator {
 pub trait WalletStorage {
     fn get(&self, type_: &Vec<u8>, name: &Vec<u8>, options: &str) -> Result<StorageEntity, WalletStorageError>;
     fn add(&self, type_: &Vec<u8>, name: &Vec<u8>, value: &Vec<u8>, value_key: &Vec<u8>, tags: &HashMap<Vec<u8>, TagValue>) -> Result<(), WalletStorageError>;
+    fn add_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tags: &HashMap<Vec<u8>, TagValue>) -> Result<(), WalletStorageError>;
+    fn update_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tags: &HashMap<Vec<u8>, TagValue>) -> Result<(), WalletStorageError>;
+    fn delete_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tag_names: &[TagName]) -> Result<(), WalletStorageError>;
+    fn update(&self, type_: &Vec<u8>, name: &Vec<u8>, value: &Vec<u8>, value_key: &Vec<u8>) -> Result<(), WalletStorageError>;
     fn delete(&self, type_: &Vec<u8>, name: &Vec<u8>) -> Result<(), WalletStorageError>;
     fn get_all<'a>(&'a self) -> Result<Box<StorageIterator + 'a>, WalletStorageError>;
     fn search<'a>(&'a self, type_: &Vec<u8>, query: &language::Operator, options: Option<&str>) -> Result<Box<StorageIterator + 'a>, WalletStorageError>;
