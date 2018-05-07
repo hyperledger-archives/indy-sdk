@@ -388,17 +388,25 @@ impl LedgerService {
 
         let reply: Reply<GetSchemaReplyResult> = LedgerService::parse_response(get_schema_response)?;
 
-        let id = Schema::schema_id(&reply.result.dest, &reply.result.data.name, &reply.result.data.version.clone());
+        let schema = match reply.result() {
+            GetSchemaReplyResult::GetSchemaReplyResultV0(res) => SchemaV1 {
+                name: res.data.name.clone(),
+                version: res.data.version.clone(),
+                attr_names: res.data.attr_names,
+                id: Schema::schema_id(&res.dest, &res.data.name, &res.data.version),
+                seq_no: Some(res.seq_no)
+            },
+            GetSchemaReplyResult::GetSchemaReplyResultV1(res) => SchemaV1 {
+                name: res.txn.data.schema_name,
+                version: res.txn.data.schema_version,
+                attr_names: res.txn.data.value.attr_names,
+                id: res.txn.data.id,
+                seq_no: Some(res.txn_metadata.seq_no)
+            }
+        };
 
-        let res = (id.clone(),
-                   Schema::SchemaV1(
-                       SchemaV1 {
-                           name: reply.result.data.name.clone(),
-                           version: reply.result.data.version.clone(),
-                           attr_names: reply.result.data.attr_names,
-                           id,
-                           seq_no: Some(reply.result.seq_no)
-                       })
+        let res = (schema.id.clone(),
+                   Schema::SchemaV1(schema)
                        .to_json()
                        .map_err(|err|
                            LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize Schema {:?}.", err))))?);
@@ -413,17 +421,25 @@ impl LedgerService {
 
         let reply: Reply<GetCredDefReplyResult> = LedgerService::parse_response(get_cred_def_response)?;
 
-        let cred_def_id = CredentialDefinition::cred_def_id(&reply.result.origin, &reply.result.ref_.to_string(), &reply.result.signature_type.to_str());
+        let cred_def = match reply.result() {
+            GetCredDefReplyResult::GetCredDefReplyResultV0(res) => CredentialDefinitionV1 {
+                id: CredentialDefinition::cred_def_id(&res.origin, &res.ref_.to_string(), &res.signature_type.to_str()),
+                schema_id: res.ref_.to_string(),
+                signature_type: res.signature_type,
+                tag: String::new(),
+                value: res.data
+            },
+            GetCredDefReplyResult::GetCredDefReplyResultV1(res) => CredentialDefinitionV1 {
+                id: res.txn.data.id,
+                schema_id: res.txn.data.schema_ref,
+                signature_type: res.txn.data.type_,
+                tag: res.txn.data.tag,
+                value: res.txn.data.public_keys
+            }
+        };
 
-        let res = (cred_def_id.clone(),
-                   CredentialDefinition::CredentialDefinitionV1(
-                       CredentialDefinitionV1 {
-                           id: cred_def_id,
-                           schema_id: reply.result.ref_.to_string(),
-                           signature_type: reply.result.signature_type,
-                           tag: String::new(),
-                           value: reply.result.data
-                       })
+        let res = (cred_def.id.clone(),
+                   CredentialDefinition::CredentialDefinitionV1(cred_def)
                        .to_json()
                        .map_err(|err|
                            LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize CredentialDefinition {:?}.", err))))?);
@@ -438,8 +454,13 @@ impl LedgerService {
 
         let reply: Reply<GetRevocRegDefReplyResult> = LedgerService::parse_response(get_revoc_reg_def_response)?;
 
-        let res = (reply.result.data.id.clone(),
-                   RevocationRegistryDefinition::RevocationRegistryDefinitionV1(reply.result.data)
+        let revoc_reg_def = match reply.result() {
+            GetRevocRegDefReplyResult::GetRevocRegDefReplyResultV0(res) => res.data,
+            GetRevocRegDefReplyResult::GetRevocRegDefReplyResultV1(res) => res.txn.data,
+        };
+
+        let res = (revoc_reg_def.id.clone(),
+                   RevocationRegistryDefinition::RevocationRegistryDefinitionV1(revoc_reg_def)
                        .to_json()
                        .map_err(|err|
                            LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDefinition {:?}.", err))))?);
@@ -454,12 +475,17 @@ impl LedgerService {
 
         let reply: Reply<GetRevocRegReplyResult> = LedgerService::parse_response(get_revoc_reg_response)?;
 
-        let res = (reply.result.revoc_reg_def_id,
-                   RevocationRegistry::RevocationRegistryV1(reply.result.data)
+        let (revoc_reg_def_id, revoc_reg, txn_time) = match reply.result() {
+            GetRevocRegReplyResult::GetRevocRegReplyResultV0(res) => (res.revoc_reg_def_id, res.data, res.txn_time),
+            GetRevocRegReplyResult::GetRevocRegReplyResultV1(res) => (res.txn.data.revoc_reg_def_id, res.txn.data.value, res.txn_metadata.creation_time),
+        };
+
+        let res = (revoc_reg_def_id,
+                   RevocationRegistry::RevocationRegistryV1(revoc_reg)
                        .to_json()
                        .map_err(|err|
                            LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistry {:?}.", err))))?,
-                   reply.result.txn_time);
+                   txn_time);
 
         info!("parse_get_revoc_reg_response <<< res: {:?}", res);
 
@@ -471,18 +497,23 @@ impl LedgerService {
 
         let reply: Reply<GetRevocRegDeltaReplyResult> = LedgerService::parse_response(get_revoc_reg_delta_response)?;
 
-        let res = (reply.result.revoc_reg_def_id.clone(),
+        let (revoc_reg_def_id, revoc_reg) = match reply.result() {
+            GetRevocRegDeltaReplyResult::GetRevocRegDeltaReplyResultV0(res) => (res.revoc_reg_def_id, res.data),
+            GetRevocRegDeltaReplyResult::GetRevocRegDeltaReplyResultV1(res) => (res.txn.data.revoc_reg_def_id, res.txn.data.value),
+        };
+
+        let res = (revoc_reg_def_id.clone(),
                    RevocationRegistryDelta::RevocationRegistryDeltaV1(
                        RevocationRegistryDeltaV1 {
-                           value: CryproRevocationRegistryDelta::from_parts(reply.result.data.value.accum_from.map(|accum| accum.value).as_ref(),
-                                                                            &reply.result.data.value.accum_to.value,
-                                                                            &reply.result.data.value.issued,
-                                                                            &reply.result.data.value.revoked)
+                           value: CryproRevocationRegistryDelta::from_parts(revoc_reg.value.accum_from.map(|accum| accum.value).as_ref(),
+                                                                            &revoc_reg.value.accum_to.value,
+                                                                            &revoc_reg.value.issued,
+                                                                            &revoc_reg.value.revoked)
                        })
                        .to_json()
                        .map_err(|err|
                            LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta {:?}.", err))))?,
-                   reply.result.data.value.accum_to.txn_time);
+                   revoc_reg.value.accum_to.txn_time);
 
         info!("parse_get_revoc_reg_delta_response <<< res: {:?}", res);
 
