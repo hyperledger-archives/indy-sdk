@@ -24,7 +24,7 @@ use errors::wallet::WalletError;
 use errors::common::CommonError;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
-use utils::crypto::chacha20poly1305_ietf::ChaCha20_Poly1305_IETF;
+use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 
 use self::storage::WalletStorageType;
 use self::storage::default::SQLiteStorageType;
@@ -268,7 +268,7 @@ impl WalletService {
         let (storage, enc_keys) = storage_type.open_storage(name,
                                                             config.as_ref().map(String::as_str),
                                                             &credentials.storage_credentials)?;
-        let key_vector = ChaCha20_Poly1305_IETF::decrypt(&enc_keys, &credentials.master_key)?;
+        let key_vector = ChaCha20Poly1305IETF::decrypt(&enc_keys, &credentials.master_key)?;
         let keys = Keys::new(key_vector);
         let wallet = Wallet::new(name, &descriptor.pool_name, storage, keys);
         let wallet_handle = SequenceUtils::get_next_id();

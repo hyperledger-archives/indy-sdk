@@ -6,7 +6,7 @@ use super::WalletRecord;
 use super::wallet::Keys;
 use super::storage::StorageIterator;
 use super::encryption::{decrypt_tags};
-use utils::crypto::chacha20poly1305_ietf::ChaCha20_Poly1305_IETF;
+use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 
 
 pub(super) struct WalletIterator<'a> {
@@ -26,17 +26,17 @@ impl<'a> WalletIterator<'a> {
     pub fn next(&mut self) -> Result<Option<WalletRecord>, WalletError> {
         let next_storage_entity = self.storage_iterator.next()?;
         if let Some(next_storage_entity) = next_storage_entity {
-            let decrypted_name = ChaCha20_Poly1305_IETF::decrypt(&next_storage_entity.name, &self.keys.name_key)?;
+            let decrypted_name = ChaCha20Poly1305IETF::decrypt(&next_storage_entity.name, &self.keys.name_key)?;
             let name = String::from_utf8(decrypted_name)?;
 
             let value = match next_storage_entity.value {
                 None => None,
                 Some(storage_value) => {
-                    let value_key = ChaCha20_Poly1305_IETF::decrypt(&storage_value.key, &self.keys.value_key)?;
-                    if value_key.len() != ChaCha20_Poly1305_IETF::key_len() {
+                    let value_key = ChaCha20Poly1305IETF::decrypt(&storage_value.key, &self.keys.value_key)?;
+                    if value_key.len() != ChaCha20Poly1305IETF::key_len() {
                         return Err(WalletError::EncryptionError("Value key is not right size".to_string()));
                     }
-                    Some(String::from_utf8(ChaCha20_Poly1305_IETF::decrypt(&storage_value.data, &value_key)?)?)
+                    Some(String::from_utf8(ChaCha20Poly1305IETF::decrypt(&storage_value.data, &value_key)?)?)
                 }
             };
 

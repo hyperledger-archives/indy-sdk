@@ -6,10 +6,10 @@ use self::sodiumoxide::crypto::aead::chacha20poly1305_ietf;
 use sodiumoxide::crypto::auth::hmacsha256;
 use utils::byte_array::_clone_into_array;
 
-pub struct ChaCha20_Poly1305_IETF {
+pub struct ChaCha20Poly1305IETF {
 }
 
-impl ChaCha20_Poly1305_IETF {
+impl ChaCha20Poly1305IETF {
     pub fn new() -> Self {
         Self {}
     }
@@ -85,21 +85,21 @@ mod tests {
     #[test]
     fn encrypt_as_searchable_decrypt_works() {
         let data = randombytes::randombytes(16);
-        let key = ChaCha20_Poly1305_IETF::create_key();
-        let hmac_key = ChaCha20_Poly1305_IETF::create_key();
+        let key = ChaCha20Poly1305IETF::create_key();
+        let hmac_key = ChaCha20Poly1305IETF::create_key();
 
-        let c = ChaCha20_Poly1305_IETF::encrypt_as_searchable(&data, &key, &hmac_key);
-        let u = ChaCha20_Poly1305_IETF::decrypt(&c, &key).unwrap();
+        let c = ChaCha20Poly1305IETF::encrypt_as_searchable(&data, &key, &hmac_key);
+        let u = ChaCha20Poly1305IETF::decrypt(&c, &key).unwrap();
         assert_eq!(data, u);
     }
 
     #[test]
     fn encrypt_as_not_searchable_decrypt_works() {
         let data = randombytes::randombytes(16);
-        let key = ChaCha20_Poly1305_IETF::create_key();
+        let key = ChaCha20Poly1305IETF::create_key();
 
-        let c = ChaCha20_Poly1305_IETF::encrypt_as_not_searchable(&data, &key);
-        let u = ChaCha20_Poly1305_IETF::decrypt(&c, &key).unwrap();
+        let c = ChaCha20Poly1305IETF::encrypt_as_not_searchable(&data, &key);
+        let u = ChaCha20Poly1305IETF::decrypt(&c, &key).unwrap();
         assert_eq!(data, u);
     }
 }
