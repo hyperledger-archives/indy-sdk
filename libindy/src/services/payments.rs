@@ -3,10 +3,12 @@ use api::ErrorCode;
 use errors::common::CommonError;
 use errors::payments::PaymentsError;
 
+use serde_json;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::error::Error;
 use std::ffi::{CString, NulError};
+use std::collections::HashSet;
 
 
 pub struct PaymentsService {
@@ -111,7 +113,7 @@ impl PaymentsService {
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_get_utxo_request;
 
         let address = CString::new(address)?;
-
+        warn!("Before call");
         let err = build_get_utxo_request(cmd_handle, address.as_ptr(), wallet_handle, cbs::build_get_utxo_request_cb(cmd_handle));
 
         PaymentsService::consume_result(err)
@@ -191,6 +193,49 @@ impl PaymentsService {
         let err = parse_get_txn_fees_response(cmd_handle, response.as_ptr(), cbs::parse_get_txn_fees_response(cmd_handle));
 
         PaymentsService::consume_result(err)
+    }
+
+    pub fn parse_method_from_inputs_outputs(&self, inputs: &str, outputs: &str) -> Result<String, PaymentsError> {
+        let unwrapper_inputs = move |json: serde_json::Value| json.as_str().map(|s| s.to_string());
+        let unwrapper_outputs = move |json: serde_json::Value|
+            match json.as_object()
+                .map(|obj|
+                    obj.get("paymentAddress")
+                        .map(|val|
+                            val.as_str()
+                                .map(|s| s.to_string()))) {
+                Some(Some(e)) => e,
+                _ => None
+            };
+
+        let from_inputs = self._parse_method_from_inputs_outputs(inputs, Box::new(unwrapper_inputs));
+        let from_outputs = self._parse_method_from_inputs_outputs(outputs, Box::new(unwrapper_outputs));
+
+        match (from_inputs.len(), from_outputs.len()) {
+            (1, 0) => Ok(from_inputs.into_iter().next().unwrap().to_string()),
+            (0, 1) => Ok(from_outputs.into_iter().next().unwrap().to_string()),
+            (1, 1) if from_inputs == from_outputs => Ok(from_outputs.into_iter().next().unwrap().to_string()),
+            _ => Err(PaymentsError::IncompatiblePaymentError("Incompatible inputs and outputs -- payment method cannot be determined".to_string()))
+        }
+    }
+
+    fn _parse_method_from_inputs_outputs(&self, json: &str, unwrapper: Box<Fn(serde_json::Value) -> Option<String> + Send>) -> HashSet<String> {
+        let inputs_json : Vec<serde_json::Value> = serde_json::from_str(json).unwrap();
+        inputs_json.into_iter()
+            .filter_map(|v| unwrapper(v))
+            .filter_map(|input_str| self._parse_method_from_payment_address(input_str.as_str()))
+            .collect()
+    }
+
+    fn _parse_method_from_payment_address(&self, address: &str) -> Option<String> {
+        address.split(":").nth(1).map(|s| s.to_string())
+    }
+
+    pub fn parse_method_from_payment_address (&self, address: &str) -> Result<String, PaymentsError> {
+        match self._parse_method_from_payment_address(address) {
+            Some(method) => Ok(method),
+            None => Err(PaymentsError::IncompatiblePaymentError("Wrong payment address -- no payment method found".to_string()))
+        }
     }
 
     fn consume_result(err: ErrorCode) -> Result<(), PaymentsError> {

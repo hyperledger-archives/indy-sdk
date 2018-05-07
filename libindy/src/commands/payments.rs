@@ -1,10 +1,10 @@
 extern crate libc;
-extern crate serde_json;
 
 use errors::indy::IndyError;
 use errors::payments::PaymentsError;
 use services::payments::{PaymentsMethodCBs, PaymentsService};
 
+use serde_json;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -249,7 +249,7 @@ impl PaymentsCommandExecutor {
     }
 
     fn add_request_fees(&self, req: &str, inputs: &str, outputs: &str, wallet_handle: i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        match PaymentsCommandExecutor::parse_method_from_inputs(inputs) {
+        match self.payments_service.parse_method_from_inputs_outputs(inputs, outputs) {
             Ok(type_) => {
                 let type_copy = type_.to_string();
                 self.process_method(
@@ -257,7 +257,7 @@ impl PaymentsCommandExecutor {
                     &|i| self.payments_service.add_request_fees(i, &type_copy, req, inputs, outputs, wallet_handle)
                 );
             }
-            Err(error) => cb(Err(error)),
+            Err(error) => cb(Err(IndyError::from(error))),
         };
     }
 
@@ -274,13 +274,17 @@ impl PaymentsCommandExecutor {
     }
 
     fn build_get_utxo_request(&self, payment_address: &str, wallet_handle: i32, cb: Box<Fn(Result<(String,String), IndyError>) + Send>) {
-        let method = payment_address.matches("[^:]+:([^:]+):.*").next().unwrap().to_string();
-        let method_copy = method.to_string();
+        match self.payments_service.parse_method_from_payment_address(payment_address) {
+            Ok(method) => {
+                let method_copy = method.to_string();
 
-        self.process_method(
-            Box::new(move |get_utxo_txn_json| cb(get_utxo_txn_json.map(|s| (s, method.to_string())))),
-            & |i| self.payments_service.build_get_utxo_request(i, &method_copy, payment_address, wallet_handle)
-        );
+                self.process_method(
+                    Box::new(move |get_utxo_txn_json| cb(get_utxo_txn_json.map(|s| (s, method.to_string())))),
+                    &|i| self.payments_service.build_get_utxo_request(i, &method_copy, payment_address, wallet_handle)
+                );
+            }
+            Err(err) => cb(Err(IndyError::from(err)))
+        }
     }
 
     fn build_get_utxo_request_ack(&self, cmd_handle: i32, result: Result<String, PaymentsError>) {
@@ -296,7 +300,7 @@ impl PaymentsCommandExecutor {
     }
 
     fn build_payment_req(&self, inputs: &str, outputs: &str, wallet_handle:i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        match PaymentsCommandExecutor::parse_method_from_inputs(inputs) {
+        match self.payments_service.parse_method_from_inputs_outputs(inputs, outputs) {
             Ok(type_) => {
                 let type_copy = type_.to_string();
                 self.process_method(
@@ -304,7 +308,7 @@ impl PaymentsCommandExecutor {
                     &|i| self.payments_service.build_payment_req(i, &type_copy, inputs, outputs, wallet_handle)
                 );
             }
-            Err(error) => cb(Err(error))
+            Err(error) => cb(Err(IndyError::from(error)))
         }
     }
 
@@ -321,7 +325,7 @@ impl PaymentsCommandExecutor {
     }
 
     fn build_mint_req(&self, outputs: &str, wallet_handle: i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        match PaymentsCommandExecutor::parse_method_from_outputs(outputs) {
+        match self.payments_service.parse_method_from_inputs_outputs("", outputs) {
             Ok(type_) => {
                 let type_copy = type_.to_string();
                 self.process_method(
@@ -329,7 +333,7 @@ impl PaymentsCommandExecutor {
                     &|i| self.payments_service.build_mint_req(i, &type_copy, outputs, wallet_handle)
                 );
             }
-            Err(error) => cb(Err(error))
+            Err(error) => cb(Err(IndyError::from(error)))
         }
     }
 
@@ -383,55 +387,6 @@ impl PaymentsCommandExecutor {
             Some(cb) => cb(result),
             None => error!("Can't process PaymentsCommand::{} for handle {} with result {:?} - appropriate callback not found!",
                            name, cmd_handle, result),
-        }
-    }
-
-    fn parse_method_from_inputs(inputs: &str) -> Result<String, IndyError> {
-        PaymentsCommandExecutor::parse_method(
-            inputs,
-            Box::new(
-                move |json|
-                    json.as_str().map(|s| s.to_string())))
-    }
-
-    fn parse_method_from_outputs(inputs: &str) -> Result<String, IndyError> {
-        PaymentsCommandExecutor::parse_method(
-            inputs,
-            Box::new(
-                move |json|
-                    match json.as_object()
-                        .map(|obj|
-                            obj.get("paymentAddress")
-                                .map(|val|
-                                    val.as_str()
-                                        .map(|s| s.to_string()))) {
-                        Some(Some(e)) => e,
-                        _ => None
-                    }
-            ))
-    }
-
-    fn parse_method(raw: &str, unwrapper: Box<Fn(serde_json::Value) -> Option<String> + Send>) -> Result<String, IndyError> {
-        let inputs_json : Vec<serde_json::Value> = serde_json::from_str(raw).unwrap();
-
-        let result_set : HashSet<String> =
-            inputs_json.into_iter()
-                .filter_map(|v| unwrapper(v))
-                .filter_map(|input_str| input_str.matches("[^:]+:([^:]+):.*").next().map(|s| s.to_string()))
-                .collect();
-
-        match result_set.len() {
-            0 => {
-                error!("No payment methods found in inputs!");
-                Err(IndyError::from(CommonError::InvalidStructure("No payment methods found in inputs".to_string())))
-            }
-            1 => {
-                Ok(result_set.into_iter().next().unwrap().to_string())
-            }
-            _ => {
-                error!("More than one payment method found in inputs!");
-                Err(IndyError::from(CommonError::InvalidStructure("More than one payment method found in inputs!".to_string())))
-            }
         }
     }
 }

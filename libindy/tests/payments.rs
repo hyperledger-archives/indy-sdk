@@ -44,6 +44,14 @@ mod high_cases {
         assert!(vec.contains(&res));
     }
 
+    #[test]
+    fn build_get_utxo_request() {
+        PaymentsUtils::create_payment_method();
+        let wallet_handle = WalletUtils::create_and_open_wallet("WALLET", None).unwrap();
+        let payment_address = CString::new("pay:null:test").unwrap();
+        let (txn, method) = PaymentsUtils::build_get_utxo_request(wallet_handle, payment_address).unwrap();
+        assert_eq!("null".to_string(), method);
+    }
 }
 
 mod medium_cases {
@@ -58,4 +66,16 @@ mod medium_cases {
         let res = PaymentsUtils::create_payment_address(wallet_handle, cfg, payment_method).unwrap_err();
         assert_eq!(res, ErrorCode::UnknownPaymentMethod);
     }
+
+//    #[test]
+//    fn create_payment_address_plugin_error() {
+//        PaymentsUtils::create_payment_method();
+//        PaymentsUtils::inject_create_address_error(701);
+//        let wallet_handle = WalletUtils::create_and_open_wallet("WALLET", None).unwrap();
+//        let cfg = CString::new ("{}").unwrap();
+//        let payment_method = CString::new("null").unwrap();
+//        let res = PaymentsUtils::create_payment_address(wallet_handle, cfg, payment_method).unwrap_err();
+//        assert_eq!(res as i32, 701);
+//
+//    }
 }

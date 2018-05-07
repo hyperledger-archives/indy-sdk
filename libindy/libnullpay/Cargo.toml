@@ -10,4 +10,6 @@ crate-type = ["dylib", "rlib"]
 [dependencies]
 libc = "0.2.21"
 lazy_static = "1.0"
+log = "0.3.7"
+num-traits = "0.2.2"
 rand = "0.3"

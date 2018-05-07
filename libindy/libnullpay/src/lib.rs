@@ -1,8 +1,11 @@
 extern crate libc;
 extern crate rand;
+extern crate num_traits;
 
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate log;
 
 mod libindy;
 
@@ -12,6 +15,7 @@ mod utils;
 
 use libindy::ErrorCode;
 
+use num_traits::FromPrimitive;
 use std::ffi::CString;
 use std::os::raw::c_char;
 

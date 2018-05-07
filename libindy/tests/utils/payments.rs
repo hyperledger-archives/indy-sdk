@@ -22,28 +22,54 @@ impl PaymentsUtils {
             nullpay_init();
         });
     }
+//
+//    pub fn inject_create_address_error(error: ErrorCode) {
+//        nullpay::create_payment_address::nullpay_injmock_create_payment_address(error, CString::new("").unwrap().as_ptr());
+//    }
 
     pub fn create_payment_address(wallet_handle: i32, config: CString, payment_method: CString) -> Result<String, ErrorCode> {
         let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
-        let errc = indy_create_payment_address(
+        let err = indy_create_payment_address(
             cmd_handle,
             wallet_handle,
             payment_method.as_ptr(),
             config.as_ptr(),
             cb
         );
-        super::results::result_to_string(errc, receiver)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn list_payment_addresses(wallet_handle: i32) -> Result<String, ErrorCode> {
         let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
-        let ec = indy_list_payment_addresses(
+        let err = indy_list_payment_addresses(
             cmd_handle,
             wallet_handle,
             cb
         );
-        super::results::result_to_string(ec, receiver)
+        super::results::result_to_string(err, receiver)
     }
 
-//    pub fn
+    pub fn add_request_fees(wallet_handle: i32, req_json: CString, inputs_json: CString, outputs_json: CString) -> Result<(String, String), ErrorCode> {
+        let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
+        let err = indy_add_request_fees(
+            cmd_handle,
+            wallet_handle,
+            req_json.as_ptr(),
+            inputs_json.as_ptr(),
+            outputs_json.as_ptr(),
+            cb
+        );
+        super::results::result_to_string_string(err, receiver)
+    }
+
+    pub fn build_get_utxo_request(wallet_handle: i32, payment_address: CString) -> Result<(String, String), ErrorCode> {
+        let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
+        let err = indy_build_get_utxo_request(
+            cmd_handle,
+            wallet_handle,
+            payment_address.as_ptr(),
+            cb
+        );
+        super::results::result_to_string_string(err, receiver)
+    }
 }

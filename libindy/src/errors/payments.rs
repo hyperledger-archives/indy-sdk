@@ -11,6 +11,7 @@ pub enum PaymentsError {
     PluggedMethodError(ErrorCode),
     UnknownType(String),
     CommonError(CommonError),
+    IncompatiblePaymentError(String),
 }
 
 impl Error for PaymentsError {
@@ -18,7 +19,8 @@ impl Error for PaymentsError {
         match *self {
             PaymentsError::CommonError(ref err) => err.description(),
             PaymentsError::UnknownType(ref msg) => msg.as_str(),
-            PaymentsError::PluggedMethodError(_error_code) => "Plugged method error. Consider the error code."
+            PaymentsError::PluggedMethodError(_error_code) => "Plugged method error. Consider the error code.",
+            PaymentsError::IncompatiblePaymentError(ref msg) => msg.as_str(),
         }
     }
 }
@@ -28,7 +30,8 @@ impl Display for PaymentsError {
         match *self {
             PaymentsError::CommonError(ref err) => err.fmt(_f),
             PaymentsError::PluggedMethodError(_err_code) => write!(_f, "Plugged method error. Consider the error code."),
-            PaymentsError::UnknownType(ref msg) => write!(_f, "Unknown Type Error: {}", msg)
+            PaymentsError::UnknownType(ref msg) => write!(_f, "Unknown Type Error: {}", msg),
+            PaymentsError::IncompatiblePaymentError(ref msg) => write!(_f, "Incompatible Payment Method Error: {}", msg),
         }
     }
 }
@@ -38,7 +41,8 @@ impl ToErrorCode for PaymentsError {
         match *self {
             PaymentsError::PluggedMethodError(e) => e,
             PaymentsError::CommonError(ref err) => err.to_error_code(),
-            PaymentsError::UnknownType(ref _str) => ErrorCode::UnknownPaymentMethod
+            PaymentsError::UnknownType(ref _str) => ErrorCode::UnknownPaymentMethod,
+            PaymentsError::IncompatiblePaymentError(ref _str) => ErrorCode::IncompatiblePaymentError,
         }
     }
 }

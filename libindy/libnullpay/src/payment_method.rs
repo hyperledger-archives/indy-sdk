@@ -98,14 +98,14 @@ pub mod build_get_utxo_request {
     mocked_handler!(payment_address: *const c_char, wallet_handle: i32);
 
     fn handle(cmd_handle: i32, _payment_address: *const c_char, _wallet_handle: i32, cb: IndyPaymentCallback) -> ErrorCode {
-        let submitter_did = CString::new("null_payment_plugin").unwrap();
+        let submitter_did = CString::new("Th7MpTaRZVRYnPiabds81Y").unwrap();
         let submitter_did = submitter_did.to_str().unwrap();
         ledger::build_get_txn_request(
             submitter_did,
             1,
             Box::new(move |ec, res| {
-                let res = CString::new(res).unwrap().as_ptr();
-                cb(cmd_handle, ec, res);
+                let res = CString::new(res).unwrap();
+                cb(cmd_handle, ec, res.as_ptr());
             })
         )
     }
@@ -159,14 +159,14 @@ pub mod build_mint_req {
     mocked_handler!(outputs_json: *const c_char, wallet_handle: i32);
 
     fn handle(cmd_handle: i32, _outputs_json: *const c_char, _wallet_handle: i32, cb: IndyPaymentCallback) -> ErrorCode {
-        let submitter_did = CString::new("null_payment_plugin").unwrap();
+        let submitter_did = CString::new("Th7MpTaRZVRYnPiabds81Y").unwrap();
         let submitter_did = submitter_did.to_str().unwrap();
         ledger::build_get_txn_request(
             submitter_did,
             1,
             Box::new(move |ec, res| {
-                let res = CString::new(res).unwrap().as_ptr();
-                cb(cmd_handle, ec, res);
+                let res = CString::new(res).unwrap();
+                cb(cmd_handle, ec, res.as_ptr());
             })
         )
     }
@@ -190,14 +190,14 @@ pub mod build_get_txn_fees_req {
     mocked_handler!(wallet_handle: i32);
 
     fn handle(cmd_handle: i32, _wallet_handle: i32, cb: IndyPaymentCallback) -> ErrorCode {
-        let submitter_did = CString::new("null_payment_plugin").unwrap();
+        let submitter_did = CString::new("Th7MpTaRZVRYnPiabds81Y").unwrap();
         let submitter_did = submitter_did.to_str().unwrap();
         ledger::build_get_txn_request(
             submitter_did,
             1,
             Box::new(move |ec, res| {
-                let res = CString::new(res).unwrap().as_ptr();
-                cb(cmd_handle, ec, res);
+                let res = CString::new(res).unwrap();
+                cb(cmd_handle, ec, res.as_ptr());
             })
         )
     }
@@ -211,8 +211,8 @@ pub mod parse_get_txn_fees_response {
     fn handle(cmd_handle: i32, _resp_json: *const c_char, cb: IndyPaymentCallback) -> ErrorCode {
         let res = CString::new(
             r#"{"txnType1":1, "txnType2":2, "txnType3":3}"#
-        ).unwrap().as_ptr();
+        ).unwrap();
         let err = ErrorCode::Success;
-        (cb)(cmd_handle, err, res)
+        (cb)(cmd_handle, err, res.as_ptr())
     }
 }

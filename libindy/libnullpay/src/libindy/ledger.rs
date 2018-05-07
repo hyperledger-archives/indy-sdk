@@ -12,6 +12,7 @@ pub fn build_get_txn_request(
     let (command_handle, cb) = callbacks::closure_to_cb_ec_string(cb);
     let submitter_did = CString::new(submitter_did).unwrap();
 
+    warn!("call to libindy");
     unsafe {
         indy_build_get_txn_request(
             command_handle,
