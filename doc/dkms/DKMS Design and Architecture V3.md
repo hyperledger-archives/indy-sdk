@@ -67,11 +67,11 @@ DKMS architecture and DPKI provides the following major benefits:
 
 As a general rule, DKMS requirements are a derivation of CKMS requirements, adjusted for the lack of centralized authorities or systems for key management operations. Evernym’s DKMS team and subcontractors performed an extensive analysis of the applicability of conventional CKMS requirements to DKMS using [NIST Special Publication 800-130: A Framework for Designing Cryptographic Key Management Systems](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-130.pdf). For a summary of the results, see:
 
-* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Spreadsheet Based On NIST 800-130](https://github.com/hyperledger/indy-sdk/blob/master/doc/dkms/DKMS Requirements Spreadsheet Based On NIST 800-130.pdf)
+* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Spreadsheet Based On NIST 800-130](https://github.com/hyperledger/indy-sdk/blob/master/doc/dkms/DKMS%20Requirements%20Spreadsheet%20Based%20On%20NIST%20800-130.pdf)
 
-* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Text Based on NIST 800-130](https://github.com/hyperledger/indy-sdk/blob/master/doc/dkms/DKMS Requirements Text Based on NIST 800-130.pdf)
+* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Text Based on NIST 800-130](https://github.com/hyperledger/indy-sdk/blob/master/doc/dkms/DKMS%20Requirements%20Text%20Based%20on%20NIST%20800-130.pdf)
 
-* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Report - 30 June 2017](https://github.com/hyperledger/indy-sdk/blob/master/doc/dkms/DKMS Requirements Report - 30 June 2017.pdf)
+* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Report - 30 June 2017](https://github.com/hyperledger/indy-sdk/blob/master/doc/dkms/DKMS%20Requirements%20Report%20-%2030%20June%202017.pdf)
 
 The most relevant special requirements are highlighted in the following sections.
 
@@ -211,7 +211,7 @@ By themselves, DIDs are "trustless", i.e., they carry no more inherent trust tha
 
 To achieve a higher level of trust, DKMS agents may exchange digitally signed credentials called [verifiable credentials](https://www.w3.org/2017/vc/). Verifiable credentials are being standardized by the W3C Working Group of the same name. The purpose is summarized in the [charter](https://www.w3.org/2017/vc/charter.html):
 
-*It is currently difficult to express banking account information, education qualifications, healthcare data, and other sorts of machine-readable personal information that has been verified by a 3rd party on the Web. These sorts of data are often referred to as ***_verifiable credentials_***. The mission of the Verifiable Credentials Working Group is to make expressing, exchanging, and verifying credentials easier and more secure on the Web.*
+*It is currently difficult to express banking account information, education qualifications, healthcare data, and other sorts of machine-readable personal information that has been verified by a 3rd party on the Web. These sorts of data are often referred to as **_verifiable credentials_***. The mission of the Verifiable Credentials Working Group is to make expressing, exchanging, and verifying credentials easier and more secure on the Web.*
 
 The following diagram from the Verifiable Credentials Working Group illustrates the primary roles in the verifiable credential ecosystem and the close relationship between DIDs and verifiable credentials.
 
@@ -233,7 +233,7 @@ There are a variety of ledger designs and governance models as illustrated in Fi
 
 Figure 3: Blockchain and distributed ledger governance models
 
-**Public ledgers** are available for anyone to access, while **private ledgers** have restricted access. **Permissionless ledgers** allow anyone to run a validator node of the ledger (a node that participates in the [consensus protocol](https://en.wikipedia.org/wiki/Consensus_(computer_science)#Some_consensus_protocols)), and thus require proof-of-work, proof-of-stake, or other protections against [Sybil attacks](https://en.wikipedia.org/wiki/Sybil_attack). **Permissioned ledgers** restrict who can run a validator node, and thus can typically operate at a higher transaction rate.
+**Public ledgers** are available for anyone to access, while **private ledgers** have restricted access. **Permissionless ledgers** allow anyone to run a validator node of the ledger (a node that participates in the [consensus protocol](https://en.wikipedia.org/wiki/Consensus_%28computer_science%29#Some_consensus_protocols)), and thus require proof-of-work, proof-of-stake, or other protections against [Sybil attacks](https://en.wikipedia.org/wiki/Sybil_attack). **Permissioned ledgers** restrict who can run a validator node, and thus can typically operate at a higher transaction rate.
 
 For decentralized identity management, a core requirement of DIDs and DKMS is that they can interoperate with any of these ledgers. However for privacy and scalability reasons, certain types of ledgers play specific roles in DKMS architecture.
 
