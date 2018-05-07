@@ -30,7 +30,7 @@ Returns:
 
 ### List payment addresses
 
-List payment addresses for specific payment method in the wallet
+List payment addresses in the wallet
 
 ```indy-cli
 indy> payment-address list
