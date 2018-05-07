@@ -124,3 +124,19 @@ pub struct SchemaData {
 pub struct CredentialOfferInfo {
     pub cred_def_id: String
 }
+
+#[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
+pub struct WalletRecord {
+    pub id: String,
+    #[serde(rename = "type")]
+    pub type_: Option<String>,
+    pub value: Option<String>,
+    pub tags: Option<String>
+}
+
+#[serde(rename_all = "camelCase")]
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SearchRecords {
+    pub total_count: Option<i32>,
+    pub records: Option<Vec<WalletRecord>>
+}

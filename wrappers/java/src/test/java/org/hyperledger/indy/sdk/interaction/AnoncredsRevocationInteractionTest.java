@@ -30,14 +30,14 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 	@Before
 	public void createProverWallet() throws Exception {
-		Wallet.createWallet(POOL, proverWalletName, TYPE, null, null).get();
-		proverWallet = Wallet.openWallet(proverWalletName, null, null).get();
+		Wallet.createWallet(POOL, proverWalletName, TYPE, null, CREDENTIALS).get();
+		proverWallet = Wallet.openWallet(proverWalletName, null, CREDENTIALS).get();
 	}
 
 	@After
 	public void deleteWalletWallet() throws Exception {
 		proverWallet.closeWallet().get();
-		Wallet.deleteWallet(proverWalletName, null).get();
+		Wallet.deleteWallet(proverWalletName, CREDENTIALS).get();
 	}
 
 	@Test

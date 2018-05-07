@@ -12,24 +12,18 @@ async def test_open_wallet_works(wallet_config, wallet_handle):
 
 
 @pytest.mark.asyncio
-async def test_open_wallet_works_for_not_created_wallet():
+async def test_open_wallet_works_for_not_created_wallet(credentials):
     with pytest.raises(IndyError) as e:
-        await wallet.open_wallet('wallet_not_created', None, None)
+        await wallet.open_wallet('wallet_not_created', None, credentials)
     assert ErrorCode.CommonIOError == e.value.error_code
 
 
 @pytest.mark.asyncio
-async def test_open_wallet_works_for_twice(wallet_name, wallet_handle):
+async def test_open_wallet_works_for_twice(wallet_name, wallet_handle, credentials):
     with pytest.raises(IndyError) as e:
-        await wallet.open_wallet(wallet_name, None, None)
+        await wallet.open_wallet(wallet_name, None, credentials)
 
     assert ErrorCode.WalletAlreadyOpenedError == e.value.error_code
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("credentials", [None, '{"key":"testkey"}'])
-async def test_open_wallet_works_for_encrypted_wallet(wallet_handle, credentials):
-    pass
 
 
 @pytest.mark.asyncio
