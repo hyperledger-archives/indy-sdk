@@ -57,19 +57,21 @@ Returns:
 Send payment transaction
 
 ```indy-cli
-indy> ledger payment inputs=<utxo-1>,..,<utxo-n>] outputs=<pay-addr-0>:<amount>:<extra>,..,<pay-addr-n>:<amount>:<extra>
+indy> ledger payment inputs=<utxo-1>,..,<utxo-n> outputs=<pay-addr-0>:<amount>:<extra>,..,<pay-addr-n>:<amount>:<extra>
 ```
 
 Returns:
 
 * Success or error message
 
+Note that "utxo-n" is identifier presented in "Input" column of ```ledger get-utxo``` command output
+
 ### Send GET_FEES request
 
 Send request to get fees amount for ledger transactions
 
 ```indy-cli
-indy> ledger payment inputs=<utxo-1>,..,<utxo-n>] outputs=<pay-addr-0>:<amount>:<extra>,..,<pay-addr-n>:<amount>:<extra>
+indy> ledger get-fees
 ```
 
 Returns:
@@ -139,3 +141,5 @@ All commands to send domain transactions require new optional params to add tran
 ```indy-cli
 [fees_inputs=<utxo-1>,..,<utxo-n>] [fees_outputs=<pay-addr-0>:<amount>:<extra>,..,<pay-addr-n>:<amount>:<extra>]
 ```
+
+Note that "utxo-n" is identifier presented in "Input" column of ```ledger get-utxo``` command output
