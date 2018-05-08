@@ -202,46 +202,25 @@ impl PaymentsService {
         PaymentsService::consume_result(err)
     }
 
-    pub fn parse_method_from_inputs_outputs(&self, inputs: &str, outputs: &str) -> Result<String, PaymentsError> {
-        let unwrapper_inputs = move |json: serde_json::Value| json.as_str().map(|s| s.to_string());
-        let unwrapper_outputs = move |json: serde_json::Value|
-            match json.as_object()
-                .map(|obj|
-                    obj.get("paymentAddress")
-                        .map(|val|
-                            val.as_str()
-                                .map(|s| s.to_string()))) {
-                Some(Some(e)) => e,
-                _ => None
-            };
-
-        let from_inputs = self._parse_method_from_inputs_outputs(inputs, Box::new(unwrapper_inputs))?;
-        let from_outputs = self._parse_method_from_inputs_outputs(outputs, Box::new(unwrapper_outputs))?;
-
-        let addresses: HashSet<String> = from_inputs.union(&from_outputs).cloned().collect();
-        if addresses.len() != 1 {
-            return Err(PaymentsError::IncompatiblePaymentError("Incompatible inputs and outputs -- payment method cannot be determined".to_string()));
+    pub fn parse_method_from_inputs(&self, inputs: &str) -> Result<String, PaymentsError> {
+        let inputs: Vec<&str> = serde_json::from_str(inputs).map_err(|e| PaymentsError::CommonError(CommonError::InvalidStructure("Unable to parse inputs".to_string())))
+        let input_set: HashSet<&str> = inputs.into_iter().collect();
+        if inputs.len() != input_set.len() {
+            return Err(PaymentsError::IncorrectTransactionInformationError("Several equal inputs".to_string()));
         }
-
-        Ok(addresses.into_iter().next().unwrap())
+        let input_methods: Vec<Option<String>> = inputs.into_iter().map(|s| self._parse_method_from_payment_address(s)).collect();
+        if input_methods.contains(None) {
+            return Err(PaymentsError::CommonError(CommonError::InvalidStructure("Payment Address incorrectly formed".to_string())));
+        }
+        let input_methods_set: HashSet<String> = inputs.into_iter().map(|s| s.unwrap()).collect();
+        if input_methods_set.len() != 1 {
+            return Err(PaymentsError::IncompatiblePaymentError("Unable to identify payment method from inputs".to_string()));
+        }
+        Ok(input_methods_set.into_iter().next().unwrap())
     }
 
-    fn _parse_method_from_inputs_outputs(&self, json: &str, unwrapper: Box<Fn(serde_json::Value) -> Option<String> + Send>) -> Result<HashSet<String>, PaymentsError> {
-        let inputs_json: Vec<serde_json::Value> = serde_json::from_str(json)
-            .map_err(|err| PaymentsError::CommonError(CommonError::InvalidStructure(format!("Cannot deserialize Inputs {:?}", err))))?;
-        let res: Vec<Option<String>> = inputs_json.into_iter()
-            .map(|v| unwrapper(v))
-            .collect();
-        if res.contains(&None) {
-            return Err(PaymentsError::CommonError(CommonError::InvalidStructure(format!("Json contains malformed values: {}", json))));
-        }
-        let res: Vec<Option<String>> = res.into_iter()
-            .map(|input_str| self._parse_method_from_payment_address(input_str?.as_str()))
-            .collect();
-        if res.contains(&None) {
-            return Err(PaymentsError::CommonError(CommonError::InvalidStructure(format!("Json contains incorrect payment address: {}", json))));
-        }
-        Ok(res.into_iter().map(|o| o.unwrap()).collect())
+    pub fn parse_method_from_outputs(&self, outputs: &str) -> Result<String, PaymentsError> {
+        serde_json::from_str(outputs).map_err(|e| PaymentsError::CommonError(CommonError::InvalidStructure("Unable to parse outputs".to_string())))
     }
 
     fn _parse_method_from_payment_address(&self, address: &str) -> Option<String> {
@@ -265,6 +244,13 @@ impl PaymentsService {
             _ => Err(PaymentsError::PluggedMethodError(err))
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Output {
+    paymentAddress: String,
+    amount: i32,
+    extra: Option<String>
 }
 
 impl From<NulError> for PaymentsError {

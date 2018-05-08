@@ -250,6 +250,19 @@ impl PaymentsCommandExecutor {
     }
 
     fn add_request_fees(&self, wallet_handle: i32, submitter_did: &str, req: &str, inputs: &str, outputs: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        let method_from_inputs = self.payments_service.parse_method_from_inputs(inputs).map_err(IndyError::from);
+        let method_from_outputs = if outputs == "[]" {
+            method_from_inputs
+        } else {
+            match self.payments_service.parse_method_from_outputs(outputs).map_err(IndyError::from) {
+                Ok(method) => method,
+                Err(err) => {
+                    cb(Err(err));
+                    return;
+                }
+            }
+        };
+
         match self.payments_service.parse_method_from_inputs_outputs(inputs, outputs) {
             Ok(type_) => {
                 let type_copy = type_.to_string();
