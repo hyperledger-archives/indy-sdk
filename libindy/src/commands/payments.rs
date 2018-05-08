@@ -329,7 +329,13 @@ impl PaymentsCommandExecutor {
     }
 
     fn build_mint_req(&self, outputs: &str, wallet_handle: i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        match self.payments_service.parse_method_from_inputs_outputs("", outputs) {
+        match self.wallet_service.check(wallet_handle) {
+            //TODO: move to helper
+            Ok(_) => (),
+            Err(err) => return cb(Err(IndyError::from(err)))
+        };
+
+        match self.payments_service.parse_method_from_inputs_outputs("[]", outputs) {
             Ok(type_) => {
                 let type_copy = type_.to_string();
                 self.process_method(
@@ -346,7 +352,15 @@ impl PaymentsCommandExecutor {
     }
 
     fn build_set_txn_fees_req(&self, type_: &str, fees: &str, wallet_handle: i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        self.process_method(cb, &|i| self.payments_service.build_set_txn_fees_req(i, type_, fees, wallet_handle))
+        match self.wallet_service.check(wallet_handle) {
+            Ok(_) => (),
+            Err(err) => return cb(Err(IndyError::from(err)))
+        };
+
+        match serde_json::from_str::<HashMap<String, i64>>(fees) {
+            Ok(_) => self.process_method(cb, &|i| self.payments_service.build_set_txn_fees_req(i, type_, fees, wallet_handle)),
+            Err(err) => cb(Err(IndyError::CommonError(CommonError::InvalidStructure(format!("Cannot deserialize Fees: {:?}", err)))))
+        }
     }
 
     fn build_set_txn_fees_req_ack(&self, cmd_handle: i32, result: Result<String, PaymentsError>) {
@@ -354,6 +368,11 @@ impl PaymentsCommandExecutor {
     }
 
     fn build_get_txn_fees_req(&self, type_: &str, wallet_handle: i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        match self.wallet_service.check(wallet_handle) {
+            Ok(_) => (),
+            Err(err) => return cb(Err(IndyError::from(err)))
+        };
+
         self.process_method(cb, &|i| self.payments_service.build_get_txn_fees_req(i, type_, wallet_handle))
     }
 

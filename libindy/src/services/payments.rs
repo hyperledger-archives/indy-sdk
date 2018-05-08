@@ -209,12 +209,12 @@ impl PaymentsService {
         let from_inputs = self._parse_method_from_inputs_outputs(inputs, Box::new(unwrapper_inputs))?;
         let from_outputs = self._parse_method_from_inputs_outputs(outputs, Box::new(unwrapper_outputs))?;
 
-        match (from_inputs.len(), from_outputs.len()) {
-            (1, 0) => Ok(from_inputs.into_iter().next().unwrap().to_string()),
-            (0, 1) => Ok(from_outputs.into_iter().next().unwrap().to_string()),
-            (1, 1) if from_inputs == from_outputs => Ok(from_outputs.into_iter().next().unwrap().to_string()),
-            _ => Err(PaymentsError::IncompatiblePaymentError("Incompatible inputs and outputs -- payment method cannot be determined".to_string()))
+        let addresses: HashSet<String> = from_inputs.union(&from_outputs).cloned().collect();
+        if addresses.len() != 1 {
+            return Err(PaymentsError::IncompatiblePaymentError("Incompatible inputs and outputs -- payment method cannot be determined".to_string()));
         }
+
+        Ok(addresses.into_iter().next().unwrap())
     }
 
     fn _parse_method_from_inputs_outputs(&self, json: &str, unwrapper: Box<Fn(serde_json::Value) -> Option<String> + Send>) -> Result<HashSet<String>, PaymentsError> {

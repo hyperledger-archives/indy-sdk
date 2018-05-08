@@ -125,4 +125,73 @@ impl PaymentsUtils {
         );
         super::results::result_to_string_string(err, receiver)
     }
+
+    pub fn parse_payment_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let payment_method = CString::new(payment_method).unwrap();
+        let resp_json = CString::new(resp_json).unwrap();
+
+        let err = indy_parse_payment_response(cmd_handle,
+                                              payment_method.as_ptr(),
+                                              resp_json.as_ptr(),
+                                              cb,
+        );
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn build_mint_req(wallet_handle: i32, outputs_json: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
+
+        let outputs_json = CString::new(outputs_json).unwrap();
+
+        let err = indy_build_mint_req(cmd_handle,
+                                      wallet_handle,
+                                      outputs_json.as_ptr(),
+                                      cb,
+        );
+        super::results::result_to_string_string(err, receiver)
+    }
+
+    pub fn build_set_txn_fees_req(wallet_handle: i32, payment_method: &str, fees_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let payment_method = CString::new(payment_method).unwrap();
+        let fees_json = CString::new(fees_json).unwrap();
+
+        let err = indy_build_set_txn_fees_req(cmd_handle,
+                                              wallet_handle,
+                                              payment_method.as_ptr(),
+                                              fees_json.as_ptr(),
+                                              cb,
+        );
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn build_get_txn_fees_req(wallet_handle: i32, payment_method: &str) -> Result<String, ErrorCode> {
+        let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let payment_method = CString::new(payment_method).unwrap();
+
+        let err = indy_build_get_txn_fees_req(cmd_handle,
+                                              wallet_handle,
+                                              payment_method.as_ptr(),
+                                              cb,
+        );
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn parse_get_txn_fees_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let payment_method = CString::new(payment_method).unwrap();
+        let resp_json = CString::new(resp_json).unwrap();
+
+        let err = indy_parse_get_txn_fees_response(cmd_handle,
+                                              payment_method.as_ptr(),
+                                                   resp_json.as_ptr(),
+                                              cb,
+        );
+        super::results::result_to_string(err, receiver)
+    }
 }
