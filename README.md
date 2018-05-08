@@ -28,7 +28,7 @@ Please refer to [release workflow](doc/release-workflow.md) for more details.
 ### Ubuntu based distributions (Ubuntu 16.04)
 It is recommended to install packages with APT:
 
-    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
     sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial {release channel}"
     sudo apt-get update
     sudo apt-get install -y libindy
