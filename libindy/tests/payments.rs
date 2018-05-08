@@ -16,6 +16,7 @@ extern crate log;
 mod utils;
 
 use indy::api::ErrorCode;
+use utils::payment_method::*;
 use utils::payments::PaymentsUtils;
 use utils::test::TestUtils;
 use utils::constants::*;
@@ -24,6 +25,7 @@ use utils::types::Utxo;
 
 use serde_json::{from_str, Value};
 use std::ffi::CString;
+use std::os::raw::c_char;
 
 use std::collections::HashMap;
 
@@ -48,6 +50,27 @@ mod high_cases {
 
     mod register_payment_method {
         use super::*;
+
+        #[test]
+        fn register_payment_method_works() {
+            TestUtils::cleanup_storage();
+
+            let res = PaymentsUtils::register_payment_method(PAYMENT_METHOD_NAME,
+                                                             Some(create_payment_address_stub),
+                                                             Some(add_request_fees_stub),
+                                                             Some(parse_response_with_fees),
+                                                             Some(build_get_utxo_request_stub),
+                                                             Some(parse_get_utxo_response_stub),
+                                                             Some(build_payment_req_stub),
+                                                             Some(parse_payment_response_stub),
+                                                             Some(build_mint_req_stub),
+                                                             Some(build_set_txn_fees_request_stub),
+                                                             Some(build_get_txn_fees_request_stub),
+                                                             Some(parse_get_txn_fees_response_stub),
+            ).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod create_payment_address {
@@ -155,6 +178,18 @@ mod high_cases {
 
     mod parse_response_with_fees {
         use super::*;
+
+        #[test]
+        fn parse_response_with_fees_works() {
+            TestUtils::cleanup_storage();
+
+            PaymentsUtils::init_nullpay_plugin();
+            let utxo = PaymentsUtils::parse_response_with_fees(PAYMENT_METHOD_NAME, CORRECT_OUTPUTS).unwrap();
+
+            assert_eq!(utxo, CORRECT_OUTPUTS);
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod build_get_utxo_request {
@@ -177,6 +212,24 @@ mod high_cases {
 
     mod parse_get_utxo_response {
         use super::*;
+
+        #[derive(Debug, Deserialize, Serialize)]
+        pub struct UtxoResponse {
+            input: String,
+            amount: i32,
+            extra: Option<String>
+        }
+
+        #[test]
+        fn parse_get_utxo_response_works() {
+            TestUtils::cleanup_storage();
+
+            PaymentsUtils::init_nullpay_plugin();
+            let utxo = PaymentsUtils::parse_get_utxo_response(PAYMENT_METHOD_NAME, CORRECT_OUTPUTS).unwrap();
+            let res: Vec<UtxoResponse> = serde_json::from_str(utxo.as_str()).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod payment_request {
@@ -282,6 +335,7 @@ mod high_cases {
         use super::*;
 
         #[test]
+//        #[ignore]
         fn build_set_txn_fees_request_works() {
             TestUtils::cleanup_storage();
             PaymentsUtils::init_nullpay_plugin();
@@ -341,6 +395,33 @@ mod high_cases {
 
 mod medium_cases {
     use super::*;
+
+    mod register_payment_method {
+        use super::*;
+
+        #[test]
+        fn register_payment_method_works_for_no_first_method() {
+            TestUtils::cleanup_storage();
+
+            let err = PaymentsUtils::register_payment_method(PAYMENT_METHOD_NAME,
+                                                             None,
+                                                             None,
+                                                             None,
+                                                             None,
+                                                             None,
+                                                             None,
+                                                             None,
+                                                             None,
+                                                             None,
+                                                             None,
+                                                             None,
+            ).unwrap_err();
+
+            assert_eq!(err, ErrorCode::CommonInvalidParam3);
+
+            TestUtils::cleanup_storage();
+        }
+    }
 
     mod create_payment_address {
         use super::*;
@@ -499,6 +580,68 @@ mod medium_cases {
         }
     }
 
+    mod parse_response_with_fees {
+        use super::*;
+
+        #[test]
+        pub fn parse_response_with_fees_works_for_nonexistant_plugin () {
+            TestUtils::cleanup_storage();
+
+            PaymentsUtils::init_nullpay_plugin();
+            let err = PaymentsUtils::parse_response_with_fees(WRONG_PAYMENT_METHOD_NAME, CORRECT_OUTPUTS).unwrap_err();
+
+            assert_eq!(err, ErrorCode::UnknownPaymentMethod);
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod build_get_utxo_request {
+        use super::*;
+
+        #[test]
+        pub fn build_get_utxo_request_works_for_nonexistant_plugin() {
+            TestUtils::cleanup_storage();
+
+            PaymentsUtils::init_nullpay_plugin();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let err = PaymentsUtils::build_get_utxo_request(wallet_handle, "pay:null1:test").unwrap_err();
+            assert_eq!(err, ErrorCode::UnknownPaymentMethod);
+            WalletUtils::close_wallet(wallet_handle);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn build_get_utxo_request_works_for_malformed_payment_address() {
+            TestUtils::cleanup_storage();
+
+            PaymentsUtils::init_nullpay_plugin();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let err = PaymentsUtils::build_get_utxo_request(wallet_handle, "pay:null1").unwrap_err();
+            assert_eq!(err, ErrorCode::IncompatiblePaymentError);
+            WalletUtils::close_wallet(wallet_handle);
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod parse_get_utxo_request {
+        use super::*;
+
+        #[test]
+        pub fn parse_get_utxo_response_works_for_nonexistant_plugin() {
+            TestUtils::cleanup_storage();
+
+            PaymentsUtils::init_nullpay_plugin();
+            let err = PaymentsUtils::parse_get_utxo_response(WRONG_PAYMENT_METHOD_NAME, CORRECT_OUTPUTS).unwrap_err();
+            assert_eq!(err, ErrorCode::UnknownPaymentMethod);
+
+            TestUtils::cleanup_storage();
+        }
+    }
     mod payment_request {
         use super::*;
 

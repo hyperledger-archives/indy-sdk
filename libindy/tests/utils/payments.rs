@@ -126,6 +126,32 @@ impl PaymentsUtils {
         super::results::result_to_string_string(err, receiver)
     }
 
+    pub fn parse_response_with_fees(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+        let payment_method = CString::new(payment_method).unwrap();
+        let resp_json = CString::new(resp_json).unwrap();
+
+        let err = indy_parse_response_with_fees(cmd_handle,
+                                                payment_method.as_ptr(),
+                                                resp_json.as_ptr(),
+                                                cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn parse_get_utxo_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+        let payment_method = CString::new(payment_method).unwrap();
+        let resp_json = CString::new(resp_json).unwrap();
+
+        let err = indy_parse_get_utxo_response(cmd_handle,
+                                               payment_method.as_ptr(),
+                                               resp_json.as_ptr(),
+                                               cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
     pub fn parse_payment_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
         let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
