@@ -131,7 +131,7 @@ impl PaymentsCommandExecutor {
                 self.create_address(wallet_handle, &type_, &config, cb);
             }
             PaymentsCommand::CreateAddressAck(handle, wallet_handle, result) => {
-                self.create_address_ack(handle, wallet_handle,result);
+                self.create_address_ack(handle, wallet_handle, result);
             }
             PaymentsCommand::ListAddresses(wallet_handle, cb) => {
                 self.list_addresses(wallet_handle, cb);
@@ -216,15 +216,11 @@ impl PaymentsCommandExecutor {
 
     fn create_address_ack(&self, handle: i32, wallet_handle: i32, result: Result<String, PaymentsError>) {
         let total_result: Result<String, IndyError> = match result {
-            Ok(_) => {
-                //TODO: think about deleting payment_address on wallet save failure
-                let res = result.unwrap();
-                self.wallet_service.set(wallet_handle, &format!("pay_addr::{}", &res), "")
-                    .map_err(IndyError::from).map(|_| res)
-            }
-            Err(_) => {
-                result.map_err(IndyError::from)
-            }
+            Ok(res) =>
+            //TODO: think about deleting payment_address on wallet save failure
+                self.wallet_service.set(wallet_handle, &format!("pay_addr::{}", &res), &res)
+                    .map_err(IndyError::from).map(|_| res),
+            Err(err) => Err(IndyError::from(err))
         };
 
         self.common_ack(handle, total_result, "CreateAddressAck")
@@ -233,15 +229,15 @@ impl PaymentsCommandExecutor {
     fn list_addresses(&self, wallet_handle: i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
         match self.wallet_service.list(wallet_handle, "pay_addr::") {
             Ok(vec) => {
-                let list_addresses = vec.iter()
-                    .map(
-                        |&(ref key, _)| {
-                            key.matches("pay_addr::(.*)").next().unwrap().to_string()
-                        })
-                    .collect::<Vec<String>>();
+                let list_addresses =
+                    vec.iter()
+                        .map(|&(_, ref value)| value.to_string())
+                        .collect::<Vec<String>>();
                 let json_string =
                     serde_json::to_string(&list_addresses)
-                        .map_err(|err| IndyError::CommonError(CommonError::InvalidStructure(err.to_string())));
+                        .map_err(|err|
+                            IndyError::CommonError(
+                                CommonError::InvalidState(format!("Cannot deserialize List of Payment Addresses: {:?}", err))));
                 cb(json_string);
             }
             Err(err) => cb(Err(IndyError::from(err)))
@@ -273,13 +269,16 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "ParseResponseWithFeesFeesAck")
     }
 
-    fn build_get_utxo_request(&self, payment_address: &str, wallet_handle: i32, cb: Box<Fn(Result<(String,String), IndyError>) + Send>) {
-        let method = payment_address.matches("[^:]+:([^:]+):.*").next().unwrap().to_string();
+    fn build_get_utxo_request(&self, payment_address: &str, wallet_handle: i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        let method = match PaymentsCommandExecutor::extract_payment_method(payment_address) {
+            Some(method) => method,
+            None => return cb(Err(IndyError::PaymentsError(PaymentsError::UnknownType(format!("Payment Method not found in Payment Address")))))
+        };
         let method_copy = method.to_string();
 
         self.process_method(
             Box::new(move |get_utxo_txn_json| cb(get_utxo_txn_json.map(|s| (s, method.to_string())))),
-            & |i| self.payments_service.build_get_utxo_request(i, &method_copy, payment_address, wallet_handle)
+            &|i| self.payments_service.build_get_utxo_request(i, &method_copy, payment_address, wallet_handle)
         );
     }
 
@@ -295,7 +294,7 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "ParseGetUtxoResponseAck")
     }
 
-    fn build_payment_req(&self, inputs: &str, outputs: &str, wallet_handle:i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+    fn build_payment_req(&self, inputs: &str, outputs: &str, wallet_handle: i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         match PaymentsCommandExecutor::parse_method_from_inputs(inputs) {
             Ok(type_) => {
                 let type_copy = type_.to_string();
@@ -337,7 +336,7 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "BuildMintReqAck");
     }
 
-    fn build_set_txn_fees_req(&self, type_: &str, fees: &str, wallet_handle:i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+    fn build_set_txn_fees_req(&self, type_: &str, fees: &str, wallet_handle: i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
         self.process_method(cb, &|i| self.payments_service.build_set_txn_fees_req(i, type_, fees, wallet_handle))
     }
 
@@ -345,7 +344,7 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "BuildSetTxnFeesReq");
     }
 
-    fn build_get_txn_fees_req(&self, type_: &str, wallet_handle:i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+    fn build_get_txn_fees_req(&self, type_: &str, wallet_handle: i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
         self.process_method(cb, &|i| self.payments_service.build_get_txn_fees_req(i, type_, wallet_handle))
     }
 
@@ -412,26 +411,31 @@ impl PaymentsCommandExecutor {
     }
 
     fn parse_method(raw: &str, unwrapper: Box<Fn(serde_json::Value) -> Option<String> + Send>) -> Result<String, IndyError> {
-        let inputs_json : Vec<serde_json::Value> = serde_json::from_str(raw).unwrap();
+        let inputs_json: Vec<serde_json::Value> = serde_json::from_str(raw).unwrap();
 
-        let result_set : HashSet<String> =
+        let result_set: HashSet<String> =
             inputs_json.into_iter()
                 .filter_map(|v| unwrapper(v))
-                .filter_map(|input_str| input_str.matches("[^:]+:([^:]+):.*").next().map(|s| s.to_string()))
+                .filter_map(|input_str| PaymentsCommandExecutor::extract_payment_method(&input_str))
                 .collect();
 
         match result_set.len() {
             0 => {
                 error!("No payment methods found in inputs!");
-                Err(IndyError::from(CommonError::InvalidStructure("No payment methods found in inputs".to_string())))
+                Err(IndyError::from(PaymentsError::UnknownType("No payment methods found in inputs".to_string())))
             }
             1 => {
                 Ok(result_set.into_iter().next().unwrap().to_string())
             }
             _ => {
                 error!("More than one payment method found in inputs!");
-                Err(IndyError::from(CommonError::InvalidStructure("More than one payment method found in inputs!".to_string())))
+                Err(IndyError::from(PaymentsError::UnknownType("More than one payment method found in inputs!".to_string())))
             }
         }
+    }
+
+    fn extract_payment_method(payment_address: &str) -> Option<String> {
+        let parts: Vec<&str> = payment_address.split(":").collect();
+        parts.get(1).map(|method| method.to_string())
     }
 }
