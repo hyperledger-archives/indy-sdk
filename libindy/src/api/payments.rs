@@ -634,8 +634,8 @@ pub extern fn indy_parse_get_utxo_response(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_build_payment_req(command_handle: i32,
                                      wallet_handle: i32,
-                                     inputs_json: *const c_char,
                                      submitter_did: *const c_char,
+                                     inputs_json: *const c_char,
                                      outputs_json: *const c_char,
                                      cb: Option<extern fn(command_handle_: i32,
                                                           err: ErrorCode,
@@ -651,8 +651,8 @@ pub extern fn indy_build_payment_req(command_handle: i32,
             Command::Payments(
                 PaymentsCommand::BuildPaymentReq(
                     wallet_handle,
-                    inputs_json,
                     submitter_did,
+                    inputs_json,
                     outputs_json,
                     Box::new(move |result| {
                         let (err, payment_req_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
