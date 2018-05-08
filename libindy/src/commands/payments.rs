@@ -12,7 +12,6 @@ use services::wallet::WalletService;
 use errors::common::CommonError;
 use std::vec::Vec;
 use std::string::String;
-use std::collections::HashSet;
 
 pub enum PaymentsCommand {
     RegisterMethod(
@@ -276,9 +275,12 @@ impl PaymentsCommandExecutor {
     }
 
     fn build_get_utxo_request(&self, wallet_handle: i32, submitter_did: &str, payment_address: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        let method = match PaymentsCommandExecutor::extract_payment_method(payment_address) {
-            Some(method) => method,
-            None => return cb(Err(IndyError::PaymentsError(PaymentsError::UnknownType(format!("Payment Method not found in Payment Address")))))
+        let method = match self.payments_service.parse_method_from_payment_address(payment_address) {
+            Ok(method) => method,
+            Err(err) => {
+                cb(Err(IndyError::from(err)));
+                return;
+            }
         };
         let method_copy = method.to_string();
 
@@ -413,59 +415,5 @@ impl PaymentsCommandExecutor {
             None => error!("Can't process PaymentsCommand::{} for handle {} with result {:?} - appropriate callback not found!",
                            name, cmd_handle, result),
         }
-    }
-
-    fn parse_method_from_inputs(inputs: &str) -> Result<String, IndyError> {
-        PaymentsCommandExecutor::parse_method(
-            inputs,
-            Box::new(
-                move |json|
-                    json.as_str().map(|s| s.to_string())))
-    }
-
-    fn parse_method_from_outputs(inputs: &str) -> Result<String, IndyError> {
-        PaymentsCommandExecutor::parse_method(
-            inputs,
-            Box::new(
-                move |json|
-                    match json.as_object()
-                        .map(|obj|
-                            obj.get("paymentAddress")
-                                .map(|val|
-                                    val.as_str()
-                                        .map(|s| s.to_string()))) {
-                        Some(Some(e)) => e,
-                        _ => None
-                    }
-            ))
-    }
-
-    fn parse_method(raw: &str, unwrapper: Box<Fn(serde_json::Value) -> Option<String> + Send>) -> Result<String, IndyError> {
-        let inputs_json: Vec<serde_json::Value> = serde_json::from_str(raw).unwrap();
-
-        let result_set: HashSet<String> =
-            inputs_json.into_iter()
-                .filter_map(|v| unwrapper(v))
-                .filter_map(|input_str| PaymentsCommandExecutor::extract_payment_method(&input_str))
-                .collect();
-
-        match result_set.len() {
-            0 => {
-                error!("No payment methods found in inputs!");
-                Err(IndyError::from(PaymentsError::UnknownType("No payment methods found in inputs".to_string())))
-            }
-            1 => {
-                Ok(result_set.into_iter().next().unwrap().to_string())
-            }
-            _ => {
-                error!("More than one payment method found in inputs!");
-                Err(IndyError::from(PaymentsError::UnknownType("More than one payment method found in inputs!".to_string())))
-            }
-        }
-    }
-
-    fn extract_payment_method(payment_address: &str) -> Option<String> {
-        let parts: Vec<&str> = payment_address.split(":").collect();
-        parts.get(1).map(|method| method.to_string())
     }
 }

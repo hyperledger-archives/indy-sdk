@@ -35,9 +35,8 @@ impl PaymentsUtils {
     ) -> Result<(), ErrorCode> {
         let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec();
         let payment_method_name = CString::new(payment_method_name).unwrap();
-        let payment_method_name = payment_method_name.as_ptr();
         let err = indy_register_payment_method(cmd_handle,
-                                               payment_method_name,
+                                               payment_method_name.as_ptr(),
                                                create_payment_address,
                                                add_request_fees,
                                                parse_response_with_fees,
@@ -79,14 +78,16 @@ impl PaymentsUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn add_request_fees(wallet_handle: i32, req_json: &str, inputs_json: &str, outputs_json: &str) -> Result<(String, String), ErrorCode> {
+    pub fn add_request_fees(wallet_handle: i32, submitter_did: &str, req_json: &str, inputs_json: &str, outputs_json: &str) -> Result<(String, String), ErrorCode> {
         let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
         let req_json = CString::new(req_json).unwrap();
         let inputs_json = CString::new(inputs_json).unwrap();
         let outputs_json = CString::new(outputs_json).unwrap();
+        let submitter_did = CString::new(submitter_did).unwrap();
         let err = indy_add_request_fees(
             cmd_handle,
             wallet_handle,
+            submitter_did.as_ptr(),
             req_json.as_ptr(),
             inputs_json.as_ptr(),
             outputs_json.as_ptr(),
@@ -95,26 +96,29 @@ impl PaymentsUtils {
         super::results::result_to_string_string(err, receiver)
     }
 
-    pub fn build_get_utxo_request(wallet_handle: i32, payment_address: &str) -> Result<(String, String), ErrorCode> {
+    pub fn build_get_utxo_request(wallet_handle: i32, submitter_did: &str, payment_address: &str) -> Result<(String, String), ErrorCode> {
         let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
         let payment_address = CString::new(payment_address).unwrap();
-        let err = indy_build_get_utxo_request(
-            cmd_handle,
-            wallet_handle,
-            payment_address.as_ptr(),
-            cb,
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let err = indy_build_get_utxo_request(cmd_handle,
+                                              wallet_handle,
+                                              submitter_did.as_ptr(),
+                                              payment_address.as_ptr(),
+                                              cb,
         );
         super::results::result_to_string_string(err, receiver)
     }
 
-    pub fn build_payment_req(wallet_handle: i32, inputs_json: &str, outputs_json: &str) -> Result<(String, String), ErrorCode> {
+    pub fn build_payment_req(wallet_handle: i32, submitter_did: &str, inputs_json: &str, outputs_json: &str) -> Result<(String, String), ErrorCode> {
         let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
 
         let inputs_json = CString::new(inputs_json).unwrap();
         let outputs_json = CString::new(outputs_json).unwrap();
+        let submitter_did = CString::new(submitter_did).unwrap();
 
         let err = indy_build_payment_req(cmd_handle,
                                          wallet_handle,
+                                         submitter_did.as_ptr(),
                                          inputs_json.as_ptr(),
                                          outputs_json.as_ptr(),
                                          cb,
@@ -162,27 +166,31 @@ impl PaymentsUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_mint_req(wallet_handle: i32, outputs_json: &str) -> Result<(String, String), ErrorCode> {
+    pub fn build_mint_req(wallet_handle: i32, submitter_did: &str, outputs_json: &str) -> Result<(String, String), ErrorCode> {
         let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
 
         let outputs_json = CString::new(outputs_json).unwrap();
+        let submitter_did = CString::new(submitter_did).unwrap();
 
         let err = indy_build_mint_req(cmd_handle,
                                       wallet_handle,
+                                      submitter_did.as_ptr(),
                                       outputs_json.as_ptr(),
                                       cb,
         );
         super::results::result_to_string_string(err, receiver)
     }
 
-    pub fn build_set_txn_fees_req(wallet_handle: i32, payment_method: &str, fees_json: &str) -> Result<String, ErrorCode> {
+    pub fn build_set_txn_fees_req(wallet_handle: i32, submitter_did: &str, payment_method: &str, fees_json: &str) -> Result<String, ErrorCode> {
         let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let payment_method = CString::new(payment_method).unwrap();
         let fees_json = CString::new(fees_json).unwrap();
+        let submitter_did = CString::new(submitter_did).unwrap();
 
         let err = indy_build_set_txn_fees_req(cmd_handle,
                                               wallet_handle,
+                                              submitter_did.as_ptr(),
                                               payment_method.as_ptr(),
                                               fees_json.as_ptr(),
                                               cb,
@@ -190,13 +198,15 @@ impl PaymentsUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_txn_fees_req(wallet_handle: i32, payment_method: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_txn_fees_req(wallet_handle: i32, submitter_did: &str, payment_method: &str) -> Result<String, ErrorCode> {
         let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let payment_method = CString::new(payment_method).unwrap();
+        let submitter_did = CString::new(submitter_did).unwrap();
 
         let err = indy_build_get_txn_fees_req(cmd_handle,
                                               wallet_handle,
+                                              submitter_did.as_ptr(),
                                               payment_method.as_ptr(),
                                               cb,
         );
