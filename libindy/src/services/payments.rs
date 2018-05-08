@@ -80,7 +80,7 @@ impl PaymentsService {
 
         let config = CString::new(config)?;
 
-        let err = create_address(cmd_handle, config.as_ptr(), wallet_handle, cbs::create_address_cb(cmd_handle, wallet_handle));
+        let err = create_address(cmd_handle, wallet_handle, config.as_ptr(), cbs::create_address_cb(cmd_handle, wallet_handle));
 
         PaymentsService::consume_result(err)
     }
@@ -93,7 +93,7 @@ impl PaymentsService {
         let inputs = CString::new(inputs)?;
         let outputs = CString::new(outputs)?;
 
-        let err = add_request_fees(cmd_handle, req.as_ptr(), inputs.as_ptr(), outputs.as_ptr(), wallet_handle, cbs::add_request_fees_cb(cmd_handle));
+        let err = add_request_fees(cmd_handle, wallet_handle, req.as_ptr(), inputs.as_ptr(), outputs.as_ptr(), cbs::add_request_fees_cb(cmd_handle));
 
         PaymentsService::consume_result(err)
     }
@@ -113,7 +113,8 @@ impl PaymentsService {
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_get_utxo_request;
 
         let address = CString::new(address)?;
-        let err = build_get_utxo_request(cmd_handle, address.as_ptr(), wallet_handle, cbs::build_get_utxo_request_cb(cmd_handle));
+
+        let err = build_get_utxo_request(cmd_handle, wallet_handle, address.as_ptr(), cbs::build_get_utxo_request_cb(cmd_handle));
 
         PaymentsService::consume_result(err)
     }
@@ -136,7 +137,7 @@ impl PaymentsService {
         let inputs = CString::new(inputs)?;
         let outputs = CString::new(outputs)?;
 
-        let err = build_payment_req(cmd_handle, inputs.as_ptr(), outputs.as_ptr(), wallet_handle, cbs::build_payment_req_cb(cmd_handle));
+        let err = build_payment_req(cmd_handle, wallet_handle, inputs.as_ptr(), outputs.as_ptr(), cbs::build_payment_req_cb(cmd_handle));
 
         PaymentsService::consume_result(err)
     }
@@ -158,7 +159,7 @@ impl PaymentsService {
 
         let outputs = CString::new(outputs)?;
 
-        let err = build_mint_req(cmd_handle, outputs.as_ptr(), wallet_handle, cbs::build_mint_req_cb(cmd_handle));
+        let err = build_mint_req(cmd_handle, wallet_handle, outputs.as_ptr(), cbs::build_mint_req_cb(cmd_handle));
 
         PaymentsService::consume_result(err)
     }
@@ -168,7 +169,7 @@ impl PaymentsService {
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_set_txn_fees_req;
         let fees = CString::new(fees)?;
 
-        let err = build_set_txn_fees_req(cmd_handle, fees.as_ptr(), wallet_handle, cbs::build_set_txn_fees_req_cb(cmd_handle));
+        let err = build_set_txn_fees_req(cmd_handle, wallet_handle, fees.as_ptr(), cbs::build_set_txn_fees_req_cb(cmd_handle));
 
         PaymentsService::consume_result(err)
     }

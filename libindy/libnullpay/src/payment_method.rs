@@ -59,9 +59,9 @@ pub static PAYMENT_METHOD_NAME : &str = "null";
 pub mod create_payment_address {
     use super::*;
 
-    mocked_handler!(config: *const c_char, wallet_handle: i32);
+    mocked_handler!(wallet_handle: i32, config: *const c_char);
 
-    fn handle(cmd_handle: i32, _config: *const c_char, _wallet_handle: i32, cb: IndyPaymentCallback) -> ErrorCode {
+    fn handle(cmd_handle: i32, _wallet_handle: i32, _config: *const c_char, cb: IndyPaymentCallback) -> ErrorCode {
         let res = CString::new(format!("pay:null:{}", rand::get_rand_string(15))).unwrap();
         let err = ErrorCode::Success;
         (cb)(cmd_handle, err, res.as_ptr())
@@ -71,9 +71,9 @@ pub mod create_payment_address {
 pub mod add_request_fees {
     use super::*;
 
-    mocked_handler!(req_json: *const c_char, inputs_json: *const c_char, outputs_json: *const c_char, wallet_handle: i32);
+    mocked_handler!(wallet_handle: i32, req_json: *const c_char, inputs_json: *const c_char, outputs_json: *const c_char);
 
-    fn handle(cmd_handle: i32, req_json: *const c_char, _inputs_json: *const c_char, _outputs_json: *const c_char, _wallet_handle: i32, cb: IndyPaymentCallback) -> ErrorCode {
+    fn handle(cmd_handle: i32, _wallet_handle: i32, req_json: *const c_char, _inputs_json: *const c_char, _outputs_json: *const c_char, cb: IndyPaymentCallback) -> ErrorCode {
         let res = req_json;
         let err = ErrorCode::Success;
         (cb)(cmd_handle, err, res)
@@ -95,9 +95,9 @@ pub mod parse_response_with_fees {
 pub mod build_get_utxo_request {
     use super::*;
 
-    mocked_handler!(payment_address: *const c_char, wallet_handle: i32);
+    mocked_handler!(wallet_handle: i32, payment_address: *const c_char);
 
-    fn handle(cmd_handle: i32, _payment_address: *const c_char, _wallet_handle: i32, cb: IndyPaymentCallback) -> ErrorCode {
+    fn handle(cmd_handle: i32, _wallet_handle: i32, _payment_address: *const c_char, cb: IndyPaymentCallback) -> ErrorCode {
         let submitter_did = CString::new("Th7MpTaRZVRYnPiabds81Y").unwrap();
         let submitter_did = submitter_did.to_str().unwrap();
         ledger::build_get_txn_request(
@@ -132,9 +132,9 @@ pub mod parse_get_utxo_response {
 pub mod build_payment_req {
     use super::*;
 
-    mocked_handler!(inputs_json: *const c_char, outputs_json: *const c_char, wallet_handle: i32);
+    mocked_handler!(wallet_handle: i32, inputs_json: *const c_char, outputs_json: *const c_char);
 
-    fn handle(cmd_handle: i32, _inputs_json: *const c_char, _outputs_json: *const c_char, _wallet_handle: i32, cb: IndyPaymentCallback) -> ErrorCode {
+    fn handle(cmd_handle: i32, _wallet_handle: i32, _inputs_json: *const c_char, _outputs_json: *const c_char, cb: IndyPaymentCallback) -> ErrorCode {
         let submitter_did = CString::new("Th7MpTaRZVRYnPiabds81Y").unwrap();
         let submitter_did = submitter_did.to_str().unwrap();
         ledger::build_get_txn_request(
@@ -154,7 +154,13 @@ pub mod parse_payment_response {
     mocked_handler!(resp_json: *const c_char);
 
     fn handle(cmd_handle: i32, _resp_json: *const c_char, cb: IndyPaymentCallback) -> ErrorCode {
-        let res = CString::new(r#"[{"input": "pay:null:1", "amount":1, "extra":"1"}, {"input": "pay:null:2", "amount":2, "extra":"2"}]"#).unwrap();
+        let payment_response_example =
+            format!(
+                r#"[{{"input":"pov:null_payment:1", "amount":1, "extra":"{}"}}, {{"input":"pov:null_payment:2", "amount":2, "extra":"{}"}}]"#,
+                rand::get_rand_string(15),
+                rand::get_rand_string(15)
+            );
+        let res = CString::new(payment_response_example).unwrap();
         let err = ErrorCode::Success;
         (cb)(cmd_handle, err, res.as_ptr())
     }
@@ -163,9 +169,9 @@ pub mod parse_payment_response {
 pub mod build_mint_req {
     use super::*;
 
-    mocked_handler!(outputs_json: *const c_char, wallet_handle: i32);
+    mocked_handler!(wallet_handle: i32, outputs_json: *const c_char);
 
-    fn handle(cmd_handle: i32, _outputs_json: *const c_char, _wallet_handle: i32, cb: IndyPaymentCallback) -> ErrorCode {
+    fn handle(cmd_handle: i32, _wallet_handle: i32, _outputs_json: *const c_char, cb: IndyPaymentCallback) -> ErrorCode {
         let submitter_did = CString::new("Th7MpTaRZVRYnPiabds81Y").unwrap();
         let submitter_did = submitter_did.to_str().unwrap();
         ledger::build_get_txn_request(
@@ -182,9 +188,9 @@ pub mod build_mint_req {
 pub mod build_set_txn_fees_req {
     use super::*;
 
-    mocked_handler!(fees_json: *const c_char, wallet_handle: i32);
+    mocked_handler!(wallet_handle: i32, fees_json: *const c_char);
 
-    fn handle(cmd_handle: i32, fees_json: *const c_char, _wallet_handle: i32, cb: IndyPaymentCallback) -> ErrorCode {
+    fn handle(cmd_handle: i32, _wallet_handle: i32, fees_json: *const c_char, cb: IndyPaymentCallback) -> ErrorCode {
         let res = fees_json;
         let err = ErrorCode::Success;
         (cb)(cmd_handle, err, res)

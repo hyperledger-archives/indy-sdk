@@ -215,15 +215,11 @@ impl PaymentsCommandExecutor {
 
     fn create_address_ack(&self, handle: i32, wallet_handle: i32, result: Result<String, PaymentsError>) {
         let total_result: Result<String, IndyError> = match result {
-            Ok(_) => {
-                //TODO: think about deleting payment_address on wallet save failure
-                let res = result.unwrap();
-                self.wallet_service.set(wallet_handle, &format!("pay_addr::{}", &res), "")
-                    .map_err(IndyError::from).map(|_| res)
-            }
-            Err(_) => {
-                result.map_err(IndyError::from)
-            }
+            Ok(res) =>
+            //TODO: think about deleting payment_address on wallet save failure
+                self.wallet_service.set(wallet_handle, &format!("pay_addr::{}", &res), &res)
+                    .map_err(IndyError::from).map(|_| res),
+            Err(err) => Err(IndyError::from(err))
         };
 
         self.common_ack(handle, total_result, "CreateAddressAck")
@@ -232,15 +228,15 @@ impl PaymentsCommandExecutor {
     fn list_addresses(&self, wallet_handle: i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
         match self.wallet_service.list(wallet_handle, "pay_addr::") {
             Ok(vec) => {
-                let list_addresses = vec.iter()
-                    .map(
-                        |&(ref key, _)| {
-                            key.split("::").nth(1).unwrap().to_string()
-                        })
-                    .collect::<Vec<String>>();
+                let list_addresses =
+                    vec.iter()
+                        .map(|&(_, ref value)| value.to_string())
+                        .collect::<Vec<String>>();
                 let json_string =
                     serde_json::to_string(&list_addresses)
-                        .map_err(|err| IndyError::CommonError(CommonError::InvalidStructure(err.to_string())));
+                        .map_err(|err|
+                            IndyError::CommonError(
+                                CommonError::InvalidState(format!("Cannot deserialize List of Payment Addresses: {:?}", err))));
                 cb(json_string);
             }
             Err(err) => cb(Err(IndyError::from(err)))
@@ -273,17 +269,16 @@ impl PaymentsCommandExecutor {
     }
 
     fn build_get_utxo_request(&self, payment_address: &str, wallet_handle: i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        match self.payments_service.parse_method_from_payment_address(payment_address) {
-            Ok(method) => {
-                let method_copy = method.to_string();
+        let method = match PaymentsCommandExecutor::extract_payment_method(payment_address) {
+            Some(method) => method,
+            None => return cb(Err(IndyError::PaymentsError(PaymentsError::UnknownType(format!("Payment Method not found in Payment Address")))))
+        };
+        let method_copy = method.to_string();
 
-                self.process_method(
-                    Box::new(move |get_utxo_txn_json| cb(get_utxo_txn_json.map(|s| (s, method.to_string())))),
-                    &|i| self.payments_service.build_get_utxo_request(i, &method_copy, payment_address, wallet_handle)
-                );
-            }
-            Err(err) => cb(Err(IndyError::from(err)))
-        }
+        self.process_method(
+            Box::new(move |get_utxo_txn_json| cb(get_utxo_txn_json.map(|s| (s, method.to_string())))),
+            &|i| self.payments_service.build_get_utxo_request(i, &method_copy, payment_address, wallet_handle)
+        );
     }
 
     fn build_get_utxo_request_ack(&self, cmd_handle: i32, result: Result<String, PaymentsError>) {
@@ -411,5 +406,59 @@ impl PaymentsCommandExecutor {
             None => error!("Can't process PaymentsCommand::{} for handle {} with result {:?} - appropriate callback not found!",
                            name, cmd_handle, result),
         }
+    }
+
+    fn parse_method_from_inputs(inputs: &str) -> Result<String, IndyError> {
+        PaymentsCommandExecutor::parse_method(
+            inputs,
+            Box::new(
+                move |json|
+                    json.as_str().map(|s| s.to_string())))
+    }
+
+    fn parse_method_from_outputs(inputs: &str) -> Result<String, IndyError> {
+        PaymentsCommandExecutor::parse_method(
+            inputs,
+            Box::new(
+                move |json|
+                    match json.as_object()
+                        .map(|obj|
+                            obj.get("paymentAddress")
+                                .map(|val|
+                                    val.as_str()
+                                        .map(|s| s.to_string()))) {
+                        Some(Some(e)) => e,
+                        _ => None
+                    }
+            ))
+    }
+
+    fn parse_method(raw: &str, unwrapper: Box<Fn(serde_json::Value) -> Option<String> + Send>) -> Result<String, IndyError> {
+        let inputs_json: Vec<serde_json::Value> = serde_json::from_str(raw).unwrap();
+
+        let result_set: HashSet<String> =
+            inputs_json.into_iter()
+                .filter_map(|v| unwrapper(v))
+                .filter_map(|input_str| PaymentsCommandExecutor::extract_payment_method(&input_str))
+                .collect();
+
+        match result_set.len() {
+            0 => {
+                error!("No payment methods found in inputs!");
+                Err(IndyError::from(PaymentsError::UnknownType("No payment methods found in inputs".to_string())))
+            }
+            1 => {
+                Ok(result_set.into_iter().next().unwrap().to_string())
+            }
+            _ => {
+                error!("More than one payment method found in inputs!");
+                Err(IndyError::from(PaymentsError::UnknownType("More than one payment method found in inputs!".to_string())))
+            }
+        }
+    }
+
+    fn extract_payment_method(payment_address: &str) -> Option<String> {
+        let parts: Vec<&str> = payment_address.split(":").collect();
+        parts.get(1).map(|method| method.to_string())
     }
 }
