@@ -85,16 +85,15 @@ impl PaymentsService {
         PaymentsService::consume_result(err)
     }
 
-    pub fn add_request_fees(&self, cmd_handle: i32, method_type: &str, req: &str, inputs: &str, outputs: &str, wallet_handle: i32, submitter_did: &str) -> Result<(), PaymentsError> {
+    pub fn add_request_fees(&self, cmd_handle: i32, method_type: &str, req: &str, inputs: &str, outputs: &str, wallet_handle: i32) -> Result<(), PaymentsError> {
         let add_request_fees: AddRequestFeesCB = self.methods.borrow().get(method_type)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", method_type)))?.add_request_fees;
 
         let req = CString::new(req)?;
         let inputs = CString::new(inputs)?;
         let outputs = CString::new(outputs)?;
-        let submitter_did = CString::new(submitter_did)?;
 
-        let err = add_request_fees(cmd_handle,  req.as_ptr(), inputs.as_ptr(), outputs.as_ptr(), wallet_handle,submitter_did.as_ptr(), cbs::add_request_fees_cb(cmd_handle));
+        let err = add_request_fees(cmd_handle, req.as_ptr(), inputs.as_ptr(), outputs.as_ptr(), wallet_handle, cbs::add_request_fees_cb(cmd_handle));
 
         PaymentsService::consume_result(err)
     }
@@ -109,14 +108,12 @@ impl PaymentsService {
         PaymentsService::consume_result(err)
     }
 
-    pub fn build_get_utxo_request(&self, cmd_handle: i32, type_: &str, address: &str, wallet_handle: i32, submitter_did: &str) -> Result<(), PaymentsError> {
+    pub fn build_get_utxo_request(&self, cmd_handle: i32, type_: &str, address: &str, wallet_handle: i32) -> Result<(), PaymentsError> {
         let build_get_utxo_request: BuildGetUTXORequestCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_get_utxo_request;
 
         let address = CString::new(address)?;
-        let submitter_did = CString::new(submitter_did)?;
-
-        let err = build_get_utxo_request(cmd_handle, address.as_ptr(), wallet_handle, submitter_did.as_ptr(), cbs::build_get_utxo_request_cb(cmd_handle));
+        let err = build_get_utxo_request(cmd_handle, address.as_ptr(), wallet_handle, cbs::build_get_utxo_request_cb(cmd_handle));
 
         PaymentsService::consume_result(err)
     }

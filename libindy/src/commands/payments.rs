@@ -35,7 +35,6 @@ pub enum PaymentsCommand {
         String, //inputs
         String, //outputs
         i32, //wallet_handle
-        String, //submitter_did
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     AddRequestFeesAck(
         i32, //handle
@@ -50,7 +49,6 @@ pub enum PaymentsCommand {
     BuildGetUtxoRequest(
         String, //payment_address
         i32, //wallet_handle
-        String, //submitter_did
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     BuildGetUtxoRequestAck(
         i32, //handle
@@ -137,8 +135,8 @@ impl PaymentsCommandExecutor {
             PaymentsCommand::ListAddresses(wallet_handle, cb) => {
                 self.list_addresses(wallet_handle, cb);
             }
-            PaymentsCommand::AddRequestFees(req, inputs, outputs, wallet_handle, submitter_did, cb) => {
-                self.add_request_fees(&req, &inputs, &outputs, wallet_handle, &submitter_did, cb);
+            PaymentsCommand::AddRequestFees(req, inputs, outputs, wallet_handle, cb) => {
+                self.add_request_fees(&req, &inputs, &outputs, wallet_handle, cb);
             }
             PaymentsCommand::AddRequestFeesAck(cmd_handle, result) => {
                 self.add_request_fees_ack(cmd_handle, result);
@@ -149,8 +147,8 @@ impl PaymentsCommandExecutor {
             PaymentsCommand::ParseResponseWithFeesAck(cmd_handle, result) => {
                 self.parse_response_with_fees_ack(cmd_handle, result);
             }
-            PaymentsCommand::BuildGetUtxoRequest(payment_address, wallet_handle, submitter_did, cb) => {
-                self.build_get_utxo_request(&payment_address, wallet_handle, &submitter_did, cb);
+            PaymentsCommand::BuildGetUtxoRequest(payment_address, wallet_handle, cb) => {
+                self.build_get_utxo_request(&payment_address, wallet_handle, cb);
             }
             PaymentsCommand::BuildGetUtxoRequestAck(cmd_handle, result) => {
                 self.build_get_utxo_request_ack(cmd_handle, result);
@@ -249,19 +247,13 @@ impl PaymentsCommandExecutor {
         }
     }
 
-    fn add_request_fees(&self,
-                        req: &str,
-                        inputs: &str,
-                        outputs: &str,
-                        wallet_handle: i32,
-                        submitter_did: &str,
-                        cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        match PaymentsCommandExecutor::parse_method_from_inputs(inputs) {
+    fn add_request_fees(&self, req: &str, inputs: &str, outputs: &str, wallet_handle: i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        match self.payments_service.parse_method_from_inputs_outputs(inputs, outputs) {
             Ok(type_) => {
                 let type_copy = type_.to_string();
                 self.process_method(
                     Box::new(move |result| cb(result.map(|e| (e, type_.to_string())))),
-                    &|i| self.payments_service.add_request_fees(i, &type_copy, req, inputs, outputs, wallet_handle, submitter_did)
+                    &|i| self.payments_service.add_request_fees(i, &type_copy, req, inputs, outputs, wallet_handle)
                 );
             }
             Err(error) => cb(Err(IndyError::from(error))),
@@ -280,15 +272,18 @@ impl PaymentsCommandExecutor {
         self.common_ack_payments(cmd_handle, result, "ParseResponseWithFeesFeesAck")
     }
 
-
     fn build_get_utxo_request(&self, payment_address: &str, wallet_handle: i32, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        let method = payment_address.matches("[^:]+:([^:]+):.*").next().unwrap().to_string();
-        let method_copy = method.to_string();
+        match self.payments_service.parse_method_from_payment_address(payment_address) {
+            Ok(method) => {
+                let method_copy = method.to_string();
 
-        self.process_method(
-            Box::new(move |get_utxo_txn_json| cb(get_utxo_txn_json.map(|s| (s, method.to_string())))),
-            & |i| self.payments_service.build_get_utxo_request(i, &method_copy, payment_address, wallet_handle, submitter_did)
-        );
+                self.process_method(
+                    Box::new(move |get_utxo_txn_json| cb(get_utxo_txn_json.map(|s| (s, method.to_string())))),
+                    &|i| self.payments_service.build_get_utxo_request(i, &method_copy, payment_address, wallet_handle)
+                );
+            }
+            Err(err) => cb(Err(IndyError::from(err)))
+        }
     }
 
     fn build_get_utxo_request_ack(&self, cmd_handle: i32, result: Result<String, PaymentsError>) {
