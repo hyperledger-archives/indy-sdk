@@ -67,11 +67,11 @@ DKMS architecture and DPKI provides the following major benefits:
 
 As a general rule, DKMS requirements are a derivation of CKMS requirements, adjusted for the lack of centralized authorities or systems for key management operations. Evernym’s DKMS team and subcontractors performed an extensive analysis of the applicability of conventional CKMS requirements to DKMS using [NIST Special Publication 800-130: A Framework for Designing Cryptographic Key Management Systems](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-130.pdf). For a summary of the results, see:
 
-* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Spreadsheet Based On NIST 800-130](https://github.com/hyperledger/indy-sdk/blob/master/doc/dkms/DKMS%20Requirements%20Spreadsheet%20Based%20On%20NIST%20800-130%20-%20Sheet1.pdf)
+* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Spreadsheet Based On NIST 800-130](https://github.com/hyperledger/indy-sdk/blob/master/doc/design/005-dkms/DKMS%20Requirements%20Spreadsheet%20Based%20On%20NIST%20800-130%20-%20Sheet1.pdf)
 
-* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Text Based on NIST 800-130](https://github.com/hyperledger/indy-sdk/blob/master/doc/dkms/DKMS%20Requirements%20Text%20Based%20on%20NIST%20800-130.pdf)
+* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Text Based on NIST 800-130](https://github.com/hyperledger/indy-sdk/blob/master/doc/design/005-dkms/DKMS%20Requirements%20Text%20Based%20on%20NIST%20800-130.pdf)
 
-* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Report - 30 June 2017](https://github.com/hyperledger/indy-sdk/blob/master/doc/dkms/DKMS%20Requirements%20Report%20-%2030%20June%202017.pdf)
+* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Report - 30 June 2017](https://github.com/hyperledger/indy-sdk/blob/master/doc/design/005-dkms/DKMS%20Requirements%20Report%20-%2030%20June%202017.pdf)
 
 The most relevant special requirements are highlighted in the following sections.
 
