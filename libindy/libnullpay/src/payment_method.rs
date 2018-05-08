@@ -153,7 +153,7 @@ pub mod parse_payment_response {
 
     mocked_handler!(resp_json: *const c_char);
 
-    fn handle(cmd_handle: i32, resp_json: *const c_char, cb: IndyPaymentCallback) -> ErrorCode {
+    fn handle(cmd_handle: i32, _resp_json: *const c_char, cb: IndyPaymentCallback) -> ErrorCode {
         let res = CString::new(r#"[{"input": "pay:null:1", "amount":1, "extra":"1"}, {"input": "pay:null:2", "amount":2, "extra":"2"}]"#).unwrap();
         let err = ErrorCode::Success;
         (cb)(cmd_handle, err, res.as_ptr())
