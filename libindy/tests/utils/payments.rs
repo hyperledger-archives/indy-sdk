@@ -4,9 +4,7 @@ use indy::api::ErrorCode;
 use std::ffi::CString;
 use std::sync::{Once, ONCE_INIT};
 use utils::callback::CallbackUtils;
-use utils::test::TestUtils;
 use self::nullpay::nullpay_init;
-use std::os::raw::c_char;
 use indy::api::payments::*;
 
 pub struct PaymentsUtils {}
@@ -38,23 +36,21 @@ impl PaymentsUtils {
         let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec();
         let payment_method_name = CString::new(payment_method_name).unwrap();
         let payment_method_name = payment_method_name.as_ptr();
-        let err = unsafe {
-            indy_register_payment_method(cmd_handle,
-                                         payment_method_name,
-                                         create_payment_address,
-                                         add_request_fees,
-                                         parse_response_with_fees,
-                                         build_get_utxo_request,
-                                         parse_get_utxo_response,
-                                         build_payment_req,
-                                         parse_payment_response,
-                                         build_mint_req,
-                                         build_set_txn_fees_req,
-                                         build_get_txn_fees_req,
-                                         parse_get_txn_fees_response,
-                                         cb,
-            )
-        };
+        let err = indy_register_payment_method(cmd_handle,
+                                               payment_method_name,
+                                               create_payment_address,
+                                               add_request_fees,
+                                               parse_response_with_fees,
+                                               build_get_utxo_request,
+                                               parse_get_utxo_response,
+                                               build_payment_req,
+                                               parse_payment_response,
+                                               build_mint_req,
+                                               build_set_txn_fees_req,
+                                               build_get_txn_fees_req,
+                                               parse_get_txn_fees_response,
+                                               cb,
+        );
 
         super::results::result_to_empty(err, receiver)
     }
@@ -214,9 +210,9 @@ impl PaymentsUtils {
         let resp_json = CString::new(resp_json).unwrap();
 
         let err = indy_parse_get_txn_fees_response(cmd_handle,
-                                              payment_method.as_ptr(),
+                                                   payment_method.as_ptr(),
                                                    resp_json.as_ptr(),
-                                              cb,
+                                                   cb,
         );
         super::results::result_to_string(err, receiver)
     }
