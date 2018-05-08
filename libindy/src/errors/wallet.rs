@@ -5,6 +5,7 @@ use std::error::Error;
 use std::io;
 use std::fmt;
 use std::string::FromUtf8Error;
+use libsqlite3_sys;
 
 use rusqlite;
 use serde_json;
@@ -196,7 +197,10 @@ pub enum WalletStorageError {
 
 impl From<rusqlite::Error> for WalletStorageError {
     fn from(err: rusqlite::Error) -> WalletStorageError {
-        WalletStorageError::IOError(format!("IO error during storage operation: {}", err.description()))
+        match &err {
+            &rusqlite::Error::SqliteFailure(libsqlite3_sys::Error{code: libsqlite3_sys::ErrorCode::ConstraintViolation, extended_code: _}, _) => WalletStorageError::ItemAlreadyExists,
+            _ => WalletStorageError::IOError(format!("IO error during storage operation: {}", err.description()))
+        }
     }
 }
 
