@@ -124,3 +124,10 @@ pub struct SchemaData {
 pub struct CredentialOfferInfo {
     pub cred_def_id: String
 }
+
+#[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
+pub struct Utxo {
+    pub input: String,
+    pub amount: i32,
+    pub extra: Option<String>
+}
