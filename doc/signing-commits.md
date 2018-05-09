@@ -46,7 +46,7 @@ Below we have made a simple walkthrough to do this, with the link to Github's do
 The `-S` flag signs your commit with GPG. the `-s` flag signs the commit message with your name and email. Both are required for the DCO check to succeed.
 
 ## How to Sign Previous Commits
-   1. Use `git-log --show-signature` to see which commits need to be signed.
+   1. Use `git log --show-signature` to see which commits need to be signed.
    1. Go into interactive rebase mode using `$ git rebase -i HEAD~X` where X is the number of commits up to the most current commit you would like to see.
    1. You will see a list of the commits in a text file. **On the line after each commit you need to sign**, add `exec git commit --amend --no-edit -S -s` with a capital `-S` for a GPG signature, and lowercase `-s` for a text signature in the commit body. Example that signs both commits:
       ```
