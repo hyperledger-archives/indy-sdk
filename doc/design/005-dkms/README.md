@@ -33,5 +33,5 @@ These methods are not exclusive and should be combined with key rotation and rev
 
 1. [Design and architecture](DKMS%20Design%20and%20Architecture%20V3.md)
 2. **Public Registry for Agent Authorization Policy**. An identity owner create a policy on the ledger that defines its agents and their authorizations. 
-   Agents while acting on the behalf of the identity owner need to prove that they are authorised. [More details](https://github.com/hyperledger/indy-sdk/blob/master/doc/dkms/Agent Authorization Policy.pdf)  
+   Agents while acting on the behalf of the identity owner need to prove that they are authorised. [More details](https://github.com/hyperledger/indy-sdk/blob/master/doc/design/005-dkms/Agent%20Authorization%20Policy.pdf)  
    
