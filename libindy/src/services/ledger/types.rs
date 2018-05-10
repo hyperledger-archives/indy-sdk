@@ -26,7 +26,7 @@ pub struct Request<T: serde::Serialize> {
 }
 
 impl<T: serde::Serialize> Request<T> {
-    fn new(req_id: u64, identifier: &str, operation: T, protocol_version: u64) -> Request<T> {
+    pub fn new(req_id: u64, identifier: &str, operation: T, protocol_version: u64) -> Request<T> {
         Request {
             req_id,
             identifier: identifier.to_string(),
@@ -34,10 +34,6 @@ impl<T: serde::Serialize> Request<T> {
             protocol_version,
             signature: None
         }
-    }
-
-    pub fn build_request(identifier: &str, operation: T) -> Result<String, serde_json::Error> {
-        serde_json::to_string(&Request::new(super::LedgerService::get_req_id(), identifier, operation, 1))
     }
 }
 

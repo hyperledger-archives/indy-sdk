@@ -3,6 +3,7 @@ package org.hyperledger.indy.sdk;
 import org.hyperledger.indy.sdk.anoncreds.*;
 import org.hyperledger.indy.sdk.did.DidAlreadyExistsException;
 import org.hyperledger.indy.sdk.ledger.ConsensusException;
+import org.hyperledger.indy.sdk.ledger.LedgerInvalidTransactionException;
 import org.hyperledger.indy.sdk.ledger.LedgerSecurityException;
 import org.hyperledger.indy.sdk.ledger.TimeoutException;
 import org.hyperledger.indy.sdk.payments.UnknownPaymentMethodException;
@@ -23,7 +24,7 @@ public class IndyException extends Exception {
 
 	/**
 	 * Initializes a new IndyException with the specified message.
-	 * 
+	 *
 	 * @param message The message for the exception.
 	 */
 	protected IndyException(String message, int sdkErrorCode) {
@@ -33,23 +34,23 @@ public class IndyException extends Exception {
 
 	/**
 	 * Gets the SDK error code for the exception.
-	 * 
+	 *
 	 * @return The SDK error code used to construct the exception.
 	 */
 	public int getSdkErrorCode() {
 		return sdkErrorCode;
 	}
-	
+
 	/**
 	 * Initializes a new IndyException using the specified SDK error code.
-	 * 
+	 *
 	 * @param sdkErrorCode The SDK error code to construct the exception from.
 	 */
 	public static IndyException fromSdkError(int sdkErrorCode) {
-		
+
 		ErrorCode errorCode = ErrorCode.valueOf(sdkErrorCode);
-		
-		switch(errorCode){
+
+		switch (errorCode) {
 			case CommonInvalidParam1:
 			case CommonInvalidParam2:
 			case CommonInvalidParam3:
@@ -95,6 +96,8 @@ public class IndyException extends Exception {
 				return new PoolLedgerTerminatedException();
 			case LedgerNoConsensusError:
 				return new ConsensusException();
+			case LedgerInvalidTransaction:
+				return new LedgerInvalidTransactionException();
 			case LedgerSecurityError:
 				return new LedgerSecurityException();
 			case PoolLedgerConfigAlreadyExistsError:
@@ -121,7 +124,7 @@ public class IndyException extends Exception {
 				return new UnknownPaymentMethodException();
 			default:
 				String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
-				return new IndyException(message, sdkErrorCode);			
+				return new IndyException(message, sdkErrorCode);
 		}
 	}
 }

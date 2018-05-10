@@ -576,6 +576,9 @@ fn ledger_demo_works() {
     info!("nym_resp_raw : {:?}", resp);
     info!("nym_resp     : {:?}", nym_resp);
 
+    // pause for syncronization of all nodes in the ledger
+    ::std::thread::sleep(TimeoutUtils::short_timeout());
+
     // 12. Prepare and send GET_NYM request
     let get_nym_req_id = PoolUtils::get_req_id();
     let get_nym_txn = Request {

@@ -1,6 +1,8 @@
-﻿using Hyperledger.Indy.LedgerApi;
+﻿using Hyperledger.Indy.BlobStorageApi;
+using Hyperledger.Indy.LedgerApi;
 using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
+using System;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.AnonCredsApi.NativeMethods;
 
@@ -14,114 +16,153 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <summary>
         /// Gets the callback to use when the IssuerCreateAndStoreClaimDefAsync command completes.
         /// </summary>
-        private static IssuerCreateAndStoreClaimDefCompletedDelegate _issuerCreateAndStoreClaimDefCallback = (xcommand_handle, err, claim_def_json) =>
+        private static IssuerCreateSchemaCompletedDelegate _issuerCreateSchemaCallback = (xcommand_handle, err, schema_id, schema_json) =>
         {
-            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+            var taskCompletionSource = PendingCommands.Remove<IssuerCreateSchemaResult>(xcommand_handle);
 
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(claim_def_json);
+            taskCompletionSource.SetResult(new IssuerCreateSchemaResult(schema_id, schema_json));
+        };
+
+        /// <summary>
+        /// Gets the callback to use when the IssuerCreateAndStoreClaimDefAsync command completes.
+        /// </summary>
+        private static IssuerCreateAndStoreCredentialDefCompletedDelegate _issuerCreateAndStoreClaimDefCallback = (xcommand_handle, err, claim_def_id, claim_def_json) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<IssuerCreateAndStoreCredentialDefResult>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(new IssuerCreateAndStoreCredentialDefResult(claim_def_id, claim_def_json));
         };
 
         /// <summary>
         /// Gets the callback to use when the IssuerCreateAndStoreClaimRevocRegAsync command completes.
         /// </summary>
-        private static IssuerCreateAndStoreClaimRevocRegCompletedDelegate _issuerCreateAndStoreClaimRevocRegCallback = (xcommand_handle, err, revoc_reg_json) =>
+        private static IssuerCreateAndStoreRevocRegCompletedDelegate _issuerCreateAndStoreClaimRevocRegCallback = (xcommand_handle, err, revoc_reg_id, revoc_reg_def_json, revoc_reg_entry_json) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<IssuerCreateAndStoreRevocRegResult>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(new IssuerCreateAndStoreRevocRegResult(revoc_reg_id, revoc_reg_def_json, revoc_reg_entry_json));
+        };
+
+        /// <summary>
+        /// Gets the callback to use when the IssuerCreateClaimAsync command completes.
+        /// </summary>
+        private static IssuerCreateCredentialOfferCompletedDelegate _issuerCreateCredentialOfferCallback = (xcommand_handle, err, cred_offer_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(revoc_reg_json);
+            taskCompletionSource.SetResult(cred_offer_json);
         };
 
         /// <summary>
         /// Gets the callback to use when the IssuerCreateClaimAsync command completes.
         /// </summary>
-        private static IssuerCreateClaimOfferCompletedDelegate _issuerCreateClaimOfferCallback = (xcommand_handle, err, claim_offer_json) =>
+        private static IssuerCreateCredentialCompletedDelegate _issuerCreateCredentialCallback = (xcommand_handle, err, cred_json, cred_revoc_id, revoc_reg_delta_json) =>
         {
-            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+            var taskCompletionSource = PendingCommands.Remove<IssuerCreateCredentialResult>(xcommand_handle);
 
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(claim_offer_json);
-        };
-
-        /// <summary>
-        /// Gets the callback to use when the IssuerCreateClaimAsync command completes.
-        /// </summary>
-        private static IssuerCreateClaimCompletedDelegate _issuerCreateClaimCallback = (xcommand_handle, err, revoc_reg_update_json, claim_json) =>
-        {
-            var taskCompletionSource = PendingCommands.Remove<IssuerCreateClaimResult>(xcommand_handle);
-
-            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
-                return;
-
-            var callbackResult = new IssuerCreateClaimResult(revoc_reg_update_json, claim_json);
+            var callbackResult = new IssuerCreateCredentialResult(cred_json, cred_revoc_id, revoc_reg_delta_json);
 
             taskCompletionSource.SetResult(callbackResult);
         };
 
 
         /// <summary>
-        /// Gets the callback to use when the IssuerRevokeClaimAsync command completes.
+        /// Gets the callback to use when the IssuerRevokeCredentialAsync command completes.
         /// </summary>
-        private static IssuerRevokeClaimCompletedDelegate IssuerRevokeClaimCallback = (xcommand_handle, err, revoc_reg_update_json) =>
+        private static IssuerRevokeCredentialCompletedDelegate _issuerRevokeCredentialCallback = (xcommand_handle, err, revoc_reg_delta_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(revoc_reg_update_json);
+            taskCompletionSource.SetResult(revoc_reg_delta_json);
         };
 
         /// <summary>
-        /// Gets the callback to use when the ProverGetClaimOffersAsync command completes.
+        /// The issuer merge revocation registry deltas callback.
         /// </summary>
-        private static ProverGetClaimOffersCompletedDelegate _proverGetClaimOffersCallback = (xcommand_handle, err, claim_offer_json) =>
+        private static IssuerMergeRevocationRegistryDeltasCompletedDelegate _issuerMergeRevocationRegistryDeltasCallback = (xcommand_handle, err, merged_rev_reg_delta) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(claim_offer_json);
+            taskCompletionSource.SetResult(merged_rev_reg_delta);
+        };
+
+        /// <summary>
+        /// The prover create master secret callback.
+        /// </summary>
+        private static ProverCreateMasterSecretCompletedDelegate _proverCreateMasterSecretCallback = (xcommand_handle, err, out_master_secret_id) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(out_master_secret_id);
         };
 
         /// <summary>
         /// Gets the callback to use when the roverCreateAndStoreClaimReqAsync command completes.
         /// </summary>
-        private static ProverCreateAndStoreClaimReqCompletedDelegate _proverCreateAndStoreClaimReqCallback = (xcommand_handle, err, claim_req_json) =>
+        private static ProverCreateCredentialReqCompletedDelegate _proverCreateCredentialReqCallback = (xcommand_handle, err, cred_req_json, cred_req_metadata_json) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<ProverCreateCredentialRequestResult>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(new ProverCreateCredentialRequestResult(cred_req_json, cred_req_metadata_json));
+        };
+
+        /// <summary>
+        /// The prover store credential callback.
+        /// </summary>
+        private static ProverStoreCredentialCompletedDelegate _proverStoreCredentialCallback = (xcommand_handle, err, out_cred_id) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(claim_req_json);
+            taskCompletionSource.SetResult(out_cred_id);
         };
 
         /// <summary>
         /// Gets the callback to use when the ProverGetClaimsAsync command completes.
         /// </summary>
-        private static ProverGetClaimsCompletedDelegate _proverGetClaimsCallback = (xcommand_handle, err, claims_json) =>
+        private static ProverGetCredentialsCompletedDelegate _proverGetCredentialsCallback = (xcommand_handle, err, matched_credentials_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(claims_json);
+            taskCompletionSource.SetResult(matched_credentials_json);
         };
 
         /// <summary>
         /// Gets the callback to use when the ProverGetClaimsForProofAsync command completes.
         /// </summary>
-        private static ProverGetClaimsForProofCompletedDelegate _proverGetClaimsForProofCallback = (xcommand_handle, err, claims_json) =>
+        private static ProverGetCredentialsForProofCompletedDelegate _proverGetClaimsForProofCallback = (xcommand_handle, err, claims_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -158,6 +199,76 @@ namespace Hyperledger.Indy.AnonCredsApi
         };
 
         /// <summary>
+        /// The create revocation state callback.
+        /// </summary>
+        private static CreateRevocationStateCompletedDelegate _createRevocationStateCallback = (xcommand_handle, err, rev_state_json) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(rev_state_json);
+        };
+
+        /// <summary>
+        /// The update revocation state callback.
+        /// </summary>
+        private static UpdateRevocationStateCompletedDelegate _updateRevocationStateCallback = (xcommand_handle, err, updated_rev_state_json) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(updated_rev_state_json);
+        };
+
+        /// <summary>
+        /// Create credential schema entity that describes credential attributes list and allows credentials
+        /// interoperability.
+        ///
+        /// Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
+        /// to Indy distributed ledger.
+        ///
+        /// It is IMPORTANT for current version POST Schema in Ledger and after that GET it from Ledger
+        /// with correct seq_no to save compatibility with Ledger.
+        /// After that can call indy_issuer_create_and_store_credential_def to build corresponding Credential Definition.
+        ///
+        /// </summary>
+        /// <returns>
+        /// schemaId: identifier of created schema
+        /// schemaJson: schema as json
+        /// </returns>
+        /// <param name="issuerDid">DID of schema issuer</param>
+        /// <param name="name">Name of the schema</param>
+        /// <param name="version">Version of the schema</param>
+        /// <param name="attrs">A list of schema attributes descriptions</param>
+        public static Task<IssuerCreateSchemaResult> IssuerCreateSchemaAsync(string issuerDid, string name, string version, string attrs)
+        {
+            ParamGuard.NotNullOrWhiteSpace(issuerDid, nameof(issuerDid));
+            ParamGuard.NotNullOrWhiteSpace(name, nameof(name));
+            ParamGuard.NotNullOrWhiteSpace(version, nameof(version));
+            ParamGuard.NotNullOrWhiteSpace(attrs, nameof(attrs));
+
+            var taskCompletionSource = new TaskCompletionSource<IssuerCreateSchemaResult>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_issuer_create_schema(
+                commandHandle,
+                issuerDid,
+                name,
+                version,
+                attrs,
+                _issuerCreateSchemaCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
         /// Creates keys for the given schema and signature type.
         /// </summary>
         /// <remarks>
@@ -172,27 +283,30 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="wallet">The wallet into which the claim definition will be stored.</param>
         /// <param name="issuerDid">The DID of the issuer of the claim definition.</param>
         /// <param name="schemaJson">The JSON schema of the claim definition.</param>
-        /// <param name="signatureType">The type of signature to use.</param>
-        /// <param name="createNonRevoc">Whether to request non-revocation claim.</param>
+        /// <param name="tag">Allows to distinct between credential definitions for the same issuer and schema</param>
+        /// <param name="type">The type of signature to use.</param>
+        /// <param name="configJson">Whether to request non-revocation claim.</param>
         /// <returns>
-        /// An asynchronous <see cref="Task{T}"/> that, when the operation completes, resolves to a 
-        /// JSON string containing the claim definition.</returns>
-        public static Task<string> IssuerCreateAndStoreClaimDefAsync(Wallet wallet, string issuerDid, string schemaJson, string signatureType, bool createNonRevoc)
+        /// credDefId: identifier of created credential definition
+        /// credDefJson: public part of created credential definition
+        /// </returns>
+        public static Task<IssuerCreateAndStoreCredentialDefResult> IssuerCreateAndStoreCredentialDefAsync(Wallet wallet, string issuerDid, string schemaJson, string tag, string type, string configJson)
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(issuerDid, "issuerDid");
             ParamGuard.NotNullOrWhiteSpace(schemaJson, "schemaJson");
             
-            var taskCompletionSource = new TaskCompletionSource<string>();
+            var taskCompletionSource = new TaskCompletionSource<IssuerCreateAndStoreCredentialDefResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = NativeMethods.indy_issuer_create_and_store_claim_def(
+            var commandResult = NativeMethods.indy_issuer_create_and_store_credential_def(
                 commandHandle,
                 wallet.Handle,
                 issuerDid,
                 schemaJson,
-                signatureType,
-                createNonRevoc,
+                tag,
+                type,
+                configJson,
                 _issuerCreateAndStoreClaimDefCallback
                 );
 
@@ -202,32 +316,63 @@ namespace Hyperledger.Indy.AnonCredsApi
         }
 
         /// <summary>
-        /// Creates a new revocation registry for the provided claim definition.
+        /// Create a new revocation registry for the given credential definition as tuple of entities:
+        /// - Revocation registry definition that encapsulates credentials definition reference, revocation type specific configuration and
+        ///   secrets used for credentials revocation
+        /// - Revocation registry state that stores the information about revoked entities in a non-disclosing way. The state can be
+        ///   represented as ordered list of revocation registry entries were each entry represents the list of revocation or issuance operations.
+        ///
+        /// Revocation registry definition entity contains private and public parts. Private part will be stored in the wallet. Public part
+        /// will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing REVOC_REG_DEF transaction
+        /// to Indy distributed ledger.
+        ///
+        /// Revocation registry state is stored on the wallet and also intended to be shared as the ordered list of REVOC_REG_ENTRY transactions.
+        /// This call initializes the state in the wallet and returns the initial entry.
+        ///
+        /// Some revocation registry types (for example, 'CL_ACCUM') can require generation of binary blob called tails used to hide information about revoked credentials in public
+        /// revocation registry and intended to be distributed out of leger (REVOC_REG_DEF transaction will still contain uri and hash of tails).
+        /// This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.
+        ///
         /// </summary>
-        /// <remarks>
-        /// The revocation registry is stored in the provided <paramref name="wallet"/> and is identified by
-        /// a unique key which is returned in the revocation registry JSON string returned by the method.
-        /// </remarks>
-        /// <param name="wallet">The wallet to store the revocation registry in.</param>
-        /// <param name="issuerDid">The DID of the issuer that signed the revoc_reg transaction to the ledger.</param>
-        /// <param name="schemaSeqNo">The sequence number of a schema transaction in the ledger.</param>
-        /// <param name="maxClaimNum">The maximum number of claims the new registry can process.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that, when the operation completes, resolves 
-        /// to a JSON string containing the revocation registry.</returns>
-        public static Task<string> IssuerCreateAndStoreRevocRegAsync(Wallet wallet, string issuerDid, int schemaSeqNo, int maxClaimNum)
+        /// <returns>
+        /// revoc_reg_id: identifier of created revocation registry definition
+        /// revoc_reg_def_json: public part of revocation registry definition
+        /// revoc_reg_entry_json: revocation registry entry that defines initial state of revocation registry</returns>
+        /// <param name="wallet">wallet handler (created by open_wallet)..</param>
+        /// <param name="issuerDid">a DID of the issuer signing transaction to the Ledger.</param>
+        /// <param name="type">revocation registry type (optional, default value depends on credential definition type). Supported types are:
+        /// - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' credential definition type.</param>
+        /// <param name="tag">allows to distinct between revocation registries for the same issuer and credential definition.</param>
+        /// <param name="credDefId">id of stored in ledger credential definition.</param>
+        /// <param name="configJson">type-specific configuration of revocation registry as json:
+        /// - 'CL_ACCUM': {
+        ///     "issuance_type": (optional) type of issuance. Currently supported:
+        ///         1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
+        ///            Revocation Registry is updated only during revocation.
+        ///         2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
+        ///     "max_cred_num": maximum number of credentials the new registry can process (optional, default 100000)
+        /// }.</param>
+        /// <param name="tailsWriter">handle of blob storage to store tails</param>
+        public static Task<IssuerCreateAndStoreRevocRegResult> IssuerCreateAndStoreRevocRegAsync(Wallet wallet, string issuerDid, string type, string tag, string credDefId, string configJson, BlobStorageWriter tailsWriter)
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(issuerDid, "issuerDid");
+            ParamGuard.NotNullOrWhiteSpace(tag, "tag");
+            ParamGuard.NotNullOrWhiteSpace(credDefId, "credDefId");
+            ParamGuard.NotNullOrWhiteSpace(configJson, "configJson");
 
-            var taskCompletionSource = new TaskCompletionSource<string>();
+            var taskCompletionSource = new TaskCompletionSource<IssuerCreateAndStoreRevocRegResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
             var commandResult = NativeMethods.indy_issuer_create_and_store_revoc_reg(
                 commandHandle,
                 wallet.Handle,
                 issuerDid,
-                schemaSeqNo,
-                maxClaimNum,
+                type,
+                tag,
+                credDefId,
+                configJson,
+                tailsWriter.Handle,
                 _issuerCreateAndStoreClaimRevocRegCallback
                 );
 
@@ -237,30 +382,35 @@ namespace Hyperledger.Indy.AnonCredsApi
         }
 
         /// <summary>
-        /// TODO: Issuers the create claim offer async.
+        /// Create credential offer that will be used by Prover for
+        /// credential request creation. Offer includes nonce and key correctness proof
+        /// for authentication between protocol steps and integrity checking.
         /// </summary>
-        /// <returns>The create claim offer async.</returns>
+        /// <returns>
+        /// credential offer json:
+        ///     {
+        ///         "schema_id": string,
+        ///         "cred_def_id": string,
+        ///         // Fields below can depend on Cred Def type
+        ///         "nonce": string,
+        ///         "key_correctness_proof" : [key_correctness_proof]
+        ///     }
+        /// </returns>
         /// <param name="wallet">Wallet.</param>
-        /// <param name="schemaJson">Schema json.</param>
-        /// <param name="issuerDid">Issuer did.</param>
-        /// <param name="proverDid">Prover did.</param>
-        public static Task<string> IssuerCreateClaimOfferAsync(Wallet wallet, string schemaJson, string issuerDid, string proverDid)
+        /// <param name="credDefId"> id of credential definition stored in the wallet</param>
+        public static Task<string> IssuerCreateCredentialOfferAsync(Wallet wallet, string credDefId)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(schemaJson, "schemaJson");
-            ParamGuard.NotNullOrWhiteSpace(issuerDid, "issuerDid");
-            ParamGuard.NotNullOrWhiteSpace(proverDid, "proverDid");
+            ParamGuard.NotNullOrWhiteSpace(credDefId, "credDefId");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = NativeMethods.indy_issuer_create_claim_offer(
+            var commandResult = NativeMethods.indy_issuer_create_credential_offer(
                 commandHandle,
                 wallet.Handle,
-                schemaJson,
-                issuerDid,
-                proverDid,
-                _issuerCreateClaimOfferCallback
+                credDefId,
+                _issuerCreateCredentialOfferCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -269,72 +419,62 @@ namespace Hyperledger.Indy.AnonCredsApi
         }
 
         /// <summary>
-        /// Signs the provided claim for using the key provided in the specified claim request.
+        /// Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.
+        ///
+        /// Cred Request must match Cred Offer. The credential definition and revocation registry definition
+        /// referenced in Cred Offer and Cred Request must be already created and stored into the wallet.
+        ///
+        /// Information for this credential revocation will be store in the wallet as part of revocation registry under
+        /// generated cred_revoc_id local for this wallet.
+        ///
+        /// This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
+        /// Note that it is possible to accumulate deltas to reduce ledger load.
         /// </summary>
-        /// <remarks>
-        /// <para>
-        /// The <paramref name="claimReqJson"/> parameter must be passed a claim request that was previously
-        /// created using the <see cref="ProverCreateAndStoreClaimReqAsync(Wallet, string, string, string, string)"/>
-        /// method.  Usually the claim request will be received from another party that has performed this 
-        /// action.
-        /// </para>
-        /// <para>
-        /// The claim to be signed is provided in the <paramref name="claimJson"/> parameter 
-        /// and the structure of the claim must conform to the schema from claim request provided in 
-        /// the <paramref name="claimReqJson"/> parameter.  Claims must be structured as a series of
-        /// attributes, each of which has two values; a human readable value and a hex encoded value.  
-        /// <code>
-        /// {
-        ///      "attr1" : ["value1", "value1_as_int"],
-        ///      "attr2" : ["value2", "value2_as_int"]
-        /// }
-        /// </code>
-        /// For example:
-        /// <code>
-        /// {
-        ///     'name': ['Alex', '1139481716457488690172217916278103335'],
-        ///     'height': ['175', '175']
-        /// }
-        /// </code>
-        /// </para>
-        /// <para>
-        /// This method results a revocation registry update JSON and a newly issued claim JSON.  The
-        /// claim JSON contains the issued claim, the DID of the issuer (<c>issuer_did</c>), 
-        /// schema sequence number (<c>schema_seq_no</c>) and revocation registry sequence number (<c>
-        /// revoc_reg_seq_no</c>) used for issuance:
-        /// <code>
-        /// {
-        ///     "claim": &lt;see claim_json above&gt;,
-        ///     "signature": &lt;signature&gt;,
-        ///     "revoc_reg_seq_no", string,
-        ///     "issuer_did", string,
-        ///     "schema_seq_no", string,
-        /// }
-        /// </code>
-        /// </para>
-        /// </remarks>
-        /// <param name="wallet">The wallet containing the keys to use for signing the claim.</param>
-        /// <param name="claimReqJson">A claim request with a blinded secret.</param>
-        /// <param name="claimJson">A claim containing attribute values for each of requested attribute names.</param>
-        /// <param name="userRevocIndex">The index of a new user in the revocation registry or -1 if absentee.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that, when the operation completes, resolves to 
-        /// an <see cref="IssuerCreateClaimResult"/>.</returns>
-        public static Task<IssuerCreateClaimResult> IssuerCreateClaimAsync(Wallet wallet, string claimReqJson, string claimJson, int userRevocIndex)
+        /// <returns>
+        /// cred_json: Credential json containing signed credential values
+        ///     {
+        ///         "schema_id": string,
+        ///         "cred_def_id": string,
+        ///         "rev_reg_def_id", Optional&lt;string&gt;,
+        ///         "values": [see cred_values_json above],
+        ///         // Fields below can depend on Cred Def type
+        ///         "signature": [signature],
+        ///         "signature_correctness_proof": [signature_correctness_proof]
+        ///     }
+        /// cred_revoc_id: local id for revocation info (Can be used for revocation of this cred)
+        /// revoc_reg_delta_json: Revocation registry delta json with a newly issued credential
+        /// </returns>
+        /// <param name="wallet">Wallet.</param>
+        /// <param name="credOfferJson">a cred offer created by indy_issuer_create_credential_offer</param>
+        /// <param name="credReqJson">a credential request created by indy_prover_create_credential_req.</param>
+        /// <param name="credValuesJson">a credential containing attribute values for each of requested attribute names.
+        ///     Example:
+        ///     {
+        ///      "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
+        ///      "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
+        ///     }</param>
+        /// <param name="revRegId">id of revocation registry stored in the wallet.</param>
+        /// <param name="blobStorageReader">configuration of blob storage reader handle that will allow to read revocation tails</param>
+        public static Task<IssuerCreateCredentialResult> IssuerCreateCredentialAsync(Wallet wallet, string credOfferJson, string credReqJson, string credValuesJson, string revRegId, BlobStorageReader blobStorageReader)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(claimReqJson, "claimReqJson");
-            ParamGuard.NotNullOrWhiteSpace(claimJson, "claimJson");
+            ParamGuard.NotNullOrWhiteSpace(credOfferJson, "credOfferJson");
+            ParamGuard.NotNullOrWhiteSpace(credReqJson, "credReqJson");
+            ParamGuard.NotNullOrWhiteSpace(credValuesJson, "credValuesJson");
 
-            var taskCompletionSource = new TaskCompletionSource<IssuerCreateClaimResult>();
+
+            var taskCompletionSource = new TaskCompletionSource<IssuerCreateCredentialResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = NativeMethods.indy_issuer_create_claim(
+            var commandResult = NativeMethods.indy_issuer_create_credential(
                 commandHandle,
                 wallet.Handle,
-                claimReqJson,
-                claimJson,
-                userRevocIndex,
-                _issuerCreateClaimCallback
+                credOfferJson,
+                credReqJson,
+                credValuesJson,
+                revRegId,
+                blobStorageReader?.Handle ?? -1,
+                _issuerCreateCredentialCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -343,35 +483,36 @@ namespace Hyperledger.Indy.AnonCredsApi
         }
 
         /// <summary>
-        /// Revokes a user identified by a revoc_id in a given revoc-registry.
+        /// 
+        /// Revoke a credential identified by a cred_revoc_id (returned by indy_issuer_create_credential).
+        ///
+        /// The corresponding credential definition and revocation registry must be already
+        /// created an stored into the wallet.
+        ///
+        /// This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
+        /// Note that it is possible to accumulate deltas to reduce ledger load.
         /// </summary>
-        /// <remarks>
-        /// <para>
-        /// The corresponding claim definition and revocation registry must be already
-        /// have been created and stored in the wallet.
-        /// </para>
-        /// </remarks>
-        /// <param name="wallet">The target wallet.</param>
-        /// <param name="issuerDid">The DID of the issuer.</param>
-        /// <param name="schemaSequenceNumber">The sequence number of the schema.</param>
-        /// <param name="userRevocIndex">index of the user in the revocation registry</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that, when the operation completes, resolves 
-        /// to a revocation registry update JSON with a revoked claim.</returns>
-        public static Task<string> IssuerRevokeClaimAsync(Wallet wallet, string issuerDid, int schemaSequenceNumber, int userRevocIndex)
+        /// <returns>revoc_reg_delta_json: Revocation registry delta json with a revoked credential.</returns>
+        /// <param name="wallet">Wallet.</param>
+        /// <param name="blobStorageReader">configuration of blob storage reader handle that will allow to read revocation tails</param>
+        /// <param name="revRegId">id of revocation registry stored in wallet</param>
+        /// <param name="credRevocId">local id for revocation info.</param>
+        public static Task<string> IssuerRevokeCredentialAsync(Wallet wallet, BlobStorageReader blobStorageReader, string revRegId, string credRevocId)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(issuerDid, "issuerDid");
+            ParamGuard.NotNullOrWhiteSpace(revRegId, "revRegId");
+            ParamGuard.NotNullOrWhiteSpace(credRevocId, "credRevocId");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = NativeMethods.indy_issuer_revoke_claim(
+            var commandResult = NativeMethods.indy_issuer_revoke_credential(
                 commandHandle,
                 wallet.Handle,
-                issuerDid,
-                schemaSequenceNumber,
-                userRevocIndex,
-                IssuerRevokeClaimCallback
+                blobStorageReader.Handle,
+                revRegId,
+                credRevocId,
+                _issuerRevokeCredentialCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -380,91 +521,25 @@ namespace Hyperledger.Indy.AnonCredsApi
         }
 
         /// <summary>
-        /// Stores a claim offer.
+        /// Merge two revocation registry deltas (returned by indy_issuer_create_credential or indy_issuer_revoke_credential) to accumulate common delta.
+        /// Send common delta to ledger to reduce the load.
         /// </summary>
-        /// <remarks>
-        /// Stores a claim offer from the issuer specified in the <paramref name="claimOfferJson"/>
-        /// into the provided <paramref name="wallet"/>.  The expected structure of the claim offer
-        /// is as follows:
-        /// <code>
-        /// {
-        ///     "issuer_did": string,
-        ///     "schema_seq_no": string
-        /// }
-        /// </code>
-        /// </remarks>
-        /// <param name="wallet">The target wallet.</param>
-        /// <param name="claimOfferJson">The claim offer JSON</param>
-        /// <returns>An asynchronous <see cref="Task"/> that completes when the operation has completed.</returns>
-        public static Task ProverStoreClaimOfferAsync(Wallet wallet, string claimOfferJson)
+        /// <returns>merged_rev_reg_delta: Merged revocation registry delta.</returns>
+        /// <param name="revRegDelta">revocation registry delta.</param>
+        /// <param name="otherRevRegDelta">revocation registry delta for which PrevAccum value  is equal to current accum value of rev_reg_delta_json..</param>
+        public static Task<string> IssuerMergeRevocationRegistryDeltasAsync(string revRegDelta, string otherRevRegDelta)
         {
-            ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(claimOfferJson, "claimOfferJson");
-
-            var taskCompletionSource = new TaskCompletionSource<bool>();
-            var commandHandle = PendingCommands.Add(taskCompletionSource);
-
-            var commandResult = NativeMethods.indy_prover_store_claim_offer(
-                commandHandle,
-                wallet.Handle,
-                claimOfferJson,
-                CallbackHelper.TaskCompletingNoValueCallback
-                );
-
-            CallbackHelper.CheckResult(commandResult);
-
-            return taskCompletionSource.Task;
-        }
-
-        /// <summary>
-        /// Gets all claim offers in the provided wallet matching the specified filter.
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// Claim offers stored with the <see cref="ProverStoreClaimOfferAsync(Wallet, string)"/> can be
-        /// retrieved from the <paramref name="wallet"/> by searching on the DID of the issuer and/or the schema 
-        /// sequence number.  To filter the claim offers a <paramref name="filterJson"/> parameter must be provided with 
-        /// a JSON string which can include the following members:
-        /// <code>
-        /// {
-        ///     "issuer_did": string,
-        ///     "schema_seq_no": string
-        /// }
-        /// </code>
-        /// </para>
-        /// <para>
-        /// The return value from this method is a JSON string that contains the list of matching claim 
-        /// offers in the following format:
-        /// <code>
-        /// {
-        ///     [
-        ///         {
-        ///             "issuer_did": string,
-        ///             "schema_seq_no": string
-        ///         },
-        ///         ...
-        ///     ]
-        /// }
-        /// </code>
-        /// </para>
-        /// </remarks>
-        /// <param name="wallet">The wallet containing the claims to get.</param>
-        /// <param name="filterJson">The filter JSON.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that, when the operation completes, resolves 
-        /// to a JSON string with a list of claim offers matching the filter.</returns>
-        public static Task<string> ProverGetClaimOffersAsync(Wallet wallet, string filterJson)
-        {
-            ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(filterJson, "filterJson");
+            ParamGuard.NotNullOrWhiteSpace(revRegDelta, "revRegDelta");
+            ParamGuard.NotNullOrWhiteSpace(otherRevRegDelta, "otherRevRegDelta");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = NativeMethods.indy_prover_get_claim_offers(
+            var commandResult = NativeMethods.indy_issuer_merge_revocation_registry_deltas(
                 commandHandle,
-                wallet.Handle,
-                filterJson,
-                _proverGetClaimOffersCallback
+                revRegDelta,
+                otherRevRegDelta,
+                _issuerMergeRevocationRegistryDeltasCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -479,21 +554,20 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// The name of the master secret must be unique within the wallet.
         /// </remarks>
         /// <param name="wallet">The target wallet.</param>
-        /// <param name="masterSecretName">The name of the master secret.</param>
+        /// <param name="masterSecretId">The name of the master secret.</param>
         /// <returns>An asynchronous <see cref="Task"/> that completes when the operation has completed.</returns>
-        public static Task ProverCreateMasterSecretAsync(Wallet wallet, string masterSecretName)
+        public static Task<string> ProverCreateMasterSecretAsync(Wallet wallet, string masterSecretId)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(masterSecretName, "masterSecretName");
 
-            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
             var commandResult = NativeMethods.indy_prover_create_master_secret(
                 commandHandle,
                 wallet.Handle,
-                masterSecretName,
-                CallbackHelper.TaskCompletingNoValueCallback
+                masterSecretId,
+                _proverCreateMasterSecretCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -502,60 +576,48 @@ namespace Hyperledger.Indy.AnonCredsApi
         }
 
         /// <summary>
-        /// Creates a claim request for the specified claim offer and stores it in the provided wallet.
+        /// Creates a credential request for the given credential offer.
+        ///
+        /// The method creates a blinded master secret for a master secret identified by a provided name.
+        /// The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
+        /// The blinded master secret is a part of the credential request.
         /// </summary>
-        /// <remarks>
-        /// <para>
-        /// The JSON of a claim definition that is associated with the issuer_did and schema_seq_no in the 
-        /// claim_offer must be provided in the <paramref name="claimDefJson"/> parameter.  Claim 
-        /// definitions can be retrieved from the ledger using the 
-        /// <see cref="Ledger.BuildGetClaimDefTxnAsync(string, int, string, string)"/>method.
-        /// </para>
-        /// <para>
-        /// The JSON in the <paramref name="claimOfferJson"/> parameter contains information about the 
-        /// issuer of the claim offer:
-        /// <code>
-        /// {
-        ///     "issuer_did": string,
-        ///     "schema_seq_no": string
-        /// }
-        /// </code>
-        /// This method gets the public key and schema the <c>issuer_did</c> from the ledger for and 
-        /// stores them in the provided wallet. Once this is complete a blinded master secret is for the 
-        /// master secret specified by the <paramref name="masterSecretName"/> parameter.  
-        /// <note type="note">
-        /// The master secret identified by the name must be already stored in the secure wallet using the
-        /// <see cref="ProverCreateMasterSecretAsync(Wallet, string)"/> method.
-        /// </note>
-        /// The blinded master secret becomes a part of the claim request.
-        /// </para>
-        /// </remarks>
-        /// <param name="wallet">The target wallet.</param>
-        /// <param name="proverDid">The DID of the prover.</param>
-        /// <param name="claimOfferJson">The claim offer JSON to generate a claim request for.</param>
-        /// <param name="claimDefJson">The claim definition JSON.</param>
-        /// <param name="masterSecretName">The name of the master secret in the wallet to use for generating the blinded secret.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that, when the operation completes, resolves 
-        /// to a JSON string containing the claim request.</returns>
-        public static Task<string> ProverCreateAndStoreClaimReqAsync(Wallet wallet, string proverDid, string claimOfferJson, string claimDefJson, string masterSecretName)
+        /// <returns>
+        /// cred_req_json: Credential request json for creation of credential by Issuer
+        ///     {
+        ///      "prover_did" : string,
+        ///      "cred_def_id" : string,
+        ///         // Fields below can depend on Cred Def type
+        ///      "blinded_ms" : [blinded_master_secret],
+        ///      "blinded_ms_correctness_proof" : [blinded_ms_correctness_proof],
+        ///      "nonce": string
+        ///    }
+        /// cred_req_metadata_json: Credential request metadata json for processing of received form Issuer credential.
+        ///</returns>
+        /// <param name="wallet">Wallet.</param>
+        /// <param name="proverDid">a DID of the prover.</param>
+        /// <param name="credOfferJson">credential offer as a json containing information about the issuer and a credential.</param>
+        /// <param name="credDefJson">credential definition json.</param>
+        /// <param name="masterSecretId">the id of the master secret stored in the wallet.</param>
+        public static Task<ProverCreateCredentialRequestResult> ProverCreateCredentialReqAsync(Wallet wallet, string proverDid, string credOfferJson, string credDefJson, string masterSecretId)
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(proverDid, "proverDid");
-            ParamGuard.NotNullOrWhiteSpace(claimOfferJson, "claimOfferJson");
-            ParamGuard.NotNullOrWhiteSpace(claimDefJson, "claimDefJson");
-            ParamGuard.NotNullOrWhiteSpace(masterSecretName, "masterSecretName");
+            ParamGuard.NotNullOrWhiteSpace(credOfferJson, "credOfferJson");
+            ParamGuard.NotNullOrWhiteSpace(credDefJson, "credDefJson");
+            ParamGuard.NotNullOrWhiteSpace(masterSecretId, "masterSecretId");
 
-            var taskCompletionSource = new TaskCompletionSource<string>();
+            var taskCompletionSource = new TaskCompletionSource<ProverCreateCredentialRequestResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = NativeMethods.indy_prover_create_and_store_claim_req(
+            var commandResult = NativeMethods.indy_prover_create_credential_req(
                 commandHandle,
                 wallet.Handle,
                 proverDid,
-                claimOfferJson,
-                claimDefJson,
-                masterSecretName,
-                _proverCreateAndStoreClaimReqCallback
+                credOfferJson,
+                credDefJson,
+                masterSecretId,
+                _proverCreateCredentialReqCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -564,105 +626,38 @@ namespace Hyperledger.Indy.AnonCredsApi
         }
 
         /// <summary>
-        /// Updates and stores the provided claim in the specified wallet.
+        /// Check credential provided by Issuer for the given credential request,
+        /// updates the credential by a master secret and stores in a secure wallet.
         /// </summary>
-        /// <remarks>
-        /// <para>
-        /// This method updates the claim provided in the <paramref name="claimsJson"/> parameter
-        /// with a blinded master secret and stores it in the wallet specified in the 
-        /// <paramref name="wallet"/> parameter. 
-        /// </para>
-        /// <para>
-        /// The claim JSON is typically structured as follows:
-        /// <code>
-        /// {
-        ///     "claim": {attr1:[value, value_as_int]}
-        ///     "signature": &lt;signature&gt;,
-        ///     "schema_seq_no": string,
-        ///     "revoc_reg_seq_no", string
-        ///     "issuer_did", string
-        /// }
-        /// </code>
-        /// It contains the information about the <c>schema_seq_no</c>, <c>issuer_did</c> 
-        /// and <c>revoc_reg_seq_no</c> - see the <see cref="IssuerCreateClaimAsync(Wallet, string, string, int)"/>
-        /// method for details.
-        /// </para>
-        /// Seq_no is a sequence number of the corresponding transaction in the ledger.
-        /// </remarks>
-        /// <param name="wallet">The target wallet.</param>
-        /// <param name="claimsJson">The claims JSON.</param>
-        /// <param name="revRegJson">revocation registry json</param>
-        /// <returns>An asynchronous <see cref="Task"/> that completes when the operation has completed.</returns>
-        public static Task ProverStoreClaimAsync(Wallet wallet, string claimsJson, string revRegJson)
+        /// <returns>out_cred_id: identifier by which credential is stored in the wallet.</returns>
+        /// <param name="wallet">Wallet.</param>
+        /// <param name="credId">(optional, default is a random one) identifier by which credential will be stored in the wallet</param>
+        /// <param name="credReqJson">a credential request created by indy_prover_create_credential_req.</param>
+        /// <param name="credReqMetadataJson">a credential request metadata created by indy_prover_create_credential_req</param>
+        /// <param name="credJson">credential json received from issuer.</param>
+        /// <param name="credDefJson">redential definition json.</param>
+        /// <param name="revRegDefJson">revocation registry definition json.</param>
+        public static Task<string> ProverStoreCredentialAsync(Wallet wallet, string credId, string credReqJson, string credReqMetadataJson, string credJson, string credDefJson, string revRegDefJson)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(claimsJson, "claimsJson");
-
-            var taskCompletionSource = new TaskCompletionSource<bool>();
-            var commandHandle = PendingCommands.Add(taskCompletionSource);
-
-            var commandResult = NativeMethods.indy_prover_store_claim(
-                commandHandle,
-                wallet.Handle,
-                claimsJson,
-                revRegJson,
-                CallbackHelper.TaskCompletingNoValueCallback
-                );
-
-            CallbackHelper.CheckResult(commandResult);
-
-            return taskCompletionSource.Task;
-        }
-
-        /// <summary>
-        /// Gets claims matching the provided filter from the specified wallet.
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// Claims can be filtered by Issuer, claim_def and/or Schema. To filter the results set the
-        /// <paramref name="filterJson"/> parameter with a JSON string that conforms to the following 
-        /// format:
-        /// <code>
-        /// {
-        ///     "issuer_did": string,
-        ///     "schema_seq_no": string
-        /// }
-        /// </code>
-        /// If <paramref name="filterJson"/> is null then all claims will be returned.
-        /// </para>
-        /// <para>
-        /// Upon successful completion this method will return a JSON string containing an array of
-        /// claims:
-        /// <code>
-        /// [
-        ///     {
-        ///         "referent": string,
-        ///         "attrs": [{"attr_name" : "attr_value"}, ...],
-        ///         "schema_seq_no": string,
-        ///         "issuer_did": string,
-        ///         "revoc_reg_seq_no": string,
-        ///     },
-        ///     ...
-        /// ]
-        /// </code>
-        /// </para>
-        /// </remarks>
-        /// <param name="wallet">The target wallet.</param>
-        /// <param name="filterJson">The filter JSON.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that, when the operation completes, resolves 
-        /// to a JSON string containing the claim request.</returns>
-        public static Task<string> ProverGetClaimsAsync(Wallet wallet, string filterJson)
-        {
-            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(credReqJson, "credReqJson");
+            ParamGuard.NotNullOrWhiteSpace(credReqMetadataJson, "credReqMetadataJson");
+            ParamGuard.NotNullOrWhiteSpace(credJson, "credJson");
+            ParamGuard.NotNullOrWhiteSpace(credDefJson, "credDefJson");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = NativeMethods.indy_prover_get_claims(
+            var commandResult = NativeMethods.indy_prover_store_credential(
                 commandHandle,
                 wallet.Handle,
-                filterJson,
-                _proverGetClaimsCallback
+                credId,
+                credReqJson,
+                credReqMetadataJson,
+                credJson,
+                credDefJson,
+                revRegDefJson,
+                _proverStoreCredentialCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -671,51 +666,126 @@ namespace Hyperledger.Indy.AnonCredsApi
         }
 
         /// <summary>
-        /// Gets claims matching the provided proof request from the specified wallet.
+        /// Gets human readable credentials according to the filter.
+        /// If filter is NULL, then all credentials are returned.
+        /// Credentials can be filtered by Issuer, credential_def and/or Schema.
         /// </summary>
-        /// <remarks>
-        /// The proof request provided in the <paramref name="proofRequestJson"/> parameter must conform 
-        /// to the format:
-        /// <code>
-        /// {
-        ///     "name": string,
-        ///     "version": string,
-        ///     "nonce": string,
-        ///     "requested_attr1_referent": &lt;attr_info&gt;,
-        ///     "requested_attr2_referent": &lt;attr_info&gt;,
-        ///     "requested_attr3_referent": &lt;attr_info&gt;,
-        ///     "requested_predicate_1_referent": &lt;predicate_info&gt;,
-        ///     "requested_predicate_2_referent": &lt;predicate_info&gt;,
-        /// }
-        /// </code>
-        /// The method will return a JSON string with claims matching the given proof request in the following format:
-        /// <code>
-        /// {
-        ///     "requested_attr1_referent": [claim1, claim2],
-        ///     "requested_attr2_referent": [],
-        ///     "requested_attr3_referent": [claim3],
-        ///     "requested_predicate_1_referent": [claim1, claim3],
-        ///     "requested_predicate_2_referent": [claim2],
-        /// }
-        /// </code>
-        /// Each claim in the result consists of a uuid (<c>referent</c>), human-readable attributes as
-        /// a key-value map (<c>attrs</c>), a schema sequence number (<c>schema_seq_no</c>) an issuer DID
-        /// (<c>issuer_did</c>) and a revocation registry sequence number (<c>revoc_reg_seq_no</c>):
-        /// <code>
-        /// {
-        ///     "referent": string,
-        ///     "attrs": [{"attr_name" : "attr_value"}],
-        ///     "schema_seq_no": string,
-        ///     "issuer_did": string,
-        ///     "revoc_reg_seq_no": string,
-        /// }
-        /// </code>
-        /// </remarks>
-        /// <param name="wallet">The target wallet.</param>
-        /// <param name="proofRequestJson">The proof request JSON.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that, when the operation completes, resolves 
-        /// to a JSON string containing the claims for the proof request.</returns>
-        public static Task<string> ProverGetClaimsForProofReqAsync(Wallet wallet, string proofRequestJson)
+        /// <returns>/// credentials json
+        ///     [{
+        ///         "referent": string, // cred_id in the wallet
+        ///         "values": [see cred_values_json above],
+        ///         "schema_id": string,
+        ///         "cred_def_id": string,
+        ///         "rev_reg_id": Optional string,
+        ///         "cred_rev_id": Optional string
+        ///     }].</returns>
+        /// <param name="wallet">Wallet.</param>
+        /// <param name="filterJson">filter_json: filter for credentials
+        ///        {
+        ///            "schema_id": string, (Optional)
+        ///            "schema_issuer_did": string, (Optional)
+        ///            "schema_name": string, (Optional)
+        ///            "schema_version": string, (Optional)
+        ///            "issuer_did": string, (Optional)
+        ///            "cred_def_id": string, (Optional)
+        ///        }</param>
+        public static Task<string> ProverGetCredentialsAsync(Wallet wallet, string filterJson)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(filterJson, "filterJson");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_prover_get_credentials(
+                commandHandle,
+                wallet.Handle,
+                filterJson,
+                _proverGetCredentialsCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Gets human readable credentials matching the given proof request.
+        /// </summary>
+        /// <returns>
+        /// credentials_json: json with credentials for the given pool request.
+        ///     {
+        ///         "requested_attrs": {
+        ///             "[attr_referent]": [{ cred_info: (credential_info), interval: Optional(non_revoc_interval) }],
+        ///             ...,
+        ///         },
+        ///         "requested_predicates": {
+        ///             "requested_predicates": [{ cred_info: (credential_info), timestamp: Optional integer }, { cred_info: (credential_2_info), timestamp: Optional integer }],
+        ///             "requested_predicate_2_referent": [{ cred_info: (credential_2_info), timestamp: Optional integer }]
+        ///         }
+        ///     }, where credential is
+        ///     {
+        ///         "referent": string,
+        ///         "attrs": [{"attr_name" : "attr_raw_value"}],
+        ///         "schema_id": string,
+        ///         "cred_def_id": string,
+        ///         "rev_reg_id": Optional int,
+        ///         "cred_rev_id": Optional int,
+        ///     }
+        /// </returns>
+        /// <param name="wallet">Wallet.</param>
+        /// <param name="proofRequestJson">/// proof_request_json: proof request json
+        ///     {
+        ///         "name": string,
+        ///         "version": string,
+        ///         "nonce": string,
+        ///         "requested_attributes": { // set of requested attributes
+        ///              "[attr_referent]": [attr_info], // see below
+        ///              ...,
+        ///         },
+        ///         "requested_predicates": { // set of requested predicates
+        ///              "[predicate_referent]": [predicate_info], // see below
+        ///              ...,
+        ///          },
+        ///         "non_revoked": Optional [non_revoc_interval], // see below,
+        ///                        // If specified prover must proof non-revocation
+        ///                        // for date in this interval for each attribute
+        ///                        // (can be overridden on attribute level)
+        ///     }
+        /// 
+        /// where
+        /// attr_referent: Proof-request local identifier of requested attribute
+        /// attr_info: Describes requested attribute
+        ///     {
+        ///         "name": string, // attribute name, (case insensitive and ignore spaces)
+        ///         "restrictions": Optional ['attr_filter'] // see below,
+        ///                         // if specified, credential must satisfy to one of the given restriction.
+        ///         "non_revoked": Optional [non_revoc_interval], // see below,
+        ///                        // If specified prover must proof non-revocation
+        ///                        // for date in this interval this attribute
+        ///                        // (overrides proof level interval)
+        ///     }
+        /// predicate_referent: Proof-request local identifier of requested attribute predicate
+        /// predicate_info: Describes requested attribute predicate
+        ///     {
+        ///         "name": attribute name, (case insensitive and ignore spaces)
+        ///         "p_type": predicate type (Currently >= only)
+        ///         "p_value": predicate value
+        ///         "restrictions": Optional ['attr_filter'] // see below,
+        ///                         // if specified, credential must satisfy to one of the given restriction.
+        ///         "non_revoked": Optional [non_revoc_interval], // see below,
+        ///                        // If specified prover must proof non-revocation
+        ///                        // for date in this interval this attribute
+        ///                        // (overrides proof level interval)
+        ///     }
+        /// non_revoc_interval: Defines non-revocation interval
+        ///     {
+        ///         "from": Optional int, // timestamp of interval beginning
+        ///         "to": Optional int, // timestamp of interval ending
+        ///     }
+        /// filter: see filter_json above
+        /// </param>
+        public static Task<string> ProverGetCredentialsForProofReqAsync(Wallet wallet, string proofRequestJson)
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(proofRequestJson, "proofRequestJson");
@@ -723,7 +793,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = NativeMethods.indy_prover_get_claims_for_proof_req(
+            var commandResult = NativeMethods.indy_prover_get_credentials_for_proof_req(
                 commandHandle,
                 wallet.Handle,
                 proofRequestJson,
@@ -736,125 +806,150 @@ namespace Hyperledger.Indy.AnonCredsApi
         }
 
         /// <summary>
-        /// Creates a proof for the provided proof request.
+        /// Creates a proof according to the given proof request
+        /// Either a corresponding credential with optionally revealed attributes or self-attested attribute must be provided
+        /// for each requested attribute (see indy_prover_get_credentials_for_pool_req).
+        /// A proof request may request multiple credentials from different schemas and different issuers.
+        /// All required schemas, public keys and revocation registries must be provided.
+        /// The proof request also contains nonce.
+        /// The proof contains either proof or self-attested attribute value for each requested attribute.
+        ///
         /// </summary>
         /// <remarks>
-        /// <para>
-        /// Either a corresponding claim with optionally revealed attributes or self-attested attribute 
-        /// must be provided for each requested attribute - see the 
-        /// <see cref="ProverGetClaimsForProofReqAsync(Wallet, string)"/> method.
-        /// A proof request may request multiple claims from different schema and different issuers.
-        /// All required schema, public keys and revocation registries must be provided.
-        /// The proof request also contains a nonce.
-        /// The proof contains either proof or self-attested attribute value for each requested attribute.
-        /// </para>
-        /// <para>
-        /// The <paramref name="proofReqJson"/> parameter expects a JSON string containing a proof request
-        /// from the party that will verify the proof.  E.g.:
-        /// <code>
-        ///  {
-        ///     "nonce": string,
-        ///     "requested_attr1_referent": &lt;attr_info&gt;,
-        ///     "requested_attr2_referent": &lt;attr_info&gt;,
-        ///     "requested_attr3_referent": &lt;attr_info&gt;,
-        ///     "requested_predicate_1_referent": &lt;predicate_info&gt;,
-        ///     "requested_predicate_2_referent": &lt;predicate_info&gt;,
-        /// }
-        /// </code>
-        /// </para>
-        /// <para>
-        /// The <paramref name="requestedClaimsJson"/> parameter should contain either a claim or a 
-        /// self-attested attribute for each attribute requested in the proof request.  E.g.:
-        /// <code>
-        /// {
-        ///     "requested_attr1_referent": [claim1_referent_in_wallet, true &lt;reveal_attr&gt;],
-        ///     "requested_attr2_referent": [self_attested_attribute],
-        ///     "requested_attr3_referent": [claim2_seq_no_in_wallet, false]
-        ///     "requested_attr4_referent": [claim2_seq_no_in_wallet, true]
-        ///     "requested_predicate_1_referent": [claim2_seq_no_in_wallet],
-        ///     "requested_predicate_2_referent": [claim3_seq_no_in_wallet],
-        /// }
-        /// </code>
-        /// </para>
-        /// <para>
-        /// The <paramref name="schemasJson"/> parameter expects the JSON for each schema that participates
-        /// in the proof request.  E.g.:
-        /// <code>
-        /// {
-        ///     "claim1_referent_in_wallet": &lt;schema1&gt;,
-        ///     "claim2_referent_in_wallet": &lt;schema2&gt;,
-        ///     "claim3_referent_in_wallet": &lt;schema3&gt;,
-        /// }
-        /// </code>
-        /// </para>
-        /// <para>
-        /// The <paramref name="masterSecretName"/> specifies the name of the master secret stored in 
-        /// the wallet.
-        /// </para>
-        /// <para>
-        /// The <paramref name="claimDefsJson"/> parameter expects the JSON for each claim definition 
-        /// participating in the proof request. E.g.:
-        /// <code>
-        /// {
-        ///     "claim1_referent_in_wallet": &lt;claim_def1&gt;,
-        ///     "claim2_referent_in_wallet": &lt;claim_def2&gt;,
-        ///     "claim3_referent_in_wallet": &lt;claim_def3&gt;,
-        /// }
-        /// </code>
-        /// </para>
-        /// <para>
-        /// The <paramref name="revocRegsJson"/> parameter expects the JSON for each revocation registry
-        /// participating in the proof request.  E.g.:
-        /// <code>
-        /// {
-        ///     "claim1_referent_in_wallet": &lt;revoc_reg1&gt;,
-        ///     "claim2_referent_in_wallet": &lt;revoc_reg2&gt;,
-        ///     "claim3_referent_in_wallet": &lt;revoc_reg3&gt;,
-        /// }
-        /// </code>
-        /// </para>
-        /// Upon successful completion the operation will return a JSON string.
+        /// where
+        /// attr_referent: Proof-request local identifier of requested attribute
+        /// attr_info: Describes requested attribute
+        ///     {
+        ///         "name": string, // attribute name, (case insensitive and ignore spaces)
+        ///         "restrictions": Optional ['attr_filter'] // see above,
+        ///                         // if specified, credential must satisfy to one of the given restriction.
+        ///         "non_revoked": Optional [non_revoc_interval], // see below,
+        ///                        // If specified prover must proof non-revocation
+        ///                        // for date in this interval this attribute
+        ///                        // (overrides proof level interval)
+        ///     }
+        /// predicate_referent: Proof-request local identifier of requested attribute predicate
+        /// predicate_info: Describes requested attribute predicate
+        ///     {
+        ///         "name": attribute name, (case insensitive and ignore spaces)
+        ///         "p_type": predicate type (Currently >= only)
+        ///         "p_value": predicate value
+        ///         "restrictions": Optional ['attr_filter'] // see above,
+        ///                         // if specified, credential must satisfy to one of the given restriction.
+        ///         "non_revoked": Optional [non_revoc_interval], // see below,
+        ///                        // If specified prover must proof non-revocation
+        ///                        // for date in this interval this attribute
+        ///                        // (overrides proof level interval)
+        ///     }
+        /// non_revoc_interval: Defines non-revocation interval
+        ///     {
+        ///         "from": Optional int, // timestamp of interval beginning
+        ///         "to": Optional int, // timestamp of interval ending
+        ///     }
+        ///
+        /// </remarks>
+        /// <returns>
+        /// Proof json
         /// For each requested attribute either a proof (with optionally revealed attribute value) or
         /// self-attested attribute value is provided.
-        /// Each proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.
-        /// There is also aggregated proof part common for all claim proofs.
-        /// <code>
-        /// {
-        ///     "requested": {
-        ///         "requested_attr1_id": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
-        ///         "requested_attr2_id": [self_attested_attribute],
-        ///         "requested_attr3_id": [claim_proof2_referent]
-        ///         "requested_attr4_id": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
-        ///         "requested_predicate_1_referent": [claim_proof2_referent],
-        ///         "requested_predicate_2_referent": [claim_proof3_referent],
+        /// Each proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.
+        /// There is also aggregated proof part common for all credential proofs.
+        ///     {
+        ///         "requested": {
+        ///             "revealed_attrs": {
+        ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
+        ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+        ///             },
+        ///             "unrevealed_attrs": {
+        ///                 "requested_attr3_id": {sub_proof_index: number}
+        ///             },
+        ///             "self_attested_attrs": {
+        ///                 "requested_attr2_id": self_attested_value,
+        ///             },
+        ///             "requested_predicates": {
+        ///                 "requested_predicate_1_referent": {sub_proof_index: int},
+        ///                 "requested_predicate_2_referent": {sub_proof_index: int},
+        ///             }
         ///         }
-        ///     "claim_proofs": {
-        ///         "claim_proof1_referent": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no],
-        ///         "claim_proof2_referent": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no],
-        ///         "claim_proof3_referent": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no]
-        ///     },
-        ///     "aggregated_proof": &lt;aggregated_proof&gt;
-        /// }
-        /// </code>
-        /// </remarks>
-        /// <param name="wallet">The target wallet.</param>
-        /// <param name="proofReqJson">The proof request JSON.</param>
-        /// <param name="requestedClaimsJson">The requested claims JSON.</param>
-        /// <param name="schemasJson">The schema JSON.</param>
-        /// <param name="masterSecretName">The master secret name.</param>
-        /// <param name="claimDefsJson">The claim definitions JSON.</param>
-        /// <param name="revocRegsJson">The revocation registries JSON.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that, when the operation completes, resolves 
-        /// to a JSON string containing the proof.</returns>
-        public static Task<string> ProverCreateProofAsync(Wallet wallet, string proofReqJson, string requestedClaimsJson, string schemasJson, string masterSecretName, string claimDefsJson, string revocRegsJson)
+        ///         "proof": {
+        ///             "proofs": [ (credential_proof), (credential_proof), (credential_proof) ],
+        ///             "aggregated_proof": (aggregated_proof)
+        ///         }
+        ///         "identifiers": [{schema_id, cred_def_id, Optional rev_reg_id , Optional timestamp}]
+        ///     }
+        ///
+        /// </returns>
+        /// <param name="wallet">Wallet.</param>
+        /// <param name="proofRequest">proof_request_json: proof request json
+        ///     {
+        ///         "name": string,
+        ///         "version": string,
+        ///         "nonce": string,
+        ///         "requested_attributes": { // set of requested attributes
+        ///              "(attr_referent)": (attr_info), // see below
+        ///              ...,
+        ///         },
+        ///         "requested_predicates": { // set of requested predicates
+        ///              "(predicate_referent)": (predicate_info), // see below
+        ///              ...,
+        ///          },
+        ///         "non_revoked": Optional [non_revoc_interval], // see below,
+        ///                        // If specified prover must proof non-revocation
+        ///                        // for date in this interval for each attribute
+        ///                        // (can be overridden on attribute level)
+        ///     }</param>
+        /// <param name="requestedCredentials">
+        /// requested_credentials_json: either a credential or self-attested attribute for each requested attribute
+        ///     {
+        ///         "self_attested_attributes": {
+        ///             "self_attested_attribute_referent": string
+        ///         },
+        ///         "requested_attributes": {
+        ///             "requested_attribute_referent_1": {"cred_id": string, "timestamp": Optional number, revealed: bool }},
+        ///             "requested_attribute_referent_2": {"cred_id": string, "timestamp": Optional number, revealed: bool }}
+        ///         },
+        ///         "requested_predicates": {
+        ///             "requested_predicates_referent_1": {"cred_id": string, "timestamp": Optional number }},
+        ///         }
+        ///     }.</param>
+        /// <param name="masterSecret">the id of the master secret stored in the wallet</param>
+        /// <param name="schemas">
+        /// schemas_json: all schemas json participating in the proof request
+        ///     {
+        ///         [schema1_id]: [schema1_json],
+        ///         [schema2_id]: [schema2_json],
+        ///         [schema3_id]: [schema3_json],
+        ///     }.</param>
+        /// <param name="credentialDefs">
+        /// credential_defs_json: all credential definitions json participating in the proof request
+        ///     {
+        ///         "cred_def1_id": (credential_def1_json),
+        ///         "cred_def2_id": (credential_def2_json),
+        ///         "cred_def3_id": (credential_def3_json),
+        ///     }.</param>
+        /// <param name="revStates">
+        /// rev_states_json: all revocation states json participating in the proof request
+        ///     {
+        ///         "rev_reg_def1_id": {
+        ///             "timestamp1": (rev_state1),
+        ///             "timestamp2": (rev_state2),
+        ///         },
+        ///         "rev_reg_def2_id": {
+        ///             "timestamp3": (rev_state3)
+        ///         },
+        ///         "rev_reg_def3_id": {
+        ///             "timestamp4": (rev_state4)
+        ///         },
+        ///     }.</param>
+        public static Task<string> ProverCreateProofAsync(Wallet wallet, string proofRequest, string requestedCredentials, string masterSecret, string schemas, string credentialDefs, string revStates)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(proofReqJson, "proofReqJson");
-            ParamGuard.NotNullOrWhiteSpace(requestedClaimsJson, "requestedClaimsJson");
-            ParamGuard.NotNullOrWhiteSpace(schemasJson, "schemasJson");
-            ParamGuard.NotNullOrWhiteSpace(masterSecretName, "masterSecretName");
-            ParamGuard.NotNullOrWhiteSpace(claimDefsJson, "claimDefsJson");
-            ParamGuard.NotNullOrWhiteSpace(revocRegsJson, "revocRegsJson");
+            ParamGuard.NotNullOrWhiteSpace(proofRequest, "proofRequest");
+            ParamGuard.NotNullOrWhiteSpace(requestedCredentials, "requestedCredentials");
+            ParamGuard.NotNullOrWhiteSpace(schemas, "schemas");
+            ParamGuard.NotNullOrWhiteSpace(masterSecret, "masterSecret");
+            ParamGuard.NotNullOrWhiteSpace(credentialDefs, "credentialDefs");
+            ParamGuard.NotNullOrWhiteSpace(revStates, "revStates");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -862,12 +957,12 @@ namespace Hyperledger.Indy.AnonCredsApi
             var commandResult = NativeMethods.indy_prover_create_proof(
                 commandHandle,
                 wallet.Handle,
-                proofReqJson,
-                requestedClaimsJson,
-                schemasJson,
-                masterSecretName,
-                claimDefsJson,
-                revocRegsJson,
+                proofRequest,
+                requestedCredentials,
+                masterSecret,
+                schemas,
+                credentialDefs,
+                revStates,
                 _proverCreateProofCallback);
 
             CallbackHelper.CheckResult(commandResult);
@@ -876,112 +971,194 @@ namespace Hyperledger.Indy.AnonCredsApi
         }
 
         /// <summary>
-        /// Verifies whether or not a proof is valid.
+        /// Verifies a proof (of multiple credential).
+        /// All required schemas, public keys and revocation registries must be provided.
         /// </summary>
-        /// <remarks>
-        /// <para>
-        /// This method verifies a proof that can be made up of multiple claims.
-        /// All required schema, public keys and revocation registries must be provided.
-        /// </para>
-        /// <para>
-        /// The <paramref name="proofRequestJson"/> parameter expects the initial proof request sent
-        /// by the verifier.
-        /// <code>
-        /// {
-        ///     "nonce": string,
-        ///     "requested_attr1_referent": &lt;attr_info&gt;,
-        ///     "requested_attr2_referent": &lt;attr_info&gt;,
-        ///     "requested_attr3_referent": &lt;attr_info&gt;,
-        ///     "requested_predicate_1_referent": &lt;predicate_info&gt;,
-        ///     "requested_predicate_2_referent": &lt;predicate_info&gt;,
-        /// }
-        /// </code>
-        /// </para>
-        /// <para>
-        /// The <paramref name="proofJson"/> parameter expects a JSON string containing,  
-        /// for each requested attribute,  either a proof (with optionally revealed attribute value) or
-        /// self-attested attribute value.  Each proof is associated with a claim and corresponding 
-        /// schema_seq_no, issuer_did and revoc_reg_seq_no. There is also aggregated proof part 
-        /// common for all claim proofs.
-        /// <code>
-        /// {
-        ///     "requested": {
-        ///         "requested_attr1_id": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
-        ///         "requested_attr2_id": [self_attested_attribute],
-        ///         "requested_attr3_id": [claim_proof2_referent]
-        ///         "requested_attr4_id": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
-        ///         "requested_predicate_1_referent": [claim_proof2_referent],
-        ///         "requested_predicate_2_referent": [claim_proof3_referent],
-        ///     },
-        ///     "claim_proofs": {
-        ///         "claim_proof1_referent": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no],
-        ///         "claim_proof2_referent": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no],
-        ///         "claim_proof3_referent": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no]
-        ///     },
-        ///     "aggregated_proof": &lt;aggregated_proof&gt;
-        /// }
-        /// </code>
-        /// </para>
-        /// <para>
-        /// The <paramref name="schemasJson"/> parameter expects a JSON string containing all schema
-        /// participating in the proof.
-        /// <code>
-        /// {
-        ///     "claim_proof1_referent": &lt;schema&gt;,
-        ///     "claim_proof2_referent": &lt;schema&gt;,
-        ///     "claim_proof3_referent": &lt;schema&gt;
-        /// }
-        /// </code>
-        /// </para> 
-        /// <para>
-        /// The <paramref name="claimDefsJson"/> parameter expects a JSON string containing all claim
-        /// definitions participating in the proof.
-        /// <code>
-        /// {
-        ///     "claim_proof1_referent": &lt;claim_def&gt;,
-        ///     "claim_proof2_referent": &lt;claim_def&gt;,
-        ///     "claim_proof3_referent": &lt;claim_def&gt;
-        /// }
-        /// </code>
-        /// </para>
-        /// <para>
-        /// The <paramref name="revocRegsJson"/> parameter expects a JSON string containing all revocation
-        /// registries participating in the proof.
-        /// <code>
-        /// {
-        ///     "claim_proof1_referent": &lt;revoc_reg&gt;,
-        ///     "claim_proof2_referent": &lt;revoc_reg&gt;,
-        ///     "claim_proof3_referent": &lt;revoc_reg&gt;
-        /// }
-        /// </code>
-        /// </para>
-        /// </remarks>
-        /// <param name="proofRequestJson">The proof request JSON.</param>
-        /// <param name="proofJson">The proof JSON.</param>
-        /// <param name="schemasJson">The schemas JSON.</param>
-        /// <param name="claimDefsJson">The claim definitions JSON.</param>
-        /// <param name="revocRegsJson">The revocation registries JSON.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that, when the operation completes, resolves 
-        /// to true if the proof is valid, otherwise false.</returns>
-        public static Task<bool> VerifierVerifyProofAsync(string proofRequestJson, string proofJson, string schemasJson, string claimDefsJson, string revocRegsJson)
+        /// <returns>The verify proof async.</returns>
+        /// <param name="proofRequest">
+        /// proof_request_json: proof request json
+        ///     {
+        ///         "name": string,
+        ///         "version": string,
+        ///         "nonce": string,
+        ///         "requested_attributes": { // set of requested attributes
+        ///              "(attr_referent)": (attr_info), // see below
+        ///              ...,
+        ///         },
+        ///         "requested_predicates": { // set of requested predicates
+        ///              "[predicate_referent]": (predicate_info), // see below
+        ///              ...,
+        ///          },
+        ///         "non_revoked": Optional [non_revoc_interval], // see below,
+        ///                        // If specified prover must proof non-revocation
+        ///                        // for date in this interval for each attribute
+        ///                        // (can be overridden on attribute level)
+        ///     }</param>
+        /// <param name="proof">
+        /// proof_json: created for request proof json
+        ///     {
+        ///         "requested": {
+        ///             "revealed_attrs": {
+        ///                 "requested_attr1_id": {sub_proof_index: number, raw: string, encoded: string},
+        ///                 "requested_attr4_id": {sub_proof_index: number: string, encoded: string},
+        ///             },
+        ///             "unrevealed_attrs": {
+        ///                 "requested_attr3_id": {sub_proof_index: number}
+        ///             },
+        ///             "self_attested_attrs": {
+        ///                 "requested_attr2_id": self_attested_value,
+        ///             },
+        ///             "requested_predicates": {
+        ///                 "requested_predicate_1_referent": {sub_proof_index: int},
+        ///                 "requested_predicate_2_referent": {sub_proof_index: int},
+        ///             }
+        ///         }
+        ///         "proof": {
+        ///             "proofs": [ &lt;credential_proof>, &lt;credential_proof>, &lt;credential_proof> ],
+        ///             "aggregated_proof": &lt;aggregated_proof>
+        ///         }
+        ///         "identifiers": [{schema_id, cred_def_id, Optional&lt;rev_reg_id>, Optional timestamp }]
+        ///     }.</param>
+        /// <param name="schemas">
+        /// schemas_json: all schema jsons participating in the proof
+        ///     {
+        ///         &lt;schema1_id>: &lt;schema1_json>,
+        ///         &lt;schema2_id>: &lt;schema2_json>,
+        ///         &lt;schema3_id>: &lt;schema3_json>,
+        ///     }.</param>
+        /// <param name="credentialDefs">
+        /// credential_defs_json: all credential definitions json participating in the proof
+        ///     {
+        ///         "cred_def1_id": &lt;credential_def1_json>,
+        ///         "cred_def2_id": &lt;credential_def2_json>,
+        ///         "cred_def3_id": &lt;credential_def3_json>,
+        ///     }</param>
+        /// <param name="revocRegDefs">
+        /// rev_reg_defs_json: all revocation registry definitions json participating in the proof
+        ///     {
+        ///         "rev_reg_def1_id": &lt;rev_reg_def1_json>,
+        ///         "rev_reg_def2_id": &lt;rev_reg_def2_json>,
+        ///         "rev_reg_def3_id": &lt;rev_reg_def3_json>,
+        ///     }.</param>
+        /// <param name="revocRegs">
+        /// rev_regs_json: all revocation registries json participating in the proof
+        ///     {
+        ///         "rev_reg_def1_id": {
+        ///             "timestamp1": &lt;rev_reg1>,
+        ///             "timestamp2": &lt;rev_reg2>,
+        ///         },
+        ///         "rev_reg_def2_id": {
+        ///             "timestamp3": &lt;rev_reg3>
+        ///         },
+        ///         "rev_reg_def3_id": {
+        ///             "timestamp4": &lt;rev_reg4>
+        ///         },
+        ///     }</param>
+        public static Task<bool> VerifierVerifyProofAsync(string proofRequest, string proof, string schemas, string credentialDefs, string revocRegDefs, string revocRegs)
         {
-            ParamGuard.NotNullOrWhiteSpace(proofRequestJson, "proofRequestJson");
-            ParamGuard.NotNullOrWhiteSpace(proofJson, "proofJson");
-            ParamGuard.NotNullOrWhiteSpace(schemasJson, "schemasJson");
-            ParamGuard.NotNullOrWhiteSpace(claimDefsJson, "claimDefsJson");
-            ParamGuard.NotNullOrWhiteSpace(revocRegsJson, "revocRegsJson");
+            ParamGuard.NotNullOrWhiteSpace(proofRequest, "proofRequest");
+            ParamGuard.NotNullOrWhiteSpace(proof, "proof");
+            ParamGuard.NotNullOrWhiteSpace(schemas, "schemas");
+            ParamGuard.NotNullOrWhiteSpace(credentialDefs, "credentialDefs");
+            ParamGuard.NotNullOrWhiteSpace(revocRegDefs, "revocRegDefs");
+            ParamGuard.NotNullOrWhiteSpace(revocRegs, "revocRegs");
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
             var commandResult = NativeMethods.indy_verifier_verify_proof(
                 commandHandle,
-                proofRequestJson,
-                proofJson,
-                schemasJson,
-                claimDefsJson,
-                revocRegsJson,
+                proofRequest,
+                proof,
+                schemas,
+                credentialDefs,
+                revocRegDefs,
+                revocRegs,
                 _verifierVerifyProofCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Create revocation state for credential in the particular time moment.
+        /// </summary>
+        /// <returns>
+        /// revocation state json:
+        ///     {
+        ///         "rev_reg": &lt;revocation registry>,
+        ///         "witness": &lt;witness>,
+        ///         "timestamp" : integer
+        ///     }
+        /// .</returns>
+        /// <param name="blobStorageReader">Configuration of blob storage reader handle that will allow to read revocation tails.</param>
+        /// <param name="revRegDef">Revocation registry definition json.</param>
+        /// <param name="revRegDelta">Revocation registry definition delta json.</param>
+        /// <param name="timestamp">Time represented as a total number of seconds from Unix Epoch.</param>
+        /// <param name="credRevId">user credential revocation id in revocation registry.</param>
+        public static Task<string> CreateRevocationStateAsync(BlobStorageReader blobStorageReader, string revRegDef, string revRegDelta, long timestamp, string credRevId)
+        {
+            ParamGuard.NotNullOrWhiteSpace(revRegDef, "revRegDef");
+            ParamGuard.NotNullOrWhiteSpace(revRegDelta, "revRegDelta");
+            ParamGuard.NotNullOrWhiteSpace(credRevId, "credRevId");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_create_revocation_state(
+                commandHandle,
+                blobStorageReader.Handle,
+                revRegDef,
+                revRegDelta,
+                timestamp,
+                credRevId,
+                _createRevocationStateCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Create new revocation state for a credential based on existed state
+        /// at the particular time moment (to reduce calculation time).
+        /// </summary>
+        /// <returns>
+        /// revocation state json:
+        ///     {
+        ///         "rev_reg": &lt;revocation registry>,
+        ///         "witness": &lt;witness>,
+        ///         "timestamp" : integer
+        ///     }
+        /// .</returns>
+        /// <param name="blobStorageReader">configuration of blob storage reader handle that will allow to read revocation tails.</param>
+        /// <param name="revState">revocation registry state json</param>
+        /// <param name="revRegDef">revocation registry definition json</param>
+        /// <param name="revRegDelta">revocation registry definition delta json.</param>
+        /// <param name="timestamp">time represented as a total number of seconds from Unix Epoch.</param>
+        /// <param name="credRevId">user credential revocation id in revocation registry.</param>
+        public static Task<string> UpdateRevocationStateAsync(BlobStorageReader blobStorageReader, string revState, string revRegDef, string revRegDelta, long timestamp, string credRevId)
+        {
+            ParamGuard.NotNullOrWhiteSpace(revState, "revState");
+            ParamGuard.NotNullOrWhiteSpace(revRegDef, "revRegDef");
+            ParamGuard.NotNullOrWhiteSpace(revRegDelta, "revRegDelta");
+            ParamGuard.NotNullOrWhiteSpace(credRevId, "credRevId");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_update_revocation_state(
+                commandHandle,
+                blobStorageReader.Handle,
+                revState,
+                revRegDef,
+                revRegDelta,
+                timestamp,
+                credRevId,
+                _updateRevocationStateCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);

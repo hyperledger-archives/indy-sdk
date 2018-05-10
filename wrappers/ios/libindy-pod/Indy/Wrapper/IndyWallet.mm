@@ -47,17 +47,17 @@
     }
     
     ret = indy_register_wallet_type(handle,
-                                    [type UTF8String],
-                                    CustomWalletCreateCallback,
-                                    CustomWalletOpenCallback,
-                                    CustomWalletSetCallback,
-                                    CustomWalletGetCallback,
-                                    CustomWalletGetNotExpiredCallback,
-                                    CustomWalletListCallback,
-                                    CustomWalletCloseCallback,
-                                    CustomWalletDeleteCallback,
-                                    CustomWalletFreeCallback,
-                                    IndyWrapperCommon2PCallback);
+            [type UTF8String],
+            CustomWalletCreateCallback,
+            CustomWalletOpenCallback,
+            CustomWalletSetCallback,
+            CustomWalletGetCallback,
+            CustomWalletGetNotExpiredCallback,
+            CustomWalletListCallback,
+            CustomWalletCloseCallback,
+            CustomWalletDeleteCallback,
+            CustomWalletFreeCallback,
+            IndyWrapperCommonCallback);
     
     if( ret != Success )
     {
@@ -78,17 +78,17 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: completion];
     
     ret = indy_register_wallet_type(handle,
-                                    [type UTF8String],
-                                    IndyKeychainWalletCreateCallback,
-                                    IndyKeychainWalletOpenCallback,
-                                    IndyKeychainWalletSetCallback,
-                                    IndyKeychainWalletGetCallback,
-                                    IndyKeychainWalletGetNotExpiredCallback,
-                                    IndyKeychainWalletListCallback,
-                                    IndyKeychainWalletCloseCallback,
-                                    IndyKeychainWalletDeleteCallback,
-                                    IndyKeychainWalletFreeCallback,
-                                    IndyWrapperCommon2PCallback);
+            [type UTF8String],
+            IndyKeychainWalletCreateCallback,
+            IndyKeychainWalletOpenCallback,
+            IndyKeychainWalletSetCallback,
+            IndyKeychainWalletGetCallback,
+            IndyKeychainWalletGetNotExpiredCallback,
+            IndyKeychainWalletListCallback,
+            IndyKeychainWalletCloseCallback,
+            IndyKeychainWalletDeleteCallback,
+            IndyKeychainWalletFreeCallback,
+            IndyWrapperCommonCallback);
     
     if( ret != Success )
     {
@@ -113,13 +113,13 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: completion];
     
     ret = indy_create_wallet(handle,
-                               [poolName UTF8String],
-                               [name UTF8String],
-                               [type UTF8String],
-                               [config UTF8String],
-                               [credentials UTF8String],
-                               IndyWrapperCommon2PCallback
-                              );
+            [poolName UTF8String],
+            [name UTF8String],
+            [type UTF8String],
+            [config UTF8String],
+            [credentials UTF8String],
+            IndyWrapperCommonCallback
+    );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -140,12 +140,12 @@
     //id hghg = [completion copy];
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
-    ret = indy_open_wallet( handle,
-                              [name UTF8String],
-                              [config UTF8String],
-                              [credentials UTF8String],
-                              IndyWrapperCommon3PHCallback
-                             );
+    ret = indy_open_wallet(handle,
+            [name UTF8String],
+            [config UTF8String],
+            [credentials UTF8String],
+            IndyWrapperCommonHandleCallback
+    );
     
     if( ret != Success )
     {
@@ -164,10 +164,10 @@
     
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
-    ret = indy_close_wallet( handle,
-                            walletHandle,
-                            IndyWrapperCommon2PCallback
-                            );
+    ret = indy_close_wallet(handle,
+            walletHandle,
+            IndyWrapperCommonCallback
+    );
     
     if( ret != Success )
     {
@@ -187,11 +187,11 @@
     
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
-    ret = indy_delete_wallet( handle,
-                             [walletName UTF8String],
-                             [credentials UTF8String],
-                             IndyWrapperCommon2PCallback
-                             );
+    ret = indy_delete_wallet(handle,
+            [walletName UTF8String],
+            [credentials UTF8String],
+            IndyWrapperCommonCallback
+    );
     
     if( ret != Success )
     {

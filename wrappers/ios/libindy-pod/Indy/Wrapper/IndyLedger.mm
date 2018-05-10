@@ -26,7 +26,7 @@
             walletHandle,
             [submitterDid UTF8String],
             [requestJSON UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
 
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -49,7 +49,7 @@
             walletHandle,
             [submitterDid UTF8String],
             [requestJson UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
 
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -70,7 +70,7 @@
     ret = indy_submit_request(handle,
             poolHandle,
             [requestJSON UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
 
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -100,7 +100,7 @@
             [verkey UTF8String],
             [alias UTF8String],
             [role UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -120,7 +120,7 @@
     ret = indy_build_get_nym_request(handle,
             [submitterDid UTF8String],
             [targetDid UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
 
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -149,7 +149,7 @@
             [hash UTF8String],
             [raw UTF8String],
             [enc UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
 
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -176,7 +176,7 @@
             [raw UTF8String],
             [hash UTF8String],
             [enc UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -198,7 +198,7 @@
     ret = indy_build_schema_request(handle,
             [submitterDid UTF8String],
             [data UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -219,7 +219,7 @@
     ret = indy_build_get_schema_request(handle,
             [submitterDid UTF8String],
             [id UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -238,7 +238,7 @@
 
     ret = indy_parse_get_schema_response(handle,
             [getSchemaResponse UTF8String],
-            IndyWrapperCommon4PCallback);
+            IndyWrapperCommonStringStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -260,7 +260,7 @@
     ret = indy_build_cred_def_request(handle,
             [submitterDid UTF8String],
             [data UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -280,7 +280,7 @@
     ret = indy_build_get_cred_def_request(handle,
             [submitterDid UTF8String],
             [id UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -299,7 +299,7 @@
 
     ret = indy_parse_get_cred_def_response(handle,
             [getCredDefResponse UTF8String],
-            IndyWrapperCommon4PCallback);
+            IndyWrapperCommonStringStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -321,7 +321,7 @@
     ret = indy_build_get_ddo_request(handle,
             [submitterDid UTF8String],
             [targetDid UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
 
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -346,7 +346,7 @@
             [submitterDid UTF8String],
             [targetDid UTF8String],
             [data UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -368,7 +368,7 @@
     ret = indy_build_get_txn_request(handle,
             [submitterDid UTF8String],
             [data intValue],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -392,7 +392,7 @@
             [submitterDid UTF8String],
             (indy_bool_t) writes,
             (indy_bool_t) force,
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -416,7 +416,7 @@
             [submitterDid UTF8String],
             [action UTF8String],
             [datetime UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -454,7 +454,7 @@
             [justification UTF8String],
             (indy_bool_t) reinstall,
             (indy_bool_t) force,
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -476,7 +476,7 @@
     ret = indy_build_revoc_reg_def_request(handle,
             [submitterDid UTF8String],
             [data UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -496,7 +496,7 @@
     ret = indy_build_get_revoc_reg_def_request(handle,
             [submitterDid UTF8String],
             [id UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -515,7 +515,7 @@
 
     ret = indy_parse_get_revoc_reg_def_response(handle,
             [getRevocRegDefResponse UTF8String],
-            IndyWrapperCommon4PCallback);
+            IndyWrapperCommonStringStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -541,7 +541,7 @@
             [revocRegDefId UTF8String],
             [type UTF8String],
             [value UTF8String],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -563,7 +563,7 @@
             [submitterDid UTF8String],
             [revocRegDefId UTF8String],
             [timestamp intValue],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -581,7 +581,7 @@
 
     ret = indy_parse_get_revoc_reg_response(handle,
             [getRevocRegResponse UTF8String],
-            IndyWrapperCommon5SSUCallback);
+            IndyWrapperCommonStringStringLongCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -605,7 +605,7 @@
             [revocRegDefId UTF8String],
             [from intValue],
             [to intValue],
-            IndyWrapperCommon3PSCallback);
+            IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
@@ -623,7 +623,7 @@
 
     ret = indy_parse_get_revoc_reg_delta_response(handle,
             [getRevocRegDeltaResponse UTF8String],
-            IndyWrapperCommon5SSUCallback);
+            IndyWrapperCommonStringStringLongCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 

@@ -1,11 +1,3 @@
-//
-//  AnoncredsUtils.m
-//  Indy-demo
-//
-//  Created by Kirill Neznamov on 24/05/2017.
-//  Copyright © 2017 Kirill Neznamov. All rights reserved.
-//
-
 #import "AnoncredsUtils.h"
 #import "TestUtils.h"
 
@@ -39,24 +31,21 @@
 // MARK: - Json configurators
 
 - (NSString *)defaultCredentialDefConfig {
-    return @"{\"support_revocation\": false}";
+    return [self toJson:@{@"support_revocation": @NO}];
 }
 
 - (NSString *)getGvtSchemaId {
     return @"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
 }
 
-- (NSString *)getXyzSchemaId {
-    return @"NcYxiDXkpYi6ov5FcYDi1e:2:xyz:1.0";
-}
-
 - (NSString *)getGvtSchemaJson {
-    return [NSString stringWithFormat:@"{"
-                                              "\"id\":\"%@\","
-                                              "\"ver\":\"1.0\","
-                                              "\"name\":\"gvt\","
-                                              "\"version\":\"1.0\","
-                                              "\"attrNames\":[\"age\",\"sex\",\"height\",\"name\"]}", [self getGvtSchemaId]];
+    return [self toJson:@{
+            @"id": [self getGvtSchemaId],
+            @"ver": @"1.0",
+            @"name": [TestUtils gvtSchemaName],
+            @"version": [TestUtils schemaVersion],
+            @"attrNames": @[@"age", @"sex", @"height", @"name"]
+    }];
 }
 
 - (NSString *)getIssuer1GvtCredDefId {
@@ -64,28 +53,58 @@
 }
 
 - (NSString *)getGvtCredentialValuesJson {
-    return [NSString stringWithFormat:@"{"\
-            "\"sex\":{\"raw\":\"male\",\"encoded\":\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"},"\
-            "\"name\":{\"raw\":\"Alex\",\"encoded\":\"1139481716457488690172217916278103335\"},"\
-            "\"height\":{\"raw\":\"175\",\"encoded\":\"175\"},"\
-            "\"age\":{\"raw\":\"28\",\"encoded\":\"28\"}"\
-            "}"];
+    return [self toJson:@{
+            @"sex": @{
+                    @"raw": @"male",
+                    @"encoded": @"5944657099558967239210949258394887428692050081607692519917050011144233115103"
+            },
+            @"name": @{
+                    @"raw": @"Alex",
+                    @"encoded": @"1139481716457488690172217916278103335"
+            },
+            @"height": @{
+                    @"raw": @"175",
+                    @"encoded": @"175"
+            },
+            @"age": @{
+                    @"raw": @"28",
+                    @"encoded": @"28"
+            }
+    }];
 }
 
 - (NSString *)getXyzCredentialValuesJson {
-    return [NSString stringWithFormat:@"{"\
-            "\"status\":{\"raw\":\"partial\",\"encoded\":\"123455672645217415414\"},"\
-            "\"period\":{\"raw\":\"8\",\"encoded\":\"8\"}"\
-            "}"];
+    return [self toJson:@{
+            @"status": @{
+                    @"raw": @"partial",
+                    @"encoded": @"123455672645217415414"
+            },
+            @"period": @{
+                    @"raw": @"8",
+                    @"encoded": @"8"
+            }
+    }];
 }
 
 - (NSString *)getGvt2CredentialValuesJson {
-    return [NSString stringWithFormat:@"{"\
-            "\"sex\":{\"raw\":\"male\",\"encoded\":\"3423574238417531735213261554781254821457218541265418245812541274517645176\"},"\
-            "\"name\":{\"raw\":\"Alexander\",\"encoded\":\"245372858126541862352154819291254612\"},"\
-            "\"height\":{\"raw\":\"170\",\"encoded\":\"170\"},"\
-            "\"age\":{\"raw\":\"28\",\"encoded\":\"28\"}"\
-            "}"];
+    return [self toJson:@{
+            @"sex": @{
+                    @"raw": @"male",
+                    @"encoded": @"3423574238417531735213261554781254821457218541265418245812541274517645176"
+            },
+            @"name": @{
+                    @"raw": @"Alexander",
+                    @"encoded": @"245372858126541862352154819291254612"
+            },
+            @"height": @{
+                    @"raw": @"170",
+                    @"encoded": @"170"
+            },
+            @"age": @{
+                    @"raw": @"28",
+                    @"encoded": @"28"
+            }
+    }];
 }
 
 - (NSString *)credentialId1 {
@@ -820,9 +839,6 @@
                                 schemaJson:&gvtSchemaJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateSchemaForIssuerDID failed");
 
-    XCTAssertTrue([gvtSchemaId isValid], @"invalid gvtSchemaId: %@", gvtSchemaId);
-    XCTAssertTrue([gvtSchemaJson isValid], @"invalid gvtSchemaJson: %@", gvtSchemaJson);
-
     //3. Create XYZ Schema
     NSString *xyzSchemaId;
     NSString *xyzSchemaJson;
@@ -833,9 +849,6 @@
                                   schemaId:&xyzSchemaId
                                 schemaJson:&xyzSchemaJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateSchemaForIssuerDID failed");
-
-    XCTAssertTrue([xyzSchemaId isValid], @"invalid xyzSchemaId: %@", xyzSchemaId);
-    XCTAssertTrue([xyzSchemaJson isValid], @"invalid xyzSchemaJson: %@", xyzSchemaJson);
 
     //4. Issuer1 create GVT CredentialDef
     NSString *issuer1GvtCredentialDefId;
@@ -850,9 +863,6 @@
                                                credDefJson:&issuer1GvtCredentialDefJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialDefinifionWithWalletHandle failed");
 
-    XCTAssertTrue([issuer1GvtCredentialDefId isValid], @"invalid issuer1GvtCredentialDefId: %@", issuer1GvtCredentialDefId);
-    XCTAssertTrue([issuer1GvtCredentialDefJson isValid], @"invalid issuer1GvtCredentialDefJson: %@", issuer1GvtCredentialDefJson);
-
     //5. Issuer1 create XYZ CredentialDef
     NSString *issuer1XyzCredentialDefId;
     NSString *issuer1XyzCredentialDefJson;
@@ -866,9 +876,6 @@
                                                credDefJson:&issuer1XyzCredentialDefJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialDefinifionWithWalletHandle failed");
 
-    XCTAssertTrue([issuer1XyzCredentialDefId isValid], @"invalid issuer1XyzCredentialDefId: %@", issuer1XyzCredentialDefId);
-    XCTAssertTrue([issuer1XyzCredentialDefJson isValid], @"invalid issuer1XyzCredentialDefJson: %@", issuer1XyzCredentialDefJson);
-
     //6. Issuer2 create XYZ CredentialDef
     NSString *issuer2GvtCredentialDefId;
     NSString *issuer2GvtCredentialDefJson;
@@ -881,10 +888,6 @@
                                                  credDefId:&issuer2GvtCredentialDefId
                                                credDefJson:&issuer2GvtCredentialDefJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialDefinifionWithWalletHandle failed");
-
-    XCTAssertTrue([issuer2GvtCredentialDefId isValid], @"invalid issuer2GvtCredentialDefId: %@", issuer2GvtCredentialDefId);
-    XCTAssertTrue([issuer2GvtCredentialDefJson isValid], @"invalid issuer2GvtCredentialDefJson: %@", issuer2GvtCredentialDefJson);
-
 
     // 7. Issuer1 create GVT Credential Offer
     NSString *issuer1GvtCredentialOfferJSON = nil;
@@ -924,10 +927,6 @@
                                                 credReqJson:&issuer1GvtCredentialRequest
                                         credReqMetadataJson:&issuer1GvtCredentialRequestMetadata];
     XCTAssertEqual(ret.code, Success, @"proverCreateAndStoreCredentialReq failed for issuer1GvtCredentialRequest");
-    XCTAssertTrue([issuer1GvtCredentialRequest isValid], @"invalid credential request: %@", issuer1GvtCredentialRequest);
-    XCTAssertTrue([issuer1GvtCredentialRequestMetadata isValid], @"invalid credential request metadata: %@", issuer1GvtCredentialRequestMetadata);
-
-    if (ret.code != Success) {return ret;}
 
     //12. Issuer1 create  GVT Credential
     NSString *issuer1GvtCredential;
@@ -941,7 +940,6 @@
                                                credRevocId:nil
                                          revocRegDeltaJSON:nil];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialWithWalletHandle failed");
-    XCTAssertTrue([issuer1GvtCredential isValid], @"invalid issuer1GvtCredential: %@", issuer1GvtCredential);
 
     //13. Prover store GVT credential from issuer1
     ret = [self proverStoreCredential:issuer1GvtCredential
@@ -964,10 +962,6 @@
                                                 credReqJson:&issuer1XyzCredentialRequest
                                         credReqMetadataJson:&issuer1XyzCredentialRequestMetadata];
     XCTAssertEqual(ret.code, Success, @"proverCreateAndStoreCredentialReq failed for issuer1GvtCredentialRequest");
-    XCTAssertTrue([issuer1XyzCredentialRequest isValid], @"invalid credential request: %@", issuer1XyzCredentialRequest);
-    XCTAssertTrue([issuer1XyzCredentialRequestMetadata isValid], @"invalid credential request metadata: %@", issuer1XyzCredentialRequestMetadata);
-
-    if (ret.code != Success) {return ret;}
 
     //15. Issuer1 create  XYZ Credential
     NSString *issuer1XyzCredential;
@@ -981,7 +975,6 @@
                                                credRevocId:nil
                                          revocRegDeltaJSON:nil];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialWithWalletHandle failed");
-    XCTAssertTrue([issuer1XyzCredential isValid], @"invalid issuer1GvtCredential: %@", issuer1XyzCredential);
 
     //16. Prover store XYZ credential from Issuer1
     ret = [self proverStoreCredential:issuer1XyzCredential
@@ -1005,10 +998,6 @@
                                                 credReqJson:&issuer2GvtCredentialRequest
                                         credReqMetadataJson:&issuer2GvtCredentialRequestMetadata];
     XCTAssertEqual(ret.code, Success, @"proverCreateAndStoreCredentialReq failed for issuer2GvtCredentialRequest");
-    XCTAssertTrue([issuer2GvtCredentialRequest isValid], @"invalid credential request: %@", issuer2GvtCredentialRequest);
-    XCTAssertTrue([issuer2GvtCredentialRequestMetadata isValid], @"invalid credential request metadata: %@", issuer2GvtCredentialRequestMetadata);
-
-    if (ret.code != Success) {return ret;}
 
     //18. Issuer2 create  GVT Credential
     NSString *issuer2GvtCredential;
@@ -1022,7 +1011,6 @@
                                                credRevocId:nil
                                          revocRegDeltaJSON:nil];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialWithWalletHandle failed");
-    XCTAssertTrue([issuer2GvtCredential isValid], @"invalid issuer2GvtCredential: %@", issuer2GvtCredential);
 
     //18. Prover store GVT credential from Issuer2
     ret = [self proverStoreCredential:issuer2GvtCredential

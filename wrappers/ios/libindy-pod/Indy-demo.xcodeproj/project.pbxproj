@@ -23,18 +23,10 @@
 		5DB57B501F712A5200EB4C90 /* Base58Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B0F1F712A5100EB4C90 /* Base58Test.m */; };
 		5DB57B591F712A5200EB4C90 /* AnoncredsHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B1C1F712A5100EB4C90 /* AnoncredsHighCases.m */; };
 		5DB57B5B1F712A5200EB4C90 /* AnoncredsMediumCasesDemos.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B1E1F712A5100EB4C90 /* AnoncredsMediumCasesDemos.m */; };
-		5DB57B5C1F712A5200EB4C90 /* LedgerAttribRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B201F712A5200EB4C90 /* LedgerAttribRequest.mm */; };
-		5DB57B5D1F712A5200EB4C90 /* LedgerHignCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B211F712A5200EB4C90 /* LedgerHignCases.mm */; };
-		5DB57B5E1F712A5200EB4C90 /* LedgerNodeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B221F712A5200EB4C90 /* LedgerNodeRequest.mm */; };
-		5DB57B5F1F712A5200EB4C90 /* LedgerNymRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B231F712A5200EB4C90 /* LedgerNymRequest.mm */; };
-		5DB57B601F712A5200EB4C90 /* LedgerSchemaRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B241F712A5200EB4C90 /* LedgerSchemaRequest.mm */; };
+		5DB57B5D1F712A5200EB4C90 /* LedgerSendRequests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B211F712A5200EB4C90 /* LedgerSendRequests.mm */; };
 		5DB57B611F712A5200EB4C90 /* PoolHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B261F712A5200EB4C90 /* PoolHighCases.m */; };
-		5DB57B621F712A5200EB4C90 /* PoolMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B271F712A5200EB4C90 /* PoolMediumCases.m */; };
 		5DB57B631F712A5200EB4C90 /* DidHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B291F712A5200EB4C90 /* DidHighCases.m */; };
-		5DB57B641F712A5200EB4C90 /* DidMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B2A1F712A5200EB4C90 /* DidMediumCases.m */; };
-		5DB57B651F712A5200EB4C90 /* RegisterWalletType.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B2C1F712A5200EB4C90 /* RegisterWalletType.m */; };
 		5DB57B661F712A5200EB4C90 /* WalletHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B2D1F712A5200EB4C90 /* WalletHighCases.m */; };
-		5DB57B671F712A5200EB4C90 /* WalletMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B2E1F712A5200EB4C90 /* WalletMediumCases.m */; };
 		5DB57B681F712A5200EB4C90 /* AnoncredsDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B301F712A5200EB4C90 /* AnoncredsDemo.mm */; };
 		5DB57B691F712A5200EB4C90 /* LedgerDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B311F712A5200EB4C90 /* LedgerDemo.mm */; };
 		5DB57B6A1F712A5200EB4C90 /* CryptoDemo.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B321F712A5200EB4C90 /* CryptoDemo.mm */; };
@@ -52,12 +44,10 @@
 		5DB57B771F712A5200EB4C90 /* NSDictionary+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B4D1F712A5200EB4C90 /* NSDictionary+JSON.m */; };
 		5DB57B781F712A5200EB4C90 /* NSString+Validation.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B4F1F712A5200EB4C90 /* NSString+Validation.m */; };
 		80DCB08582AE3D8C572032E5 /* libPods-Indy-demoTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D78D0155F3E8AF26D9FBE34 /* libPods-Indy-demoTests.a */; };
-		ADF5F072D66857F8E8F5EF89 /* LedgerPoolConfigRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FC55674BDCE214933132 /* LedgerPoolConfigRequest.mm */; };
+		ADF5F64401BEE20C3FC0E002 /* LedgerBuildRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5F3613A78A60DBE7F1AB9 /* LedgerBuildRequest.mm */; };
 		ADF5F67A3F994466D5D58BD8 /* BlobStorageUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FB263C0C3F9BD6F57037 /* BlobStorageUtils.m */; };
 		ADF5FAA7813FC4B983F82948 /* Interaction.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5F0F5B189065464F202AF /* Interaction.mm */; };
-		ADF5FEFC9E28F7FBBC11828B /* LedgerPoolUpgradeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FF3A492118F1F40C2D4C /* LedgerPoolUpgradeRequest.mm */; };
 		C1BA94778E40060E56814C61 /* libPods-Indy-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 49682051B863F7784F1A8CAE /* libPods-Indy-demo.a */; };
-		DD287A642068F6A1003EF9A7 /* LedgerPoolRestartRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = DD287A632068F6A1003EF9A7 /* LedgerPoolRestartRequest.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -119,18 +109,10 @@
 		5DB57B0F1F712A5100EB4C90 /* Base58Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base58Test.m; sourceTree = "<group>"; };
 		5DB57B1C1F712A5100EB4C90 /* AnoncredsHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsHighCases.m; sourceTree = "<group>"; };
 		5DB57B1E1F712A5100EB4C90 /* AnoncredsMediumCasesDemos.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCasesDemos.m; sourceTree = "<group>"; };
-		5DB57B201F712A5200EB4C90 /* LedgerAttribRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerAttribRequest.mm; sourceTree = "<group>"; };
-		5DB57B211F712A5200EB4C90 /* LedgerHignCases.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerHignCases.mm; sourceTree = "<group>"; };
-		5DB57B221F712A5200EB4C90 /* LedgerNodeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNodeRequest.mm; sourceTree = "<group>"; };
-		5DB57B231F712A5200EB4C90 /* LedgerNymRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerNymRequest.mm; sourceTree = "<group>"; };
-		5DB57B241F712A5200EB4C90 /* LedgerSchemaRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerSchemaRequest.mm; sourceTree = "<group>"; };
+		5DB57B211F712A5200EB4C90 /* LedgerSendRequests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerSendRequests.mm; sourceTree = "<group>"; };
 		5DB57B261F712A5200EB4C90 /* PoolHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolHighCases.m; sourceTree = "<group>"; };
-		5DB57B271F712A5200EB4C90 /* PoolMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PoolMediumCases.m; sourceTree = "<group>"; };
 		5DB57B291F712A5200EB4C90 /* DidHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DidHighCases.m; sourceTree = "<group>"; };
-		5DB57B2A1F712A5200EB4C90 /* DidMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DidMediumCases.m; sourceTree = "<group>"; };
-		5DB57B2C1F712A5200EB4C90 /* RegisterWalletType.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RegisterWalletType.m; sourceTree = "<group>"; };
 		5DB57B2D1F712A5200EB4C90 /* WalletHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletHighCases.m; sourceTree = "<group>"; };
-		5DB57B2E1F712A5200EB4C90 /* WalletMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WalletMediumCases.m; sourceTree = "<group>"; };
 		5DB57B301F712A5200EB4C90 /* AnoncredsDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AnoncredsDemo.mm; sourceTree = "<group>"; };
 		5DB57B311F712A5200EB4C90 /* LedgerDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerDemo.mm; sourceTree = "<group>"; };
 		5DB57B321F712A5200EB4C90 /* CryptoDemo.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = CryptoDemo.mm; sourceTree = "<group>"; };
@@ -162,13 +144,11 @@
 		7BCBA93D72AE3588DDAD9D49 /* Pods-Indy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demoTests/Pods-Indy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
 		8301CE9D60BE235EB8E50A72 /* libPods-libindy-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ADF5F0F5B189065464F202AF /* Interaction.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Interaction.mm; sourceTree = "<group>"; };
+		ADF5F3613A78A60DBE7F1AB9 /* LedgerBuildRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerBuildRequest.mm; sourceTree = "<group>"; };
 		ADF5FB263C0C3F9BD6F57037 /* BlobStorageUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BlobStorageUtils.m; sourceTree = "<group>"; };
 		ADF5FC4BA3EAF704D53570D5 /* BlobStorageUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BlobStorageUtils.h; sourceTree = "<group>"; };
-		ADF5FC55674BDCE214933132 /* LedgerPoolConfigRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerPoolConfigRequest.mm; sourceTree = "<group>"; };
-		ADF5FF3A492118F1F40C2D4C /* LedgerPoolUpgradeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerPoolUpgradeRequest.mm; sourceTree = "<group>"; };
 		B87BB39216A2B13E57165BF9 /* libPods-libindy-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DACC1FF866C0BAFAF74DC73B /* Pods-libindy-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.debug.xcconfig"; sourceTree = "<group>"; };
-		DD287A632068F6A1003EF9A7 /* LedgerPoolRestartRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerPoolRestartRequest.mm; sourceTree = "<group>"; };
 		ED81D70B4C1CD531B86E9E9F /* Pods-libindy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
 		EE41F07D6A899FDD613605CE /* Pods-Indy-demo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demo.release.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demo/Pods-Indy-demo.release.xcconfig"; sourceTree = "<group>"; };
 		F54627AA7BB604ED15A77C6E /* Pods-Indy-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demo/Pods-Indy-demo.debug.xcconfig"; sourceTree = "<group>"; };
@@ -288,14 +268,8 @@
 		5DB57B1F1F712A5200EB4C90 /* Ledger */ = {
 			isa = PBXGroup;
 			children = (
-				DD287A632068F6A1003EF9A7 /* LedgerPoolRestartRequest.mm */,
-				5DB57B201F712A5200EB4C90 /* LedgerAttribRequest.mm */,
-				5DB57B211F712A5200EB4C90 /* LedgerHignCases.mm */,
-				5DB57B221F712A5200EB4C90 /* LedgerNodeRequest.mm */,
-				5DB57B231F712A5200EB4C90 /* LedgerNymRequest.mm */,
-				5DB57B241F712A5200EB4C90 /* LedgerSchemaRequest.mm */,
-				ADF5FC55674BDCE214933132 /* LedgerPoolConfigRequest.mm */,
-				ADF5FF3A492118F1F40C2D4C /* LedgerPoolUpgradeRequest.mm */,
+				5DB57B211F712A5200EB4C90 /* LedgerSendRequests.mm */,
+				ADF5F3613A78A60DBE7F1AB9 /* LedgerBuildRequest.mm */,
 			);
 			path = Ledger;
 			sourceTree = "<group>";
@@ -304,7 +278,6 @@
 			isa = PBXGroup;
 			children = (
 				5DB57B261F712A5200EB4C90 /* PoolHighCases.m */,
-				5DB57B271F712A5200EB4C90 /* PoolMediumCases.m */,
 			);
 			path = Pool;
 			sourceTree = "<group>";
@@ -313,7 +286,6 @@
 			isa = PBXGroup;
 			children = (
 				5DB57B291F712A5200EB4C90 /* DidHighCases.m */,
-				5DB57B2A1F712A5200EB4C90 /* DidMediumCases.m */,
 			);
 			path = Did;
 			sourceTree = "<group>";
@@ -321,9 +293,7 @@
 		5DB57B2B1F712A5200EB4C90 /* Wallet */ = {
 			isa = PBXGroup;
 			children = (
-				5DB57B2C1F712A5200EB4C90 /* RegisterWalletType.m */,
 				5DB57B2D1F712A5200EB4C90 /* WalletHighCases.m */,
-				5DB57B2E1F712A5200EB4C90 /* WalletMediumCases.m */,
 			);
 			path = Wallet;
 			sourceTree = "<group>";
@@ -632,45 +602,35 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5DB57B641F712A5200EB4C90 /* DidMediumCases.m in Sources */,
-				5DB57B651F712A5200EB4C90 /* RegisterWalletType.m in Sources */,
 				5DB57B771F712A5200EB4C90 /* NSDictionary+JSON.m in Sources */,
 				5D413F201F850DFF00E04D7D /* PairwiseHighCases.m in Sources */,
 				5DB57B6D1F712A5200EB4C90 /* AnoncredsUtils.m in Sources */,
 				5DB57B751F712A5200EB4C90 /* WalletUtils.m in Sources */,
 				5DB57B6F1F712A5200EB4C90 /* Environment.m in Sources */,
-				5DB57B5E1F712A5200EB4C90 /* LedgerNodeRequest.mm in Sources */,
 				5DB57B711F712A5200EB4C90 /* PoolUtils.m in Sources */,
 				5DB57B661F712A5200EB4C90 /* WalletHighCases.m in Sources */,
 				5DB57B741F712A5200EB4C90 /* TestUtils.m in Sources */,
-				5DB57B671F712A5200EB4C90 /* WalletMediumCases.m in Sources */,
 				5DB57B5B1F712A5200EB4C90 /* AnoncredsMediumCasesDemos.m in Sources */,
-				5DB57B601F712A5200EB4C90 /* LedgerSchemaRequest.mm in Sources */,
 				5DB57B721F712A5200EB4C90 /* SequenceUtils.m in Sources */,
 				5DB57B501F712A5200EB4C90 /* Base58Test.m in Sources */,
 				5DB57B6A1F712A5200EB4C90 /* CryptoDemo.mm in Sources */,
 				5DB57B761F712A5200EB4C90 /* NSArray+JSON.m in Sources */,
-				5DB57B5D1F712A5200EB4C90 /* LedgerHignCases.mm in Sources */,
+				5DB57B5D1F712A5200EB4C90 /* LedgerSendRequests.mm in Sources */,
 				5DB57B631F712A5200EB4C90 /* DidHighCases.m in Sources */,
-				5DB57B5F1F712A5200EB4C90 /* LedgerNymRequest.mm in Sources */,
 				5DB57B681F712A5200EB4C90 /* AnoncredsDemo.mm in Sources */,
 				5DB57B691F712A5200EB4C90 /* LedgerDemo.mm in Sources */,
-				DD287A642068F6A1003EF9A7 /* LedgerPoolRestartRequest.mm in Sources */,
 				5DB57B781F712A5200EB4C90 /* NSString+Validation.m in Sources */,
 				5DB57B611F712A5200EB4C90 /* PoolHighCases.m in Sources */,
 				5DB57B731F712A5200EB4C90 /* DidUtils.mm in Sources */,
 				5D413F231F850F2E00E04D7D /* PairwiseUtils.m in Sources */,
 				5DB57B701F712A5200EB4C90 /* LedgerUtils.mm in Sources */,
-				5DB57B621F712A5200EB4C90 /* PoolMediumCases.m in Sources */,
 				5DB57B6E1F712A5200EB4C90 /* ClosureUtils.m in Sources */,
-				5DB57B5C1F712A5200EB4C90 /* LedgerAttribRequest.mm in Sources */,
 				5DB57B591F712A5200EB4C90 /* AnoncredsHighCases.m in Sources */,
 				109A3722C0C40A992FE7826B /* CryptoHighCases.mm in Sources */,
 				109A32E000D96FD088BFFFB1 /* CryptoUtils.mm in Sources */,
-				ADF5F072D66857F8E8F5EF89 /* LedgerPoolConfigRequest.mm in Sources */,
-				ADF5FEFC9E28F7FBBC11828B /* LedgerPoolUpgradeRequest.mm in Sources */,
 				ADF5F67A3F994466D5D58BD8 /* BlobStorageUtils.m in Sources */,
 				ADF5FAA7813FC4B983F82948 /* Interaction.mm in Sources */,
+				ADF5F64401BEE20C3FC0E002 /* LedgerBuildRequest.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

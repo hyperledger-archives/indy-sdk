@@ -145,6 +145,7 @@ impl Prover {
         }
 
         trace!("get_credentials_for_proof_req <<< credentials_for_proof_request: {:?}", credentials_for_proof_request);
+
         Ok(credentials_for_proof_request)
     }
 
