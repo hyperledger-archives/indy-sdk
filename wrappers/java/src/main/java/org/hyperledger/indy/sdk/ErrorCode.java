@@ -231,7 +231,18 @@ public enum ErrorCode {
 	/**
 	 * Unknown payment method has been called
 	 */
-	UnknownPaymentMethod(700);
+	UnknownPaymentMethod(700),
+
+	/**
+	 * No method were scraped from inputs/outputs or more than one were scraped
+	 */
+	IncompatiblePaymentError(701),
+
+	/**
+	 * Information passed to libindy is incorrect
+	 */
+	IncorrectTransactionInformationError(702)
+	;
 
 	private int value;
 	private static Map<Integer, ErrorCode> map = new HashMap<Integer, ErrorCode>();

@@ -9,7 +9,7 @@ import org.hyperledger.indy.sdk.IndyException;
 public class UnknownPaymentMethodException extends IndyException {
 
     private static final long serialVersionUID = -8226688236266389417L;
-    public static final String MESSAGE = "An unknown payment method was called";
+    private static final String MESSAGE = "An unknown payment method was called";
 
     /**
      * Initializes a new {@link UnknownPaymentMethodException}

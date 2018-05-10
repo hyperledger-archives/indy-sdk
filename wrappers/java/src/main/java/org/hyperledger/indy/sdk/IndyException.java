@@ -6,6 +6,8 @@ import org.hyperledger.indy.sdk.ledger.ConsensusException;
 import org.hyperledger.indy.sdk.ledger.LedgerInvalidTransactionException;
 import org.hyperledger.indy.sdk.ledger.LedgerSecurityException;
 import org.hyperledger.indy.sdk.ledger.TimeoutException;
+import org.hyperledger.indy.sdk.payments.IncompatiblePaymentException;
+import org.hyperledger.indy.sdk.payments.IncorrectTransactionInformationException;
 import org.hyperledger.indy.sdk.payments.UnknownPaymentMethodException;
 import org.hyperledger.indy.sdk.pool.InvalidPoolException;
 import org.hyperledger.indy.sdk.pool.PoolConfigNotCreatedException;
@@ -122,6 +124,10 @@ public class IndyException extends Exception {
 				return new DidAlreadyExistsException();
 			case UnknownPaymentMethod:
 				return new UnknownPaymentMethodException();
+			case IncompatiblePaymentError:
+				return new IncompatiblePaymentException();
+			case IncorrectTransactionInformationError:
+				return new IncorrectTransactionInformationException();
 			default:
 				String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
 				return new IndyException(message, sdkErrorCode);
