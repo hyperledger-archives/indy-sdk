@@ -230,18 +230,6 @@ Send GET_ATTRIB transaction
 ledger get-attrib did=<did-value> [raw=<raw-value>] [hash=<hash-value>] [enc=<enc-value>]
 ```
 
-#### NODE transaction
-Send NODE transaction
-```
-ledger node target=<target-value> node_ip=<node_ip-value> node_port=<node_port-value> client_ip=<client_ip-value> client_port=<client_port-value> alias=<alias-value> blskey=<blskey-value> [services=<services-value>]
-```
-
-#### POOL_UPGRADE transaction
-Send POOL_UPGRADE transaction
-```
-ledger pool-upgrade name=<name> version=<version> action=<start or cancel> sha256=<sha256> [timeout=<timeout>] [schedule=<schedule>] [justification=<justification>] [reinstall=<true or false (default false)>] [force=<true or false (default false)>]
-```
-
 #### SCHEMA transaction
 Send SCHEMA transaction
 ```
@@ -265,16 +253,81 @@ Send GET_CRED_DEF transaction
 ledger get-cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> origin=<origin-value>
 ```
 
+#### NODE transaction
+Send NODE transaction
+```
+ledger node target=<target-value> node_ip=<node_ip-value> node_port=<node_port-value> client_ip=<client_ip-value> client_port=<client_port-value> alias=<alias-value> blskey=<blskey-value> [services=<services-value>]
+```
+
+#### POOL_UPGRADE transaction
+Send POOL_UPGRADE transaction
+```
+ledger pool-upgrade name=<name> version=<version> action=<start or cancel> sha256=<sha256> [timeout=<timeout>] [schedule=<schedule>] [justification=<justification>] [reinstall=<true or false (default false)>] [force=<true or false (default false)>]
+```
+
 #### POOL_CONFIG transaction
 Send POOL_CONFIG transaction
 ```
 ledger pool-config writes=<true or false (default false)> [force=<true or false (default false)>]
 ```
 
+#### POOL_RESTART transaction
+Send POOL_RESTART transaction
+```
+ledger pool-restart action=<start or cancel> [datetime=<datetime>]
+```
+
 #### Custom transaction
 Send custom transaction with user defined json body and optional signature
 ```
 ledger custom [txn=]<txn-json-value> [sign=<true|false>]
+```
+
+#### GET_UTXO transaction
+Send GET_UTXO transaction
+```
+ledger get-utxo payment_address=<payment_address>
+```
+
+#### PAYMENT transaction
+Send PAYMENT transaction
+```
+ledger get-utxo inputs=<utxo-1>,..,<utxo-n> outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
+```
+
+#### GET_FEES transaction
+Send GET_FEES transaction
+```
+ledger get-fees payment_address=<payment_address>
+```
+
+#### MINT transaction
+Prepare MINT transaction
+```
+ledger mint-prepare outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
+```
+
+#### SET_FEES transaction
+Prepare SET_FEES transaction
+```
+ledger set-fees-prepare payment_method=<payment_method> fees=<txn-type-1>:<amount-1>,..,<txn-type-n>:<amount-n>
+```
+
+### Payment Address commands
+```
+indy> payment-address <subcommand>
+```
+
+#### Create
+Create the payment address for specified payment method. Requires opened wallet.
+```
+payment-address create payment_method=<payment_method> [seed=<seed-value>]
+```
+
+#### List
+Lists all payment addresses. Requires opened wallet.
+```
+payment-address list
 ```
 
 ## Examples
