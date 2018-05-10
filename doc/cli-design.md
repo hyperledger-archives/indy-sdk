@@ -292,7 +292,7 @@ ledger get-utxo payment_address=<payment_address>
 #### PAYMENT transaction
 Send PAYMENT transaction
 ```
-ledger get-utxo inputs=<utxo-1>,..,<utxo-n> outputs=<pay-addr-1>-<amount>-<extra>,..,<pay-addr-n>-<amount>-<extra>
+ledger get-utxo inputs=<utxo-1>,..,<utxo-n> outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
 ```
 
 #### GET_FEES transaction
@@ -304,7 +304,7 @@ ledger get-fees payment_address=<payment_address>
 #### MINT transaction
 Prepare MINT transaction
 ```
-ledger mint-prepare outputs=<pay-addr-1>-<amount>-<extra>,..,<pay-addr-n>-<amount>-<extra>
+ledger mint-prepare outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
 ```
 
 #### SET_FEES transaction
