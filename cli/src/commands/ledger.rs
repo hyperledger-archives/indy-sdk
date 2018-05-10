@@ -58,7 +58,7 @@ pub mod nym_command {
         let verkey = get_opt_str_param("verkey", params).map_err(error_err!())?;
         let role = get_opt_empty_str_param("role", params).map_err(error_err!())?;
         let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
-        let fees_outputs = get_opt_str_array_tuples_param("fees_outputs", params).map_err(error_err!())?;
+        let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
 
         let mut request = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
             .map_err(|err| handle_build_request_error(err))?;
@@ -168,7 +168,7 @@ pub mod attrib_command {
         let raw = get_opt_str_param("raw", params).map_err(error_err!())?;
         let enc = get_opt_str_param("enc", params).map_err(error_err!())?;
         let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
-        let fees_outputs = get_opt_str_array_tuples_param("fees_outputs", params).map_err(error_err!())?;
+        let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
 
         let mut request = Ledger::build_attrib_request(&submitter_did, target_did, hash, raw, enc)
             .map_err(|err| handle_build_request_error(err))?;
@@ -282,7 +282,7 @@ pub mod schema_command {
         let version = get_str_param("version", params).map_err(error_err!())?;
         let attr_names = get_str_array_param("attr_names", params).map_err(error_err!())?;
         let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
-        let fees_outputs = get_opt_str_array_tuples_param("fees_outputs", params).map_err(error_err!())?;
+        let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
 
         let id = build_id(&submitter_did, name, version);
 
@@ -401,7 +401,7 @@ pub mod cred_def_command {
         let primary = get_object_param("primary", params).map_err(error_err!())?;
         let revocation = get_opt_str_param("revocation", params).map_err(error_err!())?;
         let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
-        let fees_outputs = get_opt_str_array_tuples_param("fees_outputs", params).map_err(error_err!())?;
+        let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
 
         let id = build_id(&submitter_did, schema_id, signature_type);
 
@@ -866,10 +866,10 @@ pub mod payment_command {
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let inputs = get_str_array_param("inputs", params).map_err(error_err!())?;
-        let outputs = get_str_array_tuples_param("outputs", params).map_err(error_err!())?;
+        let outputs = get_str_tuple_array_param("outputs", params).map_err(error_err!())?;
 
         let inputs = parse_payment_inputs(&inputs).map_err(error_err!())?;
-        let outputs = parse_payment_outputs(&outputs, true).map_err(error_err!())?;
+        let outputs = parse_payment_outputs(&outputs).map_err(error_err!())?;
 
         println!("{}", inputs);
         println!("{}", outputs);
@@ -970,8 +970,8 @@ pub mod mint_prepare_command {
         let submitter_did = ensure_active_did(&ctx)?;
         let wallet_handle = ensure_opened_wallet_handle(ctx)?;
 
-        let outputs = get_str_array_tuples_param("outputs", params).map_err(error_err!())?;
-        let outputs = parse_payment_outputs(&outputs, true).map_err(error_err!())?;
+        let outputs = get_str_tuple_array_param("outputs", params).map_err(error_err!())?;
+        let outputs = parse_payment_outputs(&outputs).map_err(error_err!())?;
 
         Payment::build_mint_req(wallet_handle, &submitter_did, &outputs)
             .map(|(request, _payment_method)| {
@@ -1055,9 +1055,12 @@ pub mod sign_multi_command {
 }
 
 fn set_request_fees(request: &mut String, wallet_handle: i32, submitter_did: &str, fees_inputs: &Option<Vec<&str>>, fees_outputs: &Option<Vec<String>>) -> Result<(), ()> {
-    if let (&Some(ref inputs), &Some(ref outputs)) = (fees_inputs, fees_outputs) {
+    if let &Some(ref inputs) = fees_inputs {
         let inputs = parse_payment_inputs(&inputs)?;
-        let outputs = parse_payment_outputs(&outputs, false)?;
+
+        let outputs = if let &Some(ref o) = fees_outputs {
+            parse_payment_outputs(&o)?
+        } else { "[]".to_string() };
 
         *request = Payment::add_request_fees(wallet_handle, submitter_did, request, &inputs, &outputs)
             .map(|(request, _)| request)
@@ -1074,10 +1077,10 @@ fn parse_payment_inputs(inputs: &Vec<&str>) -> Result<String, ()> {
         .map_err(|_| println_err!("Wrong data has been received"))
 }
 
-fn parse_payment_outputs(outputs: &Vec<String>, is_required: bool) -> Result<String, ()> {
+fn parse_payment_outputs(outputs: &Vec<String>) -> Result<String, ()> {
     const OUTPUTS_DELIMITER: &'static str = ",";
 
-    if is_required && outputs.is_empty() {
+    if outputs.is_empty() {
         return Err(println_err!("Outputs list is empty"));
     }
 
