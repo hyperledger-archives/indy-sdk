@@ -270,11 +270,6 @@ impl LedgerService {
             return Err(CommonError::InvalidStructure(format!("Invalid action: {}", action)));
         }
 
-        if action == "start" && datetime.is_none() {
-            return Err(CommonError::InvalidStructure(format!("Datetime is required for `{}` action", action)));
-        }
-
-
         let operation = PoolRestartOperation::new(action, datetime.map(String::from));
 
         let request = LedgerService::build_request(identifier, operation, "POOL_RESTART")?;

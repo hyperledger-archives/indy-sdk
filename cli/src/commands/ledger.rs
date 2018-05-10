@@ -627,9 +627,9 @@ pub mod pool_config_command {
 pub mod pool_restart_command {
     use super::*;
 
-    command!(CommandMetadata::build("pool-restart", "Send instructions to nodes to update themselves.")
+    command!(CommandMetadata::build("pool-restart", "Send instructions to nodes to restart themselves.")
                 .add_required_param("action", "Restart type. Either start or cancel.")
-                .add_optional_param("datetime", "Node restart datetime. Datetime is mandatory for action=start.")
+                .add_optional_param("datetime", "Node restart datetime (only for action=start).")
                 .add_example(r#"ledger pool-restart action=start datetime=2020-01-25T12:49:05.258870+00:00"#)
                 .add_example(r#"ledger pool-restart action=cancel"#)
                 .finalize()
@@ -643,7 +643,7 @@ pub mod pool_restart_command {
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let action = get_str_param("action", params).map_err(error_err!())?;
-        let datetime = get_str_param("datetime", params).map_err(error_err!())?;
+        let datetime = get_opt_str_param("datetime", params).map_err(error_err!())?;
 
         let response = Ledger::indy_build_pool_restart_request(&submitter_did, action, datetime)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));

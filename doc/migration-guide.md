@@ -1982,5 +1982,5 @@ The Wallet API has not been changed.
 Here you can find integration tests that demonstrates basic revocation scenario using Libindy and Ledger
 * [Rust](https://github.com/hyperledger/indy-sdk/blob/master/libindy/tests/interaction.rs)
 * [Java](https://github.com/hyperledger/indy-sdk/blob/master/wrappers/java/src/test/java/org/hyperledger/indy/sdk/interaction/AnoncredsRevocationInteractionTest.java)
-* [Pyton](https://github.com/hyperledger/indy-sdk/blob/master/wrappers/python/tests/interation/interaction.py)
+* [Python](https://github.com/hyperledger/indy-sdk/blob/master/wrappers/python/tests/interation/interaction.py)
 * [XCode](https://github.com/hyperledger/indy-sdk/blob/master/wrappers/ios/libindy-pod/Indy-demoTests/Demo%20Tests/Interaction.mm)
