@@ -3,8 +3,7 @@ import random
 from vcx.error import ErrorCode, VcxError
 from vcx.state import State
 from vcx.api.connection import Connection
-from vcx.common import release
-from ctypes import *
+
 
 source_id = '123'
 phone_number = '8019119191'
@@ -24,6 +23,9 @@ async def test_connection_connect():
     connection = await Connection.create(source_id)
     invite_details = await connection.connect(phone_number)
     assert invite_details
+    await connection.delete()
+    with pytest.raises(VcxError) as e:
+        await connection.serialize()
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')

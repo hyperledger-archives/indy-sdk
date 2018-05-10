@@ -83,7 +83,6 @@ struct AcceptInvitePayload{
     send_payload: SendMsgPayload,
 }
 
-
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
 pub struct SendInvite {
@@ -258,17 +257,38 @@ impl SendInvite{
         match httpclient::post_u8(&data, &url) {
             Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
             Ok(response) => {
-                let response = parse_send_invite_response(response)?;
+                let response = parse_response(response)?;
                 result.push(response);
             },
         };
 
         Ok(result.to_owned())
     }
+    fn print_info(&self) {
+//    TODO: This could go away
+        println!("\n****\n**** message pack: Send Invite");
+        println!("create_payload {}", serde_json::to_string(&self.payload.create_payload).unwrap());
+        println!("msg_detail_payload {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap());
+        println!("send_payload {}", serde_json::to_string(&self.payload.send_payload).unwrap());
+        println!("self.to_vk: {}", &self.to_vk);
+        println!("self.agent_did: {}", &self.agent_did);
+        println!("self.agent_vk: {}", &self.agent_vk);
+        debug!("connection invitation details: {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap_or("failure".to_string()));
+    }
 }
 
 impl AcceptInvite{
-
+//    TODO: This could go away
+    fn print_info(&self) {
+        println!("\n****\n**** message pack: Accept Invite");
+        println!("create_payload {}", serde_json::to_string(&self.payload.create_payload).unwrap());
+        println!("msg_detail_payload {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap());
+        println!("send_payload {}", serde_json::to_string(&self.payload.send_payload).unwrap());
+        println!("self.to_vk: {}", &self.to_vk);
+        println!("self.agent_did: {}", &self.agent_did);
+        println!("self.agent_vk: {}", &self.agent_vk);
+        debug!("connection invitation details: {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap_or("failure".to_string()));
+    }
     pub fn create() -> AcceptInvite {
         AcceptInvite {
             to_did: String::new(),
@@ -376,7 +396,6 @@ impl GeneralMessage for SendInvite{
         }
 
         self.generate_signature()?;
-
         debug!("connection invitation details: {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap_or("failure".to_string()));
         let create = encode::to_vec_named(&self.payload.create_payload).unwrap();
         let details = encode::to_vec_named(&self.payload.msg_detail_payload).unwrap();
@@ -415,7 +434,6 @@ impl GeneralMessage for AcceptInvite{
         }
 
         self.generate_signature()?;
-
         debug!("connection invitation details: {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap_or("failure".to_string()));
         let create = encode::to_vec_named(&self.payload.create_payload).unwrap();
         let details = encode::to_vec_named(&self.payload.msg_detail_payload).unwrap();
@@ -431,7 +449,7 @@ impl GeneralMessage for AcceptInvite{
     }
 }
 
-fn parse_send_invite_response(response: Vec<u8>) -> Result<String, u32> {
+fn parse_response(response: Vec<u8>) -> Result<String, u32> {
     let data = unbundle_from_agency(response)?;
 
     if data.len() != 3 {
@@ -492,7 +510,6 @@ pub fn parse_invitation_acceptance_details(payload: Vec<u8>) -> Result<SenderDet
     Ok(response.sender_detail.to_owned())
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -534,7 +551,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
 
-        let result = parse_send_invite_response(SEND_INVITE_RESPONSE.to_vec()).unwrap();
+        let result = parse_response(SEND_INVITE_RESPONSE.to_vec()).unwrap();
 
         assert_eq!(result, INVITE_DETAIL_STRING);
     }

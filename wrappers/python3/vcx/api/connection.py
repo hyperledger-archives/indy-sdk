@@ -60,6 +60,13 @@ class Connection(VcxStateful):
                                        Connection.connect.cb)
         return invite_details
 
+    async def _delete(self):
+        if not hasattr(Connection._delete, "cb"):
+            Connection._delete.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+        c_connection_handle = c_uint32(self.handle)
+        return await do_call('vcx_connection_delete_connection', c_connection_handle, Connection._delete.cb)
+
     async def serialize(self) -> dict:
         return await self._serialize(Connection, 'vcx_connection_serialize')
 
@@ -71,6 +78,9 @@ class Connection(VcxStateful):
 
     def release(self) -> None:
         self._release(Connection, 'vcx_connection_release')
+
+    async def delete(self):
+        await self._delete()
 
     async def invite_details(self, abbreviated: bool) -> dict:
         if not hasattr(Connection.invite_details, "cb"):

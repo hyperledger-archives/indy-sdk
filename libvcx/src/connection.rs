@@ -57,7 +57,7 @@ impl Connection {
     fn _connect_send_invite(&mut self, options: Option<String>) -> Result<u32, ConnectionError> {
         debug!("\"_connect_send_invite\" for connection {}", self.source_id);
 
-        let options_obj: ConnectionOptions = match options{
+        let options_obj: ConnectionOptions = match options {
             Some(opt) => {
                 match opt.trim().is_empty() {
                     true => ConnectionOptions {
@@ -74,13 +74,12 @@ impl Connection {
                 }
             },
             None => {
-                ConnectionOptions{
+                ConnectionOptions {
                     connection_type: None,
                     phone: None
                 }
             }
         };
-
         match messages::send_invite()
             .to(&self.pw_did)
             .to_vk(&self.pw_verkey)
@@ -109,6 +108,23 @@ impl Connection {
                 Ok(error::SUCCESS.code_num)
             }
         }
+    }
+    pub fn delete_connection(&mut self) -> Result<u32, ConnectionError> {
+        match messages::delete_connection()
+            .to(&self.pw_did)
+            .to_vk(&self.pw_verkey)
+            .agent_did(&self.agent_did)
+            .agent_vk(&self.agent_vk)
+            .send_secure() {
+            Err(ec) => {
+                return Err(ConnectionError::CannotDeleteConnection())
+            },
+            Ok(response) => {
+                self.state = VcxStateType::VcxStateNone;
+                Ok(error::SUCCESS.code_num)
+            }
+        }
+
     }
 
     fn _connect_accept_invite(&mut self, options: Option<String>) -> Result<u32,ConnectionError> {
@@ -540,6 +556,16 @@ pub fn update_state(handle: u32) -> Result<u32, ConnectionError> {
         },
     }
 }
+pub fn delete_connection(handle:u32) -> Result<u32, ConnectionError> {
+    CONNECTION_MAP.get_mut(handle, |t| {
+        match t.delete_connection() {
+            Ok(x) => Ok(x),
+            Err(e) => {
+                return Err(e.to_error_code())
+            },
+        }
+    }).or(Err(ConnectionError::CannotDeleteConnection())).and(release(handle))
+}
 
 pub fn connect(handle: u32, options: Option<String>) -> Result<u32, ConnectionError> {
     CONNECTION_MAP.get_mut(handle, |t| {
@@ -751,7 +777,9 @@ mod tests {
         assert!(!get_pw_verkey(handle).unwrap().is_empty());
         assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
         connect(handle, Some("{}".to_string())).unwrap();
-        assert!(release(handle).is_ok());
+        assert_eq!(delete_connection(handle).unwrap(), 0);
+        // This errors b/c we release handle in delete connection
+        assert!(release(handle).is_err());
 
     }
 
@@ -1118,4 +1146,5 @@ mod tests {
         assert_eq!(set_invite_details(1, details).err(), Some(ConnectionError::InvalidHandle()));
         assert_eq!(set_pw_verkey(1, "blah").err(), Some(ConnectionError::InvalidHandle()));
     }
+
 }

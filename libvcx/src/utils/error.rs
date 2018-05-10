@@ -66,7 +66,10 @@ pub static INVALID_CREDENTIAL_HANDLE: Error = Error{code_num: 1053, message: "In
 pub static INVALID_CREDENTIAL_JSON: Error = Error{code_num: 1054, message: "Invalid credential json"};
 pub static CREATE_CREDENTIAL_REQUEST_ERROR: Error = Error{code_num: 1055, message: "could not create credential request"};
 pub static CREATE_PROOF_ERROR: Error = Error{code_num: 1056, message: "could not create proof"};
-
+pub static CANNOT_DELETE_CONNECTION: Error = Error{code_num: 1057, message: "Cannot Delete Connection. Check status of connection is appropriate to be deleted from agency."};
+pub static CREATE_CONNECTION_ERROR: Error = Error{code_num:1058, message: "Could not create connection"};
+pub static INVALID_WALLET_SETUP: Error = Error{code_num:1059, message: "Invalid wallet keys...have you provisioned correctly?"};
+pub static COMMON_ERROR: Error = Error{ code_num: 1060, message: "Common Error"};
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
        let mut m = HashMap::new();
@@ -125,6 +128,10 @@ lazy_static! {
         insert_c_message(&mut m, &INVALID_CREDENTIAL_JSON);
         insert_c_message(&mut m, &CREATE_CREDENTIAL_REQUEST_ERROR);
         insert_c_message(&mut m, &CREATE_PROOF_ERROR);
+        insert_c_message(&mut m, &CANNOT_DELETE_CONNECTION);
+        insert_c_message(&mut m, &CREATE_CONNECTION_ERROR);
+        insert_c_message(&mut m, &INVALID_WALLET_SETUP);
+        insert_c_message(&mut m, &COMMON_ERROR);
        m
     };
 }

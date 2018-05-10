@@ -119,6 +119,9 @@ vcx_error_t vcx_credentialdef_get(vcx_credentialdef_handle_t credentialdef_handl
  * credentials and proofs.
  */
 
+/** Deletes a connection object releases it from memory */
+vcx_error_t vcx_connection_delete_connection(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
+
 /** Creates a connection object to a specific identity owner. Populates a handle to the new connection. */
 vcx_error_t vcx_connection_create(vcx_command_handle_t command_handle, const char *source_id, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_connection_handle_t connection_handle));
 
