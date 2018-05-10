@@ -223,12 +223,12 @@ impl Ledger {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn indy_build_pool_restart_request(submitter_did: &str, action: &str, datetime: &str) -> Result<String, ErrorCode> {
+    pub fn indy_build_pool_restart_request(submitter_did: &str, action: &str, datetime: Option<&str>) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let action = CString::new(action).unwrap();
-        let datetime = CString::new(datetime).unwrap();
+        let datetime = datetime.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
             indy_build_pool_restart_request(command_handle,
