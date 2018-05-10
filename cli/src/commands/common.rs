@@ -125,6 +125,7 @@ pub fn load_plugin(ctx: &CommandContext, library: &str, initializer: &str) -> Re
         }
     }
 
+    //TODO think more about behaviour in case of init_func failed
     ctx.add_plugin(library, lib);
 
     Ok(())

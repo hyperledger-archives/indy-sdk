@@ -215,6 +215,7 @@ impl CommandContext {
     }
 
     pub fn add_plugin(&self, plugin_name: &str, plugin: libloading::Library) {
+        //TODO check already exists. Also check libindy
         self.plugins.borrow_mut().insert(plugin_name.to_string(), plugin);
     }
 }
