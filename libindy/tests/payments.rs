@@ -609,7 +609,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let err = PaymentsUtils::build_get_utxo_request(wallet_handle, "pay:null1").unwrap_err();
-            assert_eq!(err, ErrorCode::IncompatiblePaymentError);
+            assert_eq!(err, ErrorCode::UnknownPaymentMethod);
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
