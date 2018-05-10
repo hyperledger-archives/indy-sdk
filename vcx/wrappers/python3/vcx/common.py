@@ -43,7 +43,7 @@ def release(name, handle):
 
     if err != ErrorCode.Success:
         logger.warning("release: Function %s returned error %i", name, err)
-        raise VcxError(ErrorCode(err))
+        raise VcxError(ErrorCode(err), error_message(err))
 
 
 def error_message(error_code: int) -> str:

@@ -9,6 +9,7 @@ pub mod send_message;
 pub mod update_profile;
 pub mod proofs;
 pub mod agent_utils;
+pub mod update_connection;
 
 use std::u8;
 use settings;
@@ -17,15 +18,14 @@ use utils::libindy::wallet;
 use utils::error;
 use self::rmp_serde::encode;
 use self::create_key::CreateKeyMsg;
-use self::invite::SendInvite;
-use self::invite::AcceptInvite;
+use self::update_connection::DeleteConnection;
+use self::invite::{AcceptInvite, SendInvite};
 use self::update_profile::UpdateProfileData;
 use self::get_message::GetMessages;
 use self::send_message::SendMessage;
 use serde::Deserialize;
 use self::rmp_serde::Deserializer;
 use self::proofs::proof_request::{ProofRequestMessage};
-
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
 pub struct MsgInfo {
@@ -209,7 +209,6 @@ pub fn bundle_for_agent(message: Vec<u8>, pw_vk: &str, agent_did: &str, agent_vk
         fwd: agent_did.to_string(),
         msg,
     };
-
     let inner = encode::to_vec_named(&inner).unwrap();
     debug!("inner forward: {:?}", inner);
 
@@ -312,6 +311,7 @@ pub trait GeneralMessage{
 
 pub fn create_keys() -> CreateKeyMsg { CreateKeyMsg::create() }
 pub fn send_invite() -> SendInvite { SendInvite::create() }
+pub fn delete_connection() -> DeleteConnection { DeleteConnection::create() }
 pub fn accept_invite() -> AcceptInvite { AcceptInvite::create() }
 pub fn update_data() -> UpdateProfileData{ UpdateProfileData::create() }
 pub fn get_messages() -> GetMessages { GetMessages::create() }

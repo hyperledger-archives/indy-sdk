@@ -18,6 +18,17 @@ mod tests {
     use serde_json::Value;
     use std::thread;
     use std::time::Duration;
+    #[test]
+    fn test_delete_connection() {
+        self::vcx::utils::logger::LoggerUtils::init();
+        let test_name = "test_delete_connection";
+        settings::set_to_defaults();
+        self::vcx::utils::devsetup::setup_dev_env(test_name);
+        let alice = connection::build_connection("alice").unwrap();
+        connection::delete_connection(alice).unwrap();
+        assert!(connection::release(alice).is_err());
+        self::vcx::utils::devsetup::cleanup_dev_env(test_name);
+    }
 
     #[test]
     fn test_real_proof() {
