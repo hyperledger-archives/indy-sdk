@@ -12,6 +12,7 @@ use services::wallet::WalletService;
 use errors::common::CommonError;
 use std::vec::Vec;
 use std::string::String;
+use services::crypto::CryptoService;
 
 pub enum PaymentsCommand {
     RegisterMethod(
@@ -115,14 +116,16 @@ pub enum PaymentsCommand {
 pub struct PaymentsCommandExecutor {
     payments_service: Rc<PaymentsService>,
     wallet_service: Rc<WalletService>,
+    crypto_service: Rc<CryptoService>,
     pending_callbacks: RefCell<HashMap<i32, Box<Fn(Result<String, IndyError>) + Send>>>,
 }
 
 impl PaymentsCommandExecutor {
-    pub fn new(payments_service: Rc<PaymentsService>, wallet_service: Rc<WalletService>) -> PaymentsCommandExecutor {
+    pub fn new(payments_service: Rc<PaymentsService>, wallet_service: Rc<WalletService>, crypto_service: Rc<CryptoService>) -> PaymentsCommandExecutor {
         PaymentsCommandExecutor {
             payments_service,
             wallet_service,
+            crypto_service,
             pending_callbacks: RefCell::new(HashMap::new()),
         }
     }
@@ -261,6 +264,10 @@ impl PaymentsCommandExecutor {
     }
 
     fn add_request_fees(&self, wallet_handle: i32, submitter_did: &str, req: &str, inputs: &str, outputs: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        match self.crypto_service.validate_did(submitter_did) {
+            Err(err) => return cb(Err(IndyError::from(err))),
+            _ => ()
+        }
         match self.wallet_service.check(wallet_handle) {
             Ok(_) => (),
             Err(err) => return cb(Err(IndyError::from(err)))
@@ -300,6 +307,10 @@ impl PaymentsCommandExecutor {
     }
 
     fn build_get_utxo_request(&self, wallet_handle: i32, submitter_did: &str, payment_address: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        match self.crypto_service.validate_did(submitter_did) {
+            Err(err) => return cb(Err(IndyError::from(err))),
+            _ => ()
+        }
         match self.wallet_service.check(wallet_handle) {
             Ok(_) => (),
             Err(err) => return cb(Err(IndyError::from(err)))
@@ -333,6 +344,11 @@ impl PaymentsCommandExecutor {
     }
 
     fn build_payment_req(&self, wallet_handle: i32, submitter_did: &str, inputs: &str, outputs: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        match self.crypto_service.validate_did(submitter_did) {
+            Err(err) => return cb(Err(IndyError::from(err))),
+            _ => ()
+        }
+
         match self.wallet_service.check(wallet_handle) {
             Ok(_) => (),
             Err(err) => return cb(Err(IndyError::from(err)))
@@ -367,6 +383,11 @@ impl PaymentsCommandExecutor {
     }
 
     fn build_mint_req(&self, wallet_handle: i32, submitter_did: &str, outputs: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        match self.crypto_service.validate_did(submitter_did) {
+            Err(err) => return cb(Err(IndyError::from(err))),
+            _ => ()
+        }
+
         match self.wallet_service.check(wallet_handle) {
             //TODO: move to helper
             Ok(_) => (),
@@ -390,6 +411,10 @@ impl PaymentsCommandExecutor {
     }
 
     fn build_set_txn_fees_req(&self, wallet_handle: i32, submitter_did: &str, type_: &str, fees: &str, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        match self.crypto_service.validate_did(submitter_did) {
+            Err(err) => return cb(Err(IndyError::from(err))),
+            _ => ()
+        }
         match self.wallet_service.check(wallet_handle) {
             Ok(_) => (),
             Err(err) => return cb(Err(IndyError::from(err)))
@@ -406,6 +431,10 @@ impl PaymentsCommandExecutor {
     }
 
     fn build_get_txn_fees_req(&self, wallet_handle: i32, submitter_did: &str, type_: &str, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        match self.crypto_service.validate_did(submitter_did) {
+            Err(err) => return cb(Err(IndyError::from(err))),
+            _ => ()
+        }
         match self.wallet_service.check(wallet_handle) {
             Ok(_) => (),
             Err(err) => return cb(Err(IndyError::from(err)))
