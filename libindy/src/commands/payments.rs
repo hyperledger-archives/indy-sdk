@@ -216,15 +216,21 @@ impl PaymentsCommandExecutor {
     }
 
     fn create_address(&self, wallet_handle: i32, type_: &str, config: &str, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        match self.wallet_service.check(wallet_handle) {
+            Ok(_) => (),
+            Err(err) => return cb(Err(IndyError::from(err)))
+        };
         self.process_method(cb, &|i| self.payments_service.create_address(i, wallet_handle, type_, config));
     }
 
     fn create_address_ack(&self, handle: i32, wallet_handle: i32, result: Result<String, PaymentsError>) {
         let total_result: Result<String, IndyError> = match result {
-            Ok(res) =>
+            Ok(res) => {
             //TODO: think about deleting payment_address on wallet save failure
-                self.wallet_service.set(wallet_handle, &format!("pay_addr::{}", &res), &res)
-                    .map_err(IndyError::from).map(|_| res),
+                self.wallet_service.check(wallet_handle).and(
+                    self.wallet_service.set(wallet_handle, &format!("pay_addr::{}", &res), &res).map(|_| res)
+                ).map_err(IndyError::from)
+            }
             Err(err) => Err(IndyError::from(err))
         };
 
@@ -232,6 +238,11 @@ impl PaymentsCommandExecutor {
     }
 
     fn list_addresses(&self, wallet_handle: i32, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        match self.wallet_service.check(wallet_handle) {
+            Ok(_) => (),
+            Err(err) => return cb(Err(IndyError::from(err)))
+        };
+
         match self.wallet_service.list(wallet_handle, "pay_addr::") {
             Ok(vec) => {
                 let list_addresses =
@@ -250,20 +261,21 @@ impl PaymentsCommandExecutor {
     }
 
     fn add_request_fees(&self, wallet_handle: i32, submitter_did: &str, req: &str, inputs: &str, outputs: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        let method_from_inputs = self.payments_service.parse_method_from_inputs(inputs).map_err(IndyError::from);
-        let method_from_outputs = if outputs == "[]" {
-            method_from_inputs
-        } else {
-            match self.payments_service.parse_method_from_outputs(outputs).map_err(IndyError::from) {
-                Ok(method) => method,
-                Err(err) => {
-                    cb(Err(err));
-                    return;
-                }
-            }
+        match self.wallet_service.check(wallet_handle) {
+            Ok(_) => (),
+            Err(err) => return cb(Err(IndyError::from(err)))
         };
 
-        match self.payments_service.parse_method_from_inputs_outputs(inputs, outputs) {
+        let method_from_inputs = self.payments_service.parse_method_from_inputs(inputs);
+
+        let method = if outputs == "[]" {
+            method_from_inputs
+        } else {
+            let method_from_outputs = self.payments_service.parse_method_from_outputs(outputs);
+            PaymentsCommandExecutor::merge_parse_result(method_from_inputs, method_from_outputs)
+        };
+
+        match method {
             Ok(type_) => {
                 let type_copy = type_.to_string();
                 self.process_method(
@@ -288,6 +300,11 @@ impl PaymentsCommandExecutor {
     }
 
     fn build_get_utxo_request(&self, wallet_handle: i32, submitter_did: &str, payment_address: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        match self.wallet_service.check(wallet_handle) {
+            Ok(_) => (),
+            Err(err) => return cb(Err(IndyError::from(err)))
+        };
+
         let method = match self.payments_service.parse_method_from_payment_address(payment_address) {
             Ok(method) => method,
             Err(err) => {
@@ -321,7 +338,11 @@ impl PaymentsCommandExecutor {
             Err(err) => return cb(Err(IndyError::from(err)))
         };
 
-        match self.payments_service.parse_method_from_inputs_outputs(inputs, outputs) {
+        let method_from_inputs = self.payments_service.parse_method_from_inputs(inputs);
+        let method_from_outputs = self.payments_service.parse_method_from_outputs(outputs);
+        let method = PaymentsCommandExecutor::merge_parse_result(method_from_inputs, method_from_outputs);
+
+        match method {
             Ok(type_) => {
                 let type_copy = type_.to_string();
                 self.process_method(
@@ -352,7 +373,7 @@ impl PaymentsCommandExecutor {
             Err(err) => return cb(Err(IndyError::from(err)))
         };
 
-        match self.payments_service.parse_method_from_inputs_outputs("[]", outputs) {
+        match self.payments_service.parse_method_from_outputs(outputs) {
             Ok(type_) => {
                 let type_copy = type_.to_string();
                 self.process_method(
@@ -427,6 +448,14 @@ impl PaymentsCommandExecutor {
             Some(cb) => cb(result),
             None => error!("Can't process PaymentsCommand::{} for handle {} with result {:?} - appropriate callback not found!",
                            name, cmd_handle, result),
+        }
+    }
+
+    fn merge_parse_result(method_from_inputs: Result<String, PaymentsError>, method_from_outputs: Result<String, PaymentsError>) -> Result<String, PaymentsError> {
+        match (method_from_inputs, method_from_outputs) {
+            (Err(err), _) | (_, Err(err)) => Err(err),
+            (Ok(ref mth1), Ok(ref mth2)) if mth1 != mth2 => Err(PaymentsError::IncompatiblePaymentError("Different payment method in inputs and outputs".to_string())),
+            (Ok(mth1), Ok(_)) => Ok(mth1)
         }
     }
 }
