@@ -22,7 +22,7 @@ You will find the best and most update resources on chat board here: [Hyperledge
 1. Add the hyperledger/indy-sdk as the remote upstream:  
    `git remote add upstream https://github.com/hyperledger/indy-sdk.git`
 
-1. Set up Developer Certificate of Origin and learn how to [sign your commits with GPG](signing-commits.md)  
+1. Set up Developer Certificate of Origin and learn how to [sign your commits](signing-commits.md)  
 
 1. Take a look at our [release workflow](release-workflow.md)
 
