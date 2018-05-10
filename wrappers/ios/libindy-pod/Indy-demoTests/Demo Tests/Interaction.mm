@@ -1,15 +1,7 @@
-//
-//  Indy_demoTests.m
-//  Indy-demoTests
-//
-
 #import <Foundation/Foundation.h>
 #import <XCTest/XCTest.h>
 #import <Indy/Indy.h>
 #import "TestUtils.h"
-#import "WalletUtils.h"
-#import "NSDictionary+JSON.h"
-#import "AnoncredsUtils.h"
 #import "BlobStorageUtils.h"
 
 @interface AnoncredsLedgerInteraction : XCTestCase
@@ -34,31 +26,33 @@
     NSError *ret;
 
     // Create ledger config from genesis txn file
-    NSString *poolName = @"pool1";
-    NSString *txnFilePath = [[PoolUtils sharedInstance] createGenesisTxnFileForTestPool:poolName
+    NSString *txnFilePath = [[PoolUtils sharedInstance] createGenesisTxnFileForTestPool:[TestUtils pool]
                                                                              nodesCount:nil
                                                                             txnFilePath:nil];
     NSString *poolConfig = [[PoolUtils sharedInstance] poolConfigJsonForTxnFilePath:txnFilePath];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfigWithPoolName() failed!");
 
-    ret = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName
+    ret = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:[TestUtils pool]
                                                               poolConfig:poolConfig];
     XCTAssertEqual(ret.code, Success, @"createPoolLedgerConfigWithPoolName() failed!");
 
     //  Open pool ledger
     __block IndyHandle poolHandle = 0;
-    ret = [[PoolUtils sharedInstance] openPoolLedger:poolName config:nil poolHandler:&poolHandle];
+    ret = [[PoolUtils sharedInstance] openPoolLedger:[TestUtils pool]
+                                              config:nil
+                                         poolHandler:&poolHandle];
+    XCTAssertEqual(ret.code, Success, @"openPoolLedger() failed!");
 
     // Create Issuer wallet, get wallet handle
     IndyHandle issuerWalletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
                                                                   xtype:nil
                                                                  handle:&issuerWalletHandle];
     XCTAssertEqual(ret.code, Success, @"createAndOpenWalletWithPoolName() failed!");
 
     // Create Prover wallet, get wallet handle
     IndyHandle proverWalletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
                                                                   xtype:nil
                                                                  handle:&proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"createAndOpenWalletWithPoolName() failed!");
@@ -66,7 +60,7 @@
     // Obtain default trustee did
     NSString *trusteeDid = nil;
     ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:issuerWalletHandle
-                                                                    seed:@"000000000000000000000000Trustee1"
+                                                                    seed:[TestUtils trusteeSeed]
                                                                 outMyDid:&trusteeDid
                                                              outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDidWithWalletHandle() failed!");
@@ -180,8 +174,15 @@
     XCTAssertEqual(ret.code, Success, @"signAndSubmitRequestWithPoolHandle() failed!");
 
     // Issuer create revocation registry
-    NSString *configJson = @"{\"max_cred_num\":5, \"issuance_type\":\"ISSUANCE_ON_DEMAND\"}";
-    NSString *tailsWriterConfig = [NSString stringWithFormat:@"{\"base_dir\":\"%@\", \"uri_pattern\":\"\"}", [TestUtils tmpFilePathAppending:@"tails"]];
+    NSString *configJson = [[AnoncredsUtils sharedInstance] toJson:@{
+            @"max_cred_num": @(5),
+            @"issuance_type": @"ISSUANCE_ON_DEMAND"
+    }];
+
+    NSString *tailsWriterConfig = [[AnoncredsUtils sharedInstance] toJson:@{
+            @"base_dir": [TestUtils tmpFilePathAppending:@"tails"],
+            @"uri_pattern": @""
+    }];
 
     NSNumber *tailsWriterHandle = nil;
     ret = [[BlobStorageUtils sharedInstance] openWriterWithType:[TestUtils defaultType]
@@ -352,22 +353,23 @@
     XCTAssertEqual(ret.code, Success, @"proverStoreCredential() failed!");
 
     // Prover gets Credentials for Proof Request
-    NSString *proofReqJson = @"{"\
-                             " \"nonce\":\"123432421212\","\
-                             " \"name\":\"proof_req_1\","\
-                             " \"version\":\"0.1\","\
-                             " \"requested_attributes\":"\
-                             "             {\"attr1_referent\":"\
-                             "                        {"\
-                             "                          \"name\":\"name\""\
-                             "                        }"
-            "             },"\
-                             " \"requested_predicates\":"\
-                             "             {"\
-                             "              \"predicate1_referent\":"\
-                             "                      {\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}"\
-                             "             }"\
-                             "}";
+    NSString *proofReqJson = [[AnoncredsUtils sharedInstance] toJson:@{
+            @"nonce": @"123432421212",
+            @"name": @"proof_req_1",
+            @"version": @"0.1",
+            @"requested_attributes": @{
+                    @"attr1_referent": @{
+                            @"name": @"name"
+                    }
+            },
+            @"requested_predicates": @{
+                    @"predicate1_referent": @{
+                            @"name": @"age",
+                            @"p_type": @">=",
+                            @"p_value": @(18)
+                    }
+            }
+    }];
 
     NSString *credentialsJson = nil;
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofReqJson
@@ -415,12 +417,22 @@
     XCTAssertEqual(ret.code, Success, @"createRevocationStateForCredRevID() failed!");
 
     // Prover create Proof
-    NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{\
-                                     \"self_attested_attributes\":{},\
-                                     \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true, \"timestamp\":%@}},\
-                                     \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%@\", \"timestamp\":%@}}\
-                                     }", credentialReferent, timestamp, credentialReferent, timestamp];
-
+    NSString *requestedCredentialsJson = [[AnoncredsUtils sharedInstance] toJson:@{
+            @"self_attested_attributes": @{},
+            @"requested_attributes": @{
+                    @"attr1_referent": @{
+                            @"cred_id": credentialReferent,
+                            @"revealed": @(YES),
+                            @"timestamp": timestamp
+                    }
+            },
+            @"requested_predicates": @{
+                    @"predicate1_referent": @{
+                            @"cred_id": credentialReferent,
+                            @"timestamp": timestamp
+                    }
+            }
+    }];
 
     NSString *schemasJson = [[AnoncredsUtils sharedInstance] toJson:@{schemaId: [NSDictionary fromString:schemaJson]}];
 
@@ -541,12 +553,22 @@
     XCTAssertEqual(ret.code, Success, @"createRevocationStateForCredRevID() failed!");
 
     // Prover create Proof
-    requestedCredentialsJson = [NSString stringWithFormat:@"{\
-                                     \"self_attested_attributes\":{},\
-                                     \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true, \"timestamp\":%@}},\
-                                     \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%@\", \"timestamp\":%@}}\
-                                     }", credentialReferent, timestamp, credentialReferent, timestamp];
-
+    requestedCredentialsJson = [[AnoncredsUtils sharedInstance] toJson:@{
+            @"self_attested_attributes": @{},
+            @"requested_attributes": @{
+                    @"attr1_referent": @{
+                            @"cred_id": credentialReferent,
+                            @"revealed": @(YES),
+                            @"timestamp": timestamp
+                    }
+            },
+            @"requested_predicates": @{
+                    @"predicate1_referent": @{
+                            @"cred_id": credentialReferent,
+                            @"timestamp": timestamp
+                    }
+            }
+    }];
 
     revocStatesJson = [[AnoncredsUtils sharedInstance] toJson:@{revocRegId: @{[timestamp stringValue]: [NSDictionary fromString:revocStateJson]}}];
 

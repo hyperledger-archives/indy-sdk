@@ -121,14 +121,14 @@ fn extract_array_tuples<'a>(param: &'a str) -> Vec<String> {
     re.captures_iter(param).map(|c| c[1].to_string()).collect::<Vec<String>>()
 }
 
-pub fn get_str_array_tuples_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Vec<String>, ()> {
+pub fn get_str_tuple_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Vec<String>, ()> {
     match params.get(name) {
         Some(v) => Ok(extract_array_tuples(v)),
         None => Err(println_err!("No required \"{}\" parameter present", name))
     }
 }
 
-pub fn get_opt_str_array_tuples_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Option<Vec<String>>, ()> {
+pub fn get_opt_str_tuple_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Option<Vec<String>>, ()> {
     match params.get(name) {
         Some(v) =>
             if v.is_empty() {

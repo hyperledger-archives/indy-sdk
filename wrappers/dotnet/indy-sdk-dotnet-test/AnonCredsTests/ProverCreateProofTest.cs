@@ -22,7 +22,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                     "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                     "                              }";
 
-            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);                
+            var claimsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(commonWallet, proofRequest);                
 
             var claims = JObject.Parse(claimsJson);
 
@@ -51,7 +51,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         {
             await InitCommonWallet();
 
-            var claimsJson = await AnonCreds.ProverGetClaimsAsync(commonWallet, "{}");
+            var claimsJson = await AnonCreds.ProverGetCredentialsAsync(commonWallet, "{}");
 
             var claims = JArray.Parse(claimsJson);
 
@@ -91,7 +91,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                 "                              }";
 
-            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
+            var claimsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -127,7 +127,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                 "                              }";
 
-            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
+            var claimsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
@@ -163,7 +163,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                 "                              }";
 
-            var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
+            var claimsJson = await AnonCreds.ProverGetCredentialsForProofReqAsync(commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 

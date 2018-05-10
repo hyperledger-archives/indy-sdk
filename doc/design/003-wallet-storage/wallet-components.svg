@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="778px" preserveAspectRatio="none" style="width:1037px;height:778px;" version="1.1" viewBox="0 0 1037 778" width="1037px" zoomAndPan="magnify"><defs><filter height="300%" id="fo89j2b7kxt12" width="300%" x="-1" y="-1"><feGaussianBlur result="blurOut" stdDeviation="2.0"/><feColorMatrix in="blurOut" result="blurOut2" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .4 0"/><feOffset dx="4.0" dy="4.0" in="blurOut2" result="blurOut3"/><feBlend in="SourceGraphic" in2="blurOut3" mode="normal"/></filter></defs><g><!--cluster Indy SDK--><polygon fill="#FFFFFF" filter="url(#fo89j2b7kxt12)" points="22,70,90,70,97,93.6094,1015,93.6094,1015,686,22,686,22,70" style="stroke: #000000; stroke-width: 1.5;"/><line style="stroke: #000000; stroke-width: 1.5;" x1="22" x2="97" y1="93.6094" y2="93.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="62" x="26" y="86.5332">Indy SDK</text><!--entity i_non_secrets_api--><ellipse cx="774" cy="160" fill="#FEFECE" filter="url(#fo89j2b7kxt12)" rx="8" ry="8" style="stroke: #A80036; stroke-width: 2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="101" x="723.5" y="191.5332">Non-secrets API</text><polygon fill="#FBFB77" filter="url(#fo89j2b7kxt12)" points="867.5,122.5,867.5,197.9063,998.5,197.9063,998.5,132.5,988.5,122.5,867.5,122.5" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#FBFB77" points="867.5,122.5,867.5,156,783.001,160,867.5,164,867.5,197.9063,998.5,197.9063,998.5,132.5,988.5,122.5,867.5,122.5" style="stroke: #A80036; stroke-width: 1.0;"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="988.5" x2="988.5" y1="122.5" y2="132.5"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="998.5" x2="988.5" y1="132.5" y2="132.5"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="107" x="873.5" y="140.9951">An API that allows</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="110" x="873.5" y="157.3467">to store application</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="73" x="873.5" y="173.6982">specific data</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="91" x="873.5" y="190.0498">in a secure way</text><!--entity i_secrets_api--><ellipse cx="637" cy="160" fill="#FEFECE" filter="url(#fo89j2b7kxt12)" rx="8" ry="8" style="stroke: #A80036; stroke-width: 2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="73" x="600.5" y="191.5332">Secrets API</text><polygon fill="#FBFB77" filter="url(#fo89j2b7kxt12)" points="392.5,106,392.5,214.1094,557.5,214.1094,557.5,116,547.5,106,392.5,106" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#FBFB77" points="392.5,106,392.5,214.1094,557.5,214.1094,557.5,164,617.307,160,557.5,156,557.5,116,547.5,106,392.5,106" style="stroke: #A80036; stroke-width: 1.0;"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="547.5" x2="547.5" y1="106" y2="116"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="557.5" x2="547.5" y1="116" y2="116"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="107" x="398.5" y="124.4951">An API that allows</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="107" x="398.5" y="140.8467">creation of secrets</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="140" x="398.5" y="157.1982">and wallet-style access.</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="140" x="398.5" y="173.5498">Existing API for creation</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="107" x="398.5" y="189.9014">of DIDs, CredDefs,</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="144" x="398.5" y="206.2529">MasterSecrets and etc...</text><!--entity i_wallet_api--><ellipse cx="317" cy="160" fill="#FEFECE" filter="url(#fo89j2b7kxt12)" rx="8" ry="8" style="stroke: #A80036; stroke-width: 2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="64" x="285" y="191.5332">Wallet API</text><polygon fill="#FBFB77" filter="url(#fo89j2b7kxt12)" points="38.5,122.5,38.5,197.9063,241.5,197.9063,241.5,132.5,231.5,122.5,38.5,122.5" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#FBFB77" points="38.5,122.5,38.5,197.9063,241.5,197.9063,241.5,164,297.775,160,241.5,156,241.5,132.5,231.5,122.5,38.5,122.5" style="stroke: #A80036; stroke-width: 1.0;"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="231.5" x2="231.5" y1="122.5" y2="132.5"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="241.5" x2="231.5" y1="132.5" y2="132.5"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="182" x="44.5" y="140.9951">An API for wallets management</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="159" x="44.5" y="157.3467">Will be extended to register</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="127" x="44.5" y="173.6982">custom wallet storage</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="88" x="44.5" y="190.0498">implementation</text><!--entity indy_api--><rect fill="#FEFECE" filter="url(#fo89j2b7kxt12)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="81" x="596.5" y="274"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="591.5" y="279"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="591.5" y="301.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="61" x="606.5" y="298.5332">API Layer</text><!--entity i_wallet_service--><ellipse cx="637" cy="409.5" fill="#FEFECE" filter="url(#fo89j2b7kxt12)" rx="8" ry="8" style="stroke: #A80036; stroke-width: 2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="149" x="562.5" y="441.0332">Wallet Service Interface</text><polygon fill="#FBFB77" filter="url(#fo89j2b7kxt12)" points="754,372,754,447.4063,978,447.4063,978,382,968,372,754,372" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#FBFB77" points="754,372,754,405.5,646.079,409.5,754,413.5,754,447.4063,978,447.4063,978,382,968,372,754,372" style="stroke: #A80036; stroke-width: 1.0;"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="968" x2="968" y1="372" y2="382"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="978" x2="968" y1="382" y2="382"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="170" x="760" y="390.4951">Generic key storage interface</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="158" x="760" y="406.8467">with a support of filtering by</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="203" x="760" y="423.1982">tags. Consumes unecrypted values</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="71" x="760" y="439.5498">and queries.</text><!--entity wallet_service--><rect fill="#FEFECE" filter="url(#fo89j2b7kxt12)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="110" x="582" y="509.5"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="577" y="514.5"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="577" y="537.1094"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="90" x="592" y="534.0332">Wallet Service</text><polygon fill="#FBFB77" filter="url(#fo89j2b7kxt12)" points="727.5,507,727.5,549.7031,938.5,549.7031,938.5,517,928.5,507,727.5,507" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#FBFB77" points="727.5,507,727.5,524.5,692.125,528.5,727.5,532.5,727.5,549.7031,938.5,549.7031,938.5,517,928.5,507,727.5,507" style="stroke: #A80036; stroke-width: 1.0;"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="928.5" x2="928.5" y1="507" y2="517"/><line style="stroke: #A80036; stroke-width: 1.0;" x1="938.5" x2="928.5" y1="517" y2="517"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="190" x="733.5" y="525.4951">All values and queries encryption</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="104" x="733.5" y="541.8467">is performed here.</text><!--entity i_storage_api--><ellipse cx="637" cy="640" fill="#FEFECE" filter="url(#fo89j2b7kxt12)" rx="8" ry="8" style="stroke: #A80036; stroke-width: 2.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="109" x="582.5" y="671.5332">Storage Interface</text><!--entity default_storage--><rect fill="#FEFECE" filter="url(#fo89j2b7kxt12)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="119" x="427.5" y="509.5"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="422.5" y="514.5"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="422.5" y="537.1094"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="99" x="437.5" y="534.0332">Default Storage</text><!--entity application--><rect fill="#FEFECE" filter="url(#fo89j2b7kxt12)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="89" x="592.5" y="8"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="587.5" y="13"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="587.5" y="35.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="69" x="602.5" y="32.5332">Application</text><!--entity enterprise_storage--><rect fill="#FEFECE" filter="url(#fo89j2b7kxt12)" height="37.6094" style="stroke: #A80036; stroke-width: 1.5;" width="139" x="567.5" y="730"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="562.5" y="735"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="562.5" y="757.6094"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="119" x="577.5" y="754.5332">Enterprise Storage</text><!--link application to i_non_secrets_api--><path d="M675.981,46.171 C684,50.768 692.094,56.098 699,62 C728.815,87.477 754.559,126.521 766.651,146.41 " fill="none" id="application-i_non_secrets_api" style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 7.0,7.0;"/><polygon fill="#A80036" points="769.291,150.808,768.0872,141.033,766.7171,146.5214,761.2286,145.1513,769.291,150.808" style="stroke: #A80036; stroke-width: 1.0;"/><!--link application to i_secrets_api--><path d="M637,46.215 C637,72.9 637,122.006 637,145.623 " fill="none" id="application-i_secrets_api" style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 7.0,7.0;"/><polygon fill="#A80036" points="637,150.787,641,141.787,637,145.787,633,141.787,637,150.787" style="stroke: #A80036; stroke-width: 1.0;"/><!--link application to i_wallet_api--><path d="M592.461,29.152 C527.278,31.602 409.855,39.141 375,62 C344.447,82.038 327.653,124.25 320.769,145.774 " fill="none" id="application-i_wallet_api" style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 7.0,7.0;"/><polygon fill="#A80036" points="319.229,150.774,325.7004,143.3497,320.7004,145.9954,318.0547,140.9954,319.229,150.774" style="stroke: #A80036; stroke-width: 1.0;"/><!--link i_secrets_api to indy_api--><path d="M637,169.195 C637,189.92 637,244.824 637,273.684 " fill="none" id="i_secrets_api-indy_api" style="stroke: #A80036; stroke-width: 1.0;"/><!--link i_wallet_api to indy_api--><path d="M323.65,169.043 C333.638,180.619 353.63,201.91 375,214 C447.08,254.78 542.629,276.207 596.161,285.717 " fill="none" id="i_wallet_api-indy_api" style="stroke: #A80036; stroke-width: 1.0;"/><!--link i_non_secrets_api to indy_api--><path d="M765.43,169.195 C743.756,189.92 686.337,244.824 656.155,273.684 " fill="none" id="i_non_secrets_api-indy_api" style="stroke: #A80036; stroke-width: 1.0;"/><!--link indy_api to i_wallet_service--><path d="M637,312.143 C637,335.297 637,374.799 637,395.292 " fill="none" id="indy_api-i_wallet_service" style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 7.0,7.0;"/><polygon fill="#A80036" points="637,400.306,641,391.306,637,395.306,633,391.306,637,400.306" style="stroke: #A80036; stroke-width: 1.0;"/><!--link i_wallet_service to wallet_service--><path d="M637,418.542 C637,437.128 637,483.445 637,509.307 " fill="none" id="i_wallet_service-wallet_service" style="stroke: #A80036; stroke-width: 1.0;"/><!--link wallet_service to i_storage_api--><path d="M637,547.582 C637,569.569 637,606.159 637,625.715 " fill="none" id="wallet_service-i_storage_api" style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 7.0,7.0;"/><polygon fill="#A80036" points="637,630.753,641,621.753,637,625.753,633,621.753,637,630.753" style="stroke: #A80036; stroke-width: 1.0;"/><!--link default_storage to wallet_service--><path d="M546.766,528.5 C558.397,528.5 570.029,528.5 581.661,528.5 " fill="none" id="default_storage-wallet_service" style="stroke: #A80036; stroke-width: 1.0;"/><!--link i_storage_api to enterprise_storage--><path d="M637,649.042 C637,666.053 637,706.0498 637,729.6574 " fill="none" id="i_storage_api-enterprise_storage" style="stroke: #A80036; stroke-width: 1.0;"/><!--
+@startuml wallet-components
+
+[Application] as application
+
+package "Indy SDK" {
+    () "Non-secrets API" as i_non_secrets_api
+    application ..> i_non_secrets_api
+
+    note right of i_non_secrets_api
+    An API that allows
+    to store application
+    specific data
+    in a secure way
+    end note
+
+    () "Secrets API" as i_secrets_api
+    application  ..> i_secrets_api
+
+    note left of i_secrets_api
+    An API that allows
+    creation of secrets
+    and wallet-style access.
+    Existing API for creation
+    of DIDs, CredDefs,
+    MasterSecrets and etc...
+    end note
+
+    () "Wallet API" as i_wallet_api
+    application  ..> i_wallet_api
+
+    note left of i_wallet_api
+    An API for wallets management
+    Will be extended to register
+    custom wallet storage
+    implementation
+    end note
+   
+    [API Layer] as indy_api
+    i_secrets_api - - indy_api
+    i_wallet_api - - indy_api
+    i_non_secrets_api - - indy_api    
+
+    () "Wallet Service Interface" as i_wallet_service
+    indy_api ..> i_wallet_service
+
+    note right of i_wallet_service
+    Generic key storage interface
+    with a support of filtering by
+    tags. Consumes unecrypted values
+    and queries.
+    end note
+    
+    [Wallet Service] as wallet_service
+    i_wallet_service - - wallet_service
+
+    note right of wallet_service
+    All values and queries encryption
+    is performed here.
+    end note
+
+    () "Storage Interface" as i_storage_api
+    wallet_service ..> i_storage_api
+
+    [Default Storage] as default_storage
+    default_storage - wallet_service
+}
+
+[Enterprise Storage] as enterprise_storage
+i_storage_api - - enterprise_storage 
+
+@enduml
+
+PlantUML version 1.2017.20(Mon Dec 11 19:57:05 MSK 2017)
+(GPL source distribution)
+Java Runtime: Java(TM) SE Runtime Environment
+JVM: Java HotSpot(TM) 64-Bit Server VM
+Java Version: 1.8.0_151-b12
+Operating System: Windows 10
+OS Version: 10.0
+Default Encoding: Cp1252
+Language: en
+Country: US
+--></g></svg>
