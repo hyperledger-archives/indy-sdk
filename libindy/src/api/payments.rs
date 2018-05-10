@@ -48,6 +48,8 @@ pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
 /// with at least one output that corresponds to payment address that user owns.
 ///
 /// #Params
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// req_json: initial transaction request as json
 /// inputs_json: The list of UTXO inputs as json array:
 ///   ["input1", ...]
@@ -58,12 +60,12 @@ pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
 ///     amount: <int>, // amount of tokens to transfer to this payment address
 ///     extra: <str>, // optional data
 ///   }]
-/// wallet_handle: wallet handle where keys for signature are stored
 ///
 /// #Returns
 /// req_with_fees_json - modified Indy request with added fees info
 pub type AddRequestFeesCB = extern fn(command_handle: i32,
                                       wallet_handle: i32,
+                                      submitter_did: *const c_char,
                                       req_json: *const c_char,
                                       inputs_json: *const c_char,
                                       outputs_json: *const c_char,
@@ -95,13 +97,15 @@ pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
 /// according to this payment method.
 ///
 /// #Params
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// payment_address: target payment address
-/// wallet_handle: wallet handle where keys for signature are stored
 ///
 /// #Returns
 /// get_utxo_txn_json - Indy request for getting UTXO list for payment address
 pub type BuildGetUTXORequestCB = extern fn(command_handle: i32,
                                            wallet_handle: i32,
+                                           submitter_did: *const c_char,
                                            payment_address: *const c_char,
                                            cb: Option<extern fn(command_handle_: i32,
                                                                 err: ErrorCode,
@@ -134,6 +138,8 @@ pub type ParseGetUTXOResponseCB = extern fn(command_handle: i32,
 /// with at least one output that corresponds to payment address that user owns.
 ///
 /// #Params
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// inputs_json: The list of UTXO inputs as json array:
 ///   ["input1", ...]
 ///   Note that each input should reference paymentAddress
@@ -143,12 +149,12 @@ pub type ParseGetUTXOResponseCB = extern fn(command_handle: i32,
 ///     amount: <int>, // amount of tokens to transfer to this payment address
 ///     extra: <str>, // optional data
 ///   }]
-/// wallet_handle: wallet handle where keys for signature are stored
 ///
 /// #Returns
 /// payment_req_json - Indy request for doing tokens payment
 pub type BuildPaymentReqCB = extern fn(command_handle: i32,
                                        wallet_handle: i32,
+                                       submitter_did: *const c_char,
                                        inputs_json: *const c_char,
                                        outputs_json: *const c_char,
                                        cb: Option<extern fn(command_handle_: i32,
@@ -179,18 +185,20 @@ pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
 /// according to this payment method.
 ///
 /// #Params
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// outputs_json: The list of UTXO outputs as json array:
 ///   [{
 ///     paymentAddress: <str>, // payment address used as output
 ///     amount: <int>, // amount of tokens to transfer to this payment address
 ///     extra: <str>, // optional data
 ///   }]
-/// wallet_handle: wallet handle where keys for signature are stored
 ///
 /// #Returns
 /// mint_req_json - Indy request for doing tokens minting
 pub type BuildMintReqCB = extern fn(command_handle: i32,
                                     wallet_handle: i32,
+                                    submitter_did: *const c_char,
                                     outputs_json: *const c_char,
                                     cb: Option<extern fn(command_handle_: i32,
                                                          err: ErrorCode,
@@ -200,18 +208,20 @@ pub type BuildMintReqCB = extern fn(command_handle: i32,
 ///
 /// # Params
 /// command_handle
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// fees_json {
 ///   txnType1: amount1,
 ///   txnType2: amount2,
 ///   .................
 ///   txnTypeN: amountN,
 /// }
-/// wallet_handle: wallet handle where keys for signature are stored
 ///
 /// # Return
 /// set_txn_fees_json - Indy request for setting fees for transactions in the ledger
 pub type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
                                           wallet_handle: i32,
+                                          submitter_did: *const c_char,
                                           fees_json: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
@@ -221,12 +231,14 @@ pub type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
 ///
 /// # Params
 /// command_handle
-/// wallet_handle: wallet handle where keys for signature are stored
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 ///
 /// # Return
 /// get_txn_fees_json - Indy request for getting fees for transactions in the ledger
 pub type BuildGetTxnFeesReqCB = extern fn(command_handle: i32,
                                           wallet_handle: i32,
+                                          submitter_did: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
                                                                get_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode;
@@ -310,11 +322,16 @@ pub extern fn indy_register_payment_method(command_handle: i32,
         build_get_txn_fees_req,
         parse_get_txn_fees_response
     );
-    let result = CommandExecutor::instance().send(Command::Payments(
-        PaymentsCommand::RegisterMethod(payment_method, cbs, Box::new(move |result| {
-            cb(command_handle, result.to_error_code());
-        }))
-    ));
+    let result =
+        CommandExecutor::instance().send(
+            Command::Payments(
+                PaymentsCommand::RegisterMethod(
+                    payment_method,
+                    cbs,
+                    Box::new(move |result| {
+                        cb(command_handle, result.to_error_code());
+                    }))
+            ));
 
     result.to_error_code()
 }
@@ -352,13 +369,19 @@ pub extern fn indy_create_payment_address(command_handle: i32,
     check_useful_c_str!(config, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    let result = CommandExecutor::instance().send(Command::Payments(
-        PaymentsCommand::CreateAddress(wallet_handle, payment_method, config, Box::new(move |result| {
-            let (err, address) = result_to_err_code_1!(result, String::new());
-            let address = CStringUtils::string_to_cstring(address);
-            cb(command_handle, err, address.as_ptr());
-        }))
-    ));
+    let result =
+        CommandExecutor::instance().send(
+            Command::Payments(
+                PaymentsCommand::CreateAddress(
+                    wallet_handle,
+                    payment_method,
+                    config,
+                    Box::new(move |result| {
+                        let (err, address) = result_to_err_code_1!(result, String::new());
+                        let address = CStringUtils::string_to_cstring(address);
+                        cb(command_handle, err, address.as_ptr());
+                    }))
+            ));
 
     result.to_error_code()
 }
@@ -379,13 +402,17 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
                                                                payment_addresses_json: *const c_char)>) -> ErrorCode {
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    let result = CommandExecutor::instance().send(Command::Payments(
-        PaymentsCommand::ListAddresses(wallet_handle, Box::new(move |result| {
-            let (err, addresses_json) = result_to_err_code_1!(result, String::new());
-            let addresses_json = CStringUtils::string_to_cstring(addresses_json);
-            cb(command_handle, err, addresses_json.as_ptr());
-        }))
-    ));
+    let result =
+        CommandExecutor::instance().send(
+            Command::Payments(
+                PaymentsCommand::ListAddresses(
+                    wallet_handle,
+                    Box::new(move |result| {
+                        let (err, addresses_json) = result_to_err_code_1!(result, String::new());
+                        let addresses_json = CStringUtils::string_to_cstring(addresses_json);
+                        cb(command_handle, err, addresses_json.as_ptr());
+                    }))
+            ));
 
     result.to_error_code()
 }
@@ -404,7 +431,8 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
 /// with at least one output that corresponds to payment address that user owns.
 ///
 /// #Params
-/// wallet_handle: wallet handle where keys for signature are stored
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// req_json: initial transaction request as json
 /// inputs_json: The list of UTXO inputs as json array:
 ///   ["input1", ...]
@@ -424,6 +452,7 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_add_request_fees(command_handle: i32,
                                     wallet_handle: i32,
+                                    submitter_did: *const c_char,
                                     req_json: *const c_char,
                                     inputs_json: *const c_char,
                                     outputs_json: *const c_char,
@@ -431,19 +460,28 @@ pub extern fn indy_add_request_fees(command_handle: i32,
                                                          err: ErrorCode,
                                                          req_with_fees_json: *const c_char,
                                                          payment_method: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(req_json, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(req_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    let result = CommandExecutor::instance().send(Command::Payments(
-        PaymentsCommand::AddRequestFees(req_json, inputs_json, outputs_json, wallet_handle, Box::new(move |result| {
-            let (err, req_with_fees_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
-            let req_with_fees_json = CStringUtils::string_to_cstring(req_with_fees_json);
-            let payment_method = CStringUtils::string_to_cstring(payment_method);
-            cb(command_handle, err, req_with_fees_json.as_ptr(), payment_method.as_ptr());
-        }))
-    ));
+    let result =
+        CommandExecutor::instance().send(
+            Command::Payments(
+                PaymentsCommand::AddRequestFees(
+                    wallet_handle,
+                    submitter_did,
+                    req_json,
+                    inputs_json,
+                    outputs_json,
+                    Box::new(move |result| {
+                        let (err, req_with_fees_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
+                        let req_with_fees_json = CStringUtils::string_to_cstring(req_with_fees_json);
+                        let payment_method = CStringUtils::string_to_cstring(payment_method);
+                        cb(command_handle, err, req_with_fees_json.as_ptr(), payment_method.as_ptr());
+                    }))
+            ));
 
     result.to_error_code()
 }
@@ -474,13 +512,16 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    let result = CommandExecutor::instance().send(Command::Payments(
-        PaymentsCommand::ParseResponseWithFees(payment_method, resp_json, Box::new(move |result| {
-            let (err, utxo_json) = result_to_err_code_1!(result, String::new());
-            let utxo_json = CStringUtils::string_to_cstring(utxo_json);
-            cb(command_handle, err, utxo_json.as_ptr());
-        }))
-    ));
+    let result =
+        CommandExecutor::instance().send(
+            Command::Payments(
+                PaymentsCommand::ParseResponseWithFees(
+                    payment_method, resp_json, Box::new(move |result| {
+                        let (err, utxo_json) = result_to_err_code_1!(result, String::new());
+                        let utxo_json = CStringUtils::string_to_cstring(utxo_json);
+                        cb(command_handle, err, utxo_json.as_ptr());
+                    }))
+            ));
     result.to_error_code()
 }
 
@@ -488,7 +529,8 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
 /// according to this payment method.
 ///
 /// #Params
-/// wallet_handle: wallet handle where keys for signature are stored
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// payment_address: target payment address
 ///
 /// #Returns
@@ -497,22 +539,30 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_build_get_utxo_request(command_handle: i32,
                                           wallet_handle: i32,
+                                          submitter_did: *const c_char,
                                           payment_address: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
                                                                get_utxo_txn_json: *const c_char,
                                                                payment_method: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(payment_address, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(payment_address, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    let result = CommandExecutor::instance().send(Command::Payments(
-        PaymentsCommand::BuildGetUtxoRequest(payment_address, wallet_handle, Box::new(move |result| {
-            let (err, get_utxo_txn_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
-            let get_utxo_txn_json = CStringUtils::string_to_cstring(get_utxo_txn_json);
-            let payment_method = CStringUtils::string_to_cstring(payment_method);
-            cb(command_handle, err, get_utxo_txn_json.as_ptr(), payment_method.as_ptr());
-        }))
-    ));
+    let result =
+        CommandExecutor::instance().send(
+            Command::Payments(
+                PaymentsCommand::BuildGetUtxoRequest(
+                    wallet_handle,
+                    submitter_did,
+                    payment_address,
+                    Box::new(move |result| {
+                        let (err, get_utxo_txn_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
+                        let get_utxo_txn_json = CStringUtils::string_to_cstring(get_utxo_txn_json);
+                        let payment_method = CStringUtils::string_to_cstring(payment_method);
+                        cb(command_handle, err, get_utxo_txn_json.as_ptr(), payment_method.as_ptr());
+                    }))
+            ));
 
     result.to_error_code()
 }
@@ -541,13 +591,18 @@ pub extern fn indy_parse_get_utxo_response(command_handle: i32,
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    let result = CommandExecutor::instance().send(Command::Payments(
-        PaymentsCommand::ParseGetUtxoResponse(payment_method, resp_json, Box::new(move |result| {
-            let (err, utxo_json) = result_to_err_code_1!(result, String::new());
-            let utxo_json = CStringUtils::string_to_cstring(utxo_json);
-            cb(command_handle, err, utxo_json.as_ptr());
-        }))
-    ));
+    let result =
+        CommandExecutor::instance().send(
+            Command::Payments(
+                PaymentsCommand::ParseGetUtxoResponse(
+                    payment_method,
+                    resp_json,
+                    Box::new(move |result| {
+                        let (err, utxo_json) = result_to_err_code_1!(result, String::new());
+                        let utxo_json = CStringUtils::string_to_cstring(utxo_json);
+                        cb(command_handle, err, utxo_json.as_ptr());
+                    }))
+            ));
 
     result.to_error_code()
 }
@@ -561,7 +616,8 @@ pub extern fn indy_parse_get_utxo_response(command_handle: i32,
 /// with at least one output that corresponds to payment address that user owns.
 ///
 /// #Params
-/// wallet_handle: wallet handle where keys for signature are stored
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// inputs_json: The list of UTXO inputs as json array:
 ///   ["input1", ...]
 ///   Note that each input should reference paymentAddress
@@ -578,24 +634,33 @@ pub extern fn indy_parse_get_utxo_response(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_build_payment_req(command_handle: i32,
                                      wallet_handle: i32,
+                                     submitter_did: *const c_char,
                                      inputs_json: *const c_char,
                                      outputs_json: *const c_char,
                                      cb: Option<extern fn(command_handle_: i32,
                                                           err: ErrorCode,
                                                           payment_req_json: *const c_char,
                                                           payment_method: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    let result = CommandExecutor::instance().send(Command::Payments(
-        PaymentsCommand::BuildPaymentReq(inputs_json, outputs_json, wallet_handle, Box::new(move |result| {
-            let (err, payment_req_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
-            let payment_req_json = CStringUtils::string_to_cstring(payment_req_json);
-            let payment_method = CStringUtils::string_to_cstring(payment_method);
-            cb(command_handle, err, payment_req_json.as_ptr(), payment_method.as_ptr());
-        }))
-    ));
+    let result =
+        CommandExecutor::instance().send(
+            Command::Payments(
+                PaymentsCommand::BuildPaymentReq(
+                    wallet_handle,
+                    submitter_did,
+                    inputs_json,
+                    outputs_json,
+                    Box::new(move |result| {
+                        let (err, payment_req_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
+                        let payment_req_json = CStringUtils::string_to_cstring(payment_req_json);
+                        let payment_method = CStringUtils::string_to_cstring(payment_method);
+                        cb(command_handle, err, payment_req_json.as_ptr(), payment_method.as_ptr());
+                    }))
+            ));
 
     result.to_error_code()
 }
@@ -626,13 +691,18 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    let result = CommandExecutor::instance().send(Command::Payments(
-        PaymentsCommand::ParsePaymentResponse(payment_method, resp_json, Box::new(move |result| {
-            let (err, utxo_json) = result_to_err_code_1!(result, String::new());
-            let utxo_json = CStringUtils::string_to_cstring(utxo_json);
-            cb(command_handle, err, utxo_json.as_ptr());
-        }))
-    ));
+    let result =
+        CommandExecutor::instance().send(
+            Command::Payments(
+                PaymentsCommand::ParsePaymentResponse(
+                    payment_method,
+                    resp_json,
+                    Box::new(move |result| {
+                        let (err, utxo_json) = result_to_err_code_1!(result, String::new());
+                        let utxo_json = CStringUtils::string_to_cstring(utxo_json);
+                        cb(command_handle, err, utxo_json.as_ptr());
+                    }))
+            ));
 
     result.to_error_code()
 }
@@ -641,7 +711,8 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
 /// according to this payment method.
 ///
 /// #Params
-/// wallet_handle: wallet handle where keys for signature are stored
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// outputs_json: The list of UTXO outputs as json array:
 ///   [{
 ///     paymentAddress: <str>, // payment address used as output
@@ -655,22 +726,30 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_build_mint_req(command_handle: i32,
                                   wallet_handle: i32,
+                                  submitter_did: *const c_char,
                                   outputs_json: *const c_char,
                                   cb: Option<extern fn(command_handle_: i32,
                                                        err: ErrorCode,
                                                        mint_req_json: *const c_char,
                                                        payment_method: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    let result = CommandExecutor::instance().send(Command::Payments(
-        PaymentsCommand::BuildMintReq(outputs_json, wallet_handle, Box::new(move |result| {
-            let (err, mint_req_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
-            let mint_req_json = CStringUtils::string_to_cstring(mint_req_json);
-            let payment_method = CStringUtils::string_to_cstring(payment_method);
-            cb(command_handle, err, mint_req_json.as_ptr(), payment_method.as_ptr());
-        }))
-    ));
+    let result =
+        CommandExecutor::instance().send(
+            Command::Payments(
+                PaymentsCommand::BuildMintReq(
+                    wallet_handle,
+                    submitter_did,
+                    outputs_json,
+                    Box::new(move |result| {
+                        let (err, mint_req_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
+                        let mint_req_json = CStringUtils::string_to_cstring(mint_req_json);
+                        let payment_method = CStringUtils::string_to_cstring(payment_method);
+                        cb(command_handle, err, mint_req_json.as_ptr(), payment_method.as_ptr());
+                    }))
+            ));
 
     result.to_error_code()
 }
@@ -679,7 +758,8 @@ pub extern fn indy_build_mint_req(command_handle: i32,
 ///
 /// # Params
 /// command_handle
-/// wallet_handle: wallet handle where keys for signature are stored
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// payment_method
 /// fees_json {
 ///   txnType1: amount1,
@@ -692,22 +772,31 @@ pub extern fn indy_build_mint_req(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
                                           wallet_handle: i32,
+                                          submitter_did: *const c_char,
                                           payment_method: *const c_char,
                                           fees_json: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
                                                                set_txn_fees_json: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(fees_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(fees_json, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    let result = CommandExecutor::instance().send(Command::Payments(
-        PaymentsCommand::BuildSetTxnFeesReq(payment_method, fees_json, wallet_handle, Box::new(move |result| {
-            let (err, set_txn_fees_json) = result_to_err_code_1!(result, String::new());
-            let set_txn_fees_json = CStringUtils::string_to_cstring(set_txn_fees_json);
-            cb(command_handle, err, set_txn_fees_json.as_ptr());
-        }))
-    ));
+    let result =
+        CommandExecutor::instance().send(
+            Command::Payments(
+                PaymentsCommand::BuildSetTxnFeesReq(
+                    wallet_handle,
+                    submitter_did,
+                    payment_method,
+                    fees_json,
+                    Box::new(move |result| {
+                        let (err, set_txn_fees_json) = result_to_err_code_1!(result, String::new());
+                        let set_txn_fees_json = CStringUtils::string_to_cstring(set_txn_fees_json);
+                        cb(command_handle, err, set_txn_fees_json.as_ptr());
+                    }))
+            ));
 
     result.to_error_code()
 }
@@ -716,7 +805,8 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
 ///
 /// # Params
 /// command_handle
-/// wallet_handle: wallet handle where keys for signature are stored
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// payment_method
 ///
 /// # Return
@@ -724,20 +814,28 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_build_get_txn_fees_req(command_handle: i32,
                                           wallet_handle: i32,
+                                          submitter_did: *const c_char,
                                           payment_method: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
                                                                get_txn_fees_json: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    let result = CommandExecutor::instance().send(Command::Payments(
-        PaymentsCommand::BuildGetTxnFeesReq(payment_method, wallet_handle, Box::new(move |result| {
-            let (err, get_txn_fees_json) = result_to_err_code_1!(result, String::new());
-            let get_txn_fees_json = CStringUtils::string_to_cstring(get_txn_fees_json);
-            cb(command_handle, err, get_txn_fees_json.as_ptr());
-        }))
-    ));
+    let result =
+        CommandExecutor::instance().send(
+            Command::Payments(
+                PaymentsCommand::BuildGetTxnFeesReq(
+                    wallet_handle,
+                    submitter_did,
+                    payment_method,
+                    Box::new(move |result| {
+                        let (err, get_txn_fees_json) = result_to_err_code_1!(result, String::new());
+                        let get_txn_fees_json = CStringUtils::string_to_cstring(get_txn_fees_json);
+                        cb(command_handle, err, get_txn_fees_json.as_ptr());
+                    }))
+            ));
 
     result.to_error_code()
 }

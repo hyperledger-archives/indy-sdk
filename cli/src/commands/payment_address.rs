@@ -75,8 +75,8 @@ pub mod list_command {
                         .map(|payment_address| {
                             let parts = payment_address.split(":").collect::<Vec<&str>>();
                             json!({
-                                "method": parts[1],
-                                "address": parts[2],
+                                "address": payment_address,
+                                "method": parts.get(1).unwrap_or(&"Unknown payment method")
                             })
                         })
                         .collect::<Vec<serde_json::Value>>();
@@ -98,6 +98,7 @@ pub mod list_command {
 pub fn handle_payment_error(err: ErrorCode, payment_method: Option<&str>) {
     match err {
         ErrorCode::UnknownPaymentMethod => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
+        ErrorCode::IncompatiblePaymentError => println_err!("Multiple different payment methods were specified"),
         err => println_err!("Indy SDK error occurred {:?}", err)
     }
 }
@@ -108,6 +109,7 @@ pub mod tests {
 
     use commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
     use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
+    use commands::did::tests::SEED_MY1;
 
     mod create {
         use super::*;
@@ -132,6 +134,26 @@ pub mod tests {
         }
 
         #[test]
+        pub fn create_works_for_seed() {
+            let ctx = CommandContext::new();
+
+            let wallet_handle = create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
+                params.insert("seed", SEED_MY1.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let addresses = get_payment_addresses(wallet_handle);
+            assert_eq!(1, addresses.len());
+            assert!(addresses[0].starts_with("pay:null:"));
+
+            close_and_delete_wallet(&ctx);
+        }
+
+        #[test]
         pub fn create_works_for_unknown_payment_method() {
             let ctx = CommandContext::new();
 
@@ -144,13 +166,25 @@ pub mod tests {
             }
             close_and_delete_wallet(&ctx);
         }
+
+        #[test]
+        pub fn create_works_for_no_opened_wallet() {
+            let ctx = CommandContext::new();
+            load_null_payment_plugin(&ctx);
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+        }
     }
 
     mod list {
         use super::*;
 
         #[test]
-        pub fn list_works() {
+        pub fn list_worksa() {
             let ctx = CommandContext::new();
 
             let wallet_handle = create_and_open_wallet(&ctx);
@@ -165,6 +199,35 @@ pub mod tests {
             assert_eq!(1, addresses.len());
 
             close_and_delete_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn list_works_for_empty_list() {
+            let ctx = CommandContext::new();
+
+            let wallet_handle = create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            {
+                let cmd = list_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let addresses = get_payment_addresses(wallet_handle);
+            assert_eq!(0, addresses.len());
+
+            close_and_delete_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn list_works_for_no_opened_wallet() {
+            let ctx = CommandContext::new();
+
+            load_null_payment_plugin(&ctx);
+            {
+                let cmd = list_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
         }
     }
 
