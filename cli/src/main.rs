@@ -205,6 +205,12 @@ fn _iter_batch<T>(command_executor: CommandExecutor, reader: T) where T: std::io
         let line = if let Ok(line) = line { line } else {
             return println_err!("Can't parse line #{}", line_num);
         };
+
+        if line.starts_with("#") || line.is_empty() {
+            // Skip blank lines and lines starting with #
+            continue;
+        }
+
         println!("{}", line);
         let (line, force) = if line.starts_with("-") {
             (line[1..].as_ref(), true)

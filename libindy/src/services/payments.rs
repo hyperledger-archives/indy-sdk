@@ -70,7 +70,7 @@ impl PaymentsService {
     }
 
     pub fn register_payment_method(&self, method_type: &str, method_cbs: PaymentsMethodCBs) {
-        //TODO check already exists
+        //TODO check already exists. Also check CLI
         self.methods.borrow_mut().insert(method_type.to_owned(), method_cbs);
     }
 

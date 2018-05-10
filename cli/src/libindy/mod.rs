@@ -100,6 +100,9 @@ pub enum ErrorCode
     // No concensus during ledger operation
     LedgerNoConsensusError = 303,
 
+    // Attempt to parse invalid transaction response
+    LedgerInvalidTransaction = 304,
+
     // Attempt to send transaction without the necessary privileges
     LedgerSecurityError = 305,
 
@@ -136,7 +139,10 @@ pub enum ErrorCode
     DidAlreadyExistsError = 600,
 
     // Unknown payment method was given
-    UnknownPaymentMethod = 700
+    UnknownPaymentMethod = 700,
+
+    //No method were scraped from inputs/outputs or more than one were scraped
+    IncompatiblePaymentError = 701
 }
 
 impl ErrorCode {
@@ -186,6 +192,7 @@ impl ErrorCode {
             UnknownCryptoTypeError => "Unknown format of DID entity keys",
             DidAlreadyExistsError => "Did already exists",
             UnknownPaymentMethod => "Unknown payment method was given",
+            IncompatiblePaymentError => "Multiple different payment methods were specified",
         }
     }
 }

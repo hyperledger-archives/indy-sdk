@@ -82,7 +82,7 @@ async def demo():
                                                  cred_values_json, rev_reg_id, blob_storage_reader_handle)
 
     # 11. Prover store Credential
-    await anoncreds.prover_store_credential(prover_wallet, None, cred_req_json, cred_req_metadata_json,
+    await anoncreds.prover_store_credential(prover_wallet, None, cred_req_metadata_json,
                                             cred_json, cred_def_json, rev_reg_def_json)
 
     # 11. Prover gets Credentials for Proof Request
