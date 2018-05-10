@@ -12,6 +12,7 @@ use services::wallet::WalletService;
 use errors::common::CommonError;
 use std::vec::Vec;
 use std::string::String;
+use std::collections::HashSet;
 
 pub enum PaymentsCommand {
     RegisterMethod(
