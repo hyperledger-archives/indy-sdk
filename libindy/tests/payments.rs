@@ -36,7 +36,7 @@ static OUTPUTS_UNKNOWN_METHOD: &str = r#"[{"paymentAddress": "pay:unknown_paymen
 static INPUTS_INVALID_FORMAT: &str = r#"pay:null:1"#;
 static OUTPUTS_INVALID_FORMAT: &str = r#"["pay:null:1",1]"#;
 static INCOMPATIBLE_INPUTS: &str = r#"["pay:PAYMENT_METHOD_1:1", "pay:PAYMENT_METHOD_2:1"]"#;
-static INCOMPATIBLE_OUTPUTS: &str = r#"[{"paymentAddress": "pay:PAYMENT_METHOD_1:1"}, {"paymentAddress": "pay:PAYMENT_METHOD_2:1"}]"#;
+static INCOMPATIBLE_OUTPUTS: &str = r#"[{"paymentAddress": "pay:PAYMENT_METHOD_1:1", "amount":1}, {"paymentAddress": "pay:PAYMENT_METHOD_2:1", "amount":1}]"#;
 static CORRECT_FEES: &str = r#"{"txnType1":1, "txnType2":2}"#;
 static PAYMENT_RESPONSE: &str = r#"{"reqId":1, "utxos":[{"input": "pay:null:1", "amount":1, "extra":"1"}, {"input": "pay:null:2", "amount":2, "extra":"2"}]}"#;
 static GET_TXN_FEES_RESPONSE: &str = r#"{"reqId":1, fees:{"txnType1":1, "txnType2":2}}"#;
@@ -52,17 +52,17 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let _res = PaymentsUtils::register_payment_method("register_payment_method_works",
-                                                             Some(create_payment_address_stub),
-                                                             Some(add_request_fees_stub),
-                                                             Some(parse_response_with_fees),
-                                                             Some(build_get_utxo_request_stub),
-                                                             Some(parse_get_utxo_response_stub),
-                                                             Some(build_payment_req_stub),
-                                                             Some(parse_payment_response_stub),
-                                                             Some(build_mint_req_stub),
-                                                             Some(build_set_txn_fees_request_stub),
-                                                             Some(build_get_txn_fees_request_stub),
-                                                             Some(parse_get_txn_fees_response_stub),
+                                                              Some(create_payment_address_stub),
+                                                              Some(add_request_fees_stub),
+                                                              Some(parse_response_with_fees),
+                                                              Some(build_get_utxo_request_stub),
+                                                              Some(parse_get_utxo_response_stub),
+                                                              Some(build_payment_req_stub),
+                                                              Some(parse_payment_response_stub),
+                                                              Some(build_mint_req_stub),
+                                                              Some(build_set_txn_fees_request_stub),
+                                                              Some(build_get_txn_fees_request_stub),
+                                                              Some(parse_get_txn_fees_response_stub),
             ).unwrap();
 
             TestUtils::cleanup_storage();
@@ -124,27 +124,10 @@ mod high_cases {
             PaymentsUtils::init_nullpay_plugin();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (txn, method) = PaymentsUtils::add_request_fees(wallet_handle,
+                                                                IDENTIFIER,
                                                                 EMPTY_OBJECT,
                                                                 CORRECT_INPUTS,
                                                                 EMPTY_ARRAY,
-            ).unwrap();
-            assert_eq!(method, PAYMENT_METHOD_NAME);
-            assert_eq!(txn, EMPTY_OBJECT);
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        fn add_request_fees_works_for_method_works_for_outputs() {
-            TestUtils::cleanup_storage();
-
-            PaymentsUtils::init_nullpay_plugin();
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-            let (txn, method) = PaymentsUtils::add_request_fees(wallet_handle,
-                                                                EMPTY_OBJECT,
-                                                                EMPTY_ARRAY,
-                                                                CORRECT_OUTPUTS,
             ).unwrap();
             assert_eq!(method, PAYMENT_METHOD_NAME);
             assert_eq!(txn, EMPTY_OBJECT);
@@ -160,6 +143,7 @@ mod high_cases {
             PaymentsUtils::init_nullpay_plugin();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let (txn, method) = PaymentsUtils::add_request_fees(wallet_handle,
+                                                                IDENTIFIER,
                                                                 EMPTY_OBJECT,
                                                                 CORRECT_INPUTS,
                                                                 CORRECT_OUTPUTS,
@@ -198,7 +182,10 @@ mod high_cases {
             PaymentsUtils::init_nullpay_plugin();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let payment_address = "pay:null:test";
-            let (_, method) = PaymentsUtils::build_get_utxo_request(wallet_handle, payment_address).unwrap();
+            let (_, method) = PaymentsUtils::build_get_utxo_request(wallet_handle,
+                                                                    IDENTIFIER,
+                                                                    payment_address,
+            ).unwrap();
             assert_eq!("null".to_string(), method);
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -232,46 +219,10 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let (payment_req_json, payment_method) = PaymentsUtils::build_payment_req(wallet_handle,
+                                                                                      IDENTIFIER,
                                                                                       CORRECT_INPUTS,
-                                                                                      CORRECT_OUTPUTS).unwrap();
-
-            let payment_req = serde_json::from_str::<serde_json::Value>(&payment_req_json).unwrap();
-            assert!(payment_req.is_object());
-            assert_eq!(payment_method, PAYMENT_METHOD_NAME);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        fn build_payment_request_works_for_empty_inputs() {
-            TestUtils::cleanup_storage();
-            PaymentsUtils::init_nullpay_plugin();
-
-            let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
-
-            let (payment_req_json, payment_method) = PaymentsUtils::build_payment_req(wallet_handle,
-                                                                                      EMPTY_ARRAY,
-                                                                                      CORRECT_OUTPUTS).unwrap();
-
-            let payment_req = serde_json::from_str::<serde_json::Value>(&payment_req_json).unwrap();
-            assert!(payment_req.is_object());
-            assert_eq!(payment_method, PAYMENT_METHOD_NAME);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        fn build_payment_request_works_for_empty_outputs() {
-            TestUtils::cleanup_storage();
-            PaymentsUtils::init_nullpay_plugin();
-
-            let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
-
-            let (payment_req_json, payment_method) = PaymentsUtils::build_payment_req(wallet_handle,
-                                                                                      CORRECT_INPUTS,
-                                                                                      EMPTY_ARRAY).unwrap();
+                                                                                      CORRECT_OUTPUTS,
+            ).unwrap();
 
             let payment_req = serde_json::from_str::<serde_json::Value>(&payment_req_json).unwrap();
             assert!(payment_req.is_object());
@@ -309,7 +260,9 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let (mint_req_json, payment_method) = PaymentsUtils::build_mint_req(wallet_handle,
-                                                                                CORRECT_OUTPUTS).unwrap();
+                                                                                IDENTIFIER,
+                                                                                CORRECT_OUTPUTS,
+            ).unwrap();
 
             let mint_req = serde_json::from_str::<serde_json::Value>(&mint_req_json).unwrap();
             assert!(mint_req.is_object());
@@ -331,8 +284,10 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let set_txn_fees_json = PaymentsUtils::build_set_txn_fees_req(wallet_handle,
+                                                                          IDENTIFIER,
                                                                           PAYMENT_METHOD_NAME,
-                                                                          CORRECT_FEES).unwrap();
+                                                                          CORRECT_FEES,
+            ).unwrap();
 
             let set_txn_fees = serde_json::from_str::<serde_json::Value>(&set_txn_fees_json).unwrap();
             assert!(set_txn_fees.is_object());
@@ -353,7 +308,9 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let set_txn_fees_json = PaymentsUtils::build_get_txn_fees_req(wallet_handle,
-                                                                          PAYMENT_METHOD_NAME).unwrap();
+                                                                          IDENTIFIER,
+                                                                          PAYMENT_METHOD_NAME,
+            ).unwrap();
 
             let set_txn_fees: serde_json::Value = serde_json::from_str(&set_txn_fees_json).unwrap();
             assert!(set_txn_fees.is_object());
@@ -455,11 +412,30 @@ mod medium_cases {
             PaymentsUtils::init_nullpay_plugin();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let err = PaymentsUtils::add_request_fees(wallet_handle,
+                                                      IDENTIFIER,
                                                       EMPTY_OBJECT,
                                                       r#"["pay:null1:1"]"#,
                                                       EMPTY_ARRAY,
             ).unwrap_err();
             assert_eq!(err, ErrorCode::UnknownPaymentMethod);
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn add_request_fees_works_for_method_works_for_empty_inputs() {
+            TestUtils::cleanup_storage();
+
+            PaymentsUtils::init_nullpay_plugin();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let err = PaymentsUtils::add_request_fees(wallet_handle,
+                                                      IDENTIFIER,
+                                                      EMPTY_OBJECT,
+                                                      EMPTY_ARRAY,
+                                                      CORRECT_OUTPUTS,
+            ).unwrap_err();
+            assert_eq!(err, ErrorCode::CommonInvalidStructure);
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
@@ -472,11 +448,12 @@ mod medium_cases {
             PaymentsUtils::init_nullpay_plugin();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let err = PaymentsUtils::add_request_fees(wallet_handle,
+                                                      IDENTIFIER,
                                                       EMPTY_OBJECT,
                                                       EMPTY_ARRAY,
                                                       EMPTY_ARRAY,
             ).unwrap_err();
-            assert_eq!(err, ErrorCode::IncompatiblePaymentError);
+            assert_eq!(err, ErrorCode::CommonInvalidStructure);
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
@@ -489,8 +466,9 @@ mod medium_cases {
             PaymentsUtils::init_nullpay_plugin();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let err = PaymentsUtils::add_request_fees(wallet_handle,
+                                                      IDENTIFIER,
                                                       EMPTY_OBJECT,
-                                                      EMPTY_ARRAY,
+                                                      CORRECT_INPUTS,
                                                       r#"[{"paymentAddress": "pay:null1:1", "amount":1, "extra":"1"}, {"paymentAddress": "pay:null2:2", "amount":2, "extra":"2"}]"#,
             ).unwrap_err();
             assert_eq!(err, ErrorCode::IncompatiblePaymentError);
@@ -506,6 +484,7 @@ mod medium_cases {
             PaymentsUtils::init_nullpay_plugin();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let err = PaymentsUtils::add_request_fees(wallet_handle,
+                                                      IDENTIFIER,
                                                       EMPTY_OBJECT,
                                                       r#"["pay:null1:1", "pay:null2:2"]"#,
                                                       EMPTY_ARRAY,
@@ -523,6 +502,7 @@ mod medium_cases {
             PaymentsUtils::init_nullpay_plugin();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let err = PaymentsUtils::add_request_fees(wallet_handle,
+                                                      IDENTIFIER,
                                                       EMPTY_OBJECT,
                                                       r#"["pay:null1:1"]"#,
                                                       r#"[{"paymentAddress": "pay:null2:1", "amount":1, "extra":"1"}]"#,
@@ -540,6 +520,7 @@ mod medium_cases {
             PaymentsUtils::init_nullpay_plugin();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let err = PaymentsUtils::add_request_fees(wallet_handle,
+                                                      IDENTIFIER,
                                                       EMPTY_OBJECT,
                                                       r#"["pay:null1:1", 1]"#,
                                                       EMPTY_ARRAY,
@@ -557,6 +538,7 @@ mod medium_cases {
             PaymentsUtils::init_nullpay_plugin();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let err = PaymentsUtils::add_request_fees(wallet_handle,
+                                                      IDENTIFIER,
                                                       EMPTY_OBJECT,
                                                       r#"["pay:null1"]"#,
                                                       EMPTY_ARRAY,
@@ -572,7 +554,7 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        pub fn parse_response_with_fees_works_for_nonexistant_plugin () {
+        pub fn parse_response_with_fees_works_for_nonexistant_plugin() {
             TestUtils::cleanup_storage();
 
             PaymentsUtils::init_nullpay_plugin();
@@ -594,7 +576,7 @@ mod medium_cases {
             PaymentsUtils::init_nullpay_plugin();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let err = PaymentsUtils::build_get_utxo_request(wallet_handle, "pay:null1:test").unwrap_err();
+            let err = PaymentsUtils::build_get_utxo_request(wallet_handle, IDENTIFIER, "pay:null1:test").unwrap_err();
             assert_eq!(err, ErrorCode::UnknownPaymentMethod);
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -608,8 +590,8 @@ mod medium_cases {
             PaymentsUtils::init_nullpay_plugin();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let err = PaymentsUtils::build_get_utxo_request(wallet_handle, "pay:null1").unwrap_err();
-            assert_eq!(err, ErrorCode::UnknownPaymentMethod);
+            let err = PaymentsUtils::build_get_utxo_request(wallet_handle, IDENTIFIER, "pay:null1").unwrap_err();
+            assert_eq!(err, ErrorCode::IncompatiblePaymentError);
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
@@ -630,6 +612,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
         }
     }
+
     mod payment_request {
         use super::*;
 
@@ -642,9 +625,48 @@ mod medium_cases {
 
             let invalid_wallet_handle = wallet_handle + 1;
             let res = PaymentsUtils::build_payment_req(invalid_wallet_handle,
+                                                       IDENTIFIER,
                                                        CORRECT_INPUTS,
                                                        CORRECT_OUTPUTS);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn build_payment_request_works_for_empty_inputs() {
+            TestUtils::cleanup_storage();
+            PaymentsUtils::init_nullpay_plugin();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
+
+            let err = PaymentsUtils::build_payment_req(wallet_handle,
+                                                       IDENTIFIER,
+                                                       EMPTY_ARRAY,
+                                                       CORRECT_OUTPUTS,
+            ).unwrap_err();
+
+            assert_eq!(err, ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn build_payment_request_works_for_empty_outputs() {
+            TestUtils::cleanup_storage();
+            PaymentsUtils::init_nullpay_plugin();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
+
+            let err = PaymentsUtils::build_payment_req(wallet_handle,
+                                                       IDENTIFIER,
+                                                       CORRECT_INPUTS,
+                                                       EMPTY_ARRAY,
+            ).unwrap_err();
+
+            assert_eq!(err, ErrorCode::CommonInvalidStructure);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
             TestUtils::cleanup_storage();
@@ -658,23 +680,8 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let res = PaymentsUtils::build_payment_req(wallet_handle,
+                                                       IDENTIFIER,
                                                        INPUTS_UNKNOWN_METHOD,
-                                                       EMPTY_ARRAY);
-            assert_eq!(ErrorCode::UnknownPaymentMethod, res.unwrap_err());
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        fn build_payment_request_works_for_unknown_output_payment_method() {
-            TestUtils::cleanup_storage();
-            PaymentsUtils::init_nullpay_plugin();
-
-            let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
-
-            let res = PaymentsUtils::build_payment_req(wallet_handle,
-                                                       EMPTY_ARRAY,
                                                        OUTPUTS_UNKNOWN_METHOD);
             assert_eq!(ErrorCode::UnknownPaymentMethod, res.unwrap_err());
 
@@ -691,6 +698,7 @@ mod medium_cases {
 
             let inputs = r#"["pay:null"]"#;
             let res = PaymentsUtils::build_payment_req(wallet_handle,
+                                                       IDENTIFIER,
                                                        inputs,
                                                        CORRECT_OUTPUTS);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
@@ -707,6 +715,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let res = PaymentsUtils::build_payment_req(wallet_handle,
+                                                       IDENTIFIER,
                                                        INCOMPATIBLE_INPUTS,
                                                        EMPTY_ARRAY);
             assert_eq!(ErrorCode::IncompatiblePaymentError, res.unwrap_err());
@@ -723,7 +732,8 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let res = PaymentsUtils::build_payment_req(wallet_handle,
-                                                       EMPTY_ARRAY,
+                                                       IDENTIFIER,
+                                                       CORRECT_INPUTS,
                                                        INCOMPATIBLE_OUTPUTS);
             assert_eq!(ErrorCode::IncompatiblePaymentError, res.unwrap_err());
 
@@ -739,9 +749,10 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let inputs = r#"["pay:PAYMENT_METHOD_1:1"]"#;
-            let outputs = r#"[{"paymentAddress": "pay:PAYMENT_METHOD_2:1"}]"#;
+            let outputs = r#"[{"paymentAddress": "pay:PAYMENT_METHOD_2:1", "amount": 1}]"#;
 
             let res = PaymentsUtils::build_payment_req(wallet_handle,
+                                                       IDENTIFIER,
                                                        inputs,
                                                        outputs);
             assert_eq!(ErrorCode::IncompatiblePaymentError, res.unwrap_err());
@@ -758,6 +769,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let res = PaymentsUtils::build_payment_req(wallet_handle,
+                                                       IDENTIFIER,
                                                        INPUTS_INVALID_FORMAT,
                                                        CORRECT_OUTPUTS);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
@@ -774,6 +786,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let res = PaymentsUtils::build_payment_req(wallet_handle,
+                                                       IDENTIFIER,
                                                        CORRECT_INPUTS,
                                                        OUTPUTS_INVALID_FORMAT);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
@@ -810,8 +823,9 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let res = PaymentsUtils::build_mint_req(wallet_handle,
+                                                    IDENTIFIER,
                                                     EMPTY_ARRAY);
-            assert_eq!(ErrorCode::IncompatiblePaymentError, res.unwrap_err()); // TODO: CommonInvalidStructure looks more appropriate here
+            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
             TestUtils::cleanup_storage();
@@ -825,6 +839,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let res = PaymentsUtils::build_mint_req(wallet_handle,
+                                                    IDENTIFIER,
                                                     OUTPUTS_UNKNOWN_METHOD);
             assert_eq!(ErrorCode::UnknownPaymentMethod, res.unwrap_err());
 
@@ -841,6 +856,7 @@ mod medium_cases {
 
             let invalid_wallet_handle = wallet_handle + 1;
             let res = PaymentsUtils::build_mint_req(invalid_wallet_handle,
+                                                    IDENTIFIER,
                                                     CORRECT_OUTPUTS);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
@@ -856,6 +872,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let res = PaymentsUtils::build_mint_req(wallet_handle,
+                                                    IDENTIFIER,
                                                     OUTPUTS_INVALID_FORMAT);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
@@ -873,6 +890,7 @@ mod medium_cases {
             let outputs = r#"[{"paymentAddress": "pay:null", "amount":1, "extra":"1"}]"#;
 
             let res = PaymentsUtils::build_mint_req(wallet_handle,
+                                                    IDENTIFIER,
                                                     outputs);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
@@ -888,6 +906,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let res = PaymentsUtils::build_mint_req(wallet_handle,
+                                                    IDENTIFIER,
                                                     INCOMPATIBLE_OUTPUTS);
             assert_eq!(ErrorCode::IncompatiblePaymentError, res.unwrap_err());
 
@@ -907,6 +926,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let res = PaymentsUtils::build_set_txn_fees_req(wallet_handle,
+                                                            IDENTIFIER,
                                                             WRONG_PAYMENT_METHOD_NAME,
                                                             CORRECT_FEES);
             assert_eq!(res.unwrap_err(), ErrorCode::UnknownPaymentMethod);
@@ -924,6 +944,7 @@ mod medium_cases {
 
             let invalid_wallet_handle = wallet_handle + 1;
             let res = PaymentsUtils::build_set_txn_fees_req(invalid_wallet_handle,
+                                                            IDENTIFIER,
                                                             PAYMENT_METHOD_NAME,
                                                             CORRECT_FEES);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
@@ -941,6 +962,7 @@ mod medium_cases {
 
             let fees = r#"[txnType1:1, txnType2:2]"#;
             let res = PaymentsUtils::build_set_txn_fees_req(wallet_handle,
+                                                            IDENTIFIER,
                                                             PAYMENT_METHOD_NAME,
                                                             fees);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -962,6 +984,7 @@ mod medium_cases {
 
             let invalid_wallet_handle = wallet_handle + 1;
             let res = PaymentsUtils::build_get_txn_fees_req(invalid_wallet_handle,
+                                                            IDENTIFIER,
                                                             PAYMENT_METHOD_NAME);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
@@ -977,6 +1000,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
 
             let res = PaymentsUtils::build_get_txn_fees_req(wallet_handle,
+                                                            IDENTIFIER,
                                                             WRONG_PAYMENT_METHOD_NAME);
             assert_eq!(res.unwrap_err(), ErrorCode::UnknownPaymentMethod);
 

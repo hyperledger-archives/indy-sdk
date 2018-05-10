@@ -90,7 +90,7 @@ impl CommandExecutor {
                 let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
                 let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
                 let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());
-                let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone());
+                let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone());
 
                 loop {
                     match receiver.recv() {

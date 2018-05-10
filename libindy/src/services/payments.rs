@@ -202,46 +202,50 @@ impl PaymentsService {
         PaymentsService::consume_result(err)
     }
 
-    pub fn parse_method_from_inputs_outputs(&self, inputs: &str, outputs: &str) -> Result<String, PaymentsError> {
-        let unwrapper_inputs = move |json: serde_json::Value| json.as_str().map(|s| s.to_string());
-        let unwrapper_outputs = move |json: serde_json::Value|
-            match json.as_object()
-                .map(|obj|
-                    obj.get("paymentAddress")
-                        .map(|val|
-                            val.as_str()
-                                .map(|s| s.to_string()))) {
-                Some(Some(e)) => e,
-                _ => None
-            };
-
-        let from_inputs = self._parse_method_from_inputs_outputs(inputs, Box::new(unwrapper_inputs))?;
-        let from_outputs = self._parse_method_from_inputs_outputs(outputs, Box::new(unwrapper_outputs))?;
-
-        let addresses: HashSet<String> = from_inputs.union(&from_outputs).cloned().collect();
-        if addresses.len() != 1 {
-            return Err(PaymentsError::IncompatiblePaymentError("Incompatible inputs and outputs -- payment method cannot be determined".to_string()));
+    pub fn parse_method_from_inputs(&self, inputs: &str) -> Result<String, PaymentsError> {
+        let inputs: Vec<&str> = serde_json::from_str(inputs).map_err(|_| PaymentsError::CommonError(CommonError::InvalidStructure("Unable to parse inputs".to_string())))?;
+        let inputs_len = inputs.len();
+        if inputs_len == 0 {
+            return Err(PaymentsError::CommonError(CommonError::InvalidStructure("No inputs for transaction".to_string())));
         }
-
-        Ok(addresses.into_iter().next().unwrap())
+        let input_set: HashSet<&str> = inputs.into_iter().collect();
+        if inputs_len != input_set.len() {
+            return Err(PaymentsError::IncorrectTransactionInformationError("Several equal inputs".to_string()));
+        }
+        let input_methods: Vec<Option<String>> = input_set.into_iter().map(|s| self._parse_method_from_payment_address(s)).collect();
+        if input_methods.contains(&None) {
+            return Err(PaymentsError::CommonError(CommonError::InvalidStructure("Some payment addresses are incorrectly formed".to_string())));
+        }
+        let input_methods_set: HashSet<String> = input_methods.into_iter().map(|s| s.unwrap()).collect();
+        if input_methods_set.len() != 1 {
+            return Err(PaymentsError::IncompatiblePaymentError("Unable to identify payment method from inputs".to_string()));
+        }
+        Ok(input_methods_set.into_iter().next().unwrap())
     }
 
-    fn _parse_method_from_inputs_outputs(&self, json: &str, unwrapper: Box<Fn(serde_json::Value) -> Option<String> + Send>) -> Result<HashSet<String>, PaymentsError> {
-        let inputs_json: Vec<serde_json::Value> = serde_json::from_str(json)
-            .map_err(|err| PaymentsError::CommonError(CommonError::InvalidStructure(format!("Cannot deserialize Inputs {:?}", err))))?;
-        let res: Vec<Option<String>> = inputs_json.into_iter()
-            .map(|v| unwrapper(v))
-            .collect();
-        if res.contains(&None) {
-            return Err(PaymentsError::CommonError(CommonError::InvalidStructure(format!("Json contains malformed values: {}", json))));
+    pub fn parse_method_from_outputs(&self, outputs: &str) -> Result<String, PaymentsError> {
+        let outputs: Vec<Output> = serde_json::from_str(outputs).map_err(|_| PaymentsError::CommonError(CommonError::InvalidStructure("Unable to parse outputs".to_string())))?;
+        let outputs_len = outputs.len();
+        if outputs_len == 0 {
+            return Err(PaymentsError::CommonError(CommonError::InvalidStructure("No outputs for transaction".to_string())));
         }
-        let res: Vec<Option<String>> = res.into_iter()
-            .map(|input_str| self._parse_method_from_payment_address(input_str?.as_str()))
-            .collect();
-        if res.contains(&None) {
-            return Err(PaymentsError::CommonError(CommonError::InvalidStructure(format!("Json contains incorrect payment address: {}", json))));
+
+        let payment_address_set: HashSet<String> = outputs.into_iter().map(|s| s.payment_address).collect();
+        if payment_address_set.len() != outputs_len {
+            return Err(PaymentsError::IncorrectTransactionInformationError("Several equal payment addresses".to_string()));
         }
-        Ok(res.into_iter().map(|o| o.unwrap()).collect())
+
+        let payment_methods: Vec<Option<String>> = payment_address_set.into_iter().map(|s| self._parse_method_from_payment_address(s.as_str())).collect();
+        if payment_methods.contains(&None) {
+            return Err(PaymentsError::CommonError(CommonError::InvalidStructure("Some payment addresses are incorrectly formed".to_string())));
+        }
+
+        let payment_method_set: HashSet<String> = payment_methods.into_iter().map(|s| s.unwrap()).collect();
+        if payment_method_set.len() != 1 {
+            return Err(PaymentsError::IncompatiblePaymentError("Unable to identify payment method from outputs".to_string()));
+        }
+
+        Ok(payment_method_set.into_iter().next().unwrap())
     }
 
     fn _parse_method_from_payment_address(&self, address: &str) -> Option<String> {
@@ -266,6 +270,20 @@ impl PaymentsService {
         }
     }
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Output {
+    #[serde(rename = "paymentAddress")]
+    payment_address: String,
+    amount: i32,
+    extra: Option<String>
+}
+//
+//impl PartialEq for Output {
+//    fn eq(&self, other: &Rhs) -> bool {
+//        self.paymentAddress == other.paymentAddress &&
+//    }
+//}
 
 impl From<NulError> for PaymentsError {
     fn from(err: NulError) -> PaymentsError {

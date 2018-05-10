@@ -12,6 +12,7 @@ pub enum PaymentsError {
     UnknownType(String),
     CommonError(CommonError),
     IncompatiblePaymentError(String),
+    IncorrectTransactionInformationError(String),
 }
 
 impl Error for PaymentsError {
@@ -21,6 +22,7 @@ impl Error for PaymentsError {
             PaymentsError::UnknownType(ref msg) => msg.as_str(),
             PaymentsError::PluggedMethodError(_error_code) => "Plugged method error. Consider the error code.",
             PaymentsError::IncompatiblePaymentError(ref msg) => msg.as_str(),
+            PaymentsError::IncorrectTransactionInformationError(ref msg) => msg.as_str(),
         }
     }
 }
@@ -32,6 +34,7 @@ impl Display for PaymentsError {
             PaymentsError::PluggedMethodError(_err_code) => write!(_f, "Plugged method error. Consider the error code."),
             PaymentsError::UnknownType(ref msg) => write!(_f, "Unknown Type Error: {}", msg),
             PaymentsError::IncompatiblePaymentError(ref msg) => write!(_f, "Incompatible Payment Method Error: {}", msg),
+            PaymentsError::IncorrectTransactionInformationError(ref msg) => write!(_f, "Incorrect Transaction Information: {}", msg),
         }
     }
 }
@@ -43,6 +46,7 @@ impl ToErrorCode for PaymentsError {
             PaymentsError::CommonError(ref err) => err.to_error_code(),
             PaymentsError::UnknownType(ref _str) => ErrorCode::UnknownPaymentMethod,
             PaymentsError::IncompatiblePaymentError(ref _str) => ErrorCode::IncompatiblePaymentError,
+            PaymentsError::IncorrectTransactionInformationError(ref _str) => ErrorCode::IncorrectTransactionInformationError,
         }
     }
 }

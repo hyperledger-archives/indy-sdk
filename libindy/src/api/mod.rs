@@ -146,4 +146,7 @@ pub enum ErrorCode
 
     //No method were scraped from inputs/outputs or more than one were scraped
     IncompatiblePaymentError = 701,
+
+    //Information passed to libindy is incorrect
+    IncorrectTransactionInformationError = 702,
 }
