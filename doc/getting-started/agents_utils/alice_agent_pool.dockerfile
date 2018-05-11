@@ -57,8 +57,5 @@ RUN generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 1 2 3 4 --ip
 
 EXPOSE 9701 9702 9703 9704 9705 9706 9707 9708
 
-ARG bare="0"
-ENV SETUP_BARE ${bare}
-
 CMD ["/home/indy/agents_setup.sh"]
 
