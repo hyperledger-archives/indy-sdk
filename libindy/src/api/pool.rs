@@ -28,10 +28,15 @@ use self::libc::c_char;
 pub extern fn indy_create_pool_ledger_config(command_handle: i32,
                                              config_name: *const c_char,
                                              config: *const c_char,
-                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                             cb: Option<extern fn(xcommand_handle: i32,
+                                                                  err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_create_pool_ledger_config: >>> config_name: {:?}, config: {:?}", config_name, config);
+
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
     check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_create_pool_ledger_config: entities >>> config_name: {:?}, config: {:?}", config_name, config);
 
     let result = CommandExecutor::instance()
         .send(Command::Pool(PoolCommand::Create(
@@ -39,11 +44,16 @@ pub extern fn indy_create_pool_ledger_config(command_handle: i32,
             config,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
+                trace!("indy_create_pool_ledger_config:");
                 cb(command_handle, err)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_create_pool_ledger_config: <<< res: {:?}", res);
+
+    res
 }
 
 /// Opens pool ledger and performs connecting to pool nodes.
@@ -74,10 +84,16 @@ pub extern fn indy_create_pool_ledger_config(command_handle: i32,
 pub extern fn indy_open_pool_ledger(command_handle: i32,
                                     config_name: *const c_char,
                                     config: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, pool_handle: i32)>) -> ErrorCode {
+                                    cb: Option<extern fn(xcommand_handle: i32,
+                                                         err: ErrorCode,
+                                                         pool_handle: i32)>) -> ErrorCode {
+    trace!("indy_open_pool_ledger: >>> config_name: {:?}, config: {:?}", config_name, config);
+
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
     check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_open_pool_ledger: entities >>> config_name: {:?}, config: {:?}", config_name, config);
 
     let result = CommandExecutor::instance()
         .send(Command::Pool(PoolCommand::Open(
@@ -85,11 +101,16 @@ pub extern fn indy_open_pool_ledger(command_handle: i32,
             config,
             Box::new(move |result| {
                 let (err, pool_handle) = result_to_err_code_1!(result, 0);
+                trace!("indy_open_pool_ledger: pool_handle: {:?}", pool_handle);
                 cb(command_handle, err, pool_handle)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_open_pool_ledger: <<< res: {:?}", res);
+
+    res
 }
 
 /// Refreshes a local copy of a pool ledger and updates pool nodes connections.
@@ -106,38 +127,58 @@ pub extern fn indy_open_pool_ledger(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_refresh_pool_ledger(command_handle: i32,
                                        handle: i32,
-                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                       cb: Option<extern fn(xcommand_handle: i32,
+                                                            err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_refresh_pool_ledger: >>> handle: {:?}", handle);
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    trace!("indy_refresh_pool_ledger: entities >>> handle: {:?}", handle);
 
     let result = CommandExecutor::instance()
         .send(Command::Pool(PoolCommand::Refresh(
             handle,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
+                trace!("indy_refresh_pool_ledger:");
                 cb(command_handle, err)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_refresh_pool_ledger: <<< res: {:?}", res);
+
+    res
 }
 
 /// Lists names of created pool ledgers
 #[no_mangle]
 pub extern fn indy_list_pools(command_handle: i32,
-                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                              cb: Option<extern fn(xcommand_handle: i32,
+                                                   err: ErrorCode,
                                                    pools: *const c_char)>) -> ErrorCode {
+    trace!("indy_list_pools: >>>");
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
+
+    trace!("indy_list_pools: entities >>>");
 
     let result = CommandExecutor::instance()
         .send(Command::Pool(PoolCommand::List(
             Box::new(move |result| {
                 let (err, pools) = result_to_err_code_1!(result, String::new());
+                trace!("indy_refresh_pool_ledger: pools: {:?}", pools);
                 let pools = CStringUtils::string_to_cstring(pools);
                 cb(command_handle, err, pools.as_ptr())
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_refresh_pool_ledger: <<< res: {:?}", res);
+
+    res
 }
 
 /// Closes opened pool ledger, opened nodes connections and frees allocated resources.
@@ -154,19 +195,29 @@ pub extern fn indy_list_pools(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_close_pool_ledger(command_handle: i32,
                                      handle: i32,
-                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                     cb: Option<extern fn(xcommand_handle: i32,
+                                                          err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_close_pool_ledger: >>> handle: {:?}", handle);
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    trace!("indy_close_pool_ledger: entities >>> handle: {:?}", handle);
 
     let result = CommandExecutor::instance()
         .send(Command::Pool(PoolCommand::Close(
             handle,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
+                trace!("indy_close_pool_ledger:");
                 cb(command_handle, err)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_close_pool_ledger: <<< res: {:?}", res);
+
+    res
 }
 
 /// Deletes created pool ledger configuration.
@@ -183,18 +234,28 @@ pub extern fn indy_close_pool_ledger(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_delete_pool_ledger_config(command_handle: i32,
                                              config_name: *const c_char,
-                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                             cb: Option<extern fn(xcommand_handle: i32,
+                                                                  err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_delete_pool_ledger_config: >>> config_name: {:?}", config_name);
+
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    trace!("indy_delete_pool_ledger_config: entities >>> config_name: {:?}", config_name);
 
     let result = CommandExecutor::instance()
         .send(Command::Pool(PoolCommand::Delete(
             config_name,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
+                trace!("indy_delete_pool_ledger_config:");
                 cb(command_handle, err)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_delete_pool_ledger_config: <<< res: {:?}", res);
+
+    res
 }
