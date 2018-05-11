@@ -113,6 +113,7 @@ def macosTesting() {
                     setupRust()
                     setupBrewPackages()
                     sh "cargo build"
+                    sh "cargo test --no-run"
                     // TODO testing
                 }
 

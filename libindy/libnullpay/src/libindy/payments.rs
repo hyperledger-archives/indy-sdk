@@ -110,6 +110,7 @@ pub fn register_payment_method(
     receiver.recv().unwrap()
 }
 
+#[link(name="indy")]
 extern {
     #[no_mangle]
     pub fn indy_register_payment_method(
