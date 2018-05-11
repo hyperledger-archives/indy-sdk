@@ -875,13 +875,3 @@ pub extern fn indy_parse_get_txn_fees_response(command_handle: i32,
 
     result.to_error_code()
 }
-
-#[no_mangle]
-pub extern fn indy_sign_multi_request(command_handle: i32,
-                                      wallet_handle: i32,
-                                      submitter_did: *const c_char,
-                                      request_json: *const c_char,
-                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                           signed_request_json: *const c_char)>) -> ErrorCode {
-    unimplemented!()
-}
