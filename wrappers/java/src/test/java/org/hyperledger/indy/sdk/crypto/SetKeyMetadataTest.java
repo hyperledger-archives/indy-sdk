@@ -1,7 +1,7 @@
 package org.hyperledger.indy.sdk.crypto;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
-import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WalletNotFoundException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -45,7 +45,7 @@ public class SetKeyMetadataTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testSetKeyMetadataWorksForNoKey() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletNotFoundException.class));
 
 		Crypto.setKeyMetadata(wallet, VERKEY, METADATA).get();
 	}

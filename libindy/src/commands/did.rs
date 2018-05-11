@@ -104,7 +104,7 @@ pub enum DidCommand {
 macro_rules! ensure_their_did {
     ($self_:ident, $wallet_handle:ident, $pool_handle:ident, $their_did:ident, $deferred_cmd:expr, $cb:ident) => (match $self_._wallet_get_their_did($wallet_handle, &$their_did) {
           Ok(val) => val,
-          Err(WalletError::NotFound(_)) => {
+          Err(WalletError::ItemNotFound) => {
 
               check_wallet_and_pool_handles_consistency!($self_.wallet_service, $self_.pool_service,
                                                          $wallet_handle, $pool_handle, $cb);
@@ -377,7 +377,7 @@ impl DidCommandExecutor {
         // Look to my did
         match self._wallet_get_my_did(wallet_handle, &did) {
             Ok(my_did) => return cb(Ok(my_did.verkey)),
-            Err(WalletError::NotFound(_)) => {}
+            Err(WalletError::ItemNotFound) => {}
             Err(err) => return cb(Err(IndyError::from(err)))
         };
 
@@ -410,7 +410,7 @@ impl DidCommandExecutor {
         // Look to my did
         match self._wallet_get_my_did(wallet_handle, &did) {
             Ok(my_did) => return Ok(my_did.verkey),
-            Err(WalletError::NotFound(_)) => {}
+            Err(WalletError::ItemNotFound) => {}
             Err(err) => return Err(IndyError::from(err))
         };
 
@@ -458,7 +458,7 @@ impl DidCommandExecutor {
 
         match endpoint {
             Ok(endpoint) => cb(Ok((endpoint.ha, endpoint.verkey))),
-            Err(WalletError::NotFound(_)) => {
+            Err(WalletError::ItemNotFound) => {
                 check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
                                                            wallet_handle, pool_handle, cb);
 
@@ -502,7 +502,7 @@ impl DidCommandExecutor {
             .get_tags()
             .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
             .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
-            .ok_or(WalletError::NotFound(format!("Metadata not found for did: {}", did)))?;
+            .ok_or(WalletError::ItemNotFound)?;
 
         info!("get_did_metadata <<< res: {:?}", res);
 

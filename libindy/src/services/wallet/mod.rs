@@ -474,7 +474,7 @@ impl WalletService {
             Some(wallet) =>
                 match wallet.get(&self.add_prefix(T::short_type_name()), name, &RecordOptions::id()) {
                     Ok(_) => Ok(true),
-                    Err(WalletError::NotFound(_)) => Ok(false),
+                    Err(WalletError::ItemNotFound) => Ok(false),
                     Err(err) => Err(err),
                 }
             None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))

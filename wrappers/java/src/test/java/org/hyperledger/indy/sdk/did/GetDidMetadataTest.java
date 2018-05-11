@@ -1,7 +1,7 @@
 package org.hyperledger.indy.sdk.did;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
-import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -38,7 +38,7 @@ public class GetDidMetadataTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testGetDidMetadataWorksForNotFoundDid() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		Did.getDidMetadata(wallet, DID).get();
 	}
@@ -46,7 +46,7 @@ public class GetDidMetadataTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testGetDidMetadataWorksForNoMetadata() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		Did.getDidMetadata(wallet, did).get();
 	}
