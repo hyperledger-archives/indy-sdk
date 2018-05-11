@@ -142,17 +142,11 @@ pub enum ErrorCode
     DidAlreadyExistsError = 600,
 
     // Unknown payment method was given
-    UnknownPaymentMethod = 700,
+    PaymentUnknownMethodError = 700,
 
     //No method were scraped from inputs/outputs or more than one were scraped
-    IncompatiblePaymentError = 701,
-
-    //Information passed to libindy is incorrect
-    IncorrectTransactionInformationError = 702,
+    PaymentIncompatibleMethodsError = 701,
 
     //Insufficient funds on inputs
-    InsufficientFundsError = 703,
-
-    //No key for this payment address in wallet
-    NoPaymentAddressKeyError = 704,
+    PaymentInsufficientFundsError = 703,
 }

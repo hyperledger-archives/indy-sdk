@@ -19,11 +19,11 @@ use utils::cstring::CStringUtils;
 ///
 /// #Params
 /// command_handle: command handle to map callback to context
+/// wallet_handle: wallet handle where keys for signature are stored
 /// config: payment address config as json:
 ///   {
 ///     seed: <str>, // allows deterministic creation of payment address
 ///   }
-/// wallet_handle: wallet handle where keys for signature are stored
 ///
 /// #Returns
 /// payment_address - public identifier of payment address in fully resolvable payment address format
