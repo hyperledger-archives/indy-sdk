@@ -550,6 +550,11 @@ def publishingRCtoStable() {
                 echo 'Moving RC artifacts to Stable: Checkout csm'
                 checkout scm
 
+                echo 'Moving RC artifacts to Stable: Download packaging utils'
+                dir('sovrin-packaging') {
+                    downloadPackagingUtils()
+                }
+
                 version = getSrcVersion()
 
                 echo 'Moving Windows RC artifacts to Stable: libindy'
@@ -629,10 +634,9 @@ def publishLibindyCliDebRCtoStable(testEnv, version) {
 
 def uploadDebianFilesToStable() {
     withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-        downloadPackagingUtils()
         path = sh(returnStdout: true, script: 'pwd').trim()
 
-        sh "./upload_debs.py $path $SOVRIN_SDK_REPO_NAME stable --host $SOVRIN_REPO_HOST --ssh-key $sovrin_key"
+        sh "./sovrin-packaging/upload_debs.py $path $SOVRIN_SDK_REPO_NAME stable --host $SOVRIN_REPO_HOST --ssh-key $sovrin_key"
     }
 }
 
