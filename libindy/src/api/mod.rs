@@ -149,4 +149,10 @@ pub enum ErrorCode
 
     //Information passed to libindy is incorrect
     IncorrectTransactionInformationError = 702,
+
+    //Insufficient funds on inputs
+    InsufficientFundsError = 703,
+
+    //No key for this payment address in wallet
+    NoPaymentAddressKeyError = 704,
 }
