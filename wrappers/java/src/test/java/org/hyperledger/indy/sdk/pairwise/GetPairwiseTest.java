@@ -1,6 +1,6 @@
 package org.hyperledger.indy.sdk.pairwise;
 
-import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WalletNotFoundException;
 import org.json.JSONObject;
 import org.junit.Test;
 
@@ -25,7 +25,7 @@ public class GetPairwiseTest extends PairwiseIntegrationTest {
 	@Test
 	public void testGetPairwiseWorksForNotCreated() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletNotFoundException.class));
 
 		Pairwise.getPairwise(wallet, theirDid).get();
 	}

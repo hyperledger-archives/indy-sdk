@@ -35,9 +35,9 @@ public class OpenWalletTest extends IndyIntegrationTest {
 		Wallet.createWallet(POOL, "ForEbcryptedWalletInvalidCredentials", TYPE, null, CREDENTIALS).get();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletAccessFailedException.class));
+		thrown.expectCause(isA(WalletDecodingException.class));
 
-		Wallet.openWallet("ForEbcryptedWalletInvalidCredentials", null, "{\"key\":\"otherkey\"}").get();
+		Wallet.openWallet("ForEbcryptedWalletInvalidCredentials", null, "{\"key\": \"OTHERBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=\", \"storage_credentials\": {}}").get();
 	}
 
 
