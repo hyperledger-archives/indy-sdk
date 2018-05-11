@@ -23,7 +23,6 @@ pub fn build_get_txn_request(
 }
 
 
-#[link(name="indy")]
 extern {
     #[no_mangle]
     pub fn indy_build_get_txn_request(command_handle: i32,
