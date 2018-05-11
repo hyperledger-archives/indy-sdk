@@ -10,19 +10,19 @@ did use Th7MpTaRZVRYnPiabds81Y
 ledger nym did=ULtgFQJe6bjiFbs7ke3NJD role=TRUST_ANCHOR verkey=~5kh3FB4H3NKq7tUDqeqHc1
 did new seed=Faber000000000000000000000000000 metadata="Faber Key"
 did use ULtgFQJe6bjiFbs7ke3NJD
-ledger attrib did=ULtgFQJe6bjiFbs7ke3NJD raw="{"endpoint": {"ha": "10.0.0.6:5555", "pubkey": "5hmMA64DDQz5NzGJNVtRzNwpkZxktNQds21q3Wxxa62z"}}"
+ledger attrib did=ULtgFQJe6bjiFbs7ke3NJD raw="{"endpoint": {"ha": "127.0.0.1:9702", "pubkey": "5hmMA64DDQz5NzGJNVtRzNwpkZxktNQds21q3Wxxa62z"}}"
 
 did use Th7MpTaRZVRYnPiabds81Y
 
 ledger nym did=CzkavE58zgX7rUMrzSinLr role=TRUST_ANCHOR verkey=~WjXEvZ9xj4Tz9sLtzf7HVP
 did new seed=Acme0000000000000000000000000000 metadata="Acme Key"
 did use CzkavE58zgX7rUMrzSinLr
-ledger attrib did=CzkavE58zgX7rUMrzSinLr raw="{"endpoint":{"ha": "10.0.0.6:6666", "pubkey": "C5eqjU7NMVMGGfGfx2ubvX5H9X346bQt5qeziVAo3naQ"}}"
+ledger attrib did=CzkavE58zgX7rUMrzSinLr raw="{"endpoint":{"ha": "127.0.0.1:9704", "pubkey": "C5eqjU7NMVMGGfGfx2ubvX5H9X346bQt5qeziVAo3naQ"}}"
 
 did use Th7MpTaRZVRYnPiabds81Y
 
 ledger nym did=H2aKRiDeq8aLZSydQMDbtf role=TRUST_ANCHOR verkey=~3sphzTb2itL2mwSeJ1Ji28
 did new seed=Thrift00000000000000000000000000 metadata="Thrift Key"
 did use H2aKRiDeq8aLZSydQMDbtf
-ledger attrib did=H2aKRiDeq8aLZSydQMDbtf raw="{"endpoint": {"ha": "10.0.0.6:7777", "pubkey":"AGBjYvyM3SFnoiDGAEzkSLHvqyzVkXeMZfKDvdpEsC2x"}}"
+ledger attrib did=H2aKRiDeq8aLZSydQMDbtf raw="{"endpoint": {"ha": "127.0.0.1:9706", "pubkey":"AGBjYvyM3SFnoiDGAEzkSLHvqyzVkXeMZfKDvdpEsC2x"}}"
 

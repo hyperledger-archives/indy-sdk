@@ -21,6 +21,7 @@ RUN pip3 install -U \
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
 ARG indy_stream=rc
 RUN echo "deb https://repo.sovrin.org/deb xenial $indy_stream" >> /etc/apt/sources.list
+RUN echo "deb https://repo.sovrin.org/sdk/deb xenial $indy_stream" >> /etc/apt/sources.list
 
 RUN useradd -ms /bin/bash -u $uid indy
 
@@ -36,51 +37,16 @@ RUN apt-get update -y && apt-get install -y \
         indy-node=${indy_node_ver} \
         python3-indy-crypto=${python3_indy_crypto_ver} \
         libindy-crypto=${indy_crypto_ver} \
+        indy-cli \
         vim
 
-RUN echo '[supervisord]\n\
-logfile = /tmp/supervisord.log\n\
-logfile_maxbytes = 50MB\n\
-logfile_backups=10\n\
-logLevel = error\n\
-pidfile = /tmp/supervisord.pid\n\
-nodaemon = true\n\
-minfds = 1024\n\
-minprocs = 200\n\
-umask = 022\n\
-user = indy\n\
-identifier = supervisor\n\
-directory = /tmp\n\
-nocleanup = true\n\
-childlogdir = /tmp\n\
-strip_ansi = false\n\
-\n\
-[program:node1]\n\
-command=start_indy_node Node1 9701 9702\n\
-directory=/home/indy\n\
-stdout_logfile=/tmp/node1.log\n\
-stderr_logfile=/tmp/node1.log\n\
-\n\
-[program:node2]\n\
-command=start_indy_node Node2 9703 9704\n\
-directory=/home/indy\n\
-stdout_logfile=/tmp/node2.log\n\
-stderr_logfile=/tmp/node2.log\n\
-\n\
-[program:node3]\n\
-command=start_indy_node Node3 9705 9706\n\
-directory=/home/indy\n\
-stdout_logfile=/tmp/node3.log\n\
-stderr_logfile=/tmp/node3.log\n\
-\n\
-[program:node4]\n\
-command=start_indy_node Node4 9707 9708\n\
-directory=/home/indy\n\
-stdout_logfile=/tmp/node4.log\n\
-stderr_logfile=/tmp/node4.log\n'\
->> /etc/supervisord.conf
+RUN ["apt-get", "install", "-y", "net-tools"]
+
+ADD node_supervisord.conf /etc/supervisord.conf
 
 USER indy
+ADD getting_started.indyscript /home/indy/getting_started.indyscript
+ADD agents_setup.sh /home/indy/agents_setup.sh
 
 ARG pool_ip=127.0.0.1
 
@@ -91,4 +57,8 @@ RUN generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 1 2 3 4 --ip
 
 EXPOSE 9701 9702 9703 9704 9705 9706 9707 9708
 
-CMD ["/usr/bin/supervisord"]
+ARG bare="0"
+ENV SETUP_BARE ${bare}
+
+CMD ["/home/indy/agents_setup.sh"]
+
