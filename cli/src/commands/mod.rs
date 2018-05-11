@@ -88,7 +88,7 @@ pub fn get_opt_bool_param(key: &str, params: &CommandParams) -> Result<Option<bo
 
 pub fn get_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Vec<&'a str>, ()> {
     match params.get(name) {
-        Some(v) => Ok(v.split(",").collect::<Vec<&'a str>>()),
+        Some(v) => Ok(if v.is_empty() {Vec::new()} else { v.split(",").collect::<Vec<&'a str>>() }),
         None => Err(println_err!("No required \"{}\" parameter present", name))
     }
 }

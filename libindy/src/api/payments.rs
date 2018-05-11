@@ -1,5 +1,3 @@
-//TODO FIXME
-#![allow(unused_variables)]
 extern crate libc;
 
 use self::libc::c_char;

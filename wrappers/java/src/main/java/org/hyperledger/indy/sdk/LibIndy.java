@@ -134,9 +134,9 @@ public abstract class LibIndy {
 		int indy_parse_get_utxo_response(int command_handle, String payment_method, String resp_json, Callback cb);
 		int indy_build_payment_req(int command_handle, int wallet_handle, String submitter_did, String inputs_json, String outputs_json, Callback cb);
 		int indy_parse_payment_response(int command_handle, String payment_method, String resp_json, Callback cb);
-		int indy_build_mint_req(int command_handle, int wallet_handle, String indy_build_mint_req, String outputs_json, Callback cb);
+		int indy_build_mint_req(int command_handle, int wallet_handle, String submitter_did, String outputs_json, Callback cb);
 		int indy_build_set_txn_fees_req(int command_handle, int wallet_handle, String submitter_did, String payment_method, String fees_json, Callback cb);
-		int indy_build_get_txn_fees_req(int command_handle, int wallet_handle, String indy_build_get_txn_fees_req, String payment_method, Callback cb);
+		int indy_build_get_txn_fees_req(int command_handle, int wallet_handle, String submitter_did, String payment_method, Callback cb);
 		int indy_parse_get_txn_fees_response(int command_handle, String payment_method, String resp_json, Callback cb);
 
 	}

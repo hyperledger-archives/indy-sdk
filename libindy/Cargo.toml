@@ -58,8 +58,10 @@ time = "0.1.36"
 zmq = "0.8.2"
 lazy_static = "1.0"
 byteorder = "1.0.0"
-null-payment-method = {path = "libnullpay"}
 [dependencies.uuid]
 version = "0.5.0"
 default-features = false
 features = ["v4"]
+
+[dev-dependencies]
+null-payment-method = {path = "libnullpay"}

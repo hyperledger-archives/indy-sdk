@@ -215,8 +215,7 @@ public class Payments extends IndyJava.API {
                 reqJson,
                 inputsJson,
                 outputsJson,
-                addRequestFeesCb
-        );
+                addRequestFeesCb);
 
         checkResult(result);
 
@@ -267,8 +266,7 @@ public class Payments extends IndyJava.API {
                 walletHandle,
                 submitterDid,
                 paymentAddress,
-                buildGetUtxoRequestCb
-        );
+                buildGetUtxoRequestCb);
 
         checkResult(result);
 
@@ -339,8 +337,7 @@ public class Payments extends IndyJava.API {
                 submitterDid,
                 inputsJson,
                 outputsJson,
-                buildPaymentReqCb
-        );
+                buildPaymentReqCb);
 
         checkResult(result);
 
@@ -398,8 +395,7 @@ public class Payments extends IndyJava.API {
                 walletHandle,
                 submitterDid,
                 outputsJson,
-                buildMintReqCb
-        );
+                buildMintReqCb);
 
         checkResult(result);
 
@@ -439,8 +435,7 @@ public class Payments extends IndyJava.API {
                 submitterDid,
                 paymentMethod,
                 feesJson,
-                stringCompleteCb
-        );
+                stringCompleteCb);
 
         checkResult(result);
 
@@ -472,8 +467,7 @@ public class Payments extends IndyJava.API {
                 walletHandle,
                 submitterDid,
                 paymentMethod,
-                stringCompleteCb
-        );
+                stringCompleteCb);
 
         checkResult(result);
 
