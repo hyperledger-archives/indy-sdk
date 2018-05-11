@@ -201,23 +201,6 @@ impl Payment {
 
         super::results::result_to_string(err, receiver)
     }
-
-    pub fn sign_multi_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
-
-        let submitter_did = CString::new(submitter_did).unwrap();
-        let request_json = CString::new(request_json).unwrap();
-
-        let err = unsafe {
-            indy_sign_multi_request(command_handle,
-                                    wallet_handle,
-                                    submitter_did.as_ptr(),
-                                    request_json.as_ptr(),
-                                    cb)
-        };
-
-        super::results::result_to_string(err, receiver)
-    }
 }
 
 extern {
@@ -322,12 +305,4 @@ extern {
                                         cb: Option<extern fn(command_handle_: i32,
                                                              err: ErrorCode,
                                                              fees_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_sign_multi_request(command_handle: i32,
-                               wallet_handle: i32,
-                               submitter_did: *const c_char,
-                               request_json: *const c_char,
-                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                    signed_request_json: *const c_char)>) -> ErrorCode;
 }

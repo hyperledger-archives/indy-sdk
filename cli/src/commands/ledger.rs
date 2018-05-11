@@ -1020,8 +1020,8 @@ pub mod set_fees_prepare_command {
 pub mod sign_multi_command {
     use super::*;
 
-    command!(CommandMetadata::build("sign-multi", "Add signature by current DID to transaction.")
-                .add_required_param("txn","Transaction to sign.")
+    command!(CommandMetadata::build("sign-multi", "Add multi signature by current DID to transaction.")
+                .add_required_param("txn","Transaction to sign")
                 .add_example("ledger sign-multi txn={\"reqId\":123456789, type: \"100\"}")
                 .finalize()
     );
@@ -1034,7 +1034,7 @@ pub mod sign_multi_command {
 
         let txn = get_str_param("txn", params).map_err(error_err!())?;
 
-        let res = match Payment::sign_multi_request(wallet_handle, &submitter_did, txn) {
+        let res = match Ledger::multi_sign_request(wallet_handle, &submitter_did, txn) {
             Ok(request) => {
                 println_succ!("Transaction has been signed:");
                 println_succ!("{}", request);
