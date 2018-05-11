@@ -53,11 +53,11 @@ impl PoolCommandExecutor {
         match command {
             PoolCommand::Create(name, config, cb) => {
                 info!(target: "pool_command_executor", "Create command received");
-                self.create(&name, config.as_ref().map(String::as_str), cb);
+                cb(self.create(&name, config.as_ref().map(String::as_str)));
             }
             PoolCommand::Delete(name, cb) => {
                 info!(target: "pool_command_executor", "Delete command received");
-                self.delete(&name, cb);
+                cb(self.delete(&name));
             }
             PoolCommand::Open(name, config, cb) => {
                 info!(target: "pool_command_executor", "Open command received");
@@ -86,7 +86,7 @@ impl PoolCommandExecutor {
             }
             PoolCommand::List(cb) => {
                 info!(target: "pool_command_executor", "List command received");
-                self.list(cb);
+                cb(self.list());
             }
             PoolCommand::Close(handle, cb) => {
                 info!(target: "pool_command_executor", "Close command received");
@@ -129,15 +129,29 @@ impl PoolCommandExecutor {
         };
     }
 
-    fn create(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self.pool_service.create(name, config).map_err(IndyError::from))
+    fn create(&self, name: &str, config: Option<&str>) -> Result<(), IndyError> {
+        debug!("create >>> name: {:?}, config: {:?}", name, config);
+
+        let res = self.pool_service.create(name, config)?;
+
+        debug!("create << res: {:?}", res);
+
+        Ok(res)
     }
 
-    fn delete(&self, name: &str, cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self.pool_service.delete(name).map_err(IndyError::from));
+    fn delete(&self, name: &str) -> Result<(), IndyError> {
+        debug!("delete >>> name: {:?}", name);
+
+        let res = self.pool_service.delete(name)?;
+
+        debug!("delete << res: {:?}", res);
+
+        Ok(res)
     }
 
     fn open(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<i32, IndyError>) + Send>) {
+        debug!("open >>> name: {:?}, config: {:?}", name, config);
+
         let result = self.pool_service.open(name, config)
             .map_err(|err| IndyError::PoolError(err))
             .and_then(|handle| {
@@ -152,15 +166,21 @@ impl PoolCommandExecutor {
         };
     }
 
-    fn list(&self, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+    fn list(&self) -> Result<String, IndyError> {
+        debug!("list >>> ");
+
         let res = self.pool_service.list()
             .and_then(|pools| ::serde_json::to_string(&pools).map_err(|err|
-                PoolError::CommonError(CommonError::InvalidState(format!("Can't serialize pools list {}", err)))))
-            .map_err(IndyError::from);
-        cb(res)
+                PoolError::CommonError(CommonError::InvalidState(format!("Can't serialize pools list {}", err)))))?;
+
+        debug!("list << res: {:?}", res);
+
+        Ok(res)
     }
 
     fn close(&self, handle: i32, cb: Box<Fn(Result<(), IndyError>) + Send>) {
+        debug!("close >>> handle: {:?}", handle);
+
         let result = self.pool_service.close(handle)
             .map_err(From::from)
             .and_then(|handle| {
@@ -176,6 +196,8 @@ impl PoolCommandExecutor {
     }
 
     fn refresh(&self, handle: i32, cb: Box<Fn(Result<(), IndyError>) + Send>) {
+        debug!("refresh >>> handle: {:?}", handle);
+
         let result = self.pool_service.refresh(handle)
             .map_err(From::from)
             .and_then(|handle| {
