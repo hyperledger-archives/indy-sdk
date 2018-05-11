@@ -212,6 +212,7 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
         }
 
         sh "cp libindy/target/release/libindy.so cli"
+        sh "cp libindy/target/release/deps/libnullpay.so cli"
         dir('cli') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Indy Cli Test: Build"
