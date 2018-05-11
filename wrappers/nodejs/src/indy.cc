@@ -4,12 +4,23 @@
 #include "indy_core.h"
 
 char* copyCStr(const char* original){
+    if(original == nullptr){
+        return nullptr;
+    }
     size_t len = strlen(original);
     char* dest = new char[len + 1];
     strncpy(dest, original, len);
     dest[len] = '\0';
     return dest;
 }
+
+v8::Local<v8::Value> toJSString(const char* str){
+    if(str == nullptr){
+        return Nan::Null();
+    }
+    return Nan::New<v8::String>(str).ToLocalChecked();
+}
+
 
 char* copyBuffer(const indy_u8_t* data, indy_u32_t len){
     char* dest = (char*)malloc(len * sizeof(char));
@@ -187,7 +198,7 @@ class IndyCallback : public Nan::AsyncResource {
                 argv[1] = Nan::Null();
                 break;
             case CB_STRING:
-                argv[1] = Nan::New<v8::String>(icb->str0).ToLocalChecked();
+                argv[1] = toJSString(icb->str0);
                 break;
             case CB_BOOLEAN:
                 argv[1] = Nan::New<v8::Boolean>(icb->bool0);
@@ -203,28 +214,28 @@ class IndyCallback : public Nan::AsyncResource {
                 break;
             case CB_STRING_BUFFER:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, Nan::New<v8::String>(icb->str0).ToLocalChecked());
+                tuple->Set(0, toJSString(icb->str0));
                 tuple->Set(1, Nan::NewBuffer(icb->buffer0data, icb->buffer0len).ToLocalChecked());
                 argv[1] = tuple;
                 break;
             case CB_STRING_STRING:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, Nan::New<v8::String>(icb->str0).ToLocalChecked());
-                tuple->Set(1, Nan::New<v8::String>(icb->str1).ToLocalChecked());
+                tuple->Set(0, toJSString(icb->str0));
+                tuple->Set(1, toJSString(icb->str1));
                 argv[1] = tuple;
                 break;
             case CB_STRING_STRING_TIMESTAMP:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, Nan::New<v8::String>(icb->str0).ToLocalChecked());
-                tuple->Set(1, Nan::New<v8::String>(icb->str1).ToLocalChecked());
+                tuple->Set(0, toJSString(icb->str0));
+                tuple->Set(1, toJSString(icb->str1));
                 tuple->Set(2, Nan::New<v8::Number>(icb->timestamp0));
                 argv[1] = tuple;
                 break;
             case CB_STRING_STRING_STRING:
                 tuple = Nan::New<v8::Array>();
-                tuple->Set(0, Nan::New<v8::String>(icb->str0).ToLocalChecked());
-                tuple->Set(1, Nan::New<v8::String>(icb->str1).ToLocalChecked());
-                tuple->Set(2, Nan::New<v8::String>(icb->str2).ToLocalChecked());
+                tuple->Set(0, toJSString(icb->str0));
+                tuple->Set(1, toJSString(icb->str1));
+                tuple->Set(2, toJSString(icb->str2));
                 argv[1] = tuple;
                 break;
         }

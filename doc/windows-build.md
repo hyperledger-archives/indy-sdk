@@ -43,7 +43,9 @@ git clone https://github.com/hyperledger/indy-sdk.git
 ### Binary deps
 
 - https://www.npcglib.org/~stathis/downloads/openssl-1.0.2k-vs2017.7z
-- https://download.libsodium.org/libsodium/releases/libsodium-1.0.12-msvc.zip
+- https://download.libsodium.org/libsodium/releases/libsodium-1.0.14-msvc.zip
+  - versions from 1.0.15 onwards dropped the required `crypto_stream_aes128ctr_*` methods
+  - please note that in the future this release might be moved to subdirectory `old`
 
 ### Source deps
 
@@ -84,6 +86,7 @@ Follow to https://http://zeromq.org/intro.
 - execute "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
 - Point path to this directory using environment variables:
   - set INDY_PREBUILT_DEPS_DIR=C:\BIN\x64
+  - set INDY_CRYPTO_PREBUILT_DEPS_DIR=C:\BIN\x64
   - set MILAGRO_DIR=C:\BIN\x64
   - set LIBZMQ_PREFIX=C:\BIN\x64
   - set SODIUM_LIB_DIR=C:\BIN\x64

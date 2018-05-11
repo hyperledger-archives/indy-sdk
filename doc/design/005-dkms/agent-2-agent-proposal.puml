@@ -1,0 +1,85 @@
+@startuml
+
+participant "Client Agent" as Client
+participant "Server Agent" as Server
+
+== Transport Layer ==
+
+Client -> Server: Transport layer CurveCP HELLO
+note left
+    Conversation starts with establishing standard CurveCP connection.
+
+    Important point is that client must (?) be able to authenticate
+    endpoint (only endpoint, not server identity) on transport level. Without this
+    it is quite easy to perform man in the middle attacks. In case of
+    CurveCP transport key will be part of endpoint. It causes agency-level transport
+    key related correlation, but CurveCP-PW and DID-TLS proposals have the same
+    issue if we want to indicate server DID securely. Anyway any IP/DNS based
+    solutions have exactly same issue.
+
+    We can adopt this workflow to use TLS protocol too. Endpoint authentication
+    can be be performed in different ways:
+    - Option 1 is just use standard CAA signed cert on the endpoint.
+    - Option 2 is use self signed cert, store server cert in the Ledger,
+      and add this cert to client trust chain, but this option have a lot
+      of potential vulnerabilities.
+
+    It can be possible to adopt some TOR like protocol too.
+end note
+Server <-> Client: Complete transport layer CurveCP Handshake
+note left
+    At this point secure transport connection is established.
+    We can assume that communication is secure, provides integrity, and endpoint is authenticated.
+    So Client can send Server DID he wants to communicate without fear of eavesdropping.
+end note
+
+== DID Protocol Layer ==
+
+Client -> Server: AGENT_CLIENT_HELLO message
+note left
+    Note this sequence diagram describes DID Protocol over sockets layer, but it can be adopted
+    to HTTP layer too if we use TLS as transport layer.
+
+    Client sends AGENT_HELLO message. It contains the following fields:
+    - Random nonce (CLIENT_NONCE)
+    - Server DID he wants to communicate (SERVER_DID)
+    - Security levels that client accepts (SECURITY_LEVELS). It is bit mask with the following
+      values for now:
+      - TRANSPORT. Application messages will be secured only on transport layer.
+      - APPLICATION. Application messages will be also encrypted by DIDs ed25519 keys.
+end note
+
+Server -> Server: Server checks that he owns SERVER_DID
+Server -> Server: Server checks that he can accept SECURITY_LEVELS
+Server -> Client: AGENT_SERVER_HELLO message
+note left
+    Server sends AGENT_SERVER_HELLO message. It contains the following fields:
+    - CLIENT_NONCE signed by SERVER_DID (CLIENT_NONCE_SIGNATURE)
+    - Random nonce (SERVER_NONCE)
+    - Accepted security level (SECURITY_LEVEL). One of value from SECURITY_LEVELS bitmask.
+end note
+
+Client -> Client: Client verifies CLIENT_NONCE_SIGNATURE and authenticates Server
+Client -> Server: AGENT_CLIENT_ACCEPTED message
+note left
+    Client sends AGENT_CLIENT_ACCEPTED message. It contains the following fields:
+    - Client DID (CLIENT_DID)
+    - SERVER_NONCE signed by CLIENT_DID (SERVER_NONCE_SIGNATURE)
+end note
+
+Server -> Server: Server verifies SERVER_NONCE_SIGNATURE and authenticates Client
+Server -> Client: AGENT_SERVER_ACCEPTED message
+note left
+    Server sends AGENT_SERVER_ACCEPTED message without payload.
+
+    At this point Client and Server authenticated each other and performed Nonce Exchange.
+    They are ready to exchange application-specific messages. This messages can be optionally
+    encrypted by DIDs ed25519 keys.
+end note
+
+== Application Layer ==
+
+Client -> Server: Application layer message 1 (optionally encrypted by Server DID ed25519 key and CLIENT_NONCE)
+Server -> Client: Application layer message 1 ack (optionally encrypted by Client DID ed25519 key and SERVER_NONCE)
+
+@enduml

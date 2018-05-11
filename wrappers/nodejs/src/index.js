@@ -61,7 +61,7 @@ indy.issuerCreateCredential = function issuerCreateCredential (wh, credOffer, cr
   cb = wrapIndyCallback(cb, function (data) {
     return [fromJson(data[0]), data[1], fromJson(data[2])]
   })
-  capi.issuerCreateCredential(wh, toJson(credOffer), toJson(credReq), toJson(credValues), revRegId, blobStorageReaderHandle, cb)
+  capi.issuerCreateCredential(wh, toJson(credOffer), toJson(credReq), toJson(credValues), revRegId, blobStorageReaderHandle == null ? -1 : blobStorageReaderHandle, cb)
   return cb.promise
 }
 

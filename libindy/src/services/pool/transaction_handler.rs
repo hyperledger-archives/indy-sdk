@@ -81,7 +81,7 @@ impl TransactionHandler {
     }
 
     fn process_reply(&mut self, req_id: u64, raw_msg: &str) {
-        trace!("TransactionHandler::process_reply: >>> req_id: {:?}, raw_msg: {:?}", req_id, raw_msg);
+        debug!("TransactionHandler::process_reply: >>> req_id: {:?}, raw_msg: {:?}", req_id, raw_msg);
 
         if !self.pending_commands.contains_key(&req_id) {
             return warn!("TransactionHandler::process_reply: <<< No pending command for request");
@@ -101,7 +101,7 @@ impl TransactionHandler {
         let reply_cnt = *self.pending_commands
             .get(&req_id).unwrap()
             .replies.get(&msg_result_without_proof).unwrap_or(&0usize);
-        trace!("TransactionHandler::process_reply: reply_cnt: {:?}, f: {:?}", reply_cnt, self.f);
+        debug!("TransactionHandler::process_reply: reply_cnt: {:?}, f: {:?}", reply_cnt, self.f);
 
         let consensus_reached = reply_cnt >= self.f || {
             debug!("TransactionHandler::process_reply: Try to verify proof and signature");
@@ -154,11 +154,13 @@ impl TransactionHandler {
             pend_cmd.try_send_to_next_node_if_exists(&self.nodes);
         }
 
-        trace!("TransactionHandler::process_reply: <<<");
+        debug!("TransactionHandler::process_reply: <<<");
     }
 
     //TODO correct handling of Reject
     fn process_reject(&mut self, response: &Response, raw_msg: &String) {
+        debug!("TransactionHandler::process_reject: >>> response: {:?}, raw_msg: {:?}", response, raw_msg);
+
         let req_id = response.req_id;
         let mut remove = false;
         if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
@@ -179,6 +181,8 @@ impl TransactionHandler {
         if remove {
             self.pending_commands.remove(&req_id);
         }
+
+        debug!("TransactionHandler::process_reject: <<<");
     }
 
     pub fn try_send_request(&mut self, req_str: &str, cmd_id: i32) -> Result<(), PoolError> {
