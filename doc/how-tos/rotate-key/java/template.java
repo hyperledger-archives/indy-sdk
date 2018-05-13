@@ -26,5 +26,7 @@ public class RotateKey {
 		// Step 2 code goes here.
 
 		// Step 3 code goes here.
+
+        // Step 4 code goes here.
 	}
 }
