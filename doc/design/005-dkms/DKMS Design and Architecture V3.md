@@ -67,11 +67,11 @@ DKMS architecture and DPKI provides the following major benefits:
 
 As a general rule, DKMS requirements are a derivation of CKMS requirements, adjusted for the lack of centralized authorities or systems for key management operations. Evernym’s DKMS team and subcontractors performed an extensive analysis of the applicability of conventional CKMS requirements to DKMS using [NIST Special Publication 800-130: A Framework for Designing Cryptographic Key Management Systems](http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-130.pdf). For a summary of the results, see:
 
-* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Spreadsheet Based On NIST 800-130](../pdf/DKMS%20Requirements%20Spreadsheet%20Based%20On%20NIST%20800-130%20-%20Sheet1.pdf)
+* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Spreadsheet Based On NIST 800-130](../005-dkms/pdf/DKMS%20Requirements%20Spreadsheet%20Based%20On%20NIST%20800-130%20-%20Sheet1.pdf)
 
-* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Text Based on NIST 800-130](../pdf/DKMS%20Requirements%20Text%20Based%20on%20NIST%20800-130.pdf)
+* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Text Based on NIST 800-130](../005-dkms/pdf/DKMS%20Requirements%20Text%20Based%20on%20NIST%20800-130.pdf)
 
-* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Report - 30 June 2017](../pdf/DKMS%20Requirements%20Report%20-%2030%20June%202017.pdf)
+* [Evernym HSHQDC-17-C-00018 - DKMS Requirements Report - 30 June 2017](../005-dkms/pdf/DKMS%20Requirements%20Report%20-%2030%20June%202017.pdf)
 
 The most relevant special requirements are highlighted in the following sections.
 
@@ -159,7 +159,7 @@ At a high level, DKMS architecture consists of three logical layers:
 
 Figure 1 is an overview of this three-layer architecture:
 
-![image alt text](../images/image_0.png)
+![image alt text](../005-dkms/images/image_0.png)
 
 Figure 1: The high-level three-layer DKMS architecture
 
@@ -215,7 +215,7 @@ To achieve a higher level of trust, DKMS agents may exchange digitally signed cr
 
 The following diagram from the Verifiable Credentials Working Group illustrates the primary roles in the verifiable credential ecosystem and the close relationship between DIDs and verifiable credentials.
 
-![image alt text](../images/image_1.png)
+![image alt text](../005-dkms/images/image_1.png)
 
 Figure 2: The W3C Verifiable Credentials ecosystem
 
@@ -229,7 +229,7 @@ A fundamental feature of DIDs and DKMS is that they will work with any modern bl
 
 There are a variety of ledger designs and governance models as illustrated in Figure 3. 
 
-![image alt text](../images/image_2.png)
+![image alt text](../005-dkms/images/image_2.png)
 
 Figure 3: Blockchain and distributed ledger governance models
 
@@ -423,7 +423,7 @@ For social recovery, agents SHOULD split keys into shares and distribute them to
 
 The shares may be encrypted by a key derived from a KDF or PRNG whose input is something only the identity owner knows, has, or is or any combination of these.
 
-![image alt text](../images/image_3.png)
+![image alt text](../005-dkms/images/image_3.png)
 
 Figure 4: Key sharing using Shamir Secret Sharing
 
@@ -569,7 +569,7 @@ Table 1: DKMS key names used in this section
 
 An identity owner’s experience with DKMS begins with her first installation of a DKMS edge agent. This startup routine is reused by many other protocol sequences because it is needed each time an identity owner installs a new DKMS edge agent.
 
-![image alt text](../images/image_4.png)
+![image alt text](../005-dkms/images/image_4.png)
 
 The first step after successful installation is to prompt the identity owner whether he/she already has a DKMS identity wallet or is instantiating one for the first time. If the owner already has a wallet, the owner is prompted to determine if the new edge agent installation is for the purpose of adding a new edge agent, or recovering from a lost or compromised edge agent. Each of these options references another protocol pattern.
 
@@ -577,7 +577,7 @@ The first step after successful installation is to prompt the identity owner whe
 
 Any time a new agent is provisioned—regardless of whether it is an edge agent or a cloud agent—the same sequence of steps are necessary to set up the associated wallet and secure communications with the new agent.
 
-![image alt text](../images/image_5.png)
+![image alt text](../005-dkms/images/image_5.png)
 
 As noted in section 3.3, DKMS architecture recommends that a DKMS agent be installed in an environment that includes a secure element. So the first step is for the edge agent to set up the credential the identity owner will use to unlock the secure element. On modern smartphones this will typically be a biometric, but it could be a PIN, passcode, or other factor, or a combination of factors.
 
@@ -589,7 +589,7 @@ Finally the edge agent requests the secure element to create a wallet encryption
 
 The first time a new identity owner installs an edge agent, it must also set up the DKMS components that enable the identity owner to manage multiple separate DIDs and verifiable credentials as if they were from one logically unified digital identity. It must also lay the groundwork for the identity owner to install additional DKMS agents on other devices, each of which will maintain its own DKMS identity wallet while still enabling the identity owner to act as if they were all part of one logically unified identity wallet.
 
-![image alt text](../images/image_6.png)
+![image alt text](../005-dkms/images/image_6.png)
 
 Link secrets are defined in section 5.1 and policy registries in section 7.2. The edge agent first needs to generate and store the link secret in the edge wallet. It then needs to generate the policy registry address and store it in the edge wallet. Now it is ready to update the agent policy registry.
 
@@ -597,7 +597,7 @@ Link secrets are defined in section 5.1 and policy registries in section 7.2. Th
 
 As explained in section 9.2, an agent policy registry is the master control point that an identity owner uses to authorize and revoke DKMS agent proof authorization (edge or cloud).
 
-![image alt text](../images/image_7.png)
+![image alt text](../005-dkms/images/image_7.png)
 
 Each time the identity owner takes an action to add, revoke, or change the permissions for an agent, the policy registry is updated. For example, at the end of the protocol sequence in section 10.3, the action is to write the first policy registry entries that authorize the first edge agent.
 
@@ -605,9 +605,9 @@ Each time the identity owner takes an action to add, revoke, or change the permi
 
 The final step in first-time setup of an edge agent is creation of the corresponding cloud agent. As explained in section 3.3, the default in DKMS architecture is to always pair an edge agent with a corresponding cloud agent due to the many different key management functions this combination can automate.
 
-![image alt text](../images/image_8.png)
+![image alt text](../005-dkms/images/image_8.png)
 
-![image alt text](../images/image_9.png)
+![image alt text](../005-dkms/images/image_9.png)
 
 The process of registering a cloud agent begins with the edge agent contacting the **agency agent**. For purposes of this document, we will assume that the edge agent has a relationship with one or more agencies, and has a trusted method (such as a pre-installed DID) for establishing a secure connection using authenticated encryption.
 
@@ -621,7 +621,7 @@ Once these tasks are performed, the results are returned to the edge agent and s
 
 Each time an identity owner installs a new edge agent after their first edge agent, the process must initialize the new agent and grant it the necessary authorizations to begin acting on the identity owner’s behalf.
 
-![image alt text](../images/image_10.png)
+![image alt text](../005-dkms/images/image_10.png)
 
 Provisioning of the new edge agent (Edge Agent 2) starts by the identity owner installing the edge agent software (section 10.2) and then receiving instructions about how to provision the new edge agent from an existing edge agent (Edge Agent 1). Note that Edge Agent 1 must the authorization to add a new edge agent (not all edge agents have such authorization). The identity owner must also select the authorizations the edge agent will have (DKMS agent developers will compete to make such policy choices easy and intuitive for identity owners).
 
@@ -635,9 +635,9 @@ Once that is confirmed, provisioning of Edge Agent 2 is completed when Edge Agen
 
 The primary purpose of DIDs and DKMS is to enable trusted digital connections. One of the most common use cases is when an identity owner needs to create a connection to an entity that has a public DID, for example any website that wants to support trusted decentralized identity connections with its users (for registration, authentication, verifiable credentials exchange, secure communications, etc.)
 
-![image alt text](../images/image_11.png)
+![image alt text](../005-dkms/images/image_11.png)
 
-![image alt text](../images/image_12.png)
+![image alt text](../005-dkms/images/image_12.png)
 
 Note that this sequence is entirely about agent-to-agent communications between DKMS agents to create a shared microledger and populate it with the pairwise pseudonymous DIDs that Alice and Org assign to each other together with the public keys and service endpoints they need to enable their agents to use authenticated encryption.
 
@@ -653,9 +653,9 @@ When that is complete, Org’s edge agent returns its microledger updates via au
 
 The other common use case for trusted connections is private peer-to-peer connections between two parties that do not initially connect via one or the other’s public DIDs. These connections can be initiated any way that one party can share a unique **invitation address**, i.e., via a URL sent via text, email, or posted on a blog, website, LinkedIn profile, etc.
 
-![image alt text](../images/image_13.png)
+![image alt text](../005-dkms/images/image_13.png)
 
-![image alt text](../images/image_14.png)
+![image alt text](../005-dkms/images/image_14.png)
 
 The flow in this sequence diagram is very similar to the flow in section 10.8 where Alice is connecting to a public organization. The only difference is that rather than beginning with Alice’s edge agent knowing a public DID for the Org, Alice’s edge agent knows Bob’s invitation address. This is a service, typically provided by an agency, that enables Bob’s cloud agent to accept connection invitations (typically with appropriate spam protections and other forms of connection invitation filtering).
 
@@ -665,9 +665,9 @@ The end result is the same as in section 10.8: Alice and Bob have established a 
 
 This sequence is identical to section 10.8 except that Bob does not yet have a DKMS agent or wallet. So it addresses what is necessary for Alice to invite Bob to both start using a DKMS agent and to form a connection with Alice at the same time.
 
-![image alt text](../images/image_15.png)
+![image alt text](../005-dkms/images/image_15.png)
 
-![image alt text](../images/image_16.png)
+![image alt text](../005-dkms/images/image_16.png)
 
 The only difference between this sequence diagram and section 10.8 is the invitation delivery process. In 10.8, Bob already has a cloud agent, so the invitation can be delivered to an invitation address established at the hosting agency. In this sequence, Bob does not yet have cloud agent, so the invitation must be: a) anchored at a helper URL (typically provided by an agency), and b) delivered to Bob via some out-of-band means (typically an SMS, email, or other medium that can communicate a helper URL).
 
@@ -677,9 +677,9 @@ When Bob receives the invitation, Bob clicks on the URL to go to the helper page
 
 As described in section 8.1, key rotation is a core security feature of DKMS. This diagram illustrates athe protocol for key rotation.
 
-![image alt text](../images/image_17.png)
+![image alt text](../005-dkms/images/image_17.png)
 
-![image alt text](../images/image_18.png)
+![image alt text](../005-dkms/images/image_18.png)
 
 Key rotation may be triggered by expiration of a key or by an another event such as agent recovery. The process begins with the identity owner’s edge agent generating its own new keys. If keys also need to be rotated in the cloud agent, the edge agent sends a key change request.
 
@@ -693,7 +693,7 @@ Bob’s edge agent then needs to broadcast the changes to Bob’s cloud agent an
 
 In decentralized identity, identity owners are always in control of their relationships. This means either party to a connection can terminate the relationship by deleting it. This diagram illustrates Alice deleting the connection she had with Bob.
 
-![image alt text](../images/image_19.png)
+![image alt text](../005-dkms/images/image_19.png)
 
 All that is required to delete a connection is for the edge agent to add a DISABLE event to the microledger she established with Bob. As always, this change is propagated to Alice’s cloud agent and any other edge agents authorized to interact with the DID she assigned to Bob.
 
@@ -703,7 +703,7 @@ Note that, just like in the real world, it is optional for Alice to notify Bob o
 
 Key revocation is also a required feature of DKMS architecture as discussed in section 8.2. Revocation of keys for a specific DID is accomplished either through rotation of those keys (section 10.10) or deletion of the connection (section 10.11). However in certain cases, an identity owner may need to revoke an entire edge agent, effectively disabling all keys managed by that agent. This is appropriate if a device is lost, stolen, or suspected of compromise.
 
-![image alt text](../images/image_20.png)
+![image alt text](../005-dkms/images/image_20.png)
 
 Revoking an edge agent is done from another edge agent that is authorized to revoke agents. If a single edge agent is authorized, the process is straightforward. The revoking edge agent sends a signed request to the policy registry address (section 9.2) on the ledger holding the policy registry. The ledger performs the update. The revoking edge agent then "removes" the keys for the revoked edge agent by disabling them.
 
@@ -715,7 +715,7 @@ Note that an identity owner may have a stronger revocation policy, such as requi
 
 As discussed in section 6, recovery is a paramount feature of DKMS—in decentralized key management, there is no "forgot password" button (and if there were, it would be a major security vulnerability). So it is particularly important that it be easy and natural for an identity owner to select and configure recovery options.
 
-![image alt text](../images/image_21.png)
+![image alt text](../005-dkms/images/image_21.png)
 
 The process begins with Alice’s edge agent prompting Alice to select among the two recovery options described in section 6: offline recovery and social recovery. Her edge agent then creates a key pair for backup encryption, encrypts a backup of her edge wallet, and stores it with her cloud agent.
 
@@ -737,7 +737,7 @@ To some extent these can be addressed if the edge agent periodically reminds the
 
 The secret to implementing social recovery in DKMS is using DKMS agents to automate the process of securely storing, sharing, and recovering encrypted backups of DKMS wallets with several of the identity owner’s connections. In DKMS architecture, these connections are currently called trustees. (Note: this is a placeholder term pending further usability research on the best name for this new role.)
 
-![image alt text](../images/image_22.png)
+![image alt text](../005-dkms/images/image_22.png)
 
 Trustees are selected by the identity owner based on the owner’s trust. For each trustee, the edge agent requests the cloud agent to create a trustee invitation. The cloud agent generates and registers with the agency a unique URL that will be used only for this purpose. The edge agent then creates a recovery data share (defined in 10.13) and shards it as defined by the identity owner’s recovery policy.
 
@@ -751,7 +751,7 @@ Once the trustee accepts the invitation, the response is returned to identity ow
 
 With DKMS infrastructure, key recovery is a lifelong process. A DKMS wallet filled with keys, DIDs, and verifiable credentials is an asset constantly increasing in value. Thus it is critical that identity owners be able to update their recovery methods as their circumstances, devices, and connections change.
 
-![image alt text](../images/image_23.png)
+![image alt text](../005-dkms/images/image_23.png)
 
 For social recovery, an identity owner may wish to add new trustees or delete existing ones. Whenever this happens, the owner’s edge agent must recalculate new recovery data shares to shard among the new set of trustees. This is a two step process: the new share must first be sent to all trustees in the new set and an acknowledgement must be received from all of them. Once that it done, the edge agent can send a commitment message to all trustees in the new set to complete the process.
 
@@ -761,7 +761,7 @@ Updating offline recovery data is simply a matter of repeating the process of cr
 
 One advantage of the offline recovery process is that it can be performed very quickly by the identity owner because it has no dependencies on outside parties.
 
-![image alt text](../images/image_24.png)
+![image alt text](../005-dkms/images/image_24.png)
 
 The identity owner simply initiates recovery on a newly installed edge agent. The edge agent prompts to scan the paper wallet (or input the text). From this data, it extracts the special recovery endpoint registered in the recovery setup process (section 10.13) and the backup decryption key. It then requests the encrypted backup from the recovery endpoint (which routes to the identity owner’s cloud agent), decrypts it, restores the edge wallet, and replaces the agent keys with new keys. The final steps are to update the agent policy registry and, as a best practice, rotate all DID keys.
 
@@ -769,9 +769,9 @@ The identity owner simply initiates recovery on a newly installed edge agent. Th
 
 Social recovery, while more complex than offline recovery, is also more automated, flexible, and resilient. The secret to making it easy and intuitive for identity owners is using DKMS agents to automate every aspect of the process except for the most social step: verification of the actual identity of the identity owner by trustees.
 
-![image alt text](../images/image_25.png)
+![image alt text](../005-dkms/images/image_25.png)
 
-![image alt text](../images/image_26.png)
+![image alt text](../005-dkms/images/image_26.png)
 
 Social recovery, like offline recovery, begins with the installation of a fresh edge agent. The identity owner selects the social recovery option and is prompted for the contact data her edge agent and cloud agent will need to send special new connection requests to her trustees. These special connection requests are then issued as described in section 10.8.
 
