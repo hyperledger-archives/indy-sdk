@@ -12,7 +12,7 @@ lazy_static! {
 }
 
 impl PaymentsUtils {
-    pub fn init_nullpay_plugin() {
+    pub fn init_mock_plugin() {
         CREATE_PAYMENT_METHOD_INIT.call_once(|| {
             let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec();
             let payment_method_name = CString::new("null").unwrap();
