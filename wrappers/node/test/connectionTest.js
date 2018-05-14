@@ -15,13 +15,21 @@ describe('A Connection object with ', function () {
   })
 
   // connection_create tests
-  it('valid parameters in create should return success', async () => {
+  it('a valid connection that is deleted should error when serialized', async () => {
     const connection = await Connection.create({
       id: '234',
       DIDself: '456',
       DIDremote: '0'
     })
     assert.notEqual(connection._handle, undefined)
+    await connection.delete()
+    try {
+      await connection.serialize()
+    } catch (error) {
+      assert.equal(error.vcxCode, 1003)
+      assert.equal(error.vcxFunction, 'vcx_connection_serialize')
+      assert.equal(error.message, 'Invalid Connection Handle')
+    }
   })
 
   it('object with id as param in create should return success', async () => {

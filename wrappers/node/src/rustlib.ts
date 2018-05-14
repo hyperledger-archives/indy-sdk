@@ -51,6 +51,7 @@ export interface IFFIEntryPoint {
   vcx_update_institution_info: (institutionName: string, institutionLogoUrl: string) => number,
 
   // connection
+  vcx_connection_delete_connection: (commandId: number, handle: string, cb: any) => void,
   vcx_connection_connect: (commandId: number, handle: string, data: string, cb: any) => number,
   vcx_connection_create: (commandId: number, data: string, cb: any) => number,
   vcx_connection_create_with_invite: (commandId: number, data: string, invite: string, cb: any) => number,
@@ -141,6 +142,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_update_institution_info: [FFI_ERROR_CODE, [FFI_STRING_DATA, FFI_STRING_DATA]],
 
   // connection
+  vcx_connection_delete_connection: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   vcx_connection_connect: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CONNECTION_DATA,
     FFI_CALLBACK_PTR]],
   vcx_connection_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
