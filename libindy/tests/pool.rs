@@ -160,6 +160,29 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        fn open_pool_ledger_works_for_two_nodes_new_format() {
+            TestUtils::cleanup_storage();
+
+            let test_pool_ip = EnvironmentUtils::test_pool_ip();
+
+            let txn_file_data  = format!(r#"
+                {{"txn": {{"type": "0","data": {{"data": {{"alias":"Node1","client_ip":"{0}","client_port":9702,"node_ip":"{0}","node_port":9701,"services":["VALIDATOR"]}},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"}},"metadata": {{"from": "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4"}}}},"txnMetadata": {{"txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62"}}}}
+                {{"txn": {{"type": "0","data": {{"data": {{"alias":"Node2","client_ip":"{0}","client_port":9704,"node_ip":"{0}","node_port":9703,"services":["VALIDATOR"]}},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"}},"metadata": {{"from": "8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy"}}}},"txnMetadata": {{"txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc"}}}}"#, test_pool_ip);
+
+            let pool_name = "open_pool_ledger_works_for_two_nodes_new_format";
+            PoolUtils::create_genesis_txn_file(pool_name, &txn_file_data, None);
+
+            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, Some(2), None);
+            let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
+            PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
+
+            PoolUtils::open_pool_ledger(pool_name, None).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_three_nodes() {
             TestUtils::cleanup_storage();
 

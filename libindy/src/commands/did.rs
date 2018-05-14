@@ -6,7 +6,7 @@ use errors::did::DidError;
 use errors::wallet::WalletError;
 use errors::indy::IndyError;
 use services::crypto::types::{KeyInfo, MyDidInfo, TheirDidInfo, Did, Key};
-use services::ledger::types::{Reply, GetNymResultData, GetNymReplyResult, GetAttribReplyResult, Endpoint, AttribData};
+use services::ledger::types::{Reply, GetNymReplyResult, GetNymResultDataV0, GetAttrReplyResult, AttribData, Endpoint};
 use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::crypto::CryptoService;
@@ -503,16 +503,21 @@ impl DidCommandExecutor {
         trace!("_get_nym_ack >>> wallet_handle: {:?}, get_nym_reply_result: {:?}", wallet_handle, get_nym_reply_result);
 
         let get_nym_reply = get_nym_reply_result?;
-
+        
         let get_nym_response: Reply<GetNymReplyResult> = Reply::from_json(&get_nym_reply)
             .map_err(map_err_trace!())
-            .map_err(|_| CommonError::InvalidState(format!("Invalid GetNymReplyResult json")))?;
+            .map_err(|err| CommonError::InvalidState(format!("Invalid GetNymReplyResult json: {:?}", err)))?;
 
-        let gen_nym_result_data = GetNymResultData::from_json(&get_nym_response.result.data)
-            .map_err(map_err_trace!())
-            .map_err(|_| CommonError::InvalidState(format!("Invalid GetNymResultData json")))?;
+        let their_did_info = match get_nym_response.result() {
+            GetNymReplyResult::GetNymReplyResultV0(res) => {
+                let gen_nym_result_data = GetNymResultDataV0::from_json(&res.data)
+                    .map_err(map_err_trace!())
+                    .map_err(|_| CommonError::InvalidState(format!("Invalid GetNymResultData json")))?;
 
-        let their_did_info = TheirDidInfo::new(gen_nym_result_data.dest, gen_nym_result_data.verkey);
+                TheirDidInfo::new(gen_nym_result_data.dest, gen_nym_result_data.verkey)
+            },
+            GetNymReplyResult::GetNymReplyResultV1(res) => TheirDidInfo::new(res.txn.data.did, res.txn.data.verkey)
+        };
 
         let their_did = self.crypto_service.create_their_did(&their_did_info)?;
 
@@ -542,17 +547,22 @@ impl DidCommandExecutor {
 
         let get_attrib_reply = get_attrib_reply_result?;
 
-        let get_attrib_response: Reply<GetAttribReplyResult> = Reply::from_json(&get_attrib_reply)
+        let get_attrib_reply: Reply<GetAttrReplyResult> = Reply::from_json(&get_attrib_reply)
             .map_err(map_err_trace!())
-            .map_err(|_| CommonError::InvalidState(format!("Invalid GetAttribReplyResult json")))?;
+            .map_err(|err| CommonError::InvalidState(format!("Invalid GetAttrReplyResult json {:?}", err)))?;
 
-        let attrib_data: AttribData = AttribData::from_json(&get_attrib_response.result.data)
+        let (raw, did) = match get_attrib_reply.result() {
+            GetAttrReplyResult::GetAttrReplyResultV0(res) => (res.data, res.dest),
+            GetAttrReplyResult::GetAttrReplyResultV1(res) => (res.txn.data.raw, res.txn.data.did)
+        };
+
+        let attrib_data = AttribData::from_json(&raw)
             .map_err(map_err_trace!())
-            .map_err(|_| CommonError::InvalidState(format!("Invalid GetAttribResultData json")))?;
+            .map_err(|err| CommonError::InvalidState(format!("Invalid GetAttReply json: {:?}", err)))?;
 
         let endpoint = Endpoint::new(attrib_data.endpoint.ha, attrib_data.endpoint.verkey);
 
-        let res = self._wallet_set_did_endpoint(wallet_handle, &get_attrib_response.result.dest, &endpoint)?;
+        let res = self._wallet_set_did_endpoint(wallet_handle, &did, &endpoint)?;
 
         trace!("_get_attrib_ack <<< res: {:?}", res);
 
