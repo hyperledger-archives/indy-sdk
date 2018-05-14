@@ -3,7 +3,7 @@ use std::string;
 use serde_json;
 
 use errors::wallet::WalletQueryError;
-
+use base64;
 
 #[derive(Debug)]
 pub enum TagName {
@@ -24,7 +24,8 @@ impl From<String> for TagName {
 impl string::ToString for TagName {
     fn to_string(&self) -> String {
         match *self {
-            TagName::EncryptedTagName(ref v) | TagName::PlainTagName(ref v) => String::from_utf8_lossy(v).into_owned()
+            TagName::EncryptedTagName(ref v) => base64::encode(v),
+            TagName::PlainTagName(ref v) => format!("~{}", base64::encode(v))
         }
     }
 }
@@ -46,7 +47,7 @@ impl string::ToString for TargetValue {
     fn to_string(&self) -> String {
         match *self {
             TargetValue::Unencrypted(ref s) => s.clone(),
-            TargetValue::Encrypted(ref v) => String::from_utf8_lossy(v).into_owned()
+            TargetValue::Encrypted(ref v) => base64::encode(v),
         }
     }
 }

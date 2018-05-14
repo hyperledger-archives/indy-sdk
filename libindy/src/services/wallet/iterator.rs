@@ -31,13 +31,7 @@ impl<'a> WalletIterator<'a> {
 
             let value = match next_storage_entity.value {
                 None => None,
-                Some(storage_value) => {
-                    let value_key = ChaCha20Poly1305IETF::decrypt(&storage_value.key, &self.keys.value_key)?;
-                    if value_key.len() != ChaCha20Poly1305IETF::key_len() {
-                        return Err(WalletError::EncryptionError("Value key is not right size".to_string()));
-                    }
-                    Some(String::from_utf8(ChaCha20Poly1305IETF::decrypt(&storage_value.data, &value_key)?)?)
-                }
+                Some(encrypted_value) => Some(encrypted_value.decrypt(&self.keys.value_key)?)
             };
 
             let tags = match decrypt_tags(&next_storage_entity.tags, &self.keys.tag_name_key, &self.keys.tag_value_key)? {

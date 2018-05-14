@@ -127,6 +127,8 @@ impl WalletService {
                                    get_record_type: WalletGetRecordType,
                                    get_record_value: WalletGetRecordValue,
                                    get_record_tags: WalletGetRecordTags,
+                                   get_storage_metadata: WalletGetStorageMetadata,
+                                   set_storage_metadata: WalletSetStorageMetadata,
                                    free_record: WalletFreeRecord,
                                    search_records: WalletSearchRecords,
                                    search_all_records: WalletSearchAllRecords,
@@ -146,6 +148,7 @@ impl WalletService {
                                                          update_record_tags, add_record_tags, delete_record_tags,
                                                          delete_record, get_record, get_record_id,
                                                          get_record_type, get_record_value, get_record_tags,
+                                                          get_storage_metadata, set_storage_metadata,
                                                          free_record, search_records, search_all_records,
                                                          get_search_total_count,
                                                          fetch_search_next_record, free_search)));
@@ -265,11 +268,15 @@ impl WalletService {
         };
 
         let credentials = WalletCredentials::from_json(credentials)?;
-        let (storage, enc_keys) = storage_type.open_storage(name,
-                                                            config.as_ref().map(String::as_str),
-                                                            &credentials.storage_credentials)?;
-        let key_vector = ChaCha20Poly1305IETF::decrypt(&enc_keys, &credentials.master_key)?;
-        let keys = Keys::new(key_vector);
+        let storage = storage_type.open_storage(name,
+                                                config.as_ref().map(String::as_str),
+                                                &credentials.storage_credentials)?;
+        let keys = Keys::new(
+            ChaCha20Poly1305IETF::decrypt(
+                &storage.get_storage_metadata()?,
+                &credentials.master_key
+            )?
+        );
         let wallet = Wallet::new(name, &descriptor.pool_name, storage, keys);
         let wallet_handle = SequenceUtils::get_next_id();
         wallets.insert(wallet_handle, Box::new(wallet));
@@ -654,7 +661,7 @@ mod tests {
 //    const VALUE_1: &'static str = "value1";
 //    const VALUE_2: &'static str = "value2";
 //    const TAGS_EMPTY: &'static str = "{}";
-//    const TAGS: &'static str = r#"{"tagName1":"tagValue1"}"#;
+//    const TAGS: &'static str = r#"{"tagName1":"tagValue1"}"##;
 //    const QUERY_EMPTY: &'static str = "{}";
 //    const OPTIONS_EMPTY: &'static str = "{}";
 

@@ -58,6 +58,8 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                            get_record_type: Option<WalletGetRecordType>,
                                            get_record_value: Option<WalletGetRecordValue>,
                                            get_record_tags: Option<WalletGetRecordTags>,
+                                           get_storage_metadata: Option<WalletGetStorageMetadata>,
+                                           set_storage_metadata: Option<WalletSetStorageMetadata>,
                                            free_record: Option<WalletFreeRecord>,
                                            search_records: Option<WalletSearchRecords>,
                                            search_all_records: Option<WalletSearchAllRecords>,
@@ -82,6 +84,8 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
     check_useful_c_callback!(get_record_type, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(get_record_value, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(get_record_tags, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(get_storage_metadata, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(set_storage_metadata, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(free_record, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(search_records, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(search_all_records, ErrorCode::CommonInvalidParam11);
@@ -109,6 +113,8 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                 get_record_type,
                 get_record_value,
                 get_record_tags,
+                get_storage_metadata,
+                set_storage_metadata,
                 free_record,
                 search_records,
                 search_all_records,
@@ -319,9 +325,11 @@ pub extern fn indy_delete_wallet(command_handle: i32,
 /// name: wallet storage name (the same as wallet name)
 /// config: wallet storage config (For example, database config)
 /// credentials: wallet storage credentials (For example, database credentials)
+/// metadata: wallet metadata (For example encrypted keys).
 pub type WalletCreate = extern fn(name: *const c_char,
                                   config: *const c_char,
-                                  credentials: *const c_char) -> ErrorCode;
+                                  credentials: *const c_char,
+                                  metadata: *const c_char) -> ErrorCode;
 
 /// Open the wallet storage (For example, opening database connection)
 ///
@@ -522,6 +530,27 @@ pub type WalletGetRecordValue = extern fn(storage_handle: i32,
 pub type WalletGetRecordTags = extern fn(storage_handle: i32,
                                          record_handle: i32,
                                          record_tags_p: *mut *const c_char) -> ErrorCode;
+
+/// Get storage metadata
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+///
+/// returns: metadata as base64 value
+///          Note that pointer lifetime is static
+pub type WalletGetStorageMetadata = extern fn(storage_handle: i32,
+                                              metadata_p: *mut *const c_char) -> ErrorCode;
+
+/// Set storage metadata
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// metadata_p: base64 value of metadata
+///
+///   Note if storage already have metadata record it will be overwritten.
+pub type WalletSetStorageMetadata = extern fn(storage_handle: i32,
+                                              metadata_p: *const c_char) -> ErrorCode;
+
 
 /// Free retrieved wallet record (make retrieved record handle invalid)
 ///
