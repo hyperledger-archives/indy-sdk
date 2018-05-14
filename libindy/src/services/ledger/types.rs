@@ -627,7 +627,7 @@ impl<'a> JsonDecodable<'a> for TxnMetadata {}
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum GetNymReplyResult {
-    GetNymReplyResultV0(GetReplyResultV0<GetNymResultDataV0>),
+    GetNymReplyResultV0(GetReplyResultV0<String>),
     GetNymReplyResultV1(GetReplyResultV1<GetNymResultDataV1>)
 }
 
@@ -640,6 +640,8 @@ pub struct GetNymResultDataV0 {
     pub role: Option<String>,
     pub verkey: Option<String>
 }
+
+impl<'a> JsonDecodable<'a> for GetNymResultDataV0 {}
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub struct GetNymResultDataV1 {
