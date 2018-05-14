@@ -1226,6 +1226,7 @@ mod tests {
         let wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("tag_name_1".to_string(), "tag_value_1".to_string());
+        tags.insert("tag_name_2".to_string(), "tag_value_2".to_string());
         tags.insert("~tag_name_2".to_string(), "tag_value_2".to_string());
         tags.insert("~tag_name_3".to_string(), "tag_value_3".to_string());
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
@@ -1234,6 +1235,7 @@ mod tests {
 
         let query_json = jsonise!({
             "tag_name_1": "tag_value_1",
+            "tag_name_2": "tag_value_2",
             "~tag_name_2": "tag_value_2",
         });
         let iterator = wallet.search("test_type_", &query_json, Some(search_config)).unwrap();
@@ -1270,7 +1272,7 @@ mod tests {
         let results = _search_iterator_to_vector(iterator);
         assert_eq!(results.len(), 0);
 
-        // wrong type_
+        // wrong type
         let query_json = jsonise!({
             "tag_name_1": "tag_value_1",
             "~tag_name_2": "tag_value_2",
@@ -1279,10 +1281,10 @@ mod tests {
         let results = _search_iterator_to_vector(iterator);
         assert_eq!(results.len(), 0);
 
-        // wrong tag type
+        // wrong tag name
         let query_json = jsonise!({
             "tag_name_1": "tag_value_1",
-            "tag_name_2": "tag_value_2",
+            "tag_name_3": "tag_value_3",
         });
         let iterator = wallet.search("test_type_", &query_json, Some(search_config)).unwrap();
         let results = _search_iterator_to_vector(iterator);
@@ -1396,9 +1398,11 @@ mod tests {
         tags1.insert("~tag_name_3".to_string(), "tag_value_3".to_string());
         wallet.add("test_type_", "foo", "bar", &tags1).unwrap();
         let mut tags2 = HashMap::new();
+        tags2.insert("tag_name_12".to_string(), "tag_value_12".to_string());
         tags2.insert("~tag_name_2".to_string(), "tag_value_22".to_string());
         wallet.add("test_type_", "spam", "eggs", &tags2).unwrap();
         let mut tags3 = HashMap::new();
+        tags3.insert("tag_name_13".to_string(), "tag_value_13".to_string());
         tags3.insert("~tag_name_4".to_string(), "tag_value_4".to_string());
         wallet.add("test_type_", "ping", "pong", &tags3).unwrap();
 
@@ -1407,7 +1411,7 @@ mod tests {
         });
         let iterator = wallet.search("test_type_", &query_json, Some(search_config)).unwrap();
         let values = _search_iterator_to_map(iterator);
-        assert_eq!(values.len(), 1);
+        assert_eq!(values.len(), 3);
         let expected_values = HashMap::<String,String>::new();
         assert_eq!(values.get("foo").unwrap(), "bar");
 
