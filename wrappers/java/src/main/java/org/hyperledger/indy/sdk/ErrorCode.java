@@ -239,19 +239,9 @@ public enum ErrorCode {
 	IncompatiblePaymentError(701),
 
 	/**
-	 * Information passed to libindy is incorrect
-	 */
-	IncorrectTransactionInformationError(702),
-
-	/**
 	 * Insufficient funds on inputs
 	 */
-	InsufficientFundsError(703),
-
-	/**
-	 * No key for this payment address in wallet
-	 */
-	NoPaymentAddressKeyError(704),
+	InsufficientFundsError(702),
 	;
 
 	private int value;

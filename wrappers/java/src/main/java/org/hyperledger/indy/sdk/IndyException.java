@@ -124,10 +124,6 @@ public class IndyException extends Exception {
 				return new UnknownPaymentMethodException();
 			case IncompatiblePaymentError:
 				return new IncompatiblePaymentException();
-			case IncorrectTransactionInformationError:
-				return new IncorrectTransactionInformationException();
-			case NoPaymentAddressKeyError:
-				return new NoPaymentAddressKeyException();
 			case InsufficientFundsError:
 				return new InsufficientFundsException();
 			default:
