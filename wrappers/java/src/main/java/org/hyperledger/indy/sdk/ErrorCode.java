@@ -239,9 +239,9 @@ public enum ErrorCode {
 	IncompatiblePaymentError(701),
 
 	/**
-	 * Information passed to libindy is incorrect
+	 * Insufficient funds on inputs
 	 */
-	IncorrectTransactionInformationError(702)
+	InsufficientFundsError(702),
 	;
 
 	private int value;
