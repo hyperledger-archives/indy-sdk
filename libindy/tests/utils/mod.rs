@@ -17,7 +17,7 @@ pub mod constants;
 pub mod blob_storage;
 pub mod results;
 pub mod payments;
-pub mod payment_method;
+pub mod rand_utils;
 
 #[macro_use]
 #[allow(unused_macros)]
