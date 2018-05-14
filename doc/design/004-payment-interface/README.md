@@ -95,6 +95,7 @@ The list below is type description for registered calls.
 ///
 /// #Params
 /// command_handle: command handle to map callback to context
+/// wallet_handle: wallet handle where keys for signature are stored
 /// config: payment address config as json:
 ///   {
 ///     seed: <str>, // allows deterministic creation of payment address
@@ -103,6 +104,7 @@ The list below is type description for registered calls.
 /// #Returns
 /// payment_address - public identifier of payment address in fully resolvable payment address format
 type CreatePaymentAddressCB = extern fn(command_handle: i32,
+                                        wallet_handle: i32,
                                         config: *const c_char,
                                         cb: Option<extern fn(command_handle_: i32,
                                                              err: ErrorCode,
@@ -120,6 +122,8 @@ type CreatePaymentAddressCB = extern fn(command_handle: i32,
 /// with at least one output that corresponds to payment address that user owns.
 ///
 /// #Params
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// req_json: initial transaction request as json
 /// inputs_json: The list of UTXO inputs as json array:
 ///   ["input1", ...]
@@ -134,6 +138,8 @@ type CreatePaymentAddressCB = extern fn(command_handle: i32,
 /// #Returns
 /// req_with_fees_json - modified Indy request with added fees info
 type AddRequestFeesCB = extern fn(command_handle: i32,
+                                  wallet_handle: i32,
+                                  submitter_did: *const c_char,
                                   req_json: *const c_char,
                                   inputs_json: *const c_char,
                                   outputs_json: *const c_char,
@@ -165,11 +171,15 @@ type ParseResponseWithFeesCB = extern fn(command_handle: i32,
 /// according to this payment method.
 ///
 /// #Params
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// payment_address: target payment address
 ///
 /// #Returns
 /// get_utxo_txn_json - Indy request for getting UTXO list for payment address
 type BuildGetUTXORequestCB = extern fn(command_handle: i32,
+                                       wallet_handle: i32,
+                                       submitter_did: *const c_char,
                                        payment_address: *const c_char,
                                        cb: Option<extern fn(command_handle_: i32,
                                                             err: ErrorCode,
@@ -202,6 +212,8 @@ type ParseGetUTXOResponseCB = extern fn(command_handle: i32,
 /// with at least one output that corresponds to payment address that user owns.
 ///
 /// #Params
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// inputs_json: The list of UTXO inputs as json array:
 ///   ["input1", ...]
 ///   Note that each input should reference paymentAddress
@@ -215,6 +227,8 @@ type ParseGetUTXOResponseCB = extern fn(command_handle: i32,
 /// #Returns
 /// payment_req_json - Indy request for doing tokens payment
 type BuildPaymentReqCB = extern fn(command_handle: i32,
+                                   wallet_handle: i32,
+                                   submitter_did: *const c_char,
                                    inputs_json: *const c_char,
                                    outputs_json: *const c_char,
                                    cb: Option<extern fn(command_handle_: i32,
@@ -245,6 +259,8 @@ type ParsePaymentResponseCB = extern fn(command_handle: i32,
 /// according to this payment method.
 ///
 /// #Params
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// outputs_json: The list of UTXO outputs as json array:
 ///   [{
 ///     paymentAddress: <str>, // payment address used as output
@@ -255,6 +271,8 @@ type ParsePaymentResponseCB = extern fn(command_handle: i32,
 /// #Returns
 /// mint_req_json - Indy request for doing tokens minting
 type BuildMintReqCB = extern fn(command_handle: i32,
+                                wallet_handle: i32,
+                                submitter_did: *const c_char,
                                 outputs_json: *const c_char,
                                 cb: Option<extern fn(command_handle_: i32,
                                                      err: ErrorCode,
@@ -264,6 +282,8 @@ type BuildMintReqCB = extern fn(command_handle: i32,
 /// 
 /// # Params
 /// command_handle
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// fees_json {
 ///   txnType1: amount1,
 ///   txnType2: amount2,
@@ -274,6 +294,8 @@ type BuildMintReqCB = extern fn(command_handle: i32,
 /// # Return
 /// set_txn_fees_json - Indy request for setting fees for transactions in the ledger
 type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
+                                      wallet_handle: i32,
+                                      submitter_did: *const c_char,
                                       fees_json: *const c_char,
                                       cb: Option<extern fn(command_handle_: i32,
                                                            err: ErrorCode,
@@ -283,10 +305,14 @@ type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
 /// 
 /// # Params
 /// command_handle
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// 
 /// # Return
 /// get_txn_fees_json - Indy request for getting fees for transactions in the ledger
 type BuildGetTxnFeesReqCB = extern fn(command_handle: i32,
+                                      wallet_handle: i32,
+                                      submitter_did: *const c_char,
                                       cb: Option<extern fn(command_handle_: i32,
                                                            err: ErrorCode,
                                                            get_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode;
@@ -331,6 +357,7 @@ Another part of calls use assumptions about input parameters format to determine
 ///
 /// #Params
 /// command_handle: command handle to map callback to context
+/// wallet_handle: wallet handle where to save new address
 /// payment_method: Payment method to use (for example, 'sov')
 /// config: payment address config as json:
 ///   {
@@ -340,11 +367,26 @@ Another part of calls use assumptions about input parameters format to determine
 /// #Returns
 /// payment_address - public identifier of payment address in fully resolvable payment address format
 pub extern fn indy_create_payment_address(command_handle: i32,
+                                          wallet_handle: i32,
                                           payment_method: *const c_char,
                                           config: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
                                                                payment_address: *const c_char) -> ErrorCode>) -> ErrorCode {}
+                                                               
+/// Lists all payment addresses that are stored in the wallet
+///
+/// #Params
+/// command_handle: command handle to map callback to context
+/// wallet_handle: wallet to search for payment_addresses in
+///
+/// #Returns
+/// payment_addresses_json - json array of string with json addresses
+pub extern fn indy_list_payment_addresses(command_handle: i32,
+                                          wallet_handle: i32,
+                                          cb: Option<extern fn(command_handle_: i32,
+                                                               err: ErrorCode,
+                                                               payment_addresses_json: *const c_char)>) -> ErrorCode {}
 
 /// Modifies Indy request by adding information how to pay fees for this transaction
 /// according to selected payment method.
@@ -360,6 +402,8 @@ pub extern fn indy_create_payment_address(command_handle: i32,
 /// with at least one output that corresponds to payment address that user owns.
 ///
 /// #Params
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// req_json: initial transaction request as json
 /// inputs_json: The list of UTXO inputs as json array:
 ///   ["input1", ...]
@@ -377,6 +421,8 @@ pub extern fn indy_create_payment_address(command_handle: i32,
 /// req_with_fees_json - modified Indy request with added fees info
 /// payment_method
 pub extern fn indy_add_request_fees(command_handle: i32,
+                                    wallet_handle: i32,
+                                    submitter_did: *const c_char,
                                     req_json: *const c_char,
                                     inputs_json: *const c_char,
                                     outputs_json: *const c_char,
@@ -411,12 +457,16 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
 /// according to this payment method.
 ///
 /// #Params
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// payment_address: target payment address
 ///
 /// #Returns
 /// get_utxo_txn_json - Indy request for getting UTXO list for payment address
 /// payment_method
 pub extern fn indy_build_get_utxo_request(command_handle: i32,
+                                          wallet_handle: i32,
+                                          submitter_did: *const c_char,
                                           payment_address: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
@@ -452,6 +502,8 @@ pub extern fn indy_parse_get_utxo_response(command_handle: i32,
 /// with at least one output that corresponds to payment address that user owns.
 ///
 /// #Params
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// inputs_json: The list of UTXO inputs as json array:
 ///   ["input1", ...]
 ///   Note that each input should reference paymentAddress
@@ -466,6 +518,8 @@ pub extern fn indy_parse_get_utxo_response(command_handle: i32,
 /// payment_req_json - Indy request for doing tokens payment
 /// payment_method
 pub extern fn indy_build_payment_req(command_handle: i32,
+                                     wallet_handle: i32,
+                                     submitter_did: *const c_char,
                                      inputs_json: *const c_char,
                                      outputs_json: *const c_char,
                                      cb: Option<extern fn(command_handle_: i32,
@@ -499,6 +553,8 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
 /// according to this payment method.
 ///
 /// #Params
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// outputs_json: The list of UTXO outputs as json array:
 ///   [{
 ///     paymentAddress: <str>, // payment address used as output
@@ -510,6 +566,8 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
 /// mint_req_json - Indy request for doing tokens minting
 /// payment_method
 pub extern fn indy_build_mint_req(command_handle: i32,
+                                  wallet_handle: i32,
+                                  submitter_did: *const c_char,
                                   outputs_json: *const c_char,
                                   cb: Option<extern fn(command_handle_: i32,
                                                        err: ErrorCode,
@@ -520,6 +578,8 @@ pub extern fn indy_build_mint_req(command_handle: i32,
 /// 
 /// # Params
 /// command_handle
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// payment_method
 /// fees_json {
 ///   txnType1: amount1,
@@ -530,6 +590,8 @@ pub extern fn indy_build_mint_req(command_handle: i32,
 /// # Return
 /// set_txn_fees_json - Indy request for setting fees for transactions in the ledger
 pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
+                                          wallet_handle: i32,
+                                          submitter_did: *const c_char,
                                           payment_method: *const c_char,
                                           fees_json: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
@@ -540,11 +602,15 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
 /// 
 /// # Params
 /// command_handle
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
 /// payment_method
 ///
 /// # Return
 /// get_txn_fees_json - Indy request for getting fees for transactions in the ledger
 pub extern fn indy_build_get_txn_fees_req(command_handle: i32,
+                                          wallet_handle: i32,
+                                          submitter_did: *const c_char,
                                           payment_method: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,

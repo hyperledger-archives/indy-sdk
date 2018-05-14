@@ -210,7 +210,7 @@ impl PaymentsService {
         }
         let input_set: HashSet<&str> = inputs.into_iter().collect();
         if inputs_len != input_set.len() {
-            return Err(PaymentsError::IncorrectTransactionInformationError("Several equal inputs".to_string()));
+            return Err(PaymentsError::CommonError(CommonError::InvalidStructure("Several equal inputs".to_string())));
         }
         let input_methods: Vec<Option<String>> = input_set.into_iter().map(|s| self._parse_method_from_payment_address(s)).collect();
         if input_methods.contains(&None) {
@@ -232,7 +232,7 @@ impl PaymentsService {
 
         let payment_address_set: HashSet<String> = outputs.into_iter().map(|s| s.payment_address).collect();
         if payment_address_set.len() != outputs_len {
-            return Err(PaymentsError::IncorrectTransactionInformationError("Several equal payment addresses".to_string()));
+            return Err(PaymentsError::CommonError(CommonError::InvalidStructure("Several equal payment addresses".to_string())));
         }
 
         let payment_methods: Vec<Option<String>> = payment_address_set.into_iter().map(|s| self._parse_method_from_payment_address(s.as_str())).collect();
