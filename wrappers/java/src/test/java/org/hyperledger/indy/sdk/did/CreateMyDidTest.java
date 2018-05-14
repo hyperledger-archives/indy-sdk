@@ -35,7 +35,7 @@ public class CreateMyDidTest extends IndyIntegrationTestWithSingleWallet {
 	public void testCreateMyDidWorksAsCid() throws Exception {
 		String  didJson = new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, null, true).toJson();
 
-		CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(this.wallet, didJson).get();
+		CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(this.wallet, MY1_IDENTITY_KEY_JSON).get();
 
 		assertEquals(VERKEY_MY1, result.getDid());
 		assertEquals(VERKEY_MY1, result.getVerkey());

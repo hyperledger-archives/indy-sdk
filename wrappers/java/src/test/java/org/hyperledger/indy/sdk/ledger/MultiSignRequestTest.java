@@ -5,49 +5,49 @@ import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.did.DidResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.json.JSONObject;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
-public class SignRequestTest extends IndyIntegrationTestWithSingleWallet {
-	
+public class MultiSignRequestTest extends IndyIntegrationTestWithSingleWallet {
+
 	@Test
-	public void testSignWorks() throws Exception {
+	public void testMultiSignWorks() throws Exception {
+		CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		String did = result.getDid();
 
-		String msg = "{\n" +
+		String msg = String.format("{\n" +
 				"                \"reqId\":1496822211362017764,\n" +
-				"                \"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\",\n" +
+				"                \"identifier\":\"%s\",\n" +
 				"                \"operation\":{\n" +
 				"                    \"type\":\"1\",\n" +
 				"                    \"dest\":\"VsKV7grR1BUE29mG2Fm2kX\",\n" +
 				"                    \"verkey\":\"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa\"\n" +
 				"                }\n" +
-				"            }";
+				"            }", did);
 
-		String expectedSignature = "\"signature\":\"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW\"";
+		String signedMessageJson = Ledger.multiSignRequest(wallet, did, msg).get();
 
-		CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String did = result.getDid();
+		String expectedSignature = "3YnLxoUd4utFLzeXUkeGefAqAdHUD7rBprpSx2CJeH7gRYnyjkgJi7tCnFgUiMo62k6M2AyUDtJrkUSgHfcq3vua";
 
-		String signedMessage = Ledger.signRequest(wallet, did, msg).get();
-
-		assertTrue(signedMessage.contains(expectedSignature));
+		assertEquals(new JSONObject(signedMessageJson).getJSONObject("signatures").getString(did), expectedSignature);
 	}
 
 	@Test
-	public void testSignWorksForUnknowDid() throws Exception {
+	public void testMultiSignWorksForUnknowDid() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
 		String msg = "{\"reqId\":1496822211362017764}";
-		Ledger.signRequest(wallet, DID, msg).get();
+		Ledger.multiSignRequest(wallet, DID, msg).get();
 	}
 
 	@Test
-	public void testSignWorksForInvalidMessageFormat() throws Exception {
+	public void testMultiSignWorksForInvalidMessageFormat() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
@@ -55,7 +55,7 @@ public class SignRequestTest extends IndyIntegrationTestWithSingleWallet {
 		String did = result.getDid();
 
 		String msg = "\"reqId\":1496822211362017764";
-		Ledger.signRequest(wallet, did, msg).get();
+		Ledger.multiSignRequest(wallet, did, msg).get();
 	}
 
 }
