@@ -20,3 +20,4 @@
   "source_files": "*.h",
   "vendored_libraries": "*.a",
   "requires_arc": false
+}
