@@ -1,11 +1,9 @@
-extern crate nullpay;
-
 use indy::api::ErrorCode;
 use std::ffi::CString;
 use std::sync::{Once, ONCE_INIT};
 use utils::callback::CallbackUtils;
-use self::nullpay::nullpay_init;
 use indy::api::payments::*;
+use utils::payment_method::*;
 
 pub struct PaymentsUtils {}
 
@@ -16,7 +14,25 @@ lazy_static! {
 impl PaymentsUtils {
     pub fn init_nullpay_plugin() {
         CREATE_PAYMENT_METHOD_INIT.call_once(|| {
-            nullpay_init();
+            let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+            let payment_method_name = CString::new("null").unwrap();
+            indy_register_payment_method(cmd_handle,
+                                                   payment_method_name.as_ptr(),
+                                                   Some(create_payment_address::handle_mocked),
+                                                   Some(add_request_fees::handle_mocked),
+                                                   Some(parse_response_with_fees::handle_mocked),
+                                                   Some(build_get_utxo_request::handle_mocked),
+                                                   Some(parse_get_utxo_response::handle_mocked),
+                                                   Some(build_payment_req::handle_mocked),
+                                                   Some(parse_payment_response::handle_mocked),
+                                                   Some(build_mint_req::handle_mocked),
+                                                   Some(build_set_txn_fees_req::handle_mocked),
+                                                   Some(build_get_txn_fees_req::handle_mocked),
+                                                   Some(parse_get_txn_fees_response::handle_mocked),
+                                                   cb,
+            );
+
+            receiver.recv().unwrap();
         });
     }
 
