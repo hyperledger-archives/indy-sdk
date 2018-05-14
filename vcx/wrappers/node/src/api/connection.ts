@@ -117,7 +117,33 @@ export class Connection extends VCXBaseWithState {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_deserialize')
     }
   }
-
+  /**
+   * @memberof Connection
+   * @description Deletes and releases a connection
+   * @function delete
+   * @returns {Promis<void>}
+   */
+  async delete (): Promise<void> {
+    try {
+      return await createFFICallbackPromise<void>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_connection_delete_connection(0, this._handle, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32'], (xcommandHandle, err) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve(xcommandHandle)
+        })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_delete_connection')
+    }
+  }
   /**
    * @memberof Connection
    * @description Creates a connection between enterprise and end user.
