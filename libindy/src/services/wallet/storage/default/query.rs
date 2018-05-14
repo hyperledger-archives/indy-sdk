@@ -67,9 +67,6 @@ fn eq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<
 }
 
 
-// SELECT i.id, i.name, i.value, i.key FROM items as i WHERE NOT ((i.id in (SELECT item_id FROM tags_encrypted WHERE name = ? AND value = ?))) AND i.type = ?;
-//  Query string: "SELECT i.id, i.name, i.value, i.key FROM items as i INNER JOIN tags_encrypted as enc_tag ON i.id == enc_tag.item_id WHERE NOT ((enc_tag.name = ? AND enc_tag.value = ?)) AND i.type = ?;"
-
 fn neq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> String {
     match (name, value) {
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {

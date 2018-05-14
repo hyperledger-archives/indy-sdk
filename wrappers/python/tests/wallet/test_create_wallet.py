@@ -22,17 +22,17 @@ async def test_create_wallet_works(wallet_type, wallet_config, xwallet):
     "wallet_name, wallet_type, error_code",
     [(wallet_name(), "unknown_type", ErrorCode.WalletUnknownTypeError),
      ('', "default", ErrorCode.CommonInvalidParam3)])
-async def test_create_wallet_works_for_exception(pool_name, wallet_name, wallet_type, error_code, path_home):
+async def test_create_wallet_works_for_exception(pool_name, wallet_name, wallet_type, error_code, path_home, credentials):
     with pytest.raises(IndyError) as e:
-        await wallet.create_wallet(pool_name, wallet_name, wallet_type, None, None)
+        await wallet.create_wallet(pool_name, wallet_name, wallet_type, None, credentials)
     assert error_code == e.value.error_code
 
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_create_wallet_works_for_duplicate_name(pool_name, wallet_name, wallet_type, xwallet):
+async def test_create_wallet_works_for_duplicate_name(pool_name, wallet_name, wallet_type, xwallet, credentials):
     with pytest.raises(IndyError) as e:
-        await wallet.create_wallet(pool_name, wallet_name, wallet_type, None, None)
+        await wallet.create_wallet(pool_name, wallet_name, wallet_type, None, credentials)
 
     assert ErrorCode.WalletAlreadyExistsError == e.value.error_code
 

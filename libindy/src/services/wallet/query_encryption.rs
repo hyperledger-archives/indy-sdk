@@ -1,5 +1,5 @@
 use super::wallet::Keys;
-use super::encryption::*;
+use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 use super::language::{Operator,TargetValue,TagName};
 
 
@@ -48,11 +48,11 @@ fn encrypt_operator(op: Operator, keys: &Keys) -> Operator {
         Operator::In(name, values) => {
             let name = match name {
                 TagName::EncryptedTagName(ref name) => {
-                    let encrypted_name = encrypt_as_searchable(&name[..], keys.tag_name_key, keys.tags_hmac_key);
+                    let encrypted_name = ChaCha20Poly1305IETF::encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
                     TagName::EncryptedTagName(encrypted_name)
                 },
                 TagName::PlainTagName(ref name) => {
-                    let encrypted_name = encrypt_as_searchable(&name[..], keys.tag_name_key, keys.tags_hmac_key);
+                    let encrypted_name = ChaCha20Poly1305IETF::encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
                     TagName::PlainTagName(encrypted_name)
                 }
             };
@@ -74,12 +74,12 @@ fn encrypt_operator(op: Operator, keys: &Keys) -> Operator {
 fn encrypt_name_value(name: &TagName, value: TargetValue, keys: &Keys) -> (TagName, TargetValue) {
     match (name, value) {
         (&TagName::EncryptedTagName(ref name), TargetValue::Unencrypted(ref s)) => {
-            let encrypted_tag_name = encrypt_as_searchable(&name[..], keys.tag_name_key, keys.tags_hmac_key);
-            let encrypted_tag_value = encrypt_as_searchable(s.as_bytes(), keys.tag_value_key, keys.tags_hmac_key);
+            let encrypted_tag_name = ChaCha20Poly1305IETF::encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
+            let encrypted_tag_value = ChaCha20Poly1305IETF::encrypt_as_searchable(s.as_bytes(), &keys.tag_value_key, &keys.tags_hmac_key);
             (TagName::EncryptedTagName(encrypted_tag_name), TargetValue::Encrypted(encrypted_tag_value))
         },
         (&TagName::PlainTagName(ref name), TargetValue::Unencrypted(ref s)) => {
-            let encrypted_tag_name = encrypt_as_searchable(&name[..], keys.tag_name_key, keys.tags_hmac_key);
+            let encrypted_tag_name = ChaCha20Poly1305IETF::encrypt_as_searchable(&name[..], &keys.tag_name_key, &keys.tags_hmac_key);
             (TagName::PlainTagName(encrypted_tag_name), TargetValue::Unencrypted(s.clone()))
         },
         _ => unreachable!()

@@ -13,7 +13,7 @@ use api::wallet::*;
 use api::ErrorCode;
 use errors::common::CommonError;
 use errors::wallet::WalletStorageError;
-use services::wallet::wallet::WalletRuntimeConfig;
+use services::wallet::wallet::{TagName, WalletRuntimeConfig};
 use services::wallet::language;
 
 
@@ -132,7 +132,7 @@ impl WalletStorage for PluggedStorage {
         unimplemented!();
     }
 
-//    fn update_record_value(&self, type_: &str, id: &str, value: &str) -> Result<(), WalletError> {
+    fn update(&self, type_: &Vec<u8>, name: &Vec<u8>, value: &Vec<u8>, value_key: &Vec<u8>) -> Result<(), WalletStorageError> {
 //        let type_ = CString::new(type_)?;
 //        let id = CString::new(id)?;
 //        let value = value.as_bytes();
@@ -150,9 +150,10 @@ impl WalletStorage for PluggedStorage {
 //        }
 //
 //        Ok(())
-//    }
+        unimplemented!()
+    }
 
-//    fn add_record_tags(&self, type_: &str, id: &str, tags_json: &str) -> Result<(), WalletStorageError> {
+    fn add_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tags: &HashMap<Vec<u8>, TagValue>) -> Result<(), WalletStorageError> {
 //        let type_ = CString::new(type_)?;
 //        let id = CString::new(id)?;
 //        let tags_json = CString::new(tags_json)?;
@@ -184,7 +185,16 @@ impl WalletStorage for PluggedStorage {
 //        }
 //
 //        Ok(())
-//    }
+        unimplemented!()
+    }
+
+    fn update_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tags: &HashMap<Vec<u8>, TagValue>) -> Result<(), WalletStorageError> {
+        unimplemented!()
+    }
+
+    fn delete_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tag_names: &[TagName]) -> Result<(), WalletStorageError> {
+        unimplemented!()
+    }
 
     fn delete(&self, type_: &Vec<u8>, name: &Vec<u8>) -> Result<(), WalletStorageError> {
 //        let type_ = CString::new(type_)?;

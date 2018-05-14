@@ -466,7 +466,7 @@ pub type WalletGetRecord = extern fn(storage_handle: i32,
                                      type_: *const c_char,
                                      id: *const c_char,
                                      options_json: *const c_char,
-                                     record_handle_p: *mut u32) -> ErrorCode;
+                                     record_handle_p: *mut i32) -> ErrorCode;
 
 /// Get an id for retrieved wallet storage record
 ///
@@ -478,7 +478,7 @@ pub type WalletGetRecord = extern fn(storage_handle: i32,
 ///          Note that pointer lifetime the same as retrieved record lifetime
 ///            (until record_free called)
 pub type WalletGetRecordId = extern fn(storage_handle: i32,
-                                       record_handle: u32,
+                                       record_handle: i32,
                                        record_id_p: *mut *const c_char) -> ErrorCode;
 
 /// Get an type for retrieved wallet storage record
@@ -491,7 +491,7 @@ pub type WalletGetRecordId = extern fn(storage_handle: i32,
 ///          Note that pointer lifetime the same as retrieved record lifetime
 ///            (until record_free called)
 pub type WalletGetRecordType = extern fn(storage_handle: i32,
-                                         record_handle: u32,
+                                         record_handle: i32,
                                          record_type_p: *mut *const c_char) -> ErrorCode;
 
 /// Get an value for retrieved wallet storage record
@@ -505,7 +505,7 @@ pub type WalletGetRecordType = extern fn(storage_handle: i32,
 ///            (until record_free called)
 ///          Note that null be returned if no value retrieved
 pub type WalletGetRecordValue = extern fn(storage_handle: i32,
-                                          record_handle: u32,
+                                          record_handle: i32,
                                           record_value_p: *mut *const u8,
                                           record_value_len_p: *mut usize) -> ErrorCode;
 
@@ -520,7 +520,7 @@ pub type WalletGetRecordValue = extern fn(storage_handle: i32,
 ///            (until record_free called)
 ///          Note that null be returned if no tags retrieved
 pub type WalletGetRecordTags = extern fn(storage_handle: i32,
-                                         record_handle: u32,
+                                         record_handle: i32,
                                          record_tags_p: *mut *const c_char) -> ErrorCode;
 
 /// Free retrieved wallet record (make retrieved record handle invalid)
@@ -529,7 +529,7 @@ pub type WalletGetRecordTags = extern fn(storage_handle: i32,
 /// storage_handle: opened storage handle (See open_wallet_storage)
 /// record_handle: retrieved record handle (See wallet_storage_get_wallet_record)
 pub type WalletFreeRecord = extern fn(storage_handle: i32,
-                                      record_handle: u32) -> ErrorCode;
+                                      record_handle: i32) -> ErrorCode;
 
 /// Search for wallet storage records
 ///
@@ -557,7 +557,7 @@ pub type WalletSearchRecords = extern fn(storage_handle: i32,
                                          type_: *const c_char,
                                          query_json: *const c_char,
                                          options_json: *const c_char,
-                                         search_handle_p: *mut u32) -> ErrorCode;
+                                         search_handle_p: *mut i32) -> ErrorCode;
 
 /// Search for all wallet storage records
 ///
@@ -565,7 +565,7 @@ pub type WalletSearchRecords = extern fn(storage_handle: i32,
 /// storage_handle: opened storage handle (See open handler)
 /// search_handle_p: pointer to store wallet search handle
 pub type WalletSearchAllRecords = extern fn(storage_handle: i32,
-                                            search_handle_p: *mut u32) -> ErrorCode;
+                                            search_handle_p: *mut i32) -> ErrorCode;
 
 /// Get total count of records that corresponds to wallet storage search query
 ///
@@ -576,8 +576,8 @@ pub type WalletSearchAllRecords = extern fn(storage_handle: i32,
 /// returns: total count of records that corresponds to wallet storage search query
 ///          Note -1 will be returned if retrieveTotalCount set to false for search_records
 pub type WalletGetSearchTotalCount = extern fn(storage_handle: i32,
-                                               search_handle: u32,
-                                               total_count_p: *mut u32) -> ErrorCode;
+                                               search_handle: i32,
+                                               total_count_p: *mut usize) -> ErrorCode;
 
 /// Get the next wallet storage record handle retrieved by this wallet search.
 ///
@@ -588,7 +588,7 @@ pub type WalletGetSearchTotalCount = extern fn(storage_handle: i32,
 /// returns: record handle (the same as for get_record handler)
 ///          Note if no more records WalletNoRecords error will be returned
 pub type WalletFetchSearchNextRecord = extern fn(storage_handle: i32,
-                                                 search_handle: u32,
+                                                 search_handle: i32,
                                                  record_handle_p: *mut i32) -> ErrorCode;
 
 /// Free wallet search (make search handle invalid)
@@ -597,4 +597,4 @@ pub type WalletFetchSearchNextRecord = extern fn(storage_handle: i32,
 /// storage_handle: opened storage handle (See open handler)
 /// search_handle: wallet search handle (See search_records handler)
 pub type WalletFreeSearch = extern fn(storage_handle: i32,
-                                      search_handle: u32) -> ErrorCode;
+                                      search_handle: i32) -> ErrorCode;

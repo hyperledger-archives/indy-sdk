@@ -11,7 +11,8 @@ from tests.ledger.test_submit_request import ensure_previous_request_applied
 
 @pytest.mark.asyncio
 async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_name, pool_handle, wallet_handle,
-                                                                        identity_my, identity_my1, path_home, did_my2):
+                                                                        identity_my, identity_my1, path_home, did_my2,
+                                                                        credentials):
     issuer_did, _ = identity_my
     issuer_wallet_handle = wallet_handle
 
@@ -19,8 +20,8 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
 
     #  Prover Creates Wallet and Get Wallet Handle
     prover_wallet_name = 'prover_wallet'
-    await wallet.create_wallet(pool_name, prover_wallet_name, None, None, None)
-    prover_wallet_handle = await wallet.open_wallet(prover_wallet_name, None, None)
+    await wallet.create_wallet(pool_name, prover_wallet_name, None, None, credentials)
+    prover_wallet_handle = await wallet.open_wallet(prover_wallet_name, None, credentials)
 
     # Issuer Creates Schema
     (schema_id, schema_json) = \
@@ -278,4 +279,4 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
 
     #  Close and Delete Prover Wallet
     await wallet.close_wallet(prover_wallet_handle)
-    await wallet.delete_wallet(prover_wallet_name, None)
+    await wallet.delete_wallet(prover_wallet_name, credentials)
