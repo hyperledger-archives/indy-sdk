@@ -8,7 +8,7 @@
 
 		System.out.println("\n11. Sending NYM request to the ledger\n");
 		String nymUpdateResponse = signAndSubmitRequest(pool, walletHandle, trustAnchorDID, nymUpdateRequest).get();
-		System.out.println("NYM response:\n" + nymUpdateRequest);
+		System.out.println("NYM response:\n" + nymUpdateResponse);
 
 		System.out.println("\n12. Applying new Trust Anchor's Verkey in wallet\n");
 		Did.replaceKeysApply(walletHandle, trustAnchorDID);

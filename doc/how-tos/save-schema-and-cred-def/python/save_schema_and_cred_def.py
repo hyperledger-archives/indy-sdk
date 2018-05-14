@@ -1,14 +1,3 @@
-"""
-Example demonstrating how to write Schema and Cred Definition on the ledger
-
-As a setup, Steward (already on the ledger) adds Trust Anchor to the ledger.
-
-After that, Steward builds the SCHEMA request to add new schema to the ledger.
-Once that succeeds, Trust Anchor uses anonymous credentials to issue and store
-claim definition for the Schema added by Steward.
-"""
-
-
 import asyncio
 import json
 import pprint
@@ -29,7 +18,7 @@ def print_log(value_color="", value_noncolor=""):
     print(HEADER + value_color + ENDC + str(value_noncolor))
 
 
-async def write_schema_and_cred_def():
+async def save_schema_and_cred_def():
     try:
         # 1.
         print_log('\n1. Creates a new local pool ledger configuration that is used '
@@ -110,11 +99,11 @@ async def write_schema_and_cred_def():
         pprint.pprint(json.loads(schema_response))
 
         # 11.
-        print_log('\n11. Creating and storing CLAIM DEFINITION using anoncreds as Trust Anchor, for the given Schema\n')
-        claim_def = await anoncreds.issuer_create_and_store_claim_def(
+        print_log('\n11. Creating and storing CRED DEFINITION using anoncreds as Trust Anchor, for the given Schema\n')
+        cred_def = await anoncreds.issuer_create_and_store_claim_def(
             wallet_handle, trust_anchor_did, json.dumps(schema), 'CL', False)
-        print_log('Claim definition:\n')
-        pprint.pprint(json.loads(claim_def))
+        print_log('Returned Cred Definition:\n')
+        pprint.pprint(json.loads(cred_def))
 
         # 12.
         print_log('\n12. Closing wallet and pool\n')
@@ -129,16 +118,16 @@ async def write_schema_and_cred_def():
         print_log('\n14. Deleting pool ledger config\n')
         await pool.delete_pool_ledger_config(pool_name)
 
+
     except IndyError as e:
         print('Error occurred: %s' % e)
 
 
 def main():
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(write_schema_and_cred_def())
+    loop.run_until_complete(save_schema_and_cred_def())
     loop.close()
 
 
 if __name__ == '__main__':
     main()
-
