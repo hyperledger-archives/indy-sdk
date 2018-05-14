@@ -18,6 +18,9 @@ mod tests {
     use serde_json::Value;
     use std::thread;
     use std::time::Duration;
+
+    // Ignoring until Dev Agency is updated to libindy 1.4
+    #[ignore]
     #[test]
     fn test_delete_connection() {
         self::vcx::utils::logger::LoggerUtils::init();
@@ -30,6 +33,8 @@ mod tests {
         self::vcx::utils::devsetup::cleanup_dev_env(test_name);
     }
 
+    // Ignoring until Dev Agency is updated to libindy 1.4
+    #[ignore]
     #[test]
     fn test_real_proof() {
         self::vcx::utils::logger::LoggerUtils::init();
