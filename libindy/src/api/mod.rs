@@ -147,6 +147,6 @@ pub enum ErrorCode
     //No method were scraped from inputs/outputs or more than one were scraped
     PaymentIncompatibleMethodsError = 701,
 
-    //Insufficient funds on inputs
-    PaymentInsufficientFundsError = 703,
+    // Insufficient funds on inputs
+    PaymentInsufficientFundsError = 702,
 }
