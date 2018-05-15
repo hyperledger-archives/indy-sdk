@@ -214,10 +214,11 @@ def linuxTesting(file, env_name, network_name) {
         sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
         sh "cp libindy/target/debug/libindy.so wrappers/python"
         sh "cp libindy/target/debug/libindy.so cli"
+        sh "cp libindy/target/debug/deps/libnullpay.so cli"
 
         stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
         stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
-        stash includes: 'cli/libindy.so', name: "LibindyCliSO${env_name}"
+        stash includes: 'cli/*.so', name: "LibindyCliSO${env_name}"
 
         parallel([
                 "${env_name}-libindy-test": {
