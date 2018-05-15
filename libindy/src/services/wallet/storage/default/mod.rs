@@ -389,7 +389,9 @@ impl WalletStorage for SQLiteStorage {
     }
 
     fn add_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tags: &HashMap<Vec<u8>, TagValue>) -> Result<(), WalletStorageError> {
-        let res = self.conn.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
+        let tx = self.conn.transaction()?;
+
+        let res = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
             .query_row(&[type_, name], |row| row.get(0));
 
         let item_id: i64 = match res {
@@ -398,10 +400,9 @@ impl WalletStorage for SQLiteStorage {
             Ok(id) => id
         };
 
-        let tx = self.conn.transaction()?;
         {
-            let mut enc_tag_insert_stmt = tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)")?;
-            let mut plain_tag_insert_stmt = tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)")?;
+            let mut enc_tag_insert_stmt = tx.prepare_cached("INSERT OR REPLACE INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)")?;
+            let mut plain_tag_insert_stmt = tx.prepare_cached("INSERT OR REPLACE INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)")?;
 
             for (tag_name, tag_value) in tags {
                 match tag_value {
@@ -416,7 +417,9 @@ impl WalletStorage for SQLiteStorage {
     }
 
     fn update_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tags: &HashMap<Vec<u8>, TagValue>) -> Result<(), WalletStorageError> {
-        let res = self.conn.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
+        let tx = self.conn.transaction()?;
+
+        let res = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
             .query_row(&[type_, name], |row| row.get(0));
 
         let item_id: i64 = match res {
@@ -425,20 +428,18 @@ impl WalletStorage for SQLiteStorage {
             Ok(id) => id
         };
 
-        let tx = self.conn.transaction()?;
+        tx.execute("DELETE FROM tags_encrypted WHERE item_id = ?1", &[&item_id])?;
+        tx.execute("DELETE FROM tags_plaintext WHERE item_id = ?1", &[&item_id])?;
+
         {
-            let mut enc_tag_insert_stmt = tx.prepare_cached("UPDATE tags_encrypted SET value = ?1 WHERE item_id = ?2 AND name = ?3")?;
-            let mut plain_tag_insert_stmt = tx.prepare_cached("UPDATE tags_plaintext SET value = ?1 WHERE item_id = ?2 AND name = ?3")?;
+            let mut enc_tag_insert_stmt = tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)")?;
+            let mut plain_tag_insert_stmt = tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)")?;
 
             for (tag_name, tag_value) in tags {
-                let res = match tag_value {
-                    &TagValue::Encrypted(ref tag_data) => enc_tag_insert_stmt.execute(&[tag_data, &item_id, tag_name])?,
-                    &TagValue::Plain(ref tag_data) => plain_tag_insert_stmt.execute(&[tag_data, &item_id, tag_name])?
+                match tag_value {
+                    &TagValue::Encrypted(ref tag_data) => enc_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?,
+                    &TagValue::Plain(ref tag_data) => plain_tag_insert_stmt.execute(&[&item_id, tag_name, tag_data])?
                 };
-
-                if res == 0 {
-                    return Err(WalletStorageError::ItemNotFound);
-                }
             }
         }
         tx.commit()?;
@@ -576,57 +577,6 @@ impl WalletStorage for SQLiteStorage {
 
 impl WalletStorageType for SQLiteStorageType {
     ///
-    /// Creates the SQLite DB file with the provided name in the path specified in the config file,
-    /// and initializes the encryption keys needed for encryption and decryption of data.
-    ///
-    /// # Arguments
-    ///
-    ///  * `name` - name of the SQLite DB file
-    ///  * `storage_config` - config containing the location of SQLite DB files
-    ///  * `keys` - encryption keys that need to be stored in the newly created DB
-    ///  * `storage_credentials` - DB credentials
-    ///
-    /// # Returns
-    ///
-    /// Result that can be either:
-    ///
-    ///  * `()`
-    ///  * `WalletStorageError`
-    ///
-    /// # Errors
-    ///
-    /// Any of the following `WalletStorageError` type_ of errors can be throw by this method:
-    ///
-    ///  * `AlreadyExists` - File with a given name already exists on the path
-    ///  * `IOError("IO error during storage operation:...")` - Connection to the DB failed
-    ///  * `IOError("Error occurred while creating wallet file:..)"` - Creation of schema failed
-    ///  * `IOError("Error occurred while inserting the keys...")` - Insertion of keys failed
-    ///  * `IOError(..)` - Deletion of the file form the file-system failed
-    ///
-    fn create_storage(&self, name: &str, config: Option<&str>, credentials: &str, keys: &Vec<u8>) -> Result<(), WalletStorageError> {
-        let db_file_path = SQLiteStorageType::create_path(name);
-        if db_file_path.exists() {
-            return Err(WalletStorageError::AlreadyExists);
-        }
-
-        let conn = rusqlite::Connection::open(db_file_path.as_path())?;
-
-        match conn.execute_batch(_CREATE_SCHEMA) {
-            Ok(_) => match conn.execute("INSERT OR REPLACE INTO metadata(value) VALUES(?1)", &[keys]) {
-                Ok(_) => Ok(()),
-                Err(error) => {
-                    std::fs::remove_file(db_file_path)?;
-                    Err(WalletStorageError::IOError(format!("Error occurred while inserting the keys: {}", error)))
-                }
-            },
-            Err(error) => {
-                std::fs::remove_file(db_file_path)?;
-                Err(WalletStorageError::IOError(format!("Error occurred while creating wallet file: {}", error)))
-            }
-        }
-    }
-
-    ///
     /// Deletes the SQLite database file with the provided name from the path specified in the
     /// config file.
     ///
@@ -662,6 +612,57 @@ impl WalletStorageType for SQLiteStorageType {
     }
 
     ///
+    /// Creates the SQLite DB file with the provided name in the path specified in the config file,
+    /// and initializes the encryption keys needed for encryption and decryption of data.
+    ///
+    /// # Arguments
+    ///
+    ///  * `name` - name of the SQLite DB file
+    ///  * `storage_config` - config containing the location of SQLite DB files
+    ///  * `credentials` - DB credentials
+    ///  * `metadata` - encryption keys that need to be stored in the newly created DB
+    ///
+    /// # Returns
+    ///
+    /// Result that can be either:
+    ///
+    ///  * `()`
+    ///  * `WalletStorageError`
+    ///
+    /// # Errors
+    ///
+    /// Any of the following `WalletStorageError` type_ of errors can be throw by this method:
+    ///
+    ///  * `AlreadyExists` - File with a given name already exists on the path
+    ///  * `IOError("IO error during storage operation:...")` - Connection to the DB failed
+    ///  * `IOError("Error occurred while creating wallet file:..)"` - Creation of schema failed
+    ///  * `IOError("Error occurred while inserting the keys...")` - Insertion of keys failed
+    ///  * `IOError(..)` - Deletion of the file form the file-system failed
+    ///
+    fn create_storage(&self, name: &str, config: Option<&str>, credentials: &str, metadata: &Vec<u8>) -> Result<(), WalletStorageError> {
+        let db_file_path = SQLiteStorageType::create_path(name);
+        if db_file_path.exists() {
+            return Err(WalletStorageError::AlreadyExists);
+        }
+
+        let conn = rusqlite::Connection::open(db_file_path.as_path())?;
+
+        match conn.execute_batch(_CREATE_SCHEMA) {
+            Ok(_) => match conn.execute("INSERT OR REPLACE INTO metadata(value) VALUES(?1)", &[metadata]) {
+                Ok(_) => Ok(()),
+                Err(error) => {
+                    std::fs::remove_file(db_file_path)?;
+                    Err(WalletStorageError::IOError(format!("Error occurred while inserting the keys: {}", error)))
+                }
+            },
+            Err(error) => {
+                std::fs::remove_file(db_file_path)?;
+                Err(WalletStorageError::IOError(format!("Error occurred while creating wallet file: {}", error)))
+            }
+        }
+    }
+
+    ///
     /// Establishes a connection to the SQLite DB with the provided name located in the path
     /// specified in the config. In case of a succesfull onection returns a Storage object
     /// embedding the connection and the encryption keys that will be used for encryption and
@@ -671,9 +672,9 @@ impl WalletStorageType for SQLiteStorageType {
     /// # Arguments
     ///
     ///  * `name` - name of the SQLite DB file
-    ///  * `storage_config` - config containing the location of SQLite DB files
+    ///  * `config` - config containing the location of SQLite DB files
     ///  * `runtime_config` - #TODO
-    ///  * `storage_credentials` - DB credentials
+    ///  * `credentials` - DB credentials
     ///
     /// # Returns
     ///
@@ -1263,21 +1264,26 @@ mod tests {
         let mut tags = HashMap::new();
         let tag_name_1 = vec![0, 0, 0];
         let tag_value_1 = TagValue::Encrypted(vec![9, 9, 9]);
+        let tag_name_2 = vec![1, 1, 1];
+        let tag_value_2 = TagValue::Encrypted(vec![8, 8, 8]);
         tags.insert(tag_name_1.clone(), tag_value_1.clone());
+        tags.insert(tag_name_2.clone(), tag_value_2.clone());
 
         storage.add(&type_, &name, &value, &tags).unwrap();
 
         let mut new_tags = HashMap::new();
-        let tag_name_2 = vec![1, 1, 1];
-        let tag_value_2 = TagValue::Encrypted(vec![2, 2, 2]);
-        new_tags.insert(tag_name_2, tag_value_2);
+        let tag_name_3 = vec![2, 2, 2];
+        let tag_value_3 = TagValue::Encrypted(vec![7, 7, 7]);
+        new_tags.insert(tag_name_3, tag_value_3);
         new_tags.insert(tag_name_1, tag_value_1);
 
-        let res = storage.add_tags(&type_, &name, &new_tags);
-        assert_match!(Err(WalletStorageError::ItemAlreadyExists), res);
+        storage.add_tags(&type_, &name, &new_tags).unwrap();
+
+        let mut expected_tags = new_tags.clone();
+        expected_tags.insert(tag_name_2, tag_value_2);
 
         let item = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
-        assert_eq!(item.tags.unwrap(), tags);
+        assert_eq!(item.tags.unwrap(), expected_tags);
     }
 
 
@@ -1312,12 +1318,9 @@ mod tests {
 
         storage.update_tags(&type_, &name, &updated_tags).unwrap();
 
-        let mut expected_tags = updated_tags.clone();
-        expected_tags.insert(tag_name_3.clone(), tag_value_3.clone());
-
         let item = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
         let retrieved_tags = item.tags.unwrap();
-        assert_eq!(retrieved_tags, expected_tags);
+        assert_eq!(retrieved_tags, updated_tags);
     }
 
     #[test]
@@ -1375,7 +1378,7 @@ mod tests {
     }
 
     #[test]
-    fn sqlite_storage_update_tags_returns_error_if_nonexistant_tag_and_works_atomically() {
+    fn sqlite_storage_update_tags_succedes_for_nonexistant_tag_and_works_atomically() {
         let mut storage = _create_and_open_test_storage();
         let type_ = vec![1,2,3];
         let name = vec![4,5,6];
@@ -1401,11 +1404,11 @@ mod tests {
         updated_tags.insert(nonexistant_tag_name, new_tag_value_2.clone());
 
         let res = storage.update_tags(&type_, &name, &updated_tags);
-        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+        assert_match!(Ok(()), res);
 
         let item = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
         let retrieved_tags = item.tags.unwrap();
-        assert_eq!(retrieved_tags, tags);
+        assert_eq!(retrieved_tags, updated_tags);
     }
 
 
