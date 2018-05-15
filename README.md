@@ -115,6 +115,11 @@ After successfully compiling `libindy`, you will need to add the path containing
 * [Windows](doc/windows-build.md)
 * [MacOS](doc/mac-build.md)
 
+**Note:**
+By default `cargo build` produce debug artifacts with a large amount of run-time checks.
+It's good for development, but this build can be in 100+ times slower for some math calculation.
+If you would like to analyse CPU performance of libindy for your use case, you have to use release artifacts (`cargo build --release`). 
+
 ## How to start local nodes pool with docker
 To test the SDK codebase with a virtual Indy node network, you can start a pool of local nodes using docker:
 

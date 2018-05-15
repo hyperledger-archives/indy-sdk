@@ -53,7 +53,7 @@ impl TransactionHandler {
     pub fn process_msg(&mut self, msg: Message, raw_msg: &String, _src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         match msg {
             Message::Reply(reply) => {
-                self.process_reply(reply.result.req_id, raw_msg);
+                self.process_reply(reply.req_id(), raw_msg);
             }
             Message::Reject(response) | Message::ReqNACK(response) => {
                 self.process_reject(&response, raw_msg);
@@ -71,8 +71,8 @@ impl TransactionHandler {
     fn process_ack(&mut self, ack: &Response, raw_msg: &str) {
         trace!("TransactionHandler::process_ack: >>> ack: {:?}, raw_msg: {:?}", ack, raw_msg);
 
-        self.pending_commands.get_mut(&ack.req_id).map(|cmd| {
-            debug!("TransactionHandler::process_ack: update timeout for req_id: {:?}", ack.req_id);
+        self.pending_commands.get_mut(&ack.req_id()).map(|cmd| {
+            debug!("TransactionHandler::process_ack: update timeout for req_id: {:?}", ack.req_id());
             cmd.full_cmd_timeout
                 = Some(time::now_utc().add(Duration::seconds(REQUEST_TIMEOUT_REPLY)))
         });
@@ -161,7 +161,7 @@ impl TransactionHandler {
     fn process_reject(&mut self, response: &Response, raw_msg: &String) {
         debug!("TransactionHandler::process_reject: >>> response: {:?}, raw_msg: {:?}", response, raw_msg);
 
-        let req_id = response.req_id;
+        let req_id = response.req_id();
         let mut remove = false;
         if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
             pend_cmd.nack_cnt += 1;
@@ -414,7 +414,8 @@ impl TransactionHandler {
                 Vec::new()
             }
             constants::GET_REVOC_REG_DEF => {
-                if let Some(id) = json_msg["id"].as_str() { //FIXME
+                if let Some(id) = json_msg["id"].as_str() {
+                    //FIXME
                     id.splitn(2, ":").next().unwrap()
                         .as_bytes().to_vec()
                 } else {
