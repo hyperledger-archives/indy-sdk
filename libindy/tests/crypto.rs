@@ -267,7 +267,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = CryptoUtils::sign(wallet_handle, VERKEY, MESSAGE.as_bytes());
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -384,7 +384,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = CryptoUtils::auth_crypt(wallet_handle, VERKEY_MY2, VERKEY, MESSAGE.as_bytes());
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -482,7 +482,7 @@ mod high_cases {
             let encrypted_msg = CryptoUtils::auth_crypt(wallet_handle, &sender_vk, &VERKEY_TRUSTEE, MESSAGE.as_bytes()).unwrap();
 
             let res = CryptoUtils::anon_decrypt(wallet_handle, &VERKEY_TRUSTEE, &encrypted_msg);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -584,7 +584,7 @@ mod high_cases {
             let encrypted_msg = CryptoUtils::anon_crypt(&VERKEY_TRUSTEE, MESSAGE.as_bytes()).unwrap();
 
             let res = CryptoUtils::anon_decrypt(wallet_handle, &VERKEY_TRUSTEE, &encrypted_msg);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 

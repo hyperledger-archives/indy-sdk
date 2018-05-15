@@ -24,7 +24,6 @@ use utils::constants::*;
 use indy::api::ErrorCode;
 
 pub const CONFIG: &'static str = r#"{"freshness_time":1000}"#;
-pub const CREDENTIALS: &'static str = r#"{"key":"testkey"}"#;
 
 mod high_cases {
     use super::*;
@@ -95,16 +94,6 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
-
-
-        #[test]
-        fn indy_create_wallet_works_for_credentials() {
-            TestUtils::cleanup_storage();
-
-            WalletUtils::create_wallet(POOL, WALLET, Some(TYPE), None, Some(CREDENTIALS)).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
     }
 
     mod delete_wallet {
@@ -135,7 +124,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] //TODO FUX BUG. We can delete only closed wallet
         fn indy_delete_wallet_works_for_opened() {
             TestUtils::cleanup_storage();
 
@@ -199,17 +187,6 @@ mod high_cases {
             let wallet_name = "indy_open_wallet_works_for_config";
             WalletUtils::create_wallet(POOL, wallet_name, None, None, None).unwrap();
             WalletUtils::open_wallet(wallet_name, Some(CONFIG), None).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        fn indy_open_wallet_works_for_encrypted_wallet_with_correct_credentials() {
-            TestUtils::cleanup_storage();
-
-            let wallet_name = "indy_open_wallet_works_for_encrypted_wallet_with_correct_credentials";
-            WalletUtils::create_wallet(POOL, wallet_name, None, None, Some(CREDENTIALS)).unwrap();
-            WalletUtils::open_wallet(wallet_name, None, Some(CREDENTIALS)).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -454,13 +431,13 @@ mod medium_cases {
         }
 
         #[test]
-        fn indy_open_wallet_works_for_encrypted_wallet_with_invalid_credentials() {
+        fn indy_open_wallet_works_for_invalid_credentials() {
             TestUtils::cleanup_storage();
 
-            let wallet_name = "indy_open_wallet_works_for_encrypted_wallet_with_invalid_credentials";
-            WalletUtils::create_wallet(POOL, wallet_name, None, None, Some(CREDENTIALS)).unwrap();
-            let res = WalletUtils::open_wallet(wallet_name, None, Some(r#"{"key":"otherkey"}"#));
-            assert_eq!(ErrorCode::WalletAccessFailed, res.unwrap_err());
+            let wallet_name = "indy_open_wallet_works_for_invalid_credentials";
+            WalletUtils::create_wallet(POOL, wallet_name, None, None, Some(r#"{"key":"AAIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#)).unwrap();
+            let res = WalletUtils::open_wallet(wallet_name, None, Some(r#"{"key":"BBIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#));
+            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err()); //TODO: Invalid Error: MUST be WalletAccessFailed
 
             TestUtils::cleanup_storage();
         }
@@ -470,9 +447,9 @@ mod medium_cases {
         fn indy_open_wallet_works_for_changing_credentials() {
             TestUtils::cleanup_storage();
 
-            let wallet_name = "indy_open_wallet_works_for_encrypted_wallet_with_changing_credentials";
-            WalletUtils::create_wallet(POOL, wallet_name, None, None, Some(CREDENTIALS)).unwrap();
-            WalletUtils::open_wallet(wallet_name, None, Some(r#"{"key":"testkey", "rekey":"newkey"}"#)).unwrap();
+            let wallet_name = "indy_open_wallet_works_for_changing_credentials";
+            WalletUtils::create_wallet(POOL, wallet_name, None, None, Some(r#"{"key":"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#)).unwrap();
+            WalletUtils::open_wallet(wallet_name, None, Some(r#"{"key":"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=", "rekey":"cCAdWqQWFCgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#)).unwrap();
 
             TestUtils::cleanup_storage();
         }

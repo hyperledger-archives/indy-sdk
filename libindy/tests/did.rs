@@ -205,7 +205,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = DidUtils::key_for_local_did(wallet_handle, DID);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -533,7 +533,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = DidUtils::set_did_metadata(wallet_handle, &DID, METADATA);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -606,7 +606,7 @@ mod high_cases {
             let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let res = DidUtils::get_did_metadata(wallet_handle, &did);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -620,7 +620,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = DidUtils::get_did_metadata(wallet_handle, DID);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -841,7 +841,7 @@ mod high_cases {
 
             let (my_did, _) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-            assert_eq!(DidUtils::replace_keys_apply(wallet_handle, &my_did).unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(DidUtils::replace_keys_apply(wallet_handle, &my_did).unwrap_err(), ErrorCode::WalletItemNotFound);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -858,7 +858,7 @@ mod high_cases {
 
             DidUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
 
-            assert_eq!(DidUtils::replace_keys_apply(wallet_handle, DID).unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(DidUtils::replace_keys_apply(wallet_handle, DID).unwrap_err(), ErrorCode::WalletItemNotFound);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -1043,7 +1043,7 @@ mod high_cases {
             DidUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let res = DidUtils::store_their_did(wallet_handle, &identity_json);
-            assert_eq!(ErrorCode::CommonInvalidState, res.unwrap_err()); // TODO Change Error
+            assert_eq!(ErrorCode::WalletItemAlreadyExists, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 

@@ -239,7 +239,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = LedgerUtils::sign_request(wallet_handle, DID, MESSAGE);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -1374,7 +1374,7 @@ mod medium_cases {
             let nym_request = LedgerUtils::build_nym_request(&DID, &DID, None, None, None).unwrap();
 
             let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &DID, &nym_request);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();

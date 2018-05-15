@@ -61,7 +61,7 @@ I-[#blue]>L: send REVOC_REG_ENTRY txn
 
 P -> PW: <b>5.indy_prover_create_master_secret
 PW -[#green]> PW: store master secret
-IW -> I: <master_secret_id>
+PW -> P: <master_secret_id>
 
 === Create Credential Offer ==
 
