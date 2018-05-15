@@ -7,12 +7,13 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_multi_sign_works(wallet_handle, seed_trustee1):
-    (_did, _) = await did.create_and_store_my_did(wallet_handle, json.dumps({"seed": seed_trustee1}))
+async def test_multi_sign_works(wallet_handle, seed_trustee1, seed_my1):
+    (_did1, _) = await did.create_and_store_my_did(wallet_handle, json.dumps({"seed": seed_trustee1}))
+    (_did2, _) = await did.create_and_store_my_did(wallet_handle, json.dumps({"seed": seed_my1}))
 
     message = json.dumps({
         "reqId": 1496822211362017764,
-        "identifier": _did,
+        "identifier": _did1,
         "operation": {
             "type": "1",
             "dest": "VsKV7grR1BUE29mG2Fm2kX",
@@ -20,10 +21,14 @@ async def test_multi_sign_works(wallet_handle, seed_trustee1):
         }
     })
 
-    expected_signature = "3YnLxoUd4utFLzeXUkeGefAqAdHUD7rBprpSx2CJeH7gRYnyjkgJi7tCnFgUiMo62k6M2AyUDtJrkUSgHfcq3vua"
+    signed_msg = await ledger.multi_sign_request(wallet_handle, _did1, message)
+    signed_msg = await ledger.multi_sign_request(wallet_handle, _did2, signed_msg)
+    msg = json.loads(signed_msg)
 
-    signed_msg = json.loads(await ledger.multi_sign_request(wallet_handle, _did, message))
-    assert signed_msg['signatures'][_did] == expected_signature
+    assert msg['signatures'][_did1] == \
+           "3YnLxoUd4utFLzeXUkeGefAqAdHUD7rBprpSx2CJeH7gRYnyjkgJi7tCnFgUiMo62k6M2AyUDtJrkUSgHfcq3vua"
+    assert msg['signatures'][_did2] == \
+           "4EyvSFPoeQCJLziGVqjuMxrbuoWjAWUGPd6LdxeZuG9w3Bcbt7cSvhjrv8SX5e8mGf8jrf3K6xd9kEhXsQLqUg45"
 
 
 @pytest.mark.asyncio

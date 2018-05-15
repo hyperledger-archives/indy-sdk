@@ -212,7 +212,7 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Signs request message.
 	 * <p>
-	 * Adds submitter information to passed request json, signs it with submitter
+	 * dds submitter information to passed request json, signs it with submitter
 	 * sign key (see wallet_sign).
 	 *
 	 * @param wallet       A Wallet.
@@ -468,11 +468,11 @@ public class Ledger extends IndyJava.API {
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
 	 * @param data         Credential schema.
 	 *                     {
-	 *                     id: identifier of schema
-	 *                     attrNames: array of attribute name strings
-	 *                     name: Schema's name string
-	 *                     version: Schema's version string,
-	 *                     ver: Version of the Schema json
+	 *                         id: identifier of schema
+	 *                         attrNames: array of attribute name strings
+	 *                         name: Schema's name string
+	 *                         version: Schema's version string,
+	 *                         ver: Version of the Schema json
 	 *                     }
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -533,11 +533,11 @@ public class Ledger extends IndyJava.API {
 	 * @param getSchemaResponse response of GET_SCHEMA request.
 	 * @return A future resolving to a Schema Id and Schema json.
 	 * {
-	 * id: identifier of schema
-	 * attrNames: array of attribute name strings
-	 * name: Schema's name string
-	 * version: Schema's version string
-	 * ver: Version of the Schema json
+	 *     id: identifier of schema
+	 *     attrNames: array of attribute name strings
+	 *     name: Schema's name string
+	 *     version: Schema's version string
+	 *     ver: Version of the Schema json
 	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -565,17 +565,17 @@ public class Ledger extends IndyJava.API {
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
 	 * @param data         Credential definition json
-	 *                     {
-	 *                     id: string - identifier of credential definition
-	 *                     schemaId: string - identifier of stored in ledger schema
-	 *                     type: string - type of the credential definition. CL is the only supported type now.
-	 *                     tag: string - allows to distinct between credential definitions for the same issuer and schema
-	 *                     value: Dictionary with Credential Definition's data: {
-	 *                     primary: primary credential public key,
-	 *                     Optional<revocation>: revocation credential public key
-	 *                     },
-	 *                     ver: Version of the CredDef json
-	 *                     }
+	 * {
+	 *     id: string - identifier of credential definition
+	 *     schemaId: string - identifier of stored in ledger schema
+	 *     type: string - type of the credential definition. CL is the only supported type now.
+	 *     tag: string - allows to distinct between credential definitions for the same issuer and schema
+	 *     value: Dictionary with Credential Definition's data: {
+	 *         primary: primary credential public key,
+	 *         Optional<revocation>: revocation credential public key
+	 *     },
+	 *     ver: Version of the CredDef json
+	 * }
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -636,15 +636,15 @@ public class Ledger extends IndyJava.API {
 	 * @param getCredDefResponse response of GET_CRED_DEF request.
 	 * @return A future resolving to a Credential Definition Id and Credential Definition json.
 	 * {
-	 * id: string - identifier of credential definition
-	 * schemaId: string - identifier of stored in ledger schema
-	 * type: string - type of the credential definition. CL is the only supported type now.
-	 * tag: string - allows to distinct between credential definitions for the same issuer and schema
-	 * value: Dictionary with Credential Definition's data: {
-	 * primary: primary credential public key,
-	 * Optional<revocation>: revocation credential public key
-	 * },
-	 * ver: Version of the Credential Definition json
+	 *     id: string - identifier of credential definition
+	 *     schemaId: string - identifier of stored in ledger schema
+	 *     type: string - type of the credential definition. CL is the only supported type now.
+	 *     tag: string - allows to distinct between credential definitions for the same issuer and schema
+	 *     value: Dictionary with Credential Definition's data: {
+	 *         primary: primary credential public key,
+	 *         Optional<revocation>: revocation credential public key
+	 *     },
+	 *     ver: Version of the Credential Definition json
 	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -672,14 +672,14 @@ public class Ledger extends IndyJava.API {
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
 	 * @param targetDid    Target Node's DID. It differs from submitter_did field.
 	 * @param data         Data associated with the Node: {
-	 *                     alias: string - Node's alias
-	 *                     blskey: string - (Optional) BLS multi-signature key as base58-encoded string.
-	 *                     client_ip: string - (Optional) Node's client listener IP address.
-	 *                     client_port: string - (Optional) Node's client listener port.
-	 *                     node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.
-	 *                     node_port: string - (Optional) The port other Nodes use to communicate with this Node.
-	 *                     services: array<string> - (Optional) The service of the Node. VALIDATOR is the only supported one now.
-	 *                     }
+	 *     alias: string - Node's alias
+	 *     blskey: string - (Optional) BLS multi-signature key as base58-encoded string.
+	 *     client_ip: string - (Optional) Node's client listener IP address.
+	 *     client_port: string - (Optional) Node's client listener port.
+	 *     node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.
+	 *     node_port: string - (Optional) The port other Nodes use to communicate with this Node.
+	 *     services: array<string> - (Optional) The service of the Node. VALIDATOR is the only supported one now.
+	 * }
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -711,7 +711,7 @@ public class Ledger extends IndyJava.API {
 	 * Builds a GET_TXN request. Request to get any transaction by its seq_no.
 	 *
 	 * @param submitterDid DID of read request sender.
-	 * @param seqNo        seq_no of transaction in ledger.
+	 * @param seqNo         seq_no of transaction in ledger.
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -770,10 +770,10 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds a POOL_RESTART request.
-	 * <p>
+	 *
 	 * param submitter_did: Id of Identity that sender transaction
 	 * param action       : Action that pool has to do after received transaction.
-	 * Can be "start" or "cancel"
+	 * 						Can be "start" or "cancel"
 	 * schedule           : Time when pool must be restarted.
 	 */
 	public static CompletableFuture<String> buildPoolRestartRequest(
@@ -858,20 +858,20 @@ public class Ledger extends IndyJava.API {
 	 *
 	 * @param submitterDid DID of the submitter stored in secured Wallet.
 	 * @param data         Revocation Registry data:
-	 *                     {
-	 *                     "id": string - ID of the Revocation Registry,
-	 *                     "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
-	 *                     "tag": string - Unique descriptive ID of the Registry,
-	 *                     "credDefId": string - ID of the corresponding CredentialDefinition,
-	 *                     "value": Registry-specific data {
-	 *                     "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
-	 *                     "maxCredNum": number - Maximum number of credentials the Registry can serve.
-	 *                     "tailsHash": string - Hash of tails.
-	 *                     "tailsLocation": string - Location of tails file.
-	 *                     "publicKeys": <public_keys> - Registry's public key.
-	 *                     },
-	 *                     "ver": string - version of revocation registry definition json.
-	 *                     }
+	 *     {
+	 *         "id": string - ID of the Revocation Registry,
+	 *         "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+	 *         "tag": string - Unique descriptive ID of the Registry,
+	 *         "credDefId": string - ID of the corresponding CredentialDefinition,
+	 *         "value": Registry-specific data {
+	 *             "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+	 *             "maxCredNum": number - Maximum number of credentials the Registry can serve.
+	 *             "tailsHash": string - Hash of tails.
+	 *             "tailsLocation": string - Location of tails file.
+	 *             "publicKeys": <public_keys> - Registry's public key.
+	 *         },
+	 *         "ver": string - version of revocation registry definition json.
+	 *     }
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -931,18 +931,18 @@ public class Ledger extends IndyJava.API {
 	 * @param getRevocRegDefResponse response of GET_REVOC_REG_DEF request.
 	 * @return A future resolving to a Revocation Registry Definition Id and Revocation Registry Definition json.
 	 * {
-	 * "id": string - ID of the Revocation Registry,
-	 * "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
-	 * "tag": string - Unique descriptive ID of the Registry,
-	 * "credDefId": string - ID of the corresponding CredentialDefinition,
-	 * "value": Registry-specific data {
-	 * "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
-	 * "maxCredNum": number - Maximum number of credentials the Registry can serve.
-	 * "tailsHash": string - Hash of tails.
-	 * "tailsLocation": string - Location of tails file.
-	 * "publicKeys": <public_keys> - Registry's public key.
-	 * },
-	 * "ver": string - version of revocation registry definition json.
+	 *     "id": string - ID of the Revocation Registry,
+	 *     "revocDefType": string - Revocation Registry type (only CL_ACCUM is supported for now),
+	 *     "tag": string - Unique descriptive ID of the Registry,
+	 *     "credDefId": string - ID of the corresponding CredentialDefinition,
+	 *     "value": Registry-specific data {
+	 *         "issuanceType": string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+	 *         "maxCredNum": number - Maximum number of credentials the Registry can serve.
+	 *         "tailsHash": string - Hash of tails.
+	 *         "tailsLocation": string - Location of tails file.
+	 *         "publicKeys": <public_keys> - Registry's public key.
+	 *     },
+	 *     "ver": string - version of revocation registry definition json.
 	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -974,15 +974,15 @@ public class Ledger extends IndyJava.API {
 	 * @param revocRegDefId ID of the corresponding RevocRegDef.
 	 * @param revDefType    Revocation Registry type (only CL_ACCUM is supported for now).
 	 * @param value         Registry-specific data: {
-	 *                      value: {
-	 *                      prevAccum: string - previous accumulator value.
-	 *                      accum: string - current accumulator value.
-	 *                      issued: array<number> - an array of issued indices.
-	 *                      revoked: array<number> an array of revoked indices.
-	 *                      },
-	 *                      ver: string - version revocation registry entry json
-	 *                      <p>
-	 *                      }
+	 *     value: {
+	 *         prevAccum: string - previous accumulator value.
+	 *         accum: string - current accumulator value.
+	 *         issued: array<number> - an array of issued indices.
+	 *         revoked: array<number> an array of revoked indices.
+	 *     },
+	 *     ver: string - version revocation registry entry json
+	 *
+	 * }
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -1051,10 +1051,10 @@ public class Ledger extends IndyJava.API {
 	 * @param getRevocRegResponse response of GET_REVOC_REG request.
 	 * @return A future resolving to a Revocation Registry Definition Id, Revocation Registry json and Timestamp.
 	 * {
-	 * "value": Registry-specific data {
-	 * "accum": string - current accumulator value.
-	 * },
-	 * "ver": string - version revocation registry json
+	 *     "value": Registry-specific data {
+	 *         "accum": string - current accumulator value.
+	 *     },
+	 *     "ver": string - version revocation registry json
 	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -1119,13 +1119,13 @@ public class Ledger extends IndyJava.API {
 	 * @param getRevocRegDeltaResponse response of GET_REVOC_REG_DELTA request.
 	 * @return A future resolving to a Revocation Registry Definition Id, Revocation Registry Delta json and Timestamp.
 	 * {
-	 * "value": Registry-specific data {
-	 * prevAccum: string - previous accumulator value.
-	 * accum: string - current accumulator value.
-	 * issued: array<number> - an array of issued indices.
-	 * revoked: array<number> an array of revoked indices.
-	 * },
-	 * "ver": string
+	 *     "value": Registry-specific data {
+	 *         prevAccum: string - previous accumulator value.
+	 *         accum: string - current accumulator value.
+	 *         issued: array<number> - an array of issued indices.
+	 *         revoked: array<number> an array of revoked indices.
+	 *     },
+	 *     "ver": string
 	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */

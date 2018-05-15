@@ -121,7 +121,16 @@ class ErrorCode(IntEnum):
     UnknownCryptoTypeError = 500,
 
     # Attempt to create duplicate did
-    DidAlreadyExistsError = 600
+    DidAlreadyExistsError = 600,
+
+    # Unknown payment method was given
+    PaymentUnknownMethodError = 700,
+
+    # No method were scraped from inputs/outputs or more than one were scraped
+    PaymentIncompatibleMethodsError = 701,
+
+    # Insufficient funds on inputs
+    PaymentInsufficientFundsError = 702
 
 
 class IndyError(Exception):

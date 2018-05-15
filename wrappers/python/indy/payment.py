@@ -149,13 +149,11 @@ async def add_request_fees(wallet_handle: int,
     return res
 
 
-async def parse_response_with_fees(wallet_handle: int,
-                                   payment_method: str,
+async def parse_response_with_fees(payment_method: str,
                                    resp_json: str) -> str:
     """
      Parses response for Indy request with fees.
 
-    :param wallet_handle: wallet handle (created by open_wallet).
     :param payment_method: Payment method to use (for example, 'sov').
     :param resp_json: response for Indy request with fees
                Note: this param will be used to determine payment_method
@@ -168,8 +166,7 @@ async def parse_response_with_fees(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("parse_response_with_fees: >>> wallet_handle: %r, payment_method: %r, resp_json: %r",
-                 wallet_handle,
+    logger.debug("parse_response_with_fees: >>> payment_method: %r, resp_json: %r",
                  payment_method,
                  resp_json)
 
@@ -177,12 +174,10 @@ async def parse_response_with_fees(wallet_handle: int,
         logger.debug("parse_response_with_fees: Creating callback")
         parse_response_with_fees.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
-    c_wallet_handle = c_int32(wallet_handle)
     c_payment_method = c_char_p(payment_method.encode('utf-8'))
     c_resp_json = c_char_p(resp_json.encode('utf-8'))
 
     utxo_json = await do_call('indy_parse_response_with_fees',
-                              c_wallet_handle,
                               c_payment_method,
                               c_resp_json,
                               parse_response_with_fees.cb)
@@ -231,13 +226,11 @@ async def build_get_utxo_request(wallet_handle: int,
     return res
 
 
-async def parse_get_utxo_response(wallet_handle: int,
-                                  payment_method: str,
+async def parse_get_utxo_response(payment_method: str,
                                   resp_json: str) -> str:
     """
      Parses response for Indy request for getting UTXO list.
 
-    :param wallet_handle: wallet handle (created by open_wallet).
     :param payment_method: Payment method to use (for example, 'sov').
     :param resp_json: resp_json: response for Indy request for getting UTXO list
                       Note: this param will be used to determine payment_method
@@ -250,8 +243,7 @@ async def parse_get_utxo_response(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("parse_get_utxo_response: >>> wallet_handle: %r, payment_method: %r, resp_json: %r",
-                 wallet_handle,
+    logger.debug("parse_get_utxo_response: >>> payment_method: %r, resp_json: %r",
                  payment_method,
                  resp_json)
 
@@ -259,12 +251,10 @@ async def parse_get_utxo_response(wallet_handle: int,
         logger.debug("parse_get_utxo_response: Creating callback")
         parse_get_utxo_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
-    c_wallet_handle = c_int32(wallet_handle)
     c_payment_method = c_char_p(payment_method.encode('utf-8'))
     c_resp_json = c_char_p(resp_json.encode('utf-8'))
 
     utxo_json = await do_call('indy_parse_get_utxo_response',
-                              c_wallet_handle,
                               c_payment_method,
                               c_resp_json,
                               parse_get_utxo_response.cb)
@@ -329,13 +319,11 @@ async def build_payment_req(wallet_handle: int,
     return res
 
 
-async def parse_payment_response(wallet_handle: int,
-                                 payment_method: str,
+async def parse_payment_response(payment_method: str,
                                  resp_json: str) -> str:
     """
      Parses response for Indy request for getting UTXO list.
 
-    :param wallet_handle: wallet handle (created by open_wallet).
     :param payment_method: Payment method to use (for example, 'sov').
     :param resp_json: resp_json: response for Indy request for getting UTXO list
                       Note: this param will be used to determine payment_method
@@ -349,7 +337,6 @@ async def parse_payment_response(wallet_handle: int,
 
     logger = logging.getLogger(__name__)
     logger.debug("parse_payment_response: >>> wallet_handle: %r, payment_method: %r, resp_json: %r",
-                 wallet_handle,
                  payment_method,
                  resp_json)
 
@@ -357,12 +344,10 @@ async def parse_payment_response(wallet_handle: int,
         logger.debug("parse_payment_response: Creating callback")
         parse_payment_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
-    c_wallet_handle = c_int32(wallet_handle)
     c_payment_method = c_char_p(payment_method.encode('utf-8'))
     c_resp_json = c_char_p(resp_json.encode('utf-8'))
 
     utxo_json = await do_call('indy_parse_payment_response',
-                              c_wallet_handle,
                               c_payment_method,
                               c_resp_json,
                               parse_payment_response.cb)
