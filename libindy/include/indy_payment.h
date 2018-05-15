@@ -1,5 +1,5 @@
-#ifndef __indy__payment_included__
-#define __indy__payment_included__
+#ifndef __indy__payment__included__
+#define __indy__payment__included__
 
 #include "indy_mod.h"
 #include "indy_types.h"
@@ -95,13 +95,13 @@ extern "C" {
     /// #Returns
     /// payment_addresses_json - json array of string with json addresses
 
-    extern indy_error_t indy_list_addresses(indy_handle_t command_handle,
-                                            indy_handle_t wallet_handle,
+    extern indy_error_t indy_list_payment_addresses(indy_handle_t command_handle,
+                                                    indy_handle_t wallet_handle,
 
-                                            void           (*cb)(indy_handle_t xcommand_handle,
-                                                                 indy_error_t  err,
-                                                                 const char*   payment_addresses_json)
-                                            );
+                                                    void           (*cb)(indy_handle_t xcommand_handle,
+                                                                         indy_error_t  err,
+                                                                         const char*   payment_addresses_json)
+                                                    );
 
     /// Modifies Indy request by adding information how to pay fees for this transaction
     /// according to selected payment method.
@@ -117,7 +117,8 @@ extern "C" {
     /// with at least one output that corresponds to payment address that user owns.
     ///
     /// #Params
-    /// wallet_handle: wallet handle where keys for signature are stored
+    /// wallet_handle: wallet handle
+    /// submitter_did : DID of request sender
     /// req_json: initial transaction request as json
     /// inputs_json: The list of UTXO inputs as json array:
     ///   ["input1", ...]
@@ -137,6 +138,7 @@ extern "C" {
 
     extern indy_error_t indy_add_request_fees(indy_handle_t command_handle,
                                               indy_handle_t wallet_handle,
+                                              const char *  submitter_did,
                                               const char *  req_json,
                                               const char *  inputs_json,
                                               const char *  outputs_json,
@@ -147,11 +149,37 @@ extern "C" {
                                                                    const char*   payment_method)
                                               );
 
+    /// Parses response for Indy request with fees.
+    ///
+    /// #Params
+    /// command_handle
+    /// payment_method
+    /// resp_json: response for Indy request with fees
+    ///   Note: this param will be used to determine payment_method
+    ///
+    /// #Returns
+    /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
+    ///   [{
+    ///      input: <str>, // UTXO input
+    ///      amount: <int>, // amount of tokens in this input
+    ///      extra: <str>, // optional data from payment transaction
+    ///   }]
+
+    extern indy_error_t indy_parse_response_with_fees(indy_handle_t command_handle,
+                                                        const char *  payment_method,
+                                                        const char *  resp_json,
+
+                                                        void           (*cb)(indy_handle_t xcommand_handle,
+                                                                indy_error_t  err,
+                                                                const char*   utxo_json)
+                                                );
+
     /// Builds Indy request for getting UTXO list for payment address
     /// according to this payment method.
     ///
     /// #Params
     /// wallet_handle: wallet handle where keys for signature are stored
+    /// submitter_did: target payment address
     /// payment_address: target payment address
     ///
     /// #Returns
@@ -160,6 +188,7 @@ extern "C" {
 
     extern indy_error_t indy_build_get_utxo_request(indy_handle_t command_handle,
                                                     indy_handle_t wallet_handle,
+                                                    const char *  submitter_did,
                                                     const char *  payment_address,
 
                                                     void           (*cb)(indy_handle_t xcommand_handle,
@@ -217,6 +246,7 @@ extern "C" {
 
     extern indy_error_t indy_build_payment_req(indy_handle_t command_handle,
                                                indy_handle_t wallet_handle,
+                                               const char *  submitter_did,
                                                const char *  inputs_json,
                                                const char *  outputs_json,
 
@@ -269,6 +299,7 @@ extern "C" {
 
     extern indy_error_t indy_build_mint_req(indy_handle_t command_handle,
                                             indy_handle_t wallet_handle,
+                                            const char *  submitter_did,
                                             const char *  outputs_json,
 
                                             void           (*cb)(indy_handle_t xcommand_handle,
@@ -294,6 +325,7 @@ extern "C" {
 
     extern indy_error_t indy_build_set_txn_fees_req(indy_handle_t command_handle,
                                                     indy_handle_t wallet_handle,
+                                                    const char *  submitter_did,
                                                     const char *  payment_method,
                                                     const char *  fees_json,
 
@@ -314,6 +346,7 @@ extern "C" {
 
     extern indy_error_t indy_build_get_txn_fees_req(indy_handle_t command_handle,
                                                     indy_handle_t wallet_handle,
+                                                    const char *  submitter_did,
                                                     const char *  payment_method,
 
                                                     void           (*cb)(indy_handle_t xcommand_handle,
@@ -344,16 +377,6 @@ extern "C" {
                                                                               indy_error_t  err,
                                                                               const char*   fees_json)
                                                          );
-
-    extern indy_error_t indy_sign_multi_request(indy_handle_t command_handle,
-                                                indy_handle_t wallet_handle,
-                                                const char *  submitter_did,
-                                                const char *  request_json,
-
-                                                void           (*cb)(indy_handle_t xcommand_handle,
-                                                                     indy_error_t  err,
-                                                                     const char*   signed_request_json)
-                                                );
 
 #ifdef __cplusplus
 }
