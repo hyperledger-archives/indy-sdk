@@ -12,8 +12,8 @@ value3 = "RecordValue3"
 tags_empty = "{}"
 options_empty = "{}"
 query_empty = "{}"
-tags1 = '{"tagName1":"str1","tagName2":5,"tagName3":12}'
-tags2 = '{"tagName1":"str2","tagName2":"pre_str3","tagName3":2}'
+tags1 = '{"tagName1":"str1","tagName2":"5","tagName3":"12"}'
+tags2 = '{"tagName1":"str2","tagName2":"pre_str3","tagName3":"2"}'
 tags3 = '{"tagName1":"str1","tagName2":"str2","tagName3":"str3"}'
 
 

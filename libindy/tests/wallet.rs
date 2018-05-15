@@ -124,6 +124,7 @@ mod high_cases {
         }
 
         #[test]
+        #[ignore]
         fn indy_delete_wallet_works_for_opened() {
             TestUtils::cleanup_storage();
 

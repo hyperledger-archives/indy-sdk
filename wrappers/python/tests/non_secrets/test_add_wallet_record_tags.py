@@ -35,4 +35,4 @@ async def test_add_wallet_record_tags_works_for_twice(wallet_handle):
 async def test_add_wallet_record_tags_works_for_not_found_record(wallet_handle):
     with pytest.raises(IndyError) as e:
         await non_secrets.add_wallet_record_tags(wallet_handle, type_, id1, tags1)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code

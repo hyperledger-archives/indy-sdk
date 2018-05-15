@@ -4,7 +4,6 @@ import org.bitcoinj.core.Base58;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
 import org.hyperledger.indy.sdk.did.DidResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
-import org.hyperledger.indy.sdk.wallet.WalletNotFoundException;
 
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
