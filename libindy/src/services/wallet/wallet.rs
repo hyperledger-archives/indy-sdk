@@ -5,6 +5,7 @@ use serde_json;
 use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 
 use errors::wallet::WalletError;
+use errors::common::CommonError;
 
 use super::storage;
 use super::iterator::WalletIterator;
@@ -98,6 +99,56 @@ pub enum TagName {
     OfPlain(Vec<u8>),
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct EncryptedValue {
+    pub data: Vec<u8>,
+    pub key: Vec<u8>
+}
+
+impl EncryptedValue {
+    pub fn new(data: Vec<u8>, key: Vec<u8>) -> Self {
+        Self {
+            data: data,
+            key: key,
+        }
+    }
+
+    pub fn encrypt(data: &str, key: &[u8]) -> Self {
+        let value_key = ChaCha20Poly1305IETF::create_key();
+        EncryptedValue::new(
+            ChaCha20Poly1305IETF::encrypt_as_not_searchable(data.as_bytes(), &value_key),
+            ChaCha20Poly1305IETF::encrypt_as_not_searchable(&value_key, key)
+        )
+    }
+
+    pub fn decrypt(&self, key: &[u8]) -> Result<String, WalletError> {
+        let value_key = ChaCha20Poly1305IETF::decrypt(&self.key, key)?;
+        if value_key.len() != ChaCha20Poly1305IETF::KEYBYTES {
+            return Err(WalletError::EncryptionError("Value key is not right size".to_string()));
+        }
+
+        String::from_utf8(ChaCha20Poly1305IETF::decrypt(&self.data, &value_key)?)
+            .map_err(|_| WalletError::CommonError(CommonError::InvalidStructure("Invalid UTF8 string inside of value".to_string())))
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut result = self.key.clone();
+        result.extend_from_slice(self.data.as_slice());
+        result
+    }
+
+    pub fn from_bytes(joined_data: &[u8]) -> Result<Self, CommonError> {
+        // value_key is stored as NONCE || CYPHERTEXT. Lenth of CYPHERTHEXT is length of DATA + length of TAG.
+        const ENCRYPTED_KEY_LEN: usize = ChaCha20Poly1305IETF::TAGBYTES + ChaCha20Poly1305IETF::NONCEBYTES + ChaCha20Poly1305IETF::KEYBYTES;
+        if joined_data.len() < ENCRYPTED_KEY_LEN {
+            return Err(CommonError::InvalidStructure(format!("Unable to split value_key from value: value too short")));
+        }
+
+        let value_key = joined_data[..ENCRYPTED_KEY_LEN].to_owned();
+        let value = joined_data[ENCRYPTED_KEY_LEN..].to_owned();
+        Ok(EncryptedValue{data: value, key: value_key})
+    }
+}
 
 impl Wallet {
     pub fn new(name: &str, pool_name: &str, storage: Box<storage::WalletStorage>, keys: Keys) -> Wallet {
@@ -112,13 +163,11 @@ impl Wallet {
     pub fn add(&self, type_: &str, name: &str, value: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
         let etype = ChaCha20Poly1305IETF::encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let ename = ChaCha20Poly1305IETF::encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
-        let value_key= ChaCha20Poly1305IETF::create_key();
-        let evalue = ChaCha20Poly1305IETF::encrypt_as_not_searchable(value.as_bytes(), &value_key);
-        let evalue_key = ChaCha20Poly1305IETF::encrypt_as_not_searchable(&value_key, &self.keys.value_key);
+        let evalue = EncryptedValue::encrypt(value, &self.keys.value_key);
 
         let etags = encrypt_tags(tags, &self.keys.tag_name_key, &self.keys.tag_value_key, &self.keys.tags_hmac_key);
 
-        self.storage.add(&etype, &ename, &evalue, &evalue_key, &etags)?;
+        self.storage.add(&etype, &ename, &evalue, &etags)?;
         Ok(())
     }
     
@@ -149,10 +198,8 @@ impl Wallet {
     pub fn update(&self, type_: &str, name: &str, new_value: &str) -> Result<(), WalletError> {
         let encrypted_type = ChaCha20Poly1305IETF::encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let encrypted_name = ChaCha20Poly1305IETF::encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
-        let new_value_key= ChaCha20Poly1305IETF::create_key();
-        let encrypted_new_value = ChaCha20Poly1305IETF::encrypt_as_not_searchable(new_value.as_bytes(), &new_value_key);
-        let encrypted_new_value_key = ChaCha20Poly1305IETF::encrypt_as_not_searchable(&new_value_key, &self.keys.value_key);
-        self.storage.update(&encrypted_type, &encrypted_name, &encrypted_new_value, &encrypted_new_value_key)?;
+        let encrypted_value = EncryptedValue::encrypt(new_value, &self.keys.value_key);
+        self.storage.update(&encrypted_type, &encrypted_name, &encrypted_value)?;
         Ok(())
     }
 
@@ -164,13 +211,7 @@ impl Wallet {
 
         let value = match result.value {
             None => None,
-            Some(storage_value) => {
-                let value_key = ChaCha20Poly1305IETF::decrypt(&storage_value.key, &self.keys.value_key)?;
-                if value_key.len() != ChaCha20Poly1305IETF::key_len() {
-                    return Err(WalletError::EncryptionError("Value key is not right size".to_string()));
-                }
-                Some(String::from_utf8(ChaCha20Poly1305IETF::decrypt(&storage_value.data, &value_key)?)?)
-            }
+            Some(encrypted_value) => Some(encrypted_value.decrypt(&self.keys.value_key)?)
         };
 
         let tags = match decrypt_tags(&result.tags, &self.keys.tag_name_key, &self.keys.tag_value_key)? {
@@ -225,6 +266,7 @@ impl Wallet {
 mod tests {
     use std;
     use std::env;
+    use base64;
     use errors::wallet::WalletError;
     use services::wallet::wallet::{WalletRecord,Wallet,WalletRuntimeConfig};
     use services::wallet::storage::{WalletStorage,WalletStorageType};
@@ -258,7 +300,6 @@ mod tests {
         r##"{"master_key": "AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=\n", "storage_credentials": {}}}"##.to_string()
     }
 
-
     fn _create_wallet() -> Wallet {
         let name = "test_wallet";
         let pool_name = "test_pool";
@@ -266,8 +307,16 @@ mod tests {
         let master_key = _get_test_master_key();
         storage_type.create_storage("test_wallet", None, "", &Keys::gen_keys(master_key)).unwrap();
         let credentials = _credentials();
-        let (storage, keys) = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
-        Wallet::new(name, pool_name, storage, Keys::new(keys))
+        let storage = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
+
+        let keys = Keys::new(
+            ChaCha20Poly1305IETF::decrypt(
+                &storage.get_storage_metadata().unwrap(),
+                &master_key
+            ).unwrap()
+        );
+
+        Wallet::new(name, pool_name, storage, keys)
     }
 
     fn _get_test_master_key() -> [u8; 32] {
@@ -390,8 +439,14 @@ mod tests {
 
         let storage_type = SQLiteStorageType::new();
         let credentials = _credentials();
-        let (storage, keys) = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
-        let wallet = Wallet::new("test_wallet", "test_pool", storage, Keys::new(keys));
+        let storage = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
+        let keys = Keys::new(
+            ChaCha20Poly1305IETF::decrypt( // DARKO
+                &storage.get_storage_metadata().unwrap(),
+                &_get_test_master_key()
+            ).unwrap()
+        );
+        let wallet = Wallet::new("test_wallet", "test_pool", storage, keys);
 
         let entity = wallet.get(type_, name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
 
