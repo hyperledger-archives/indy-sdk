@@ -1,0 +1,13 @@
+[package]
+name = "null-payment-method"
+version = "0.1.0"
+authors = ["Nikita Khateev <nikita.khateev@dsr-corporation.com>"]
+
+[lib]
+name = "nullpay"
+crate-type = ["dylib", "rlib"]
+
+[dependencies]
+libc = "0.2.21"
+lazy_static = "1.0"
+rand = "0.3"

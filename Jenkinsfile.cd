@@ -266,6 +266,7 @@ def windowsTesting() {
                                 "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
                                 "RUST_BACKTRACE=1"
                         ]) {
+                            bat "cargo build --release"
                             bat "cargo test --release --no-run"
 
                             echo "Windows Libindy Test: Run tests"
