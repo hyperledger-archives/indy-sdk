@@ -62,6 +62,3 @@ byteorder = "1.0.0"
 version = "0.5.0"
 default-features = false
 features = ["v4"]
-
-[dev-dependencies]
-null-payment-method = {path = "libnullpay"}

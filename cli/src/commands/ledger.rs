@@ -1752,6 +1752,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn schema_works_for_set_fees() {
             let ctx = CommandContext::new();
 
@@ -2388,6 +2389,7 @@ pub mod tests {
         use super::*;
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn get_utxo_works() {
             let ctx = CommandContext::new();
 
@@ -2408,6 +2410,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn get_utxo_works_for_unknown_payment_address() {
             let ctx = CommandContext::new();
 
@@ -2431,6 +2434,7 @@ pub mod tests {
         use super::*;
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn payment_works() {
             let ctx = CommandContext::new();
 
@@ -2451,6 +2455,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn payment_works_for_multiple_inputs_and_outputs() {
             let ctx = CommandContext::new();
 
@@ -2470,6 +2475,7 @@ pub mod tests {
             disconnect_and_delete_pool(&ctx);
         }
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn payment_works_for_incompatible_payment_methods() {
             let ctx = CommandContext::new();
 
@@ -2490,6 +2496,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn payment_works_for_empty_inputs() {
             let ctx = CommandContext::new();
 
@@ -2510,6 +2517,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn payment_works_for_invalid_inputs() {
             let ctx = CommandContext::new();
 
@@ -2530,6 +2538,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn payment_works_for_invalid_outputs() {
             let ctx = CommandContext::new();
 
@@ -2554,6 +2563,7 @@ pub mod tests {
         use super::*;
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn get_fees_works() {
             let ctx = CommandContext::new();
 
@@ -2573,6 +2583,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn get_fees_works_for_unknown_payment_method() {
             let ctx = CommandContext::new();
 
@@ -2596,6 +2607,7 @@ pub mod tests {
         use super::*;
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn mint_prepare_works() {
             let ctx = CommandContext::new();
 
@@ -2613,6 +2625,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn mint_prepare_works_for_multiple_outputs() {
             let ctx = CommandContext::new();
 
@@ -2630,6 +2643,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn mint_prepare_works_for_invalid_outputs_format() {
             let ctx = CommandContext::new();
 
@@ -2651,6 +2665,7 @@ pub mod tests {
         use super::*;
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn set_fees_prepare_works() {
             let ctx = CommandContext::new();
 
@@ -2671,6 +2686,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn set_fees_prepare_works_for_unknown_payment_method() {
             let ctx = CommandContext::new();
 
@@ -2691,6 +2707,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn set_fees_prepare_works_for_invalid_fees_format() {
             let ctx = CommandContext::new();
 

@@ -115,6 +115,7 @@ pub mod tests {
         use super::*;
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn create_works() {
             let ctx = CommandContext::new();
 
@@ -134,6 +135,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn create_works_for_seed() {
             let ctx = CommandContext::new();
 
@@ -154,6 +156,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn create_works_for_unknown_payment_method() {
             let ctx = CommandContext::new();
 
@@ -168,6 +171,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn create_works_for_no_opened_wallet() {
             let ctx = CommandContext::new();
             load_null_payment_plugin(&ctx);
@@ -184,6 +188,7 @@ pub mod tests {
         use super::*;
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn list_worksa() {
             let ctx = CommandContext::new();
 
@@ -202,6 +207,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn list_works_for_empty_list() {
             let ctx = CommandContext::new();
 
@@ -219,6 +225,7 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn list_works_for_no_opened_wallet() {
             let ctx = CommandContext::new();
 

@@ -3,6 +3,9 @@ name = "indy-cli"
 version = "0.1.0"
 authors = ["Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>"]
 
+[features]
+payments_cli_tests = []
+
 [dependencies]
 ansi_term = "0.10"
 chrono = "0.4"

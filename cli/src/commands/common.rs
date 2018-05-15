@@ -159,6 +159,7 @@ pub mod tests {
         use super::*;
 
         #[test]
+        #[cfg(feature = "payments_cli_tests")]
         pub fn load_works() {
             let ctx = CommandContext::new();
 
