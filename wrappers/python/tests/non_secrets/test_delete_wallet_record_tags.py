@@ -28,4 +28,4 @@ async def test_delete_wallet_record_tags_works_for_delete_all(wallet_handle):
 async def test_delete_wallet_record_tags_works_for_not_found_record(wallet_handle):
     with pytest.raises(IndyError) as e:
         await non_secrets.delete_wallet_record_tags(wallet_handle, type_, id1, '["tagName1", "tagName2", "tagName3"]')
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code

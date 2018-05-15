@@ -1,6 +1,7 @@
 package org.hyperledger.indy.sdk.pairwise;
 
 import org.json.JSONArray;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -8,6 +9,7 @@ import static org.junit.Assert.assertEquals;
 public class ListPairwiseTest extends PairwiseIntegrationTest {
 
 	@Test
+	@Ignore
 	public void testListPairwiseWorks() throws Exception {
 		Pairwise.createPairwise(wallet, theirDid, myDid, null).get();
 
@@ -19,6 +21,7 @@ public class ListPairwiseTest extends PairwiseIntegrationTest {
 	}
 
 	@Test
+	@Ignore
 	public void testListPairwiseWorksForEmptyResult() throws Exception {
 		String listPairwise = Pairwise.listPairwise(wallet).get();
 		JSONArray listPairwiseArray = new JSONArray(listPairwise);

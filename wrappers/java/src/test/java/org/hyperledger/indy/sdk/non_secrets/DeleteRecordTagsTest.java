@@ -1,6 +1,6 @@
 package org.hyperledger.indy.sdk.non_secrets;
 
-import org.hyperledger.indy.sdk.wallet.WalletNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -36,7 +36,7 @@ public class DeleteRecordTagsTest extends NonSecretsIntegrationTest {
 	@Test
 	public void testDeleteRecordTagsWorksForNotFoundRecord() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletNotFoundException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		WalletRecord.deleteTags(wallet, type, id, "[\"tagName1\"]").get();
 	}

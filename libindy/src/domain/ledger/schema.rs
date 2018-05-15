@@ -3,6 +3,7 @@ extern crate serde_json;
 extern crate indy_crypto;
 
 use super::constants::{SCHEMA, GET_SCHEMA};
+use super::response::GetReplyResultV1;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
@@ -86,16 +87,39 @@ impl JsonEncodable for GetSchemaOperationData {}
 
 impl<'a> JsonDecodable<'a> for GetSchemaOperationData {}
 
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct GetSchemaReplyResult {
-    pub identifier: String,
-    pub req_id: u64,
-    pub seq_no: u32,
-    #[serde(rename = "type")]
-    pub  _type: String,
-    pub  data: SchemaOperationData,
-    pub  dest: String
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum GetSchemaReplyResult {
+    GetSchemaReplyResultV0(GetSchemaResultV0),
+    GetSchemaReplyResultV1(GetReplyResultV1<GetSchemaResultDataV1>)
 }
 
 impl<'a> JsonDecodable<'a> for GetSchemaReplyResult {}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetSchemaResultV0 {
+    pub seq_no: u32,
+    pub data: SchemaOperationData,
+    pub dest: String
+}
+
+impl<'a> JsonDecodable<'a> for GetSchemaResultV0 {}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetSchemaResultDataV1 {
+    pub ver: String,
+    pub id: String,
+    pub schema_name: String,
+    pub schema_version: String,
+    pub value: GetSchemaResultDataValueV1
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetSchemaResultDataValueV1 {
+    pub attr_names: HashSet<String>
+}
+
+impl<'a> JsonDecodable<'a> for GetSchemaResultDataV1 {}

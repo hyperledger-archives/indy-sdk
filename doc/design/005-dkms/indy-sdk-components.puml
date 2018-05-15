@@ -1,0 +1,23 @@
+@startuml
+
+() "C Interface" as cinterface
+[libindy] -- cinterface
+
+[Indy CLI] as cli
+cinterface <.. cli
+
+package "Programming lanugages wrappers" {
+    [Java Wrapper] as java_wrapper
+    cinterface <.. java_wrapper
+    
+    [Python Wrapper] as python_wrapper
+    cinterface <.. python_wrapper
+    
+    [ObjectiveC Wrapper (iOS)] as objc_wrapper
+    cinterface <.. objc_wrapper
+
+    [.Net Wrapper (iOS)] as dnet_wrapper
+    cinterface <.. dnet_wrapper
+}
+
+@enduml

@@ -4,7 +4,7 @@ use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use named_type::NamedType;
 
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MyDidInfo {
     pub did: Option<String>,
     pub seed: Option<String>,

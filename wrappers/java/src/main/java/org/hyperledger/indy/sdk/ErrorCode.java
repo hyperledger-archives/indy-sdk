@@ -90,6 +90,16 @@ public enum ErrorCode {
 	 */
 	CommonIOError(114),
 
+	/**
+	 * Caller passed invalid value as param 13 (null, invalid json and etc..)
+	 */
+	CommonInvalidParam13(115),
+
+	/**
+	 * Caller passed invalid value as param 14 (null, invalid json and etc..)
+	 */
+	CommonInvalidParam14(116),
+
 	// Wallet errors
 	 
 	/**
@@ -251,7 +261,23 @@ public enum ErrorCode {
 	/**
 	 * Attempt to create duplicate did.
 	 */
-	DidAlreadyExistsError(600);
+	DidAlreadyExistsError(600),
+
+	/**
+	 * Unknown payment method has been called
+	 */
+	UnknownPaymentMethod(700),
+
+	/**
+	 * No method were scraped from inputs/outputs or more than one were scraped
+	 */
+	IncompatiblePaymentError(701),
+
+	/**
+	 * Insufficient funds on inputs
+	 */
+	InsufficientFundsError(702),
+	;
 
 	private int value;
 	private static Map<Integer, ErrorCode> map = new HashMap<Integer, ErrorCode>();

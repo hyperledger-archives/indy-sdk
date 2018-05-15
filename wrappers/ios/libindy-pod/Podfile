@@ -8,7 +8,7 @@ def appPods
     pod 'libsodium'
     pod 'libzmq',"4.2.3"
     pod 'OpenSSL'
-    pod 'libindy', "1.3.1-1"
+    pod 'libindy', "1.4.0-1"
 end
 
 target 'Indy-demo' do

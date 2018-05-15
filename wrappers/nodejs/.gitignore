@@ -1,0 +1,22 @@
+/libindy.so
+/libindy.dylib
+/indy.dll
+
+# this is the libindy header files needed for the build, must be published to npm
+/include/
+
+node_modules/
+build/
+build-pre-gyp/
+Release/
+prebuilds/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.tlog
+*.obj
+*.1sdk.pdb
+*.lastbuildstate
+npm-debug.log
+package-lock.json
+yarn.lock

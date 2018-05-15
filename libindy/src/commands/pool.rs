@@ -130,27 +130,27 @@ impl PoolCommandExecutor {
     }
 
     fn create(&self, name: &str, config: Option<&str>) -> Result<(), IndyError> {
-        info!("create >>> name: {:?},  config: {:?}", name, config);
+        debug!("create >>> name: {:?}, config: {:?}", name, config);
 
         let res = self.pool_service.create(name, config)?;
 
-        info!("create <<< res: {:?}", res);
+        debug!("create << res: {:?}", res);
 
         Ok(res)
     }
 
     fn delete(&self, name: &str) -> Result<(), IndyError> {
-        info!("delete >>> name: {:?}", name);
+        debug!("delete >>> name: {:?}", name);
 
         let res = self.pool_service.delete(name)?;
 
-        info!("delete <<< res: {:?}", res);
+        debug!("delete << res: {:?}", res);
 
         Ok(res)
     }
 
     fn open(&self, name: &str, config: Option<&str>, cb: Box<Fn(Result<i32, IndyError>) + Send>) {
-        info!("open >>> name: {:?}, config: {:?}", name, config);
+        debug!("open >>> name: {:?}, config: {:?}", name, config);
 
         let result = self.pool_service.open(name, config)
             .map_err(|err| IndyError::PoolError(err))
@@ -165,23 +165,23 @@ impl PoolCommandExecutor {
             Ok((mut cbs, handle)) => { cbs.insert(handle, cb); /* TODO check if map contains same key */ }
         };
 
-        info!("open <<<");
+        debug!("open <<<");
     }
 
     fn list(&self) -> Result<String, IndyError> {
-        info!("list >>>");
+        debug!("list >>> ");
 
         let res = self.pool_service.list()
             .and_then(|pools| ::serde_json::to_string(&pools).map_err(|err|
                 PoolError::CommonError(CommonError::InvalidState(format!("Can't serialize pools list {}", err)))))?;
 
-        info!("list <<< res: {:?}", res);
+        debug!("list << res: {:?}", res);
 
         Ok(res)
     }
 
     fn close(&self, handle: i32, cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        info!("close >>> handle: {:?}", handle);
+        debug!("close >>> handle: {:?}", handle);
 
         let result = self.pool_service.close(handle)
             .map_err(From::from)
@@ -196,11 +196,11 @@ impl PoolCommandExecutor {
             Ok((mut cbs, handle)) => { cbs.insert(handle, cb); /* TODO check if map contains same key */ }
         };
 
-        info!("close <<<");
+        debug!("close <<<");
     }
 
     fn refresh(&self, handle: i32, cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        info!("refresh >>> handle: {:?}", handle);
+        debug!("refresh >>> handle: {:?}", handle);
 
         let result = self.pool_service.refresh(handle)
             .map_err(From::from)
@@ -215,6 +215,6 @@ impl PoolCommandExecutor {
             Ok((mut cbs, handle)) => { cbs.insert(handle, cb); /* TODO check if map contains same key */ }
         };
 
-        info!("refresh <<<");
+        debug!("refresh <<<");
     }
 }

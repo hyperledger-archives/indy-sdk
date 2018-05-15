@@ -7,7 +7,7 @@ use self::indy_crypto::cl::{RevocationKeyPublic, RevocationKeyPrivate};
 
 use super::DELIMITER;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use named_type::NamedType;
 
 pub const CL_ACCUM: &'static str = "CL_ACCUM";
@@ -121,3 +121,14 @@ pub struct RevocationRegistryDefinitionPrivate {
 impl JsonEncodable for RevocationRegistryDefinitionPrivate {}
 
 impl<'a> JsonDecodable<'a> for RevocationRegistryDefinitionPrivate {}
+
+#[derive(Debug, Deserialize, Serialize, Clone, NamedType)]
+pub struct RevocationRegistryInfo {
+    pub id: String,
+    pub curr_id: u32,
+    pub used_ids: HashSet<u32>
+}
+
+impl JsonEncodable for RevocationRegistryInfo {}
+
+impl<'a> JsonDecodable<'a> for RevocationRegistryInfo {}

@@ -33,7 +33,7 @@ use self::wallet::{Wallet, Keys, Tags};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct WalletDescriptor {
     pool_name: String,
     xtype: String,
@@ -195,10 +195,14 @@ impl WalletService {
             config_file.sync_all()?;
         }
 
+        trace!("create <<<");
+
         Ok(())
     }
 
     pub fn delete_wallet(&self, name: &str, credentials: &str) -> Result<(), WalletError> {
+        trace!("delete >>> name: {:?}, credentials: {:?}", name, credentials);
+
         let mut descriptor_json = String::new();
         let descriptor: WalletDescriptor = WalletDescriptor::from_json({
             let mut file = File::open(_wallet_descriptor_path(name))?; // FIXME: Better error!
@@ -232,10 +236,15 @@ impl WalletService {
                                     &credentials.storage_credentials)?;
 
         fs::remove_dir_all(_wallet_path(name))?;
+
+        trace!("delete <<<");
+
         Ok(())
     }
 
     pub fn open_wallet(&self, name: &str, runtime_config: Option<&str>, credentials: &str) -> Result<i32, WalletError> {
+        trace!("open >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
+
         let mut descriptor_json = String::new();
         let descriptor: WalletDescriptor = WalletDescriptor::from_json({
             let mut file = File::open(_wallet_descriptor_path(name))?; // FIXME: Better error!
@@ -280,10 +289,14 @@ impl WalletService {
         let wallet = Wallet::new(name, &descriptor.pool_name, storage, keys);
         let wallet_handle = SequenceUtils::get_next_id();
         wallets.insert(wallet_handle, Box::new(wallet));
+
+        trace!("open <<< wallet_handle: {:?}", wallet_handle);
         Ok(wallet_handle)
     }
 
     pub fn list_wallets(&self) -> Result<Vec<WalletDescriptor>, WalletError> {
+        trace!("list_wallets >>>");
+
         let mut descriptors = Vec::new();
         let wallet_home_path = EnvironmentUtils::wallet_home_path();
 
@@ -298,14 +311,22 @@ impl WalletService {
             }
         }
 
+        trace!("list_wallets <<< descriptors: {:?}", descriptors);
+
         Ok(descriptors)
     }
 
     pub fn close_wallet(&self, handle: i32) -> Result<(), WalletError> {
+        trace!("close >>> handle: {:?}", handle);
+
         match self.wallets.borrow_mut().remove(&handle) {
             Some(mut wallet) => wallet.close(),
             None => Err(WalletError::InvalidHandle(handle.to_string()))
-        }
+        }?;
+
+        trace!("close <<<");
+
+        Ok(())
     }
 
     pub fn add_record(&self, wallet_handle: i32, type_: &str, name: &str, value: &str, tags_json: &str) -> Result<(), WalletError> {
@@ -485,6 +506,13 @@ impl WalletService {
                     Err(err) => Err(err),
                 }
             None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
+        }
+    }
+
+    pub fn check(&self, handle: i32) -> Result<(), WalletError> {
+        match self.wallets.borrow().get(&handle) {
+            Some(_) => Ok(()),
+            None => Err(WalletError::InvalidHandle(handle.to_string()))
         }
     }
 

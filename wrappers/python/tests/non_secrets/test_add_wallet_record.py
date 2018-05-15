@@ -22,4 +22,4 @@ async def test_add_wallet_record_works_for_duplicate(wallet_handle):
     await non_secrets.add_wallet_record(wallet_handle, type_, id1, value1, tags1)
     with pytest.raises(IndyError) as e:
         await non_secrets.add_wallet_record(wallet_handle, type_, id1, value1, tags1)
-    assert ErrorCode.WalletAlreadyExistsError == e.value.error_code
+    assert ErrorCode.WalletItemAlreadyExists == e.value.error_code

@@ -25,7 +25,7 @@ async def test_get_key_metadata_works_for_empty_string(wallet_handle):
 async def test_get_key_metadata_works_for_no_key(wallet_handle, verkey_my1):
     with pytest.raises(IndyError) as e:
         await did.get_key_metadata(wallet_handle, verkey_my1)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -33,7 +33,7 @@ async def test_get_key_metadata_works_for_no_metadata(wallet_handle):
     verkey = await did.create_key(wallet_handle, "{}")
     with pytest.raises(IndyError) as e:
         await did.get_key_metadata(wallet_handle, verkey)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio

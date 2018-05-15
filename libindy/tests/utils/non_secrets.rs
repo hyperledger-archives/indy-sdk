@@ -30,11 +30,11 @@ pub const VALUE_5: &'static str = "RecordValue5";
 pub const QUERY_EMPTY: &'static str = r#"{}"#;
 pub const OPTIONS_EMPTY: &'static str = r#"{}"#;
 pub const TAGS_EMPTY: &'static str = r#"{}"#;
-pub const TAGS: &'static str = r#"{"tagName1":"str1","tagName2":5,"tagName3":12}"#;
-pub const TAGS_2: &'static str = r#"{"tagName1":"str2","tagName2":"pre_str3","tagName3":2}"#;
+pub const TAGS: &'static str = r#"{"tagName1":"str1","tagName2":"5","tagName3":"12"}"#;
+pub const TAGS_2: &'static str = r#"{"tagName1":"str2","tagName2":"pre_str3","tagName3":"2"}"#;
 pub const TAGS_3: &'static str = r#"{"tagName1":"str1","tagName2":"str2","tagName3":"str3"}"#;
-pub const TAGS_4: &'static str = r#"{"tagName1":2,"tagName2":4,"tagName3":5}"#;
-pub const TAGS_5: &'static str = r#"{"tagName1":"prefix_str2","tagName2":"str3","tagName3":6}"#;
+pub const TAGS_4: &'static str = r#"{"tagName1":"2","tagName2":"4","tagName3":"5"}"#;
+pub const TAGS_5: &'static str = r#"{"tagName1":"prefix_str2","tagName2":"str3","tagName3":"6"}"#;
 
 pub struct NonSecretsUtils {}
 

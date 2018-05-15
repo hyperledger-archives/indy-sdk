@@ -15,22 +15,39 @@ pub fn attr_common_view(attr: &str) -> String {
 }
 
 pub fn build_credential_schema(attrs: &HashSet<String>) -> Result<CredentialSchema, CommonError> {
+    trace!("build_credential_schema >>> attrs: {:?}", attrs);
+
     let mut credential_schema_builder = issuer::Issuer::new_credential_schema_builder()?;
     for attr in attrs {
         credential_schema_builder.add_attr(&attr_common_view(attr))?;
     }
-    Ok(credential_schema_builder.finalize()?)
+
+    let res = credential_schema_builder.finalize()?;
+
+    trace!("build_credential_schema <<< res: {:?}", res);
+
+    Ok(res)
 }
 
 pub fn build_credential_values(credential_values: &HashMap<String, AttributeValues>) -> Result<CredentialValues, CommonError> {
+    trace!("build_credential_values >>> credential_values: {:?}", credential_values);
+
     let mut credential_values_builder = issuer::Issuer::new_credential_values_builder()?;
     for (attr, values) in credential_values {
         credential_values_builder.add_value(&attr_common_view(attr), &values.encoded)?;
     }
-    Ok(credential_values_builder.finalize()?)
+
+    let res = credential_values_builder.finalize()?;
+
+    trace!("build_credential_values <<< res: {:?}", res);
+
+    Ok(res)
 }
 
-pub fn build_sub_proof_request(attrs_for_credential: &Vec<AttributeInfo>, predicates_for_credential: &Vec<PredicateInfo>) -> Result<SubProofRequest, CommonError> {
+pub fn build_sub_proof_request(attrs_for_credential: &Vec<AttributeInfo>,
+                               predicates_for_credential: &Vec<PredicateInfo>) -> Result<SubProofRequest, CommonError> {
+    trace!("build_sub_proof_request >>> attrs_for_credential: {:?}, predicates_for_credential: {:?}", attrs_for_credential, predicates_for_credential);
+
     let mut sub_proof_request_builder = verifier::Verifier::new_sub_proof_request_builder()?;
 
     for attr in attrs_for_credential {
@@ -41,10 +58,20 @@ pub fn build_sub_proof_request(attrs_for_credential: &Vec<AttributeInfo>, predic
         sub_proof_request_builder.add_predicate(&attr_common_view(&predicate.name), "GE", predicate.p_value)?;
     }
 
-    Ok(sub_proof_request_builder.finalize()?)
+    let res = sub_proof_request_builder.finalize()?;
+
+    trace!("build_sub_proof_request <<< res: {:?}", res);
+
+    Ok(res)
 }
 
 pub fn parse_cred_rev_id(cred_rev_id: &str) -> Result<u32, CommonError> {
-    Ok(cred_rev_id.parse::<u32>()
-        .map_err(|err| CommonError::InvalidStructure(format!("Cannot parse CredentialRevocationId: {}", err)))?)
+    trace!("parse_cred_rev_id >>> cred_rev_id: {:?}", cred_rev_id);
+
+    let res = cred_rev_id.parse::<u32>()
+        .map_err(|err| CommonError::InvalidStructure(format!("Cannot parse CredentialRevocationId: {}", err)))?;
+
+    trace!("parse_cred_rev_id <<< res: {:?}", res);
+
+    Ok(res)
 }
