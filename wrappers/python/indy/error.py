@@ -76,6 +76,9 @@ class ErrorCode(IntEnum):
     # Attempt to open encrypted wallet with invalid credentials
     WalletAccessFailed = 207,
 
+    # Entity id already present in the wallet.
+    WalletRecordAlreadyExistsError = 208,
+
     # Ledger errors
     # Trying to open pool ledger that wasn't created before
     PoolLedgerNotCreatedError = 300,

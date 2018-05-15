@@ -1278,11 +1278,9 @@ mod tests {
         wallet_service.update_record_tags(wallet_handle, type_, name, &new_tags_json).unwrap();
 
         let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
-        let mut expected_tags = new_tags.clone();
-        expected_tags.insert(tag_name_1.to_string(), tag_value_1.to_string());
         let retrieved_tags = item.tags.unwrap();
         let retrieved_tags: Tags = serde_json::from_str(&retrieved_tags).unwrap();
-        assert_eq!(expected_tags, retrieved_tags);
+        assert_eq!(new_tags, retrieved_tags);
     }
 
     /**
