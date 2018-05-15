@@ -6,6 +6,7 @@ use super::constants::{REVOC_REG_DEF, GET_REVOC_REG_DEF};
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
+use super::response::GetReplyResultV1;
 use super::super::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValue};
 
 #[derive(Serialize, Debug)]
@@ -55,15 +56,20 @@ impl GetRevRegDefOperation {
 
 impl JsonEncodable for GetRevRegDefOperation {}
 
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct GetRevocRegDefReplyResult {
-    pub identifier: String,
-    pub req_id: u64,
-    pub seq_no: i32,
-    #[serde(rename = "type")]
-    pub  _type: String,
-    pub  data: RevocationRegistryDefinitionV1
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum GetRevocRegDefReplyResult {
+    GetRevocRegDefReplyResultV0(GetRevocRegDefResultV0),
+    GetRevocRegDefReplyResultV1(GetReplyResultV1<RevocationRegistryDefinitionV1>)
 }
 
 impl<'a> JsonDecodable<'a> for GetRevocRegDefReplyResult {}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRevocRegDefResultV0 {
+    pub seq_no: i32,
+    pub data: RevocationRegistryDefinitionV1
+}
+
+impl<'a> JsonDecodable<'a> for GetRevocRegDefResultV0 {}

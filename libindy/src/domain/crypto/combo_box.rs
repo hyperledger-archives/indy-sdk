@@ -1,6 +1,6 @@
 extern crate rmp_serde;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ComboBox {
     pub msg: String,
     pub sender: String,

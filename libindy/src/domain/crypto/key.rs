@@ -22,7 +22,7 @@ impl JsonEncodable for Key {}
 
 impl<'a> JsonDecodable<'a> for Key {}
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct KeyInfo {
     pub seed: Option<String>,
     pub crypto_type: Option<String>

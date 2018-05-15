@@ -53,6 +53,8 @@ impl Drop for SDKTailsAccessor {
 
 impl RevocationTailsAccessor for SDKTailsAccessor {
     fn access_tail(&self, tail_id: u32, accessor: &mut FnMut(&Tail)) -> Result<(), IndyCryptoError> {
+        debug!("access_tail >>> tail_id: {:?}",tail_id);
+
         let tail_bytes = self.tails_service
             .read(self.tails_reader_handle,
                   TAIL_SIZE,
@@ -61,14 +63,19 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
                 IndyCryptoError::InvalidState("Can't read tail bytes from blob storage".to_owned()))?; //TODO
         let tail = Tail::from_bytes(tail_bytes.as_slice())?;
         accessor(&tail);
-        Ok(())
+
+        let res = ();
+
+        debug!("access_tail <<< res: {:?}",res);
+
+        Ok(res)
     }
 }
 
 pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
                                   writer_handle: i32,
                                   rtg: &mut RevocationTailsGenerator) -> Result<(String, String), CommonError> {
-    info!("store_tails_from_generator >>> writer_handle: {:?}, rtg: {:?}", writer_handle, rtg);
+    debug!("store_tails_from_generator >>> writer_handle: {:?}",writer_handle);
 
     let blob_handle = service.create_blob(writer_handle)?;
 
@@ -84,7 +91,7 @@ pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
 
     let res = service.finalize(blob_handle).map(|(location, hash)| (location, hash.to_base58()))?;
 
-    info!("store_tails_from_generator <<< res: {:?}", res);
+    debug!("store_tails_from_generator <<< res: {:?}", res);
 
     Ok(res)
 }

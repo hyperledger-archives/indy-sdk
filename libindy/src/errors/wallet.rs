@@ -136,7 +136,7 @@ impl ToErrorCode for WalletError {
 
 impl From<io::Error> for WalletError {
     fn from(err: io::Error) -> WalletError {
-        WalletError::CommonError(CommonError::IOError((err)))
+        WalletError::CommonError(CommonError::IOError(err))
     }
 }
 

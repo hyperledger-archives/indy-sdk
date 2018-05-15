@@ -6,6 +6,7 @@ use super::constants::{CRED_DEF, GET_CRED_DEF};
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
+use super::response::GetReplyResultV1;
 use super::super::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1, SignatureType};
 
 #[derive(Serialize, Debug)]
@@ -55,20 +56,37 @@ impl GetCredDefOperation {
 
 impl JsonEncodable for GetCredDefOperation {}
 
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum GetCredDefReplyResult {
+    GetCredDefReplyResultV0(GetCredDefResultV0),
+    GetCredDefReplyResultV1(GetReplyResultV1<GetCredDefResultDataV1>)
+}
+
+impl<'a> JsonDecodable<'a> for GetCredDefReplyResult {}
+
 #[derive(Deserialize, Serialize, Debug)]
-pub struct GetCredDefReplyResult {
+pub struct GetCredDefResultV0 {
     pub identifier: String,
-    #[serde(rename = "reqId")]
-    pub req_id: u64,
     #[serde(rename = "ref")]
     pub ref_: u64,
     #[serde(rename = "seqNo")]
     pub seq_no: i32,
-    #[serde(rename = "type")]
-    pub  _type: String,
-    pub  signature_type: SignatureType,
-    pub  origin: String,
-    pub  data: CredentialDefinitionData
+    pub signature_type: SignatureType,
+    pub origin: String,
+    pub data: CredentialDefinitionData
 }
 
-impl<'a> JsonDecodable<'a> for GetCredDefReplyResult {}
+impl<'a> JsonDecodable<'a> for GetCredDefResultV0 {}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetCredDefResultDataV1 {
+    pub ver: String,
+    pub id: String,
+    #[serde(rename = "type")]
+    pub type_: SignatureType,
+    pub tag: String,
+    pub schema_ref: String,
+    pub public_keys: CredentialDefinitionData
+}

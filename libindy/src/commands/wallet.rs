@@ -151,12 +151,12 @@ impl WalletCommandExecutor {
               storage_type: Option<&str>,
               config: Option<&str>,
               credentials: &str) -> Result<(), IndyError> {
-        info!("create >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}",
-              pool_name, name, storage_type, config, credentials);
+        debug!("create >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}",
+               pool_name, name, storage_type, config, credentials);
 
         let res = self.wallet_service.create_wallet(pool_name, name, storage_type, config, credentials)?;
 
-        info!("create <<< res: {:?}", res);
+        debug!("create <<< res: {:?}", res);
 
         Ok(res)
     }
@@ -165,28 +165,28 @@ impl WalletCommandExecutor {
             name: &str,
             runtime_config: Option<&str>,
             credentials: &str) -> Result<i32, IndyError> {
-        info!("open >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
+        debug!("open >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
 
         let res = self.wallet_service.open_wallet(name, runtime_config, credentials)?;
 
-        info!("open <<< res: {:?}", res);
+        debug!("open <<< res: {:?}", res);
 
         Ok(res)
     }
 
     fn close(&self,
              handle: i32) -> Result<(), IndyError> {
-        info!("close >>> handle: {:?}", handle);
+        debug!("close >>> handle: {:?}", handle);
 
         let res = self.wallet_service.close_wallet(handle)?;
 
-        info!("close <<< res: {:?}", res);
+        debug!("close <<< res: {:?}", res);
 
         Ok(res)
     }
 
     fn list_wallets(&self) -> Result<String, IndyError> {
-        info!("list_wallets >>>");
+        debug!("list_wallets >>>");
 
         let res = self.wallet_service.list_wallets()
             .and_then(|wallets|
@@ -194,7 +194,7 @@ impl WalletCommandExecutor {
                     .map_err(|err|
                         WalletError::CommonError(CommonError::InvalidState(format!("Can't serialize wallets list {}", err)))))?;
 
-        info!("list_wallets <<< res: {:?}", res);
+        debug!("list_wallets << res: {:?}", res);
 
         Ok(res)
     }
@@ -202,11 +202,11 @@ impl WalletCommandExecutor {
     fn delete(&self,
               name: &str,
               credentials: &str) -> Result<(), IndyError> {
-        info!("delete >>> name: {:?}, credentials: {:?}", name, credentials);
+        debug!("delete >>> name: {:?}, credentials: {:?}", name, credentials);
 
         let res = self.wallet_service.delete_wallet(name, credentials)?;
 
-        info!("delete <<< res: {:?}", res);
+        debug!("delete <<< res: {:?}", res);
 
         Ok(res)
     }

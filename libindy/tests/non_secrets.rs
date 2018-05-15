@@ -862,7 +862,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = NonSecretsUtils::get_wallet_record(wallet_handle, TYPE, ID, OPTIONS_EMPTY);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -879,7 +879,7 @@ mod high_cases {
 
             let options = "not_json";
             let res = NonSecretsUtils::get_wallet_record(wallet_handle, TYPE, ID, options);
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletStorageError, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 

@@ -1,10 +1,14 @@
 extern crate serde_json;
+extern crate regex;
 
 pub mod common;
 pub mod did;
 pub mod pool;
 pub mod wallet;
 pub mod ledger;
+pub mod payment_address;
+
+use self::regex::Regex;
 
 use command_executor::{CommandContext, CommandParams};
 
@@ -84,7 +88,7 @@ pub fn get_opt_bool_param(key: &str, params: &CommandParams) -> Result<Option<bo
 
 pub fn get_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Vec<&'a str>, ()> {
     match params.get(name) {
-        Some(v) => Ok(v.split(",").collect::<Vec<&'a str>>()),
+        Some(v) => Ok(if v.is_empty() {Vec::new()} else { v.split(",").collect::<Vec<&'a str>>() }),
         None => Err(println_err!("No required \"{}\" parameter present", name))
     }
 }
@@ -109,6 +113,30 @@ pub fn get_object_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<
             println_err!("No required \"{}\" parameter present", name);
             Err(())
         }
+    }
+}
+
+fn extract_array_tuples<'a>(param: &'a str) -> Vec<String> {
+    let re = Regex::new(r#"\(([\w\d:,]+)\),?"#).unwrap();
+    re.captures_iter(param).map(|c| c[1].to_string()).collect::<Vec<String>>()
+}
+
+pub fn get_str_tuple_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Vec<String>, ()> {
+    match params.get(name) {
+        Some(v) => Ok(extract_array_tuples(v)),
+        None => Err(println_err!("No required \"{}\" parameter present", name))
+    }
+}
+
+pub fn get_opt_str_tuple_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Option<Vec<String>>, ()> {
+    match params.get(name) {
+        Some(v) =>
+            if v.is_empty() {
+                Ok(Some(Vec::<String>::new()))
+            } else {
+                Ok(Some(extract_array_tuples(v)))
+            },
+        None => Ok(None)
     }
 }
 

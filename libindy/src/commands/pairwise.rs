@@ -76,11 +76,11 @@ impl PairwiseCommandExecutor {
     fn pairwise_exists(&self,
                        wallet_handle: i32,
                        their_did: &str) -> Result<bool, IndyError> {
-        info!("pairwise_exists >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
+        debug!("pairwise_exists >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
 
         let res = self.wallet_service.record_exists::<Pairwise>(wallet_handle, their_did)?;
 
-        info!("pairwise_exists <<< res: {:?}", res);
+        debug!("pairwise_exists <<< res: {:?}", res);
 
         Ok(res)
     }
@@ -90,7 +90,7 @@ impl PairwiseCommandExecutor {
                        their_did: &str,
                        my_did: &str,
                        metadata: Option<&str>) -> Result<(), IndyError> {
-        info!("create_pairwise >>> wallet_handle: {:?}, their_did: {:?}, my_did: {:?}, metadata: {:?}", wallet_handle, their_did, my_did, metadata);
+        debug!("create_pairwise >>> wallet_handle: {:?}, their_did: {:?}, my_did: {:?}, metadata: {:?}", wallet_handle, their_did, my_did, metadata);
 
         self.wallet_service.get_indy_record::<Did>(wallet_handle, &my_did, &RecordOptions::id())?;
         self.wallet_service.get_indy_record::<TheirDid>(wallet_handle, &their_did, &RecordOptions::id())?;
@@ -103,14 +103,14 @@ impl PairwiseCommandExecutor {
 
         self.wallet_service.add_indy_object(wallet_handle, &their_did, &pairwise, "{}")?;
 
-        info!("create_pairwise <<<");
+        debug!("create_pairwise <<<");
 
         Ok(())
     }
 
     fn list_pairwise(&self,
                      wallet_handle: i32) -> Result<String, IndyError> {
-        info!("list_pairwise >>> wallet_handle: {:?}", wallet_handle);
+        debug!("list_pairwise >>> wallet_handle: {:?}", wallet_handle);
 
         let mut pairwise_search =
             self.wallet_service.search_indy_records::<Pairwise>(wallet_handle, "{}", &RecordOptions::id_value())?;
@@ -129,7 +129,7 @@ impl PairwiseCommandExecutor {
         let res = serde_json::to_string(&list_pairwise)
             .map_err(|err| CommonError::InvalidStructure(format!("Can't serialize {:?}", err)))?;
 
-        info!("list_pairwise <<< res: {:?}", res);
+        debug!("list_pairwise <<< res: {:?}", res);
 
         Ok(res)
     }
@@ -137,7 +137,7 @@ impl PairwiseCommandExecutor {
     fn get_pairwise(&self,
                     wallet_handle: i32,
                     their_did: &str) -> Result<String, IndyError> {
-        info!("get_pairwise >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
+        debug!("get_pairwise >>> wallet_handle: {:?}, their_did: {:?}", wallet_handle, their_did);
 
         let pairwise_info =
             PairwiseInfo::from(
@@ -147,16 +147,17 @@ impl PairwiseCommandExecutor {
             .map_err(|e|
                 CommonError::InvalidState(format!("Can't serialize PairwiseInfo: {:?}", e)))?;
 
-        info!("get_pairwise <<< res: {:?}", res);
+        debug!("get_pairwise <<< res: {:?}", res);
 
         Ok(res)
     }
+
 
     fn set_pairwise_metadata(&self,
                              wallet_handle: i32,
                              their_did: &str,
                              metadata: Option<&str>) -> Result<(), IndyError> {
-        info!("set_pairwise_metadata >>> wallet_handle: {:?}, their_did: {:?}, metadata: {:?}", wallet_handle, their_did, metadata);
+        debug!("set_pairwise_metadata >>> wallet_handle: {:?}, their_did: {:?}, metadata: {:?}", wallet_handle, their_did, metadata);
 
         let mut pairwise: Pairwise =
             self.wallet_service.get_indy_object(wallet_handle, &their_did, &RecordOptions::id_value(), &mut String::new())?;
@@ -165,7 +166,7 @@ impl PairwiseCommandExecutor {
 
         self.wallet_service.update_indy_object(wallet_handle, &their_did, &pairwise)?;
 
-        info!("set_pairwise_metadata <<<");
+        debug!("set_pairwise_metadata <<<");
 
         Ok(())
     }
