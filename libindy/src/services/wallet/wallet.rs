@@ -608,10 +608,8 @@ mod tests {
         let item = wallet.get(type_, name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
         let retrieved_tags = item.tags.unwrap();
         let retrieved_tags: Tags = serde_json::from_str(&retrieved_tags).unwrap();
-        let mut expected_tags = updated_tags.clone();
-        expected_tags.insert(tag_name_3.to_string(), tag_value_3.to_string());
 
-        assert_eq!(expected_tags, retrieved_tags);
+        assert_eq!(updated_tags, retrieved_tags);
     }
 
     /**
