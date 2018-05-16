@@ -48,14 +48,6 @@
     return [NSData dataWithBytes:bytes length:sizeof(bytes)];
 }
 
-+ (NSString *)trusteeSeed {
-    return @"000000000000000000000000Trustee1";
-}
-
-+ (NSString *)mySeed {
-    return @"00000000000000000000000000000My1";
-}
-
 - (NSError *)createMyDidWithWalletHandle:(IndyHandle)walletHandle
                                myDidJson:(NSString *)myDidJson
                                 outMyDid:(NSString **)myDid
@@ -114,6 +106,51 @@
     return err;
 }
 
+- (void)createAndStoreAndPublishDidWithWalletHandle:(IndyHandle)walletHandle
+                                         poolHandle:(IndyHandle)poolHandle
+                                                did:(NSString **)did
+                                             verkey:(NSString **)verkey {
+    // 1. Obtain trustee did
+    NSString *trusteeDid = nil;
+    NSError *ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                             seed:[TestUtils trusteeSeed]
+                                                                         outMyDid:&trusteeDid
+                                                                      outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDid() failed for trustee");
+    NSLog(@"trusteeDid: %@", trusteeDid);
+
+    // 2. Obtain did
+    __block NSString *tempDid;
+    __block NSString *tempVerkey;
+    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+                                                       myDidJson:@"{}"
+                                                        outMyDid:&tempDid
+                                                     outMyVerkey:&tempVerkey];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed for myDid");
+
+    // 3. Bulld nym request
+    NSString *nymRequest = nil;
+    ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
+                                                              targetDid:tempDid
+                                                                 verkey:tempVerkey
+                                                                  alias:nil
+                                                                   role:@"TRUSTEE"
+                                                             outRequest:&nymRequest];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildNymRequest() failed");
+
+    // 4. Sign and Submit nym request
+    NSString *nymResponse = nil;
+    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
+                                                              walletHandle:walletHandle
+                                                              submitterDid:trusteeDid
+                                                               requestJson:nymRequest
+                                                           outResponseJson:&nymResponse];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequest() failed");
+
+    if (did) {*did = tempDid;}
+    if (verkey) {*verkey = tempVerkey;}
+}
+
 
 - (NSError *)storeTheirDidWithWalletHandle:(IndyHandle)walletHandle
                               identityJson:(NSString *)identityJson {
@@ -135,15 +172,13 @@
 
 - (NSError *)storeTheirDidFromPartsWithWalletHandle:(IndyHandle)walletHandle
                                            theirDid:(NSString *)theirDid
-                                        theirVerkey:(NSString *)theirVerkey
-                                           endpoint:(NSString *)endpoint {
+                                        theirVerkey:(NSString *)theirVerkey {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
 
     NSString *theirIdentityJson = [NSString stringWithFormat:@"{"
                                                                      "\"did\":\"%@\","
-                                                                     "\"verkey\":\"%@\","
-                                                                     "\"endpoint\":\"\%@\"}", theirDid, theirVerkey, endpoint];
+                                                                     "\"verkey\":\"%@\"}", theirDid, theirVerkey];
 
     [IndyDid storeTheirDid:theirIdentityJson
               walletHandle:walletHandle
@@ -279,6 +314,168 @@
                                                            outResponseJson:&nymResponse];
 
     return myDid;
+}
+
+- (NSError *)keyForDid:(NSString *)did
+            poolHandle:(IndyHandle)poolHandle
+          walletHandle:(IndyHandle)walletHandle
+                   key:(NSString **)key {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *verkey;
+
+    [IndyDid keyForDid:did
+            poolHandle:poolHandle
+          walletHandle:walletHandle
+            completion:^(NSError *error, NSString *blockVerkey) {
+                err = error;
+                verkey = blockVerkey;
+                [completionExpectation fulfill];
+            }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (key) {*key = verkey;}
+
+    return err;
+}
+
+- (NSError *)keyForLocalDid:(NSString *)did
+               walletHandle:(IndyHandle)walletHandle
+                        key:(NSString **)key {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *verkey;
+
+    [IndyDid keyForLocalDid:did
+               walletHandle:walletHandle
+                 completion:^(NSError *error, NSString *blockVerkey) {
+                     err = error;
+                     verkey = blockVerkey;
+                     [completionExpectation fulfill];
+                 }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (key) {*key = verkey;}
+
+    return err;
+}
+
+- (NSError *)setEndpointAddress:(NSString *)address
+                   transportKey:(NSString *)transportKey
+                         forDid:(NSString *)did
+                   walletHandle:(IndyHandle)walletHandle {
+
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+    [IndyDid setEndpointAddress:address
+                   transportKey:transportKey
+                         forDid:did
+                   walletHandle:walletHandle
+                     completion:^(NSError *error) {
+                         err = error;
+                         [completionExpectation fulfill];
+                     }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    return err;
+}
+
+- (NSError *)getEndpointForDid:(NSString *)did
+                  walletHandle:(IndyHandle)walletHandle
+                    poolHandle:(IndyHandle)poolHandle
+                       address:(NSString **)address
+                  transportKey:(NSString **)transportKey {
+
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outAddress = nil;
+    __block NSString *outTransportKey = nil;
+
+    [IndyDid getEndpointForDid:did
+                  walletHandle:walletHandle
+                    poolHandle:poolHandle
+                    completion:^(NSError *error, NSString *blockAddress, NSString *blockTransportKey) {
+                        err = error;
+                        outAddress = blockAddress;
+                        outTransportKey = blockTransportKey;
+
+                        [completionExpectation fulfill];
+                    }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
+    if (address) {*address = outAddress;}
+    if (transportKey) {*transportKey = outTransportKey;}
+
+    return err;
+}
+
+- (NSError *)setMetadata:(NSString *)metadata
+                  forDid:(NSString *)did
+            walletHandle:(IndyHandle)walletHandle {
+
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+    [IndyDid setMetadata:metadata
+                  forDid:did
+            walletHandle:walletHandle
+              completion:^(NSError *error) {
+                  err = error;
+                  [completionExpectation fulfill];
+              }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    return err;
+}
+
+- (NSError *)getMetadataForDid:(NSString *)did
+                  walletHandle:(IndyHandle)walletHandle
+                      metadata:(NSString **)metadata {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outMetadata;
+
+    [IndyDid getMetadataForDid:did
+                  walletHandle:walletHandle
+                    completion:^(NSError *error, NSString *blockMetadata) {
+                        err = error;
+                        outMetadata = blockMetadata;
+                        [completionExpectation fulfill];
+                    }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (metadata) {*metadata = outMetadata;}
+
+    return err;
+}
+
+- (NSError *)abbreviateVerkey:(NSString *)did
+                   fullVerkey:(NSString *)fullVerkey
+                       verkey:(NSString **)verkey {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outVerkey;
+
+    [IndyDid abbreviateVerkey:did
+                   fullVerkey:fullVerkey
+                   completion:^(NSError *error, NSString *blockVerkey) {
+                       err = error;
+                       outVerkey = blockVerkey;
+                       [completionExpectation fulfill];
+                   }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (verkey) {*verkey = outVerkey;}
+
+    return err;
 }
 
 @end

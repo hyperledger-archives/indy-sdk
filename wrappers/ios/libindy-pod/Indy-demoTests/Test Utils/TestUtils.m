@@ -60,6 +60,11 @@
     return @"pool_1";
 }
 
++ (NSString *)wallet
+{
+    return @"wallet_1";
+}
+
 + (NSData *)message
 {
     NSString *messageJson =  @"{\"reqId\":1496822211362017764}";
@@ -87,6 +92,11 @@
 + (NSString *)trusteeSeed
 {
     return @"000000000000000000000000Trustee1";
+}
+
++ (NSString *)trusteeDid
+{
+    return @"V4SGRU86Z58d6TV7PBUe6f";
 }
 
 + (NSString *)trusteeVerkey
@@ -139,6 +149,11 @@
     return @"00000000000000000000000000000My2";
 }
 
++ (NSString *)myDid1
+{
+    return @"VsKV7grR1BUE29mG2Fm2kX";
+}
+
 + (NSString *)myVerkey1
 {
     return @"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
@@ -162,6 +177,15 @@
 + (NSString *)defaultType
 {
     return @"default";
+}
+
++ (NSString *)keychainType
+{
+    return @"keychain";
+}
+
++ (NSString *)gvtSchema {
+    return @"{\"id\":\"id\", \"name\":\"gvt\",\"version\":\"1.0\",\"attrNames\":[\"name\"],\"ver\":\"1.0\"}";
 }
 
 + (NSString *)gvtSchemaName {

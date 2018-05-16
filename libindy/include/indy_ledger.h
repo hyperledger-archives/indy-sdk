@@ -101,6 +101,37 @@ extern "C" {
                                          );
 
 
+    /// Multi signs request message.
+    ///
+    /// Adds submitter information to passed request json, signs it with submitter
+    /// sign key (see wallet_sign).
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// wallet_handle: wallet handle (created by open_wallet).
+    /// submitter_did: Id of Identity stored in secured Wallet.
+    /// request_json: Request data json.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Signed request json.
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Ledger*
+    /// Crypto*
+
+    extern indy_error_t indy_multi_sign_request(indy_handle_t command_handle,
+                                                indy_handle_t  wallet_handle,
+                                                const char *   submitter_did,
+                                                const char *   request_json,
+
+                                                void           (*cb)(indy_handle_t xcommand_handle,
+                                                                     indy_error_t  err,
+                                                                     const char*   signed_request_json)
+                                                );
+
     /// Builds a request to get a DDO.
     ///
     /// #Params

@@ -38,8 +38,8 @@
 + (void)createAndStoreMyDid:(NSString *)didJson
                walletHandle:(IndyHandle)walletHandle
                  completion:(void (^)(NSError *error,
-                                      NSString *did,
-                                      NSString *verkey)) completion;
+                         NSString *did,
+                         NSString *verkey))completion;
 
 /**
  Generated temporary keys (signing and encryption keys) for an existing
@@ -64,7 +64,7 @@
                   identityJson:(NSString *)identityJson
                   walletHandle:(IndyHandle)walletHandle
                     completion:(void (^)(NSError *error,
-                                         NSString *verkey)) completion;
+                            NSString *verkey))completion;
 
 /**
  Apply temporary keys as main for an existing DID (owned by the caller of the library).
@@ -75,7 +75,7 @@
  */
 + (void)replaceKeysApplyForDid:(NSString *)did
                   walletHandle:(IndyHandle)walletHandle
-                    completion:(void (^)(NSError *error)) completion;
+                    completion:(void (^)(NSError *error))completion;
 
 /**
  Saves their DID for a pairwise connection in a secured Wallet, so that it can be used to verify transaction.
@@ -95,7 +95,7 @@
  */
 + (void)storeTheirDid:(NSString *)identityJSON
          walletHandle:(IndyHandle)walletHandle
-           completion:(void (^)(NSError *error)) completion;
+           completion:(void (^)(NSError *error))completion;
 
 /**
   Returns ver key (key id) for the given DID.
@@ -137,8 +137,8 @@
  Returns the DIDs ver key (key id).
  */
 + (void)keyForLocalDid:(NSString *)did
-     walletHandle:(IndyHandle)walletHandle
-       completion:(void (^)(NSError *error, NSString *key))completion;
+          walletHandle:(IndyHandle)walletHandle
+            completion:(void (^)(NSError *error, NSString *key))completion;
 
 
 /**
@@ -150,18 +150,23 @@
   @param transportKey The DIDs transport key (ver key, key id).
  Returns no value.
  */
-+ (void)setEndpointAddress:(NSString *)address transportKey:(NSString *)transportKey forDid:(NSString *)did walletHandle:(IndyHandle)walletHandle completion:(void (^)(NSError *error))completion;
++ (void)setEndpointAddress:(NSString *)address
+              transportKey:(NSString *)transportKey
+                    forDid:(NSString *)did
+              walletHandle:(IndyHandle)walletHandle
+                completion:(void (^)(NSError *error))completion;
 
 /**
   Returns endpoint information for the given DID.
 
   @param walletHandle The wallet.
-  @param pool The pool.
+  @param poolHandle The pool.
   @param did  The DID to resolve endpoint.
  Returns endpoint and transportVk
  */
 + (void)getEndpointForDid:(NSString *)did
              walletHandle:(IndyHandle)walletHandle
+               poolHandle:(IndyHandle)poolHandle
                completion:(void (^)(NSError *error, NSString *address, NSString *transportKey))completion;
 
 /**
@@ -196,8 +201,8 @@
  @param fullVerkey    The DIDs verification key,
  Returns the DIDs verification key in either abbreviated or full form
  */
-+ (void)AbbreviateVerkey:(NSString *)did
-           fullVerkey:(NSString *)fullVerkey
-               completion:(void (^)(NSError *error, NSString *verkey))completion;
++ (void)abbreviateVerkey:(NSString *)did
+              fullVerkey:(NSString *)fullVerkey
+              completion:(void (^)(NSError *error, NSString *verkey))completion;
 
 @end

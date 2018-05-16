@@ -209,19 +209,9 @@ mod high_cases {
 
             let (my_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
-            let message = r#"{
-                "reqId":1496822211362017764,
-                "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
-                "operation":{
-                    "type":"1",
-                    "dest":"VsKV7grR1BUE29mG2Fm2kX",
-                    "verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
-                }
-            }"#;
-
             let expected_signature = r#""signature":"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW""#;
 
-            let msg = LedgerUtils::sign_request(wallet_handle, &my_did, message).unwrap();
+            let msg = LedgerUtils::sign_request(wallet_handle, &my_did, REQUEST).unwrap();
             assert!(msg.contains(expected_signature));
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -235,7 +225,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let res = LedgerUtils::sign_request(wallet_handle, DID, MESSAGE);
+            let res = LedgerUtils::sign_request(wallet_handle, DID, REQUEST);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -276,6 +266,64 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
+
+    mod multi_sign_request {
+        use super::*;
+
+        #[test]
+        fn indy_multi_sign_request_works() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (did2, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let message = LedgerUtils::multi_sign_request(wallet_handle, &did, REQUEST).unwrap();
+            let message = LedgerUtils::multi_sign_request(wallet_handle, &did2, &message).unwrap();
+
+            let msg: serde_json::Value = serde_json::from_str(&message).unwrap();
+            let signatures = msg["signatures"].as_object().unwrap();
+
+            assert_eq!(signatures[DID_TRUSTEE], r#"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW"#);
+            assert_eq!(signatures[DID_MY1], r#"49aXkbrtTE3e522AefE76J51WzUiakw3ZbxxWzf44cv7RS21n8mMr4vJzi4TymuqDupzCz7wEtuGz6rA94Y73kKR"#);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_multi_sign_request_works_for_unknown_signer() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let res = LedgerUtils::multi_sign_request(wallet_handle, DID, REQUEST);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_multi_sign_request_works_for_invalid_message_format() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (my_did, _) = DidUtils::create_my_did(wallet_handle, r#"{}"#).unwrap();
+
+            let res = LedgerUtils::multi_sign_request(wallet_handle, &my_did, "1495034346617224651");
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
 
     mod nym_requests {
         use super::*;

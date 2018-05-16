@@ -3,7 +3,7 @@ extern crate rmp_serde;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct KeyInfo {
     pub seed: Option<String>,
     pub crypto_type: Option<String>
@@ -13,7 +13,7 @@ impl JsonEncodable for KeyInfo {}
 
 impl<'a> JsonDecodable<'a> for KeyInfo {}
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MyDidInfo {
     pub did: Option<String>,
     pub seed: Option<String>,
@@ -80,7 +80,7 @@ impl JsonEncodable for Did {}
 
 impl<'a> JsonDecodable<'a> for Did {}
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ComboBox {
     pub msg: String,
     pub sender: String,

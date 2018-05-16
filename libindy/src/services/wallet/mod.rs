@@ -127,6 +127,8 @@ impl WalletService {
                                            credentials: *const c_char) -> ErrorCode,
                          free: extern fn(wallet_handle: i32,
                                          value: *const c_char) -> ErrorCode) -> Result<(), WalletError> {
+        trace!("register_type >>> xtype: {:?}", xtype);
+
         let mut wallet_types = self.types.borrow_mut();
 
         if wallet_types.contains_key(xtype) {
@@ -137,11 +139,18 @@ impl WalletService {
                             Box::new(
                                 PluggedWalletType::new(create, open, set, get,
                                                        get_not_expired, list, close, delete, free)));
+        trace!("register_type <<<");
+
         Ok(())
     }
 
-    pub fn create(&self, pool_name: &str, xtype: Option<&str>, name: &str, config: Option<&str>,
+    pub fn create(&self,
+                  pool_name: &str,
+                  xtype: Option<&str>,
+                  name: &str, config: Option<&str>,
                   credentials: Option<&str>) -> Result<(), WalletError> {
+        trace!("create >>> pool_name: {:?}, xtype: {:?}, name: {:?}, credentials: {:?}", pool_name, xtype, name, credentials);
+
         let xtype = xtype.unwrap_or("default");
 
         let wallet_types = self.types.borrow();
@@ -175,10 +184,16 @@ impl WalletService {
             config_file.sync_all()?;
         }
 
+        trace!("create <<<");
+
         Ok(())
     }
 
-    pub fn delete(&self, name: &str, credentials: Option<&str>) -> Result<(), WalletError> {
+    pub fn delete(&self,
+                  name: &str,
+                  credentials: Option<&str>) -> Result<(), WalletError> {
+        trace!("delete >>> name: {:?}, credentials: {:?}", name, credentials);
+
         let mut descriptor_json = String::new();
         let descriptor: WalletDescriptor = WalletDescriptor::from_json({
             let mut file = File::open(_wallet_descriptor_path(name))?; // FIXME: Better error!
@@ -211,10 +226,18 @@ impl WalletService {
                            credentials)?;
 
         fs::remove_dir_all(_wallet_path(name))?;
+
+        trace!("delete <<<");
+
         Ok(())
     }
 
-    pub fn open(&self, name: &str, runtime_config: Option<&str>, credentials: Option<&str>) -> Result<i32, WalletError> {
+    pub fn open(&self,
+                name: &str,
+                runtime_config: Option<&str>,
+                credentials: Option<&str>) -> Result<i32, WalletError> {
+        trace!("open >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
+
         let mut descriptor_json = String::new();
         let descriptor: WalletDescriptor = WalletDescriptor::from_json({
             let mut file = File::open(_wallet_descriptor_path(name))?; // FIXME: Better error!
@@ -254,10 +277,15 @@ impl WalletService {
 
         let wallet_handle = SequenceUtils::get_next_id();
         wallets.insert(wallet_handle, wallet);
+
+        trace!("open <<< wallet_handle: {:?}", wallet_handle);
+
         Ok(wallet_handle)
     }
 
     pub fn list_wallets(&self) -> Result<Vec<WalletMetadata>, WalletError> {
+        trace!("list_wallets >>>");
+
         let mut descriptors = Vec::new();
         let wallet_home_path = EnvironmentUtils::wallet_home_path();
 
@@ -272,14 +300,22 @@ impl WalletService {
             }
         }
 
+        trace!("list_wallets <<< descriptors: {:?}", descriptors);
+
         Ok(descriptors)
     }
 
     pub fn close(&self, handle: i32) -> Result<(), WalletError> {
-        match self.wallets.borrow_mut().remove(&handle) {
+        trace!("close >>> handle: {:?}", handle);
+
+        let res = match self.wallets.borrow_mut().remove(&handle) {
             Some(wallet) => wallet.close(),
             None => Err(WalletError::InvalidHandle(handle.to_string()))
-        }
+        }?;
+
+        trace!("close <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     pub fn set(&self, handle: i32, key: &str, value: &str) -> Result<(), WalletError> {
@@ -337,6 +373,13 @@ impl WalletService {
     pub fn get_pool_name(&self, handle: i32) -> Result<String, WalletError> {
         match self.wallets.borrow().get(&handle) {
             Some(wallet) => Ok(wallet.get_pool_name()),
+            None => Err(WalletError::InvalidHandle(handle.to_string()))
+        }
+    }
+
+    pub fn check(&self, handle: i32) -> Result<(), WalletError> {
+        match self.wallets.borrow().get(&handle) {
+            Some(_) => Ok(()),
             None => Err(WalletError::InvalidHandle(handle.to_string()))
         }
     }
