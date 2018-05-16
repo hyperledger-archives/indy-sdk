@@ -335,16 +335,11 @@ pub mod get_validator_info_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
-        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
 
-        let res = Ledger::build_get_validator_info_request(&submitter_did)
-            .and_then(|request| Ledger::submit_request(pool_handle, &request));
-
-        let response = match res {
-            Ok(response) => Ok(response),
-            Err(err) => handle_transaction_error(err, None, None, None),
-        }?;
+        let response = Ledger::build_get_validator_info_request(&submitter_did)
+            .and_then(|request| Ledger::submit_request(pool_handle, &request))
+            .map_err(|err| handle_transaction_error(err, None, None, None))?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -1251,7 +1246,7 @@ fn timestamp_to_datetime(_time: i64) -> String {
 pub enum ResponseType {
     REQNACK,
     REPLY,
-    REJECT
+    REJECT,
 }
 
 #[derive(Deserialize, Debug)]
@@ -1267,7 +1262,7 @@ pub struct ReplyResult<T> {
     pub data: T,
     #[serde(rename = "seqNo")]
     pub seq_no: u64,
-    pub identifier: String
+    pub identifier: String,
 }
 
 #[cfg(test)]
@@ -2546,6 +2541,7 @@ pub mod tests {
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
+
         #[test]
         #[cfg(feature = "payments_cli_tests")]
         pub fn payment_works_for_incompatible_payment_methods() {
