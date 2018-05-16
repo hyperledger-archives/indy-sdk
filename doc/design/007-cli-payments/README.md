@@ -57,7 +57,7 @@ Returns:
 Send payment transaction
 
 ```indy-cli
-indy> ledger payment inputs=<utxo-1>,..,<utxo-n> outputs=<pay-addr-0>:<amount>:<extra>,..,<pay-addr-n>:<amount>:<extra>
+indy> ledger payment inputs=<utxo-1>,..,<utxo-n> outputs=(<pay-addr-0>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
 ```
 
 Returns:
@@ -71,7 +71,7 @@ Note that "utxo-n" is identifier presented in "Input" column of ```ledger get-ut
 Send request to get fees amount for ledger transactions
 
 ```indy-cli
-indy> ledger get-fees
+indy> ledger get-fees payment_method=<payment_method>
 ```
 
 Returns:
@@ -83,7 +83,7 @@ Returns:
 Prepare MINT transaction as json.
 
 ```indy-cli
-indy> ledger mint-prepare outputs=<pay-addr-0>:<amount-0>:<extra-0>,..,<pay-addr-n>:<amount-n>:<extra-n>
+indy> ledger mint-prepare outputs=(<pay-addr-0>,<amount-0>,<extra-0>),..,(<pay-addr-n>,<amount-n>,<extra-n>)
 ```
 
 Returns:
@@ -139,7 +139,7 @@ Returns:
 All commands to send domain transactions require new optional params to add transactions fees:
 
 ```indy-cli
-[fees_inputs=<utxo-1>,..,<utxo-n>] [fees_outputs=<pay-addr-0>:<amount>:<extra>,..,<pay-addr-n>:<amount>:<extra>]
+[fees_inputs=<utxo-1>,..,<utxo-n>] [fees_outputs=(<pay-addr-0>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
 ```
 
 Note that "utxo-n" is identifier presented in "Input" column of ```ledger get-utxo``` command output

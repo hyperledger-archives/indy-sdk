@@ -175,6 +175,61 @@ pub extern fn indy_sign_request(command_handle: i32,
     res
 }
 
+/// Multi signs request message.
+///
+/// Adds submitter information to passed request json, signs it with submitter
+/// sign key (see wallet_sign).
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// wallet_handle: wallet handle (created by open_wallet).
+/// submitter_did: Id of Identity stored in secured Wallet.
+/// request_json: Request data json.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Signed request json.
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Ledger*
+/// Crypto*
+#[no_mangle]
+pub extern fn indy_multi_sign_request(command_handle: i32,
+                                      wallet_handle: i32,
+                                      submitter_did: *const c_char,
+                                      request_json: *const c_char,
+                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                           signed_request_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_multi_sign_request: >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_multi_sign_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::MultiSignRequest(
+            wallet_handle,
+            submitter_did,
+            request_json,
+            Box::new(move |result| {
+                let (err, signed_request_json) = result_to_err_code_1!(result, String::new());
+                trace!("indy_multi_sign_request: signed_request_json: {:?}", signed_request_json);
+                let signed_request_json = CStringUtils::string_to_cstring(signed_request_json);
+                cb(command_handle, err, signed_request_json.as_ptr())
+            })
+        )));
+
+    let res = result_to_err_code!(result);
+
+    trace!("indy_multi_sign_request: <<< res: {:?}", res);
+
+    res
+}
+
 
 /// Builds a request to get a DDO.
 ///

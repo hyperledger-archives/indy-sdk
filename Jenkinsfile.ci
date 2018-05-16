@@ -45,6 +45,7 @@ def windowsTesting() {
                                 "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
                                 "RUST_BACKTRACE=1"
                         ]) {
+                            bat "cargo build"
                             bat "cargo test --no-run"
 
                             echo "Windows Libindy Test: Run tests"
@@ -113,6 +114,7 @@ def macosTesting() {
                     setupRust()
                     setupBrewPackages()
                     sh "cargo build"
+                    sh "cargo test --no-run"
                     // TODO testing
                 }
 

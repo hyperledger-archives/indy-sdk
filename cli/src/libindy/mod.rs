@@ -2,6 +2,7 @@ pub mod did;
 pub mod pool;
 pub mod wallet;
 pub mod ledger;
+pub mod payment;
 mod callbacks;
 mod results;
 
@@ -135,7 +136,13 @@ pub enum ErrorCode
     UnknownCryptoTypeError = 500,
 
     // Attempt to create duplicate did
-    DidAlreadyExistsError = 600
+    DidAlreadyExistsError = 600,
+
+    // Unknown payment method was given
+    UnknownPaymentMethod = 700,
+
+    //No method were scraped from inputs/outputs or more than one were scraped
+    IncompatiblePaymentError = 701
 }
 
 impl ErrorCode {
@@ -184,6 +191,8 @@ impl ErrorCode {
             AnoncredsCredDefAlreadyExistsError => "Credential definition already exists",
             UnknownCryptoTypeError => "Unknown format of DID entity keys",
             DidAlreadyExistsError => "Did already exists",
+            UnknownPaymentMethod => "Unknown payment method was given",
+            IncompatiblePaymentError => "Multiple different payment methods were specified",
         }
     }
 }

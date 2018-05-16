@@ -228,7 +228,7 @@ pub mod rotate_key_command {
                 handle_transaction_response(response)?;
             }
             Err(err) => {
-                handle_transaction_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))?;
+                handle_transaction_error(err, Some(&did), Some(&pool_name), Some(&wallet_name));
             }
         };
 
