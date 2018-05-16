@@ -20,13 +20,14 @@ use errors::anoncreds::AnoncredsError;
 use services::anoncreds::helpers::*;
 
 use self::indy_crypto::cl::{
-    BlindedMasterSecret,
-    BlindedMasterSecretCorrectnessProof,
+    BlindedCredentialSecrets,
+    BlindedCredentialSecretsCorrectnessProof,
     CredentialPublicKey,
     MasterSecret,
-    MasterSecretBlindingData,
+    CredentialSecretsBlindingFactors,
     SubProofRequest
 };
+use self::indy_crypto::cl::issuer::Issuer as CryptoIssuer;
 use self::indy_crypto::cl::prover::Prover as CryptoProver;
 use self::indy_crypto::cl::verifier::Verifier as CryptoVerifier;
 
@@ -53,24 +54,27 @@ impl Prover {
     pub fn new_credential_request(&self,
                                   cred_def: &CredentialDefinition,
                                   master_secret: &MasterSecret,
-                                  credential_offer: &CredentialOffer) -> Result<(BlindedMasterSecret,
-                                                                                 MasterSecretBlindingData,
-                                                                                 BlindedMasterSecretCorrectnessProof), CommonError> {
+                                  credential_offer: &CredentialOffer) -> Result<(BlindedCredentialSecrets,
+                                                                                 CredentialSecretsBlindingFactors,
+                                                                                 BlindedCredentialSecretsCorrectnessProof), CommonError> {
         trace!("new_credential_request >>> cred_def: {:?}, master_secret: {:?}, credential_offer: {:?}",
                cred_def, master_secret, credential_offer);
 
         let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
+        let mut credential_values_builder = CryptoIssuer::new_credential_values_builder()?;
+        credential_values_builder.add_value_hidden("master_secret", &master_secret.value()?)?;
+        let cred_values = credential_values_builder.finalize()?;
 
-        let (blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof) =
-            CryptoProver::blind_master_secret(&credential_pub_key,
-                                              &credential_offer.key_correctness_proof,
-                                              &master_secret,
-                                              &credential_offer.nonce)?;
+        let (blinded_credential_secrets, credential_secrets_blinding_factors, blinded_credential_secrets_correctness_proof) =
+            CryptoProver::blind_credential_secrets(&credential_pub_key,
+                                                   &credential_offer.key_correctness_proof,
+                                                   &cred_values,
+                                                   &credential_offer.nonce)?;
 
-        trace!("new_credential_request <<< blinded_ms: {:?}, master_secret_blinding_data: {:?}, blinded_ms_correctness_proof: {:?}",
-               blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof);
+        trace!("new_credential_request <<< blinded_credential_secrets: {:?}, credential_secrets_blinding_factors: {:?}, blinded_credential_secrets_correctness_proof: {:?}",
+               blinded_credential_secrets, credential_secrets_blinding_factors, blinded_credential_secrets_correctness_proof);
 
-        Ok((blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof))
+        Ok((blinded_credential_secrets, credential_secrets_blinding_factors, blinded_credential_secrets_correctness_proof))
     }
 
     pub fn process_credential(&self,
@@ -83,13 +87,12 @@ impl Prover {
                credential, cred_request_metadata, master_secret, cred_def, rev_reg_def);
 
         let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
-        let credential_values = build_credential_values(&credential.values)?;
+        let credential_values = build_credential_values(&credential.values, Some(master_secret))?;
 
         CryptoProver::process_credential_signature(&mut credential.signature,
                                                    &credential_values,
                                                    &credential.signature_correctness_proof,
                                                    &cred_request_metadata.master_secret_blinding_data,
-                                                   &master_secret,
                                                    &credential_pub_key,
                                                    &cred_request_metadata.nonce,
                                                    rev_reg_def.as_ref().map(|r_reg_def| &r_reg_def.value.public_keys.accum_key),
@@ -161,6 +164,7 @@ impl Prover {
                credentials, proof_req, requested_credentials, master_secret, schemas, cred_defs, rev_states);
 
         let mut proof_builder = CryptoProver::new_proof_builder()?;
+        proof_builder.add_common_attribute("master_secret")?;
 
         let mut identifiers: Vec<Identifier> = Vec::new();
 
@@ -194,11 +198,14 @@ impl Prover {
             let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
 
             let credential_schema = build_credential_schema(&schema.attr_names)?;
-            let credential_values = build_credential_values(&credential.values)?;
+            let non_credential_schema = build_non_credential_schema()?;
+            let credential_values = build_credential_values(&credential.values, Some(master_secret))?;
+
             let sub_proof_request = Prover::_build_sub_proof_request(req_attrs_for_cred, req_predicates_for_cred)?;
 
             proof_builder.add_sub_proof_request(&sub_proof_request,
                                                 &credential_schema,
+                                                &non_credential_schema,
                                                 &credential.signature,
                                                 &credential_values,
                                                 &credential_pub_key,
@@ -221,7 +228,7 @@ impl Prover {
             sub_proof_index += 1;
         }
 
-        let proof = proof_builder.finalize(&proof_req.nonce, &master_secret)?;
+        let proof = proof_builder.finalize(&proof_req.nonce)?;
 
         let full_proof = Proof {
             proof,
