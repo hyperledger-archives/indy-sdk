@@ -14,6 +14,8 @@
 
 @implementation WalletUtils
 
+NSString *credentials = @"{\"key\":\"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=\",\"storage_credentials\":{}}";
+
 + (WalletUtils *)sharedInstance
 {
     static WalletUtils *instance = nil;
@@ -63,8 +65,6 @@
     NSString *walletName = [NSString stringWithFormat:@"default-wallet-name-%lu", (unsigned long)[[SequenceUtils sharedInstance] getNextId]];
     NSString *xTypeStr = (xtype) ? xtype : @"default";
 
-    NSString *credentials = @"{\"key\":\"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=\",\"storage_credentials\":{}}";
-
     [[IndyWallet sharedInstance] createWalletWithName:  walletName
                                              poolName:  poolName
                                                  type:  xTypeStr
@@ -112,8 +112,6 @@
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    NSString *credentials = @"{\"key\":\"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=\",\"storage_credentials\":{}}";
-
     [[IndyWallet sharedInstance] createWalletWithName:  walletName
                                              poolName:  poolName
                                                  type:  xtype
@@ -136,7 +134,7 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     [[IndyWallet sharedInstance] deleteWalletWithName:walletName
-                                          credentials:nil
+                                          credentials:credentials
                                            completion:^(NSError *error)
            {
                err = error;
@@ -156,8 +154,6 @@
     __block IndyHandle outHandle = 0;
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-
-    NSString *credentials = @"{\"key\":\"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=\",\"storage_credentials\":{}}";
 
     [[IndyWallet sharedInstance] openWalletWithName:walletName
                                       runtimeConfig:config
