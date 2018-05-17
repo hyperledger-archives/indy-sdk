@@ -113,7 +113,7 @@ pub mod load_plugin_command {
 
 pub fn load_plugin(ctx: &CommandContext, library: &str, initializer: &str) -> Result<(), ()> {
     let lib = libloading::Library::new(library)
-        .map_err(|_| println_err!("Plugin not found: \"{:?}\"", library))?;
+        .map_err(|_| println_err!("Plugin not found: {:?}", library))?;
 
     unsafe {
         let init_func: libloading::Symbol<unsafe extern fn() -> ErrorCode> = lib.get(initializer.as_bytes())
@@ -168,6 +168,30 @@ pub mod tests {
             params.insert("library", NULL_PAYMENT_PLUGIN.to_string());
             params.insert("initializer", NULL_PAYMENT_PLUGIN_INIT_FUNCTION.to_string());
             cmd.execute(&ctx, &params).unwrap();
+        }
+
+        #[test]
+        #[cfg(feature = "nullpay_plugin")]
+        pub fn load_works_for_unknown_plugin() {
+            let ctx = CommandContext::new();
+
+            let cmd = load_plugin_command::new();
+            let mut params = CommandParams::new();
+            params.insert("library", "unknown_payment_plugin".to_string());
+            params.insert("initializer", NULL_PAYMENT_PLUGIN_INIT_FUNCTION.to_string());
+            cmd.execute(&ctx, &params).unwrap_err();
+        }
+
+        #[test]
+        #[cfg(feature = "nullpay_plugin")]
+        pub fn load_works_for_unknown_init_function() {
+            let ctx = CommandContext::new();
+
+            let cmd = load_plugin_command::new();
+            let mut params = CommandParams::new();
+            params.insert("library", NULL_PAYMENT_PLUGIN.to_string());
+            params.insert("initializer", "unknown_init_function".to_string());
+            cmd.execute(&ctx, &params).unwrap_err();
         }
     }
 

@@ -188,8 +188,8 @@ pub mod tests {
         use super::*;
 
         #[test]
-        #[cfg(feature = "payments_cli_tests")]
-        pub fn list_worksa() {
+        #[cfg(feature = "nullpay_plugin")]
+        pub fn list_works() {
             let ctx = CommandContext::new();
 
             let wallet_handle = create_and_open_wallet(&ctx);
