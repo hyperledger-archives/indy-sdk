@@ -234,7 +234,7 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
         dir('libnullpay') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Indy Libnullpay Test: Build"
-                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build"
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release"
 
                 if (stashBuildResults) {
                     stash includes: 'target/release/libnullpay.so', name: 'LibnullpayUbuntuBuildResult'
