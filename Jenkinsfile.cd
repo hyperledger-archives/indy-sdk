@@ -144,9 +144,10 @@ def closePool(env_name, network_name, poolInst) {
     step([$class: 'WsCleanup'])
 }
 
-void getSrcVersion() {
+
+void getSrcVersion(folder) {
     commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
-    version = sh(returnStdout: true, script: "wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/libindy/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | cut -f2 -d '\"'").trim()
+    version = sh(returnStdout: true, script: "wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/$folder/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | cut -f2 -d '\"'").trim()
     return version
 }
 
@@ -228,6 +229,18 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
                 }
             }
         }
+
+        sh "cp libindy/target/release/libindy.so libnullpay"
+        dir('libnullpay') {
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                echo "${env_name} Indy Libnullpay Test: Build"
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build"
+
+                if (stashBuildResults) {
+                    stash includes: 'target/release/libnullpay.so', name: 'LibnullpayUbuntuBuildResult'
+                }
+            }
+        }
     }
     finally {
         closePool(env_name, network_name, poolInst)
@@ -281,11 +294,11 @@ def windowsTesting() {
                         stash includes: 'target/release/*.dll', name: 'LibindyWindowsBuildResult'
                     }
 
+                    bat "copy $WORKSPACE\\libindy\\target\\release\\indy.dll $WORKSPACE\\libindy\\prebuilt\\lib"
+                    bat "copy $WORKSPACE\\libindy\\target\\release\\indy.lib $WORKSPACE\\libindy\\prebuilt\\lib"
+
                     dir('cli') {
                         bat "sed -i -e \"s/10\\.0\\.0\\.2/${INDY_SDK_SERVER_IP}/g\" docker_pool_transactions_genesis"
-
-                        bat "copy $WORKSPACE\\libindy\\target\\release\\indy.dll $WORKSPACE\\libindy\\prebuilt\\lib"
-                        bat "copy $WORKSPACE\\libindy\\target\\release\\indy.lib $WORKSPACE\\libindy\\prebuilt\\lib"
 
                         echo "Windows Indy Cli Test: Build"
                         withEnv([
@@ -308,6 +321,18 @@ def windowsTesting() {
                         }
 
                         stash includes: 'target/release/indy-cli.exe,target/release/*.dll', name: 'IndyCliWindowsBuildResult'
+                    }
+
+                    dir('libnullpay') {
+                        echo "Windows Libnullpay Test: Build"
+                        withEnv([
+                                "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "RUST_BACKTRACE=1"
+                        ]) {
+                            bat "cargo build --release"
+                        }
+
+                        stash includes: 'target/release/*.dll', name: 'LibnullpayWindowsBuildResult'
                     }
 
                     //TODO wrappers testing
@@ -352,7 +377,7 @@ def rhelPublishing() {
                 echo 'Publish Rpm files: Checkout csm'
                 checkout scm
 
-                version = getSrcVersion()
+                version = getSrcVersion("libindy")
 
                 dir('libindy') {
                     echo 'Publish Rpm: Build docker image'
@@ -384,15 +409,16 @@ def ubuntuPublishing() {
                 echo 'Publish Ubuntu files: Checkout csm'
                 checkout scm
 
-                version = getSrcVersion()
+                version = getSrcVersion("libindy")
 
                 echo 'Publish Ubuntu files: Build docker image'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
-                libindyDebPublishing(testEnv)
+                libindyDebPublishing(testEnv, version)
                 pythonWrapperPublishing(testEnv, false)
                 javaWrapperPublishing(testEnv, false)
-                libindyCliDebPublishing(testEnv)
+                libindyCliDebPublishing(testEnv, version)
+                libnullpayDebPublishing(testEnv)
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -411,26 +437,21 @@ def windowsPublishing() {
                 echo 'Publish Windows files: Checkout csm'
                 checkout scm
 
-                version = getSrcVersion()
+                version = getSrcVersion("libindy")
 
                 dir('libindy') {
                     echo 'Publish Libindy Windows files'
-
-                    unstash name: 'LibindyWindowsBuildResult'
-
-                    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-                        sh "./ci/libindy-win-zip-and-upload.sh $version '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
-                    }
+                    windowsPublishArtifact("libindy", "lib", "LibindyWindowsBuildResult")
                 }
 
                 dir('cli') {
                     echo 'Publish Indy Cli Windows files'
+                    windowsPublishArtifact("indy-cli", "executable", "IndyCliWindowsBuildResult")
+                }
 
-                    unstash name: 'IndyCliWindowsBuildResult'
-
-                    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-                        sh "./ci/indy-cli-win-zip-and-upload.sh $version '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
-                    }
+                dir('libnullpay') {
+                    echo 'Publish Libnullpay Cli Windows files'
+                    windowsPublishArtifact("libnullpay", "lib", "LibnullpayWindowsBuildResult")
                 }
             }
             finally {
@@ -440,6 +461,14 @@ def windowsPublishing() {
         }
     }
     return version
+}
+
+def windowsPublishArtifact(packageName, packageType, stashName) {
+    unstash name: stashName
+
+    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
+        sh "../ci/win-zip-and-upload.sh $packageName $packageType $version '${repo_key}' ${env.BRANCH_NAME} $env.BUILD_NUMBER"
+    }
 }
 
 def getSuffix(isRelease, target) {
@@ -458,30 +487,49 @@ def getSuffix(isRelease, target) {
     return suffix
 }
 
-def libindyDebPublishing(testEnv) {
+def libindyDebPublishing(testEnv, version) {
     echo 'Publish Libindy deb files to Apt'
 
-    dir('libindy/sovrin-packaging') {
+    debPublishing(testEnv, "libindy", "libindy", version, "LibindyUbuntuBuildResult", "libindyDebs")
+}
+
+def libindyCliDebPublishing(testEnv, version) {
+    echo 'Publish Indy Cli deb files to Apt'
+
+    debPublishing(testEnv, "cli", "indy-cli", version, "IndyCliUbuntuBuildResult", "libindyCliDebs")
+}
+
+def libnullpayDebPublishing(testEnv) {
+    echo 'Publish Libnullpay deb files to Apt'
+
+    def version = getSrcVersion("libnullpay")
+
+    debPublishing(testEnv, "libnullpay", "libnullpay", version, "LibnullpayUbuntuBuildResult", "libnullpayDebs")
+}
+
+def debPublishing(testEnv, directory, packageName, version, inStashName, outStashName) {
+    dir("$directory/sovrin-packaging") {
         downloadPackagingUtils()
     }
 
     testEnv.inside {
-        sh 'chmod -R 755 libindy/ci/*.sh'
+        sh "cp ci/deb-build-and-upload.sh $directory && chmod -R 755 $directory/*.sh"
 
         def suffix = "~$env.BUILD_NUMBER"
 
-        unstash name: 'LibindyUbuntuBuildResult'
-        sh 'mkdir --parent libindy/target/release/ && mv target/release/* libindy/target/release/'
+        unstash name: inStashName
+        sh "mkdir --parent $directory/target/release/ && mv target/release/* $directory/target/release/"
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-            sh "cd libindy && ./ci/libindy-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
+            sh "cd $directory && ./deb-build-and-upload.sh $packageName $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
 
             if (env.BRANCH_NAME == 'rc') {
-                stash includes: 'libindy/debs/*', name: 'libindyDebs'
+                stash includes: "$directory/debs/*", name: outStashName
             }
         }
     }
 }
+
 
 def pythonWrapperPublishing(testEnv, isRelease) {
     dir('wrappers/python') {
@@ -519,31 +567,6 @@ def javaWrapperPublishing(testEnv, isRelease) {
     }
 }
 
-def libindyCliDebPublishing(testEnv) {
-    echo 'Publish Indy Cli deb files to Apt'
-
-    dir('cli/sovrin-packaging') {
-        downloadPackagingUtils()
-    }
-
-    testEnv.inside {
-        sh 'chmod -R 755 cli/ci/*.sh'
-
-        def suffix = "~$env.BUILD_NUMBER"
-
-        unstash name: 'IndyCliUbuntuBuildResult'
-        sh 'mkdir --parent cli/target/release/ && mv target/release/* cli/target/release/'
-
-        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-            sh "cd cli && ./ci/indy-cli-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
-
-            if (env.BRANCH_NAME == 'rc') {
-                stash includes: 'cli/debs/*', name: 'libindyCliDebs'
-            }
-        }
-    }
-}
-
 def publishingRCtoStable() {
     node('ubuntu') {
         stage('Moving RC artifacts to Stable') {
@@ -556,7 +579,7 @@ def publishingRCtoStable() {
                     downloadPackagingUtils()
                 }
 
-                version = getSrcVersion()
+                version = getSrcVersion("libindy")
 
                 echo 'Moving Windows RC artifacts to Stable: libindy'
                 publishLibindyWindowsFilesRCtoStable(version)
@@ -578,6 +601,13 @@ def publishingRCtoStable() {
 
                 echo 'Moving Windows RC artifacts to Stable: indy-cli'
                 publishLibindyCliWindowsFilesRCtoStable(version)
+
+                echo 'Moving Windows RC artifacts to Stable: libnullpay'
+                publishLibnullpayWindowsFilesRCtoStable(version)
+
+                echo 'Moving Ubuntu RC artifacts to Stable: libnullpay'
+                publishLibnullpayDebRCtoStable(testEnv)
+
             } finally {
                 echo 'Moving RC artifacts to Stable: Cleanup'
                 step([$class: 'WsCleanup'])
@@ -587,21 +617,23 @@ def publishingRCtoStable() {
 }
 
 def publishLibindyWindowsFilesRCtoStable(version) {
-    rcFullVersion = "${version}-${env.BUILD_NUMBER}"
-    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
-        src = "/var/repository/repos/windows/libindy/rc/$rcFullVersion/"
-        target = "/var/repository/repos/windows/libindy/stable/$version"
-
-        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 '! ls $target'"
-        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r $src $target"
-    }
+    publishWindowsFilesRCtoStable("libindy", version)
 }
 
 def publishLibindyCliWindowsFilesRCtoStable(version) {
+    publishWindowsFilesRCtoStable("indy-cli", version)
+}
+
+def publishLibnullpayWindowsFilesRCtoStable() {
+    version = getSrcVersion("libnullpay")
+    publishWindowsFilesRCtoStable("libnullpay", version)
+}
+
+def publishWindowsFilesRCtoStable(packageName, version) {
     rcFullVersion = "${version}-${env.BUILD_NUMBER}"
     withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
-        src = "/var/repository/repos/windows/indy-cli/rc/$rcFullVersion/"
-        target = "/var/repository/repos/windows/indy-cli/stable/$version"
+        src = "/var/repository/repos/windows/$packageName/rc/$rcFullVersion/"
+        target = "/var/repository/repos/windows/$packageName/stable/$version"
 
         sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 '! ls $target'"
         sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r $src $target"
@@ -609,35 +641,35 @@ def publishLibindyCliWindowsFilesRCtoStable(version) {
 }
 
 def publishLibindyDebRCtoStable(testEnv, version) {
-    testEnv.inside {
-        rcFullVersion = "${version}~${env.BUILD_NUMBER}"
-
-        unstash name: 'libindyDebs'
-
-        sh "fakeroot deb-reversion -v $version libindy/debs/libindy_\"$rcFullVersion\"_amd64.deb"
-        sh "fakeroot deb-reversion -v $version libindy/debs/libindy-dev_\"$rcFullVersion\"_amd64.deb"
-
-        uploadDebianFilesToStable()
-    }
+    publishDebRCtoStable(testEnv, "libindy", "libindy", version, "libindyDebs", true)
 }
 
 def publishLibindyCliDebRCtoStable(testEnv, version) {
+    publishDebRCtoStable(testEnv, "indy-cli", "cli", version, "libindyCliDebs", false)
+}
+
+def publishLibnullpayDebRCtoStable(testEnv) {
+    version = getSrcVersion("libnullpay")
+    publishDebRCtoStable(testEnv, "libnullpay", "libnullpay", version, "libindyCliDebs", false)
+}
+
+def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, moveDevArtifacts) {
     testEnv.inside {
         rcFullVersion = "${version}~${env.BUILD_NUMBER}"
 
-        unstash name: 'libindyCliDebs'
+        unstash name: stashName
 
-        sh "fakeroot deb-reversion -v $version cli/debs/indy-cli_\"$rcFullVersion\"_amd64.deb"
+        sh "fakeroot deb-reversion -v $version $packageName/debs/\"$packageName\"_\"$rcFullVersion\"_amd64.deb"
 
-        uploadDebianFilesToStable()
-    }
-}
+        if (moveDevArtifacts) {
+            sh "fakeroot deb-reversion -v $version $folder/debs/\"$packageName\"-dev_\"$rcFullVersion\"_amd64.deb"
+        }
 
-def uploadDebianFilesToStable() {
-    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-        path = sh(returnStdout: true, script: 'pwd').trim()
+        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
+            path = sh(returnStdout: true, script: 'pwd').trim()
 
-        sh "./sovrin-packaging/upload_debs.py $path $SOVRIN_SDK_REPO_NAME stable --host $SOVRIN_REPO_HOST --ssh-key $sovrin_key"
+            sh "./sovrin-packaging/upload_debs.py $path $SOVRIN_SDK_REPO_NAME stable --host $SOVRIN_REPO_HOST --ssh-key $sovrin_key"
+        }
     }
 }
 
