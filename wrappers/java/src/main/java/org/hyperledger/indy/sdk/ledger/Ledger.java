@@ -248,6 +248,44 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
+	 * Multi signs request message.
+	 * <p>
+	 * Adds submitter information to passed request json, signs it with submitter
+	 * sign key (see wallet_sign).
+	 *
+	 * @param wallet       A Wallet.
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param requestJson  Request data json.
+	 * @return A future resolving to a signed request json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> multiSignRequest(
+			Wallet wallet,
+			String submitterDid,
+			String requestJson) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(requestJson, "requestJson");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_multi_sign_request(
+				commandHandle,
+				walletHandle,
+				submitterDid,
+				requestJson,
+				signRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
 	 * Builds a request to get a DDO.
 	 *
 	 * @param submitterDid Id of Identity stored in secured Wallet.
