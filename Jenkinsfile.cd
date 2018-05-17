@@ -326,7 +326,7 @@ def windowsTesting() {
                     dir('libnullpay') {
                         echo "Windows Libnullpay Test: Build"
                         withEnv([
-                                "INDY_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
                                 "RUST_BACKTRACE=1"
                         ]) {
                             bat "cargo build --release"
@@ -441,32 +441,17 @@ def windowsPublishing() {
 
                 dir('libindy') {
                     echo 'Publish Libindy Windows files'
-
-                    unstash name: 'LibindyWindowsBuildResult'
-
-                    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-                        sh "./ci/libindy-win-zip-and-upload.sh $version '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
-                    }
+                    windowsPublishArtifact("libindy", "lib", "LibindyWindowsBuildResult")
                 }
 
                 dir('cli') {
                     echo 'Publish Indy Cli Windows files'
-
-                    unstash name: 'IndyCliWindowsBuildResult'
-
-                    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-                        sh "./ci/indy-cli-win-zip-and-upload.sh $version '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
-                    }
+                    windowsPublishArtifact("indy-cli", "executable", "IndyCliWindowsBuildResult")
                 }
 
                 dir('libnullpay') {
                     echo 'Publish Libnullpay Cli Windows files'
-
-                    unstash name: 'LibnullpayWindowsBuildResult'
-
-                    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-                        sh "./ci/libnullpay-win-zip-and-upload.sh $version '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
-                    }
+                    windowsPublishArtifact("libnullpay", "lib", "LibnullpayWindowsBuildResult")
                 }
             }
             finally {
@@ -476,6 +461,14 @@ def windowsPublishing() {
         }
     }
     return version
+}
+
+def windowsPublishArtifact(packageName, packageType, stashName) {
+    unstash name: stashName
+
+    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
+        sh "../ci/win-zip-and-upload.sh $packageName $packageType $version '${repo_key}' ${env.BRANCH_NAME} $env.BUILD_NUMBER"
+    }
 }
 
 def getSuffix(isRelease, target) {
@@ -531,7 +524,7 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
             sh "cd $directory && ./deb-build-and-upload.sh $packageName $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
 
             if (env.BRANCH_NAME == 'rc') {
-            stash includes: "$directory/debs/*", name: outStashName
+                stash includes: "$directory/debs/*", name: outStashName
             }
         }
     }
@@ -624,34 +617,23 @@ def publishingRCtoStable() {
 }
 
 def publishLibindyWindowsFilesRCtoStable(version) {
-    rcFullVersion = "${version}-${env.BUILD_NUMBER}"
-    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
-        src = "/var/repository/repos/windows/libindy/rc/$rcFullVersion/"
-        target = "/var/repository/repos/windows/libindy/stable/$version"
-
-        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 '! ls $target'"
-        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r $src $target"
-    }
+    publishWindowsFilesRCtoStable("libindy", version)
 }
 
 def publishLibindyCliWindowsFilesRCtoStable(version) {
-    rcFullVersion = "${version}-${env.BUILD_NUMBER}"
-    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
-        src = "/var/repository/repos/windows/indy-cli/rc/$rcFullVersion/"
-        target = "/var/repository/repos/windows/indy-cli/stable/$version"
-
-        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 '! ls $target'"
-        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r $src $target"
-    }
+    publishWindowsFilesRCtoStable("indy-cli", version)
 }
 
 def publishLibnullpayWindowsFilesRCtoStable() {
     version = getSrcVersion("libnullpay")
+    publishWindowsFilesRCtoStable("libnullpay", version)
+}
 
-    rcFullVersion = "${version}-0"
+def publishWindowsFilesRCtoStable(packageName, version) {
+    rcFullVersion = "${version}-${env.BUILD_NUMBER}"
     withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
-        src = "/var/repository/repos/windows/libnullpay/rc/$rcFullVersion/"
-        target = "/var/repository/repos/windows/libnullpay/stable/$version"
+        src = "/var/repository/repos/windows/$packageName/rc/$rcFullVersion/"
+        target = "/var/repository/repos/windows/$packageName/stable/$version"
 
         sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 '! ls $target'"
         sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r $src $target"
@@ -659,49 +641,35 @@ def publishLibnullpayWindowsFilesRCtoStable() {
 }
 
 def publishLibindyDebRCtoStable(testEnv, version) {
-    testEnv.inside {
-        rcFullVersion = "${version}~${env.BUILD_NUMBER}"
-
-        unstash name: 'libindyDebs'
-
-        sh "fakeroot deb-reversion -v $version libindy/debs/libindy_\"$rcFullVersion\"_amd64.deb"
-        sh "fakeroot deb-reversion -v $version libindy/debs/libindy-dev_\"$rcFullVersion\"_amd64.deb"
-
-        uploadDebianFilesToStable()
-    }
+    publishDebRCtoStable(testEnv, "libindy", "libindy", version, "libindyDebs", true)
 }
 
 def publishLibindyCliDebRCtoStable(testEnv, version) {
-    testEnv.inside {
-        rcFullVersion = "${version}~${env.BUILD_NUMBER}"
-
-        unstash name: 'libindyCliDebs'
-
-        sh "fakeroot deb-reversion -v $version cli/debs/indy-cli_\"$rcFullVersion\"_amd64.deb"
-
-        uploadDebianFilesToStable()
-    }
+    publishDebRCtoStable(testEnv, "indy-cli", "cli", version, "libindyCliDebs", false)
 }
 
 def publishLibnullpayDebRCtoStable(testEnv) {
     version = getSrcVersion("libnullpay")
+    publishDebRCtoStable(testEnv, "libnullpay", "libnullpay", version, "libindyCliDebs", false)
+}
 
+def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, moveDevArtifacts) {
     testEnv.inside {
         rcFullVersion = "${version}~${env.BUILD_NUMBER}"
 
-        unstash name: 'libnullpayDebs'
+        unstash name: stashName
 
-        sh "fakeroot deb-reversion -v $version libnullpay/debs/libnullpay_\"$rcFullVersion\"_amd64.deb"
+        sh "fakeroot deb-reversion -v $version $packageName/debs/\"$packageName\"_\"$rcFullVersion\"_amd64.deb"
 
-        uploadDebianFilesToStable()
-    }
-}
+        if (moveDevArtifacts) {
+            sh "fakeroot deb-reversion -v $version $folder/debs/\"$packageName\"-dev_\"$rcFullVersion\"_amd64.deb"
+        }
 
-def uploadDebianFilesToStable() {
-    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-        path = sh(returnStdout: true, script: 'pwd').trim()
+        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
+            path = sh(returnStdout: true, script: 'pwd').trim()
 
-        sh "./sovrin-packaging/upload_debs.py $path $SOVRIN_SDK_REPO_NAME stable --host $SOVRIN_REPO_HOST --ssh-key $sovrin_key"
+            sh "./sovrin-packaging/upload_debs.py $path $SOVRIN_SDK_REPO_NAME stable --host $SOVRIN_REPO_HOST --ssh-key $sovrin_key"
+        }
     }
 }
 
