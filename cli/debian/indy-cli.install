@@ -1,1 +1,1 @@
-target/release/indy-cli usr/bin/
+target/debug/indy-cli usr/bin/

@@ -234,7 +234,7 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
         dir('libnullpay') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Indy Libnullpay Test: Build"
-                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build "
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build"
 
                 if (stashBuildResults) {
                     stash includes: 'target/release/libnullpay.so', name: 'LibnullpayUbuntuBuildResult'
@@ -414,10 +414,10 @@ def ubuntuPublishing() {
                 echo 'Publish Ubuntu files: Build docker image'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
-                libindyDebPublishing(testEnv)
+                libindyDebPublishing(testEnv, version)
                 pythonWrapperPublishing(testEnv, false)
                 javaWrapperPublishing(testEnv, false)
-                libindyCliDebPublishing(testEnv)
+                libindyCliDebPublishing(testEnv, version)
                 libnullpayDebPublishing(testEnv)
             }
             finally {
@@ -494,30 +494,49 @@ def getSuffix(isRelease, target) {
     return suffix
 }
 
-def libindyDebPublishing(testEnv) {
+def libindyDebPublishing(testEnv, version) {
     echo 'Publish Libindy deb files to Apt'
 
-    dir('libindy/sovrin-packaging') {
+    debPublishing(testEnv, "libindy", "libindy", version, "LibindyUbuntuBuildResult", "libindyDebs")
+}
+
+def libindyCliDebPublishing(testEnv, version) {
+    echo 'Publish Indy Cli deb files to Apt'
+
+    debPublishing(testEnv, "cli", "indy-cli", version, "IndyCliUbuntuBuildResult", "libindyCliDebs")
+}
+
+def libnullpayDebPublishing(testEnv) {
+    echo 'Publish Libnullpay deb files to Apt'
+
+    def version = getSrcVersion("libnullpay")
+
+    debPublishing(testEnv, "libnullpay", "libnullpay", version, "LibnullpayUbuntuBuildResult", "libnullpayDebs")
+}
+
+def debPublishing(testEnv, directory, packageName, version, inStashName, outStashName) {
+    dir("$directory/sovrin-packaging") {
         downloadPackagingUtils()
     }
 
     testEnv.inside {
-        sh 'chmod -R 755 libindy/ci/*.sh'
+        sh "cp ci/deb-build-and-upload.sh $directory && chmod -R 755 $directory/*.sh"
 
         def suffix = "~$env.BUILD_NUMBER"
 
-        unstash name: 'LibindyUbuntuBuildResult'
-        sh 'mkdir --parent libindy/target/release/ && mv target/release/* libindy/target/release/'
+        unstash name: inStashName
+        sh "mkdir --parent $directory/target/release/ && mv target/release/* $directory/target/release/"
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-            sh "cd libindy && ./ci/libindy-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
+            sh "cd $directory && ./deb-build-and-upload.sh $packageName $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
 
             if (env.BRANCH_NAME == 'rc') {
-                stash includes: 'libindy/debs/*', name: 'libindyDebs'
+            stash includes: "$directory/debs/*", name: outStashName
             }
         }
     }
 }
+
 
 def pythonWrapperPublishing(testEnv, isRelease) {
     dir('wrappers/python') {
@@ -550,57 +569,6 @@ def javaWrapperPublishing(testEnv, isRelease) {
                 sh 'cp $settingsFile .'
 
                 sh "mvn clean deploy -DskipTests --settings settings.xml"
-            }
-        }
-    }
-}
-
-def libindyCliDebPublishing(testEnv) {
-    echo 'Publish Indy Cli deb files to Apt'
-
-    dir('cli/sovrin-packaging') {
-        downloadPackagingUtils()
-    }
-
-    testEnv.inside {
-        sh 'chmod -R 755 cli/ci/*.sh'
-
-        def suffix = "~$env.BUILD_NUMBER"
-
-        unstash name: 'IndyCliUbuntuBuildResult'
-        sh 'mkdir --parent cli/target/release/ && mv target/release/* cli/target/release/'
-
-        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-            sh "cd cli && ./ci/indy-cli-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
-
-            if (env.BRANCH_NAME == 'rc') {
-                stash includes: 'cli/debs/*', name: 'libindyCliDebs'
-            }
-        }
-    }
-}
-
-def libnullpayDebPublishing(testEnv) {
-    echo 'Publish Libnullpay deb files to Apt'
-
-    dir('libnullpay/sovrin-packaging') {
-        downloadPackagingUtils()
-    }
-
-    testEnv.inside {
-        sh 'chmod -R 755 libnullpay/ci/*.sh'
-
-        unstash name: 'LibnullpayUbuntuBuildResult'
-        sh 'mkdir --parent libnullpay/target/release/ && mv target/release/* libnullpay/target/release/'
-
-        def suffix = "~$env.BUILD_NUMBER"
-        def version = getSrcVersion("libnullpay")
-
-        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-            sh "cd libnullpay && ./ci/libnullpay-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
-
-            if (env.BRANCH_NAME == 'rc') {
-                stash includes: 'libnullpay/debs/*', name: 'libnullpayDebs'
             }
         }
     }

@@ -1,1 +1,1 @@
-target/release/libindy.so usr/lib/
+target/debug/libindy.so usr/lib/
