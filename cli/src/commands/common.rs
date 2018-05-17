@@ -152,14 +152,18 @@ pub mod tests {
     use super::*;
 
     pub const NULL_PAYMENT_METHOD: &'static str = "null";
-    pub const NULL_PAYMENT_PLUGIN: &'static str = "libnullpay.so";
     pub const NULL_PAYMENT_PLUGIN_INIT_FUNCTION: &'static str = "nullpay_init";
+
+    #[cfg(any(unix))]
+    pub const NULL_PAYMENT_PLUGIN: &'static str = "libnullpay.so";
+    #[cfg(any(windows))]
+    pub const NULL_PAYMENT_PLUGIN: &'static str = "nullpay.dll";
 
     mod load {
         use super::*;
 
         #[test]
-        #[cfg(feature = "payments_cli_tests")]
+        #[cfg(feature = "nullpay_plugin")]
         pub fn load_works() {
             let ctx = CommandContext::new();
 
