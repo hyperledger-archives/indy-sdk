@@ -229,6 +229,18 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
                 }
             }
         }
+
+        sh "cp libindy/target/release/libindy.so libnullpay"
+        dir('libnullpay') {
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                echo "${env_name} Indy Libnullpay Test: Build"
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build "
+
+                if (stashBuildResults) {
+                    stash includes: 'target/release/libnullpay.so', name: 'LibnullpayUbuntuBuildResult'
+                }
+            }
+        }
     }
     finally {
         closePool(env_name, network_name, poolInst)
@@ -311,6 +323,18 @@ def windowsTesting() {
                         stash includes: 'target/release/indy-cli.exe,target/release/*.dll', name: 'IndyCliWindowsBuildResult'
                     }
 
+                    dir('libnullpay') {
+                        echo "Windows Libnullpay Test: Build"
+                        withEnv([
+                                "INDY_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "RUST_BACKTRACE=1"
+                        ]) {
+                            bat "cargo build --release"
+                        }
+
+                        stash includes: 'target/release/*.dll', name: 'LibnullpayWindowsBuildResult'
+                    }
+
                     //TODO wrappers testing
 
                 } finally {
@@ -353,7 +377,7 @@ def rhelPublishing() {
                 echo 'Publish Rpm files: Checkout csm'
                 checkout scm
 
-                version = getSrcVersion()
+                version = getSrcVersion("libindy")
 
                 dir('libindy') {
                     echo 'Publish Rpm: Build docker image'
@@ -385,7 +409,7 @@ def ubuntuPublishing() {
                 echo 'Publish Ubuntu files: Checkout csm'
                 checkout scm
 
-                version = getSrcVersion()
+                version = getSrcVersion("libindy")
 
                 echo 'Publish Ubuntu files: Build docker image'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
@@ -413,7 +437,7 @@ def windowsPublishing() {
                 echo 'Publish Windows files: Checkout csm'
                 checkout scm
 
-                version = getSrcVersion()
+                version = getSrcVersion("libindy")
 
                 dir('libindy') {
                     echo 'Publish Libindy Windows files'
@@ -438,13 +462,7 @@ def windowsPublishing() {
                 dir('libnullpay') {
                     echo 'Publish Libnullpay Cli Windows files'
 
-                    echo "Windows Libnullpay Test: Build"
-                    withEnv([
-                            "INDY_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "RUST_BACKTRACE=1"
-                    ]) {
-                        bat "cargo build --release"
-                    }
+                    unstash name: 'LibnullpayWindowsBuildResult'
 
                     withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
                         sh "./ci/libnullpay-win-zip-and-upload.sh $version '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
@@ -570,16 +588,16 @@ def libnullpayDebPublishing(testEnv) {
     }
 
     testEnv.inside {
-        unstash name: 'LibindyUbuntuBuildResult'
-        sh "cp target/release/libindy.so libnullpay"
-
         sh 'chmod -R 755 libnullpay/ci/*.sh'
+
+        unstash name: 'LibnullpayUbuntuBuildResult'
+        sh 'mkdir --parent libnullpay/target/release/ && mv target/release/* libnullpay/target/release/'
 
         def suffix = "~$env.BUILD_NUMBER"
         def version = getSrcVersion("libnullpay")
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-            sh "cd libnullpay && LIBRARY_PATH=./ ./ci/libnullpay-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
+            sh "cd libnullpay && ./ci/libnullpay-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
 
             if (env.BRANCH_NAME == 'rc') {
                 stash includes: 'libnullpay/debs/*', name: 'libnullpayDebs'
@@ -605,9 +623,6 @@ def publishingRCtoStable() {
                 echo 'Moving Windows RC artifacts to Stable: libindy'
                 publishLibindyWindowsFilesRCtoStable(version)
 
-                echo 'Moving Windows RC artifacts to Stable: libnullpay'
-                publishLibnullpayWindowsFilesRCtoStable(version)
-
                 echo 'Moving RC artifacts to Stable: Build docker image for wrappers publishing'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
@@ -625,6 +640,9 @@ def publishingRCtoStable() {
 
                 echo 'Moving Windows RC artifacts to Stable: indy-cli'
                 publishLibindyCliWindowsFilesRCtoStable(version)
+
+                echo 'Moving Windows RC artifacts to Stable: libnullpay'
+                publishLibnullpayWindowsFilesRCtoStable(version)
 
                 echo 'Moving Ubuntu RC artifacts to Stable: libnullpay'
                 publishLibnullpayDebRCtoStable(testEnv)
@@ -659,6 +677,19 @@ def publishLibindyCliWindowsFilesRCtoStable(version) {
     }
 }
 
+def publishLibnullpayWindowsFilesRCtoStable() {
+    version = getSrcVersion("libnullpay")
+
+    rcFullVersion = "${version}-0"
+    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
+        src = "/var/repository/repos/windows/libnullpay/rc/$rcFullVersion/"
+        target = "/var/repository/repos/windows/libnullpay/stable/$version"
+
+        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 '! ls $target'"
+        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r $src $target"
+    }
+}
+
 def publishLibindyDebRCtoStable(testEnv, version) {
     testEnv.inside {
         rcFullVersion = "${version}~${env.BUILD_NUMBER}"
@@ -681,20 +712,6 @@ def publishLibindyCliDebRCtoStable(testEnv, version) {
         sh "fakeroot deb-reversion -v $version cli/debs/indy-cli_\"$rcFullVersion\"_amd64.deb"
 
         uploadDebianFilesToStable()
-    }
-}
-
-
-def publishLibnullpayWindowsFilesRCtoStable() {
-    version = getSrcVersion("libnullpay")
-
-    rcFullVersion = "${version}-${env.BUILD_NUMBER}"
-    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
-        src = "/var/repository/repos/windows/libnullpay/rc/$rcFullVersion/"
-        target = "/var/repository/repos/windows/libnullpay/stable/$version"
-
-        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 '! ls $target'"
-        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r $src $target"
     }
 }
 
