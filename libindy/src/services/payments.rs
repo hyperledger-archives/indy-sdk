@@ -71,8 +71,10 @@ impl PaymentsService {
 
     pub fn register_payment_method(&self, method_type: &str, method_cbs: PaymentsMethodCBs) {
         //TODO check already exists. Also check CLI
-        println!("methods {:?}", self.methods);
+        println!("methods 1 {:?}", self.methods);
         self.methods.borrow_mut().insert(method_type.to_owned(), method_cbs);
+        println!("methods 2 {:?}", self.methods);
+
     }
 
     pub fn create_address(&self, cmd_handle: i32, wallet_handle: i32, method_type: &str, config: &str) -> Result<(), PaymentsError> {
