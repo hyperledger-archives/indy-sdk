@@ -6,6 +6,7 @@ import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.ParamGuard;
 import org.hyperledger.indy.sdk.payments.PaymentsResults.*;
+import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -64,7 +65,7 @@ public class Payments extends IndyJava.API {
     };
 
     /**
-     * Callback used when buildPaymentReq completes.
+     * Callback used when buildPaymentRequest completes.
      */
     private static Callback buildPaymentReqCb = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
@@ -79,7 +80,7 @@ public class Payments extends IndyJava.API {
     };
 
     /**
-     * Callback used when buildMintReq completes.
+     * Callback used when buildMintRequest completes.
      */
     private static Callback buildMintReqCb = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
@@ -106,7 +107,7 @@ public class Payments extends IndyJava.API {
      *
      * Note that payment method should be able to resolve this
      * secret by fully resolvable payment address format.
-     * @param walletHandle wallet handle where to save new address
+     * @param wallet The wallet.
      * @param paymentMethod Payment method to use (for example, 'sov')
      * @param config payment address config as json:
      *               {
@@ -116,7 +117,7 @@ public class Payments extends IndyJava.API {
      * @throws IndyException
      */
     public static CompletableFuture<String> createPaymentAddress(
-            int walletHandle,
+            Wallet wallet,
             String paymentMethod,
             String config
     ) throws IndyException {
@@ -125,6 +126,8 @@ public class Payments extends IndyJava.API {
 
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
+
+        int walletHandle = wallet.getWalletHandle();
 
         int result = LibIndy.api.indy_create_payment_address(
                 commandHandle,
@@ -142,15 +145,17 @@ public class Payments extends IndyJava.API {
     /**
      * Lists all payment addresses that are stored in the wallet
      *
-     * @param walletHandle wallet to search for payment_addresses in
+     * @param wallet The wallet.
      * @return json array of string with json addresses
      * @throws IndyException
      */
     public static CompletableFuture<String> listPaymentAddresses(
-            int walletHandle
+            Wallet wallet
     ) throws IndyException {
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
+
+        int walletHandle = wallet.getWalletHandle();
 
         int result = LibIndy.api.indy_list_payment_addresses(
                 commandHandle,
@@ -176,7 +181,7 @@ public class Payments extends IndyJava.API {
      *
      * Format of inputs is specific for payment method. Usually it should reference payment transaction
      * with at least one output that corresponds to payment address that user owns.
-     * @param walletHandle wallet handle where keys for signature are stored
+     * @param wallet The wallet.
      * @param submitterDid DID of request sender
      * @param reqJson initial transaction request as json
      * @param inputsJson The list of UTXO inputs as json array:
@@ -194,7 +199,7 @@ public class Payments extends IndyJava.API {
      * @throws IndyException
      */
     public static CompletableFuture<AddRequestFeesResult> addRequestFees(
-            int walletHandle,
+            Wallet wallet,
             String submitterDid,
             String reqJson,
             String inputsJson,
@@ -207,6 +212,8 @@ public class Payments extends IndyJava.API {
 
         CompletableFuture<AddRequestFeesResult> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
+
+        int walletHandle = wallet.getWalletHandle();
 
         int result = LibIndy.api.indy_add_request_fees(
                 commandHandle,
@@ -244,14 +251,14 @@ public class Payments extends IndyJava.API {
     /**
      * Builds Indy request for getting UTXO list for payment address
      * according to this payment method.
-     * @param walletHandle wallet handle where keys for signature are stored
+     * @param wallet The wallet.
      * @param submitterDid DID of request sender
      * @param paymentAddress target payment address
      * @return Indy request for getting UTXO list for payment address
      * @throws IndyException
      */
     public static CompletableFuture<BuildGetUtxoRequestResult> buildGetUtxoRequest(
-            int walletHandle,
+            Wallet wallet,
             String submitterDid,
             String paymentAddress
     ) throws IndyException {
@@ -260,6 +267,8 @@ public class Payments extends IndyJava.API {
 
         CompletableFuture<BuildGetUtxoRequestResult> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
+
+        int walletHandle = wallet.getWalletHandle();
 
         int result = LibIndy.api.indy_build_get_utxo_request(
                 commandHandle,
@@ -302,7 +311,7 @@ public class Payments extends IndyJava.API {
      * Format of inputs is specific for payment method. Usually it should reference payment transaction
      * with at least one output that corresponds to payment address that user owns.
      *
-     * @param walletHandle wallet handle where keys for signature are stored
+     * @param wallet The wallet.
      * @param submitterDid DID of request sender
      * @param inputsJson The list of UTXO inputs as json array:
      *                      ["input1", ...]
@@ -318,8 +327,8 @@ public class Payments extends IndyJava.API {
      * payment_method
      * @throws IndyException
      */
-    public static CompletableFuture<BuildPaymentReqResult> buildPaymentReq(
-            int walletHandle,
+    public static CompletableFuture<BuildPaymentReqResult> buildPaymentRequest(
+            Wallet wallet,
             String submitterDid,
             String inputsJson,
             String outputsJson
@@ -330,6 +339,8 @@ public class Payments extends IndyJava.API {
 
         CompletableFuture<BuildPaymentReqResult> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
+
+        int walletHandle = wallet.getWalletHandle();
 
         int result = LibIndy.api.indy_build_payment_req(
                 commandHandle,
@@ -368,7 +379,7 @@ public class Payments extends IndyJava.API {
      * Builds Indy request for doing tokens minting
      * according to this payment method.
      *
-     * @param walletHandle wallet handle where keys for signature are stored
+     * @param wallet The wallet.
      * @param submitterDid DID of request sender
      * @param outputsJson The list of UTXO outputs as json array:
      *                      [{
@@ -379,8 +390,8 @@ public class Payments extends IndyJava.API {
      * @return Indy request for doing tokens minting
      * @throws IndyException
      */
-    public static CompletableFuture<BuildMintReqResult> buildMintReq (
-            int walletHandle,
+    public static CompletableFuture<BuildMintReqResult> buildMintRequest(
+            Wallet wallet,
             String submitterDid,
             String outputsJson
     ) throws IndyException {
@@ -389,6 +400,8 @@ public class Payments extends IndyJava.API {
 
         CompletableFuture<BuildMintReqResult> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
+
+        int walletHandle = wallet.getWalletHandle();
 
         int result = LibIndy.api.indy_build_mint_req(
                 commandHandle,
@@ -404,7 +417,7 @@ public class Payments extends IndyJava.API {
 
     /**
      * Builds Indy request for setting fees for transactions in the ledger
-     * @param walletHandle wallet handle where keys for signature are stored
+     * @param wallet The wallet.
      * @param submitterDid DID of request sender
      * @param paymentMethod
      * @param feesJson {
@@ -416,8 +429,8 @@ public class Payments extends IndyJava.API {
      * @return Indy request for setting fees for transactions in the ledger
      * @throws IndyException
      */
-    public static CompletableFuture<String> buildSetTxnFeesReq(
-            int walletHandle,
+    public static CompletableFuture<String> buildSetTxnFeesRequest(
+            Wallet wallet,
             String submitterDid,
             String paymentMethod,
             String feesJson
@@ -428,6 +441,8 @@ public class Payments extends IndyJava.API {
 
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
+
+        int walletHandle = wallet.getWalletHandle();
 
         int result = LibIndy.api.indy_build_set_txn_fees_req(
                 commandHandle,
@@ -445,14 +460,14 @@ public class Payments extends IndyJava.API {
     /**
      * Builds Indy get request for getting fees for transactions in the ledger
      *
-     * @param walletHandle wallet handle where keys for signature are stored
+     * @param wallet The wallet.
      * @param submitterDid DID of request sender
      * @param paymentMethod
      * @return Indy request for getting fees for transactions in the ledger
      * @throws IndyException
      */
-    public static CompletableFuture<String> buildGetTxnFeesReq(
-            int walletHandle,
+    public static CompletableFuture<String> buildGetTxnFeesRequest(
+            Wallet wallet,
             String submitterDid,
             String paymentMethod
     ) throws IndyException {
@@ -461,6 +476,8 @@ public class Payments extends IndyJava.API {
 
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
+
+        int walletHandle = wallet.getWalletHandle();
 
         int result = LibIndy.api.indy_build_get_txn_fees_req(
                 commandHandle,

@@ -2728,6 +2728,40 @@ pub mod tests {
         }
     }
 
+    mod sign_multi {
+        use super::*;
+
+        #[test]
+        pub fn sign_multi_works() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = sign_multi_command::new();
+                let mut params = CommandParams::new();
+                params.insert("txn", r#"{"reqId":1496822211362017764}"#.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn sign_multi_works_for_no_active_did() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            {
+                let cmd = sign_multi_command::new();
+                let mut params = CommandParams::new();
+                params.insert("txn", r#"{"reqId":1496822211362017764}"#.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+        }
+    }
+
     use std::sync::{Once, ONCE_INIT};
 
     pub fn send_nym_my1(ctx: &CommandContext) {
