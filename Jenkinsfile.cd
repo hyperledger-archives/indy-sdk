@@ -97,7 +97,8 @@ def getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver) {
 def dockerClean(env_name, network_name) {
     try {
         try {
-            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f || true" //TODO: FIXME
+            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f || true"
+            //TODO: FIXME
         } catch (error) {
             echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
         }
@@ -212,24 +213,6 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
             }
         }
 
-        sh "cp libindy/target/release/libindy.so cli"
-        dir('cli') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Indy Cli Test: Build"
-                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release"
-
-                echo "${env_name} Indy Cli Test: Build Tests"
-                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run"
-
-                echo "${env_name} Indy Cli Test: Run tests"
-                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
-
-                if (stashBuildResults) {
-                    stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
-                }
-            }
-        }
-
         sh "cp libindy/target/release/libindy.so libnullpay"
         dir('libnullpay') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
@@ -238,6 +221,27 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
 
                 if (stashBuildResults) {
                     stash includes: 'target/release/libnullpay.so', name: 'LibnullpayUbuntuBuildResult'
+                }
+            }
+        }
+
+        if (env_name == 'Ubuntu') {
+            sh "cp libnullpay/target/release/libnullpay.so cli"
+            sh "cp libindy/target/release/libindy.so cli"
+            dir('cli') {
+                testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                    echo "${env_name} Indy Cli Test: Build"
+                    sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release"
+
+                    echo "${env_name} Indy Cli Test: Build Tests"
+                    sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run'
+
+                    echo "${env_name} Indy Cli Test: Run tests"
+                    sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"'
+
+                    if (stashBuildResults) {
+                        stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
+                    }
                 }
             }
         }
@@ -294,21 +298,34 @@ def windowsTesting() {
                         stash includes: 'target/release/*.dll', name: 'LibindyWindowsBuildResult'
                     }
 
-                    bat "copy $WORKSPACE\\libindy\\target\\release\\indy.dll $WORKSPACE\\libindy\\prebuilt\\lib"
-                    bat "copy $WORKSPACE\\libindy\\target\\release\\indy.lib $WORKSPACE\\libindy\\prebuilt\\lib"
+                    dir('libnullpay') {
+                        echo "Windows Libnullpay Test: Build"
+                        withEnv([
+                                "PROFILE=release",
+                                "RUST_BACKTRACE=1"
+                        ]) {
+                            bat "cargo build --release"
+                        }
+
+                        stash includes: 'target/release/*.dll', name: 'LibnullpayWindowsBuildResult'
+                    }
+
+                    bat "copy $WORKSPACE\\libnullpay\\target\\release\\nullpay.dll $WORKSPACE\\cli"
 
                     dir('cli') {
                         bat "sed -i -e \"s/10\\.0\\.0\\.2/${INDY_SDK_SERVER_IP}/g\" docker_pool_transactions_genesis"
 
+                        def featuresArgs = '--features "nullpay_plugin"'
+
                         echo "Windows Indy Cli Test: Build"
                         withEnv([
-                                "INDY_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "PROFILE=release",
                                 "RUST_BACKTRACE=1"
                         ]) {
                             bat "cargo build --release"
 
                             echo "Windows Indy Cli Test: Build tests"
-                            bat "cargo test --release --no-run"
+                            bat "cargo test --release $featuresArgs --no-run"
 
                             echo "Windows Indy Cli Test: Run tests"
                             withEnv([
@@ -316,23 +333,11 @@ def windowsTesting() {
                                     "RUST_LOG=indy::,zmq=trace",
                                     "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                             ]) {
-                                bat "cargo test --release"
+                                bat "cargo test --release $featuresArgs"
                             }
                         }
 
                         stash includes: 'target/release/indy-cli.exe,target/release/*.dll', name: 'IndyCliWindowsBuildResult'
-                    }
-
-                    dir('libnullpay') {
-                        echo "Windows Libnullpay Test: Build"
-                        withEnv([
-                                "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
-                                "RUST_BACKTRACE=1"
-                        ]) {
-                            bat "cargo build --release"
-                        }
-
-                        stash includes: 'target/release/*.dll', name: 'LibnullpayWindowsBuildResult'
                     }
 
                     //TODO wrappers testing

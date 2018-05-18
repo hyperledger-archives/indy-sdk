@@ -59,13 +59,10 @@ def windowsTesting() {
                         }
                     }
 
-                    bat "copy $WORKSPACE\\libindy\\target\\debug\\indy.dll $WORKSPACE\\libindy\\prebuilt\\lib"
-                    bat "copy $WORKSPACE\\libindy\\target\\debug\\indy.lib $WORKSPACE\\libindy\\prebuilt\\lib"
-
                     dir('libnullpay') {
                         echo "Windows Libnullpay Test: Build"
                         withEnv([
-                                "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "PROFILE=debug",
                                 "RUST_BACKTRACE=1"
                         ]) {
                             bat "cargo build"
@@ -77,12 +74,14 @@ def windowsTesting() {
                     dir('cli') {
                         bat "sed -i -e \"s/10\\.0\\.0\\.2/${INDY_SDK_SERVER_IP}/g\" docker_pool_transactions_genesis"
 
+                        def featuresArgs = '--features "nullpay_plugin"'
+
                         echo "Windows Indy Cli Test: Build"
                         withEnv([
-                                "INDY_DIR=$WORKSPACE\\libindy\\prebuilt",
+                                "PROFILE=debug",
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo test --features \"nullpay_plugin\" --no-run"
+                            bat "cargo test $featuresArgs --no-run"
 
                             echo "Windows Indy Cli Test: Run tests"
                             withEnv([
@@ -90,7 +89,7 @@ def windowsTesting() {
                                     "RUST_LOG=indy::,zmq=trace",
                                     "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                             ]) {
-                                bat "cargo test --features \"nullpay_plugin\""
+                                bat "cargo test $featuresArgs"
                             }
                         }
                     }
@@ -317,16 +316,20 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
 }
 
 def linuxCLITesting(env_name, network_name, testEnv) {
+    if (env_name == "RedHat"){
+        return;
+    }
+
     unstash name: "LibindyCliSO${env_name}"
     unstash name: "LibnullpayCliSO${env_name}"
 
     dir('cli') {
         testEnv.inside("--network=${network_name}") {
             echo "${env_name} Indy Cli Test: Build"
-            sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --features \"nullpay_plugin\" --no-run"
+            sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --features "nullpay_plugin" --no-run'
 
             echo "${env_name} Indy Cli Test: Run tests"
-            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features \"nullpay_plugin\"'
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "nullpay_plugin"'
         }
     }
 }

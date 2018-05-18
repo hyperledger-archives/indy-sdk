@@ -209,11 +209,8 @@ impl PaymentsCommandExecutor {
 
     fn register_method(&self, type_: &str, methods: PaymentsMethodCBs) -> Result<(), IndyError> {
         trace!("register_method >>> type_: {:?}, methods: {:?}", type_, methods);
-        println!("type_ {:?}", type_);
-        println!("methods O {:?}", methods);
-        let res = self.payments_service.register_payment_method(type_, methods);
-        println!("register_payment_method {:?}", res);
 
+        self.payments_service.register_payment_method(type_, methods);
         let res = Ok(());
 
         trace!("register_method << res: {:?}", res);

@@ -386,7 +386,7 @@ pub mod tests {
             {
                 let cmd = list_command::new();
                 let params = CommandParams::new();
-                cmd.execute(&ctx, &params).unwrap();
+                cmd.execute(&ctx, &params).unwrap_err();
             }
             TestUtils::cleanup_storage();
         }
