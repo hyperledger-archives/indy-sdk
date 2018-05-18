@@ -45,7 +45,7 @@ pub trait StorageIterator {
 
 pub trait WalletStorage {
     fn get(&self, type_: &Vec<u8>, name: &Vec<u8>, options: &str) -> Result<StorageEntity, WalletStorageError>;
-    fn add(&self, type_: &Vec<u8>, name: &Vec<u8>, value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError>;
+    fn add(&mut self, type_: &Vec<u8>, name: &Vec<u8>, value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError>;
     fn add_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError>;
     fn update_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError>;
     fn delete_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tag_names: &[TagName]) -> Result<(), WalletStorageError>;

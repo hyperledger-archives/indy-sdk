@@ -351,7 +351,7 @@ impl WalletStorage for PluggedStorage {
         Ok(result)
     }
 
-    fn add(&self, type_: &Vec<u8>, id: &Vec<u8>, value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn add(&mut self, type_: &Vec<u8>, id: &Vec<u8>, value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
         let joined_value = value.to_bytes();
@@ -1389,7 +1389,7 @@ mod tests {
     fn plugged_storage_add_works() {
         DEBUG_VEC.write().unwrap().clear();
 
-        let storage = _open_storage();
+        let mut storage = _open_storage();
 
         DEBUG_VEC.write().unwrap().clear();
 

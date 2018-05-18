@@ -331,7 +331,7 @@ impl WalletService {
     }
 
     pub fn add_record(&self, wallet_handle: i32, type_: &str, name: &str, value: &str, tags_json: &str) -> Result<(), WalletError> {
-        match self.wallets.borrow().get(&wallet_handle) {
+        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
             Some(wallet) => {
                 let tags: Tags = serde_json::from_str(tags_json)?;
                 wallet.add(type_, name, value, &tags)

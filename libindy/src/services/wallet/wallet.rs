@@ -154,7 +154,7 @@ impl Wallet {
         }
     }
 
-    pub fn add(&self, type_: &str, name: &str, value: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
+    pub fn add(&mut self, type_: &str, name: &str, value: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
         let etype = ChaCha20Poly1305IETF::encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let ename = ChaCha20Poly1305IETF::encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
         let evalue = EncryptedValue::encrypt(value, &self.keys.value_key);
@@ -395,7 +395,7 @@ mod tests {
     #[test]
     fn wallet_add_get_works() {
         _cleanup();
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let type_ = "test";
         let name = "name1";
         let value = "value1";
@@ -463,7 +463,7 @@ mod tests {
     #[test]
     fn wallet_cannot_add_twice_the_same_key() {
         _cleanup();
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let type_ = "test";
         let name = "name1";
         let value = "value1";
@@ -483,7 +483,7 @@ mod tests {
     #[test]
     fn wallet_update() {
         _cleanup();
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let type_ = "test";
         let name = "name";
         let value = "value";
@@ -501,7 +501,7 @@ mod tests {
     #[test]
     fn wallet_update_returns_error_if_wrong_name() {
         _cleanup();
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let type_ = "test";
         let name = "name";
         let wrong_name = "wrong_name";
@@ -518,7 +518,7 @@ mod tests {
         #[test]
     fn wallet_update_returns_error_if_wrong_type() {
         _cleanup();
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let type_ = "test";
         let wrong_type = "wrong_type";
         let name = "name";
@@ -644,7 +644,7 @@ mod tests {
     #[test]
     fn wallet_delete_works() {
         _cleanup();
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let type_ = "test";
         let name = "name1";
         let value = "value1";
@@ -739,7 +739,7 @@ mod tests {
     #[test]
     fn wallet_search_single_item_eqencrypted() {
         _cleanup();
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("tag1".to_string(), "tag2".to_string());
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
@@ -793,7 +793,7 @@ mod tests {
     fn wallet_search_single_item_eq_plain() {
         _cleanup();
         let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("~tag1".to_string(), "tag2".to_string());
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
@@ -847,7 +847,7 @@ mod tests {
     fn wallet_search_single_item_neqencrypted() {
         _cleanup();
         let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("tag_name".to_string(), "tag_value".to_string());
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
@@ -901,7 +901,7 @@ mod tests {
     fn wallet_search_single_item_neq_plain() {
         _cleanup();
         let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("~tag_name".to_string(), "tag_value".to_string());
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
@@ -956,7 +956,7 @@ mod tests {
     fn wallet_search_single_item_gt_unencrypted() {
         _cleanup();
         let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("~tag_name".to_string(), "1".to_string());
         wallet.add("test_type_", "foo1", "bar1", &tags).unwrap();
@@ -1005,7 +1005,7 @@ mod tests {
     fn wallet_search_single_item_gte_unencrypted() {
         _cleanup();
         let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("~tag_name".to_string(), "1".to_string());
         wallet.add("test_type_", "foo1", "bar1", &tags).unwrap();
@@ -1055,7 +1055,7 @@ mod tests {
     fn wallet_search_single_item_lt_unencrypted() {
         _cleanup();
         let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("~tag_name".to_string(), "1".to_string());
         wallet.add("test_type_", "foo1", "bar1", &tags).unwrap();
@@ -1105,7 +1105,7 @@ mod tests {
     fn wallet_search_single_item_lte_unencrypted() {
         _cleanup();
         let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("~tag_name".to_string(), "1".to_string());
         wallet.add("test_type_", "foo1", "bar1", &tags).unwrap();
@@ -1155,7 +1155,7 @@ mod tests {
     fn wallet_search_single_item_in_unencrypted() {
         _cleanup();
         let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("~tag_name".to_string(), "tag_value_1".to_string());
         wallet.add("test_type_", "foo1", "bar1", &tags).unwrap();
@@ -1211,7 +1211,7 @@ mod tests {
     fn wallet_search_single_item_inencrypted() {
         _cleanup();
         let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("tag_name".to_string(), "tag_value_1".to_string());
         wallet.add("test_type_", "foo1", "bar1", &tags).unwrap();
@@ -1269,7 +1269,7 @@ mod tests {
     fn wallet_search_and_with_eqs() {
         _cleanup();
         let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("tag_name_1".to_string(), "tag_value_1".to_string());
         tags.insert("tag_name_2".to_string(), "tag_value_2".to_string());
@@ -1351,7 +1351,7 @@ mod tests {
     fn wallet_search_or_with_eqs() {
         _cleanup();
         let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("tag_name_1".to_string(), "tag_value_1".to_string());
         tags.insert("~tag_name_2".to_string(), "tag_value_21".to_string());
@@ -1437,7 +1437,7 @@ mod tests {
     fn wallet_search_not_simple() {
         _cleanup();
         let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags1 = HashMap::new();
         tags1.insert("tag_name_1".to_string(), "tag_value_1".to_string());
         tags1.insert("~tag_name_2".to_string(), "tag_value_21".to_string());
@@ -1488,7 +1488,7 @@ mod tests {
      #[test]
     fn wallet_search_without_value() {
         _cleanup();
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("tag_name".to_string(), "tag_value".to_string());
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
@@ -1541,7 +1541,7 @@ mod tests {
      #[test]
     fn wallet_search_with_tags() {
         _cleanup();
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("tag_name_1".to_string(), "tag_value_1".to_string());
         tags.insert("tag_name_2".to_string(), "tag_value_2".to_string());
@@ -1605,7 +1605,7 @@ mod tests {
     fn wallet_search_nested_query() {
         _cleanup();
         let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("tag1".to_string(), "tag2".to_string());
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
