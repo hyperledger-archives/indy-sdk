@@ -2,10 +2,8 @@ extern crate libc;
 extern crate indy_crypto;
 extern crate serde_json;
 
-use std::error::Error;
-use std::ffi::{CString, CStr, NulError};
+use std::ffi::{CString, CStr};
 use std::ptr;
-use std::str::Utf8Error;
 use std::{slice, str};
 use std::collections::HashMap;
 use base64;
@@ -14,11 +12,10 @@ use api::wallet::*;
 use api::ErrorCode;
 use errors::common::CommonError;
 use errors::wallet::WalletStorageError;
-use services::wallet::wallet::WalletRuntimeConfig;
 use services::wallet::language;
 
 
-use super::{StorageIterator, WalletStorageType, WalletStorage, StorageEntity, EncryptedValue, TagValue, TagName, StorageMetadata};
+use super::{StorageIterator, WalletStorageType, WalletStorage, StorageEntity, EncryptedValue, Tag, TagName};
 
 use self::libc::c_char;
 use self::indy_crypto::utils::json::JsonDecodable;
@@ -228,33 +225,39 @@ impl PluggedStorage {
     }
 }
 
-fn _tags_to_json(tags: &HashMap<Vec<u8>, TagValue>) -> Result<String, WalletStorageError> {
+fn _tags_to_json(tags: &[Tag]) -> Result<String, WalletStorageError> {
     let mut string_tags = HashMap::new();
-    for (k, v) in tags {
-        match v {
-            &TagValue::Encrypted(ref enc) => string_tags.insert(base64::encode(&k), base64::encode(&enc)),
-            &TagValue::Plain(ref s) => {
-                let mut key = "~".to_string();
-                key.push_str(&base64::encode(&k));
-                string_tags.insert(key, s.to_string())
-            },
+    for tag in tags {
+        match tag {
+            &Tag::Encrypted(ref name, ref value) => string_tags.insert(base64::encode(&name), base64::encode(&value)),
+            &Tag::PlainText(ref name, ref value) => string_tags.insert(format!("~{}", &base64::encode(&name)), value.to_string()),
         };
     }
     serde_json::to_string(&string_tags).map_err(|err| WalletStorageError::IOError(err.to_string()))
 }
 
-fn _tags_from_json(json: &str) -> Result<HashMap<Vec<u8>, TagValue>, WalletStorageError> {
+fn _tags_from_json(json: &str) -> Result<Vec<Tag>, WalletStorageError> {
     let string_tags: HashMap<String, String> = serde_json::from_str(json).map_err(|err| WalletStorageError::IOError(err.to_string()))?;
-    let mut tags = HashMap::new();
+    let mut tags = Vec::new();
 
     for (k, v) in string_tags {
         if k.chars().next() == Some('~') {
             let mut key = k;
             key.remove(0);
-            tags.insert(base64::decode(&key).map_err(|err| WalletStorageError::IOError(err.to_string()))?, TagValue::Plain(v));
+            tags.push(
+                Tag::PlainText(
+                    base64::decode(&key).map_err(|err| WalletStorageError::IOError(err.to_string()))?,
+                    v
+                )
+            );
         }
         else {
-            tags.insert(base64::decode(&k).map_err(|err| WalletStorageError::IOError(err.to_string()))?, TagValue::Encrypted(base64::decode(&v).map_err(|err| WalletStorageError::IOError(err.to_string()))?));
+            tags.push(
+                Tag::Encrypted(
+                    base64::decode(&k).map_err(|err| WalletStorageError::IOError(err.to_string()))?,
+                    base64::decode(&v).map_err(|err| WalletStorageError::IOError(err.to_string()))?
+                )
+            );
         }
     }
     Ok(tags)
@@ -348,7 +351,7 @@ impl WalletStorage for PluggedStorage {
         Ok(result)
     }
 
-    fn add(&self, type_: &Vec<u8>, id: &Vec<u8>, value: &EncryptedValue, tags: &HashMap<Vec<u8>, TagValue>) -> Result<(), WalletStorageError> {
+    fn add(&self, type_: &Vec<u8>, id: &Vec<u8>, value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
         let joined_value = value.to_bytes();
@@ -368,7 +371,7 @@ impl WalletStorage for PluggedStorage {
         Ok(())
     }
 
-    fn add_tags(&mut self, type_: &Vec<u8>, id: &Vec<u8>, tags: &HashMap<Vec<u8>, TagValue>) -> Result<(), WalletStorageError> {
+    fn add_tags(&mut self, type_: &Vec<u8>, id: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
         let tags_json = CString::new(_tags_to_json(&tags)?)?;
@@ -385,7 +388,7 @@ impl WalletStorage for PluggedStorage {
         Ok(())
     }
 
-    fn update_tags(&mut self, type_: &Vec<u8>, id: &Vec<u8>, tags: &HashMap<Vec<u8>, TagValue>) -> Result<(), WalletStorageError> {
+    fn update_tags(&mut self, type_: &Vec<u8>, id: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
         let tags_json = CString::new(_tags_to_json(&tags)?)?;
@@ -720,16 +723,31 @@ mod tests {
     extern crate rand;
 
     use super::*;
-    use errors::wallet::WalletError;
-    use utils::inmem_wallet::InmemWallet;
     use api::ErrorCode;
 
-    use std::time::Duration;
-    use std::thread;
     use std::sync::RwLock;
     use self::rand::{thread_rng, Rng};
     use std::clone::Clone;
-    use std::any::Any;
+
+    impl PartialEq for StorageEntity {
+        fn eq(&self, other: &StorageEntity) -> bool {
+            self.name == other.name &&
+                self.type_ == other.type_ &&
+                self.value == other.value &&
+                match (&self.tags, &other.tags) {
+                    (&Some(ref tags1), &Some(ref tags2)) => {
+                        let mut tags1 = tags1.clone();
+                        let mut tags2 = tags2.clone();
+                        tags1.sort_unstable();
+                        tags2.sort_unstable();
+
+                        tags1 == tags2
+                    },
+                    (&None, &None) => true,
+                    (_, _) => false,
+                }
+        }
+    }
 
     #[derive(PartialEq, Debug)]
     enum Call {
@@ -757,18 +775,6 @@ mod tests {
         GetSearchTotalCountHandler(i32, i32),
         FetchSearchNextRecordHandler(i32, i32),
         FreeSearchHandler(i32, i32),
-    }
-
-    macro_rules! assert_matches {
-    ($expected:pat $(if $guard:expr)*, $value:expr) => {
-        match $value {
-            $expected $(if $guard)* => {},
-            ref actual => {
-                panic!("assertion failed: `(left matches right)` (left: `{}`, right: `{:?}`",
-                    stringify!($expected), actual);
-            },
-        }
-    };
     }
 
     fn _random_vector(len: usize) -> Vec<u8> {
@@ -800,11 +806,11 @@ mod tests {
             let vec = value.to_bytes();
             (vec, value)
         });
-        static ref RETURN_TAGS: RwLock<(CString, HashMap<Vec<u8>, TagValue>)> = RwLock::new({
-            let mut tags = HashMap::new();
-            tags.insert(_random_vector(32), TagValue::Encrypted(_random_vector(64)));
-            tags.insert(_random_vector(32), TagValue::Plain(_random_string(64)));
-            tags.insert(_random_vector(32), TagValue::Encrypted(_random_vector(64)));
+        static ref RETURN_TAGS: RwLock<(CString, Vec<Tag>)> = RwLock::new({
+            let mut tags = Vec::new();
+            tags.push(Tag::Encrypted(_random_vector(32), _random_vector(64)));
+            tags.push(Tag::PlainText(_random_vector(32), _random_string(64)));
+            tags.push(Tag::Encrypted(_random_vector(32), _random_vector(64)));
             let tags_json = CString::new(_tags_to_json(&tags).unwrap()).unwrap();
             (tags_json, tags)
         });
@@ -910,7 +916,6 @@ mod tests {
         assert_ne!(type_, ptr::null());
         assert_ne!(id, ptr::null());
         assert_ne!(value, ptr::null());
-        assert!(value_len >= 0);
         assert_ne!(tags_json, ptr::null());
 
         DEBUG_VEC.write().unwrap().push(
@@ -934,7 +939,6 @@ mod tests {
         assert_ne!(type_, ptr::null());
         assert_ne!(id, ptr::null());
         assert_ne!(value, ptr::null());
-        assert!(value_len >= 0);
 
         DEBUG_VEC.write().unwrap().push(
             Call::UpdateRecordValueHandler(
@@ -1316,7 +1320,7 @@ mod tests {
         let credentials = "credentials";
 
         let mut storage = storage_type.open_storage(storage_name, None, &credentials).unwrap();
-        storage.close();
+        storage.close().unwrap();
 
         let expected_open_call = Call::OpenHandler(
             Some(storage_name.to_owned()),
@@ -1392,10 +1396,10 @@ mod tests {
         let type_ = _random_vector(32);
         let id = _random_vector(32);
         let value = EncryptedValue{data: _random_vector(256), key: _random_vector(60)};
-        let mut tags = HashMap::new();
-        tags.insert(_random_vector(32), TagValue::Encrypted(_random_vector(64)));
-        tags.insert(_random_vector(32), TagValue::Plain(_random_string(64)));
-        tags.insert(_random_vector(32), TagValue::Encrypted(_random_vector(64)));
+        let mut tags = Vec::new();
+        tags.push(Tag::Encrypted(_random_vector(32), _random_vector(64)));
+        tags.push(Tag::PlainText(_random_vector(32), _random_string(64)));
+        tags.push(Tag::Encrypted(_random_vector(32), _random_vector(64)));
 
         storage.add(&type_, &id, &value, &tags).unwrap();
 
@@ -1450,10 +1454,10 @@ mod tests {
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let mut tags = HashMap::new();
-        tags.insert(_random_vector(32), TagValue::Encrypted(_random_vector(64)));
-        tags.insert(_random_vector(32), TagValue::Plain(_random_string(64)));
-        tags.insert(_random_vector(32), TagValue::Encrypted(_random_vector(64)));
+        let mut tags = Vec::new();
+        tags.push(Tag::Encrypted(_random_vector(32), _random_vector(64)));
+        tags.push(Tag::PlainText(_random_vector(32), _random_string(64)));
+        tags.push(Tag::Encrypted(_random_vector(32), _random_vector(64)));
 
 
         storage.update_tags(&type_, &id, &tags).unwrap();
@@ -1481,10 +1485,10 @@ mod tests {
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let mut tags = HashMap::new();
-        tags.insert(_random_vector(32), TagValue::Encrypted(_random_vector(64)));
-        tags.insert(_random_vector(32), TagValue::Plain(_random_string(64)));
-        tags.insert(_random_vector(32), TagValue::Encrypted(_random_vector(64)));
+        let mut tags = Vec::new();
+        tags.push(Tag::Encrypted(_random_vector(32), _random_vector(64)));
+        tags.push(Tag::PlainText(_random_vector(32), _random_string(64)));
+        tags.push(Tag::Encrypted(_random_vector(32), _random_vector(64)));
 
 
         storage.add_tags(&type_, &id, &tags).unwrap();
@@ -1507,7 +1511,7 @@ mod tests {
     fn plugged_storage_get_record_type_value_tags_works() {
         DEBUG_VEC.write().unwrap().clear();
 
-        let mut storage = _open_storage();
+        let storage = _open_storage();
 
         DEBUG_VEC.write().unwrap().clear();
 
@@ -1795,7 +1799,7 @@ mod tests {
     fn plugged_storage_get_storage_metadata_works() {
         DEBUG_VEC.write().unwrap().clear();
 
-        let mut storage = _open_storage();
+        let storage = _open_storage();
 
         DEBUG_VEC.write().unwrap().clear();
 

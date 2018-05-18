@@ -93,12 +93,6 @@ pub(super) struct Wallet {
 }
 
 
-#[derive(Debug)]
-pub enum TagName {
-    OfEncrypted(Vec<u8>),
-    OfPlain(Vec<u8>),
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct EncryptedValue {
     pub data: Vec<u8>,
@@ -266,11 +260,10 @@ impl Wallet {
 mod tests {
     use std;
     use std::env;
-    use base64;
     use errors::wallet::WalletError;
-    use services::wallet::wallet::{WalletRecord,Wallet,WalletRuntimeConfig};
-    use services::wallet::storage::{WalletStorage,WalletStorageType};
-    use services::wallet::storage::default::{SQLiteStorageType};
+    use services::wallet::wallet::Wallet;
+    use services::wallet::storage::WalletStorageType;
+    use services::wallet::storage::default::SQLiteStorageType;
     use services::wallet::language::*;
     use super::*;
 

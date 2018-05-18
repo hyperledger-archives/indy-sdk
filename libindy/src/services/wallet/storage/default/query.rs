@@ -1,4 +1,3 @@
-use rusqlite;
 use rusqlite::types::ToSql;
 
 use services::wallet::language::{Operator,TagName,TargetValue};
@@ -192,7 +191,6 @@ fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mu
 
             in_string + ")))"
         },
-        _ => unreachable!()
     }
 }
 
@@ -231,7 +229,6 @@ fn join_operators<'a>(operators: &'a [Operator], join_str: &str, arguments: &mut
 #[cfg(test)]
 mod tests {
     use super::*;
-    use services::wallet::language;
 
     #[test]
     fn simple_and() {
