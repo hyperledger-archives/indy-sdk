@@ -71,10 +71,12 @@ impl PaymentsService {
 
     pub fn register_payment_method(&self, method_type: &str, method_cbs: PaymentsMethodCBs) {
         //TODO check already exists. Also check CLI
+        println!("methods {:?}", self.methods);
         self.methods.borrow_mut().insert(method_type.to_owned(), method_cbs);
     }
 
     pub fn create_address(&self, cmd_handle: i32, wallet_handle: i32, method_type: &str, config: &str) -> Result<(), PaymentsError> {
+        println!("methods {:?}", self.methods);
         let create_address: CreatePaymentAddressCB = self.methods.borrow().get(method_type)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", method_type)))?.create_address;
 
@@ -86,6 +88,7 @@ impl PaymentsService {
     }
 
     pub fn add_request_fees(&self, cmd_handle: i32, method_type: &str, wallet_handle: i32, submitter_did: &str, req: &str, inputs: &str, outputs: &str) -> Result<(), PaymentsError> {
+        println!("methods {:?}", self.methods);
         let add_request_fees: AddRequestFeesCB = self.methods.borrow().get(method_type)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", method_type)))?.add_request_fees;
 
@@ -100,6 +103,7 @@ impl PaymentsService {
     }
 
     pub fn parse_response_with_fees(&self, cmd_handle: i32, type_: &str, response: &str) -> Result<(), PaymentsError> {
+        println!("methods {:?}", self.methods);
         let parse_response_with_fees: ParseResponseWithFeesCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.parse_response_with_fees;
         let response = CString::new(response)?;
@@ -110,6 +114,7 @@ impl PaymentsService {
     }
 
     pub fn build_get_utxo_request(&self, cmd_handle: i32, type_: &str, wallet_handle: i32, submitter_did: &str, address: &str) -> Result<(), PaymentsError> {
+        println!("methods {:?}", self.methods);
         let build_get_utxo_request: BuildGetUTXORequestCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_get_utxo_request;
 
@@ -133,6 +138,8 @@ impl PaymentsService {
     }
 
     pub fn build_payment_req(&self, cmd_handle: i32, type_: &str, wallet_handle: i32, submitter_did: &str, inputs: &str, outputs: &str) -> Result<(), PaymentsError> {
+        println!("methods {:?}", self.methods);
+
         let build_payment_req: BuildPaymentReqCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_payment_req;
 
@@ -157,6 +164,8 @@ impl PaymentsService {
     }
 
     pub fn build_mint_req(&self, cmd_handle: i32, type_: &str, wallet_handle: i32, submitter_did: &str, outputs: &str) -> Result<(), PaymentsError> {
+        println!("methods {:?}", self.methods);
+
         let build_mint_req: BuildMintReqCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_mint_req;
 
@@ -169,6 +178,8 @@ impl PaymentsService {
     }
 
     pub fn build_set_txn_fees_req(&self, cmd_handle: i32, type_: &str, wallet_handle: i32, submitter_did: &str, fees: &str) -> Result<(), PaymentsError> {
+        println!("methods {:?}", self.methods);
+
         let build_set_txn_fees_req: BuildSetTxnFeesReqCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_set_txn_fees_req;
 
@@ -181,6 +192,8 @@ impl PaymentsService {
     }
 
     pub fn build_get_txn_fees_req(&self, cmd_handle: i32, type_: &str, wallet_handle: i32, submitter_did: &str) -> Result<(), PaymentsError> {
+        println!("methods {:?}", self.methods);
+
         let build_get_txn_fees_req: BuildGetTxnFeesReqCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_get_txn_fees_req;
 
