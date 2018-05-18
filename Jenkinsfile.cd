@@ -147,7 +147,7 @@ def closePool(env_name, network_name, poolInst) {
 
 void getSrcVersion(folder) {
     commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
-    version = sh(returnStdout: true, script: "wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/$folder/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | cut -f2 -d '\"'").trim()
+    def version = sh(returnStdout: true, script: "wget -q https://raw.githubusercontent.com/hyperledger/indy-sdk/$commit/$folder/Cargo.toml -O - | grep -E '^version =' | head -n1 | cut -f2 -d= | cut -f2 -d '\"'").trim()
     return version
 }
 
@@ -371,13 +371,15 @@ def rhelTesting() {
 }
 
 def rhelPublishing() {
+    def libindyVersion;
+
     node('ubuntu') {
         stage('Publish Libindy RPM Files') {
             try {
                 echo 'Publish Rpm files: Checkout csm'
                 checkout scm
 
-                version = getSrcVersion("libindy")
+                libindyVersion = getSrcVersion("libindy")
 
                 dir('libindy') {
                     echo 'Publish Rpm: Build docker image'
@@ -399,25 +401,27 @@ def rhelPublishing() {
             }
         }
     }
-    return version
+    return libindyVersion
 }
 
 def ubuntuPublishing() {
+    def libindyVersion
+
     node('ubuntu') {
         stage('Publish Ubuntu Files') {
             try {
                 echo 'Publish Ubuntu files: Checkout csm'
                 checkout scm
 
-                version = getSrcVersion("libindy")
+                libindyVersion = getSrcVersion("libindy")
 
                 echo 'Publish Ubuntu files: Build docker image'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
-                libindyDebPublishing(testEnv, version)
+                libindyDebPublishing(testEnv, libindyVersion)
                 pythonWrapperPublishing(testEnv, false)
                 javaWrapperPublishing(testEnv, false)
-                libindyCliDebPublishing(testEnv, version)
+                libindyCliDebPublishing(testEnv, libindyVersion)
                 libnullpayDebPublishing(testEnv)
             }
             finally {
@@ -426,18 +430,18 @@ def ubuntuPublishing() {
             }
         }
     }
-
-    return version
+    return libindyVersion
 }
 
 def windowsPublishing() {
+    def libindyVersion
     node('win2016') {
         stage('Publish Libindy Windows Files') {
             try {
                 echo 'Publish Windows files: Checkout csm'
                 checkout scm
 
-                version = getSrcVersion("libindy")
+                libindyVersion = getSrcVersion("libindy")
 
                 dir('libindy') {
                     echo 'Publish Libindy Windows files'
@@ -460,7 +464,7 @@ def windowsPublishing() {
             }
         }
     }
-    return version
+    return libindyVersion
 }
 
 def windowsPublishArtifact(packageName, packageType, stashName) {
@@ -502,9 +506,9 @@ def libindyCliDebPublishing(testEnv, version) {
 def libnullpayDebPublishing(testEnv) {
     echo 'Publish Libnullpay deb files to Apt'
 
-    def version = getSrcVersion("libnullpay")
+    def libnullpayVersion = getSrcVersion("libnullpay")
 
-    debPublishing(testEnv, "libnullpay", "libnullpay", version, "LibnullpayUbuntuBuildResult", "libnullpayDebs")
+    debPublishing(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "LibnullpayUbuntuBuildResult", "libnullpayDebs")
 }
 
 def debPublishing(testEnv, directory, packageName, version, inStashName, outStashName) {
@@ -579,16 +583,16 @@ def publishingRCtoStable() {
                     downloadPackagingUtils()
                 }
 
-                version = getSrcVersion("libindy")
+                def libindyVersion = getSrcVersion("libindy")
 
                 echo 'Moving Windows RC artifacts to Stable: libindy'
-                publishLibindyWindowsFilesRCtoStable(version)
+                publishLibindyWindowsFilesRCtoStable(libindyVersion)
 
                 echo 'Moving RC artifacts to Stable: Build docker image for wrappers publishing'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 echo 'Moving Ubuntu RC artifacts to Stable: libindy'
-                publishLibindyDebRCtoStable(testEnv, version)
+                publishLibindyDebRCtoStable(testEnv, libindyVersion)
 
                 echo 'Moving Ubuntu RC artifacts to Stable: python wrapper'
                 pythonWrapperPublishing(testEnv, true)
@@ -597,13 +601,13 @@ def publishingRCtoStable() {
                 javaWrapperPublishing(testEnv, true)
 
                 echo 'Moving Ubuntu RC artifacts to Stable: indy-cli'
-                publishLibindyCliDebRCtoStable(testEnv, version)
+                publishLibindyCliDebRCtoStable(testEnv, libindyVersion)
 
                 echo 'Moving Windows RC artifacts to Stable: indy-cli'
-                publishLibindyCliWindowsFilesRCtoStable(version)
+                publishLibindyCliWindowsFilesRCtoStable(libindyVersion)
 
                 echo 'Moving Windows RC artifacts to Stable: libnullpay'
-                publishLibnullpayWindowsFilesRCtoStable(version)
+                publishLibnullpayWindowsFilesRCtoStable(libindyVersion)
 
                 echo 'Moving Ubuntu RC artifacts to Stable: libnullpay'
                 publishLibnullpayDebRCtoStable(testEnv)
@@ -625,8 +629,8 @@ def publishLibindyCliWindowsFilesRCtoStable(version) {
 }
 
 def publishLibnullpayWindowsFilesRCtoStable() {
-    version = getSrcVersion("libnullpay")
-    publishWindowsFilesRCtoStable("libnullpay", version)
+    def libnullpayVersion = getSrcVersion("libnullpay")
+    publishWindowsFilesRCtoStable("libnullpay", libnullpayVersion)
 }
 
 def publishWindowsFilesRCtoStable(packageName, version) {
@@ -649,8 +653,8 @@ def publishLibindyCliDebRCtoStable(testEnv, version) {
 }
 
 def publishLibnullpayDebRCtoStable(testEnv) {
-    version = getSrcVersion("libnullpay")
-    publishDebRCtoStable(testEnv, "libnullpay", "libnullpay", version, "libindyCliDebs", false)
+    def libnullpayVersion = getSrcVersion("libnullpay")
+    publishDebRCtoStable(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "libindyCliDebs", false)
 }
 
 def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, moveDevArtifacts) {
