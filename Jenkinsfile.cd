@@ -445,17 +445,19 @@ def windowsPublishing() {
 
                 dir('libindy') {
                     echo 'Publish Libindy Windows files'
-                    windowsPublishArtifact("libindy", "lib", "LibindyWindowsBuildResult")
+                    windowsPublishArtifact("libindy", "lib", libindyVersion, "LibindyWindowsBuildResult")
                 }
 
                 dir('cli') {
                     echo 'Publish Indy Cli Windows files'
-                    windowsPublishArtifact("indy-cli", "executable", "IndyCliWindowsBuildResult")
+                    windowsPublishArtifact("indy-cli", "executable", libindyVersion, "IndyCliWindowsBuildResult")
                 }
 
                 dir('libnullpay') {
+                    def libnullpayVersion = getSrcVersion("libnullpay")
+
                     echo 'Publish Libnullpay Cli Windows files'
-                    windowsPublishArtifact("libnullpay", "lib", "LibnullpayWindowsBuildResult")
+                    windowsPublishArtifact("libnullpay", "lib", libnullpayVersion, "LibnullpayWindowsBuildResult")
                 }
             }
             finally {
@@ -467,11 +469,11 @@ def windowsPublishing() {
     return libindyVersion
 }
 
-def windowsPublishArtifact(packageName, packageType, stashName) {
+def windowsPublishArtifact(packageName, packageType, packageVersion, stashName) {
     unstash name: stashName
 
     withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-        sh "../ci/win-zip-and-upload.sh $packageName $packageType $version '${repo_key}' ${env.BRANCH_NAME} $env.BUILD_NUMBER"
+        sh "../ci/win-zip-and-upload.sh $packageName $packageType $packageVersion '${repo_key}' ${env.BRANCH_NAME} $env.BUILD_NUMBER"
     }
 }
 
