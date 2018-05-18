@@ -166,9 +166,10 @@ struct PluggedStorage {
     get_record_type_handler: WalletGetRecordType,
     get_record_value_handler: WalletGetRecordValue,
     get_record_tags_handler: WalletGetRecordTags,
+    free_record_handler: WalletFreeRecord,
     get_storage_metadata_handler: WalletGetStorageMetadata,
     set_storage_metadata_handler: WalletSetStorageMetadata,
-    free_record_handler: WalletFreeRecord,
+    free_storage_metadata_handler: WalletFreeStorageMetadata,
     search_records_handler: WalletSearchRecords,
     search_all_records_handler: WalletSearchAllRecords,
     get_search_total_count_handler: WalletGetSearchTotalCount,
@@ -190,9 +191,10 @@ impl PluggedStorage {
            get_record_type_handler: WalletGetRecordType,
            get_record_value_handler: WalletGetRecordValue,
            get_record_tags_handler: WalletGetRecordTags,
+           free_record_handler: WalletFreeRecord,
            get_storage_metadata_handler: WalletGetStorageMetadata,
            set_storage_metadata_handler: WalletSetStorageMetadata,
-           free_record_handler: WalletFreeRecord,
+           free_storage_metadata_handler: WalletFreeStorageMetadata,
            search_records_handler: WalletSearchRecords,
            search_all_records_handler: WalletSearchAllRecords,
            get_search_total_count_handler: WalletGetSearchTotalCount,
@@ -211,16 +213,17 @@ impl PluggedStorage {
             get_record_id_handler,
             get_record_type_handler,
             get_record_value_handler,
+            get_record_tags_handler,
+            free_record_handler,
             get_storage_metadata_handler,
             set_storage_metadata_handler,
-            close_handler,
+            free_storage_metadata_handler,
             search_records_handler,
             search_all_records_handler,
             get_search_total_count_handler,
-            free_record_handler,
-            free_search_handler,
-            get_record_tags_handler,
             fetch_search_next_record_handler,
+            free_search_handler,
+            close_handler,
         }
     }
 }
@@ -451,8 +454,11 @@ impl WalletStorage for PluggedStorage {
 
     fn get_storage_metadata(&self) -> Result<Vec<u8>, WalletStorageError> {
         let mut metadata_ptr: *const c_char = ptr::null_mut();
+        let mut metadata_handler = -1;
 
-        let err: ErrorCode = (self.get_storage_metadata_handler)(self.handle, &mut metadata_ptr);
+        let err: ErrorCode = (self.get_storage_metadata_handler)(self.handle,
+                                                                 &mut metadata_ptr,
+                                                                 &mut metadata_handler);
 
         if err == ErrorCode::WalletItemNotFound {
             return Err(WalletStorageError::ItemNotFound);
@@ -460,6 +466,8 @@ impl WalletStorage for PluggedStorage {
         else if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
+
+        (self.free_storage_metadata_handler)(self.handle, metadata_handler);
 
         Ok(base64::decode(
             unsafe { CStr::from_ptr(metadata_ptr).to_str()? }
@@ -548,9 +556,10 @@ pub struct PluggedStorageType {
     get_record_type_handler: WalletGetRecordType,
     get_record_value_handler: WalletGetRecordValue,
     get_record_tags_handler: WalletGetRecordTags,
+    free_record_handler: WalletFreeRecord,
     get_storage_metadata_handler: WalletGetStorageMetadata,
     set_storage_metadata_handler: WalletSetStorageMetadata,
-    free_record_handler: WalletFreeRecord,
+    free_storage_metadata_handler: WalletFreeStorageMetadata,
     search_records_handler: WalletSearchRecords,
     search_all_records_handler: WalletSearchAllRecords,
     get_search_total_count_handler: WalletGetSearchTotalCount,
@@ -575,9 +584,10 @@ impl PluggedStorageType {
                get_record_type_handler: WalletGetRecordType,
                get_record_value_handler: WalletGetRecordValue,
                get_record_tags_handler: WalletGetRecordTags,
+               free_record_handler: WalletFreeRecord,
                get_storage_metadata_handler: WalletGetStorageMetadata,
                set_storage_metadata_handler: WalletSetStorageMetadata,
-               free_record_handler: WalletFreeRecord,
+               free_storage_metadata_handler: WalletFreeStorageMetadata,
                search_records_handler: WalletSearchRecords,
                search_all_records_handler: WalletSearchAllRecords,
                get_search_total_count_handler: WalletGetSearchTotalCount,
@@ -599,9 +609,10 @@ impl PluggedStorageType {
             get_record_type_handler,
             get_record_value_handler,
             get_record_tags_handler,
+            free_record_handler,
             get_storage_metadata_handler,
             set_storage_metadata_handler,
-            free_record_handler,
+            free_storage_metadata_handler,
             search_records_handler,
             search_all_records_handler,
             get_search_total_count_handler,
@@ -670,9 +681,10 @@ impl WalletStorageType for PluggedStorageType {
                 self.get_record_type_handler,
                 self.get_record_value_handler,
                 self.get_record_tags_handler,
+                self.free_record_handler,
                 self.get_storage_metadata_handler,
                 self.set_storage_metadata_handler,
-                self.free_record_handler,
+                self.free_storage_metadata_handler,
                 self.search_records_handler,
                 self.search_all_records_handler,
                 self.get_search_total_count_handler,
@@ -736,9 +748,10 @@ mod tests {
         GetRecordTypeHandler(i32, i32),
         GetRecordValueHandler(i32, i32),
         GetRecordTagsHandler(i32, i32),
+        FreeRecordHandler(i32, i32),
         GetStorageMetadataHandler(i32),
         SetStorageMetadataHandler(i32, Option<String>),
-        FreeRecordHandler(i32, i32),
+        FreeStorageMetadataHandler(i32, i32),
         SearchRecordsHandler(i32, Option<String>, Option<String>, Option<String>),
         SearchAllRecordsHandler(i32),
         GetSearchTotalCountHandler(i32, i32),
@@ -807,6 +820,7 @@ mod tests {
     static RETURN_STORAGE_HANDLE: i32 = 1i32;
     static RETURN_RECORD_HANDLE: i32 = 2i32;
     static RETURN_SEARCH_HANDLE: i32 = 3i32;
+    static RETURN_METADATA_HANDLE: i32 = 4i32;
     static RETURN_SEARCH_TOTAL_COUNT: usize = 1024;
 
     fn _convert_c_string(str: *const c_char) -> Option<String> {
@@ -1100,14 +1114,18 @@ mod tests {
     }
 
     extern "C" fn _mock_get_storage_metadata_handler(storage_handle: i32,
-                                                     metadata_p: *mut *const c_char) -> ErrorCode {
+                                                     metadata_p: *mut *const c_char,
+                                                     metadata_handle: *mut i32) -> ErrorCode {
         DEBUG_VEC.write().unwrap().push(
             Call::GetStorageMetadataHandler(
                 storage_handle,
             )
         );
 
-        unsafe { *metadata_p = RETURN_METADATA.read().unwrap().0.as_ptr(); }
+        unsafe {
+            *metadata_p = RETURN_METADATA.read().unwrap().0.as_ptr();
+            *metadata_handle = RETURN_METADATA_HANDLE;
+        }
 
         ErrorCode::Success
     }
@@ -1120,6 +1138,19 @@ mod tests {
             Call::SetStorageMetadataHandler(
                 storage_handle,
                 _convert_c_string(metadata_p),
+            )
+        );
+
+        ErrorCode::Success
+    }
+
+    extern "C" fn _mock_free_storage_metadata_handler(storage_handle: i32,
+                                                      metadata_handle: i32) -> ErrorCode {
+
+        DEBUG_VEC.write().unwrap().push(
+            Call::FreeStorageMetadataHandler(
+                storage_handle,
+                metadata_handle,
             )
         );
 
@@ -1234,9 +1265,10 @@ mod tests {
             _mock_get_record_type_handler,
             _mock_get_record_value_handler,
             _mock_get_record_tags_handler,
+            _mock_free_record_handler,
             _mock_get_storage_metadata_handler,
             _mock_set_storage_metadata_handler,
-            _mock_free_record_handler,
+            _mock_free_storage_metadata_handler,
             _mock_search_records_handler,
             _mock_search_all_records_handler,
             _mock_get_search_total_count_handler,
@@ -1771,14 +1803,20 @@ mod tests {
 
         assert_eq!(RETURN_METADATA.read().unwrap().1, metadata);
 
-        let expected_call = Call::GetStorageMetadataHandler(
+        let expected_get_call = Call::GetStorageMetadataHandler(
             RETURN_STORAGE_HANDLE,
+        );
+
+        let expected_free_call = Call::FreeStorageMetadataHandler(
+            RETURN_STORAGE_HANDLE,
+            RETURN_METADATA_HANDLE
         );
 
         let debug = DEBUG_VEC.read().unwrap();
 
-        assert_eq!(debug.len(), 1);
-        assert_eq!(&expected_call, debug.get(0).unwrap());
+        assert_eq!(debug.len(), 2);
+        assert_eq!(&expected_get_call, debug.get(0).unwrap());
+        assert_eq!(&expected_free_call, debug.get(1).unwrap());
     }
 
     #[test]
