@@ -1,8 +1,6 @@
 use std::env;
 
 fn main() {
-    println!("cargo:rustc-link-lib=dylib=indy.dll");
-
     let target = env::var("TARGET").unwrap();
     println!("target={}", target);
 
@@ -13,7 +11,7 @@ fn main() {
         let indy_dir = env::var("INDY_DIR").unwrap_or(format!("..\\libindy\\target\\{}", profile));
         println!("indy_dir={}", indy_dir);
 
+        println!("cargo:rustc-link-lib=dylib=indy.dll");
         println!("cargo:rustc-flags=-L {}", indy_dir);
-        return;
     }
 }

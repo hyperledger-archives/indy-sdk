@@ -3,12 +3,12 @@ use std::fs;
 use std::path::Path;
 
 fn main() {
-    println!("cargo:rustc-link-lib=indy.dll");
-
     let target = env::var("TARGET").unwrap();
     println!("target={}", target);
 
     if target.find("-windows-").is_some() {
+        println!("cargo:rustc-link-lib=indy.dll");
+
         let profile = env::var("PROFILE").unwrap();
         println!("profile={}", profile);
 
@@ -29,6 +29,7 @@ fn main() {
                 println!("copy {} -> {}", &indy_dir.join(f).display(), &dst.join(f).display());
             }
         }
-        return;
+    } else {
+        println!("cargo:rustc-link-lib=indy");
     }
 }
