@@ -4,15 +4,17 @@ extern crate rand;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
+extern crate log;
+#[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
 extern crate serde;
 
 mod libindy;
-
+#[macro_use]
+mod utils;
 #[macro_use]
 mod payment_method;
-mod utils;
 mod services;
 
 use libindy::ErrorCode;

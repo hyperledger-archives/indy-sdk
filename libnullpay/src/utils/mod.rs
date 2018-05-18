@@ -1,4 +1,7 @@
 pub mod callbacks;
+#[macro_use]
+pub mod cstring;
+#[macro_use]
 pub mod json_helper;
 pub mod sequence;
 pub mod rand;

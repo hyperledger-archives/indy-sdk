@@ -8,8 +8,9 @@ name = "nullpay"
 crate-type = ["dylib", "rlib"]
 
 [dependencies]
-libc = "0.2.21"
 lazy_static = "1.0"
+libc = "0.2.21"
+log = "0.3.7"
 rand = "0.3"
 serde = "1.0"
 serde_json = "1.0"

@@ -16,7 +16,10 @@ pub fn parse_operation_from_request (req: &str) -> Result<String, ErrorCode> {
 }
 
 pub fn serialize_infos(infos: Vec<UTXOInfo>) -> Result<String, ErrorCode> {
-    to_string(&infos).map_err(|_| ErrorCode::CommonInvalidState)
+    to_string(&infos).map_err(|_| {
+        error!("Can't deserialize UTXO Info");
+        ErrorCode::CommonInvalidState
+    })
 }
 
 pub fn val_to_obj<'a>(val: &'a Value) -> Result<&'a Map<String, Value>, ErrorCode> {
@@ -42,4 +45,13 @@ pub fn get_val_from_obj<'a>(obj: &'a Map<String, Value>, key: &str) -> Result<&'
         Some(obj) => Ok(obj),
         None => Err(ErrorCode::CommonInvalidStructure)
     }
+}
+
+macro_rules! parse_json {
+    ($param: ident, $type_: ty, $err: expr) => {
+        let $param = match from_str::<$type_>($param.as_str()) {
+            Ok(val) => val,
+            Err(_) => {return $err}
+        };
+    };
 }
