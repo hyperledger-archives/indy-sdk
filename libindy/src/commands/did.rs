@@ -220,8 +220,8 @@ impl DidCommandExecutor {
 
         let (my_did, key) = self.crypto_service.create_my_did(&my_did_info)?;
 
-        self.wallet_service.add_indy_object(wallet_handle, &my_did.did, &my_did, "{}")?;
-        self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &my_did.did, &my_did, &HashMap::new())?;
+        self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new())?;
 
         let res = (my_did.did, my_did.verkey);
 
@@ -248,8 +248,8 @@ impl DidCommandExecutor {
         let temporary_key = self.crypto_service.create_key(&key_info)?;
         let my_temporary_did = TemporaryDid { did: my_did.did, verkey: temporary_key.verkey.clone() };
 
-        self.wallet_service.add_indy_object(wallet_handle, &temporary_key.verkey, &temporary_key, "{}")?;
-        self.wallet_service.add_indy_object(wallet_handle, &my_temporary_did.did, &my_temporary_did, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &temporary_key.verkey, &temporary_key, &HashMap::new())?;
+        self.wallet_service.add_indy_object(wallet_handle, &my_temporary_did.did, &my_temporary_did, &HashMap::new())?;
 
         let res = my_temporary_did.verkey;
 
@@ -291,7 +291,7 @@ impl DidCommandExecutor {
 
         let their_did = self.crypto_service.create_their_did(&their_did_info)?;
 
-        self.wallet_service.add_indy_object(wallet_handle, &their_did.did, &their_did, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &their_did.did, &their_did, &HashMap::new())?;
 
         info!("store_their_did <<<");
 
@@ -310,8 +310,7 @@ impl DidCommandExecutor {
             .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", my_did)))?;
 
         let meta: Option<String> = did_record.get_tags()
-            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from));
+            .and_then(|tags: &HashMap<String, String>| tags.get("metadata").map(|s| s.clone()));
 
         let did_with_meta = DidWithMeta {
             did: did.did,
@@ -344,8 +343,7 @@ impl DidCommandExecutor {
                 .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", did_id)))?;
 
             let meta: Option<String> = did_record.get_tags()
-                .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-                .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from));
+                .and_then(|tags: &HashMap<String, String>| tags.get("metadata").map(|s| s.clone()));
 
             let did_with_meta = DidWithMeta {
                 did: did.did,
@@ -482,9 +480,10 @@ impl DidCommandExecutor {
 
         self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::id())?;
 
-        let tags_json = json!({"metadata": metadata}).to_string();
+        let mut tags = HashMap::new();
+        tags.insert(String::from("metadata"), metadata);
 
-        let res = self.wallet_service.add_indy_record_tags::<Did>(wallet_handle, &did, &tags_json)?;
+        let res = self.wallet_service.add_indy_record_tags::<Did>(wallet_handle, &did, &tags)?;
 
         info!("set_did_metadata >>> res: {:?}", res);
 
@@ -500,8 +499,7 @@ impl DidCommandExecutor {
 
         let res = self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::full())?
             .get_tags()
-            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
+            .and_then(|tags: &HashMap<String, String>| tags.get("metadata").map(|s| s.clone()))
             .ok_or(WalletError::NotFound(format!("Metadata not found for did: {}", did)))?;
 
         info!("get_did_metadata <<< res: {:?}", res);
@@ -556,7 +554,7 @@ impl DidCommandExecutor {
 
         let their_did = self.crypto_service.create_their_did(&their_did_info)?;
 
-        self.wallet_service.add_indy_object(wallet_handle, &their_did.did, &their_did, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &their_did.did, &their_did, &HashMap::new())?;
 
         Ok(())
     }
@@ -582,7 +580,7 @@ impl DidCommandExecutor {
 
         let endpoint = Endpoint::new(attrib_data.endpoint.ha, attrib_data.endpoint.verkey);
 
-        self.wallet_service.add_indy_object(wallet_handle, &get_attrib_response.result.dest, &endpoint, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &get_attrib_response.result.dest, &endpoint, &HashMap::new())?;
 
         Ok(())
     }
@@ -695,10 +693,17 @@ impl DidCommandExecutor {
         self.wallet_service.get_indy_object(wallet_handle, &their_did, &RecordOptions::id_value(), &mut String::new())
     }
 
+//    fn _wallet_get_did_metadata(&self, wallet_handle: i32, did: &str) -> Option<String> {
+//        self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::full()).ok()
+//            .and_then(|rec| rec.get_tags().map(String::from))
+//            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
+//            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
+//    }
+
     fn _wallet_get_did_metadata(&self, wallet_handle: i32, did: &str) -> Option<String> {
-        self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::full()).ok()
-            .and_then(|rec| rec.get_tags().map(String::from))
-            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
+        self.wallet_service.get_indy_record::<Did>(wallet_handle, did, &RecordOptions::full()).ok()
+            .and_then(|rec|
+                rec.get_tags().map(|tags| tags.get("metadata").unwrap_or(&String::new()).to_string())
+            )
     }
 }

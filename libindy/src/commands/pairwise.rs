@@ -1,6 +1,8 @@
 extern crate serde_json;
 extern crate indy_crypto;
 
+use std::collections::HashMap;
+
 use errors::common::CommonError;
 use errors::indy::IndyError;
 use services::wallet::{WalletService, RecordOptions};
@@ -101,7 +103,7 @@ impl PairwiseCommandExecutor {
             metadata: metadata.map(str::to_string)
         };
 
-        self.wallet_service.add_indy_object(wallet_handle, &their_did, &pairwise, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &their_did, &pairwise, &HashMap::new())?;
 
         info!("create_pairwise <<<");
 

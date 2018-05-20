@@ -166,7 +166,7 @@ impl ProverCommandExecutor {
             value: master_secret
         };
 
-        self.wallet_service.add_indy_object(wallet_handle, &master_secret_id, &master_secret, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &master_secret_id, &master_secret, &HashMap::new())?;
 
         info!("create_master_secret <<< master_secret_id: {:?}", master_secret_id);
 
@@ -268,7 +268,7 @@ impl ProverCommandExecutor {
 
         let out_cred_id = cred_id.map(String::from).unwrap_or(uuid::Uuid::new_v4().to_string());
 
-        self.wallet_service.add_indy_object(wallet_handle, &out_cred_id, &credential, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &out_cred_id, &credential, &HashMap::new())?;
 
         info!("store_credential <<< out_cred_id: {:?}", out_cred_id);
 

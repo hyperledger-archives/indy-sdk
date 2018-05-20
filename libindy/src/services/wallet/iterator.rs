@@ -11,7 +11,7 @@ use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 
 pub(super) struct WalletIterator<'a> {
     storage_iterator: Box<StorageIterator + 'a>,
-    keys: &'a Keys
+    keys: &'a Keys,
 }
 
 
@@ -26,26 +26,28 @@ impl<'a> WalletIterator<'a> {
     pub fn next(&mut self) -> Result<Option<WalletRecord>, WalletError> {
         let next_storage_entity = self.storage_iterator.next()?;
         if let Some(next_storage_entity) = next_storage_entity {
-            let decrypted_name = ChaCha20Poly1305IETF::decrypt(&next_storage_entity.name, &self.keys.name_key)?;
+            let decrypted_name = ChaCha20Poly1305IETF::decrypt_merged(&next_storage_entity.name, &self.keys.name_key)?;
             let name = String::from_utf8(decrypted_name)?;
+
+            let type_ = match next_storage_entity.type_ {
+                None => None,
+                Some(encrypted_type) => Some(String::from_utf8(ChaCha20Poly1305IETF::decrypt_merged(&encrypted_type, &self.keys.type_key)?)?)
+            };
 
             let value = match next_storage_entity.value {
                 None => None,
                 Some(storage_value) => {
-                    let value_key = ChaCha20Poly1305IETF::decrypt(&storage_value.key, &self.keys.value_key)?;
+                    let value_key = ChaCha20Poly1305IETF::decrypt_merged(&storage_value.key, &self.keys.value_key)?;
                     if value_key.len() != ChaCha20Poly1305IETF::key_len() {
                         return Err(WalletError::EncryptionError("Value key is not right size".to_string()));
                     }
-                    Some(String::from_utf8(ChaCha20Poly1305IETF::decrypt(&storage_value.data, &value_key)?)?)
+                    Some(String::from_utf8(ChaCha20Poly1305IETF::decrypt_merged(&storage_value.data, &value_key)?)?)
                 }
             };
 
-            let tags = match decrypt_tags(&next_storage_entity.tags, &self.keys.tag_name_key, &self.keys.tag_value_key)? {
-                None => None,
-                Some(tags) => Some(serde_json::to_string(&tags)?)
-            };
+            let tags = decrypt_tags(&next_storage_entity.tags, &self.keys.tag_name_key, &self.keys.tag_value_key)?;
 
-            Ok(Some(WalletRecord::new(name, None, value, tags)))
+            Ok(Some(WalletRecord::new(name, type_, value, tags)))
         } else { Ok(None) }
     }
 }

@@ -29,7 +29,7 @@ pub struct StorageEntity {
 }
 
 impl StorageValue {
-    fn new(data: Vec<u8>, key: Vec<u8>) -> Self {
+    pub fn new(data: Vec<u8>, key: Vec<u8>) -> Self {
         Self {
             data: data,
             key: key,
@@ -38,7 +38,7 @@ impl StorageValue {
 }
 
 impl StorageEntity {
-    fn new(name: Vec<u8>, value: Option<StorageValue>, type_: Option<Vec<u8>>, tags: Option<HashMap<Vec<u8>, TagValue>>) -> Self {
+    pub fn new(name: Vec<u8>, value: Option<StorageValue>, type_: Option<Vec<u8>>, tags: Option<HashMap<Vec<u8>, TagValue>>) -> Self {
         Self {
             name: name,
             value: value,

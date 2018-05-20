@@ -4,6 +4,7 @@ use errors::common::CommonError;
 
 use self::sodiumoxide::crypto::aead::chacha20poly1305_ietf;
 use sodiumoxide::crypto::auth::hmacsha256;
+use sodiumoxide::utils::increment_le;
 use utils::byte_array::_clone_into_array;
 
 pub struct ChaCha20Poly1305IETF {
@@ -22,9 +23,31 @@ impl ChaCha20Poly1305IETF {
         chacha20poly1305_ietf::gen_nonce()[..].to_vec()
     }
 
+    pub fn increment_nonce(nonce: &mut [u8]) {
+        increment_le(nonce);
+    }
+
     pub fn nonce_len() -> usize { chacha20poly1305_ietf::NONCEBYTES }
 
     pub fn key_len() -> usize { chacha20poly1305_ietf::KEYBYTES }
+
+    pub fn encrypt(input: &[u8], key: &[u8], nonce: &[u8]) -> Vec<u8> {
+        chacha20poly1305_ietf::seal(
+            input,
+            None,
+            &chacha20poly1305_ietf::Nonce(_clone_into_array(nonce)),
+            &chacha20poly1305_ietf::Key(_clone_into_array(key))
+        )
+    }
+
+    pub fn decrypt(input: &[u8], key: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError> {
+        chacha20poly1305_ietf::open(
+            input,
+            None,
+            &chacha20poly1305_ietf::Nonce(_clone_into_array(nonce)),
+            &chacha20poly1305_ietf::Key(_clone_into_array(key))
+        ).map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))
+    }
 
     pub fn encrypt_as_searchable(data: &[u8], key: &[u8], hmac_key: &[u8]) -> Vec<u8> {
         let hmacsha256::Tag(hash) = hmacsha256::authenticate(
@@ -60,7 +83,7 @@ impl ChaCha20Poly1305IETF {
         result
     }
 
-    pub fn decrypt(enc_text: &[u8], key: &[u8]) -> Result<Vec<u8>, CommonError> {
+    pub fn decrypt_merged(enc_text: &[u8], key: &[u8]) -> Result<Vec<u8>, CommonError> {
         if enc_text.len() <= chacha20poly1305_ietf::NONCEBYTES {
             return Err(CommonError::InvalidStructure(format!("Unable to decrypt data: Cyphertext too short")));
         }
@@ -89,7 +112,7 @@ mod tests {
         let hmac_key = ChaCha20Poly1305IETF::create_key();
 
         let c = ChaCha20Poly1305IETF::encrypt_as_searchable(&data, &key, &hmac_key);
-        let u = ChaCha20Poly1305IETF::decrypt(&c, &key).unwrap();
+        let u = ChaCha20Poly1305IETF::decrypt_merged(&c, &key).unwrap();
         assert_eq!(data, u);
     }
 
@@ -99,7 +122,7 @@ mod tests {
         let key = ChaCha20Poly1305IETF::create_key();
 
         let c = ChaCha20Poly1305IETF::encrypt_as_not_searchable(&data, &key);
-        let u = ChaCha20Poly1305IETF::decrypt(&c, &key).unwrap();
+        let u = ChaCha20Poly1305IETF::decrypt_merged(&c, &key).unwrap();
         assert_eq!(data, u);
     }
 }

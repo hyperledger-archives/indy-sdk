@@ -133,21 +133,21 @@ impl<'a> SQLiteStorageIterator<'a> {
     fn new(stmt: rusqlite::Statement<'a>,
            args: &[&rusqlite::types::ToSql],
            options: FetchOptions,
-           tag_retriver: Option<TagRetriever<'a>>,
+           tag_retriever: Option<TagRetriever<'a>>,
            fetch_type_: bool) -> Result<SQLiteStorageIterator<'a>, WalletStorageError> {
-            let mut iter = SQLiteStorageIterator {
-                stmt: Box::new(stmt),
-                rows: None,
-                tag_retriever: tag_retriver,
-                options: options,
-                fetch_type_: fetch_type_
-            };
-            iter.rows = Some(
-                unsafe {
-                    (*(&mut *iter.stmt as *mut rusqlite::Statement)).query(args)?
-                }
-            );
-            Ok(iter)
+        let mut iter = SQLiteStorageIterator {
+            stmt: Box::new(stmt),
+            rows: None,
+            tag_retriever: tag_retriever,
+            options: options,
+            fetch_type_: fetch_type_
+        };
+        iter.rows = Some(
+            unsafe {
+                (*(&mut *iter.stmt as *mut rusqlite::Statement)).query(args)?
+            }
+        );
+        Ok(iter)
     }
 }
 

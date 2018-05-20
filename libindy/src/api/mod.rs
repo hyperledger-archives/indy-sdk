@@ -110,6 +110,9 @@ pub enum ErrorCode
     // Returned if provided wallet query is invalid
     WalletQueryError = 214,
 
+    // Returned if wallet import has failed
+    WalletImportError = 215,
+
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
     PoolLedgerNotCreatedError = 300,
