@@ -97,8 +97,9 @@ pub mod list_command {
 
 pub fn handle_payment_error(err: ErrorCode, payment_method: Option<&str>) {
     match err {
-        ErrorCode::UnknownPaymentMethod => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
-        ErrorCode::IncompatiblePaymentError => println_err!("Different payment methods were specified"),
+        ErrorCode::PaymentUnknownMethodError => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
+        ErrorCode::PaymentIncompatibleMethodsError => println_err!("Different payment methods were specified"),
+        ErrorCode::PaymentInsufficientFundsError => println_err!("Insufficient funds on inputs"),
         err => println_err!("Indy SDK error occurred {:?}", err)
     }
 }
@@ -106,7 +107,7 @@ pub fn handle_payment_error(err: ErrorCode, payment_method: Option<&str>) {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-
+    use utils::test::TestUtils;
     use commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
     use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
     use commands::did::tests::SEED_MY1;
@@ -115,8 +116,9 @@ pub mod tests {
         use super::*;
 
         #[test]
-        #[cfg(feature = "payments_cli_tests")]
+        #[cfg(feature = "nullpay_plugin")]
         pub fn create_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             let wallet_handle = create_and_open_wallet(&ctx);
@@ -132,11 +134,13 @@ pub mod tests {
             assert!(addresses[0].starts_with("pay:null:"));
 
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
-        #[cfg(feature = "payments_cli_tests")]
+        #[cfg(feature = "nullpay_plugin")]
         pub fn create_works_for_seed() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             let wallet_handle = create_and_open_wallet(&ctx);
@@ -153,11 +157,13 @@ pub mod tests {
             assert!(addresses[0].starts_with("pay:null:"));
 
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
-        #[cfg(feature = "payments_cli_tests")]
+        #[cfg(feature = "nullpay_plugin")]
         pub fn create_works_for_unknown_payment_method() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -168,11 +174,13 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
-        #[cfg(feature = "payments_cli_tests")]
+        #[cfg(feature = "nullpay_plugin")]
         pub fn create_works_for_no_opened_wallet() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
             load_null_payment_plugin(&ctx);
             {
@@ -181,6 +189,7 @@ pub mod tests {
                 params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            TestUtils::cleanup_storage();
         }
     }
 
@@ -188,8 +197,9 @@ pub mod tests {
         use super::*;
 
         #[test]
-        #[cfg(feature = "payments_cli_tests")]
-        pub fn list_worksa() {
+        #[cfg(feature = "nullpay_plugin")]
+        pub fn list_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             let wallet_handle = create_and_open_wallet(&ctx);
@@ -204,11 +214,13 @@ pub mod tests {
             assert_eq!(1, addresses.len());
 
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
-        #[cfg(feature = "payments_cli_tests")]
+        #[cfg(feature = "nullpay_plugin")]
         pub fn list_works_for_empty_list() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             let wallet_handle = create_and_open_wallet(&ctx);
@@ -222,11 +234,13 @@ pub mod tests {
             assert_eq!(0, addresses.len());
 
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
-        #[cfg(feature = "payments_cli_tests")]
+        #[cfg(feature = "nullpay_plugin")]
         pub fn list_works_for_no_opened_wallet() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             load_null_payment_plugin(&ctx);
@@ -235,6 +249,7 @@ pub mod tests {
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            TestUtils::cleanup_storage();
         }
     }
 

@@ -5,7 +5,7 @@ authors = ["Nikita Khateev <nikita.khateev@dsr-corporation.com>"]
 
 [lib]
 name = "nullpay"
-crate-type = ["dylib", "rlib"]
+crate-type = ["cdylib"]
 
 [dependencies]
 libc = "0.2.21"
