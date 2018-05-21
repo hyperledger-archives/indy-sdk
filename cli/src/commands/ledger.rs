@@ -1801,16 +1801,20 @@ pub mod tests {
 
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
-            load_null_payment_plugin(&ctx);
             let did = crate_send_and_use_new_nym(&ctx);
+            load_null_payment_plugin(&ctx);
+            set_fees(&ctx);
+
+            let payment_address_from = create_address_and_mint_tokens(&ctx);
+            let input = get_utxo_input(&ctx, &payment_address_from);
             {
                 let cmd = schema_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", "gvt".to_string());
                 params.insert("version", "1.0".to_string());
                 params.insert("attr_names", "name,age".to_string());
-                params.insert("fees_inputs", r#"txo:null:111_rBuQo2A1sc9jrJg"#.to_string());
-                params.insert("fees_outputs", r#"(pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,100)"#.to_string());
+                params.insert("fees_inputs", input);
+                params.insert("fees_outputs", OUTPUT.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             _ensure_schema_added(&ctx, &did);
@@ -2231,7 +2235,6 @@ pub mod tests {
         use super::*;
 
         #[test]
-        #[ignore]
         pub fn pool_restart_works() {
             TestUtils::cleanup_storage();
             let datetime = r#"2020-01-25T12:49:05.258870+00:00"#;
@@ -2260,6 +2263,7 @@ pub mod tests {
         use super::*;
 
         #[test]
+        #[ignore]
         pub fn pool_upgrade_works() {
             TestUtils::cleanup_storage();
             let schedule = r#"{"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"2020-01-25T12:49:05.258870+00:00",
@@ -2482,12 +2486,12 @@ pub mod tests {
     pub const UNKNOWN_PAYMENT_METHOD: &'static str = "UNKNOWN_PAYMENT_METHOD";
     pub const INVALID_PAYMENT_ADDRESS: &'static str = "null";
     pub const INPUT: &'static str = "txo:null:111_rBuQo2A1sc9jrJg";
-    pub const INPUT_2: &'static str = "txo:null:222_avsad2A1sc9jrJg";
-    pub const OUTPUT: &'static str = "(pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,100)";
+    pub const OUTPUT: &'static str = "(pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,10)";
     pub const OUTPUT_2: &'static str = "(pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa,25,some extra)";
     pub const INVALID_INPUT: &'static str = "txo:null";
     pub const INVALID_OUTPUT: &'static str = "pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,100";
-    pub const FEES: &'static str = "NYM:2,ATTRIB:1";
+    pub const FEES: &'static str = "NYM:2,ATTRIB:1,SCHEMA:5";
+    pub const TOKES_COUNT: i32 = 100;
 
     mod get_utxo {
         use super::*;
@@ -2495,6 +2499,29 @@ pub mod tests {
         #[test]
         #[cfg(feature = "nullpay_plugin")]
         pub fn get_utxo_works() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            let payment_address = create_address_and_mint_tokens(&ctx);
+            {
+                let cmd = get_utxo_command::new();
+                let mut params = CommandParams::new();
+                params.insert("payment_address", payment_address);
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "nullpay_plugin")]
+        pub fn get_utxo_works_for_no_utxos() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
@@ -2612,11 +2639,45 @@ pub mod tests {
             load_null_payment_plugin(&ctx);
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
+            let payment_address_from = create_address_and_mint_tokens(&ctx);
+            let input = get_utxo_input(&ctx, &payment_address_from);
+            let payment_address_to = create_payment_address(&ctx);
             {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
-                params.insert("inputs", INPUT.to_string());
-                params.insert("outputs", OUTPUT.to_string());
+                params.insert("inputs", input);
+                params.insert("outputs", format!("({},{})", payment_address_to, 10));
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "nullpay_plugin")]
+        pub fn payment_works_for_multiple_inputs() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+
+            let payment_address_from_1 = create_address_and_mint_tokens(&ctx);
+            let input_1 = get_utxo_input(&ctx, &payment_address_from_1);
+
+            let payment_address_from_2 = create_address_and_mint_tokens(&ctx);
+            let input_2 = get_utxo_input(&ctx, &payment_address_from_2);
+
+            let payment_address_to = create_payment_address(&ctx);
+            {
+                let cmd = payment_command::new();
+                let mut params = CommandParams::new();
+                params.insert("inputs", format!("{},{}", input_1, input_2));
+                params.insert("outputs", format!("({},{})", payment_address_to, 150));
                 cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);
@@ -2635,12 +2696,97 @@ pub mod tests {
             load_null_payment_plugin(&ctx);
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
+
+            let payment_address_from_1 = create_address_and_mint_tokens(&ctx);
+            let input_1 = get_utxo_input(&ctx, &payment_address_from_1);
+
+            let payment_address_from_2 = create_address_and_mint_tokens(&ctx);
+            let input_2 = get_utxo_input(&ctx, &payment_address_from_2);
+
+            let payment_address_to_1 = create_payment_address(&ctx);
+            let payment_address_to_2 = create_payment_address(&ctx);
             {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
-                params.insert("inputs", format!("{},{}", INPUT, INPUT_2));
-                params.insert("outputs", format!("{},{}", OUTPUT, OUTPUT_2));
+                params.insert("inputs", format!("{},{}", input_1, input_2));
+                params.insert("outputs", format!("({},{}),({},{})", payment_address_to_1, 10, payment_address_to_2, 20));
                 cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "nullpay_plugin")]
+        pub fn payment_works_for_not_enough_amount() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            let payment_address_from = create_address_and_mint_tokens(&ctx);
+            let input = get_utxo_input(&ctx, &payment_address_from);
+            let payment_address_to = create_payment_address(&ctx);
+            {
+                let cmd = payment_command::new();
+                let mut params = CommandParams::new();
+                params.insert("inputs", input);
+                params.insert("outputs", format!("({},{})", payment_address_to, 1000));
+                cmd.execute(&ctx, &params).unwrap_err(); //TODO: question about Error
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "nullpay_plugin")]
+        pub fn payment_works_for_unknown_input() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            let payment_address_to = create_payment_address(&ctx);
+            {
+                let cmd = payment_command::new();
+                let mut params = CommandParams::new();
+                params.insert("inputs", INPUT.to_string());
+                params.insert("outputs", format!("({},{})", payment_address_to, 10));
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[ignore] //TODO: question
+        #[cfg(feature = "nullpay_plugin")]
+        pub fn payment_works_for_unknown_output() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            let payment_address_from = create_address_and_mint_tokens(&ctx);
+            let input = get_utxo_input(&ctx, &payment_address_from);
+            {
+                let cmd = payment_command::new();
+                let mut params = CommandParams::new();
+                params.insert("inputs", input);
+                params.insert("outputs", OUTPUT.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
@@ -2822,6 +2968,29 @@ pub mod tests {
         #[test]
         #[cfg(feature = "nullpay_plugin")]
         pub fn get_fees_works() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            set_fees(&ctx);
+            {
+                let cmd = get_fees_command::new();
+                let mut params = CommandParams::new();
+                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "nullpay_plugin")]
+        pub fn get_fees_works_for_no_fees() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
@@ -3221,6 +3390,40 @@ pub mod tests {
             params.insert("role", role.to_string());
         }
         cmd.execute(&ctx, &params).unwrap();
+    }
+
+    pub fn create_address_and_mint_tokens(ctx: &CommandContext) -> String {
+        let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
+        let submitter_did = ensure_active_did(&ctx).unwrap();
+
+        let payment_address = create_payment_address(&ctx);
+
+        Payment::build_mint_req(wallet_handle,
+                                &submitter_did,
+                                &parse_payment_outputs(&vec![format!("{},{}", payment_address, TOKES_COUNT)]).unwrap()).unwrap();
+        payment_address
+    }
+
+    pub fn get_utxo_input(ctx: &CommandContext, payment_address: &str) -> String {
+        let (pool_handle, _) = get_connected_pool(ctx).unwrap();
+        let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
+        let submitter_did = ensure_active_did(&ctx).unwrap();
+
+        let (get_utxo_txn_json, _) = Payment::build_get_utxo_request(wallet_handle, &submitter_did, payment_address).unwrap();
+        let response = Ledger::submit_request(pool_handle, &get_utxo_txn_json).unwrap();
+
+        let utxo_json = Payment::parse_get_utxo_response(NULL_PAYMENT_METHOD, &response).unwrap();
+
+        let utxos = serde_json::from_str::<serde_json::Value>(&utxo_json).unwrap();
+        let utxo: &serde_json::Value = &utxos.as_array().unwrap()[0];
+        utxo["input"].as_str().unwrap().to_string()
+    }
+
+    pub fn set_fees(ctx: &CommandContext) {
+        let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
+        let submitter_did = ensure_active_did(&ctx).unwrap();
+
+        Payment::build_set_txn_fees_req(wallet_handle, &submitter_did, NULL_PAYMENT_METHOD, r#"{"NYM":2,"ATTRIB":1,"SCHEMA":5}"#).unwrap();
     }
 
     fn _ensure_nym_added(ctx: &CommandContext, did: &str) {

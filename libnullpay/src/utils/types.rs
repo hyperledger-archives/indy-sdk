@@ -1,5 +1,6 @@
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct UTXOOutput {
+    #[serde(rename="paymentAddress")]
     pub payment_address: String,
     pub amount: i32,
     pub extra: Option<String>

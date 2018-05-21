@@ -48,19 +48,18 @@ pub mod add_request_fees {
             }
         };
 
-        let (err, fee) = match config_ledger::get_fee(txn_type) {
-            Some(fee) => (ErrorCode::Success, fee),
+        let fee = match config_ledger::get_fee(txn_type) {
+            Some(fee) => fee,
             None => {
-                error!("No fees found for request");
-                (ErrorCode::CommonInvalidState, 0)
+                trace!("No fees found for request");
+                0
             }
         };
 
         let total_amount = _count_total_inputs(&inputs_json);
         let total_payments = _count_total_payments(&outputs_json);
 
-        let err = if err == ErrorCode::Success {
-            if total_amount >= total_payments + fee {
+        let err = if total_amount >= total_payments + fee {
                 //we have enough money for this txn, give it back
                 let seq_no = payment_ledger::add_txn(inputs_json.clone(), outputs_json.clone());
 
@@ -75,7 +74,7 @@ pub mod add_request_fees {
                     submitter_did.as_str(),
                     1,
                     Box::new(move |ec, res| {
-                        let ec = if err == ErrorCode::Success {
+                        let ec = if ec == ErrorCode::Success {
                             _add_response(res.clone(), "INSUFFICIENT_FUNDS".to_string())
                         } else { ec };
                         trace!("libnullpay::add_request_fees::handle >>");
@@ -83,8 +82,7 @@ pub mod add_request_fees {
                     }),
                 );
                 return ErrorCode::Success;
-            }
-        } else { err };
+            };
 
         trace!("libnullpay::add_request_fees::handle >>");
         _process_callback(cmd_handle, err, req_json, cb)
