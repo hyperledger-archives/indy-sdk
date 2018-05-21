@@ -58,6 +58,8 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                            get_record_type: Option<WalletGetRecordType>,
                                            get_record_value: Option<WalletGetRecordValue>,
                                            get_record_tags: Option<WalletGetRecordTags>,
+                                           get_storage_metadata: Option<WalletGetStorageMetadata>,
+                                           set_storage_metadata: Option<WalletSetStorageMetadata>,
                                            free_record: Option<WalletFreeRecord>,
                                            search_records: Option<WalletSearchRecords>,
                                            search_all_records: Option<WalletSearchAllRecords>,
@@ -82,6 +84,8 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
     check_useful_c_callback!(get_record_type, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(get_record_value, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(get_record_tags, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(get_storage_metadata, ErrorCode::CommonInvalidParam11);
+    check_useful_c_callback!(set_storage_metadata, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(free_record, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(search_records, ErrorCode::CommonInvalidParam11);
     check_useful_c_callback!(search_all_records, ErrorCode::CommonInvalidParam11);
@@ -89,6 +93,8 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
     check_useful_c_callback!(fetch_search_next_record, ErrorCode::CommonInvalidParam11); // TODO: CommonInvalidParam.......
     check_useful_c_callback!(free_search, ErrorCode::CommonInvalidParam11); // TODO: CommonInvalidParam.......
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam12);
+
+    trace!("indy_register_wallet_type: entities >>> type_: {:?}", type_);
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(
@@ -109,6 +115,8 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                 get_record_type,
                 get_record_value,
                 get_record_tags,
+                get_storage_metadata,
+                set_storage_metadata,
                 free_record,
                 search_records,
                 search_all_records,
@@ -121,7 +129,11 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                 })
             )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_register_wallet_type: <<< res: {:?}", res);
+
+    res
 }
 
 /// Creates a new secure wallet with the given unique name.
@@ -156,13 +168,20 @@ pub extern fn indy_create_wallet(command_handle: i32,
                                  storage_type: *const c_char,
                                  config: *const c_char,
                                  credentials: *const c_char,
-                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                 cb: Option<extern fn(xcommand_handle: i32,
+                                                      err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_create_wallet: >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}",
+           pool_name, name, storage_type, config, credentials);
+
     check_useful_c_str!(pool_name, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(storage_type, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+
+    trace!("indy_create_wallet: entities >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}",
+           pool_name, name, storage_type, config, credentials);
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::Create(
@@ -173,11 +192,16 @@ pub extern fn indy_create_wallet(command_handle: i32,
             credentials,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
+                trace!("indy_create_wallet:");
                 cb(command_handle, err)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_create_wallet: <<< res: {:?}", res);
+
+    res
 }
 
 /// Opens the wallet with specific name.
@@ -210,11 +234,17 @@ pub extern fn indy_open_wallet(command_handle: i32,
                                name: *const c_char,
                                runtime_config: *const c_char,
                                credentials: *const c_char,
-                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, handle: i32)>) -> ErrorCode {
+                               cb: Option<extern fn(xcommand_handle: i32,
+                                                    err: ErrorCode,
+                                                    handle: i32)>) -> ErrorCode {
+    trace!("indy_open_wallet: >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
+
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
     check_useful_opt_c_str!(runtime_config, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_open_wallet: entities >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::Open(
@@ -223,30 +253,45 @@ pub extern fn indy_open_wallet(command_handle: i32,
             credentials,
             Box::new(move |result| {
                 let (err, handle) = result_to_err_code_1!(result, 0);
+                trace!("indy_open_wallet: handle: {:?}", handle);
                 cb(command_handle, err, handle)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_open_wallet: <<< res: {:?}", res);
+
+    res
 }
 
 /// Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool
 #[no_mangle]
 pub extern fn indy_list_wallets(command_handle: i32,
-                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                cb: Option<extern fn(xcommand_handle: i32,
+                                                     err: ErrorCode,
                                                      wallets: *const c_char)>) -> ErrorCode {
+    trace!("indy_list_wallets: >>>");
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
+
+    trace!("indy_list_wallets: entities >>>");
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::ListWallets(
             Box::new(move |result| {
                 let (err, wallets) = result_to_err_code_1!(result, String::new());
+                trace!("indy_list_wallets: wallets: {:?}", wallets);
                 let wallets = CStringUtils::string_to_cstring(wallets);
                 cb(command_handle, err, wallets.as_ptr())
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_list_wallets: <<< res: {:?}", res);
+
+    res
 }
 
 /// Closes opened wallet and frees allocated resources.
@@ -263,19 +308,29 @@ pub extern fn indy_list_wallets(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_close_wallet(command_handle: i32,
                                 handle: i32,
-                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                cb: Option<extern fn(xcommand_handle: i32,
+                                                     err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_close_wallet: >>> handle: {:?}", handle);
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    trace!("indy_close_wallet: entities >>> handle: {:?}", handle);
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::Close(
             handle,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
+                trace!("indy_close_wallet:");
                 cb(command_handle, err)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_close_wallet: <<< res: {:?}", res);
+
+    res
 }
 
 /// Deletes created wallet.
@@ -295,10 +350,15 @@ pub extern fn indy_close_wallet(command_handle: i32,
 pub extern fn indy_delete_wallet(command_handle: i32,
                                  name: *const c_char,
                                  credentials: *const c_char,
-                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                 cb: Option<extern fn(xcommand_handle: i32,
+                                                      err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_delete_wallet: >>> name: {:?}, credentials: {:?}", name, credentials);
+
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_delete_wallet: entities >>> name: {:?}, credentials: {:?}", name, credentials);
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::Delete(
@@ -306,11 +366,16 @@ pub extern fn indy_delete_wallet(command_handle: i32,
             credentials,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
+                trace!("indy_delete_wallet:");
                 cb(command_handle, err)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_delete_wallet: <<< res: {:?}", res);
+
+    res
 }
 
 /// Create the wallet storage (For example, database creation)
@@ -319,9 +384,11 @@ pub extern fn indy_delete_wallet(command_handle: i32,
 /// name: wallet storage name (the same as wallet name)
 /// config: wallet storage config (For example, database config)
 /// credentials: wallet storage credentials (For example, database credentials)
+/// metadata: wallet metadata (For example encrypted keys).
 pub type WalletCreate = extern fn(name: *const c_char,
                                   config: *const c_char,
-                                  credentials: *const c_char) -> ErrorCode;
+                                  credentials: *const c_char,
+                                  metadata: *const c_char) -> ErrorCode;
 
 /// Open the wallet storage (For example, opening database connection)
 ///
@@ -522,6 +589,27 @@ pub type WalletGetRecordValue = extern fn(storage_handle: i32,
 pub type WalletGetRecordTags = extern fn(storage_handle: i32,
                                          record_handle: i32,
                                          record_tags_p: *mut *const c_char) -> ErrorCode;
+
+/// Get storage metadata
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+///
+/// returns: metadata as base64 value
+///          Note that pointer lifetime is static
+pub type WalletGetStorageMetadata = extern fn(storage_handle: i32,
+                                              metadata_p: *mut *const c_char) -> ErrorCode;
+
+/// Set storage metadata
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// metadata_p: base64 value of metadata
+///
+///   Note if storage already have metadata record it will be overwritten.
+pub type WalletSetStorageMetadata = extern fn(storage_handle: i32,
+                                              metadata_p: *const c_char) -> ErrorCode;
+
 
 /// Free retrieved wallet record (make retrieved record handle invalid)
 ///

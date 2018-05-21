@@ -25,7 +25,7 @@ async def test_get_did_metadata_works_for_empty_string(wallet_handle):
 async def test_get_did_metadata_works_for_no_metadata(wallet_handle, did_my1):
     with pytest.raises(IndyError) as e:
         await did.get_did_metadata(wallet_handle, did_my1)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -42,4 +42,4 @@ async def test_get_did_metadata_works_for_invalid_handle(wallet_handle, metadata
 async def test_get_did_metadata_works_for_not_found_did(wallet_handle, did_my1, metadata):
     with pytest.raises(IndyError) as e:
         await did.set_did_metadata(wallet_handle, did_my1, metadata)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code

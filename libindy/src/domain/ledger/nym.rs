@@ -3,6 +3,7 @@ extern crate serde_json;
 extern crate indy_crypto;
 
 use super::constants::GET_NYM;
+use super::response::{GetReplyResultV0, GetReplyResultV1};
 
 use self::indy_crypto::utils::json::{JsonEncodable, JsonDecodable};
 
@@ -24,26 +25,32 @@ impl GetNymOperation {
 
 impl JsonEncodable for GetNymOperation {}
 
-#[derive(Deserialize, Eq, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct GetNymReplyResult {
-    pub identifier: String,
-    pub req_id: u64,
-    #[serde(rename = "type")]
-    pub _type: String,
-    pub data: String,
-    pub dest: String
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum GetNymReplyResult {
+    GetNymReplyResultV0(GetReplyResultV0<String>),
+    GetNymReplyResultV1(GetReplyResultV1<GetNymResultDataV1>)
 }
 
 impl<'a> JsonDecodable<'a> for GetNymReplyResult {}
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct GetNymResultData {
+pub struct GetNymResultDataV0 {
     pub identifier: Option<String>,
     pub dest: String,
     pub role: Option<String>,
     pub verkey: Option<String>
 }
 
-impl<'a> JsonDecodable<'a> for GetNymResultData {}
+impl<'a> JsonDecodable<'a> for GetNymResultDataV0 {}
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+pub struct GetNymResultDataV1 {
+    pub ver: String,
+    pub id: String,
+    pub did: String,
+    pub verkey: Option<String>,
+    pub role: Option<String>
+}
+
+impl<'a> JsonDecodable<'a> for GetNymResultDataV1 {}

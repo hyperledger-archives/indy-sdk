@@ -6,6 +6,8 @@ use std::io;
 use std::fmt;
 use std::string::FromUtf8Error;
 use libsqlite3_sys;
+use std::ffi::NulError;
+use std::str::Utf8Error;
 
 use rusqlite;
 use serde_json;
@@ -139,7 +141,7 @@ impl ToErrorCode for WalletError {
 
 impl From<io::Error> for WalletError {
     fn from(err: io::Error) -> WalletError {
-        WalletError::CommonError(CommonError::IOError((err)))
+        WalletError::CommonError(CommonError::IOError(err))
     }
 }
 
@@ -196,7 +198,8 @@ pub enum WalletStorageError {
     ItemNotFound,
     ItemAlreadyExists,
     IOError(String),
-    PluggedStorageError(ErrorCode)
+    PluggedStorageError(ErrorCode),
+    CommonError(CommonError)
 }
 
 
@@ -221,7 +224,21 @@ impl From<serde_json::Error> for WalletStorageError {
     }
 }
 
+impl From<NulError> for WalletStorageError {
+    fn from(err: NulError) -> WalletStorageError { WalletStorageError::IOError(err.description().to_owned()) }
+}
 
+impl From<Utf8Error> for WalletStorageError {
+    fn from(err: Utf8Error) -> WalletStorageError { WalletStorageError::IOError(err.description().to_owned()) }
+}
+
+impl From<base64::DecodeError> for WalletStorageError {
+    fn from(err: base64::DecodeError) -> WalletStorageError { WalletStorageError::IOError(err.description().to_owned()) }
+}
+
+impl From<CommonError> for WalletStorageError {
+    fn from(err: CommonError) -> WalletStorageError {WalletStorageError::CommonError(err)}
+}
 
 impl error::Error for WalletStorageError {
     fn description(&self) -> &str {
@@ -233,6 +250,7 @@ impl error::Error for WalletStorageError {
             WalletStorageError::ItemAlreadyExists => "Item already exists",
             WalletStorageError::PluggedStorageError(err_code) => "Plugged storage error",
             WalletStorageError::IOError(ref s) => s,
+            WalletStorageError::CommonError(ref e) => e.description(),
         }
     }
 }
@@ -248,6 +266,7 @@ impl fmt::Display for WalletStorageError {
             WalletStorageError::ItemAlreadyExists => write!(f, "Item already exists"),
             WalletStorageError::IOError(ref s) => write!(f, "IO error occurred during storage operation: {}", s),
             WalletStorageError::PluggedStorageError(err_code) => write!(f, "Plugged storage error: {}", err_code as i32),
+            WalletStorageError::CommonError(ref e) => write!(f, "Common error: {}", e.description()),
         }
     }
 }

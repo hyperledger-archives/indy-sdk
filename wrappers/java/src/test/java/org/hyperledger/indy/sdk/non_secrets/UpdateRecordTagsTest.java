@@ -1,6 +1,6 @@
 package org.hyperledger.indy.sdk.non_secrets;
 
-import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -39,7 +39,7 @@ public class UpdateRecordTagsTest extends NonSecretsIntegrationTest {
 	@Test
 	public void testUpdateRecordTagsWorksForNotFoundRecord() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		WalletRecord.updateTags(wallet, type, id, tags).get();
 	}

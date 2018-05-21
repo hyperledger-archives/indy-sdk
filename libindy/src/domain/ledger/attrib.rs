@@ -3,6 +3,7 @@ extern crate serde_json;
 extern crate indy_crypto;
 
 use super::constants::{ATTRIB, GET_ATTR};
+use super::response::GetReplyResultV1;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use named_type::NamedType;
@@ -63,23 +64,37 @@ impl GetAttribOperation {
 
 impl JsonEncodable for GetAttribOperation {}
 
-#[derive(Deserialize, Eq, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct GetAttribReplyResult {
-    pub  identifier: String,
-    pub  req_id: u64,
-    #[serde(rename = "type")]
-    pub  _type: String,
-    pub  data: String,
-    pub  dest: String,
-    pub  raw: String,
-    pub  seq_no: Option<i32>
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum GetAttrReplyResult {
+    GetAttrReplyResultV0(GetAttResultV0),
+    GetAttrReplyResultV1(GetReplyResultV1<GetAttResultDataV1>)
 }
 
-impl<'a> JsonDecodable<'a> for GetAttribReplyResult {}
+impl<'a> JsonDecodable<'a> for GetAttrReplyResult {}
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetAttResultV0 {
+    pub  identifier: String,
+    pub  data: String,
+    pub  dest: String,
+    pub  raw: String
+}
+
+impl<'a> JsonDecodable<'a> for GetAttResultV0 {}
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+pub struct GetAttResultDataV1 {
+    pub ver: String,
+    pub id: String,
+    pub did: String,
+    pub raw: String,
+}
+
+impl<'a> JsonDecodable<'a> for GetAttResultDataV1 {}
 
 #[derive(Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct AttribData {
     pub endpoint: Endpoint
 }

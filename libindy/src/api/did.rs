@@ -48,11 +48,16 @@ use std::ptr;
 pub  extern fn indy_create_and_store_my_did(command_handle: i32,
                                             wallet_handle: i32,
                                             did_json: *const c_char,
-                                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                            cb: Option<extern fn(xcommand_handle: i32,
+                                                                 err: ErrorCode,
                                                                  did: *const c_char,
                                                                  verkey: *const c_char)>) -> ErrorCode {
+    trace!("indy_create_and_store_my_did: >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, did_json);
+
     check_useful_c_str!(did_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_create_and_store_my_did: entities >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, did_json);
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::CreateAndStoreMyDid(
@@ -60,13 +65,18 @@ pub  extern fn indy_create_and_store_my_did(command_handle: i32,
             did_json,
             Box::new(move |result| {
                 let (err, did, verkey) = result_to_err_code_2!(result, String::new(), String::new());
+                trace!("indy_create_and_store_my_did: did: {:?}, verkey: {:?}", did, verkey);
                 let did = CStringUtils::string_to_cstring(did);
                 let verkey = CStringUtils::string_to_cstring(verkey);
                 cb(command_handle, err, did.as_ptr(), verkey.as_ptr())
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_create_and_store_my_did: <<< res: {:?}", res);
+
+    res
 }
 
 /// Generated temporary keys (signing and encryption keys) for an existing
@@ -100,11 +110,16 @@ pub  extern fn indy_replace_keys_start(command_handle: i32,
                                        wallet_handle: i32,
                                        did: *const c_char,
                                        identity_json: *const c_char,
-                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                       cb: Option<extern fn(xcommand_handle: i32,
+                                                            err: ErrorCode,
                                                             verkey: *const c_char)>) -> ErrorCode {
+    trace!("indy_replace_keys_start: >>> wallet_handle: {:?}, did: {:?}, identity_json: {:?}", wallet_handle, did, identity_json);
+
     check_useful_c_str!(identity_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_replace_keys_start: entities>>> wallet_handle: {:?}, did: {:?}, identity_json: {:?}", wallet_handle, did, identity_json);
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::ReplaceKeysStart(
@@ -113,12 +128,17 @@ pub  extern fn indy_replace_keys_start(command_handle: i32,
             did,
             Box::new(move |result| {
                 let (err, verkey) = result_to_err_code_1!(result, String::new());
+                trace!("indy_replace_keys_start: verkey: {:?}", verkey);
                 let verkey = CStringUtils::string_to_cstring(verkey);
                 cb(command_handle, err, verkey.as_ptr())
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_replace_keys_start: <<< res: {:?}", res);
+
+    res
 }
 
 /// Apply temporary keys as main for an existing DID (owned by the caller of the library).
@@ -143,9 +163,14 @@ pub  extern fn indy_replace_keys_start(command_handle: i32,
 pub  extern fn indy_replace_keys_apply(command_handle: i32,
                                        wallet_handle: i32,
                                        did: *const c_char,
-                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                       cb: Option<extern fn(xcommand_handle: i32,
+                                                            err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_replace_keys_apply: >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
+
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_replace_keys_apply: entities >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::ReplaceKeysApply(
@@ -153,11 +178,16 @@ pub  extern fn indy_replace_keys_apply(command_handle: i32,
             did,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
+                trace!("indy_replace_keys_apply:");
                 cb(command_handle, err)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_replace_keys_apply: <<< res: {:?}", res);
+
+    res
 }
 
 /// Saves their DID for a pairwise connection in a secured Wallet,
@@ -187,9 +217,14 @@ pub  extern fn indy_replace_keys_apply(command_handle: i32,
 pub  extern fn indy_store_their_did(command_handle: i32,
                                     wallet_handle: i32,
                                     identity_json: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+                                    cb: Option<extern fn(xcommand_handle: i32,
+                                                         err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_store_their_did: >>> wallet_handle: {:?}, identity_json: {:?}", wallet_handle, identity_json);
+
     check_useful_c_str!(identity_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_store_their_did: entities >>> wallet_handle: {:?}, identity_json: {:?}", wallet_handle, identity_json);
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::StoreTheirDid(
@@ -197,11 +232,16 @@ pub  extern fn indy_store_their_did(command_handle: i32,
             identity_json,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
+                trace!("indy_store_their_did:");
                 cb(command_handle, err)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_store_their_did: <<< res: {:?}", res);
+
+    res
 }
 
 /// Returns ver key (key id) for the given DID.
@@ -243,8 +283,12 @@ pub extern fn indy_key_for_did(command_handle: i32,
                                cb: Option<extern fn(xcommand_handle: i32,
                                                     err: ErrorCode,
                                                     key: *const c_char)>) -> ErrorCode {
+    trace!("indy_key_for_did: >>> pool_handle: {:?}, wallet_handle: {:?}, did: {:?}", pool_handle, wallet_handle, did);
+
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_key_for_did: entities >>> pool_handle: {:?}, wallet_handle: {:?}, did: {:?}", pool_handle, wallet_handle, did);
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::KeyForDid(
@@ -253,12 +297,17 @@ pub extern fn indy_key_for_did(command_handle: i32,
             did,
             Box::new(move |result| {
                 let (err, key) = result_to_err_code_1!(result, String::new());
+                trace!("indy_key_for_did: key: {:?}", key);
                 let key = CStringUtils::string_to_cstring(key);
                 cb(command_handle, err, key.as_ptr())
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_key_for_did: <<< res: {:?}", res);
+
+    res
 }
 
 /// Returns ver key (key id) for the given DID.
@@ -296,8 +345,12 @@ pub extern fn indy_key_for_local_did(command_handle: i32,
                                      cb: Option<extern fn(xcommand_handle: i32,
                                                           err: ErrorCode,
                                                           key: *const c_char)>) -> ErrorCode {
+    trace!("indy_key_for_local_did: >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
+
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_key_for_local_did: entities >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::KeyForLocalDid(
@@ -305,12 +358,17 @@ pub extern fn indy_key_for_local_did(command_handle: i32,
             did,
             Box::new(move |result| {
                 let (err, key) = result_to_err_code_1!(result, String::new());
+                trace!("indy_key_for_local_did: key: {:?}", key);
                 let key = CStringUtils::string_to_cstring(key);
                 cb(command_handle, err, key.as_ptr())
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_key_for_local_did: <<< res: {:?}", res);
+
+    res
 }
 
 /// Set/replaces endpoint information for the given DID.
@@ -341,10 +399,15 @@ pub extern fn indy_set_endpoint_for_did(command_handle: i32,
                                         transport_key: *const c_char,
                                         cb: Option<extern fn(command_handle_: i32,
                                                              err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_set_endpoint_for_did: >>> wallet_handle: {:?}, did: {:?}, address: {:?}, transport_key: {:?}", wallet_handle, did, address, transport_key);
+
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(address, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(transport_key, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    trace!("indy_set_endpoint_for_did: entities >>> wallet_handle: {:?}, did: {:?}, address: {:?}, transport_key: {:?}",
+           wallet_handle, did, address, transport_key);
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::SetEndpointForDid(
@@ -354,11 +417,16 @@ pub extern fn indy_set_endpoint_for_did(command_handle: i32,
             transport_key,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
+                trace!("indy_set_endpoint_for_did:");
                 cb(command_handle, err)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_set_endpoint_for_did: <<< res: {:?}", res);
+
+    res
 }
 
 /// Returns endpoint information for the given DID.
@@ -390,8 +458,12 @@ pub extern fn indy_get_endpoint_for_did(command_handle: i32,
                                                              err: ErrorCode,
                                                              address: *const c_char,
                                                              transport_vk: *const c_char)>) -> ErrorCode {
+    trace!("indy_get_endpoint_for_did: >>> wallet_handle: {:?}, pool_handle: {:?}, did: {:?}", wallet_handle, pool_handle, did);
+
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_get_endpoint_for_did: entities >>> wallet_handle: {:?}, pool_handle: {:?}, did: {:?}", wallet_handle, pool_handle, did);
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::GetEndpointForDid(
@@ -400,6 +472,7 @@ pub extern fn indy_get_endpoint_for_did(command_handle: i32,
             did,
             Box::new(move |result| {
                 let (err, address, transport_vk) = result_to_err_code_2!(result, String::new(), None);
+                trace!("indy_get_endpoint_for_did: address: {:?}, transport_vk: {:?}", address, transport_vk);
                 let address = CStringUtils::string_to_cstring(address);
                 let transport_vk = transport_vk.map(CStringUtils::string_to_cstring);
                 cb(command_handle, err, address.as_ptr(),
@@ -407,7 +480,11 @@ pub extern fn indy_get_endpoint_for_did(command_handle: i32,
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_get_endpoint_for_did: <<< res: {:?}", res);
+
+    res
 }
 
 /// Saves/replaces the meta information for the giving DID in the wallet.
@@ -436,9 +513,13 @@ pub extern fn indy_set_did_metadata(command_handle: i32,
                                     metadata: *const c_char,
                                     cb: Option<extern fn(command_handle_: i32,
                                                          err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_set_did_metadata: >>> wallet_handle: {:?}, did: {:?}, metadata: {:?}", wallet_handle, did, metadata);
+
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str_empty_accepted!(metadata, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_set_did_metadata: entities >>> wallet_handle: {:?}, did: {:?}, metadata: {:?}", wallet_handle, did, metadata);
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::SetDidMetadata(
@@ -447,11 +528,16 @@ pub extern fn indy_set_did_metadata(command_handle: i32,
             metadata,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
+                trace!("indy_set_did_metadata:");
                 cb(command_handle, err)
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_set_did_metadata: <<< res: {:?}", res);
+
+    res
 }
 
 /// Retrieves the meta information for the giving DID in the wallet.
@@ -480,8 +566,12 @@ pub extern fn indy_get_did_metadata(command_handle: i32,
                                     cb: Option<extern fn(command_handle_: i32,
                                                          err: ErrorCode,
                                                          metadata: *const c_char)>) -> ErrorCode {
+    trace!("indy_get_did_metadata: >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
+
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_get_did_metadata: entities >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::GetDidMetadata(
@@ -489,12 +579,17 @@ pub extern fn indy_get_did_metadata(command_handle: i32,
             did,
             Box::new(move |result| {
                 let (err, metadata) = result_to_err_code_1!(result, String::new());
+                trace!("indy_get_did_metadata: metadata: {:?}", metadata);
                 let metadata = CStringUtils::string_to_cstring(metadata);
                 cb(command_handle, err, metadata.as_ptr())
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_get_did_metadata: <<< res: {:?}", res);
+
+    res
 }
 
 /// Retrieves the information about the giving DID in the wallet.
@@ -524,10 +619,15 @@ pub extern fn indy_get_did_metadata(command_handle: i32,
 pub extern fn indy_get_my_did_with_meta(command_handle: i32,
                                         wallet_handle: i32,
                                         my_did: *const c_char,
-                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                        cb: Option<extern fn(xcommand_handle: i32,
+                                                             err: ErrorCode,
                                                              did_with_meta: *const c_char)>) -> ErrorCode {
+    trace!("indy_get_my_did_with_meta: >>> wallet_handle: {:?}, my_did: {:?}", wallet_handle, my_did);
+
     check_useful_c_str!(my_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_get_my_did_with_meta: entities >>> wallet_handle: {:?}, my_did: {:?}", wallet_handle, my_did);
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::GetMyDidWithMeta(
@@ -535,12 +635,17 @@ pub extern fn indy_get_my_did_with_meta(command_handle: i32,
             my_did,
             Box::new(move |result| {
                 let (err, did_with_meta) = result_to_err_code_1!(result, String::new());
+                trace!("indy_get_my_did_with_meta: did_with_meta: {:?}", did_with_meta);
                 let did_with_meta = CStringUtils::string_to_cstring(did_with_meta);
                 cb(command_handle, err, did_with_meta.as_ptr())
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_get_my_did_with_meta: <<< res: {:?}", res);
+
+    res
 }
 
 /// Retrieves the information about all DIDs stored in the wallet.
@@ -568,21 +673,31 @@ pub extern fn indy_get_my_did_with_meta(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_list_my_dids_with_meta(command_handle: i32,
                                           wallet_handle: i32,
-                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                          cb: Option<extern fn(xcommand_handle: i32,
+                                                               err: ErrorCode,
                                                                dids: *const c_char)>) -> ErrorCode {
+    trace!("indy_list_my_dids_with_meta: >>> wallet_handle: {:?}", wallet_handle);
+
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    trace!("indy_list_my_dids_with_meta: entities >>> wallet_handle: {:?}", wallet_handle);
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::ListMyDidsWithMeta(
             wallet_handle,
             Box::new(move |result| {
                 let (err, dids) = result_to_err_code_1!(result, String::new());
+                trace!("indy_list_my_dids_with_meta: dids: {:?}", dids);
                 let dids = CStringUtils::string_to_cstring(dids);
                 cb(command_handle, err, dids.as_ptr())
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_list_my_dids_with_meta: <<< res: {:?}", res);
+
+    res
 }
 
 /// Retrieves abbreviated verkey if it is possible otherwise return full verkey.
@@ -607,11 +722,16 @@ pub extern fn indy_list_my_dids_with_meta(command_handle: i32,
 pub  extern fn indy_abbreviate_verkey(command_handle: i32,
                                       did: *const c_char,
                                       full_verkey: *const c_char,
-                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                      cb: Option<extern fn(xcommand_handle: i32,
+                                                           err: ErrorCode,
                                                            verkey: *const c_char)>) -> ErrorCode {
+    trace!("indy_abbreviate_verkey: >>> did: {:?}, full_verkey: {:?}", did, full_verkey);
+
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(full_verkey, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_abbreviate_verkey: entities >>> did: {:?}, full_verkey: {:?}", did, full_verkey);
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::AbbreviateVerkey(
@@ -619,10 +739,15 @@ pub  extern fn indy_abbreviate_verkey(command_handle: i32,
             full_verkey,
             Box::new(move |result| {
                 let (err, verkey) = result_to_err_code_1!(result, String::new());
+                trace!("indy_abbreviate_verkey: verkey: {:?}", verkey);
                 let verkey = CStringUtils::string_to_cstring(verkey);
                 cb(command_handle, err, verkey.as_ptr())
             })
         )));
 
-    result_to_err_code!(result)
+    let res = result_to_err_code!(result);
+
+    trace!("indy_abbreviate_verkey: <<< res: {:?}", res);
+
+    res
 }

@@ -29,12 +29,12 @@ async def test_open_wallet_works_for_twice(wallet_name, wallet_handle, credentia
 @pytest.mark.asyncio
 async def test_open_wallet_works_for_encrypted_wallet_with_invalid_credentials(xwallet, wallet_name):
     with pytest.raises(IndyError) as e:
-        await wallet.open_wallet(wallet_name, None, '{"key":"otherkey"}')
+        await wallet.open_wallet(wallet_name, None, '{"key":"BBIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}')
     assert ErrorCode.WalletAccessFailed == e.value.error_code
 
 
 @pytest.mark.asyncio
 async def test_open_wallet_works_for_changing_credentials(pool_name):
-    await wallet.create_wallet(pool_name, 'works_for_changing_credentials', None, None, '{"key":"testkey"}')
-    handle = await wallet.open_wallet('works_for_changing_credentials', None, '{"key":"testkey", "rekey":"newkey"}')
+    await wallet.create_wallet(pool_name, 'works_for_changing_credentials', None, None, '{"key":"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}')
+    handle = await wallet.open_wallet('works_for_changing_credentials', None, '{"key":"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=", "rekey":"cCAdWqQWFCgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}')
     await wallet.close_wallet(handle)

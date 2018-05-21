@@ -96,7 +96,6 @@ pub(super) fn decrypt_storage_record(record: &StorageEntity, keys: &Keys) -> Res
 #[cfg(test)]
 mod tests {
     use super::*;
-    use services::wallet::storage::StorageValue;
 
     #[test]
     fn test_encrypt_decrypt_tags() {
@@ -121,35 +120,6 @@ mod tests {
 
         let u = decrypt_tags(&None, &tag_name_key, &tag_value_key).unwrap();
         assert!(u.is_none());
-    }
-
-    #[test]
-    fn test_decrypt_record() {
-//        let name = String::from("test_name");
-//        let type_ = String::from("test_type");
-//        let value = String::from("test_value");
-//        let mut tags = HashMap::new();
-//        tags.insert(String::from("tag_name_1"), String::from("tag_value_1"));
-//        tags.insert(String::from("~tag_name_2"), String::from("tag_value_2"));
-//        let master_key = ChaCha20Poly1305IETF::create_key();
-//        let generated_keys = Keys::gen_keys(master_key);
-//        let keys = Keys::new(generated_keys);
-//        let value_key = ChaCha20Poly1305IETF::create_key();
-//        let encrypted_name = ChaCha20Poly1305IETF::encrypt_as_searchable(name.as_bytes(), &keys.name_key, &keys.item_hmac_key);
-//        let encrypted_type = ChaCha20Poly1305IETF::encrypt_as_searchable(type_.as_bytes(), &keys.type_key, &keys.item_hmac_key);
-//        let encrypted_value = ChaCha20Poly1305IETF::encrypt_as_not_searchable(value.as_bytes(), &value_key);
-//        let encrypted_value_key = ChaCha20Poly1305IETF::encrypt_as_not_searchable(&value_key, &keys.value_key);
-//        let encrypted_tags = encrypt_tags(&tags, &keys.tag_name_key, &keys.tag_value_key, &keys.tags_hmac_key);
-//        let storage_value = StorageValue::new(encrypted_value, encrypted_value_key);
-//        let storage_entity = StorageEntity::new(encrypted_name, Some(storage_value), Some(encrypted_type), Some(encrypted_tags));
-//
-//        let decrypted_wallet_record = decrypt_storage_record(&storage_entity, &keys).unwrap();
-//
-//        assert_eq!(decrypted_wallet_record.name, name);
-//        assert_eq!(decrypted_wallet_record.type_.unwrap(), type_);
-//        assert_eq!(decrypted_wallet_record.value.unwrap(), value);
-//        assert_eq!(decrypted_wallet_record.tags.unwrap(), tags);
-//        assert_eq!(2, 3);
     }
 }
 

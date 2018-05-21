@@ -353,8 +353,16 @@ mod tests {
         let master_key = _get_test_master_key();
         storage_type.create_storage("test_wallet", None, "", &Keys::gen_keys(master_key)).unwrap();
         let credentials = _credentials();
-        let (storage, keys) = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
-        Wallet::new(name, pool_name, storage, Keys::new(keys))
+        let storage = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
+
+        let keys = Keys::new(
+            ChaCha20Poly1305IETF::decrypt_merged(
+                &storage.get_storage_metadata().unwrap(),
+                &master_key
+            ).unwrap()
+        );
+
+        Wallet::new(name, pool_name, storage, keys)
     }
 
     fn _get_test_master_key() -> [u8; 32] {

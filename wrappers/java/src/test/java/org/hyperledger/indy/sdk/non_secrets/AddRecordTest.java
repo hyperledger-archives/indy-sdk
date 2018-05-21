@@ -1,6 +1,6 @@
 package org.hyperledger.indy.sdk.non_secrets;
 
-import org.hyperledger.indy.sdk.wallet.WalletExistsException;
+import org.hyperledger.indy.sdk.wallet.WalletItemAlreadyExistsException;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -26,7 +26,7 @@ public class AddRecordTest extends NonSecretsIntegrationTest {
 		WalletRecord.add(wallet, type, id, value, tagsEmpty).get();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletExistsException.class));
+		thrown.expectCause(isA(WalletItemAlreadyExistsException.class));
 
 		WalletRecord.add(wallet, type, id, value, tagsEmpty).get();
 	}

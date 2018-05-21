@@ -140,3 +140,9 @@ pub struct SearchRecords {
     pub total_count: Option<i32>,
     pub records: Option<Vec<WalletRecord>>
 }
+
+pub struct Utxo {
+    pub input: String,
+    pub amount: i32,
+    pub extra: Option<String>
+}

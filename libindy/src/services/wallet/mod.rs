@@ -36,7 +36,7 @@ use self::wallet::{Wallet, Keys, Tags};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct WalletDescriptor {
     pool_name: String,
     xtype: String,
@@ -130,6 +130,8 @@ impl WalletService {
                                    get_record_type: WalletGetRecordType,
                                    get_record_value: WalletGetRecordValue,
                                    get_record_tags: WalletGetRecordTags,
+                                   get_storage_metadata: WalletGetStorageMetadata,
+                                   set_storage_metadata: WalletSetStorageMetadata,
                                    free_record: WalletFreeRecord,
                                    search_records: WalletSearchRecords,
                                    search_all_records: WalletSearchAllRecords,
@@ -149,6 +151,7 @@ impl WalletService {
                                                          update_record_tags, add_record_tags, delete_record_tags,
                                                          delete_record, get_record, get_record_id,
                                                          get_record_type, get_record_value, get_record_tags,
+                                                          get_storage_metadata, set_storage_metadata,
                                                          free_record, search_records, search_all_records,
                                                          get_search_total_count,
                                                          fetch_search_next_record, free_search)));
@@ -195,10 +198,14 @@ impl WalletService {
             config_file.sync_all()?;
         }
 
+        trace!("create <<<");
+
         Ok(())
     }
 
     pub fn delete_wallet(&self, name: &str, credentials: &str) -> Result<(), WalletError> {
+        trace!("delete >>> name: {:?}, credentials: {:?}", name, credentials);
+
         let mut descriptor_json = String::new();
         let descriptor: WalletDescriptor = WalletDescriptor::from_json({
             let mut file = File::open(_wallet_descriptor_path(name))?; // FIXME: Better error!
@@ -232,10 +239,15 @@ impl WalletService {
                                     &credentials.storage_credentials)?;
 
         fs::remove_dir_all(_wallet_path(name))?;
+
+        trace!("delete <<<");
+
         Ok(())
     }
 
     pub fn open_wallet(&self, name: &str, runtime_config: Option<&str>, credentials: &str) -> Result<i32, WalletError> {
+        trace!("open >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
+
         let mut descriptor_json = String::new();
         let descriptor: WalletDescriptor = WalletDescriptor::from_json({
             let mut file = File::open(_wallet_descriptor_path(name))?; // FIXME: Better error!
@@ -268,18 +280,26 @@ impl WalletService {
         };
 
         let credentials = WalletCredentials::from_json(credentials)?;
-        let (storage, enc_keys) = storage_type.open_storage(name,
-                                                            config.as_ref().map(String::as_str),
-                                                            &credentials.storage_credentials)?;
-        let key_vector = ChaCha20Poly1305IETF::decrypt_merged(&enc_keys, &credentials.master_key)?;
-        let keys = Keys::new(key_vector);
+        let storage = storage_type.open_storage(name,
+                                                config.as_ref().map(String::as_str),
+                                                &credentials.storage_credentials)?;
+        let keys = Keys::new(
+            ChaCha20Poly1305IETF::decrypt_merged(
+                &storage.get_storage_metadata()?,
+                &credentials.master_key
+            )?
+        );
         let wallet = Wallet::new(name, &descriptor.pool_name, storage, keys);
         let wallet_handle = SequenceUtils::get_next_id();
         wallets.insert(wallet_handle, Box::new(wallet));
+
+        trace!("open <<< wallet_handle: {:?}", wallet_handle);
         Ok(wallet_handle)
     }
 
     pub fn list_wallets(&self) -> Result<Vec<WalletDescriptor>, WalletError> {
+        trace!("list_wallets >>>");
+
         let mut descriptors = Vec::new();
         let wallet_home_path = EnvironmentUtils::wallet_home_path();
 
@@ -294,14 +314,22 @@ impl WalletService {
             }
         }
 
+        trace!("list_wallets <<< descriptors: {:?}", descriptors);
+
         Ok(descriptors)
     }
 
     pub fn close_wallet(&self, handle: i32) -> Result<(), WalletError> {
+        trace!("close >>> handle: {:?}", handle);
+
         match self.wallets.borrow_mut().remove(&handle) {
             Some(mut wallet) => wallet.close(),
             None => Err(WalletError::InvalidHandle(handle.to_string()))
-        }
+        }?;
+
+        trace!("close <<<");
+
+        Ok(())
     }
 
     pub fn add_record(&self, wallet_handle: i32, type_: &str, name: &str, value: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
@@ -477,10 +505,17 @@ impl WalletService {
             Some(wallet) =>
                 match wallet.get(&self.add_prefix(T::short_type_name()), name, &RecordOptions::id()) {
                     Ok(_) => Ok(true),
-                    Err(WalletError::NotFound(_)) => Ok(false),
+                    Err(WalletError::ItemNotFound) => Ok(false),
                     Err(err) => Err(err),
                 }
             None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
+        }
+    }
+
+    pub fn check(&self, handle: i32) -> Result<(), WalletError> {
+        match self.wallets.borrow().get(&handle) {
+            Some(_) => Ok(()),
+            None => Err(WalletError::InvalidHandle(handle.to_string()))
         }
     }
 
@@ -688,7 +723,7 @@ mod tests {
 //    const VALUE_1: &'static str = "value1";
 //    const VALUE_2: &'static str = "value2";
 //    const TAGS_EMPTY: &'static str = "{}";
-//    const TAGS: &'static str = r#"{"tagName1":"tagValue1"}"#;
+//    const TAGS: &'static str = r#"{"tagName1":"tagValue1"}"##;
 //    const QUERY_EMPTY: &'static str = "{}";
 //    const OPTIONS_EMPTY: &'static str = "{}";
 
@@ -1302,10 +1337,8 @@ mod tests {
         wallet_service.update_record_tags(wallet_handle, type_, name, &new_tags).unwrap();
 
         let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
-        let mut expected_tags = new_tags.clone();
-        expected_tags.insert(tag_name_1.to_string(), tag_value_1.to_string());
         let retrieved_tags = item.tags.unwrap();
-        assert_eq!(expected_tags, retrieved_tags);
+        assert_eq!(new_tags, retrieved_tags);
     }
 
     /**

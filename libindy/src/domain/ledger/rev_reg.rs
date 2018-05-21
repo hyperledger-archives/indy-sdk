@@ -7,8 +7,9 @@ use super::constants::{REVOC_REG_ENTRY, GET_REVOC_REG, GET_REVOC_REG_DELTA};
 use self::indy_crypto::cl::{RevocationRegistry, RevocationRegistryDelta};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
+use super::response::GetReplyResultV1;
 use super::super::anoncreds::revocation_registry::RevocationRegistryV1;
-use  super::super::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
+use super::super::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
 
 use std::collections::HashSet;
 
@@ -80,20 +81,34 @@ impl GetRevRegDeltaOperation {
 
 impl JsonEncodable for GetRevRegDeltaOperation {}
 
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct GetRevocRegReplyResult {
-    pub identifier: String,
-    pub req_id: u64,
-    pub seq_no: i32,
-    #[serde(rename = "type")]
-    pub  _type: String,
-    pub revoc_reg_def_id: String,
-    pub  data: RevocationRegistryV1,
-    pub txn_time: u64
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum GetRevocRegReplyResult {
+    GetRevocRegReplyResultV0(GetRevocRegResultV0),
+    GetRevocRegReplyResultV1(GetReplyResultV1<GetRevocRegDataV1>)
 }
 
 impl<'a> JsonDecodable<'a> for GetRevocRegReplyResult {}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRevocRegResultV0 {
+    pub seq_no: i32,
+    pub revoc_reg_def_id: String,
+    pub data: RevocationRegistryV1,
+    pub txn_time: u64
+}
+
+impl<'a> JsonDecodable<'a> for GetRevocRegResultV0 {}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRevocRegDataV1 {
+    pub revoc_reg_def_id: String,
+    pub value: RevocationRegistryV1
+}
+
+impl<'a> JsonDecodable<'a> for GetRevocRegDataV1 {}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -116,16 +131,30 @@ pub struct AccumulatorState {
     pub txn_time: u64
 }
 
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct GetRevocRegDeltaReplyResult {
-    pub identifier: String,
-    pub req_id: u64,
-    pub seq_no: i32,
-    #[serde(rename = "type")]
-    pub  _type: String,
-    pub revoc_reg_def_id: String,
-    pub  data: RevocationRegistryDeltaData
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum GetRevocRegDeltaReplyResult {
+    GetRevocRegDeltaReplyResultV0(GetRevocRegDeltaResultV0),
+    GetRevocRegDeltaReplyResultV1(GetReplyResultV1<GetRevocRegDeltaDataV1>)
 }
 
 impl<'a> JsonDecodable<'a> for GetRevocRegDeltaReplyResult {}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRevocRegDeltaResultV0 {
+    pub seq_no: i32,
+    pub revoc_reg_def_id: String,
+    pub data: RevocationRegistryDeltaData
+}
+
+impl<'a> JsonDecodable<'a> for GetRevocRegDeltaResultV0 {}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRevocRegDeltaDataV1 {
+    pub revoc_reg_def_id: String,
+    pub value: RevocationRegistryDeltaData
+}
+
+impl<'a> JsonDecodable<'a> for GetRevocRegDeltaDataV1 {}

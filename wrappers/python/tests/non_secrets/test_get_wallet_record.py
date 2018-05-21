@@ -39,4 +39,4 @@ async def test_get_wallet_record_works_for_full_data(wallet_handle):
 async def test_get_wallet_record_works_for_not_found_record(wallet_handle):
     with pytest.raises(IndyError) as e:
         await non_secrets.get_wallet_record(wallet_handle, type_, id1, options_empty)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code

@@ -5,7 +5,7 @@ import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.did.DidJSONParameters;
 import org.hyperledger.indy.sdk.did.DidResults.CreateAndStoreMyDidResult;
-import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -44,7 +44,7 @@ public class SignRequestTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 	@Test
 	public void testSignWorksForUnknowDid() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		String msg = "{\"reqId\":1496822211362017764}";
 		Ledger.signRequest(this.wallet, DID, msg).get();

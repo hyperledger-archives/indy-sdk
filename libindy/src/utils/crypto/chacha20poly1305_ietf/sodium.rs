@@ -11,6 +11,10 @@ pub struct ChaCha20Poly1305IETF {
 }
 
 impl ChaCha20Poly1305IETF {
+    pub const NONCEBYTES: usize = chacha20poly1305_ietf::NONCEBYTES;
+    pub const KEYBYTES: usize = chacha20poly1305_ietf::KEYBYTES;
+    pub const TAGBYTES: usize = chacha20poly1305_ietf::TAGBYTES;
+
     pub fn new() -> Self {
         Self {}
     }
@@ -107,7 +111,7 @@ mod tests {
 
     #[test]
     fn encrypt_as_searchable_decrypt_works() {
-        let data = randombytes::randombytes(16);
+        let data = randombytes::randombytes(100);
         let key = ChaCha20Poly1305IETF::create_key();
         let hmac_key = ChaCha20Poly1305IETF::create_key();
 

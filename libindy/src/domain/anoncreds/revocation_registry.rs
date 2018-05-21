@@ -6,7 +6,7 @@ use self::indy_crypto::cl::RevocationRegistry as CryptoRevocationRegistry;
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use named_type::NamedType;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RevocationRegistryV1 {
@@ -45,14 +45,3 @@ pub fn rev_regs_map_to_rev_regs_local_map(rev_regs: HashMap<String, HashMap<u64,
     }
     rev_regs_local
 }
-
-#[derive(Debug, Deserialize, Serialize, Clone, NamedType)]
-pub struct RevocationRegistryInfo {
-    pub id: String,
-    pub curr_id: u32,
-    pub used_ids: HashSet<u32>
-}
-
-impl JsonEncodable for RevocationRegistryInfo {}
-
-impl<'a> JsonDecodable<'a> for RevocationRegistryInfo {}

@@ -8,7 +8,7 @@ import logging
 
 async def add_wallet_record(wallet_handle: int,
                             type_: str,
-                            id: str,
+                            id_: str,
                             value: str,
                             tags_json: Optional[str]) -> None:
     """
@@ -16,7 +16,7 @@ async def add_wallet_record(wallet_handle: int,
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param type_: allows to separate different record types collections
-    :param id: the id of record
+    :param id_: the id of record
     :param value: the value of record
     :param tags_json: the record tags used for search and storing meta information as json:
        {
@@ -32,7 +32,7 @@ async def add_wallet_record(wallet_handle: int,
     logger.debug("add_wallet_record: >>> wallet_handle: %r, type_: %r, id: %r, value: %r, tags_json: %r",
                  wallet_handle,
                  type_,
-                 id,
+                 id_,
                  value,
                  tags_json)
 
@@ -42,7 +42,7 @@ async def add_wallet_record(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_type = c_char_p(type_.encode('utf-8'))
-    c_id = c_char_p(id.encode('utf-8'))
+    c_id = c_char_p(id_.encode('utf-8'))
     c_value = c_char_p(value.encode('utf-8'))
     c_tags_json = c_char_p(tags_json.encode('utf-8')) if tags_json is not None else None
 
@@ -60,14 +60,14 @@ async def add_wallet_record(wallet_handle: int,
 
 async def update_wallet_record_value(wallet_handle: int,
                                      type_: str,
-                                     id: str,
+                                     id_: str,
                                      value: str) -> None:
     """
     Update a non-secret wallet record value
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param type_: allows to separate different record types collections
-    :param id: the id of record
+    :param id_: the id of record
     :param value: the value of record
     :return: None
     """
@@ -76,7 +76,7 @@ async def update_wallet_record_value(wallet_handle: int,
     logger.debug("update_wallet_record_value: >>> wallet_handle: %r, type_: %r, id: %r, value: %r",
                  wallet_handle,
                  type_,
-                 id,
+                 id_,
                  value)
 
     if not hasattr(update_wallet_record_value, "cb"):
@@ -85,7 +85,7 @@ async def update_wallet_record_value(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_type = c_char_p(type_.encode('utf-8'))
-    c_id = c_char_p(id.encode('utf-8'))
+    c_id = c_char_p(id_.encode('utf-8'))
     c_value = c_char_p(value.encode('utf-8'))
 
     res = await do_call('indy_update_wallet_record_value',
@@ -101,14 +101,14 @@ async def update_wallet_record_value(wallet_handle: int,
 
 async def update_wallet_record_tags(wallet_handle: int,
                                     type_: str,
-                                    id: str,
+                                    id_: str,
                                     tags_json: str) -> None:
     """
     Update a non-secret wallet record value
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param type_: allows to separate different record types collections
-    :param id: the id of record
+    :param id_: the id of record
     :param tags_json: ags_json: the record tags used for search and storing meta information as json:
        {
          "tagName1": <str>, // string tag (will be stored encrypted)
@@ -123,7 +123,7 @@ async def update_wallet_record_tags(wallet_handle: int,
     logger.debug("update_wallet_record_tags: >>> wallet_handle: %r, type_: %r, id: %r, tags_json: %r",
                  wallet_handle,
                  type_,
-                 id,
+                 id_,
                  tags_json)
 
     if not hasattr(update_wallet_record_tags, "cb"):
@@ -132,7 +132,7 @@ async def update_wallet_record_tags(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_type = c_char_p(type_.encode('utf-8'))
-    c_id = c_char_p(id.encode('utf-8'))
+    c_id = c_char_p(id_.encode('utf-8'))
     c_tags_json = c_char_p(tags_json.encode('utf-8'))
 
     res = await do_call('indy_update_wallet_record_tags',
@@ -148,14 +148,14 @@ async def update_wallet_record_tags(wallet_handle: int,
 
 async def add_wallet_record_tags(wallet_handle: int,
                                  type_: str,
-                                 id: str,
+                                 id_: str,
                                  tags_json: str) -> None:
     """
     Add new tags to the wallet record
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param type_: allows to separate different record types collections
-    :param id: the id of record
+    :param id_: the id of record
     :param tags_json: ags_json: the record tags used for search and storing meta information as json:
        {
          "tagName1": <str>, // string tag (will be stored encrypted)
@@ -170,7 +170,7 @@ async def add_wallet_record_tags(wallet_handle: int,
     logger.debug("add_wallet_record_tags: >>> wallet_handle: %r, type_: %r, id: %r, tags_json: %r",
                  wallet_handle,
                  type_,
-                 id,
+                 id_,
                  tags_json)
 
     if not hasattr(add_wallet_record_tags, "cb"):
@@ -179,7 +179,7 @@ async def add_wallet_record_tags(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_type = c_char_p(type_.encode('utf-8'))
-    c_id = c_char_p(id.encode('utf-8'))
+    c_id = c_char_p(id_.encode('utf-8'))
     c_tags_json = c_char_p(tags_json.encode('utf-8'))
 
     res = await do_call('indy_add_wallet_record_tags',
@@ -195,14 +195,14 @@ async def add_wallet_record_tags(wallet_handle: int,
 
 async def delete_wallet_record_tags(wallet_handle: int,
                                     type_: str,
-                                    id: str,
+                                    id_: str,
                                     tag_names_json: str) -> None:
     """
     Add new tags to the wallet record
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param type_: allows to separate different record types collections
-    :param id: the id of record
+    :param id_: the id of record
     :param tag_names_json: the list of tag names to remove from the record as json array: ["tagName1", "tagName2", ...]
     :return: None
     """
@@ -211,7 +211,7 @@ async def delete_wallet_record_tags(wallet_handle: int,
     logger.debug("delete_wallet_record_tags: >>> wallet_handle: %r, type_: %r, id: %r, tag_names_json: %r",
                  wallet_handle,
                  type_,
-                 id,
+                 id_,
                  tag_names_json)
 
     if not hasattr(delete_wallet_record_tags, "cb"):
@@ -220,7 +220,7 @@ async def delete_wallet_record_tags(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_type = c_char_p(type_.encode('utf-8'))
-    c_id = c_char_p(id.encode('utf-8'))
+    c_id = c_char_p(id_.encode('utf-8'))
     c_tag_names_json = c_char_p(tag_names_json.encode('utf-8'))
 
     res = await do_call('indy_delete_wallet_record_tags',
@@ -236,13 +236,13 @@ async def delete_wallet_record_tags(wallet_handle: int,
 
 async def delete_wallet_record(wallet_handle: int,
                                type_: str,
-                               id: str) -> None:
+                               id_: str) -> None:
     """
     Delete an existing wallet record in the wallet
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param type_: allows to separate different record types collections
-    :param id: the id of record
+    :param id_: the id of record
     :return: None
     """
 
@@ -250,7 +250,7 @@ async def delete_wallet_record(wallet_handle: int,
     logger.debug("delete_wallet_record: >>> wallet_handle: %r, type_: %r, id: %r",
                  wallet_handle,
                  type_,
-                 id)
+                 id_)
 
     if not hasattr(delete_wallet_record, "cb"):
         logger.debug("delete_wallet_record: Creating callback")
@@ -258,7 +258,7 @@ async def delete_wallet_record(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_type = c_char_p(type_.encode('utf-8'))
-    c_id = c_char_p(id.encode('utf-8'))
+    c_id = c_char_p(id_.encode('utf-8'))
 
     res = await do_call('indy_delete_wallet_record',
                         c_wallet_handle,

@@ -26,6 +26,8 @@ pub enum WalletCommand {
                        WalletGetRecordType, // get record id
                        WalletGetRecordValue, // get record value
                        WalletGetRecordTags, // get record tags
+                       WalletGetStorageMetadata, // get storage metadata
+                       WalletSetStorageMetadata, // set storage metadata
                        WalletFreeRecord, // free record
                        WalletSearchRecords, // search records
                        WalletSearchAllRecords, // search all records
@@ -67,14 +69,14 @@ impl WalletCommandExecutor {
             WalletCommand::RegisterWalletType(type_, create, open, close, delete, add_record,
                                               update_record_value, update_record_tags, add_record_tags,
                                               delete_record_tags, delete_record, get_record, get_record_id, get_record_type,
-                                              get_record_value, get_record_tags, free_record,
+                                              get_record_value, get_record_tags, get_storage_metadata, set_storage_metadata, free_record,
                                               search_records, search_all_records, get_search_total_count,
                                               fetch_search_next_record, free_search, cb) => {
                 info!(target: "wallet_command_executor", "RegisterWalletType command received");
                 cb(self.register_type(&type_, create, open, close, delete, add_record,
                                       update_record_value, update_record_tags, add_record_tags,
                                       delete_record_tags, delete_record, get_record, get_record_id, get_record_type,
-                                      get_record_value, get_record_tags, free_record,
+                                      get_record_value, get_record_tags, get_storage_metadata, set_storage_metadata, free_record,
                                       search_records, search_all_records, get_search_total_count,
                                       fetch_search_next_record, free_search));
             }
@@ -119,6 +121,8 @@ impl WalletCommandExecutor {
                      get_record_type: WalletGetRecordType,
                      get_record_value: WalletGetRecordValue,
                      get_record_tags: WalletGetRecordTags,
+                     get_storage_metadata: WalletGetStorageMetadata,
+                     set_storage_metadata: WalletSetStorageMetadata,
                      free_record: WalletFreeRecord,
                      search_records: WalletSearchRecords,
                      search_all_records: WalletSearchAllRecords,
@@ -132,7 +136,8 @@ impl WalletCommandExecutor {
             .register_wallet_storage(
                 type_, create, open, close, delete, add_record, update_record_value, update_record_tags,
                 add_record_tags, delete_record_tags, delete_record, get_record, get_record_id, get_record_type,
-                get_record_value, get_record_tags, free_record, search_records, search_all_records,
+                get_record_value, get_record_tags, get_storage_metadata, set_storage_metadata,
+                free_record, search_records, search_all_records,
                 get_search_total_count, fetch_search_next_record, free_search)?;
 
         info!("register_type <<< res: {:?}", res);
@@ -146,12 +151,12 @@ impl WalletCommandExecutor {
               storage_type: Option<&str>,
               config: Option<&str>,
               credentials: &str) -> Result<(), IndyError> {
-        info!("create >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}",
-              pool_name, name, storage_type, config, credentials);
+        debug!("create >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}",
+               pool_name, name, storage_type, config, credentials);
 
         let res = self.wallet_service.create_wallet(pool_name, name, storage_type, config, credentials)?;
 
-        info!("create <<< res: {:?}", res);
+        debug!("create <<< res: {:?}", res);
 
         Ok(res)
     }
@@ -160,28 +165,28 @@ impl WalletCommandExecutor {
             name: &str,
             runtime_config: Option<&str>,
             credentials: &str) -> Result<i32, IndyError> {
-        info!("open >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
+        debug!("open >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
 
         let res = self.wallet_service.open_wallet(name, runtime_config, credentials)?;
 
-        info!("open <<< res: {:?}", res);
+        debug!("open <<< res: {:?}", res);
 
         Ok(res)
     }
 
     fn close(&self,
              handle: i32) -> Result<(), IndyError> {
-        info!("close >>> handle: {:?}", handle);
+        debug!("close >>> handle: {:?}", handle);
 
         let res = self.wallet_service.close_wallet(handle)?;
 
-        info!("close <<< res: {:?}", res);
+        debug!("close <<< res: {:?}", res);
 
         Ok(res)
     }
 
     fn list_wallets(&self) -> Result<String, IndyError> {
-        info!("list_wallets >>>");
+        debug!("list_wallets >>>");
 
         let res = self.wallet_service.list_wallets()
             .and_then(|wallets|
@@ -189,7 +194,7 @@ impl WalletCommandExecutor {
                     .map_err(|err|
                         WalletError::CommonError(CommonError::InvalidState(format!("Can't serialize wallets list {}", err)))))?;
 
-        info!("list_wallets <<< res: {:?}", res);
+        debug!("list_wallets << res: {:?}", res);
 
         Ok(res)
     }
@@ -197,11 +202,11 @@ impl WalletCommandExecutor {
     fn delete(&self,
               name: &str,
               credentials: &str) -> Result<(), IndyError> {
-        info!("delete >>> name: {:?}, credentials: {:?}", name, credentials);
+        debug!("delete >>> name: {:?}, credentials: {:?}", name, credentials);
 
         let res = self.wallet_service.delete_wallet(name, credentials)?;
 
-        info!("delete <<< res: {:?}", res);
+        debug!("delete <<< res: {:?}", res);
 
         Ok(res)
     }

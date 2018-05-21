@@ -55,12 +55,12 @@ fn eq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
             arguments.push(queried_value);
-            "(plain_tag.name = ? AND plain_tag.value = ?)".to_string()
+            "(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value = ?))".to_string()
         },
         (&TagName::EncryptedTagName(ref queried_name), &TargetValue::Encrypted(ref queried_value)) => {
             arguments.push(queried_name);
             arguments.push(queried_value);
-            "(enc_tag.name = ? AND enc_tag.value = ?)".to_string()
+            "(i.id in (SELECT item_id FROM tags_encrypted WHERE name = ? AND value = ?))".to_string()
         },
         _ => unreachable!()
     }
@@ -72,12 +72,12 @@ fn neq_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
             arguments.push(queried_value);
-            "(plain_tag.name = ? AND plain_tag.value != ?)".to_string()
+            "(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value != ?))".to_string()
         },
         (&TagName::EncryptedTagName(ref queried_name), &TargetValue::Encrypted(ref queried_value)) => {
             arguments.push(queried_name);
             arguments.push(queried_value);
-            "(enc_tag.name = ? AND enc_tag.value != ?)".to_string()
+            "(i.id in (SELECT item_id FROM tags_encrypted WHERE name = ? AND value != ?))".to_string()
         },
         _ => unreachable!()
     }
@@ -89,7 +89,7 @@ fn gt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
             arguments.push(queried_value);
-            "(plain_tag.name = ? AND plain_tag.value > ?)".to_string()
+            "(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value > ?))".to_string()
         },
         _ => unreachable!()
     }
@@ -101,7 +101,7 @@ fn gte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
             arguments.push(queried_value);
-            "(plain_tag.name = ? AND plain_tag.value >= ?)".to_string()
+            "(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value >= ?))".to_string()
         },
         _ => unreachable!()
     }
@@ -113,7 +113,7 @@ fn lt_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
             arguments.push(queried_value);
-            "(plain_tag.name = ? AND plain_tag.value < ?)".to_string()
+            "(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value < ?))".to_string()
         },
         _ => unreachable!()
     }
@@ -125,7 +125,7 @@ fn lte_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
             arguments.push(queried_value);
-            "(plain_tag.name = ? AND plain_tag.value <= ?)".to_string()
+            "(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value <= ?))".to_string()
         },
         _ => unreachable!()
     }
@@ -137,7 +137,7 @@ fn like_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Ve
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
             arguments.push(queried_value);
-            "(plain_tag.name = ? AND plain_tag.value LIKE ?)".to_string()
+            "(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value LIKE ?))".to_string()
         },
         _ => unreachable!()
     }
@@ -149,7 +149,7 @@ fn regex_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut V
         (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
             arguments.push(queried_name);
             arguments.push(queried_value);
-            "(plain_tag.name = ? AND plain_tag.value REGEXP ?)".to_string()
+            "(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value REGEXP ?))".to_string()
         },
         _ => unreachable!()
     }
@@ -160,7 +160,7 @@ fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mu
     let mut in_string = String::new();
     match name {
         &TagName::PlainTagName(ref queried_name) => {
-            in_string.push_str("(plain_tag.name = ? AND plain_tag.value IN (");
+            in_string.push_str("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value IN (");
             arguments.push(queried_name);
 
             for (index, value) in values.iter().enumerate() {
@@ -173,10 +173,10 @@ fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mu
                 } else { unreachable!() }
             }
 
-            in_string + "))"
+            in_string + ")))"
         },
         &TagName::EncryptedTagName(ref queried_name) => {
-            in_string.push_str("(enc_tag.name = ? AND enc_tag.value IN (");
+            in_string.push_str("(i.id in (SELECT item_id FROM tags_encrypted WHERE name = ? AND value IN (");
             arguments.push(queried_name);
             let index_before_last = values.len() - 2;
 
@@ -190,7 +190,7 @@ fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mu
                 } else { unreachable!() }
             }
 
-            in_string + "))"
+            in_string + ")))"
         },
         _ => unreachable!()
     }
