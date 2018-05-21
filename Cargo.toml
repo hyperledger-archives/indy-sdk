@@ -1,0 +1,2 @@
+[workspace]
+members = ["indy-sdk-wrapper", "indy-sdk-sys"]
