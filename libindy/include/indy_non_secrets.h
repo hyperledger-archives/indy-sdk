@@ -240,7 +240,7 @@ extern "C" {
     extern indy_error_t indy_fetch_wallet_search_next_records(indy_handle_t  command_handle,
                                                               indy_handle_t  wallet_handle,
                                                               indy_handle_t  wallet_search_handle,
-                                                              indy_usize_t   count,
+                                                              indy_u32_t   count,
                                                               void           (*fn)(indy_handle_t xcommand_handle,
                                                                                    indy_error_t  err,
                                                                                    const char*   records_json)
