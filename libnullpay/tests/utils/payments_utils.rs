@@ -5,10 +5,16 @@ use serde_json;
 use utils::ledger;
 use std::collections::HashMap;
 
-pub fn mint_tokens(addresses: Vec<(&str, i32, &str, Option<&str>)>, wallet_handle: i32, pool_handle: i32, payment_method: &str, submitter_did: &str){
-    let mint: Vec<UTXOOutput> = addresses.into_iter().map(|(payment_address, amount, config, extra)| {
+pub fn create_addresses(cfgs: Vec<&str>, wallet_handle: i32, payment_method: &str) -> Vec<String> {
+    cfgs.into_iter().map(|cfg| {
+        payments::create_payment_address(wallet_handle, payment_method, cfg).unwrap()
+    }).collect()
+}
+
+pub fn mint_tokens(addresses: Vec<(String, i32, Option<&str>)>, wallet_handle: i32, pool_handle: i32, payment_method: &str, submitter_did: &str){
+    let mint: Vec<UTXOOutput> = addresses.into_iter().map(|(payment_address, amount, extra)| {
         UTXOOutput {
-            payment_address: payment_address.to_string(),
+            payment_address: payment_address,
             amount,
             extra: extra.map(|s| s.to_string()),
         }
@@ -20,13 +26,13 @@ pub fn mint_tokens(addresses: Vec<(&str, i32, &str, Option<&str>)>, wallet_handl
     let mint_resp = ledger::submit_request(pool_handle, req.as_str()).unwrap();
 }
 
-pub fn get_utxos_with_balance(payment_addresses: Vec<&str>, wallet_handle: i32, pool_handle: i32, submitter_did: &str) -> HashMap<String, Vec<UTXOInfo>> {
+pub fn get_utxos_with_balance(payment_addresses: Vec<String>, wallet_handle: i32, pool_handle: i32, submitter_did: &str) -> HashMap<String, Vec<UTXOInfo>> {
     payment_addresses.into_iter().map(|addr| {
-        let (req_utxo_1, payment_method) = payments::build_get_utxo_request(wallet_handle, submitter_did, addr).unwrap();
-        let resp_utxo_1 = ledger::submit_request(pool_handle, req_utxo_1.as_str()).unwrap();
-        let resp_utxo_1 = payments::parse_get_utxo_response(payment_method.as_str(), resp_utxo_1.as_str()).unwrap();
+        let (req_utxo, payment_method) = payments::build_get_utxo_request(wallet_handle, submitter_did, addr.as_str()).unwrap();
+        let resp_utxo = ledger::submit_request(pool_handle, req_utxo.as_str()).unwrap();
+        let resp_utxo = payments::parse_get_utxo_response(payment_method.as_str(), resp_utxo.as_str()).unwrap();
 
-        (addr.to_string(), serde_json::from_str::<Vec<UTXOInfo>>(resp_utxo_1.as_str()).unwrap())
+        (addr.to_string(), serde_json::from_str::<Vec<UTXOInfo>>(resp_utxo.as_str()).unwrap())
     }).collect()
 }
 
