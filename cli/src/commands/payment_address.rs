@@ -97,8 +97,9 @@ pub mod list_command {
 
 pub fn handle_payment_error(err: ErrorCode, payment_method: Option<&str>) {
     match err {
-        ErrorCode::UnknownPaymentMethod => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
-        ErrorCode::IncompatiblePaymentError => println_err!("Different payment methods were specified"),
+        ErrorCode::PaymentUnknownMethodError => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
+        ErrorCode::PaymentIncompatibleMethodsError => println_err!("Different payment methods were specified"),
+        ErrorCode::PaymentInsufficientFundsError => println_err!("Insufficient funds on inputs"),
         err => println_err!("Indy SDK error occurred {:?}", err)
     }
 }
