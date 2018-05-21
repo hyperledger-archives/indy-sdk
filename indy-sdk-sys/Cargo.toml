@@ -1,0 +1,20 @@
+[package]
+name = "indy-sdk-sys"
+version = "0.1.0"
+authors = ["Mike Lodder <redmike7@gmail.com>"]
+description = "FFI bindings for IndySDK. This is for those callers who don't link indy-sdk crate"
+readme = "README.md"
+links = "indy"
+build = "build.rs"
+
+[dependencies]
+libc = "0.2"
+lazy_static = "0.2"
+
+[build-dependencies]
+pkg-config = "0.3.11"
+bindgen = "0.37.0"
+regex = "1.0.0"
+
+[target.'cfg(target_env = "msvc")'.build-dependencies]
+vcpkg = "0.2.3"
