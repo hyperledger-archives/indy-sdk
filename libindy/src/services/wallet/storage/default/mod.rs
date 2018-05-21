@@ -1,14 +1,19 @@
+extern crate owning_ref;
+
 mod query;
 
 use std;
 use std::collections::HashMap;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use rusqlite;
 use serde_json;
 
+use self::owning_ref::OwningHandle;
+
 use utils::environment::EnvironmentUtils;
-use errors::wallet::WalletStorageError;
+use errors::{common::CommonError, wallet::WalletStorageError};
 use services::wallet::wallet::{TagName, WalletRuntimeConfig};
 use services::wallet::language;
 use super::super::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
@@ -89,15 +94,21 @@ struct TagRetriever<'a> {
     encrypted_tags_stmt: rusqlite::Statement<'a>,
 }
 
+type TagRetrieverOwned = OwningHandle<Rc<rusqlite::Connection>, Box<TagRetriever<'static>>>;
 
-impl <'a> TagRetriever<'a> {
-    fn new(conn: &'a rusqlite::Connection) -> Result<TagRetriever<'a>, WalletStorageError> {
-        let plain_tags_stmt = conn.prepare(_PLAIN_TAGS_QUERY)?;
-        let encrypted_tags_stmt = conn.prepare(_ENCRYPTED_TAGS_QUERY)?;
-        Ok(TagRetriever {
-            plain_tags_stmt: plain_tags_stmt,
-            encrypted_tags_stmt: encrypted_tags_stmt,
-        })
+impl<'a> TagRetriever<'a> {
+    fn new_owned(conn: Rc<rusqlite::Connection>) -> Result<TagRetrieverOwned, WalletStorageError> {
+        OwningHandle::try_new(conn.clone(), |conn| -> Result<_, rusqlite::Error> {
+            let (plain_tags_stmt, encrypted_tags_stmt) = unsafe {
+                ((*conn).prepare(_PLAIN_TAGS_QUERY)?,
+                 (*conn).prepare(_ENCRYPTED_TAGS_QUERY)?)
+            };
+            let tr = TagRetriever {
+                plain_tags_stmt,
+                encrypted_tags_stmt,
+            };
+            Ok(Box::new(tr))
+        }).map_err(WalletStorageError::from)
     }
 
     fn retrieve(&mut self, id: i64) -> Result<HashMap<Vec<u8>, TagValue>, WalletStorageError> {
@@ -120,39 +131,43 @@ impl <'a> TagRetriever<'a> {
 }
 
 
-struct SQLiteStorageIterator<'a> {
-    stmt: Box<rusqlite::Statement<'a>>,
-    rows: Option<rusqlite::Rows<'a>>,
-    tag_retriever: Option<TagRetriever<'a>>,
+struct SQLiteStorageIterator {
+    rows: Option<
+        OwningHandle<
+            OwningHandle<
+                Rc<rusqlite::Connection>,
+                Box<rusqlite::Statement<'static>>>,
+            Box<rusqlite::Rows<'static>>>>,
+    tag_retriever: Option<TagRetrieverOwned>,
     options: FetchOptions,
     fetch_type_: bool,
 }
 
 
-impl<'a> SQLiteStorageIterator<'a> {
-    fn new(stmt: rusqlite::Statement<'a>,
+impl SQLiteStorageIterator {
+    fn new(stmt: OwningHandle<Rc<rusqlite::Connection>, Box<rusqlite::Statement<'static>>>,
            args: &[&rusqlite::types::ToSql],
            options: FetchOptions,
-           tag_retriver: Option<TagRetriever<'a>>,
-           fetch_type_: bool) -> Result<SQLiteStorageIterator<'a>, WalletStorageError> {
-            let mut iter = SQLiteStorageIterator {
-                stmt: Box::new(stmt),
-                rows: None,
-                tag_retriever: tag_retriver,
-                options: options,
-                fetch_type_: fetch_type_
-            };
-            iter.rows = Some(
+           tag_retriever: Option<TagRetrieverOwned>,
+           fetch_type_: bool) -> Result<SQLiteStorageIterator, WalletStorageError> {
+        let mut iter = SQLiteStorageIterator {
+            rows: None,
+            tag_retriever,
+            options,
+            fetch_type_,
+        };
+        iter.rows = Some(OwningHandle::try_new(
+            stmt, |stmt|
                 unsafe {
-                    (*(&mut *iter.stmt as *mut rusqlite::Statement)).query(args)?
-                }
-            );
-            Ok(iter)
+                    (*(stmt as *mut rusqlite::Statement)).query(args).map(Box::new)
+                },
+        )?);
+        Ok(iter)
     }
 }
 
 
-impl<'a> StorageIterator for SQLiteStorageIterator<'a> {
+impl StorageIterator for SQLiteStorageIterator {
     fn next(&mut self) -> Result<Option<StorageEntity>, WalletStorageError> {
         match self.rows.as_mut().unwrap().next() {
             Some(Ok(row)) => {
@@ -216,7 +231,7 @@ impl<'a> JsonDecodable<'a> for FetchOptions {}
 
 #[derive(Debug)]
 struct SQLiteStorage {
-    conn: rusqlite::Connection,
+    conn: Rc<rusqlite::Connection>,
 }
 
 pub struct SQLiteStorageType {}
@@ -389,7 +404,11 @@ impl WalletStorage for SQLiteStorage {
     }
 
     fn add_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tags: &HashMap<Vec<u8>, TagValue>) -> Result<(), WalletStorageError> {
-        let tx = self.conn.transaction()?;
+        let tx: rusqlite::Transaction = Rc::<rusqlite::Connection>::get_mut(&mut self.conn)
+            .ok_or(WalletStorageError::CommonError(CommonError::InvalidState(
+                "Try to add tags while active reading".to_owned())))
+            .map_err(map_err_trace!())?
+            .transaction()?;
 
         let res = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
             .query_row(&[type_, name], |row| row.get(0));
@@ -417,7 +436,11 @@ impl WalletStorage for SQLiteStorage {
     }
 
     fn update_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tags: &HashMap<Vec<u8>, TagValue>) -> Result<(), WalletStorageError> {
-        let tx = self.conn.transaction()?;
+        let tx: rusqlite::Transaction = Rc::<rusqlite::Connection>::get_mut(&mut self.conn)
+            .ok_or(WalletStorageError::CommonError(CommonError::InvalidState(
+                "Try to update tags while active reading".to_owned())))
+            .map_err(map_err_trace!())?
+            .transaction()?;
 
         let res = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
             .query_row(&[type_, name], |row| row.get(0));
@@ -457,7 +480,11 @@ impl WalletStorage for SQLiteStorage {
             Ok(id) => id
         };
 
-        let tx = self.conn.transaction()?;
+        let tx: rusqlite::Transaction = Rc::<rusqlite::Connection>::get_mut(&mut self.conn)
+            .ok_or(WalletStorageError::CommonError(CommonError::InvalidState(
+                "Try to delete tags while active reading".to_owned())))
+            .map_err(map_err_trace!())?
+            .transaction()?;
         {
             let mut enc_tag_delete_stmt = tx.prepare_cached("DELETE FROM tags_encrypted WHERE item_id = ?1 AND name = ?2")?;
             let mut plain_tag_delete_stmt = tx.prepare_cached("DELETE FROM tags_plaintext WHERE item_id = ?1 AND name = ?2")?;
@@ -539,29 +566,29 @@ impl WalletStorage for SQLiteStorage {
         }
     }
 
-    fn get_all<'a>(&'a self) -> Result<Box<StorageIterator + 'a>, WalletStorageError> {
-        let statement = self.conn.prepare("SELECT id, name, value, key, type FROM items;")?;
+    fn get_all(&self) -> Result<Box<StorageIterator>, WalletStorageError> {
+        let statement = self._prepare_statement("SELECT id, name, value, key, type FROM items;")?;
         let fetch_options = FetchOptions {
             fetch_type: true,
             fetch_value: true,
             fetch_tags: true,
         };
-        let tag_retriever = Some(TagRetriever::new(&self.conn)?);
+        let tag_retriever = Some(TagRetriever::new_owned(self.conn.clone())?);
 
         let storage_iterator = SQLiteStorageIterator::new(statement, &[], fetch_options, tag_retriever, true)?;
         Ok(Box::new(storage_iterator))
     }
 
-    fn search<'a>(&'a self, type_: &Vec<u8>, query: &language::Operator, options: Option<&str>) -> Result<Box<StorageIterator + 'a>, WalletStorageError> {
+    fn search(&self, type_: &Vec<u8>, query: &language::Operator, options: Option<&str>) -> Result<Box<StorageIterator>, WalletStorageError> {
         let fetch_options = match options {
             None => FetchOptions::default(),
             Some(option_str) => serde_json::from_str(option_str)?
         };
         let (query_string, query_arguments) = query::wql_to_sql(type_, query, options);
 
-        let statement = self.conn.prepare(&query_string)?;
+        let statement = self._prepare_statement(&query_string)?;
         let tag_retriever = if fetch_options.fetch_tags {
-            Some(TagRetriever::new(&self.conn)?)
+            Some(TagRetriever::new_owned(self.conn.clone())?)
         } else {
             None
         };
@@ -571,6 +598,16 @@ impl WalletStorage for SQLiteStorage {
 
     fn close(&mut self) -> Result<(), WalletStorageError> {
         Ok(())
+    }
+}
+
+impl SQLiteStorage {
+    fn _prepare_statement(&self, sql: &str) -> Result<
+        OwningHandle<Rc<rusqlite::Connection>, Box<rusqlite::Statement<'static>>>,
+        WalletStorageError> {
+        OwningHandle::try_new(self.conn.clone(), |conn| {
+            unsafe { (*conn).prepare(sql) }.map(Box::new).map_err(WalletStorageError::from)
+        })
     }
 }
 
@@ -699,7 +736,7 @@ impl WalletStorageType for SQLiteStorageType {
 
         let conn = rusqlite::Connection::open(db_file_path.as_path())?;
 
-        Ok(Box::new(SQLiteStorage { conn: conn }))
+        Ok(Box::new(SQLiteStorage { conn: Rc::new(conn) }))
     }
 }
 

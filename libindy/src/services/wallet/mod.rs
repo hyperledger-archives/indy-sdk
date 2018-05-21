@@ -28,7 +28,7 @@ use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 
 use self::storage::WalletStorageType;
 use self::storage::default::SQLiteStorageType;
-use self::storage::plugged::PluggedStorageType;
+//TODO FIXME: use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Wallet, Keys, Tags};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
@@ -135,24 +135,25 @@ impl WalletService {
                                    get_search_total_count: WalletGetSearchTotalCount,
                                    fetch_search_next_record: WalletFetchSearchNextRecord,
                                    free_search: WalletFreeSearch) -> Result<(), WalletError> {
-        let mut storage_types = self.storage_types.borrow_mut();
-
-        if storage_types.contains_key(type_) {
-            return Err(WalletError::TypeAlreadyRegistered(type_.to_string()));
-        }
-
-        storage_types.insert(type_.to_string(),
-                             Box::new(
-                                 PluggedStorageType::new(create, open, close, delete,
-                                                         add_record, update_record_value,
-                                                         update_record_tags, add_record_tags, delete_record_tags,
-                                                         delete_record, get_record, get_record_id,
-                                                         get_record_type, get_record_value, get_record_tags,
-                                                          get_storage_metadata, set_storage_metadata,
-                                                         free_record, search_records, search_all_records,
-                                                         get_search_total_count,
-                                                         fetch_search_next_record, free_search)));
-        Ok(())
+        unimplemented!(); //TODO FIXME
+//        let mut storage_types = self.storage_types.borrow_mut();
+//
+//        if storage_types.contains_key(type_) {
+//            return Err(WalletError::TypeAlreadyRegistered(type_.to_string()));
+//        }
+//
+//        storage_types.insert(type_.to_string(),
+//                             Box::new(
+//                                 PluggedStorageType::new(create, open, close, delete,
+//                                                         add_record, update_record_value,
+//                                                         update_record_tags, add_record_tags, delete_record_tags,
+//                                                         delete_record, get_record, get_record_id,
+//                                                         get_record_type, get_record_value, get_record_tags,
+//                                                          get_storage_metadata, set_storage_metadata,
+//                                                         free_record, search_records, search_all_records,
+//                                                         get_search_total_count,
+//                                                         fetch_search_next_record, free_search)));
+//        Ok(())
     }
 
     pub fn create_wallet(&self,
@@ -452,16 +453,14 @@ impl WalletService {
     }
 
     pub fn search_records(&self, wallet_handle: i32, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> {
-        //        match self.wallets.borrow().get(&wallet_handle) {
-        //            Some(wallet) => wallet.search_records(type_, query_json, options_json),
-        //            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
-        //        }
-        unimplemented!()
+        match self.wallets.borrow().get(&wallet_handle) {
+            Some(wallet) => Ok(WalletSearch { iter: wallet.search(type_, query_json, Some(options_json))? }),
+            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
+        }
     }
 
     pub fn search_indy_records<T>(&self, wallet_handle: i32, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> where T: NamedType {
-        //        self.search_records(wallet_handle, &self.add_prefix(T::short_type_name()), query_json, options_json)
-        unimplemented!()
+        self.search_records(wallet_handle, &self.add_prefix(T::short_type_name()), query_json, options_json)
     }
 
     pub fn search_all_records(&self, wallet_handle: i32) -> Result<WalletSearch, WalletError> {
@@ -612,17 +611,16 @@ impl RecordOptions {
 
 pub struct WalletSearch {
     // TODO
-    total_count: Option<usize>,
-    iter: Option<Box<Iterator<Item=WalletRecord>>>,
+    iter: iterator::WalletIterator,
 }
 
 impl WalletSearch {
     pub fn get_total_count(&self) -> Result<Option<usize>, WalletError> {
-        Ok(self.total_count)
+        unimplemented!()
     }
 
     pub fn fetch_next_record(&mut self) -> Result<Option<WalletRecord>, WalletError> {
-        Ok(self.iter.as_mut().and_then(|i| i.next()))
+        self.iter.next()
     }
 }
 
