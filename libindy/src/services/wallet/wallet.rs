@@ -809,6 +809,42 @@ mod tests {
     }
 
     #[test]
+    fn wallet_search_returns_error_if_unencrypted_tag_name_empty() {
+        _cleanup();
+        let wallet = _create_wallet();
+        let mut tags = HashMap::new();
+        tags.insert("tag1".to_string(), "tag2".to_string());
+        wallet.add("test_type_", "foo", "bar", &tags).unwrap();
+        let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
+
+        // successful encrypted search
+        let query_json = jsonise!({
+            "tag1": "tag2",
+            "~": "tag3",
+        });
+        let mut res = wallet.search("test_type_", &query_json, Some(search_config));
+        assert_match!(Err(WalletError::QueryError(_)), res)
+    }
+
+    #[test]
+    fn wallet_search_returns_error_if_encrypted_tag_name_empty() {
+        _cleanup();
+        let wallet = _create_wallet();
+        let mut tags = HashMap::new();
+        tags.insert("tag1".to_string(), "tag2".to_string());
+        wallet.add("test_type_", "foo", "bar", &tags).unwrap();
+        let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
+
+        // successful encrypted search
+        let query_json = jsonise!({
+            "tag1": "tag2",
+            "": "tag3",
+        });
+        let mut res = wallet.search("test_type_", &query_json, Some(search_config));
+        assert_match!(Err(WalletError::QueryError(_)), res)
+    }
+
+    #[test]
     fn wallet_search_single_item_eq_plain() {
         _cleanup();
         let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
