@@ -7,7 +7,13 @@ impl EnvironmentUtils {
     pub fn indy_home_path() -> PathBuf {
         // TODO: FIXME: Provide better handling for the unknown home path case!!!
         let mut path = env::home_dir().unwrap_or(PathBuf::from("/home/indy"));
-        path.push(if cfg!(target_os = "ios") { "Documents/.indy_client" } else { ".indy_client" });
+        let mut indy_client_dir = ".indy_client";
+        if cfg!(target_os = "ios"){
+            indy_client_dir = "Documents/.indy_client"
+        }else if cfg!(target_os = "android"){ //TODO: FIX ME: Check for more secure location for the wallet.
+            indy_client_dir = "/sdcard/Documents/.indy_client"
+        }
+        path.push(indy_client_dir);
         path
     }
 
