@@ -1,4 +1,4 @@
-use libindy::ErrorCode;
+use ErrorCode;
 use libindy::ledger;
 use libindy::payments::IndyPaymentCallback;
 use services::*;
@@ -37,8 +37,11 @@ pub mod add_request_fees {
         check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidState);
         trace!("libnullpay::add_request_fees::handle << req_json: {}, inputs_json: {}, outputs_json: {}, submitter_did: {}", req_json, inputs_json, outputs_json, submitter_did);
 
+        trace!("parsing_json");
         parse_json!(inputs_json, Vec<String>, ErrorCode::CommonInvalidStructure);
+        trace!("parsed_inputs");
         parse_json!(outputs_json, Vec<UTXOOutput>, ErrorCode::CommonInvalidStructure);
+        trace!("parsed_outputs");
 
         let txn_type = match parse_operation_from_request(req_json.as_str()) {
             Ok(res) => res,
@@ -48,43 +51,44 @@ pub mod add_request_fees {
             }
         };
 
-        let (err, fee) = match config_ledger::get_fee(txn_type) {
-            Some(fee) => (ErrorCode::Success, fee),
+        trace!("TXN: {}", txn_type);
+
+        let fee = match config_ledger::get_fee(txn_type) {
+            Some(fee) => fee,
             None => {
-                error!("No fees found for request");
-                (ErrorCode::CommonInvalidState, 0)
+                trace!("No fees found for request");
+                0
             }
         };
+
+        trace!("FEE: {}", fee);
 
         let total_amount = _count_total_inputs(&inputs_json);
         let total_payments = _count_total_payments(&outputs_json);
 
-        let err = if err == ErrorCode::Success {
-            if total_amount >= total_payments + fee {
-                //we have enough money for this txn, give it back
-                let seq_no = payment_ledger::add_txn(inputs_json.clone(), outputs_json.clone());
+        let err = if total_amount >= total_payments + fee {
+            //we have enough money for this txn, give it back
+            let seq_no = payment_ledger::add_txn(inputs_json.clone(), outputs_json.clone());
 
-                _process_inputs(inputs_json);
-                let infos: Vec<UTXOInfo> = _process_outputs(outputs_json, seq_no);
+            _process_inputs(inputs_json);
+            let infos: Vec<UTXOInfo> = _process_outputs(outputs_json, seq_no);
 
-                _save_response(infos, req_json.clone())
-
-            } else {
-                //we don't have enough money, send GET_TXN transaction to callback and in response PaymentsInsufficientFundsError will be returned
-                ledger::build_get_txn_request(
-                    submitter_did.as_str(),
-                    1,
-                    Box::new(move |ec, res| {
-                        let ec = if err == ErrorCode::Success {
-                            _add_response(res.clone(), "INSUFFICIENT_FUNDS".to_string())
-                        } else { ec };
-                        trace!("libnullpay::add_request_fees::handle >>");
-                        _process_callback(cmd_handle, ec, res, cb);
-                    }),
-                );
-                return ErrorCode::Success;
-            }
-        } else { err };
+            _save_response(infos, req_json.clone())
+        } else {
+            //we don't have enough money, send GET_TXN transaction to callback and in response PaymentsInsufficientFundsError will be returned
+            ledger::build_get_txn_request(
+                submitter_did.as_str(),
+                1,
+                Box::new(move |ec, res| {
+                    let ec = if ec == ErrorCode::Success {
+                        _add_response(res.clone(), "INSUFFICIENT_FUNDS".to_string())
+                    } else { ec };
+                    trace!("libnullpay::add_request_fees::handle >>");
+                    _process_callback(cmd_handle, ec, res, cb);
+                }),
+            );
+            return ErrorCode::Success;
+        };
 
         trace!("libnullpay::add_request_fees::handle >>");
         _process_callback(cmd_handle, err, req_json, cb)

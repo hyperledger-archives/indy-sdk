@@ -1,4 +1,4 @@
-use libindy::ErrorCode;
+use ErrorCode;
 use utils::sequence;
 
 use libc::c_char;

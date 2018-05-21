@@ -1,7 +1,7 @@
 use utils::json_helper::*;
 use std::collections::HashMap;
 use std::sync::Mutex;
-use libindy::ErrorCode;
+use ErrorCode;
 
 lazy_static! {
     static ref RESPONSES: Mutex<HashMap<String, String>> = Default::default();
