@@ -12,18 +12,18 @@ popd
 pushd $LIBSODIUM_WORKDIR
 ./build.sh arm 21 arm-linux-androideabi
 unzip libsodium_arm.zip
-cp libsodium_arm.zip $LIBZMQ_WORKDIR/
+cp libsodium_arm.zip ${WORKDIR}/${LIBZMQ_WORKDIR}/
 
 ./build.sh arm64 21 aarch64-linux-android
 unzip libsodium_arm64.zip
-cp libsodium_arm64.zip $LIBZMQ_WORKDIR/
+cp libsodium_arm64.zip ${WORKDIR}/${LIBZMQ_WORKDIR}/
 
 ./build.sh x86 21 i686-linux-android
 unzip libsodium_x86.zip
-cp libsodium_armx86.zip $LIBZMQ_WORKDIR/
+cp libsodium_x86.zip ${WORKDIR}/${LIBZMQ_WORKDIR}/
 popd
 
-pushd $LIBZMQ_WORKDIR
+pushd ${LIBZMQ_WORKDIR}
 unzip libsodium_arm.zip
 unzip libsodium_arm64.zip
 unzip libsodium_x86.zip
