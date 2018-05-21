@@ -13,3 +13,14 @@ pub fn indy_home_path() -> PathBuf {
     path.push(if cfg!(target_os = "ios") { "Documents/.indy_client" } else { ".indy_client" });
     path
 }
+
+#[cfg(test)]
+pub fn test_pool_ip() -> String {
+    env::var("TEST_POOL_IP").unwrap_or("127.0.0.1".to_string())
+}
+
+pub fn tmp_file_path(file_name: &str) -> PathBuf {
+    let mut path = super::environment::tmp_path();
+    path.push(file_name);
+    path
+}

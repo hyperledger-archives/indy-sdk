@@ -1,10 +1,13 @@
 use nullpay::ErrorCode;
 
+use serde_json::to_string;
+use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::fs;
 use std::ffi::CString;
 use std::ptr::null;
+use std::os::raw::c_char;
 
 #[derive(Serialize, Deserialize)]
 pub struct PoolConfig {
@@ -13,17 +16,25 @@ pub struct PoolConfig {
 
 pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, ErrorCode> {
     let txn_file_path = _create_genesis_txn_file_for_test_pool(pool_name, None, None);
-    let pool_config = pool_config_json(txn_file_path.as_path());
-    create_pool_ledger_config(pool_name, Some(pool_config.as_str()))?;
-    open_pool_ledger(pool_name, None)
+    let pool_config = _pool_config_json(txn_file_path.as_path());
+    _create_pool_ledger_config(pool_name, Some(pool_config.as_str()))?;
+    _open_pool_ledger(pool_name, None)
+}
+
+pub fn close(pool_handle: i32) -> Result<(), ErrorCode> {
+    let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec();
+
+    let err = unsafe {
+        indy_close_pool_ledger(command_handle, pool_handle, cb)
+    };
+
+    super::results::result_to_empty(err, receiver)
 }
 
 fn _pool_config_json(txn_file_path: &Path) -> String {
-    PoolConfig {
+    to_string(&PoolConfig {
         genesis_txn: txn_file_path.to_string_lossy().to_string()
-    }
-        .to_json()
-        .unwrap()
+    }).unwrap()
 }
 
 fn _create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Result<(), ErrorCode> {
@@ -47,7 +58,7 @@ fn _create_genesis_txn_file_for_test_pool(pool_name: &str,
                                           txn_file_path: Option<&Path>) -> PathBuf {
     let nodes_count = nodes_count.unwrap_or(4);
 
-    let test_pool_ip = EnvironmentUtils::test_pool_ip();
+    let test_pool_ip = super::environment::test_pool_ip();
 
     let node_txns = vec![
         format!("{{\"data\":{{\"alias\":\"Node1\",\"blskey\":\"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba\",\"client_ip\":\"{}\",\"client_port\":9702,\"node_ip\":\"{}\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]}},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"Th7MpTaRZVRYnPiabds81Y\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip),
@@ -57,14 +68,14 @@ fn _create_genesis_txn_file_for_test_pool(pool_name: &str,
 
     let txn_file_data = node_txns[0..(nodes_count as usize)].join("\n");
 
-    _сreate_genesis_txn_file(pool_name, txn_file_data.as_str(), txn_file_path)
+    _create_genesis_txn_file(pool_name, txn_file_data.as_str(), txn_file_path)
 }
 
 fn _create_genesis_txn_file(pool_name: &str,
                             txn_file_data: &str,
                             txn_file_path: Option<&Path>) -> PathBuf {
     let txn_file_path = txn_file_path.map_or(
-        EnvironmentUtils::tmp_file_path(format!("{}.txn", pool_name).as_str()),
+        super::environment::tmp_file_path(format!("{}.txn", pool_name).as_str()),
         |path| path.to_path_buf());
 
     if !txn_file_path.parent().unwrap().exists() {
@@ -82,7 +93,7 @@ fn _create_genesis_txn_file(pool_name: &str,
 }
 
 fn _open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<i32, ErrorCode> {
-    let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_i32();
+    let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_i32();
 
     let pool_name = CString::new(pool_name).unwrap();
     let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
@@ -113,4 +124,9 @@ extern {
                                       config: *const c_char,
                                       cb: Option<extern fn(xcommand_handle: i32,
                                                            err: ErrorCode)>) -> ErrorCode;
+
+    #[no_mangle]
+    pub fn indy_close_pool_ledger(command_handle: i32,
+                                  handle: i32,
+                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode;
 }
