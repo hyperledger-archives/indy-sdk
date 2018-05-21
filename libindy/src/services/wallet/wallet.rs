@@ -811,7 +811,7 @@ mod tests {
     #[test]
     fn wallet_search_returns_error_if_unencrypted_tag_name_empty() {
         _cleanup();
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("tag1".to_string(), "tag2".to_string());
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
@@ -829,7 +829,7 @@ mod tests {
     #[test]
     fn wallet_search_returns_error_if_encrypted_tag_name_empty() {
         _cleanup();
-        let wallet = _create_wallet();
+        let mut wallet = _create_wallet();
         let mut tags = HashMap::new();
         tags.insert("tag1".to_string(), "tag2".to_string());
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();

@@ -281,12 +281,17 @@ impl WalletService {
         let storage = storage_type.open_storage(name,
                                                 config.as_ref().map(String::as_str),
                                                 &credentials.storage_credentials)?;
-        let keys = Keys::new(
-            ChaCha20Poly1305IETF::decrypt(
-                &storage.get_storage_metadata()?,
-                &credentials.master_key
-            )?
+
+        let key_decryption_result = ChaCha20Poly1305IETF::decrypt(
+            &storage.get_storage_metadata()?,
+            &credentials.master_key
         );
+        let keys_vector = match key_decryption_result {
+            Ok(keys_vector) => keys_vector,
+            Err(_) => return Err(WalletError::AccessFailed("Invalid master key provided".to_string())),
+        };
+        let keys = Keys::new(keys_vector);
+
         let wallet = Wallet::new(name, &descriptor.pool_name, storage, keys);
         let wallet_handle = SequenceUtils::get_next_id();
         wallets.insert(wallet_handle, Box::new(wallet));
