@@ -11,7 +11,7 @@ impl EnvironmentUtils {
         if cfg!(target_os = "ios"){
             indy_client_dir = "Documents/.indy_client"
         }else if cfg!(target_os = "android"){ //TODO: FIX ME: Check for more secure location for the wallet.
-            indy_client_dir = "/sdcard/Documents/.indy_client"
+            indy_client_dir = env::var("EXTERNAL_STORAGE") +  ".indy_client"
         }
         path.push(indy_client_dir);
         path
