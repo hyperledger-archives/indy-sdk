@@ -1,9 +1,9 @@
 use super::ErrorCode;
 
-use libc::c_char;
 use std::ffi::CString;
 use std::ptr::null;
 use utils;
+use indy::ledger;
 
 pub struct Ledger {}
 
@@ -15,7 +15,7 @@ impl Ledger {
         let request_json = CString::new(request_json).unwrap();
 
         let err = unsafe {
-            indy_sign_and_submit_request(command_handle,
+            ledger::indy_sign_and_submit_request(command_handle,
                                          pool_handle,
                                          wallet_handle,
                                          submitter_did.as_ptr(),
@@ -32,7 +32,7 @@ impl Ledger {
         let request_json = CString::new(request_json).unwrap();
 
         let err = unsafe {
-            indy_submit_request(command_handle,
+            ledger::indy_submit_request(command_handle,
                                 pool_handle,
                                 request_json.as_ptr(),
                                 cb)
@@ -49,7 +49,7 @@ impl Ledger {
         let request_json = CString::new(request_json).unwrap();
 
         let err = unsafe {
-            indy_multi_sign_request(command_handle,
+            ledger::indy_multi_sign_request(command_handle,
                                     wallet_handle,
                                     submitter_did.as_ptr(),
                                     request_json.as_ptr(),
@@ -70,7 +70,7 @@ impl Ledger {
         let data_str = data.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let role_str = role.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let err = unsafe {
-            indy_build_nym_request(command_handle,
+            ledger::indy_build_nym_request(command_handle,
                                    submitter_did.as_ptr(),
                                    target_did.as_ptr(),
                                    if verkey.is_some() { verkey_str.as_ptr() } else { null() },
@@ -89,7 +89,7 @@ impl Ledger {
         let target_did = CString::new(target_did).unwrap();
 
         let err = unsafe {
-            indy_build_get_nym_request(command_handle,
+            ledger::indy_build_get_nym_request(command_handle,
                                        submitter_did.as_ptr(),
                                        target_did.as_ptr(),
                                        cb)
@@ -109,7 +109,7 @@ impl Ledger {
         let enc_str = enc.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
-            indy_build_attrib_request(command_handle,
+            ledger::indy_build_attrib_request(command_handle,
                                       submitter_did.as_ptr(),
                                       target_did.as_ptr(),
                                       if hash.is_some() { hash_str.as_ptr() } else { null() },
@@ -132,7 +132,7 @@ impl Ledger {
         let enc_str = enc.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
-            indy_build_get_attrib_request(command_handle,
+            ledger::indy_build_get_attrib_request(command_handle,
                                           submitter_did.as_ptr(),
                                           target_did.as_ptr(),
                                           if raw.is_some() { raw_str.as_ptr() } else { null() },
@@ -151,7 +151,7 @@ impl Ledger {
         let data = CString::new(data).unwrap();
 
         let err = unsafe {
-            indy_build_schema_request(command_handle,
+            ledger::indy_build_schema_request(command_handle,
                                       submitter_did.as_ptr(),
                                       data.as_ptr(),
                                       cb)
@@ -167,7 +167,7 @@ impl Ledger {
         let id = CString::new(id).unwrap();
 
         let err = unsafe {
-            indy_build_get_schema_request(command_handle,
+            ledger::indy_build_get_schema_request(command_handle,
                                           submitter_did.as_ptr(),
                                           id.as_ptr(),
                                           cb)
@@ -183,7 +183,7 @@ impl Ledger {
         let data = CString::new(data).unwrap();
 
         let err = unsafe {
-            indy_build_cred_def_request(command_handle,
+            ledger::indy_build_cred_def_request(command_handle,
                                         submitter_did.as_ptr(),
                                         data.as_ptr(),
                                         cb)
@@ -199,7 +199,7 @@ impl Ledger {
         let id = CString::new(id).unwrap();
 
         let err = unsafe {
-            indy_build_get_cred_def_request(command_handle,
+            ledger::indy_build_get_cred_def_request(command_handle,
                                             submitter_did.as_ptr(),
                                             id.as_ptr(),
                                             cb)
@@ -216,7 +216,7 @@ impl Ledger {
         let data = CString::new(data).unwrap();
 
         let err = unsafe {
-            indy_build_node_request(command_handle,
+            ledger::indy_build_node_request(command_handle,
                                     submitter_did.as_ptr(),
                                     target_did.as_ptr(),
                                     data.as_ptr(),
@@ -232,7 +232,7 @@ impl Ledger {
         let submitter_did = CString::new(submitter_did).unwrap();
 
         let err = unsafe {
-            indy_build_pool_config_request(command_handle,
+            ledger::indy_build_pool_config_request(command_handle,
                                            submitter_did.as_ptr(),
                                            writes,
                                            force,
@@ -250,7 +250,7 @@ impl Ledger {
         let datetime = datetime.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
-            indy_build_pool_restart_request(command_handle,
+            ledger::indy_build_pool_restart_request(command_handle,
                                             submitter_did.as_ptr(),
                                             action.as_ptr(),
                                             datetime.as_ptr(),
@@ -274,7 +274,7 @@ impl Ledger {
         let justification_str = justification.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
-            indy_build_pool_upgrade_request(command_handle,
+            ledger::indy_build_pool_upgrade_request(command_handle,
                                             submitter_did.as_ptr(),
                                             name.as_ptr(),
                                             version.as_ptr(),
@@ -293,118 +293,3 @@ impl Ledger {
 }
 
 
-extern {
-    #[no_mangle]
-    fn indy_sign_and_submit_request(command_handle: i32,
-                                    pool_handle: i32,
-                                    wallet_handle: i32,
-                                    submitter_did: *const c_char,
-                                    request_json: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_result_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_submit_request(command_handle: i32,
-                           pool_handle: i32,
-                           request_json: *const c_char,
-                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_result_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_multi_sign_request(command_handle: i32,
-                               wallet_handle: i32,
-                               submitter_did: *const c_char,
-                               request_json: *const c_char,
-                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                    signed_request_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_nym_request(command_handle: i32,
-                              submitter_did: *const c_char,
-                              target_did: *const c_char,
-                              verkey: *const c_char,
-                              alias: *const c_char,
-                              role: *const c_char,
-                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_get_nym_request(command_handle: i32,
-                                  submitter_did: *const c_char,
-                                  target_did: *const c_char,
-                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_attrib_request(command_handle: i32,
-                                 submitter_did: *const c_char,
-                                 target_did: *const c_char,
-                                 hash: *const c_char,
-                                 raw: *const c_char,
-                                 enc: *const c_char,
-                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_get_attrib_request(command_handle: i32,
-                                     submitter_did: *const c_char,
-                                     target_did: *const c_char,
-                                     raw: *const c_char,
-                                     hash: *const c_char,
-                                     enc: *const c_char,
-                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_schema_request(command_handle: i32,
-                                 submitter_did: *const c_char,
-                                 data: *const c_char,
-                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_get_schema_request(command_handle: i32,
-                                     submitter_did: *const c_char,
-                                     id: *const c_char,
-                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_cred_def_request(command_handle: i32,
-                                   submitter_did: *const c_char,
-                                   data: *const c_char,
-                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_get_cred_def_request(command_handle: i32,
-                                       submitter_did: *const c_char,
-                                       id: *const c_char,
-                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_node_request(command_handle: i32,
-                               submitter_did: *const c_char,
-                               target_did: *const c_char,
-                               data: *const c_char,
-                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_pool_config_request(command_handle: i32,
-                                      submitter_did: *const c_char,
-                                      writes: bool,
-                                      force: bool,
-                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_pool_restart_request(command_handle: i32,
-                                       submitter_did: *const c_char,
-                                       action: *const c_char,
-                                       datetime: *const c_char,
-                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_pool_upgrade_request(command_handle: i32,
-                                       submitter_did: *const c_char,
-                                       name: *const c_char,
-                                       version: *const c_char,
-                                       action: *const c_char,
-                                       sha256: *const c_char,
-                                       timeout: i32,
-                                       schedule: *const c_char,
-                                       justification: *const c_char,
-                                       reinstall: bool,
-                                       force: bool,
-                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
-}
