@@ -9,17 +9,17 @@ use super::encryption::{decrypt_tags};
 use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 
 
-pub(super) struct WalletIterator<'a> {
-    storage_iterator: Box<StorageIterator + 'a>,
-    keys: &'a Keys
+pub(super) struct WalletIterator {
+    storage_iterator: Box<StorageIterator>,
+    keys: Keys,
 }
 
 
-impl<'a> WalletIterator<'a> {
-    pub fn new(storage_iter: Box<StorageIterator + 'a>, keys: &'a Keys) -> Self {
+impl WalletIterator {
+    pub fn new(storage_iter: Box<StorageIterator>, keys: &Keys) -> Self {
         WalletIterator {
             storage_iterator: storage_iter,
-            keys: keys
+            keys: keys.clone() /* TODO FIXME: Avoid clone, especially for sensitive information. */,
         }
     }
 
