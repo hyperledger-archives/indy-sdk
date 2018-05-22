@@ -200,17 +200,27 @@ def testNodeWrapper(envn) {
 
 // Creates debian that can install through npm.
 def createNpmDeb(app){
-  dir('vcx') {
-    stage ('Create Npm Deb') {
-      app.inside {
-        // TODO make this a version number from the script somehow.
-        sh 'ls'
-        sh 'python ci/scripts/create_npm_deb.py wrappers/node/vcx-*.tgz'
-        sh 'ls'
-        archiveArtifacts allowEmptyArchive: true, artifacts: 'vcx*.deb'
-      }
+    dir('vcx') {
+        stage ('Create Npm Deb') {
+            app.inside {
+                sh 'ls'
+                sh 'python ci/scripts/create_npm_deb.py wrappers/node/vcx-*.tgz'
+                sh 'ls'
+                archiveArtifacts allowEmptyArchive: true, artifacts: 'vcx*.deb'
+                if (env.BRANCH_NAME == "master") {
+                    withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
+                        // upload npm module
+                        sh "find wrappers/node/ -type f -name 'vcx-*.tgz' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/agency_dev/upload -F file=@{} \\;"
+                        sh "find wrappers/node/ -type f -name 'vcx-*.tgz' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/portal_dev/upload -F file=@{} \\;"
+
+                        // upload debian
+                        sh "find . -type f -name 'vcx_*_amd64.deb' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/agency_dev/upload -F file=@{} \\;"
+                        sh "find . -type f -name 'vcx_*_amd64.deb' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/portal_dev/upload -F file=@{} \\;"
+                    }
+               }
+            }
+        }
     }
-  }
 }
 
 def fail() {
