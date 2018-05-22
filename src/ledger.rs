@@ -3,12 +3,13 @@ use super::ErrorCode;
 use libc::c_char;
 use std::ffi::CString;
 use std::ptr::null;
+use utils;
 
 pub struct Ledger {}
 
 impl Ledger {
     pub fn sign_and_submit_request(pool_handle: i32, wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let request_json = CString::new(request_json).unwrap();
@@ -22,11 +23,11 @@ impl Ledger {
                                          cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn submit_request(pool_handle: i32, request_json: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let request_json = CString::new(request_json).unwrap();
 
@@ -37,12 +38,12 @@ impl Ledger {
                                 cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
 
     pub fn multi_sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let request_json = CString::new(request_json).unwrap();
@@ -55,12 +56,12 @@ impl Ledger {
                                     cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&str>,
                              data: Option<&str>, role: Option<&str>) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
@@ -78,11 +79,11 @@ impl Ledger {
                                    cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn build_get_nym_request(submitter_did: &str, target_did: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
@@ -94,11 +95,11 @@ impl Ledger {
                                        cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn build_attrib_request(submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
@@ -117,11 +118,11 @@ impl Ledger {
                                       cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn build_get_attrib_request(submitter_did: &str, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
@@ -140,11 +141,11 @@ impl Ledger {
                                           cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn build_schema_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let data = CString::new(data).unwrap();
@@ -156,11 +157,11 @@ impl Ledger {
                                       cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn build_get_schema_request(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let id = CString::new(id).unwrap();
@@ -172,11 +173,11 @@ impl Ledger {
                                           cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn build_cred_def_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let data = CString::new(data).unwrap();
@@ -188,11 +189,11 @@ impl Ledger {
                                         cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn build_get_cred_def_request(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let id = CString::new(id).unwrap();
@@ -204,11 +205,11 @@ impl Ledger {
                                             cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn build_node_request(submitter_did: &str, target_did: &str, data: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
@@ -222,11 +223,11 @@ impl Ledger {
                                     cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
-    pub fn indy_build_pool_config_request(submitter_did: &str, writes: bool, force: bool) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+    pub fn build_pool_config_request(submitter_did: &str, writes: bool, force: bool) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
 
@@ -238,11 +239,11 @@ impl Ledger {
                                            cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
-    pub fn indy_build_pool_restart_request(submitter_did: &str, action: &str, datetime: Option<&str>) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+    pub fn build_pool_restart_request(submitter_did: &str, action: &str, datetime: Option<&str>) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let action = CString::new(action).unwrap();
@@ -255,12 +256,12 @@ impl Ledger {
                                             datetime.as_ptr(),
                                             cb)
         };
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
-    pub fn indy_build_pool_upgrade_request(submitter_did: &str, name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
+    pub fn build_pool_upgrade_request(submitter_did: &str, name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
                                            justification: Option<&str>, reinstall: bool, force: bool) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let name = CString::new(name).unwrap();
@@ -287,7 +288,7 @@ impl Ledger {
                                             cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 }
 
