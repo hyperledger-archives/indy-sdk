@@ -19,7 +19,7 @@ impl WalletIterator {
     pub fn new(storage_iter: Box<StorageIterator>, keys: &Keys) -> Self {
         WalletIterator {
             storage_iterator: storage_iter,
-            keys: keys.clone(),
+            keys: keys.clone() /* TODO FIXME: Avoid clone, especially for sensitive information. */,
         }
     }
 
