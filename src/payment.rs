@@ -2,12 +2,13 @@ use super::ErrorCode;
 
 use libc::c_char;
 use std::ffi::CString;
+use utils;
 
 pub struct Payment {}
 
 impl Payment {
     pub fn create_payment_address(wallet_handle: i32, payment_method: &str, config: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let payment_method = CString::new(payment_method).unwrap();
         let config = CString::new(config).unwrap();
@@ -20,11 +21,11 @@ impl Payment {
                                         cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn list_payment_addresses(wallet_handle: i32) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let err = unsafe {
             indy_list_payment_addresses(command_handle,
@@ -32,11 +33,11 @@ impl Payment {
                                         cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn add_request_fees(wallet_handle: i32, submitter_did: &str, req_json: &str, inputs_json: &str, outputs_json: &str) -> Result<(String, String), ErrorCode> {
-        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string_string();
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let req_json = CString::new(req_json).unwrap();
@@ -53,12 +54,12 @@ impl Payment {
                                   cb)
         };
 
-        super::results::result_to_string_string(err, receiver)
+        utils::results::result_to_two(err, receiver)
     }
 
     pub fn build_get_utxo_request(wallet_handle: i32, submitter_did: &str, payment_address: &str) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) =
-            super::callbacks::_closure_to_cb_ec_string_string();
+            utils::callbacks::_closure_to_cb_ec_string_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let payment_address = CString::new(payment_address).unwrap();
@@ -71,13 +72,13 @@ impl Payment {
                                         cb)
         };
 
-        super::results::result_to_string_string(err, receiver)
+        utils::results::result_to_two(err, receiver)
     }
 
 
     pub fn parse_get_utxo_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) =
-            super::callbacks::_closure_to_cb_ec_string();
+            utils::callbacks::_closure_to_cb_ec_string();
 
         let payment_method = CString::new(payment_method).unwrap();
         let resp_json = CString::new(resp_json).unwrap();
@@ -89,12 +90,12 @@ impl Payment {
                                          cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn build_payment_req(wallet_handle: i32, submitter_did: &str, inputs: &str, outputs: &str) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) =
-            super::callbacks::_closure_to_cb_ec_string_string();
+            utils::callbacks::_closure_to_cb_ec_string_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let inputs = CString::new(inputs).unwrap();
@@ -109,12 +110,12 @@ impl Payment {
                                    cb)
         };
 
-        super::results::result_to_string_string(err, receiver)
+        utils::results::result_to_two(err, receiver)
     }
 
     pub fn parse_payment_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) =
-            super::callbacks::_closure_to_cb_ec_string();
+            utils::callbacks::_closure_to_cb_ec_string();
 
         let payment_method = CString::new(payment_method).unwrap();
         let resp_json = CString::new(resp_json).unwrap();
@@ -126,12 +127,12 @@ impl Payment {
                                         cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn build_mint_req(wallet_handle: i32, submitter_did: &str, outputs_json: &str) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) =
-            super::callbacks::_closure_to_cb_ec_string_string();
+            utils::callbacks::_closure_to_cb_ec_string_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let outputs_json = CString::new(outputs_json).unwrap();
@@ -144,12 +145,12 @@ impl Payment {
                                 cb)
         };
 
-        super::results::result_to_string_string(err, receiver)
+        utils::results::result_to_two(err, receiver)
     }
 
     pub fn build_set_txn_fees_req(wallet_handle: i32, submitter_did: &str, payment_method: &str, fees_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) =
-            super::callbacks::_closure_to_cb_ec_string();
+            utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let payment_method = CString::new(payment_method).unwrap();
@@ -164,12 +165,12 @@ impl Payment {
                                         cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn build_get_txn_fees_req(wallet_handle: i32, submitter_did: &str, payment_method: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) =
-            super::callbacks::_closure_to_cb_ec_string();
+            utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let payment_method = CString::new(payment_method).unwrap();
@@ -182,12 +183,12 @@ impl Payment {
                                         cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 
     pub fn parse_get_txn_fees_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) =
-            super::callbacks::_closure_to_cb_ec_string();
+            utils::callbacks::_closure_to_cb_ec_string();
 
         let payment_method = CString::new(payment_method).unwrap();
         let resp_json = CString::new(resp_json).unwrap();
@@ -199,7 +200,7 @@ impl Payment {
                                              cb)
         };
 
-        super::results::result_to_string(err, receiver)
+        utils::results::result_to_one(err, receiver)
     }
 }
 
