@@ -8,26 +8,14 @@ use services::wallet::language::{Operator,TagName,TargetValue};
 // Result is a tuple of query string and query arguments
 pub fn wql_to_sql<'a>(class: &'a Vec<u8>, op: &'a Operator, options: Option<&str>) -> (String, Vec<&'a ToSql>) {
     let mut arguments: Vec<&ToSql> = Vec::new();
-    let clause_string = operator_to_sql(op, &mut arguments);
-    let has_nonencrypted = clause_string.contains("plain_tag");
-    let has_encrypted = clause_string.contains("enc_tag");
-    let mut query_string = create_query_string(clause_string, has_nonencrypted, has_encrypted);
-    query_string.push_str(" AND i.type = ?;");
     arguments.push(class);
+    let clause_string = operator_to_sql(op, &mut arguments);
+    let mut query_string = "SELECT i.id, i.name, i.value, i.key FROM items as i WHERE i.type = ?".to_string();
+    if !clause_string.is_empty() {
+        query_string.push_str(" AND ");
+        query_string.push_str(&clause_string);
+    }
     (query_string, arguments)
-}
-
-
-fn create_query_string(clause_string: String, has_nonenc: bool, has_enc: bool) -> String {
-    let mut query_string = "SELECT i.id, i.name, i.value, i.key FROM items as i".to_string();
-    if has_nonenc {
-        query_string.push_str(" INNER JOIN tags_plaintext as plain_tag ON i.id == plain_tag.item_id");
-    }
-    if has_enc {
-        query_string.push_str(" INNER JOIN tags_encrypted as enc_tag ON i.id == enc_tag.item_id");
-    }
-    query_string.push_str(" WHERE ");
-    query_string + &clause_string
 }
 
 
@@ -213,15 +201,17 @@ fn not_to_sql<'a>(suboperator: &'a Operator, arguments: &mut Vec<&'a ToSql>) -> 
 
 fn join_operators<'a>(operators: &'a [Operator], join_str: &str, arguments: &mut Vec<&'a ToSql>) -> String {
     let mut s = String::new();
-    s.push('(');
-    for (index, operator) in operators.iter().enumerate() {
-        let operator_string = operator_to_sql(operator, arguments);
-        s.push_str(&operator_string);
-        if index < operators.len() - 1 {
-            s.push_str(join_str);
+    if operators.len() > 0 {
+        s.push('(');
+        for (index, operator) in operators.iter().enumerate() {
+            let operator_string = operator_to_sql(operator, arguments);
+            s.push_str(&operator_string);
+            if index < operators.len() - 1 {
+                s.push_str(join_str);
+            }
         }
+        s.push(')');
     }
-    s.push(')');
     s
 }
 

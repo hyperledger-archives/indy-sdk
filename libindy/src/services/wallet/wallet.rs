@@ -285,8 +285,8 @@ mod tests {
 
 
     fn _cleanup() {
-        std::fs::remove_dir_all(_wallet_path()).unwrap();
-        std::fs::create_dir(_wallet_path()).unwrap();
+        std::fs::remove_dir_all(_wallet_path());
+        std::fs::create_dir(_wallet_path());
     }
 
     fn _credentials() -> String {
@@ -736,6 +736,25 @@ mod tests {
 
     /// Search testing ///
     // eq tests //
+    #[test]
+    fn wallet_search_empty_query() {
+        _cleanup();
+        let mut wallet = _create_wallet();
+        let mut tags = HashMap::new();
+        tags.insert("tag1".to_string(), "tag2".to_string());
+        wallet.add("test_type_", "foo", "bar", &tags).unwrap();
+        let search_config = "{\"fetch_type\": false, \"fetch_value\": true, \"fetch_tags\": false}";
+
+        // successful encrypted search
+        let query_json = "{}";
+        let mut iterator = wallet.search("test_type_", query_json, Some(search_config)).unwrap();
+        let res = iterator.next().unwrap().unwrap();
+        assert_eq!(res.name, "foo".to_string());
+        assert_eq!(res.value.unwrap(), "bar".to_string());
+        let res = iterator.next().unwrap();
+        assert!(res.is_none());
+    }
+
     #[test]
     fn wallet_search_single_item_eqencrypted() {
         _cleanup();
