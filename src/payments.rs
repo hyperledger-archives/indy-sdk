@@ -1,12 +1,28 @@
 use super::ErrorCode;
 
-use libc::c_char;
 use std::ffi::CString;
 use utils;
+use indy::payments;
 
 pub struct Payment {}
 
 impl Payment {
+    pub fn sign_multi_request(wallet_handle: i32, submitter_did: &str, resp_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let resp_json = CString::new(resp_json).unwrap();
+
+        let err = unsafe {
+            payments::indy_sign_multi_request(command_handle,
+                                              wallet_handle,
+                                              submitter_did.as_ptr(),
+                                              resp_json.as_ptr(), cb)
+        };
+
+        utils::results::result_to_one(err, receiver)
+    }
+
     pub fn create_payment_address(wallet_handle: i32, payment_method: &str, config: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
@@ -14,7 +30,7 @@ impl Payment {
         let config = CString::new(config).unwrap();
 
         let err = unsafe {
-            indy_create_payment_address(command_handle,
+            payments::indy_create_payment_address(command_handle,
                                         wallet_handle,
                                         payment_method.as_ptr(),
                                         config.as_ptr(),
@@ -28,7 +44,7 @@ impl Payment {
         let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let err = unsafe {
-            indy_list_payment_addresses(command_handle,
+            payments::indy_list_payment_addresses(command_handle,
                                         wallet_handle,
                                         cb)
         };
@@ -45,7 +61,7 @@ impl Payment {
         let outputs_json = CString::new(outputs_json).unwrap();
 
         let err = unsafe {
-            indy_add_request_fees(command_handle,
+            payments::indy_add_request_fees(command_handle,
                                   wallet_handle,
                                   submitter_did.as_ptr(),
                                   req_json.as_ptr(),
@@ -65,7 +81,7 @@ impl Payment {
         let payment_address = CString::new(payment_address).unwrap();
 
         let err = unsafe {
-            indy_build_get_utxo_request(command_handle,
+            payments::indy_build_get_utxo_request(command_handle,
                                         wallet_handle,
                                         submitter_did.as_ptr(),
                                         payment_address.as_ptr(),
@@ -75,7 +91,6 @@ impl Payment {
         utils::results::result_to_two(err, receiver)
     }
 
-
     pub fn parse_get_utxo_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) =
             utils::callbacks::_closure_to_cb_ec_string();
@@ -84,7 +99,7 @@ impl Payment {
         let resp_json = CString::new(resp_json).unwrap();
 
         let err = unsafe {
-            indy_parse_get_utxo_response(command_handle,
+            payments::indy_parse_get_utxo_response(command_handle,
                                          payment_method.as_ptr(),
                                          resp_json.as_ptr(),
                                          cb)
@@ -102,7 +117,7 @@ impl Payment {
         let outputs = CString::new(outputs).unwrap();
 
         let err = unsafe {
-            indy_build_payment_req(command_handle,
+            payments::indy_build_payment_req(command_handle,
                                    wallet_handle,
                                    submitter_did.as_ptr(),
                                    inputs.as_ptr(),
@@ -121,7 +136,7 @@ impl Payment {
         let resp_json = CString::new(resp_json).unwrap();
 
         let err = unsafe {
-            indy_parse_payment_response(command_handle,
+            payments::indy_parse_payment_response(command_handle,
                                         payment_method.as_ptr(),
                                         resp_json.as_ptr(),
                                         cb)
@@ -138,7 +153,7 @@ impl Payment {
         let outputs_json = CString::new(outputs_json).unwrap();
 
         let err = unsafe {
-            indy_build_mint_req(command_handle,
+            payments::indy_build_mint_req(command_handle,
                                 wallet_handle,
                                 submitter_did.as_ptr(),
                                 outputs_json.as_ptr(),
@@ -157,7 +172,7 @@ impl Payment {
         let fees_json = CString::new(fees_json).unwrap();
 
         let err = unsafe {
-            indy_build_set_txn_fees_req(command_handle,
+            payments::indy_build_set_txn_fees_req(command_handle,
                                         wallet_handle,
                                         submitter_did.as_ptr(),
                                         payment_method.as_ptr(),
@@ -176,7 +191,7 @@ impl Payment {
         let payment_method = CString::new(payment_method).unwrap();
 
         let err = unsafe {
-            indy_build_get_txn_fees_req(command_handle,
+            payments::indy_build_get_txn_fees_req(command_handle,
                                         wallet_handle,
                                         submitter_did.as_ptr(),
                                         payment_method.as_ptr(),
@@ -194,7 +209,7 @@ impl Payment {
         let resp_json = CString::new(resp_json).unwrap();
 
         let err = unsafe {
-            indy_parse_get_txn_fees_response(command_handle,
+            payments::indy_parse_get_txn_fees_response(command_handle,
                                              payment_method.as_ptr(),
                                              resp_json.as_ptr(),
                                              cb)
@@ -204,106 +219,3 @@ impl Payment {
     }
 }
 
-extern {
-    #[no_mangle]
-    fn indy_create_payment_address(command_handle: i32,
-                                   wallet_handle: i32,
-                                   payment_method: *const c_char,
-                                   config: *const c_char,
-                                   cb: Option<extern fn(command_handle_: i32,
-                                                        err: ErrorCode,
-                                                        payment_address: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_list_payment_addresses(command_handle: i32,
-                                   wallet_handle: i32,
-                                   cb: Option<extern fn(command_handle_: i32,
-                                                err: ErrorCode,
-                                                payment_addresses_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_add_request_fees(command_handle: i32,
-                             wallet_handle: i32,
-                             submitter_did: *const c_char,
-                             req_json: *const c_char,
-                             inputs_json: *const c_char,
-                             outputs_json: *const c_char,
-                             cb: Option<extern fn(command_handle_: i32,
-                                                  err: ErrorCode,
-                                                  req_with_fees_json: *const c_char,
-                                                  payment_method: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_get_utxo_request(command_handle: i32,
-                                   wallet_handle: i32,
-                                   submitter_did: *const c_char,
-                                   payment_address: *const c_char,
-                                   cb: Option<extern fn(command_handle_: i32,
-                                                        err: ErrorCode,
-                                                        get_utxo_txn_json: *const c_char,
-                                                        payment_method: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_parse_get_utxo_response(command_handle: i32,
-                                    payment_method: *const c_char,
-                                    resp_json: *const c_char,
-                                    cb: Option<extern fn(command_handle_: i32,
-                                                         err: ErrorCode,
-                                                         utxo_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_payment_req(command_handle: i32,
-                              wallet_handle: i32,
-                              submitter_did: *const c_char,
-                              inputs_json: *const c_char,
-                              outputs_json: *const c_char,
-                              cb: Option<extern fn(command_handle_: i32,
-                                                   err: ErrorCode,
-                                                   payment_req_json: *const c_char,
-                                                   payment_method: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_parse_payment_response(command_handle: i32,
-                                   payment_method: *const c_char,
-                                   resp_json: *const c_char,
-                                   cb: Option<extern fn(command_handle_: i32,
-                                                        err: ErrorCode,
-                                                        utxo_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_mint_req(command_handle: i32,
-                           wallet_handle: i32,
-                           submitter_did: *const c_char,
-                           outputs_json: *const c_char,
-                           cb: Option<extern fn(command_handle_: i32,
-                                                err: ErrorCode,
-                                                mint_req_json: *const c_char,
-                                                payment_method: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_set_txn_fees_req(command_handle: i32,
-                                   wallet_handle: i32,
-                                   submitter_did: *const c_char,
-                                   payment_method: *const c_char,
-                                   fees_json: *const c_char,
-                                   cb: Option<extern fn(command_handle_: i32,
-                                                        err: ErrorCode,
-                                                        set_txn_fees_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_build_get_txn_fees_req(command_handle: i32,
-                                   wallet_handle: i32,
-                                   submitter_did: *const c_char,
-                                   payment_method: *const c_char,
-                                   cb: Option<extern fn(command_handle_: i32,
-                                                        err: ErrorCode,
-                                                        get_txn_fees_json: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_parse_get_txn_fees_response(command_handle: i32,
-                                        payment_method: *const c_char,
-                                        resp_json: *const c_char,
-                                        cb: Option<extern fn(command_handle_: i32,
-                                                             err: ErrorCode,
-                                                             fees_json: *const c_char)>) -> ErrorCode;
-}

@@ -1,9 +1,9 @@
 use super::ErrorCode;
 
-use libc::c_char;
 use std::ffi::CString;
 use std::ptr::null;
 use utils;
+use indy::wallet;
 
 pub struct Wallet {}
 
@@ -18,7 +18,7 @@ impl Wallet {
         let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
-            indy_create_wallet(command_handle,
+            wallet::indy_create_wallet(command_handle,
                                pool_name.as_ptr(),
                                wallet_name.as_ptr(),
                                if xtype.is_some() { xtype_str.as_ptr() } else { null() },
@@ -38,7 +38,7 @@ impl Wallet {
         let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
-            indy_open_wallet(command_handle,
+            wallet::indy_open_wallet(command_handle,
                              wallet_name.as_ptr(),
                              if config.is_some() { config_str.as_ptr() } else { null() },
                              if credentials.is_some() { credentials_str.as_ptr() } else { null() },
@@ -51,7 +51,7 @@ impl Wallet {
     pub fn list_wallets() -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
-        let err = unsafe { indy_list_wallets(command_handle, cb) };
+        let err = unsafe { wallet::indy_list_wallets(command_handle, cb) };
 
         utils::results::result_to_one(err, receiver)
     }
@@ -62,7 +62,7 @@ impl Wallet {
         let wallet_name = CString::new(wallet_name).unwrap();
 
         let err = unsafe {
-            indy_delete_wallet(command_handle,
+            wallet::indy_delete_wallet(command_handle,
                                wallet_name.as_ptr(),
                                null(),
                                cb)
@@ -75,42 +75,8 @@ impl Wallet {
         let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec();
 
 
-        let err = unsafe { indy_close_wallet(command_handle, wallet_handle, cb) };
+        let err = unsafe { wallet::indy_close_wallet(command_handle, wallet_handle, cb) };
 
         utils::results::result_to_empty(err, receiver)
     }
-}
-
-extern {
-    #[no_mangle]
-    fn indy_create_wallet(command_handle: i32,
-                          pool_name: *const c_char,
-                          name: *const c_char,
-                          xtype: *const c_char,
-                          config: *const c_char,
-                          credentials: *const c_char,
-                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_open_wallet(command_handle: i32,
-                        name: *const c_char,
-                        runtime_config: *const c_char,
-                        credentials: *const c_char,
-                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, handle: i32)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_list_wallets(command_handle: i32,
-                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                              wallets: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_close_wallet(command_handle: i32,
-                         handle: i32,
-                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode;
-
-    #[no_mangle]
-    fn indy_delete_wallet(command_handle: i32,
-                          name: *const c_char,
-                          credentials: *const c_char,
-                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode;
 }
