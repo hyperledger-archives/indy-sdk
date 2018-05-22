@@ -65,6 +65,17 @@ def windowsTesting() {
                                 "RUST_BACKTRACE=1"
                         ]) {
                             bat "cargo build"
+                            bat "cargo test --no-run"
+
+                            echo "Windows Libnullpay Test: Run tests"
+                            withEnv([
+                                    "RUST_TEST_THREADS=1",
+                                    "RUST_LOG=indy::=debug,zmq=trace",
+                                    "TEST_POOL_IP=$INDY_SDK_SERVER_IP",
+                                    "PATH=$WORKSPACE\\libindy\\target\\debug;$PATH",
+                            ]) {
+                                bat "cargo test"
+                            }
                         }
                     }
 
@@ -264,7 +275,7 @@ def linuxTesting(file, env_name, network_name) {
                             sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
 
                             echo "${env_name} Libnullpay Test: Run tests"
-                            sh "LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
+                            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
                         }
                     }
                 },

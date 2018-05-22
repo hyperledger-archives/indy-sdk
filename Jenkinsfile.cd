@@ -221,8 +221,7 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
 
                 echo "${env_name} Libindy Test: Run tests"
                 sh "LD_LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release"
-
-
+                
                 if (stashBuildResults) {
                     stash includes: 'target/release/libnullpay.so', name: 'LibnullpayUbuntuBuildResult'
                 }
@@ -308,6 +307,17 @@ def windowsTesting() {
                                 "RUST_BACKTRACE=1"
                         ]) {
                             bat "cargo build --release"
+                            bat "cargo test --release --no-run"
+
+                            echo "Windows Libnullpay Test: Run tests"
+                            withEnv([
+                                    "RUST_TEST_THREADS=1",
+                                    "RUST_LOG=indy::=debug,zmq=trace",
+                                    "TEST_POOL_IP=$INDY_SDK_SERVER_IP",
+                                    "PATH=$WORKSPACE\\libindy\\target\\release;$PATH",
+                            ]) {
+                                bat "cargo test --release"
+                            }
                         }
 
                         stash includes: 'target/release/*.dll', name: 'LibnullpayWindowsBuildResult'
