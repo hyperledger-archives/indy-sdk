@@ -3,188 +3,99 @@ extern crate rand;
 
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
+extern crate serde;
 
 mod libindy;
-
+#[macro_use]
+mod utils;
 #[macro_use]
 mod payment_method;
-mod utils;
-
-use libindy::ErrorCode;
+mod services;
 
 use std::ffi::CString;
-use std::os::raw::c_char;
 
-    #[no_mangle]
-    pub extern fn nullpay_init() -> ErrorCode {
-        let payment_method_name = CString::new(payment_method::PAYMENT_METHOD_NAME).unwrap();
+#[no_mangle]
+pub extern fn nullpay_init() -> ErrorCode {
+    utils::logger::init();
+    let payment_method_name = CString::new(payment_method::PAYMENT_METHOD_NAME).unwrap();
 
-        libindy::payments::register_payment_method(
-            payment_method_name.as_ptr(),
-            payment_method::create_payment_address::handle_mocked,
-            payment_method::add_request_fees::handle_mocked,
-            payment_method::parse_response_with_fees::handle_mocked,
-            payment_method::build_get_utxo_request::handle_mocked,
-            payment_method::parse_get_utxo_response::handle_mocked,
-            payment_method::build_payment_req::handle_mocked,
-            payment_method::parse_payment_response::handle_mocked,
-            payment_method::build_mint_req::handle_mocked,
-            payment_method::build_set_txn_fees_req::handle_mocked,
-            payment_method::build_get_txn_fees_req::handle_mocked,
-            payment_method::parse_get_txn_fees_response::handle_mocked
-        )
-    }
-
-pub mod create_payment_address {
-    use super::*;
-
-    #[no_mangle]
-    pub extern fn nullpay_injmock_create_payment_address(err: ErrorCode, res: *const c_char) {
-        payment_method::create_payment_address::inject_mock(err, res)
-    }
-
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_create_payment_address() {
-        payment_method::create_payment_address::clear_mocks()
-    }
+    libindy::payments::register_payment_method(
+        payment_method_name.as_ptr(),
+        payment_method::create_payment_address::handle,
+        payment_method::add_request_fees::handle,
+        payment_method::parse_response_with_fees::handle,
+        payment_method::build_get_utxo_request::handle,
+        payment_method::parse_get_utxo_response::handle,
+        payment_method::build_payment_req::handle,
+        payment_method::parse_payment_response::handle,
+        payment_method::build_mint_req::handle,
+        payment_method::build_set_txn_fees_req::handle,
+        payment_method::build_get_txn_fees_req::handle,
+        payment_method::parse_get_txn_fees_response::handle
+    )
 }
 
-pub mod add_request_fees {
-    use super::*;
+#[derive(Debug, PartialEq, Copy, Clone)]
+#[repr(i32)]
+#[allow(dead_code)]
+pub enum ErrorCode
+{
+    Success = 0,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_add_request_fees(err: ErrorCode, res: *const c_char) {
-        payment_method::add_request_fees::inject_mock(err, res)
-    }
+    // Common errors
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_add_request_fees() {
-        payment_method::add_request_fees::clear_mocks()
-    }
-}
+    // Invalid library state was detected in runtime. It signals library bug
+    CommonInvalidState = 112,
 
-pub mod parse_response_with_fees {
-    use super::*;
+    // Object (json, config, key, credential and etc...) passed by library caller has invalid structure
+    CommonInvalidStructure = 113,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_parse_response_with_fees(err: ErrorCode, res: *const c_char) {
-        payment_method::parse_response_with_fees::inject_mock(err, res)
-    }
+    // IO Error
+    CommonIOError = 114,
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_parse_response_with_fees() {
-        payment_method::parse_response_with_fees::clear_mocks()
-    }
-}
+    // Wallet errors
+    // Caller passed invalid wallet handle
+    WalletInvalidHandle = 200,
 
-pub mod build_get_utxo_request {
-    use super::*;
+    // Unknown type of wallet was passed on create_wallet
+    WalletUnknownTypeError = 201,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_build_get_utxo_request(err: ErrorCode, res: *const c_char) {
-        payment_method::build_get_utxo_request::inject_mock(err, res)
-    }
+    // Attempt to register already existing wallet type
+    WalletTypeAlreadyRegisteredError = 202,
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_build_get_utxo_request() {
-        payment_method::build_get_utxo_request::clear_mocks()
-    }
-}
+    // Attempt to create wallet with name used for another exists wallet
+    WalletAlreadyExistsError = 203,
 
-pub mod parse_get_utxo_response {
-    use super::*;
+    // Requested entity id isn't present in wallet
+    WalletNotFoundError = 204,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_parse_get_utxo_response(err: ErrorCode, res: *const c_char) {
-        payment_method::parse_get_utxo_response::inject_mock(err, res)
-    }
+    // Trying to use wallet with pool that has different name
+    WalletIncompatiblePoolError = 205,
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_parse_get_utxo_response() {
-        payment_method::parse_get_utxo_response::clear_mocks()
-    }
-}
+    // Trying to open wallet that was opened already
+    WalletAlreadyOpenedError = 206,
 
-pub mod build_payment_req {
-    use super::*;
+    // Attempt to open encrypted wallet with invalid credentials
+    WalletAccessFailed = 207,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_build_payment_req(err: ErrorCode, res: *const c_char) {
-        payment_method::build_payment_req::inject_mock(err, res)
-    }
+    // Signus errors
+    // Unknown format of DID entity keys
+    UnknownCryptoTypeError = 500,
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_build_payment_req() {
-        payment_method::build_payment_req::clear_mocks()
-    }
-}
+    // Attempt to create duplicate did
+    DidAlreadyExistsError = 600,
 
-pub mod parse_payment_response {
-    use super::*;
+    // Unknown payment method was given
+    PaymentUnknownMethodError = 700,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_parse_payment_response(err: ErrorCode, res: *const c_char) {
-        payment_method::parse_payment_response::inject_mock(err, res)
-    }
+    //No method were scraped from inputs/outputs or more than one were scraped
+    PaymentIncompatibleMethodsError = 701,
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_parse_payment_response() {
-        payment_method::parse_payment_response::clear_mocks()
-    }
-}
-
-pub mod build_mint_req {
-    use super::*;
-
-    #[no_mangle]
-    pub extern fn nullpay_injmock_build_mint_req(err: ErrorCode, res: *const c_char) {
-        payment_method::build_mint_req::inject_mock(err, res)
-    }
-
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_build_mint_req() {
-        payment_method::build_mint_req::clear_mocks()
-    }
-}
-
-pub mod build_set_txn_fees_req {
-    use super::*;
-
-    #[no_mangle]
-    pub extern fn nullpay_injmock_build_set_txn_fees_req(err:ErrorCode, res: *const c_char) {
-        payment_method::build_set_txn_fees_req::inject_mock(err, res)
-    }
-
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_build_set_txn_fees_req() {
-        payment_method::build_set_txn_fees_req::clear_mocks()
-    }
-}
-
-pub mod build_get_txn_fees_req {
-    use super::*;
-
-    #[no_mangle]
-    pub extern fn nullpay_injmock_build_get_txn_fees_req(err: ErrorCode, res: *const c_char) {
-        payment_method::build_get_txn_fees_req::inject_mock(err, res)
-    }
-
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_build_get_txn_fees_req() {
-        payment_method::build_get_txn_fees_req::clear_mocks()
-    }
-}
-
-pub mod parse_get_txn_fees_response {
-    use super::*;
-
-    #[no_mangle]
-    pub extern fn nullpay_injmock_parse_get_txn_fees_response(err: ErrorCode, res: *const c_char) {
-        payment_method::parse_get_txn_fees_response::inject_mock(err, res)
-    }
-
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_parse_get_txn_fees_response() {
-        payment_method::parse_get_txn_fees_response::clear_mocks()
-    }
+    // Insufficient funds on inputs
+    PaymentInsufficientFundsError = 702,
 }

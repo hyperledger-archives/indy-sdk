@@ -255,6 +255,19 @@ def linuxTesting(file, env_name, network_name) {
                         }
                     }
                 },
+                "${env_name}-libindy-test": {
+                    dir('libnullpay') {
+                        testEnv.inside("--network=${network_name}") {
+                            echo "${env_name} Libnullpay Test: Test"
+
+                            echo "${env_name} Libnullpay Test: Build Test"
+                            sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
+
+                            echo "${env_name} Libnullpay Test: Run tests"
+                            sh "LD_LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
+                        }
+                    }
+                },
                 "${env_name}-java-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
                 "${env_name}-python-test" : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
                 "${env_name}-cli-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) }
