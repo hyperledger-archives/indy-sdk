@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>"]
 
 [features]
-payments_cli_tests = []
+nullpay_plugin = []
 
 [dependencies]
 ansi_term = "0.10"

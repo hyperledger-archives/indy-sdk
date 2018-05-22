@@ -51,7 +51,7 @@ def windowsTesting() {
                             echo "Windows Libindy Test: Run tests"
                             withEnv([
                                     "RUST_TEST_THREADS=1",
-                                    "RUST_LOG=indy::,zmq=trace",
+                                    "RUST_LOG=indy::=debug,zmq=trace",
                                     "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                             ]) {
                                 bat "cargo test"
@@ -59,26 +59,35 @@ def windowsTesting() {
                         }
                     }
 
+                    dir('libnullpay') {
+                        echo "Windows Libnullpay Test: Build"
+                        withEnv([
+                                "RUST_BACKTRACE=1"
+                        ]) {
+                            bat "cargo build"
+                        }
+                    }
+
+                    bat "copy $WORKSPACE\\libnullpay\\target\\debug\\nullpay.dll $WORKSPACE\\cli"
+
                     dir('cli') {
                         bat "sed -i -e \"s/10\\.0\\.0\\.2/${INDY_SDK_SERVER_IP}/g\" docker_pool_transactions_genesis"
 
-                        bat "copy $WORKSPACE\\libindy\\target\\debug\\indy.dll $WORKSPACE\\libindy\\prebuilt\\lib"
-                        bat "copy $WORKSPACE\\libindy\\target\\debug\\indy.lib $WORKSPACE\\libindy\\prebuilt\\lib"
+                        def featuresArgs = '--features "nullpay_plugin"'
 
                         echo "Windows Indy Cli Test: Build"
                         withEnv([
-                                "INDY_DIR=$WORKSPACE\\libindy\\prebuilt",
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo test --no-run"
+                            bat "cargo test $featuresArgs --no-run"
 
                             echo "Windows Indy Cli Test: Run tests"
                             withEnv([
                                     "RUST_TEST_THREADS=1",
-                                    "RUST_LOG=indy::,zmq=trace",
+                                    "RUST_LOG=indy::=debug,zmq=trace",
                                     "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
                             ]) {
-                                bat "cargo test"
+                                bat "cargo test $featuresArgs"
                             }
                         }
                     }
@@ -214,10 +223,23 @@ def linuxTesting(file, env_name, network_name) {
         sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
         sh "cp libindy/target/debug/libindy.so wrappers/python"
         sh "cp libindy/target/debug/libindy.so cli"
+        sh "cp libindy/target/debug/libindy.so libnullpay"
+
+        dir('libnullpay') {
+            echo "${env_name} Libnullpay Test: Build docker image"
+
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                echo "${env_name} Libnullpay Test: Build"
+                sh "LIBRARY_PATH=./ cargo build"
+            }
+        }
+
+        sh "cp libnullpay/target/debug/libnullpay.so cli"
 
         stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
         stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
         stash includes: 'cli/libindy.so', name: "LibindyCliSO${env_name}"
+        stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
 
         parallel([
                 "${env_name}-libindy-test": {
@@ -229,7 +251,7 @@ def linuxTesting(file, env_name, network_name) {
                             sh "RUST_BACKTRACE=1 cargo test --no-run"
 
                             echo "${env_name} Libindy Test: Run tests"
-                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
+                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
                         }
                     }
                 },
@@ -272,7 +294,7 @@ def linuxJavaTesting(env_name, network_name, testEnv) {
         testEnv.inside("--network=${network_name}") {
             echo "${env_name} Libindy Test: Test java wrapper"
 
-            sh "RUST_LOG=indy::,zmq=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+            sh "RUST_LOG=indy::=debug,zmq=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
         }
     }
 }
@@ -285,21 +307,27 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
 
             sh '''
                 python3.5 -m pip install --user -e .
-                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::,zmq=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug,zmq=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
             '''
         }
     }
 }
 
 def linuxCLITesting(env_name, network_name, testEnv) {
+    if (env_name == "RedHat"){ // TODO: Delete it IS-702
+        return;
+    }
+
     unstash name: "LibindyCliSO${env_name}"
+    unstash name: "LibnullpayCliSO${env_name}"
+
     dir('cli') {
         testEnv.inside("--network=${network_name}") {
             echo "${env_name} Indy Cli Test: Build"
-            sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
+            sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --features "nullpay_plugin" --no-run'
 
             echo "${env_name} Indy Cli Test: Run tests"
-            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "nullpay_plugin"'
         }
     }
 }
