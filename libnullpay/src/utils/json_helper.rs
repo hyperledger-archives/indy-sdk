@@ -1,5 +1,5 @@
 use serde_json::{Value, from_str, Map};
-use libindy::ErrorCode;
+use ErrorCode;
 use utils::types::UTXOInfo;
 use serde_json::to_string;
 
