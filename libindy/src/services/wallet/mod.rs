@@ -453,16 +453,14 @@ impl WalletService {
     }
 
     pub fn search_records(&self, wallet_handle: i32, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> {
-        //        match self.wallets.borrow().get(&wallet_handle) {
-        //            Some(wallet) => wallet.search_records(type_, query_json, options_json),
-        //            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
-        //        }
-        unimplemented!()
+        match self.wallets.borrow().get(&wallet_handle) {
+            Some(wallet) => Ok(WalletSearch { iter: wallet.search(type_, query_json, Some(options_json))? }),
+            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
+        }
     }
 
     pub fn search_indy_records<T>(&self, wallet_handle: i32, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> where T: NamedType {
-        //        self.search_records(wallet_handle, &self.add_prefix(T::short_type_name()), query_json, options_json)
-        unimplemented!()
+        self.search_records(wallet_handle, &self.add_prefix(T::short_type_name()), query_json, options_json)
     }
 
     pub fn search_all_records(&self, wallet_handle: i32) -> Result<WalletSearch, WalletError> {
@@ -613,17 +611,16 @@ impl RecordOptions {
 
 pub struct WalletSearch {
     // TODO
-    total_count: Option<usize>,
-    iter: Option<Box<Iterator<Item=WalletRecord>>>,
+    iter: iterator::WalletIterator,
 }
 
 impl WalletSearch {
     pub fn get_total_count(&self) -> Result<Option<usize>, WalletError> {
-        Ok(self.total_count)
+        unimplemented!()
     }
 
     pub fn fetch_next_record(&mut self) -> Result<Option<WalletRecord>, WalletError> {
-        Ok(self.iter.as_mut().and_then(|i| i.next()))
+        self.iter.next()
     }
 }
 

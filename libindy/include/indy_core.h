@@ -13,6 +13,6 @@
 #include "indy_did.h"
 #include "indy_wallet.h"
 #include "indy_blob_storage.h"
-#include "indy_non_secret.h"
+#include "indy_non_secrets.h"
 
 #endif

@@ -44,6 +44,7 @@ hex = "0.2.0"
 libc = "0.2.21"
 log = "0.3.7"
 openssl = { version = "=0.9.24", optional = true }
+owning_ref = "0.3.3"
 rand = "0.3"
 rusqlite = "0.13.0"
 libsqlite3-sys = "0.9.1"

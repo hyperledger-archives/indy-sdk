@@ -18,7 +18,7 @@ use super::WalletRecord;
 pub(super) type Tags = HashMap<String, String>;
 
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub(super) struct Keys {
    pub type_key: [u8; 32],
    pub name_key: [u8; 32],

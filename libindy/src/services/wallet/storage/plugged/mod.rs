@@ -54,13 +54,13 @@ pub struct FetchOptions {
 }
 
 #[derive(PartialEq, Debug)]
-struct PluggedStorageIterator<'a> {
-    storage: &'a PluggedStorage,
+struct PluggedStorageIterator {
+    storage: PluggedStorage,
     search_handle: i32,
     options: FetchOptions,
 }
 
-impl<'a> StorageIterator for PluggedStorageIterator<'a> {
+impl StorageIterator for PluggedStorageIterator {
     fn next(&mut self) -> Result<Option<StorageEntity>, WalletStorageError> {
         let mut record_handle = -1;
 
@@ -143,7 +143,7 @@ impl<'a> StorageIterator for PluggedStorageIterator<'a> {
     }
 }
 
-impl<'a> Drop for PluggedStorageIterator<'a> {
+impl Drop for PluggedStorageIterator {
     fn drop(&mut self) {
         (self.storage.free_search_handler)(self.storage.handle, self.search_handle);
     }
@@ -489,7 +489,7 @@ impl WalletStorage for PluggedStorage {
         Ok(())
     }
 
-    fn get_all<'a>(&'a self) -> Result<Box<StorageIterator + 'a>, WalletStorageError> {
+    fn get_all(&self) -> Result<Box<StorageIterator>, WalletStorageError> {
         let mut search_handle: i32 = -1;
 
         let err = (self.search_all_records_handler)(self.handle, &mut search_handle);
@@ -500,7 +500,7 @@ impl WalletStorage for PluggedStorage {
 
         Ok(Box::new(
             PluggedStorageIterator{
-                storage: self,
+                storage: self.clone() /* TODO avoid clone. Use Rc or better approach. */,
                 search_handle,
                 options: FetchOptions{
                     fetch_type: true,
@@ -511,7 +511,7 @@ impl WalletStorage for PluggedStorage {
         ))
     }
 
-    fn search<'a>(&'a self, type_: &Vec<u8>, query: &language::Operator, options_json: Option<&str>) -> Result<Box<StorageIterator + 'a>, WalletStorageError> {
+    fn search(&self, type_: &Vec<u8>, query: &language::Operator, options_json: Option<&str>) -> Result<Box<StorageIterator>, WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let query_json = CString::new(query.to_string())?;
         let options: FetchOptions = serde_json::from_str(options_json.unwrap_or(""))?;
@@ -528,7 +528,11 @@ impl WalletStorage for PluggedStorage {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
-        Ok(Box::new(PluggedStorageIterator{storage: self, search_handle, options}))
+        Ok(Box::new(PluggedStorageIterator {
+            storage: self.clone() /* TODO avoid clone. Use Rc or better approach. */,
+            search_handle,
+            options
+        }))
     }
 
     fn close(&mut self) -> Result<(), WalletStorageError> {
