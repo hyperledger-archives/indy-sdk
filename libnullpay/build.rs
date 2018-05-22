@@ -13,5 +13,7 @@ fn main() {
 
         println!("cargo:rustc-link-lib=dylib=indy.dll");
         println!("cargo:rustc-flags=-L {}", indy_dir);
+    } else {
+        println!("cargo:rustc-link-lib=indy");
     }
 }
