@@ -1,5 +1,5 @@
 pub mod default;
-//TODO FIXME: pub mod plugged;
+pub mod plugged;
 
 use std::collections::HashMap;
 

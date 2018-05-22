@@ -28,7 +28,7 @@ use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 
 use self::storage::WalletStorageType;
 use self::storage::default::SQLiteStorageType;
-//TODO FIXME: use self::storage::plugged::PluggedStorageType;
+use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Wallet, Keys, Tags};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
@@ -135,25 +135,24 @@ impl WalletService {
                                    get_search_total_count: WalletGetSearchTotalCount,
                                    fetch_search_next_record: WalletFetchSearchNextRecord,
                                    free_search: WalletFreeSearch) -> Result<(), WalletError> {
-        unimplemented!(); //TODO FIXME
-//        let mut storage_types = self.storage_types.borrow_mut();
-//
-//        if storage_types.contains_key(type_) {
-//            return Err(WalletError::TypeAlreadyRegistered(type_.to_string()));
-//        }
-//
-//        storage_types.insert(type_.to_string(),
-//                             Box::new(
-//                                 PluggedStorageType::new(create, open, close, delete,
-//                                                         add_record, update_record_value,
-//                                                         update_record_tags, add_record_tags, delete_record_tags,
-//                                                         delete_record, get_record, get_record_id,
-//                                                         get_record_type, get_record_value, get_record_tags,
-//                                                          get_storage_metadata, set_storage_metadata,
-//                                                         free_record, search_records, search_all_records,
-//                                                         get_search_total_count,
-//                                                         fetch_search_next_record, free_search)));
-//        Ok(())
+        let mut storage_types = self.storage_types.borrow_mut();
+
+        if storage_types.contains_key(type_) {
+            return Err(WalletError::TypeAlreadyRegistered(type_.to_string()));
+        }
+
+        storage_types.insert(type_.to_string(),
+                             Box::new(
+                                 PluggedStorageType::new(create, open, close, delete,
+                                                         add_record, update_record_value,
+                                                         update_record_tags, add_record_tags, delete_record_tags,
+                                                         delete_record, get_record, get_record_id,
+                                                         get_record_type, get_record_value, get_record_tags,
+                                                         get_storage_metadata, set_storage_metadata,
+                                                         free_record, search_records, search_all_records,
+                                                         get_search_total_count,
+                                                         fetch_search_next_record, free_search)));
+        Ok(())
     }
 
     pub fn create_wallet(&self,
