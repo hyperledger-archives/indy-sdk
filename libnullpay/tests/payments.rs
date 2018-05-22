@@ -20,6 +20,7 @@ use utils::test_utils;
 use utils::types::*;
 use utils::ledger;
 use utils::pool;
+use utils::did;
 
 use std::collections::HashMap;
 
@@ -27,6 +28,8 @@ static EMPTY_OBJECT: &str = "{}";
 static PAYMENT_METHOD_NAME: &str = "null";
 static POOL_NAME: &str = "pool_1";
 static SUBMITTER_DID: &str = "Th7MpTaRZVRYnPiabds81Y";
+static DEST: &str = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
+static VERKEY: &str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 static FEES: &str = r#"{"1":1, "101":2}"#;
 
 mod high_cases {
@@ -161,17 +164,41 @@ mod high_cases {
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
+            let (my_did, verkey) = did::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
-            let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
+//            let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
 
-            let mint: Vec<(String, i32, Option<&str>)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, ((i+2)*10) as i32, None)).collect();
-            payments_utils::mint_tokens(mint, wallet_handle, pool_handle, PAYMENT_METHOD_NAME, SUBMITTER_DID);
+//            let mint: Vec<(String, i32, Option<&str>)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, ((i+2)*10) as i32, None)).collect();
+//            payments_utils::mint_tokens(mint, wallet_handle, pool_handle, PAYMENT_METHOD_NAME, my_did.as_str());
 
-            let utxos = payments_utils::get_utxos_with_balance(addresses, wallet_handle, pool_handle, SUBMITTER_DID);
+//            let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, my_did.as_str());
 
-            payments_utils::set_request_fees(wallet_handle, pool_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME, FEES);
+//            payments_utils::set_request_fees(wallet_handle, pool_handle, my_did.as_str(), PAYMENT_METHOD_NAME, FEES);
 
-            //TODO: add request fees
+            let nym_req = ledger::build_nym_request(my_did.as_str(), DEST, VERKEY, "aaa", "").unwrap();
+
+//            let addr_1 = addresses.get(0).unwrap();
+//            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+//            let inputs = serde_json::to_string(&utxos_1).unwrap();
+
+//            let outputs = vec![UTXOOutput{
+//                payment_address: addresses.get(1).unwrap().to_string(),
+//                amount: 19,
+//                extra: None
+//            }];
+//            let outputs = serde_json::to_string(&outputs).unwrap();
+//
+//            let (nym_req_with_fees, payment_method) = payments::add_request_fees(wallet_handle, my_did.as_str(), nym_req.as_str(), inputs.as_str(), outputs.as_str()).unwrap();
+
+            let nym_response = ledger::sign_and_submit_request(pool_handle, wallet_handle, my_did.as_str(), nym_req.as_str()).unwrap();
+            trace!("nym response {}", nym_response);
+            let nym_response_parsed = payments::parse_response_with_fees(PAYMENT_METHOD_NAME, nym_response.as_str()).unwrap();
+
+//            let created_utxos: Vec<UTXOInfo> = serde_json::from_str(nym_response_parsed.as_str()).unwrap();
+//
+//            assert_eq!(created_utxos.len(), 1);
+//            let new_utxo = created_utxos.get(0).unwrap();
+//            assert_eq!(new_utxo.amount, 19);
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();

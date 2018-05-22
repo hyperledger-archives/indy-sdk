@@ -1,6 +1,7 @@
 extern crate libc;
 extern crate nullpay;
 
+pub mod did;
 pub mod payments;
 pub mod plugin;
 pub mod wallet;
