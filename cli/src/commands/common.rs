@@ -121,7 +121,7 @@ pub fn load_plugin(ctx: &CommandContext, library: &str, initializer: &str) -> Re
 
         match init_func() {
             ErrorCode::Success => println_succ!("Plugin has been loaded: \"{}\"", library),
-            _ => println_err!("Plugin has not been loaded: \"{}\"", library)
+            _ => return Err(println_err!("Plugin has not been loaded: \"{}\"", library))
         }
     }
 
@@ -167,7 +167,6 @@ pub mod tests {
         #[cfg(feature = "nullpay_plugin")]
         pub fn load_works() {
             TestUtils::cleanup_storage();
-
             let ctx = CommandContext::new();
 
             let cmd = load_plugin_command::new();
