@@ -525,9 +525,9 @@ impl WalletService {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WalletRecord {
-    #[serde(rename = "id")]
+    #[serde(rename="id")]
     name: String,
-    #[serde(rename = "type")]
+    #[serde(rename="type")]
     type_: Option<String>,
     value: Option<String>,
     tags: Option<String>
@@ -709,9 +709,9 @@ mod tests {
     
     fn _fetch_options(type_: bool, value: bool, tags: bool) -> String {
         let mut map = HashMap::new();
-        map.insert("fetch_type", type_);
-        map.insert("fetch_value", value);
-        map.insert("fetch_tags", tags);
+        map.insert("retrieveType", type_);
+        map.insert("retrieveValue", value);
+        map.insert("retrieveTags", tags);
         serde_json::to_string(&map).unwrap()
     }
 

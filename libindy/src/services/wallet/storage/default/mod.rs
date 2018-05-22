@@ -196,8 +196,11 @@ impl StorageIterator for SQLiteStorageIterator {
 
 #[derive(Debug,Deserialize,Serialize)]
 struct FetchOptions {
+    #[serde(rename="retrieveType")]
     fetch_type: bool,
+    #[serde(rename="retrieveValue")]
     fetch_value: bool,
+    #[serde(rename="retrieveTags")]
     fetch_tags: bool,
 }
 
@@ -261,7 +264,7 @@ impl WalletStorage for SQLiteStorage {
     ///  * `type_` - type_ of the item in storag
     ///  * `name` - name of the item in storage
     ///  * `options` - JSon containing what needs to be fetched.
-    ///  Example: {"fetch_value": true, "fetch_tags": true}
+    ///  Example: {"retrieveValue": true, "retrieveTags": true}
     ///
     /// # Returns
     ///
@@ -939,7 +942,7 @@ mod tests {
         tags.push(Tag::PlainText(vec![1, 5, 8, 1], "Plain value".to_string()));
 
         storage.add(&type_, &name, &value, &tags).unwrap();
-        let entity = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let entity = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
 
         let entity_value = entity.value.unwrap();
 
@@ -968,7 +971,7 @@ mod tests {
         tags.push(Tag::PlainText(vec![1, 5, 8, 1], "Plain value".to_string()));
 
         storage.add(&type_, &name, &value, &tags).unwrap();
-        let entity = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let entity = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
 
         assert_eq!(value, entity.value.unwrap());
         assert_eq!(tags, entity.tags.unwrap());
@@ -997,7 +1000,7 @@ mod tests {
         }
 
         let storage = storage_type.open_storage("test_wallet", None, "").unwrap();
-        let entity = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let entity = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
         let entity_value = entity.value.unwrap();
 
         assert_eq!(value, entity_value);
@@ -1020,7 +1023,7 @@ mod tests {
         tags.push(Tag::PlainText(vec![1, 5, 8, 1], "Plain value".to_string()));
 
         storage.add(&type_, &name, &value, &tags).unwrap();
-        let res = storage.get(&type_, &vec![5, 6, 6], r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##);
+        let res = storage.get(&type_, &vec![5, 6, 6], r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
 
         assert_match!(Err(WalletStorageError::ItemNotFound), res)
     }
@@ -1044,7 +1047,7 @@ mod tests {
 
         storage.add(&type_, &name, &value, &tags).unwrap();
 
-        let entity = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let entity = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
 
         let entity_value = entity.value.unwrap();
         assert_eq!(value, entity_value);
@@ -1074,7 +1077,7 @@ mod tests {
         tags.push(Tag::PlainText(vec![1, 5, 8, 1], "Plain value".to_string()));
 
         storage.add(&type_, &name, &value, &tags).unwrap();
-        let entity = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let entity = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
 
         let entity_value = entity.value.unwrap();
 
@@ -1082,7 +1085,7 @@ mod tests {
         assert_eq!(tags, entity.tags.unwrap());
 
         storage.delete(&type_, &name).unwrap();
-        let res = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##);
+        let res = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##);
         assert_match!(Err(WalletStorageError::ItemNotFound), res);
     }
 
@@ -1185,10 +1188,10 @@ mod tests {
         let tags = Vec::new();
 
         storage.add(&type_, &name, &value1, &tags).unwrap();
-        let item = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let item = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
         assert_eq!(item.value.unwrap(), value1);
         storage.update(&type_, &name, &value2).unwrap();
-        let item = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let item = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
         assert_eq!(item.value.unwrap(), value2);
     }
 
@@ -1203,7 +1206,7 @@ mod tests {
         let tags = Vec::new();
 
         storage.add(&type_, &name, &value1, &tags).unwrap();
-        let item = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let item = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
         assert_eq!(item.value.unwrap(), value1);
         let res = storage.update(&type_, &wrong_name, &value2);
         assert_match!(Err(WalletStorageError::ItemNotFound), res)
@@ -1220,7 +1223,7 @@ mod tests {
         let tags = Vec::new();
 
         storage.add(&type_, &name, &value1, &tags).unwrap();
-        let item = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let item = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
         assert_eq!(item.value.unwrap(), value1);
         let res = storage.update(&wrong_type, &name, &value2);
         assert_match!(Err(WalletStorageError::ItemNotFound), res)
@@ -1251,7 +1254,7 @@ mod tests {
 
         storage.add_tags(&type_, &name, &new_tags).unwrap();
 
-        let item = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let item = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
         assert_eq!(item.value.unwrap(), value);
 
         let mut expected_tags = new_tags.clone();
@@ -1323,7 +1326,7 @@ mod tests {
         expected_tags.push(tag2);
         expected_tags.sort();
 
-        let item = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let item = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
         let mut item_tags = item.tags.unwrap();
         item_tags.sort();
 
@@ -1359,7 +1362,7 @@ mod tests {
 
         storage.update_tags(&type_, &name, &updated_tags).unwrap();
 
-        let item = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let item = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
         let retrieved_tags = item.tags.unwrap();
         assert_eq!(retrieved_tags, updated_tags);
     }
@@ -1439,7 +1442,7 @@ mod tests {
         let res = storage.update_tags(&type_, &name, &updated_tags);
         assert_match!(Ok(()), res);
 
-        let item = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let item = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
         let retrieved_tags = item.tags.unwrap();
         assert_eq!(retrieved_tags, updated_tags);
     }
@@ -1470,7 +1473,7 @@ mod tests {
         let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone())];
         storage.delete_tags(&type_, &name, &tag_names).unwrap();
 
-        let item = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let item = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
         let retrieved_tags = item.tags.unwrap();
         let mut expected_tags = Vec::new();
         expected_tags.push(tag3.clone());
@@ -1500,7 +1503,7 @@ mod tests {
         let res = storage.delete_tags(&vec![0, 0, 0], &name, &tag_names);
         assert_match!(Err(WalletStorageError::ItemNotFound), res);
 
-        let item = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let item = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
         let mut retrieved_tags = item.tags.unwrap();
         retrieved_tags.sort();
 
@@ -1531,7 +1534,7 @@ mod tests {
         let res = storage.delete_tags(&type_, &vec![0, 0, 0], &tag_names);
         assert_match!(Err(WalletStorageError::ItemNotFound), res);
 
-        let item = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let item = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
         let mut retrieved_tags = item.tags.unwrap();
         retrieved_tags.sort();
 
@@ -1561,7 +1564,7 @@ mod tests {
         let tag_names = vec![TagName::OfEncrypted(tag_name1.clone()), TagName::OfPlain(tag_name2.clone()), TagName::OfEncrypted(vec![100, 100, 100])];
         let res = storage.delete_tags(&type_, &name, &tag_names).unwrap();
 
-        let item = storage.get(&type_, &name, r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##).unwrap();
+        let item = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
         let mut retrieved_tags = item.tags.unwrap();
         retrieved_tags.sort();
 
