@@ -255,7 +255,7 @@ def linuxTesting(file, env_name, network_name) {
                         }
                     }
                 },
-                "${env_name}-libindy-test": {
+                "${env_name}-libnullpay-test": {
                     dir('libnullpay') {
                         testEnv.inside("--network=${network_name}") {
                             echo "${env_name} Libnullpay Test: Test"
@@ -264,7 +264,7 @@ def linuxTesting(file, env_name, network_name) {
                             sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
 
                             echo "${env_name} Libnullpay Test: Run tests"
-                            sh "LD_LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
+                            sh "LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
                         }
                     }
                 },

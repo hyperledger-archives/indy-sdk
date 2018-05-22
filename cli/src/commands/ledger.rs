@@ -2327,6 +2327,7 @@ pub mod tests {
         use super::*;
 
         #[test]
+        #[ignore]
         pub fn pool_restart_works() {
             TestUtils::cleanup_storage();
             let datetime = r#"2020-01-25T12:49:05.258870+00:00"#;
@@ -3147,17 +3148,17 @@ pub mod tests {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
+            create_and_connect_pool(&ctx);
             create_and_open_wallet(&ctx);
             load_null_payment_plugin(&ctx);
 
-            create_and_connect_pool(&ctx);
-            load_null_payment_plugin(&ctx);
             {
                 let cmd = get_fees_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
             TestUtils::cleanup_storage();
         }
