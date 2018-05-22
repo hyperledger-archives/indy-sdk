@@ -41,6 +41,7 @@ public abstract class LibIndy {
 		public int indy_sign_and_submit_request(int command_handle, int pool_handle, int wallet_handle, String submitter_did, String request_json, Callback cb);
 		public int indy_submit_request(int command_handle, int pool_handle, String request_json, Callback cb);
 		public int indy_sign_request(int command_handle, int wallet_handle, String submitter_did, String request_json, Callback cb);
+		public int indy_multi_sign_request(int command_handle, int wallet_handle, String submitter_did, String request_json, Callback cb);
 		public int indy_build_get_ddo_request(int command_handle, String submitter_did, String target_did, Callback cb);
 		public int indy_build_nym_request(int command_handle, String submitter_did, String target_did, String verkey, String alias, String role, Callback cb);
 		public int indy_build_attrib_request(int command_handle, String submitter_did, String target_did, String hash, String raw, String enc, Callback cb);
@@ -123,6 +124,20 @@ public abstract class LibIndy {
 		// blob_storage.rs
 		public int indy_open_blob_storage_reader(int command_handle, String type, String config_json, Callback cb);
 		public int indy_open_blob_storage_writer(int command_handle, String type, String config_json, Callback cb);
+
+		// payments.rs
+		int indy_create_payment_address(int command_handle, int wallet_handle, String payment_method, String config, Callback cb);
+		int indy_list_payment_addresses(int command_handle, int wallet_handle, Callback cb);
+		int indy_add_request_fees(int command_handle, int wallet_handle, String submitter_did, String req_json, String inputs_json, String outputs_json, Callback cb);
+		int indy_parse_response_with_fees(int command_handle, String payment_method, String resp_json, Callback cb);
+		int indy_build_get_utxo_request(int command_handle, int wallet_handle, String submitter_did, String payment_method, Callback cb);
+		int indy_parse_get_utxo_response(int command_handle, String payment_method, String resp_json, Callback cb);
+		int indy_build_payment_req(int command_handle, int wallet_handle, String submitter_did, String inputs_json, String outputs_json, Callback cb);
+		int indy_parse_payment_response(int command_handle, String payment_method, String resp_json, Callback cb);
+		int indy_build_mint_req(int command_handle, int wallet_handle, String submitter_did, String outputs_json, Callback cb);
+		int indy_build_set_txn_fees_req(int command_handle, int wallet_handle, String submitter_did, String payment_method, String fees_json, Callback cb);
+		int indy_build_get_txn_fees_req(int command_handle, int wallet_handle, String submitter_did, String payment_method, Callback cb);
+		int indy_parse_get_txn_fees_response(int command_handle, String payment_method, String resp_json, Callback cb);
 
 	}
 

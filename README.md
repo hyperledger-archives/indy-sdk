@@ -115,6 +115,11 @@ After successfully compiling `libindy`, you will need to add the path containing
 * [Windows](doc/windows-build.md)
 * [MacOS](doc/mac-build.md)
 
+**Note:**
+By default `cargo build` produce debug artifacts with a large amount of run-time checks.
+It's good for development, but this build can be in 100+ times slower for some math calculation.
+If you would like to analyse CPU performance of libindy for your use case, you have to use release artifacts (`cargo build --release`). 
+
 ## How to start local nodes pool with docker
 To test the SDK codebase with a virtual Indy node network, you can start a pool of local nodes using docker:
 
@@ -171,7 +176,7 @@ Docker machine needs to be rebooted after these changes.
 ## Wrappers documentation
 
 The following wrappers are tested and complete. There is also active work
-on wrappers for Go and node.js; visit
+on a wrapper for Go; visit
 [#indy-sdk on Rocket.Chat](https://chat.hyperledger.org/channel/indy-sdk) for
 details.
 
@@ -179,6 +184,7 @@ details.
 * [Java](wrappers/java/README.md)
 * [Python](wrappers/python/README.md)
 * [iOS](wrappers/ios/README.md)
+* [NodeJS](wrappers/nodejs/README.md)
 
 ## Indy CLI documentation
 * An explanation of how to install the official command line interface for that provides commands to manage wallets and interactions with the ledger: [Indy CLI](cli/README.md)

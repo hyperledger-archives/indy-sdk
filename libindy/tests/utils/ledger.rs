@@ -76,6 +76,22 @@ impl LedgerUtils {
         super::results::result_to_string(err, receiver)
     }
 
+    pub fn multi_sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let request_json = CString::new(request_json).unwrap();
+
+        let err =
+            indy_multi_sign_request(command_handle,
+                                    wallet_handle,
+                                    submitter_did.as_ptr(),
+                                    request_json.as_ptr(),
+                                    cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
     fn _extract_seq_no_from_reply(reply: &str) -> Result<u64, &'static str> {
         ::serde_json::from_str::<::serde_json::Value>(reply).map_err(|_| "Reply isn't valid JSON")?
             ["result"]["seqNo"]
@@ -295,7 +311,7 @@ impl LedgerUtils {
                                                   submitter_did.as_ptr(),
                                                   action.as_ptr(),
                                                   if datetime.is_some() { datetime_str.as_ptr() } else { null() },
-                                                      cb);
+                                                  cb);
 
         super::results::result_to_string(err, receiver)
     }

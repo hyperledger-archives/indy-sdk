@@ -376,6 +376,13 @@ impl WalletService {
             None => Err(WalletError::InvalidHandle(handle.to_string()))
         }
     }
+
+    pub fn check(&self, handle: i32) -> Result<(), WalletError> {
+        match self.wallets.borrow().get(&handle) {
+            Some(_) => Ok(()),
+            None => Err(WalletError::InvalidHandle(handle.to_string()))
+        }
+    }
 }
 
 fn _wallet_path(name: &str) -> PathBuf {
