@@ -1,9 +1,9 @@
 use super::ErrorCode;
 
-use libc::c_char;
 use std::ffi::CString;
 use std::ptr::null;
 use utils;
+use indy::pool;
 
 pub struct Pool {}
 
@@ -15,7 +15,7 @@ impl Pool {
         let pool_config_str = CString::new(pool_config).unwrap();
 
         let err = unsafe {
-            indy_create_pool_ledger_config(command_handle,
+            pool::indy_create_pool_ledger_config(command_handle,
                                            pool_name.as_ptr(),
                                            pool_config_str.as_ptr(),
                                            cb)
@@ -31,7 +31,7 @@ impl Pool {
         let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
-            indy_open_pool_ledger(command_handle,
+            pool::indy_open_pool_ledger(command_handle,
                                   pool_name.as_ptr(),
                                   if config.is_some() { config_str.as_ptr() } else { null() },
                                   cb)
@@ -44,7 +44,7 @@ impl Pool {
     pub fn refresh(pool_handle: i32) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec();
 
-        let err = unsafe { indy_refresh_pool_ledger(command_handle, pool_handle, cb) };
+        let err = unsafe { pool::indy_refresh_pool_ledger(command_handle, pool_handle, cb) };
 
         utils::results::result_to_empty(err, receiver)
     }
@@ -52,7 +52,7 @@ impl Pool {
     pub fn list() -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
-        let err = unsafe { indy_list_pools(command_handle, cb) };
+        let err = unsafe { pool::indy_list_pools(command_handle, cb) };
 
         utils::results::result_to_one(err, receiver)
     }
@@ -60,7 +60,7 @@ impl Pool {
     pub fn close(pool_handle: i32) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec();
 
-        let err = unsafe { indy_close_pool_ledger(command_handle, pool_handle, cb) };
+        let err = unsafe { pool::indy_close_pool_ledger(command_handle, pool_handle, cb) };
 
         utils::results::result_to_empty(err, receiver)
     }
@@ -70,42 +70,9 @@ impl Pool {
 
         let pool_name = CString::new(pool_name).unwrap();
 
-        let err = unsafe { indy_delete_pool_ledger_config(cmd_id, pool_name.as_ptr(), cb) };
+        let err = unsafe { pool::indy_delete_pool_ledger_config(cmd_id, pool_name.as_ptr(), cb) };
 
         utils::results::result_to_empty(err, receiver)
     }
 }
 
-extern {
-    #[no_mangle]
-    fn indy_create_pool_ledger_config(command_handle: i32,
-                                      config_name: *const c_char,
-                                      config: *const c_char,
-                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode;
-
-    #[no_mangle]
-    pub fn indy_open_pool_ledger(command_handle: i32,
-                                 config_name: *const c_char,
-                                 config: *const c_char,
-                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, pool_handle: i32)>) -> ErrorCode;
-
-    #[no_mangle]
-    pub fn indy_refresh_pool_ledger(command_handle: i32,
-                                    handle: i32,
-                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode;
-
-    #[no_mangle]
-    pub fn indy_list_pools(command_handle: i32,
-                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                pools: *const c_char)>) -> ErrorCode;
-
-    #[no_mangle]
-    pub fn indy_close_pool_ledger(command_handle: i32,
-                                  handle: i32,
-                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode;
-
-    #[no_mangle]
-    pub fn indy_delete_pool_ledger_config(command_handle: i32,
-                                          config_name: *const c_char,
-                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode;
-}

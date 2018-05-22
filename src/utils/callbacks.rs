@@ -2,7 +2,7 @@ use ErrorCode;
 
 use utils::sequence::SequenceUtils;
 
-use libc::c_char;
+use std::os::raw::c_char;
 
 use std::collections::HashMap;
 use std::slice;
