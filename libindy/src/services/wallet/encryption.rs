@@ -63,14 +63,14 @@ pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &[u8], tag_va
 
             for etag in etags {
                 let (name, value) = match etag {
-                    Tag::PlainText(ref ename, ref value) => {
+                    &Tag::PlainText(ref ename, ref value) => {
                         let name = match ChaCha20Poly1305IETF::decrypt(&ename, tag_name_key) {
                             Err(_) => return Err(WalletError::EncryptionError("Unable to decrypt tag name".to_string())),
                             Ok(tag_name_bytes) => format!("~{}", str::from_utf8(&tag_name_bytes)?)
                         };
                         (name, value.clone())
                     },
-                    Tag::Encrypted(ref ename, ref evalue) => {
+                    &Tag::Encrypted(ref ename, ref evalue) => {
                         let name = match ChaCha20Poly1305IETF::decrypt(&ename, tag_name_key) {
                             Err(_) => return Err(WalletError::EncryptionError("Unable to decrypt tag name".to_string())),
                             Ok(tag_name) => String::from_utf8(tag_name)?
