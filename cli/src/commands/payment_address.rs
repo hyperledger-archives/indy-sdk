@@ -98,8 +98,9 @@ pub mod list_command {
 pub fn handle_payment_error(err: ErrorCode, payment_method: Option<&str>) {
     match err {
         ErrorCode::PaymentUnknownMethodError => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
-        ErrorCode::PaymentIncompatibleMethodsError => println_err!("Different payment methods were specified"),
+        ErrorCode::PaymentIncompatibleMethodsError => println_err!("No method were scraped or more than one were scraped"),
         ErrorCode::PaymentInsufficientFundsError => println_err!("Insufficient funds on inputs"),
+        ErrorCode::CommonInvalidStructure => println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc..."),
         err => println_err!("Indy SDK error occurred {:?}", err)
     }
 }
@@ -121,7 +122,7 @@ pub mod tests {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
-            let wallet_handle = create_and_open_wallet(&ctx);
+            create_and_open_wallet(&ctx);
             load_null_payment_plugin(&ctx);
             {
                 let cmd = create_command::new();
@@ -129,7 +130,7 @@ pub mod tests {
                 params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let addresses = get_payment_addresses(wallet_handle);
+            let addresses = list_payment_addresses(&ctx);
             assert_eq!(1, addresses.len());
             assert!(addresses[0].starts_with("pay:null:"));
 
@@ -143,7 +144,7 @@ pub mod tests {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
-            let wallet_handle = create_and_open_wallet(&ctx);
+            create_and_open_wallet(&ctx);
             load_null_payment_plugin(&ctx);
             {
                 let cmd = create_command::new();
@@ -152,9 +153,9 @@ pub mod tests {
                 params.insert("seed", SEED_MY1.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let addresses = get_payment_addresses(wallet_handle);
+            let addresses = list_payment_addresses(&ctx);
             assert_eq!(1, addresses.len());
-            assert!(addresses[0].starts_with("pay:null:"));
+//            assert_eq!("pay:null:AkQr7K6CP1tslXd", addresses[0]);  TODO: Exactly check
 
             close_and_delete_wallet(&ctx);
             TestUtils::cleanup_storage();
@@ -202,7 +203,7 @@ pub mod tests {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
-            let wallet_handle = create_and_open_wallet(&ctx);
+            create_and_open_wallet(&ctx);
             load_null_payment_plugin(&ctx);
             create_payment_address(&ctx);
             {
@@ -210,7 +211,7 @@ pub mod tests {
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let addresses = get_payment_addresses(wallet_handle);
+            let addresses = list_payment_addresses(&ctx);
             assert_eq!(1, addresses.len());
 
             close_and_delete_wallet(&ctx);
@@ -223,14 +224,14 @@ pub mod tests {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
-            let wallet_handle = create_and_open_wallet(&ctx);
+            create_and_open_wallet(&ctx);
             load_null_payment_plugin(&ctx);
             {
                 let cmd = list_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let addresses = get_payment_addresses(wallet_handle);
+            let addresses = list_payment_addresses(&ctx);
             assert_eq!(0, addresses.len());
 
             close_and_delete_wallet(&ctx);
@@ -253,7 +254,8 @@ pub mod tests {
         }
     }
 
-    fn get_payment_addresses(wallet_handle: i32) -> Vec<String> {
+    fn list_payment_addresses(ctx: &CommandContext) -> Vec<String> {
+        let wallet_handle = ensure_opened_wallet_handle(ctx).unwrap();
         let payment_addresses = Payment::list_payment_addresses(wallet_handle).unwrap();
         serde_json::from_str(&payment_addresses).unwrap()
     }

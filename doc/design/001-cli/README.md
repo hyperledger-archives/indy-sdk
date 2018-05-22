@@ -113,6 +113,12 @@ Print content of file:
 indy> show [file=]<file_path>
 ```
 
+#### Load Plugin
+Load plugin in Libindy:
+```
+indy> load-plugin library=<name/path> initializer=<init_function>
+```
+
 ### Wallets management commands (wallet group)
 ```
 indy> wallet <command>
@@ -209,7 +215,7 @@ indy> ledger <subcommand>
 #### NYM transaction
 Send NYM transaction
 ```
-ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>]
+ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>] [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
 ```
 
 #### GET_NYM transaction
@@ -221,7 +227,7 @@ ledger get-nym did=<did-value>
 #### ATTRIB transaction
 Send ATTRIB transaction
 ```
-ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>]
+ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>]  [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
 ```
 
 #### GET_ATTRIB transaction
@@ -233,7 +239,7 @@ ledger get-attrib did=<did-value> [raw=<raw-value>] [hash=<hash-value>] [enc=<en
 #### SCHEMA transaction
 Send SCHEMA transaction
 ```
-ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value>
+ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value>  [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
 ```
 
 #### GET_SCHEMA transaction
@@ -244,7 +250,7 @@ ledger get-schema did=<did-value> name=<name-value> version=<version-value>
 #### CRED_DEF transaction
 Send CRED_DEF transaction
 ```
-ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> primary=<primary-value> [revocation=<revocation-value>]
+ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> primary=<primary-value> [revocation=<revocation-value>]  [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
 ```
 
 #### GET_CRED_DEF transaction
@@ -311,6 +317,12 @@ ledger mint-prepare outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<am
 Prepare SET_FEES transaction
 ```
 ledger set-fees-prepare payment_method=<payment_method> fees=<txn-type-1>:<amount-1>,..,<txn-type-n>:<amount-n>
+```
+
+#### Add multi signature to transaction
+Prepare SET_FEES transaction
+```
+ledger sign-multi txn=<txn_json>
 ```
 
 ### Payment Address commands

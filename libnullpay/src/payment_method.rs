@@ -166,6 +166,7 @@ pub mod build_payment_req {
 
                         _save_response(infos, res.clone())
                     } else {
+                        _add_response(res.clone(), "INSUFFICIENT_FUNDS".to_string());
                         ErrorCode::Success
                     }
                 } else {
