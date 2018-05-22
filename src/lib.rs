@@ -1,13 +1,13 @@
 #[macro_use]
 extern crate lazy_static;
-extern crate libc;
 
 pub mod crypto;
 pub mod did;
 pub mod ledger;
-pub mod payment;
+pub mod payments;
 pub mod pool;
 pub mod wallet;
+mod indy;
 
 pub type IndyHandle = i32;
 
