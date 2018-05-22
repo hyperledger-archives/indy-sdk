@@ -206,18 +206,22 @@ impl PaymentsService {
         let inputs: Vec<&str> = serde_json::from_str(inputs).map_err(|_| PaymentsError::CommonError(CommonError::InvalidStructure("Unable to parse inputs".to_string())))?;
         let inputs_len = inputs.len();
         if inputs_len == 0 {
+            error!("No inputs for transaction");
             return Err(PaymentsError::CommonError(CommonError::InvalidStructure("No inputs for transaction".to_string())));
         }
         let input_set: HashSet<&str> = inputs.into_iter().collect();
         if inputs_len != input_set.len() {
+            error!("Several equal inputs");
             return Err(PaymentsError::CommonError(CommonError::InvalidStructure("Several equal inputs".to_string())));
         }
         let input_methods: Vec<Option<String>> = input_set.into_iter().map(|s| self._parse_method_from_payment_address(s)).collect();
         if input_methods.contains(&None) {
+            error!("Some payment addresses are incorrectly formed");
             return Err(PaymentsError::CommonError(CommonError::InvalidStructure("Some payment addresses are incorrectly formed".to_string())));
         }
         let input_methods_set: HashSet<String> = input_methods.into_iter().map(|s| s.unwrap()).collect();
         if input_methods_set.len() != 1 {
+            error!("Unable to identify payment method from inputs");
             return Err(PaymentsError::IncompatiblePaymentError("Unable to identify payment method from inputs".to_string()));
         }
         Ok(input_methods_set.into_iter().next().unwrap())
@@ -227,21 +231,25 @@ impl PaymentsService {
         let outputs: Vec<Output> = serde_json::from_str(outputs).map_err(|_| PaymentsError::CommonError(CommonError::InvalidStructure("Unable to parse outputs".to_string())))?;
         let outputs_len = outputs.len();
         if outputs_len == 0 {
+            error!("No outputs for transaction");
             return Err(PaymentsError::CommonError(CommonError::InvalidStructure("No outputs for transaction".to_string())));
         }
 
         let payment_address_set: HashSet<String> = outputs.into_iter().map(|s| s.payment_address).collect();
         if payment_address_set.len() != outputs_len {
+            error!("Several equal payment addresses");
             return Err(PaymentsError::CommonError(CommonError::InvalidStructure("Several equal payment addresses".to_string())));
         }
 
         let payment_methods: Vec<Option<String>> = payment_address_set.into_iter().map(|s| self._parse_method_from_payment_address(s.as_str())).collect();
         if payment_methods.contains(&None) {
+            error!("Some payment addresses are incorrectly formed");
             return Err(PaymentsError::CommonError(CommonError::InvalidStructure("Some payment addresses are incorrectly formed".to_string())));
         }
 
         let payment_method_set: HashSet<String> = payment_methods.into_iter().map(|s| s.unwrap()).collect();
         if payment_method_set.len() != 1 {
+            error!("Unable to identify payment method from outputs");
             return Err(PaymentsError::IncompatiblePaymentError("Unable to identify payment method from outputs".to_string()));
         }
 
