@@ -26,9 +26,10 @@ pub enum WalletCommand {
                        WalletGetRecordType, // get record id
                        WalletGetRecordValue, // get record value
                        WalletGetRecordTags, // get record tags
+                       WalletFreeRecord, // free record
                        WalletGetStorageMetadata, // get storage metadata
                        WalletSetStorageMetadata, // set storage metadata
-                       WalletFreeRecord, // free record
+                       WalletFreeStorageMetadata, // free storage metadata
                        WalletSearchRecords, // search records
                        WalletSearchAllRecords, // search all records
                        WalletGetSearchTotalCount, // get search total count
@@ -69,15 +70,15 @@ impl WalletCommandExecutor {
             WalletCommand::RegisterWalletType(type_, create, open, close, delete, add_record,
                                               update_record_value, update_record_tags, add_record_tags,
                                               delete_record_tags, delete_record, get_record, get_record_id, get_record_type,
-                                              get_record_value, get_record_tags, get_storage_metadata, set_storage_metadata, free_record,
-                                              search_records, search_all_records, get_search_total_count,
+                                              get_record_value, get_record_tags, free_record, get_storage_metadata, set_storage_metadata,
+                                              free_storage_metadata, search_records, search_all_records, get_search_total_count,
                                               fetch_search_next_record, free_search, cb) => {
                 info!(target: "wallet_command_executor", "RegisterWalletType command received");
                 cb(self.register_type(&type_, create, open, close, delete, add_record,
                                       update_record_value, update_record_tags, add_record_tags,
                                       delete_record_tags, delete_record, get_record, get_record_id, get_record_type,
-                                      get_record_value, get_record_tags, get_storage_metadata, set_storage_metadata, free_record,
-                                      search_records, search_all_records, get_search_total_count,
+                                      get_record_value, get_record_tags, free_record, get_storage_metadata, set_storage_metadata,
+                                      free_storage_metadata, search_records, search_all_records, get_search_total_count,
                                       fetch_search_next_record, free_search));
             }
             WalletCommand::Create(pool_name, name, storage_type, config, credentials, cb) => {
@@ -121,9 +122,10 @@ impl WalletCommandExecutor {
                      get_record_type: WalletGetRecordType,
                      get_record_value: WalletGetRecordValue,
                      get_record_tags: WalletGetRecordTags,
+                     free_record: WalletFreeRecord,
                      get_storage_metadata: WalletGetStorageMetadata,
                      set_storage_metadata: WalletSetStorageMetadata,
-                     free_record: WalletFreeRecord,
+                     free_storage_metadata: WalletFreeStorageMetadata,
                      search_records: WalletSearchRecords,
                      search_all_records: WalletSearchAllRecords,
                      get_search_total_count: WalletGetSearchTotalCount,
@@ -136,8 +138,8 @@ impl WalletCommandExecutor {
             .register_wallet_storage(
                 type_, create, open, close, delete, add_record, update_record_value, update_record_tags,
                 add_record_tags, delete_record_tags, delete_record, get_record, get_record_id, get_record_type,
-                get_record_value, get_record_tags, get_storage_metadata, set_storage_metadata,
-                free_record, search_records, search_all_records,
+                get_record_value, get_record_tags, free_record, get_storage_metadata, set_storage_metadata,
+                free_storage_metadata, search_records, search_all_records,
                 get_search_total_count, fetch_search_next_record, free_search)?;
 
         info!("register_type <<< res: {:?}", res);

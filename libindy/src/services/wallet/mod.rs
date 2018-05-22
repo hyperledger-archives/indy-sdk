@@ -127,9 +127,10 @@ impl WalletService {
                                    get_record_type: WalletGetRecordType,
                                    get_record_value: WalletGetRecordValue,
                                    get_record_tags: WalletGetRecordTags,
+                                   free_record: WalletFreeRecord,
                                    get_storage_metadata: WalletGetStorageMetadata,
                                    set_storage_metadata: WalletSetStorageMetadata,
-                                   free_record: WalletFreeRecord,
+                                   free_storage_metadata: WalletFreeStorageMetadata,
                                    search_records: WalletSearchRecords,
                                    search_all_records: WalletSearchAllRecords,
                                    get_search_total_count: WalletGetSearchTotalCount,
@@ -147,9 +148,9 @@ impl WalletService {
                                                          add_record, update_record_value,
                                                          update_record_tags, add_record_tags, delete_record_tags,
                                                          delete_record, get_record, get_record_id,
-                                                         get_record_type, get_record_value, get_record_tags,
-                                                         get_storage_metadata, set_storage_metadata,
-                                                         free_record, search_records, search_all_records,
+                                                         get_record_type, get_record_value, get_record_tags, free_record,
+                                                          get_storage_metadata, set_storage_metadata, free_storage_metadata,
+                                                         search_records, search_all_records,
                                                          get_search_total_count,
                                                          fetch_search_next_record, free_search)));
         Ok(())
@@ -330,7 +331,7 @@ impl WalletService {
     }
 
     pub fn add_record(&self, wallet_handle: i32, type_: &str, name: &str, value: &str, tags_json: &str) -> Result<(), WalletError> {
-        match self.wallets.borrow().get(&wallet_handle) {
+        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
             Some(wallet) => {
                 let tags: Tags = serde_json::from_str(tags_json)?;
                 wallet.add(type_, name, value, &tags)

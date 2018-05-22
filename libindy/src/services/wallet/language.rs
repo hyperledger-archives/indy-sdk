@@ -13,10 +13,13 @@ pub enum TagName {
 
 impl From<String> for TagName {
     fn from(s: String) -> TagName {
-        let v = s.into_bytes();
-        match v[0] as char {
-            '~' => TagName::PlainTagName(v),
-            _ => TagName::EncryptedTagName(v),
+        let mut v = s.into_bytes();
+        if v.len() > 0 && v[0] as char == '~' {
+                v.remove(0);
+                TagName::PlainTagName(v)
+        }
+        else {
+            TagName::EncryptedTagName(v)
         }
     }
 }
