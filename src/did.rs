@@ -1,14 +1,17 @@
 use super::{ErrorCode, IndyHandle};
 
 use std::ffi::CString;
-use utils;
+
 use ffi::did;
+
+use utils::callbacks::ClosureHandler;
+use utils::results::ResultHandler;
 
 pub struct Did {}
 
 impl Did {
     pub fn new(wallet_handle: IndyHandle, my_did_json: &str) -> Result<(String, String), ErrorCode> {
-        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string_string();
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
         let my_did_json = CString::new(my_did_json).unwrap();
 
@@ -19,11 +22,11 @@ impl Did {
                                          cb)
         };
 
-        utils::results::result_to_two(err, receiver)
+        ResultHandler::two(err, receiver)
     }
 
-    pub fn replace_keys_start(wallet_handle: i32, tgt_did: &str, identity_json: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+    pub fn replace_keys_start(wallet_handle: IndyHandle, tgt_did: &str, identity_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let tgt_did = CString::new(tgt_did).unwrap();
         let identity_json = CString::new(identity_json).unwrap();
@@ -36,11 +39,11 @@ impl Did {
                                     cb)
         };
 
-        utils::results::result_to_one(err, receiver)
+        ResultHandler::one(err, receiver)
     }
 
-    pub fn replace_keys_apply(wallet_handle: i32, tgt_did: &str) -> Result<(), ErrorCode> {
-        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec();
+    pub fn replace_keys_apply(wallet_handle: IndyHandle, tgt_did: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let tgt_did = CString::new(tgt_did).unwrap();
 
@@ -51,11 +54,89 @@ impl Did {
                                     cb)
         };
 
-        utils::results::result_to_empty(err, receiver)
+        ResultHandler::empty(err, receiver)
     }
 
-    pub fn set_metadata(wallet_handle: i32, tgt_did: &str, metadata: &str) -> Result<(), ErrorCode> {
-        let (receiver, command_handle, callback) = utils::callbacks::_closure_to_cb_ec();
+    pub fn store_their_did(wallet_handle: IndyHandle, identity_json: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let identity_json = CString::new(identity_json).unwrap();
+
+        let err = unsafe {
+            did::indy_store_their_did(command_handle,
+                                    wallet_handle,
+                                    identity_json.as_ptr(),
+                                    cb)
+        };
+
+        ResultHandler::empty(err, receiver)
+    }
+
+    pub fn get_ver_key(pool_handle: IndyHandle, wallet_handle: IndyHandle, did: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let did = CString::new(did).unwrap();
+
+        let err = unsafe {
+            did::indy_key_for_did(command_handle,
+                                  pool_handle,
+                                  wallet_handle,
+                                  did.as_ptr(),
+                                  cb)
+        };
+
+        ResultHandler::one(err, receiver)
+    }
+
+    pub fn get_ver_key_local(wallet_handle: IndyHandle, did: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let did = CString::new(did).unwrap();
+
+        let err = unsafe {
+            did::indy_key_for_local_did(command_handle,
+                                  wallet_handle,
+                                  did.as_ptr(),
+                                  cb)
+        };
+
+        ResultHandler::one(err, receiver)
+    }
+
+    pub fn set_endpoint(wallet_handle: IndyHandle, did: &str, address: &str, transport_key: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let did = CString::new(did).unwrap();
+        let address = CString::new(address).unwrap();
+        let transport_key = CString::new(transport_key).unwrap();
+
+        let err = unsafe {
+            did::indy_set_endpoint_for_did(command_handle,
+                                           wallet_handle,
+                                           did.as_ptr(),
+                                           address.as_ptr(),
+                                           transport_key.as_ptr(),
+                                           cb)
+        };
+        ResultHandler::empty(err, receiver)
+    }
+
+    pub fn get_endpoint(wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
+
+        let did = CString::new(did).unwrap();
+        let err = unsafe {
+            did::indy_get_endpoint_for_did(command_handle,
+                                           wallet_handle,
+                                           pool_handle,
+                                           did.as_ptr(),
+                                           cb)
+        };
+        ResultHandler::two(err, receiver)
+    }
+
+    pub fn set_metadata(wallet_handle: IndyHandle, tgt_did: &str, metadata: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let tgt_did = CString::new(tgt_did).unwrap();
         let metadata = CString::new(metadata).unwrap();
@@ -65,37 +146,52 @@ impl Did {
                                   wallet_handle,
                                   tgt_did.as_ptr(),
                                   metadata.as_ptr(),
-                                  callback)
+                                  cb)
         };
 
-        utils::results::result_to_empty(err, receiver)
+        ResultHandler::empty(err, receiver)
     }
 
-    pub fn get_did_with_meta(wallet_handle: i32, tgt_did: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+    pub fn get_metadata(wallet_handle: IndyHandle, tgt_did: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let tgt_did = CString::new(tgt_did).unwrap();
 
         let err = unsafe {
-            did::indy_get_my_did_with_meta(command_handle,
+            did::indy_get_did_metadata(command_handle,
                                       wallet_handle,
                                       tgt_did.as_ptr(),
                                       cb)
         };
 
-        utils::results::result_to_one(err, receiver)
+        ResultHandler::one(err, receiver)
     }
 
-    pub fn list_dids_with_meta(wallet_handle: i32) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+    pub fn get_my_metadata(wallet_handle: IndyHandle, my_did: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let my_did = CString::new(my_did).unwrap();
+
+        let err = unsafe {
+            did::indy_get_my_did_with_meta(command_handle,
+                                      wallet_handle,
+                                      my_did.as_ptr(),
+                                      cb)
+        };
+
+        ResultHandler::one(err, receiver)
+    }
+
+    pub fn list_with_metadata(wallet_handle: IndyHandle) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = unsafe { did::indy_list_my_dids_with_meta(command_handle, wallet_handle, cb) };
 
-        utils::results::result_to_one(err, receiver)
+        ResultHandler::one(err, receiver)
     }
 
     pub fn abbreviate_verkey(tgt_did: &str, verkey: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let tgt_did = CString::new(tgt_did).unwrap();
         let verkey = CString::new(verkey).unwrap();
@@ -104,9 +200,9 @@ impl Did {
             did::indy_abbreviate_verkey(command_handle,
                                    tgt_did.as_ptr(),
                                    verkey.as_ptr(),
-                                   cb)
+                                        cb)
         };
 
-        utils::results::result_to_one(err, receiver)
+        ResultHandler::one(err, receiver)
     }
 }
