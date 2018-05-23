@@ -905,6 +905,7 @@ mod high_cases {
         }
     }
 
+    #[cfg(feature = "non_secrets_search_tests")]
     mod search {
         use super::*;
 

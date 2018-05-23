@@ -16,7 +16,7 @@ impl TagName {
     fn from(s: String) -> Result<TagName, WalletQueryError> {
         let mut v = s.into_bytes();
         match v.first() {
-            Some(126) => match v.get(1) {
+            Some(&126) => match v.get(1) {
                 Some(_) => {
                     v.remove(0);
                     Ok(TagName::PlainTagName(v))

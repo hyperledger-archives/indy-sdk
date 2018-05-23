@@ -281,7 +281,7 @@ impl CryptoCommandExecutor {
             .get_tags()
             .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
             .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
-            .ok_or(WalletError::NotFound(format!("Key Metadata not found for: {}", verkey)))?;
+            .ok_or(WalletError::ItemNotFound)?;
 
         debug!("get_key_metadata <<< res: {:?}", res);
 

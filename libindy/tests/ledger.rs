@@ -413,6 +413,7 @@ mod high_cases {
             let response = LedgerUtils::submit_request(pool_handle, &nym_request).unwrap();
             PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
+            WalletUtils::close_wallet(wallet_handle).unwrap();
             PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();

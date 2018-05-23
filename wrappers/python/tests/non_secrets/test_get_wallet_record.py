@@ -1,3 +1,4 @@
+import operator
 import pytest
 
 from indy import IndyError
@@ -12,7 +13,7 @@ async def test_get_wallet_record_works_for_default_options(wallet_handle):
     record = json.loads(
         await non_secrets.get_wallet_record(wallet_handle, type_, id1, options_empty))
 
-    expected = {'id': id1, 'value': value1, 'tags': tags1, 'type': None}
+    expected = {'id': id1, 'value': value1, 'tags': None, 'type': None}
 
     assert expected == record
 
@@ -32,7 +33,7 @@ async def test_get_wallet_record_works_for_full_data(wallet_handle):
 
     expected = {'id': id1, 'value': value1, 'tags': tags1, 'type': type_}
 
-    assert expected == record
+    assert len(set(expected) ^ set(record)) == 0
 
 
 @pytest.mark.asyncio

@@ -216,7 +216,7 @@ mod high_cases {
             let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
             let res = CryptoUtils::get_key_metadata(wallet_handle, &verkey);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
