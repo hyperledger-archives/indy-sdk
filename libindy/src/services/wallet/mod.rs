@@ -520,7 +520,9 @@ impl WalletService {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WalletRecord {
+    #[serde(rename = "id")]
     name: String,
+    #[serde(rename = "type")]
     type_: Option<String>,
     value: Option<String>,
     tags: Option<String>
