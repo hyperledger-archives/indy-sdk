@@ -116,8 +116,14 @@ pub enum ErrorCode
     // Returned if provided wallet query is invalid
     WalletQueryError = 214,
 
-    // Returned if wallet import has failed
-    WalletImportError = 215,
+    // Returned if I/O error occurred during wallet operation
+    WalletIOError = 215,
+
+    // Returned if wallet input has invalid structure (currently used in wallet import)
+    WalletStructureError = 216,
+
+    // Returned if the wallet is not empty, but it is required (currently only when importing)
+    WalletNotEmpty = 217,
 
     // Ledger errors
     // Trying to open pool ledger that wasn't created before

@@ -1,5 +1,5 @@
 use std::mem;
-use std::io::{Write,Read};
+use std::io::{Write, Read, BufWriter, BufReader};
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::collections::HashMap;
 
@@ -27,21 +27,21 @@ impl Header {
         let data_length: u16 = (serialised.len() - 50) as u16;
         let version = bytes_to_u32(&serialised[2..6]);
         let time = bytes_to_u64(&serialised[6..14]);
+
         let method_length = bytes_to_u16(&serialised[14..16]);
         if data_length < method_length {
-            return Err(WalletError::ImportError("Wallet header of insufficient size".to_string()));
+            return Err(WalletError::StructureError("Wallet header of insufficient size".to_string()));
         }
-
         let method_start_index: usize = 16;
         let method_end_index: usize = method_start_index + method_length as usize;
         let method_data = &serialised[method_start_index..method_end_index];
         let method = String::from_utf8(method_data.to_vec())?;
+
         let nonce_length = bytes_to_u16(&serialised[method_end_index..method_end_index + 2]);
         let actual_nonce_length = data_length - method_length;
         if nonce_length != actual_nonce_length {
-            return Err(WalletError::ImportError("Wallet header lengths mismatch".to_string()));
+            return Err(WalletError::StructureError("Wallet header lengths mismatch".to_string()));
         }
-
         let nonce_start_index = method_end_index + 2;
         let nonce_end_index = nonce_start_index + nonce_length as usize;
         let nonce_slice = &serialised[nonce_start_index..nonce_end_index];
@@ -49,7 +49,7 @@ impl Header {
 
         let actual_hash = sha256_hash(&serialised[..nonce_end_index])?;
         if actual_hash != &serialised[nonce_end_index..nonce_end_index+32] {
-            return Err(WalletError::ImportError("Wallet header hash mismatch".to_string()));
+            return Err(WalletError::StructureError("Wallet header hash mismatch".to_string()));
         }
 
         Ok(Header {
@@ -141,17 +141,17 @@ pub (super) fn export(wallet: &Wallet, mut writer: Box<Write>, key: [u8; 32], ve
 pub (super) fn import(wallet: &Wallet, mut reader: Box<Read>, key: [u8; 32]) -> Result<(), WalletError> {
     let mut existing_items = wallet.get_all()?;
     if existing_items.next()?.is_some() {
-        return Err(WalletError::ImportError("Wallet is not empty".to_string()));
+        return Err(WalletError::NotEmpty);
     }
 
     let mut header_length_bytes: [u8; 2] = [0; 2];
     let read_count = reader.read(&mut header_length_bytes)?;
     if read_count < 2 {
-        return Err(WalletError::ImportError("Failed to read import header bytes".to_string()));
+        return Err(WalletError::StructureError("Failed to read import header bytes".to_string()));
     }
     let header_length = bytes_to_u16(&header_length_bytes) as usize;
     if header_length < 48 {
-        return Err(WalletError::ImportError("Wallet import header not of sufficient minimal length".to_string()));
+        return Err(WalletError::StructureError("Wallet import header not of sufficient minimal length".to_string()));
     }
 
     let mut header_data: Vec<u8> = vec![0; header_length + 2];
@@ -164,13 +164,23 @@ pub (super) fn import(wallet: &Wallet, mut reader: Box<Read>, key: [u8; 32]) -> 
     let mut encrypted_chunk: [u8; 1040] = [0; 1040];
     let mut decrypted_buffer = Vec::new();
 
-    loop {
-        let read_count = reader.read(&mut encrypted_chunk)?;
-        if read_count == 0 {
-            break;
+    let mut has_more = true;
+    while has_more {
+        let mut chunk_read_count = 0;
+        while chunk_read_count < 1040 {
+            let read_count = reader.read(&mut encrypted_chunk[chunk_read_count..])?;
+            if read_count == 0 {
+                has_more = false;
+                break;
+            }
+            chunk_read_count += read_count;
         }
 
-        decrypted_buffer.extend(&ChaCha20Poly1305IETF::decrypt(&encrypted_chunk[0..read_count], &key, &nonce)?);
+        if chunk_read_count == 0 {
+            continue;
+        }
+
+        decrypted_buffer.extend(&ChaCha20Poly1305IETF::decrypt(&encrypted_chunk[0..chunk_read_count], &key, &nonce)?);
         ChaCha20Poly1305IETF::increment_nonce(&mut nonce);
 
         add_records_from_buffer(&wallet, &mut decrypted_buffer)?;
@@ -178,11 +188,13 @@ pub (super) fn import(wallet: &Wallet, mut reader: Box<Read>, key: [u8; 32]) -> 
 
     add_records_from_buffer(&wallet, &mut decrypted_buffer)?;
     if decrypted_buffer.len() != 0 {
-        return Err(WalletError::InputError("Failed to import all content".to_string()));
+        return Err(WalletError::StructureError("Failed to import all content".to_string()));
     }
 
     Ok(())
 }
+
+
 
 fn add_records_from_buffer(wallet: &Wallet, buff: &mut Vec<u8>) -> Result<(), WalletError> {
     let mut index = 0;
@@ -238,37 +250,45 @@ fn serialise_record(record: WalletRecord, buffer: &mut Vec<u8>) -> Result<(), Wa
 
 
 fn deserialise_record(mut buffer: &[u8]) -> Result<WalletRecord, WalletError> {
+    let expected_total_length = buffer.len();
     let type_length = bytes_to_u32(&buffer[..4]) as usize;
     if type_length + 16 > buffer.len() {
-        return Err(WalletError::ImportError("Insufficient serialised data length".to_string()));
+        return Err(WalletError::StructureError("Insufficient serialised data length".to_string()));
     }
     let type_ = String::from_utf8(buffer[4..4+type_length].to_owned())?;
     buffer = &buffer[4+type_length..];
 
     let name_length = bytes_to_u32(&buffer[..4]) as usize;
     if name_length + 12 > buffer.len() {
-        return Err(WalletError::ImportError("Insufficient serialised data length".to_string()));
+        return Err(WalletError::StructureError("Insufficient serialised data length".to_string()));
     }
     let name = String::from_utf8(buffer[4..4+name_length].to_owned())?;
     buffer = &buffer[4+name_length..];
 
     let value_length = bytes_to_u32(&buffer[..4]) as usize;
     if value_length + 8 > buffer.len() {
-        return Err(WalletError::ImportError("Insufficient serialised data length".to_string()));
+        return Err(WalletError::StructureError("Insufficient serialised data length".to_string()));
     }
     let value = String::from_utf8(buffer[4..4+value_length].to_owned())?;
     buffer = &buffer[4+value_length..];
 
     let tags_json_length = bytes_to_u32(&buffer[..4]) as usize;
     if tags_json_length > buffer.len() {
-        return Err(WalletError::ImportError("Insufficient serialised data length".to_string()));
+        return Err(WalletError::StructureError("Insufficient serialised data length".to_string()));
     }
+
+    let total_length = type_length + name_length + value_length + tags_json_length + 16;
+    if total_length != expected_total_length {
+        return Err(WalletError::StructureError("Lengths mismatch during record deserialisation".to_string()));
+    }
+
     let tags_json = String::from_utf8(buffer[4..4+tags_json_length].to_owned())?;
     let tags: HashMap<String, String> = serde_json::from_str(&tags_json)?;
 
     let wallet_record = WalletRecord::new(name,Some(type_), Some(value),Some(tags));
     Ok(wallet_record)
 }
+
 
 fn u64_to_bytes(u: u64) -> [u8; 8] {
     let u = u.to_be();
@@ -317,7 +337,9 @@ mod tests {
     use std::io::Read;
     use std::env;
     use std::collections::HashMap;
-
+    use std::time;
+    extern crate rand;
+    use self::rand::*;
     use serde_json;
 
     use services::wallet::storage::WalletStorageType;
@@ -395,6 +417,13 @@ mod tests {
         v
     }
 
+    fn _replace_export_file(data: Vec<u8>) {
+        let export_file_path = std::path::Path::new("/tmp/wallet/export_test/export");
+        std::fs::remove_file(export_file_path).unwrap();
+        let mut new_file = std::fs::File::create(export_file_path).unwrap();
+        new_file.write_all(&data).unwrap();
+    }
+
     fn _get_export_file_reader() -> Box<io::Read> {
         let export_file_path = "/tmp/wallet/export_test/export";
         Box::new(std::fs::File::open(export_file_path).unwrap())
@@ -447,7 +476,7 @@ mod tests {
         let mut serialised_header = header.serialise().unwrap();
         serialised_header[3] = 1;
         let res = Header::deserialise(&serialised_header);
-        assert_match!(Err(WalletError::ImportError(_)), res);
+        assert_match!(Err(WalletError::StructureError(_)), res);
     }
 
     #[test]
@@ -466,7 +495,7 @@ mod tests {
         serialised_header[index] = byte_value;
 
         let res = Header::deserialise(&serialised_header);
-        assert_match!(Err(WalletError::ImportError(_)), res);
+        assert_match!(Err(WalletError::StructureError(_)), res);
     }
 
     /**
@@ -495,6 +524,107 @@ mod tests {
         assert_eq!(&deserialised_record.value.unwrap(), &value);
         assert_eq!(&deserialised_record.tags.unwrap(), &tags);
     }
+
+    #[test]
+    fn test_wallet_record_serialization_and_deserialization_if_type_length_changed() {
+        let name = String::from("name");
+        let type_ = String::from("type");
+        let value = String::from("value");
+        let mut tags = HashMap::new();
+        tags.insert(String::from("~tag_name_1"), String::from("tag_value_1"));
+        tags.insert(String::from("~tag_name_2"), String::from("tag_value_2"));
+        tags.insert(String::from("tag_name_3"), String::from("tag_value_3"));
+
+        let record = WalletRecord::new(name.clone(), Some(type_.clone()), Some(value.clone()), Some(tags.clone()));
+        let mut buff = Vec::new();
+        serialise_record(record, &mut buff);
+        let new_type_length = 1000;
+        let new_type_length_bytes = u32_to_bytes(new_type_length);
+        buff[4] = new_type_length_bytes[0];
+        buff[5] = new_type_length_bytes[1];
+        buff[6] = new_type_length_bytes[2];
+        buff[7] = new_type_length_bytes[3];
+
+        let serialised_length = bytes_to_u32(&buff[0..4]) as usize;
+        let res = deserialise_record(&buff[4..]);
+        assert_match!(Err(WalletError::StructureError(_)), res);
+    }
+
+    #[test]
+    fn test_wallet_record_serialization_and_deserialization_if_name_length_changed() {
+        let name = String::from("name");
+        let type_ = String::from("type");
+        let value = String::from("value");
+        let mut tags = HashMap::new();
+        tags.insert(String::from("~tag_name_1"), String::from("tag_value_1"));
+        tags.insert(String::from("~tag_name_2"), String::from("tag_value_2"));
+        tags.insert(String::from("tag_name_3"), String::from("tag_value_3"));
+
+        let record = WalletRecord::new(name.clone(), Some(type_.clone()), Some(value.clone()), Some(tags.clone()));
+        let mut buff = Vec::new();
+        serialise_record(record, &mut buff);
+        let new_name_length = 1000;
+        let new_name_length_bytes = u32_to_bytes(new_name_length);
+        let name_length_index = 4 + 4 + "type".len();
+        buff[name_length_index] = new_name_length_bytes[0];
+        buff[name_length_index + 1] = new_name_length_bytes[1];
+        buff[name_length_index + 2] = new_name_length_bytes[2];
+        buff[name_length_index + 3] = new_name_length_bytes[3];
+
+        let res = deserialise_record(&buff[4..]);
+        assert_match!(Err(WalletError::StructureError(_)), res);
+    }
+
+    #[test]
+    fn test_wallet_record_serialization_and_deserialization_if_value_length_changed() {
+        let name = String::from("name");
+        let type_ = String::from("type");
+        let value = String::from("value");
+        let mut tags = HashMap::new();
+        tags.insert(String::from("~tag_name_1"), String::from("tag_value_1"));
+        tags.insert(String::from("~tag_name_2"), String::from("tag_value_2"));
+        tags.insert(String::from("tag_name_3"), String::from("tag_value_3"));
+
+        let record = WalletRecord::new(name.clone(), Some(type_.clone()), Some(value.clone()), Some(tags.clone()));
+        let mut buff = Vec::new();
+        serialise_record(record, &mut buff);
+        let new_value_length = 1000;
+        let new_value_length_bytes = u32_to_bytes(new_value_length);
+        let value_length_index = 4 + 4 + "type".len() + 4 + "name".len();
+        buff[value_length_index] = new_value_length_bytes[0];
+        buff[value_length_index + 1] = new_value_length_bytes[1];
+        buff[value_length_index + 2] = new_value_length_bytes[2];
+        buff[value_length_index + 3] = new_value_length_bytes[3];
+
+        let res = deserialise_record(&buff[4..]);
+        assert_match!(Err(WalletError::StructureError(_)), res);
+    }
+
+    #[test]
+    fn test_wallet_record_serialization_and_deserialization_if_tags_length_changed() {
+        let name = String::from("name");
+        let type_ = String::from("type");
+        let value = String::from("value");
+        let mut tags = HashMap::new();
+        tags.insert(String::from("~tag_name_1"), String::from("tag_value_1"));
+        tags.insert(String::from("~tag_name_2"), String::from("tag_value_2"));
+        tags.insert(String::from("tag_name_3"), String::from("tag_value_3"));
+
+        let record = WalletRecord::new(name.clone(), Some(type_.clone()), Some(value.clone()), Some(tags.clone()));
+        let mut buff = Vec::new();
+        serialise_record(record, &mut buff);
+        let new_tags_length = 1000;
+        let new_tags_length_bytes = u32_to_bytes(new_tags_length);
+        let tags_length_index = 4 + 4 + "type".len() + 4 + "name".len() + 4 + "value".len();
+        buff[tags_length_index] = new_tags_length_bytes[0];
+        buff[tags_length_index + 1] = new_tags_length_bytes[1];
+        buff[tags_length_index + 2] = new_tags_length_bytes[2];
+        buff[tags_length_index + 3] = new_tags_length_bytes[3];
+
+        let res = deserialise_record(&buff[4..]);
+        assert_match!(Err(WalletError::StructureError(_)), res);
+    }
+
 
     /**
         Export/Import tests
@@ -550,7 +680,7 @@ mod tests {
         let wallet = _create_wallet();
 
         let mut total_item_length = 0;
-        let item_count = 50;
+        let item_count = 300;
         for i in 0 .. item_count {
             let name = format!("name_{}", i);
             let value = format!("value_{}", i);
@@ -644,12 +774,62 @@ mod tests {
     }
 
     #[test]
+    fn export_import_returns_error_if_wallet_not_empty() {
+        _cleanup();
+        let type1 = "type1";
+        let name1 = "name1";
+        let value1 = "value1";
+        let mut tags1 = HashMap::new();
+        tags1.insert("tag_name_1".to_string(), "tag_value_1".to_string());
+        tags1.insert("tag_name_2".to_string(), "tag_value_2".to_string());
+        tags1.insert("~tag_name_3".to_string(), "tag_value_3".to_string());
+        let record_1_length = _record_length_serialized(type1, name1, value1, &tags1);
+        let type2 = "type2";
+        let name2 = "name2";
+        let value2 = "value2";
+        let mut tags2 = HashMap::new();
+        tags2.insert("tag_name_21".to_string(), "tag_value_21".to_string());
+        tags2.insert("tag_name_22".to_string(), "tag_value_22".to_string());
+        tags2.insert("~tag_name_23".to_string(), "tag_value_23".to_string());
+        let record_2_length = _record_length_serialized(type2, name2, value2, &tags2);
+        let mut wallet = _create_wallet();
+        wallet.add(type1, name1, value1, &tags1).unwrap();
+        wallet.add(type2, name2, value2, &tags2).unwrap();
+        let export_writer = _create_export_file();
+        let key = _get_test_master_key();
+
+        export(&wallet, export_writer, key.clone(), 1).unwrap();
+        wallet.close().unwrap();
+        _cleanup();
+
+        let reader = _get_export_file_reader();
+        let wallet = _create_wallet();
+        let name3 = "name3";
+        let value3 = "value3";
+        let value4 = "value4";
+        wallet.add(type1, name3, value3, &HashMap::new()).unwrap();
+        wallet.add(type1, name1, value4, &HashMap::new()).unwrap();
+        let first_res = wallet.get(type2, name2, _options());
+        assert_match!(Err(WalletError::ItemNotFound), first_res);
+
+        let res = import(&wallet, reader, key.clone());
+        assert_match!(Err(WalletError::NotEmpty), res);
+        let res = wallet.get(type2, name2, _options());
+        assert_match!(Err(WalletError::ItemNotFound), res);
+        let retrieved_record = wallet.get(type1, name1, _options()).unwrap();
+        assert_eq!(retrieved_record.value.unwrap(), value4);
+        let retrieved_record = wallet.get(type1, name3, _options()).unwrap();
+        assert_eq!(retrieved_record.value.unwrap(), value3);
+    }
+
+    #[test]
     fn export_import_multiple_items() {
         _cleanup();
         let mut wallet = _create_wallet();
 
         let mut total_item_length = 0;
-        let item_count = 50;
+        let item_count = rand::thread_rng().gen_range(40, 80);
+        println!("\nItem count: {}\n", item_count);
         for i in 0 .. item_count {
             let name = format!("name_{}", i);
             let value = format!("value_{}", i);
@@ -686,5 +866,50 @@ mod tests {
             assert_eq!(retrieved_record.value.unwrap(), value);
             assert_eq!(retrieved_record.tags.unwrap(), tags);
         }
+    }
+
+    #[test]
+    fn export_import_returns_error_if_header_hash_broken() {
+        _cleanup();
+        let type1 = "type1";
+        let name1 = "name1";
+        let value1 = "value1";
+        let mut tags1 = HashMap::new();
+        tags1.insert("tag_name_1".to_string(), "tag_value_1".to_string());
+        tags1.insert("tag_name_2".to_string(), "tag_value_2".to_string());
+        tags1.insert("~tag_name_3".to_string(), "tag_value_3".to_string());
+        let record_1_length = _record_length_serialized(type1, name1, value1, &tags1);
+        let type2 = "type2";
+        let name2 = "name2";
+        let value2 = "value2";
+        let mut tags2 = HashMap::new();
+        tags2.insert("tag_name_21".to_string(), "tag_value_21".to_string());
+        tags2.insert("tag_name_22".to_string(), "tag_value_22".to_string());
+        tags2.insert("~tag_name_23".to_string(), "tag_value_23".to_string());
+        let record_2_length = _record_length_serialized(type2, name2, value2, &tags2);
+        let mut wallet = _create_wallet();
+        wallet.add(type1, name1, value1, &tags1).unwrap();
+        wallet.add(type2, name2, value2, &tags2).unwrap();
+        let export_writer = _create_export_file();
+        let key = _get_test_master_key();
+
+        export(&wallet, export_writer, key.clone(), 1).unwrap();
+        wallet.close().unwrap();
+        _cleanup();
+
+        let mut content = _get_export_file_content();
+        let index = 60;
+        let byte_value = content[index];
+        let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
+        content[index] = new_byte_value;
+        _replace_export_file(content);
+
+        let reader = _get_export_file_reader();
+        let wallet = _create_wallet();
+        let first_res = wallet.get(type1, name1, "{}");
+        assert_match!(Err(WalletError::ItemNotFound), first_res);
+
+        let res = import(&wallet, reader, key.clone());
+        assert_match!(Err(WalletError::StructureError(_)), res);
     }
 }

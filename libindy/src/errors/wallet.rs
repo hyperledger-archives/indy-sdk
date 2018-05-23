@@ -37,7 +37,9 @@ pub enum WalletError {
     ItemNotFound,
     ItemAlreadyExists,
     QueryError(String),
-    ImportError(String),
+    IOError(io::Error),
+    StructureError(String),
+    NotEmpty,
 }
 
 
@@ -61,7 +63,9 @@ impl fmt::Display for WalletError {
             WalletError::ItemNotFound => write!(f, "Item not found"),
             WalletError::ItemAlreadyExists => write!(f, "Item already exists"),
             WalletError::QueryError(ref description) => write!(f, "{}", description),
-            WalletError::ImportError(ref description) => write!(f, "Wallet import error: {}", description),
+            WalletError::IOError(ref err) => write!(f, "IO error occurred during wallet operation: {}", err.description()),
+            WalletError::StructureError(ref description) => write!(f, "Invalid structure of wallet input: {}", description),
+            WalletError::NotEmpty => write!(f, "Wallet is not empty"),
         }
     }
 }
@@ -86,7 +90,9 @@ impl error::Error for WalletError {
             WalletError::ItemNotFound => "Item not found",
             WalletError::ItemAlreadyExists => "Item already exists",
             WalletError::QueryError(ref description) => description,
-            WalletError::ImportError(ref description) => description,
+            WalletError::IOError(ref err) => err.description(),
+            WalletError::StructureError(ref description) => description,
+            WalletError::NotEmpty => "Wallet is not empty",
         }
     }
 
@@ -109,7 +115,9 @@ impl error::Error for WalletError {
             WalletError::ItemNotFound => None,
             WalletError::ItemAlreadyExists => None,
             WalletError::QueryError(_) => None,
-            WalletError::ImportError(_) => None,
+            WalletError::IOError(ref err) => Some(err),
+            WalletError::StructureError(_) => None,
+            WalletError::NotEmpty => None,
         }
     }
 }
@@ -134,14 +142,16 @@ impl ToErrorCode for WalletError {
             WalletError::ItemNotFound => ErrorCode::WalletItemNotFound,
             WalletError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
             WalletError::QueryError(_) => ErrorCode::WalletQueryError,
-            WalletError::ImportError(_) => ErrorCode::WalletImportError,
+            WalletError::IOError(_) => ErrorCode::WalletIOError,
+            WalletError::StructureError(_) => ErrorCode::WalletStructureError,
+            WalletError::NotEmpty => ErrorCode::WalletNotEmpty,
         }
     }
 }
 
 impl From<io::Error> for WalletError {
     fn from(err: io::Error) -> WalletError {
-        WalletError::CommonError(CommonError::IOError(err))
+        WalletError::IOError(err)
     }
 }
 
