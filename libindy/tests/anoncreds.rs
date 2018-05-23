@@ -1473,7 +1473,7 @@ mod medium_cases {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let res = AnoncredsUtils::issuer_create_credential_offer(wallet_handle, "unknown_cred_def_id");
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
         }
     }
 
@@ -1533,7 +1533,7 @@ mod medium_cases {
                                                                    &credential_offer,
                                                                    &credential_def,
                                                                    "invalid_master_secret_name");
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
         }
     }
 
@@ -1697,7 +1697,7 @@ mod medium_cases {
                                                           &AnoncredsUtils::schemas_for_proof(),
                                                           &AnoncredsUtils::cred_defs_for_proof(),
                                                           "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
         }
 
         #[test]

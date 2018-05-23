@@ -557,10 +557,6 @@ impl LedgerService {
                 Ok(reply)
         }
     }
-
-    fn get_req_id() -> u64 {
-        time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64
-    }
 }
 
 #[cfg(test)]
