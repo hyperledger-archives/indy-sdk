@@ -67,17 +67,17 @@ pub mod add_request_fees {
         let total_payments = _count_total_payments(&outputs_json);
 
         let err = if total_amount >= total_payments + fee {
-            match parse_req_id_from_request(req_json.clone()) {
+            match parse_req_id_from_request(&req_json) {
                 Err(ec) => return ec,
                 _ => ()
             };
             //we have enough money for this txn, give it back
             let seq_no = payment_ledger::add_txn(inputs_json.clone(), outputs_json.clone());
 
-            _process_inputs(inputs_json);
-            let infos: Vec<UTXOInfo> = _process_outputs(outputs_json, seq_no);
+            _process_inputs(&inputs_json);
+            let infos: Vec<UTXOInfo> = _process_outputs(&outputs_json, seq_no);
 
-            _save_response(infos, req_json.clone())
+            _save_response(&infos, &req_json)
         } else {
             //we don't have enough money, send GET_TXN transaction to callback and in response PaymentsInsufficientFundsError will be returned
             ledger::build_get_txn_request(
@@ -85,7 +85,7 @@ pub mod add_request_fees {
                 1,
                 Box::new(move |ec, res| {
                     let ec = if ec == ErrorCode::Success {
-                        _add_response(res.clone(), "INSUFFICIENT_FUNDS".to_string())
+                        _add_response(&res, "INSUFFICIENT_FUNDS")
                     } else { ec };
                     trace!("libnullpay::add_request_fees::handle >>");
                     _process_callback(cmd_handle, ec, res, cb);
@@ -121,9 +121,9 @@ pub mod build_get_utxo_request {
             1,
             Box::new(move |ec, res| {
                 let ec = if ec == ErrorCode::Success {
-                    let utxos = utxo_cache::get_utxos_by_payment_address(payment_address.clone());
-                    let infos: Vec<UTXOInfo> = utxos.into_iter().filter_map(|utxo| payment_ledger::get_utxo_info(utxo)).collect();
-                    _save_response(infos, res.clone())
+                    let utxos = utxo_cache::get_utxos_by_payment_address(&payment_address);
+                    let infos: Vec<UTXOInfo> = utxos.into_iter().filter_map(payment_ledger::get_utxo_info).collect();
+                    _save_response(&infos, &res)
                 } else { ec };
 
                 trace!("libnullpay::build_get_utxo_request::handle >>");
@@ -165,12 +165,12 @@ pub mod build_payment_req {
                     if total_balance >= total_payments {
                         let seq_no = payment_ledger::add_txn(inputs_json.clone(), outputs_json.clone());
 
-                        _process_inputs(inputs_json.clone());
-                        let infos = _process_outputs(outputs_json.clone(), seq_no);
+                        _process_inputs(&inputs_json);
+                        let infos = _process_outputs(&outputs_json, seq_no);
 
-                        _save_response(infos, res.clone())
+                        _save_response(&infos, &res)
                     } else {
-                        _add_response(res.clone(), "INSUFFICIENT_FUNDS".to_string());
+                        _add_response(&res, "INSUFFICIENT_FUNDS");
                         ErrorCode::Success
                     }
                 } else {
@@ -210,7 +210,7 @@ pub mod build_mint_req {
                                               let seq_no = payment_ledger::add_txn(vec![], outputs_json.clone());
 
                                               outputs_json.clone().into_iter().for_each(|output| {
-                                                  utxo_cache::add_utxo(output.payment_address, seq_no, output.amount);
+                                                  utxo_cache::add_utxo(&output.payment_address, seq_no, output.amount);
                                               });
                                           }
 
@@ -259,7 +259,7 @@ pub mod build_get_txn_fees_req {
                                               let info = config_ledger::get_all_fees();
 
                                               match to_string(&info).map_err(|_| ErrorCode::CommonInvalidState) {
-                                                  Ok(str) => _add_response(res.clone(), str),
+                                                  Ok(str) => _add_response(&res, &str),
                                                   Err(ec) => ec
                                               }
                                           } else { ec };
@@ -299,9 +299,9 @@ fn _process_callback(cmd_handle: i32, err: ErrorCode, response: String, cb: Opti
     }
 }
 
-fn _process_outputs(outputs: Vec<UTXOOutput>, seq_no: i32) -> Vec<UTXOInfo> {
+fn _process_outputs(outputs: &Vec<UTXOOutput>, seq_no: i32) -> Vec<UTXOInfo> {
     outputs.into_iter().map(|out| {
-        match utxo_cache::add_utxo(out.payment_address, seq_no, out.amount)
+        match utxo_cache::add_utxo(&out.payment_address, seq_no, out.amount)
             .map(|utxo| payment_ledger::get_utxo_info(utxo)) {
             Some(Some(utxo_info)) => utxo_info,
             _ => panic!("Some UTXO was not processed!")
@@ -309,20 +309,20 @@ fn _process_outputs(outputs: Vec<UTXOOutput>, seq_no: i32) -> Vec<UTXOInfo> {
     }).collect()
 }
 
-fn _process_inputs(inputs: Vec<String>) {
+fn _process_inputs(inputs: &Vec<String>) {
     inputs.into_iter().for_each(|s| {
         utxo_cache::remove_utxo(s);
     });
 }
 
-fn _save_response(infos: Vec<UTXOInfo>, request: String) -> ErrorCode {
-    match serialize_infos(infos) {
-        Ok(str) => _add_response(request, str),
+fn _save_response(infos: &Vec<UTXOInfo>, request: &str) -> ErrorCode {
+    match serialize_infos(&infos) {
+        Ok(str) => _add_response(request, &str),
         Err(ec) => ec
     }
 }
 
-fn _add_response(request: String, response: String) -> ErrorCode {
+fn _add_response(request: &str, response: &str) -> ErrorCode {
     match add_response(request, response) {
         Err(ec) => ec,
         _ => ErrorCode::Success
@@ -330,9 +330,9 @@ fn _add_response(request: String, response: String) -> ErrorCode {
 }
 
 fn _count_total_inputs(inputs: &Vec<String>) -> i32 {
-    inputs.clone().into_iter().filter_map(utxo_cache::get_balanse_of_utxo).fold(0, |acc, next| acc + next)
+    inputs.into_iter().filter_map(utxo_cache::get_balanse_of_utxo).fold(0, |acc, next| acc + next)
 }
 
 fn _count_total_payments(outputs: &Vec<UTXOOutput>) -> i32 {
-    outputs.clone().into_iter().fold(0, |acc, next| acc + next.amount)
+    outputs.into_iter().fold(0, |acc, next| acc + next.amount)
 }
