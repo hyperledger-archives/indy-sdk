@@ -43,6 +43,7 @@ use utils::domain::revocation_registry_definition::RevocationRegistryDefinitionV
 use utils::domain::revocation_registry::RevocationRegistryV1;
 use utils::domain::revocation_registry_delta::RevocationRegistryDeltaV1;
 
+use std::collections::HashMap;
 use std::thread;
 
 mod high_cases {
@@ -914,7 +915,6 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        #[ignore]
         fn indy_get_validator_info_request_works() {
             TestUtils::cleanup_storage();
 
@@ -924,9 +924,15 @@ mod high_cases {
             let (did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 
             let get_validator_info_request = LedgerUtils::build_get_validator_info_request(&did).unwrap();
-            let get_validator_info_response = LedgerUtils::submit_request(pool_handle, &get_validator_info_request).unwrap();
+            let get_validator_info_response = LedgerUtils::sign_and_submit_request(pool_handle,
+                                                                                   wallet_handle,
+                                                                                   &did,
+                                                                                   &get_validator_info_request).unwrap();
 
-            let get_validator_info_response: Reply<GetValidatorInfoResult> = serde_json::from_str(&get_validator_info_response).unwrap();
+            let get_validator_info_response: HashMap<String, String> = serde_json::from_str(&get_validator_info_response).unwrap();
+            for value in get_validator_info_response.values() {
+                serde_json::from_str::<Reply<GetValidatorInfoResult>>(value).unwrap();
+            }
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
