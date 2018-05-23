@@ -735,6 +735,7 @@ mod high_cases {
         }
     }
 
+    #[cfg(feature = "non_secrets_get_tests")]
     mod get_record {
         use super::*;
 
@@ -905,6 +906,7 @@ mod high_cases {
         }
     }
 
+    #[cfg(feature = "non_secrets_get_tests")]
     mod search {
         use super::*;
 

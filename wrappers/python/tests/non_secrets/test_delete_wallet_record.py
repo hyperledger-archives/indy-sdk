@@ -11,7 +11,7 @@ async def test_delete_wallet_record_works(wallet_handle):
     await non_secrets.add_wallet_record(wallet_handle, type_, id1, value1, tags1)
     await non_secrets.delete_wallet_record(wallet_handle, type_, id1)
     await non_secrets.add_wallet_record(wallet_handle, type_, id1, value1, tags1)
-s
+
 
 @pytest.mark.asyncio
 async def test_delete_wallet_record_works_for_twice(wallet_handle):
