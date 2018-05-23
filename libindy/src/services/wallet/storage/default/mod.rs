@@ -325,7 +325,7 @@ impl WalletStorage for SQLiteStorage {
                                   if options.fetch_value
                                       {Some(EncryptedValue::new(item.1, item.2))}
                                       else {None},
-                                  None,
+                                  if options.fetch_type {Some(type_.clone())} else { None },
                                   Some(tags))
             )
         }
@@ -334,7 +334,7 @@ impl WalletStorage for SQLiteStorage {
                                   if options.fetch_value
                                       {Some(EncryptedValue::new(item.1, item.2))}
                                       else {None},
-                                  None,
+                                  if options.fetch_type {Some(type_.clone())} else { None },
                                   None)
             )
         }
