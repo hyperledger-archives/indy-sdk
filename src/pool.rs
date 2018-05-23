@@ -20,7 +20,7 @@ impl Pool {
         let err = unsafe {
             pool::indy_create_pool_ledger_config(command_handle,
                                            pool_name.as_ptr(),
-                                           if pool_config.is_some() { pool_config_str.as_ptr() } else { null() },
+                                           opt_c_ptr!(pool_config, pool_config_str),
                                            cb)
         };
 
@@ -36,7 +36,7 @@ impl Pool {
         let err = unsafe {
             pool::indy_open_pool_ledger(command_handle,
                                   pool_name.as_ptr(),
-                                  if config.is_some() { config_str.as_ptr() } else { null() },
+                                  opt_c_ptr!(config, config_str),
                                   cb)
         };
 

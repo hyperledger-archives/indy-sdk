@@ -24,9 +24,9 @@ impl Wallet {
             wallet::indy_create_wallet(command_handle,
                                pool_name.as_ptr(),
                                wallet_name.as_ptr(),
-                               if xtype.is_some() { xtype_str.as_ptr() } else { null() },
-                               if config.is_some() { config_str.as_ptr() } else { null() },
-                               if credentials.is_some() { credentials_str.as_ptr() } else { null() },
+                               opt_c_ptr!(xtype, xtype_str),
+                               opt_c_ptr!(config, config_str),
+                               opt_c_ptr!(credentials, credentials_str),
                                cb)
         };
 
@@ -43,8 +43,8 @@ impl Wallet {
         let err = unsafe {
             wallet::indy_open_wallet(command_handle,
                              wallet_name.as_ptr(),
-                             if config.is_some() { config_str.as_ptr() } else { null() },
-                             if credentials.is_some() { credentials_str.as_ptr() } else { null() },
+                             opt_c_ptr!(config, config_str),
+                             opt_c_ptr!(credentials, credentials_str),
                              cb)
         };
 
