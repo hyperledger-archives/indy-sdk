@@ -15,6 +15,7 @@ extern {
     pub fn indy_set_key_metadata(command_handle: IndyHandle,
                                  wallet_handle: IndyHandle,
                                  verkey: *const c_char,
+                                 metadata: *const c_char,
                                  cb: Option<ResponseEmptyCB>) -> ErrorCode;
 
     #[no_mangle]
