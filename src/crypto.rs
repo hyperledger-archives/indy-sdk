@@ -49,7 +49,7 @@ pub struct Crypto {}
 
 impl Crypto {
     pub fn sign(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_u8();
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
         let signer_vk = c_str!(signer_vk);
         let err = unsafe {
@@ -75,7 +75,7 @@ impl Crypto {
     }
 
     pub fn auth_crypt(wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_u8();
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
         let sender_vk = c_str!(sender_vk);
         let recipient_vk = c_str!(recipient_vk);
@@ -90,7 +90,7 @@ impl Crypto {
     }
 
     pub fn auth_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Result<(String, Vec<u8>), ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_u8();
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_slice();
 
         let recipient_vk = c_str!(recipient_vk);
         let err = unsafe {
@@ -105,7 +105,7 @@ impl Crypto {
     }
 
     pub fn anon_crypt(wallet_handle: IndyHandle, recipient_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_u8();
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
         let recipient_vk = c_str!(recipient_vk);
         let err = unsafe {
@@ -121,7 +121,7 @@ impl Crypto {
     }
 
     pub fn anon_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Result<(String, Vec<u8>), ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_u8();
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_slice();
 
         let recipient_vk = c_str!(recipient_vk);
         let err = unsafe {
