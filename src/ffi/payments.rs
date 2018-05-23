@@ -81,13 +81,6 @@ extern {
                                         parse_get_txn_fees_response_callback: Option<ParseGetTxnFeesResponseCB>,
                                         cb: Option<EmptyResponseCB>) -> ErrorCode;
 
-//    #[no_mangle]
-//    pub fn indy_sign_multi_request(command_handle: i32,
-//                                   wallet_handle: i32,
-//                                   submitter_did: *const c_char,
-//                                   resp_json: *const c_char,
-//                                   cb: Option<PaymentResponseCB>) -> ErrorCode;
-
     #[no_mangle]
     pub fn indy_create_payment_address(command_handle: i32,
                                    wallet_handle: i32,

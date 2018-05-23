@@ -40,6 +40,14 @@ extern {
                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
+    pub fn indy_build_get_txn_request(command_handle: i32,
+                                      submitter_did: *const c_char,
+                                      seq_no: i32,
+                                      cb: Option<extern fn(xcommand_handle: i32,
+                                                           err: ErrorCode,
+                                                           request_json: *const c_char)>) -> ErrorCode;
+
+    #[no_mangle]
     pub fn indy_build_attrib_request(command_handle: i32,
                                  submitter_did: *const c_char,
                                  target_did: *const c_char,

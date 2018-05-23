@@ -1,10 +1,8 @@
 use super::ErrorCode;
 
-use std::os::raw::c_char;
-use std::ffi::{CString, CStr};
+use std::ffi::{CString};
 use utils;
 use ffi::payments;
-use callbacks::payments as callbacks;
 
 pub struct Payment {}
 
