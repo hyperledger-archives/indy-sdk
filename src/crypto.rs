@@ -1,7 +1,7 @@
 use super::{ErrorCode, IndyHandle};
 use std::ffi::CString;
 use utils;
-use indy::crypto;
+use ffi::crypto;
 
 pub struct Key {}
 

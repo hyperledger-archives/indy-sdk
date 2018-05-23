@@ -1,27 +1,60 @@
 use super::ErrorCode;
 
-use std::ffi::CString;
+use std::os::raw::c_char;
+use std::ffi::{CString, CStr};
 use utils;
-use indy::payments;
+use ffi::payments;
+use callbacks::payments as callbacks;
 
 pub struct Payment {}
 
 impl Payment {
-    pub fn sign_multi_request(wallet_handle: i32, submitter_did: &str, resp_json: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+//    pub fn make_payment_response_c_callback(f: &callbacks::PaymentResponseCallback) -> payments::PaymentResponseCB {
+//        extern "C" fn _callback(xcommand_handle: i32, err: ErrorCode, c_str: *const c_char) {
+//            let payment_address = unsafe { CStr::from_ptr(c_str).to_str().unwrap().to_string() };
+//            f(xcommand_handle, err, payment_address)
+//        }
+//        _callback
+//    }
+//
+//    pub fn make_create_payment_address_c_callback(f: &callbacks::CreatePaymentAddressCallback) -> payments::CreatePaymentAddressCB {
+//        extern "C" fn _callback(command_handle: i32, wallet_handle: i32, c_str: *const c_char, cb: Option<payments::PaymentResponseCB>) -> ErrorCode {
+//            let config = unsafe { CStr::from_ptr(c_str).to_str().unwrap().to_string() };
+//            f(command_handle, wallet_handle, config, cb)
+//        }
+//        _callback
+//    }
 
-        let submitter_did = CString::new(submitter_did).unwrap();
-        let resp_json = CString::new(resp_json).unwrap();
+//    pub fn register(payment_method: &str,
+//                    create_payment_address: callbacks::CreatePaymentAddressCallback,
+//                    add_request_fees: callbacks::AddRequestFeesCallback,
+//                    parse_response_with_fees: callbacks::ParseResponseWithFeesCallback,
+//                    build_get_utxo_request: callbacks::BuildGetUTXORequestCallback,
+//                    parse_get_utxo_response: callbacks::ParseGetUTXOResponseCallback,
+//                    build_payment_req: callbacks::BuildPaymentRequestCallback,
+//                    parse_payment_response: callbacks::ParsePaymentResponseCallback,
+//                    build_mint_req: callbacks::BuildMintRequestCallback,
+//                    build_set_txn_fees_req: callbacks::BuildSetTxnFeesRequestCallback,
+//                    build_get_txn_fees_req: callbacks::BuildGetTxnFeesRequestCallback,
+//                    parse_get_txn_fees_response: callbacks::ParseGetTxnFeesResponseCallback) -> Result<(), ErrorCode> {
+//
+//    }
 
-        let err = unsafe {
-            payments::indy_sign_multi_request(command_handle,
-                                              wallet_handle,
-                                              submitter_did.as_ptr(),
-                                              resp_json.as_ptr(), cb)
-        };
-
-        utils::results::result_to_one(err, receiver)
-    }
+//    pub fn sign_multi_request(wallet_handle: i32, submitter_did: &str, resp_json: &str) -> Result<String, ErrorCode> {
+//        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+//
+//        let submitter_did = CString::new(submitter_did).unwrap();
+//        let resp_json = CString::new(resp_json).unwrap();
+//
+//        let err = unsafe {
+//            payments::indy_sign_multi_request(command_handle,
+//                                              wallet_handle,
+//                                              submitter_did.as_ptr(),
+//                                              resp_json.as_ptr(), cb)
+//        };
+//
+//        utils::results::result_to_one(err, receiver)
+//    }
 
     pub fn create_payment_address(wallet_handle: i32, payment_method: &str, config: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
@@ -218,4 +251,3 @@ impl Payment {
         utils::results::result_to_one(err, receiver)
     }
 }
-
