@@ -9,21 +9,40 @@ use callbacks::payments as callbacks;
 pub struct Payment {}
 
 impl Payment {
-//    pub fn make_payment_response_c_callback(f: &callbacks::PaymentResponseCallback) -> payments::PaymentResponseCB {
-//        extern "C" fn _callback(xcommand_handle: i32, err: ErrorCode, c_str: *const c_char) {
-//            let payment_address = unsafe { CStr::from_ptr(c_str).to_str().unwrap().to_string() };
-//            f(xcommand_handle, err, payment_address)
-//        }
-//        _callback
-//    }
-//
-//    pub fn make_create_payment_address_c_callback(f: &callbacks::CreatePaymentAddressCallback) -> payments::CreatePaymentAddressCB {
-//        extern "C" fn _callback(command_handle: i32, wallet_handle: i32, c_str: *const c_char, cb: Option<payments::PaymentResponseCB>) -> ErrorCode {
-//            let config = unsafe { CStr::from_ptr(c_str).to_str().unwrap().to_string() };
-//            f(command_handle, wallet_handle, config, cb)
-//        }
-//        _callback
-//    }
+    pub fn register(payment_method: &str,
+                    create_payment_address: payments::CreatePaymentAddressCB,
+                    add_request_fees: payments::AddRequestFeesCB,
+                    parse_response_with_fees: payments::ParseResponseWithFeesCB,
+                    build_get_utxo_request: payments::BuildGetUTXORequestCB,
+                    parse_get_utxo_response: payments::ParseGetUTXOResponseCB,
+                    build_payment_req: payments::BuildPaymentRequestCB,
+                    parse_payment_response: payments::ParsePaymentResponseCB,
+                    build_mint_req: payments::BuildMintRequestCB,
+                    build_set_txn_fees_req: payments::BuildSetTxnFeesRequestCB,
+                    build_get_txn_fees_req: payments::BuildGetTxnFeesRequestCB,
+                    parse_get_txn_fees_response: payments::ParseGetTxnFeesResponseCB) -> Result<(), ErrorCode> {
+
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec();
+
+        let payment_method = CString::new(payment_method).unwrap();
+        let err = unsafe {
+            payments::indy_register_payment_method(command_handle,
+                                                    payment_method.as_ptr(),
+                                                    Some(create_payment_address),
+                                                    Some(add_request_fees),
+                                                    Some(parse_response_with_fees),
+                                                    Some(build_get_utxo_request),
+                                                    Some(parse_get_utxo_response),
+                                                    Some(build_payment_req),
+                                                    Some(parse_payment_response),
+                                                    Some(build_mint_req),
+                                                    Some(build_set_txn_fees_req),
+                                                    Some(build_get_txn_fees_req),
+                                                    Some(parse_get_txn_fees_response),
+                                                     cb)
+        };
+        utils::results::result_to_empty(err, receiver)
+    }
 
 //    pub fn register(payment_method: &str,
 //                    create_payment_address: callbacks::CreatePaymentAddressCallback,

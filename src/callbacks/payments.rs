@@ -9,10 +9,10 @@ pub type PaymentsMethodResponseCallback = extern fn(xcommand_handle: i32,
                                                     json: &str,
                                                     payment_method: &str);
 
-pub type CreatePaymentAddressCallback = extern fn(command_handle: i32,
-                                                  wallet_handle: i32,
+pub type CreatePaymentAddressCallback = extern fn(wallet_handle: i32,
                                                   config: &str,
-                                                  cb: Option<payments::PaymentResponseCB>) -> ErrorCode;
+                                                  ) -> Result<String, ErrorCode>;
+
 pub type AddRequestFeesCallback = extern fn(command_handle: i32,
                                             wallet_handle: i32,
                                             submitter_did: &str,
