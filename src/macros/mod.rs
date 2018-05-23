@@ -10,6 +10,12 @@ macro_rules! opt_c_str {
     }
 }
 
+macro_rules! opt_c_ptr {
+    ($x:ident, $y:ident) => {
+        if $x.is_some() { $y.as_ptr() } else { null() }
+    }
+}
+
 macro_rules! rust_str {
     ($x:ident) => {
         unsafe { CStr::from_ptr($x).to_str().unwrap().to_string() }

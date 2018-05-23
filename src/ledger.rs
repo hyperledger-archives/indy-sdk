@@ -107,9 +107,9 @@ impl Ledger {
             ledger::indy_build_nym_request(command_handle,
                                    submitter_did.as_ptr(),
                                    target_did.as_ptr(),
-                                   if verkey.is_some() { verkey_str.as_ptr() } else { null() },
-                                   if data.is_some() { data_str.as_ptr() } else { null() },
-                                   if role.is_some() { role_str.as_ptr() } else { null() },
+                                   opt_c_ptr!(verkey, verkey_str),
+                                   opt_c_ptr!(data, data_str),
+                                   opt_c_ptr!(role, role_str),
                                    cb)
         };
 
@@ -159,9 +159,9 @@ impl Ledger {
             ledger::indy_build_attrib_request(command_handle,
                                       submitter_did.as_ptr(),
                                       target_did.as_ptr(),
-                                      if hash.is_some() { hash_str.as_ptr() } else { null() },
-                                      if raw.is_some() { raw_str.as_ptr() } else { null() },
-                                      if enc.is_some() { enc_str.as_ptr() } else { null() },
+                                      opt_c_ptr!(hash, hash_str),
+                                      opt_c_ptr!(raw, raw_str),
+                                      opt_c_ptr!(enc, enc_str),
                                       cb)
         };
 
@@ -182,9 +182,9 @@ impl Ledger {
             ledger::indy_build_get_attrib_request(command_handle,
                                           submitter_did.as_ptr(),
                                           target_did.as_ptr(),
-                                          if raw.is_some() { raw_str.as_ptr() } else { null() },
-                                          if hash.is_some() { hash_str.as_ptr() } else { null() },
-                                          if enc.is_some() { enc_str.as_ptr() } else { null() },
+                                          opt_c_ptr!(raw, raw_str),
+                                          opt_c_ptr!(hash, hash_str),
+                                          opt_c_ptr!(enc, enc_str),
                                           cb)
         };
 
@@ -350,8 +350,8 @@ impl Ledger {
                                             action.as_ptr(),
                                             sha256.as_ptr(),
                                             timeout,
-                                            if schedule.is_some() { schedule_str.as_ptr() } else { null() },
-                                            if justification.is_some() { justification_str.as_ptr() } else { null() },
+                                            opt_c_ptr!(schedule, schedule_str),
+                                            opt_c_ptr!(justification, justification_str),
                                             reinstall,
                                             force,
                                             cb)
