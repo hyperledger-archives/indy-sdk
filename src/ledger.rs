@@ -3,7 +3,7 @@ use super::ErrorCode;
 use std::ffi::CString;
 use std::ptr::null;
 use utils;
-use indy::ledger;
+use ffi::ledger;
 
 pub struct Ledger {}
 

@@ -2,7 +2,7 @@ use super::{ErrorCode, IndyHandle};
 
 use std::ffi::CString;
 use utils;
-use indy::did;
+use ffi::did;
 
 pub struct Did {}
 

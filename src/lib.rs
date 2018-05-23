@@ -7,7 +7,8 @@ pub mod ledger;
 pub mod payments;
 pub mod pool;
 pub mod wallet;
-mod indy;
+pub mod callbacks;
+mod ffi;
 
 pub type IndyHandle = i32;
 
