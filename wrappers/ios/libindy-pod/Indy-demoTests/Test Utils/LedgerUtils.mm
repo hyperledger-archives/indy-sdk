@@ -392,7 +392,7 @@
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
-    
+
     [IndyLedger buildPoolRestartRequestWithSubmitterDid:submitterDid
                                                  action:action
                                                datetime:datetime
@@ -401,9 +401,9 @@
                                                  result = request;
                                                  [completionExpectation fulfill];
                                              }];
-    
+
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
-    
+
     if (resultJson) {*resultJson = result;}
     return err;
 }
@@ -644,6 +644,26 @@
                             submitterdid:(NSString *)submitterDid
                              requestJson:(NSString *)requestJson
                               resultJson:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+
+    [IndyLedger signRequest:requestJson submitterDid:submitterDid walletHandle:walletHandle completion:^(NSError *error, NSString *signResult) {
+        err = error;
+        result = signResult;
+        [completionExpectation fulfill];
+    }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = result;}
+    return err;
+}
+
+- (NSError *)multiSignRequestWithWalletHandle:(IndyHandle)walletHandle
+                                 submitterdid:(NSString *)submitterDid
+                                  requestJson:(NSString *)requestJson
+                                   resultJson:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;

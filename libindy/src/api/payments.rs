@@ -464,6 +464,8 @@ pub extern fn indy_add_request_fees(command_handle: i32,
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
+    trace!("enter add fees api");
+
     let result =
         CommandExecutor::instance().send(
             Command::Payments(
@@ -477,6 +479,7 @@ pub extern fn indy_add_request_fees(command_handle: i32,
                         let (err, req_with_fees_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
                         let req_with_fees_json = CStringUtils::string_to_cstring(req_with_fees_json);
                         let payment_method = CStringUtils::string_to_cstring(payment_method);
+                        trace!("exit add fees api");
                         cb(command_handle, err, req_with_fees_json.as_ptr(), payment_method.as_ptr());
                     }))
             ));

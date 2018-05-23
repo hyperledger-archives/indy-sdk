@@ -17,7 +17,7 @@ build = "build.rs"
 [lib]
 name = "indy"
 path = "src/lib.rs"
-crate-type = ["staticlib","rlib", "dylib"]
+crate-type = ["staticlib","rlib", "cdylib"]
 
 [features]
 default = ["box_sodium", "sealedbox_sodium", "base58_rust_base58", "xsalsa20_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool", "revocation_tests"]
