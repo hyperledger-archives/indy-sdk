@@ -561,6 +561,8 @@ impl LedgerUtils {
                 let res = mem::transmute(&rev_reg_id as &str);
                 mem::forget(rev_reg_id);
                 REV_REG_DEF_ID = res;
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
             });
 
             (SCHEMA_ID, CRED_DEF_ID, REV_REG_DEF_ID)
