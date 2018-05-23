@@ -11,10 +11,10 @@ pub fn create_addresses(cfgs: Vec<&str>, wallet_handle: i32, payment_method: &st
     }).collect()
 }
 
-pub fn mint_tokens(addresses: Vec<(String, i32, Option<&str>)>, wallet_handle: i32, pool_handle: i32, payment_method: &str, submitter_did: &str){
+pub fn mint_tokens(addresses: Vec<(String, i32, Option<&str>)>, wallet_handle: i32, pool_handle: i32, submitter_did: &str){
     let mint: Vec<UTXOOutput> = addresses.into_iter().map(|(payment_address, amount, extra)| {
         UTXOOutput {
-            payment_address: payment_address,
+            payment_address,
             amount,
             extra: extra.map(|s| s.to_string()),
         }
@@ -22,8 +22,8 @@ pub fn mint_tokens(addresses: Vec<(String, i32, Option<&str>)>, wallet_handle: i
 
     let outputs = serde_json::to_string(&mint).unwrap();
 
-    let (req, payment_method) = payments::build_mint_req(wallet_handle, submitter_did, outputs.as_str()).unwrap();
-    let mint_resp = ledger::submit_request(pool_handle, req.as_str()).unwrap();
+    let (req, _) = payments::build_mint_req(wallet_handle, submitter_did, outputs.as_str()).unwrap();
+    ledger::submit_request(pool_handle, req.as_str()).unwrap();
 }
 
 pub fn get_utxos_with_balance(payment_addresses: Vec<String>, wallet_handle: i32, pool_handle: i32, submitter_did: &str) -> HashMap<String, Vec<UTXOInfo>> {
