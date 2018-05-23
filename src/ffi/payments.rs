@@ -11,54 +11,58 @@ pub type PaymentsMethodResponseCB = extern fn(xcommand_handle: i32,
                                                     json: *const c_char,
                                                     payment_method: *const c_char);
 
+pub type PaymentResponseApiCB = extern fn(xcommand_handle: i32,
+                                             err: ErrorCode,
+                                             json: *const c_char) -> ErrorCode;
+
 pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
                                                   wallet_handle: i32,
                                                   config: *const c_char,
-                                                  cb: Option<PaymentResponseCB>) -> ErrorCode;
+                                                  cb: Option<PaymentResponseApiCB>) -> ErrorCode;
 pub type AddRequestFeesCB = extern fn(command_handle: i32,
                                             wallet_handle: i32,
                                             submitter_did: *const c_char,
                                             req_json: *const c_char,
                                             inputs_json: *const c_char,
                                             outputs_json: *const c_char,
-                                            cb: Option<PaymentResponseCB>) -> ErrorCode;
+                                            cb: Option<PaymentResponseApiCB>) -> ErrorCode;
 pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
                                                    resp_json: *const c_char,
-                                                   cb: Option<PaymentResponseCB>) -> ErrorCode;
+                                                   cb: Option<PaymentResponseApiCB>) -> ErrorCode;
 pub type BuildGetUTXORequestCB = extern fn(command_handle: i32,
                                                  wallet_handle: i32,
                                                  submitter_did: *const c_char,
                                                  payment_address: *const c_char,
-                                                 cb: Option<PaymentResponseCB>) -> ErrorCode;
+                                                 cb: Option<PaymentResponseApiCB>) -> ErrorCode;
 pub type ParseGetUTXOResponseCB = extern fn(command_handle: i32,
                                                   resp_json: *const c_char,
-                                                  cb: Option<PaymentResponseCB>) -> ErrorCode;
+                                                  cb: Option<PaymentResponseApiCB>) -> ErrorCode;
 pub type BuildPaymentRequestCB = extern fn(command_handle: i32,
                                                  wallet_handle: i32,
                                                  submitter_did: *const c_char,
                                                  inputs_json: *const c_char,
                                                  outputs_json: *const c_char,
-                                                 cb: Option<PaymentResponseCB>) -> ErrorCode;
+                                                 cb: Option<PaymentResponseApiCB>) -> ErrorCode;
 pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
                                                   resp_json: *const c_char,
-                                                  cb: Option<PaymentResponseCB>) -> ErrorCode;
+                                                  cb: Option<PaymentResponseApiCB>) -> ErrorCode;
 pub type BuildMintRequestCB = extern fn(command_handle: i32,
                                               wallet_handle: i32,
                                               submitter_did: *const c_char,
                                               outputs_json: *const c_char,
-                                              cb: Option<PaymentResponseCB>) -> ErrorCode;
+                                              cb: Option<PaymentResponseApiCB>) -> ErrorCode;
 pub type BuildSetTxnFeesRequestCB = extern fn(command_handle: i32,
                                                     wallet_handle: i32,
                                                     submitter_did: *const c_char,
                                                     fees_json: *const c_char,
-                                                    cb: Option<PaymentResponseCB>) -> ErrorCode;
+                                                    cb: Option<PaymentResponseApiCB>) -> ErrorCode;
 pub type BuildGetTxnFeesRequestCB = extern fn(command_handle: i32,
                                                     wallet_handle: i32,
                                                     submitter_did: *const c_char,
-                                                    cb: Option<PaymentResponseCB>) -> ErrorCode;
+                                                    cb: Option<PaymentResponseApiCB>) -> ErrorCode;
 pub type ParseGetTxnFeesResponseCB = extern fn(command_handle: i32,
                                                      resp_json: *const c_char,
-                                                     cb: Option<PaymentResponseCB>) -> ErrorCode;
+                                                     cb: Option<PaymentResponseApiCB>) -> ErrorCode;
 
 extern {
     #[no_mangle]
