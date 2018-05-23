@@ -238,6 +238,52 @@ mod high_cases {
             wallet::close_wallet(wallet_handle).unwrap();
             test_utils::cleanup_storage();
         }
+
+        #[test]
+        pub fn add_request_works_for_insufficient_funds() {
+            test_utils::cleanup_storage();
+            plugin::init_plugin();
+            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
+
+            let (trustee_did, _) = did::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (my_did, my_vk) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let nym_req = ledger::build_nym_request(&trustee_did, &my_did, &my_vk, "aaa", "TRUSTEE").unwrap();
+
+            let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
+
+            let mint: Vec<(String, i32, Option<&str>)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, i as i32, None)).collect();
+            payments_utils::mint_tokens(mint, wallet_handle, pool_handle, my_did.as_str());
+
+            payments_utils::set_request_fees(wallet_handle, pool_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME, r#"{"1": 10, "101": 10}"#);
+
+            let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
+
+            let addr_1 = addresses.get(0).unwrap();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let inputs = serde_json::to_string(&utxos_1).unwrap();
+
+            let outputs = vec![UTXOOutput{
+                payment_address: addresses.get(1).unwrap().to_string(),
+                amount: 19,
+                extra: None
+            }, UTXOOutput {
+                payment_address: addresses.get(0).unwrap().to_string(),
+                amount: 1,
+                extra: None
+            }];
+            let outputs = serde_json::to_string(&outputs).unwrap();
+
+            let (nym_req_with_fees, payment_method) = payments::add_request_fees(wallet_handle, SUBMITTER_DID, nym_req.as_str(), inputs.as_str(), outputs.as_str()).unwrap();
+            let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, trustee_did.as_str(), nym_req_with_fees.as_str()).unwrap();
+            let nym_resp_parsed_err = payments::parse_response_with_fees(payment_method.as_str(), nym_resp.as_str()).unwrap_err();
+
+            assert_eq!(nym_resp_parsed_err, ErrorCode::PaymentInsufficientFundsError);
+
+            pool::close(pool_handle).unwrap();
+            wallet::close_wallet(wallet_handle).unwrap();
+            test_utils::cleanup_storage();
+        }
     }
 
     mod payment {
@@ -311,6 +357,48 @@ mod high_cases {
             wallet::close_wallet(wallet_handle).unwrap();
             test_utils::cleanup_storage();
         }
+
+        #[test]
+        pub fn payments_work_for_insufficient_funds() {
+            test_utils::cleanup_storage();
+            plugin::init_plugin();
+            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
+
+            let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
+
+            let mint: Vec<(String, i32, Option<&str>)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, ((i+2)*10) as i32, None)).collect();
+            payments_utils::mint_tokens(mint, wallet_handle, pool_handle, SUBMITTER_DID);
+
+            let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
+
+            let addr_1 = addresses.get(0).unwrap();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let inputs = serde_json::to_string(&utxos_1).unwrap();
+
+            let outputs = vec![UTXOOutput{
+                payment_address: addresses.get(1).unwrap().to_string(),
+                amount: 119,
+                extra: None
+            }, UTXOOutput {
+                payment_address: addresses.get(0).unwrap().to_string(),
+                amount: 1,
+                extra: None
+            }];
+            let outputs = serde_json::to_string(&outputs).unwrap();
+
+            let (payment_req, payment_method) = payments::build_payment_req(wallet_handle, SUBMITTER_DID, inputs.as_str(), outputs.as_str()).unwrap();
+            let payment_resp = ledger::submit_request(pool_handle, payment_req.as_str()).unwrap();
+            let payment_err = payments::parse_payment_response(payment_method.as_str(), payment_resp.as_str()).unwrap_err();
+            assert_eq!(payment_err, ErrorCode::PaymentInsufficientFundsError);
+
+            let utxos_after = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
+            assert_eq!(utxos, utxos_after);
+
+            pool::close(pool_handle).unwrap();
+            wallet::close_wallet(wallet_handle).unwrap();
+            test_utils::cleanup_storage();
+        }
     }
 
     mod fees {
@@ -369,52 +457,6 @@ mod medium_cases {
     
     mod add_request_fees {
         use super::*;
-        
-        #[test]
-        pub fn add_request_works_for_insufficient_funds() {
-            test_utils::cleanup_storage();
-            plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
-            let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
-
-            let (trustee_did, _) = did::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
-            let (my_did, my_vk) = did::create_and_store_my_did(wallet_handle, None).unwrap();
-            let nym_req = ledger::build_nym_request(&trustee_did, &my_did, &my_vk, "aaa", "TRUSTEE").unwrap();
-
-            let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
-
-            let mint: Vec<(String, i32, Option<&str>)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, i as i32, None)).collect();
-            payments_utils::mint_tokens(mint, wallet_handle, pool_handle, my_did.as_str());
-
-            payments_utils::set_request_fees(wallet_handle, pool_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME, r#"{"1": 10, "101": 10}"#);
-
-            let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
-
-            let addr_1 = addresses.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
-            let inputs = serde_json::to_string(&utxos_1).unwrap();
-
-            let outputs = vec![UTXOOutput{
-                payment_address: addresses.get(1).unwrap().to_string(),
-                amount: 19,
-                extra: None
-            }, UTXOOutput {
-                payment_address: addresses.get(0).unwrap().to_string(),
-                amount: 1,
-                extra: None
-            }];
-            let outputs = serde_json::to_string(&outputs).unwrap();
-
-            let (nym_req_with_fees, payment_method) = payments::add_request_fees(wallet_handle, SUBMITTER_DID, nym_req.as_str(), inputs.as_str(), outputs.as_str()).unwrap();
-            let nym_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, trustee_did.as_str(), nym_req_with_fees.as_str()).unwrap();
-            let nym_resp_parsed_err = payments::parse_response_with_fees(payment_method.as_str(), nym_resp.as_str()).unwrap_err();
-
-            assert_eq!(nym_resp_parsed_err, ErrorCode::PaymentInsufficientFundsError);
-
-            pool::close(pool_handle).unwrap();
-            wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
-        }
         
         #[test]
         pub fn add_request_fees_works_for_request_without_operation() {
@@ -519,51 +561,4 @@ mod medium_cases {
             test_utils::cleanup_storage();
         }
     }
-    
-    mod payment {
-        use super::*;
-        
-        #[test]
-        pub fn payments_work_for_insufficient_funds() {
-            test_utils::cleanup_storage();
-            plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
-            let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
-
-            let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
-
-            let mint: Vec<(String, i32, Option<&str>)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, ((i+2)*10) as i32, None)).collect();
-            payments_utils::mint_tokens(mint, wallet_handle, pool_handle, SUBMITTER_DID);
-
-            let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
-
-            let addr_1 = addresses.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
-            let inputs = serde_json::to_string(&utxos_1).unwrap();
-
-            let outputs = vec![UTXOOutput{
-                payment_address: addresses.get(1).unwrap().to_string(),
-                amount: 119,
-                extra: None
-            }, UTXOOutput {
-                payment_address: addresses.get(0).unwrap().to_string(),
-                amount: 1,
-                extra: None
-            }];
-            let outputs = serde_json::to_string(&outputs).unwrap();
-
-            let (payment_req, payment_method) = payments::build_payment_req(wallet_handle, SUBMITTER_DID, inputs.as_str(), outputs.as_str()).unwrap();
-            let payment_resp = ledger::submit_request(pool_handle, payment_req.as_str()).unwrap();
-            let payment_err = payments::parse_payment_response(payment_method.as_str(), payment_resp.as_str()).unwrap_err();
-            assert_eq!(payment_err, ErrorCode::PaymentInsufficientFundsError);
-
-            let utxos_after = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
-            assert_eq!(utxos, utxos_after);
-
-            pool::close(pool_handle).unwrap();
-            wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
-        }
-    }
-
 }

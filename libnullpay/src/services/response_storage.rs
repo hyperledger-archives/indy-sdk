@@ -7,15 +7,15 @@ lazy_static! {
     static ref RESPONSES: Mutex<HashMap<String, String>> = Default::default();
 }
 
-pub fn add_response(request: String, response: String) -> Result<(), ErrorCode> {
+pub fn add_response(request: &str, response: &str) -> Result<(), ErrorCode> {
     let req_id = parse_req_id_from_request(request)?;
     let mut responses = RESPONSES.lock().unwrap();
-    responses.insert(req_id.to_string(), response);
+    responses.insert(req_id.to_string(), response.to_string());
     Ok(())
 }
 
-pub fn parse_req_id_from_request(request: String) -> Result<u64, ErrorCode> {
-    let val = str_to_val(request.as_str())?;
+pub fn parse_req_id_from_request(request: &str) -> Result<u64, ErrorCode> {
+    let val = str_to_val(request)?;
     let object = val_to_obj(&val)?;
     let req_id = get_val_from_obj(object, "reqId")?;
     val_to_u64(req_id)
