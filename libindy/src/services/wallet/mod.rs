@@ -566,9 +566,9 @@ impl WalletRecord {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RecordOptions {
-    fetch_type: Option<bool>,
-    fetch_value: Option<bool>,
-    fetch_tags: Option<bool>
+    pub fetch_type: Option<bool>,
+    pub fetch_value: Option<bool>,
+    pub fetch_tags: Option<bool>
 }
 
 impl JsonEncodable for RecordOptions {}
@@ -625,11 +625,11 @@ impl WalletSearch {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchOptions {
-    retrieve_records: Option<bool>,
-    retrieve_total_count: Option<bool>,
-    retrieve_type: Option<bool>,
-    retrieve_value: Option<bool>,
-    retrieve_tags: Option<bool>
+    pub retrieve_records: Option<bool>,
+    pub retrieve_total_count: Option<bool>,
+    pub retrieve_type: Option<bool>,
+    pub retrieve_value: Option<bool>,
+    pub retrieve_tags: Option<bool>
 }
 
 impl SearchOptions {
@@ -640,6 +640,18 @@ impl SearchOptions {
             retrieve_type: Some(true),
             retrieve_value: Some(true),
             retrieve_tags: Some(true)
+        };
+
+        options.to_json().unwrap()
+    }
+
+    pub fn id_value() -> String {
+        let options = SearchOptions {
+            retrieve_records: Some(true),
+            retrieve_total_count: Some(true),
+            retrieve_type: Some(true),
+            retrieve_value: Some(true),
+            retrieve_tags: Some(false)
         };
 
         options.to_json().unwrap()

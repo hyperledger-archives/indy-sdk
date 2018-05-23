@@ -94,7 +94,6 @@ mod high_cases {
         use super::*;
 
         #[test]
-        #[ignore]
         fn list_payment_address_works() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
@@ -449,7 +448,6 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        #[ignore]
         fn list_payment_addresses_works_for_nonexistant_wallet() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();

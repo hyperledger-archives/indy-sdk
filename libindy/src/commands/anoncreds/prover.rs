@@ -302,7 +302,7 @@ impl ProverCommandExecutor {
 
         let mut credentials_search =
             self.wallet_service.search_indy_records::<Credential>(wallet_handle,
-                                                                  r#"{"$not": {"impossible_tag#FIXME": "FIXME"}}"# /* TODO FIXME update API and remove this hack. Or re-implement logic below.*/,
+                                                                  "{}",
                                                                   &RecordOptions::id_value())?;
 
         let mut credentials_info: Vec<CredentialInfo> = Vec::new();

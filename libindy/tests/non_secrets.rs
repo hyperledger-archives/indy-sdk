@@ -749,7 +749,7 @@ mod high_cases {
             let record = NonSecretsUtils::get_wallet_record(wallet_handle, TYPE, ID, OPTIONS_EMPTY).unwrap();
             let record: WalletRecord = serde_json::from_str(&record).unwrap();
 
-            let expected_record = WalletRecord { id: ID.to_string(), value: Some(VALUE.to_string()), tags: Some(TAGS_EMPTY.to_string()), type_: None };
+            let expected_record = WalletRecord { id: ID.to_string(), value: Some(VALUE.to_string()), tags: None, type_: None };
             assert_eq!(expected_record, record);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -766,6 +766,7 @@ mod high_cases {
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
             let options = json!({
+                "retrieveType": false,
                 "retrieveValue": false,
                 "retrieveTags": false
             }).to_string();
@@ -790,6 +791,7 @@ mod high_cases {
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
             let options = json!({
+                "retrieveType": false,
                 "retrieveValue": true,
                 "retrieveTags": false
             }).to_string();
@@ -814,6 +816,7 @@ mod high_cases {
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
             let options = json!({
+                "retrieveType": false,
                 "retrieveValue": false,
                 "retrieveTags": true
             }).to_string();
@@ -878,7 +881,7 @@ mod high_cases {
 
             let options = "not_json";
             let res = NonSecretsUtils::get_wallet_record(wallet_handle, TYPE, ID, options);
-            assert_eq!(ErrorCode::WalletStorageError, res.unwrap_err());
+            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
