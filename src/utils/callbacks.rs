@@ -9,7 +9,6 @@ use std::slice;
 use std::ffi::CStr;
 use std::sync::Mutex;
 use std::sync::mpsc::{channel, Receiver};
-use callbacks::payments::{PaymentResponseCallback, CreatePaymentAddressCallback};
 
 pub fn _closure_to_cb_ec() -> (Receiver<ErrorCode>, i32,
                                Option<extern fn(command_handle: i32,

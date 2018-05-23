@@ -1,5 +1,4 @@
 use ErrorCode;
-use ffi::payments;
 
 pub type PaymentResponseCallback = extern fn(xcommand_handle: i32,
                                              err: ErrorCode,
