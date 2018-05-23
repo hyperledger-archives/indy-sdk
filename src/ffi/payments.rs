@@ -103,6 +103,12 @@ extern {
                              cb: Option<PaymentsMethodResponseCB>) -> ErrorCode;
 
     #[no_mangle]
+    pub fn indy_parse_response_with_fees(command_handle: i32,
+                                         payment_method: *const c_char,
+                                         resp_json: *const c_char,
+                                         cb: Option<PaymentResponseCB>) -> ErrorCode;
+
+    #[no_mangle]
     pub fn indy_build_get_utxo_request(command_handle: i32,
                                        wallet_handle: i32,
                                        submitter_did: *const c_char,
