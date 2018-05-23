@@ -12,4 +12,4 @@ Package: libnullpay
 Architecture: amd64
 Depends: libindy
 Suggests: build-essential
-Description: TODO
+Description: Simple payment plugin
