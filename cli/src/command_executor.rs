@@ -1,4 +1,5 @@
 extern crate rpassword;
+extern crate libloading;
 
 use unescape::unescape;
 
@@ -140,6 +141,7 @@ pub struct CommandContext {
     is_exit: RefCell<bool>,
     int_values: RefCell<HashMap<&'static str, i32>>,
     string_values: RefCell<HashMap<&'static str, String>>,
+    plugins: RefCell<HashMap<String, libloading::Library>>,
 }
 
 #[allow(dead_code)] //FIXME
@@ -151,6 +153,7 @@ impl CommandContext {
             is_exit: RefCell::new(false),
             int_values: RefCell::new(HashMap::new()),
             string_values: RefCell::new(HashMap::new()),
+            plugins: RefCell::new(HashMap::new()),
         }
     }
 
@@ -209,6 +212,11 @@ impl CommandContext {
 
     pub fn get_string_value(&self, key: &'static str) -> Option<String> {
         self.string_values.borrow().get(key).map(String::to_owned)
+    }
+
+    pub fn add_plugin(&self, plugin_name: &str, plugin: libloading::Library) {
+        //TODO check already exists. Also check libindy
+        self.plugins.borrow_mut().insert(plugin_name.to_string(), plugin);
     }
 }
 
@@ -345,6 +353,24 @@ impl CommandExecutor {
         completes
     }
 
+    fn rest_command_params(command: &Command, params: &Vec<&str>, word: &str) -> Vec<(String, char)> {
+        let mut completes: Vec<(String, char)> = Vec::new();
+
+        let command_params = command
+            .metadata()
+            .params();
+
+        let param_names: Vec<(String, char)> = command_params
+            .iter()
+            .filter(|param_meta| !params.contains(&param_meta.name) && param_meta.name.starts_with(word))
+            .map(|param_meta| ((*param_meta.name).to_owned(), '='))
+            .collect();
+
+        completes.extend(param_names);
+
+        completes
+    }
+
     fn command_names(commands: &HashMap<&'static str, Command>, word: &str) -> Vec<(String, char)> {
         commands
             .iter()
@@ -403,6 +429,10 @@ impl CommandExecutor {
             }
             (Some(first_word), Some(second_word), None) => {
                 match (first_word, second_word) {
+                    (_, sub_command) if sub_command == "help" => {}
+                    (command, params) if self.commands.contains_key(command) => {
+                        completes.extend(CommandExecutor::rest_command_params(&self.commands[command], &vec![params], word));
+                    }
                     (command, sub_command) if self.grouped_commands.contains_key(command) &&
                         CommandExecutor::is_subcommand(&self.grouped_commands, command, sub_command) => {
                         let (_, ref commands) = self.grouped_commands[command];
@@ -420,6 +450,14 @@ impl CommandExecutor {
                     _ => {}
                 }
             }
+            (Some(first_word), None, Some(params)) => {
+                match (first_word, &params) {
+                    (command, params) if self.commands.contains_key(command) => {
+                        completes.extend(CommandExecutor::rest_command_params(&self.commands[command], params, word));
+                    }
+                    _ => {}
+                }
+            }
             (Some(first_word), Some(second_word), Some(params)) => {
                 match (first_word, second_word, &params) {
                     (_, _, ref params) if "help".starts_with(params[0]) => {
@@ -431,17 +469,7 @@ impl CommandExecutor {
                         CommandExecutor::is_subcommand(&self.grouped_commands, command, sub_command) => {
                         let (_, ref commands) = self.grouped_commands[command];
                         let sub_command = commands.get(sub_command).unwrap();
-                        let command_params = sub_command
-                            .metadata()
-                            .params();
-
-                        let param_names: Vec<(String, char)> = command_params
-                            .iter()
-                            .filter(|param_meta| !params.contains(&param_meta.name) && param_meta.name.starts_with(word))
-                            .map(|param_meta| ((*param_meta.name).to_owned(), '='))
-                            .collect();
-
-                        completes.extend(param_names);
+                        completes.extend(CommandExecutor::rest_command_params(&sub_command, params, word));
                     }
                     _ => {}
                 }
@@ -714,10 +742,17 @@ impl CommandExecutor {
     fn _split_arguments(s: &str) -> (Option<&str>, Option<&str>, Option<Vec<&str>>) {
         let mut parts = s.trim().split_whitespace();
         let first_word = parts.next();
-        let second_word = parts.next();
-        let params = parts
+        let mut second_word = parts.next();
+        let mut params = parts
             .map(|s| s.split("=").collect::<Vec<&str>>()[0])
             .collect::<Vec<&str>>();
+
+        if let Some(s_word) = second_word {
+            if s_word.contains("=") {
+                params.insert(0, s_word.split("=").collect::<Vec<&str>>()[0]);
+                second_word = None;
+            }
+        }
 
         (first_word, second_word, if params.is_empty() { None } else { Some(params) })
     }

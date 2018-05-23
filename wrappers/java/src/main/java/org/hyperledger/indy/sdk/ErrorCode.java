@@ -90,6 +90,16 @@ public enum ErrorCode {
 	 */
 	CommonIOError(114),
 
+	/**
+	 * Caller passed invalid value as param 13 (null, invalid json and etc..)
+	 */
+	CommonInvalidParam13(115),
+
+	/**
+	 * Caller passed invalid value as param 14 (null, invalid json and etc..)
+	 */
+	CommonInvalidParam14(116),
+
 	// Wallet errors
 	 
 	/**
@@ -155,6 +165,11 @@ public enum ErrorCode {
 	LedgerNoConsensusError(303),
 
 	/**
+	 * Attempt to parse invalid transaction response
+	 */
+	LedgerInvalidTransaction(304),
+
+	/**
 	 * Attempt to send transaction without the necessary privileges
 	 */
 	LedgerSecurityError(305),
@@ -179,18 +194,8 @@ public enum ErrorCode {
 	/**
 	 * ???
 	 */
-	AnoncredsInvalidUserRevocIndex(401),
+	AnoncredsInvalidUserRevocId(401),
 
-	/**
-	 * ???
-	 */
-	AnoncredsAccumulatorIsFull(402),
-
-	/**
-	 * ???
-	 */
-	AnoncredsNotIssuedError(403),
- 
 	/**
 	 * Attempt to generate master secret with dupplicated name
 	 */
@@ -221,7 +226,23 @@ public enum ErrorCode {
 	/**
 	 * Attempt to create duplicate did.
 	 */
-	DidAlreadyExistsError(600);
+	DidAlreadyExistsError(600),
+
+	/**
+	 * Unknown payment method has been called
+	 */
+	UnknownPaymentMethod(700),
+
+	/**
+	 * No method were scraped from inputs/outputs or more than one were scraped
+	 */
+	IncompatiblePaymentError(701),
+
+	/**
+	 * Insufficient funds on inputs
+	 */
+	InsufficientFundsError(702),
+	;
 
 	private int value;
 	private static Map<Integer, ErrorCode> map = new HashMap<Integer, ErrorCode>();

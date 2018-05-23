@@ -44,6 +44,8 @@ impl CryptoService {
     }
 
     pub fn create_key(&self, key_info: &KeyInfo) -> Result<Key, CryptoError> {
+        trace!("create_key >>> key_info: {:?}", key_info);
+
         let crypto_type_name = key_info.crypto_type
             .as_ref()
             .map(String::as_str)
@@ -59,18 +61,24 @@ impl CryptoService {
 
         let seed = self.convert_seed(key_info.seed.as_ref().map(String::as_ref))?;
         let (vk, sk) = crypto_type.create_key(seed.as_ref().map(Vec::as_slice))?;
-        let vk = Base58::encode(&vk);
+        let mut vk = Base58::encode(&vk);
         let sk = Base58::encode(&sk);
 
         if !crypto_type_name.eq(DEFAULT_CRYPTO_TYPE) {
             // Use suffix with crypto type name to store crypto type inside of vk
-            let vk = format!("{}:{}", vk, crypto_type_name);
+            vk = format!("{}:{}", vk, crypto_type_name);
         }
 
-        Ok(Key::new(vk, sk))
+        let key = Key::new(vk, sk);
+
+        trace!("create_key <<< key: {:?}", key);
+
+        Ok(key)
     }
 
     pub fn create_my_did(&self, my_did_info: &MyDidInfo) -> Result<(Did, Key), CryptoError> {
+        trace!("create_my_did >>> my_did_info: {:?}", my_did_info);
+
         let crypto_type_name = my_did_info.crypto_type
             .as_ref()
             .map(String::as_str)
@@ -96,18 +104,24 @@ impl CryptoService {
         };
 
         let did = Base58::encode(&did);
-        let vk = Base58::encode(&vk);
+        let mut vk = Base58::encode(&vk);
         let sk = Base58::encode(&sk);
 
         if !crypto_type_name.eq(DEFAULT_CRYPTO_TYPE) {
             // Use suffix with crypto type name to store crypto type inside of vk
-            let vk = format!("{}:{}", vk, crypto_type_name);
+            vk = format!("{}:{}", vk, crypto_type_name);
         }
 
-        Ok((Did::new(did, vk.clone()), Key::new(vk, sk)))
+        let did = (Did::new(did, vk.clone()), Key::new(vk, sk));
+
+        trace!("create_my_did <<< did: {:?}", did);
+
+        Ok(did)
     }
 
     pub fn create_their_did(&self, their_did_info: &TheirDidInfo) -> Result<Did, CryptoError> {
+        trace!("create_their_did >>> their_did_info: {:?}", their_did_info);
+
         // Check did is correct Base58
         Base58::decode(&their_did_info.did)?;
 
@@ -116,12 +130,16 @@ impl CryptoService {
 
         self.validate_key(&verkey)?;
 
-        let did = Did::new(their_did_info.did.clone(),
-                           verkey);
-        Ok(did)
+        let their_did = Did::new(their_did_info.did.clone(), verkey);
+
+        trace!("create_their_did <<< their_did: {:?}", their_did);
+
+        Ok(their_did)
     }
 
     pub fn sign(&self, my_key: &Key, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        trace!("sign >>> my_key: {:?}, doc: {:?}", my_key, doc);
+
         let crypto_type_name = if my_key.verkey.contains(":") {
             let splits: Vec<&str> = my_key.verkey.split(":").collect();
             splits[1]
@@ -140,10 +158,14 @@ impl CryptoService {
         let my_sk = Base58::decode(my_key.signkey.as_str())?;
         let signature = crypto_type.sign(&my_sk, doc)?;
 
+        trace!("sign <<< signature: {:?}", signature);
+
         Ok(signature)
     }
 
     pub fn verify(&self, their_vk: &str, msg: &[u8], signature: &[u8]) -> Result<bool, CryptoError> {
+        trace!("verify >>> their_vk: {:?}, msg: {:?}, signature: {:?}", their_vk, msg, signature);
+
         let (their_vk, crypto_type_name) = if their_vk.contains(":") {
             let splits: Vec<&str> = their_vk.split(":").collect();
             (splits[0], splits[1])
@@ -160,21 +182,33 @@ impl CryptoService {
 
         let their_vk = Base58::decode(&their_vk)?;
 
-        Ok(crypto_type.verify(&their_vk, msg, signature)?)
+        let valid = crypto_type.verify(&their_vk, msg, signature)?;
+
+        trace!("verify <<< valid: {:?}", valid);
+
+        Ok(valid)
     }
 
     pub fn create_combo_box(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<ComboBox, CryptoError> {
+        trace!("create_combo_box >>> my_key: {:?}, their_vk: {:?}, doc: {:?}", my_key, their_vk, doc);
+
         let (msg, nonce) = self.encrypt(my_key, their_vk, doc)?;
 
-        Ok(ComboBox {
+        let res = ComboBox {
             msg: base64::encode(msg.as_slice()),
             sender: my_key.verkey.to_string(),
             nonce: base64::encode(nonce.as_slice())
-        })
+        };
+
+        trace!("create_combo_box <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     pub fn encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
-        let (my_vk, crypto_type_name) = if my_key.verkey.contains(":") {
+        trace!("encrypt >>> my_key: {:?}, their_vk: {:?}, doc: {:?}", my_key, their_vk, doc);
+
+        let (_my_vk, crypto_type_name) = if my_key.verkey.contains(":") {
             let splits: Vec<&str> = my_key.verkey.split(":").collect();
             (splits[0], splits[1])
         } else {
@@ -207,11 +241,16 @@ impl CryptoService {
         let nonce = crypto_type.gen_nonce();
 
         let encrypted_doc = crypto_type.encrypt(&my_sk, &their_vk, doc, &nonce)?;
+
+        trace!("encrypt <<< encrypted_doc: {:?}, nonce: {:?}", encrypted_doc, nonce);
+
         Ok((encrypted_doc, nonce))
     }
 
     pub fn decrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        let (my_vk, crypto_type_name) = if my_key.verkey.contains(":") {
+        trace!("decrypt >>> my_key: {:?}, their_vk: {:?}, doc: {:?}, nonce: {:?}", my_key, their_vk, doc, nonce);
+
+        let (_my_vk, crypto_type_name) = if my_key.verkey.contains(":") {
             let splits: Vec<&str> = my_key.verkey.split(":").collect();
             (splits[0], splits[1])
         } else {
@@ -245,10 +284,14 @@ impl CryptoService {
 
         let decrypted_doc = crypto_type.decrypt(&my_sk, &their_vk, &doc, &nonce)?;
 
+        trace!("decrypt <<< decrypted_doc: {:?}", decrypted_doc);
+
         Ok(decrypted_doc)
     }
 
     pub fn encrypt_sealed(&self, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        trace!("encrypt_sealed >>> their_vk: {:?}, doc: {:?}", their_vk, doc);
+
         let (their_vk, crypto_type_name) = if their_vk.contains(":") {
             let splits: Vec<&str> = their_vk.split(":").collect();
             (splits[0], splits[1])
@@ -265,10 +308,15 @@ impl CryptoService {
         let their_vk = Base58::decode(their_vk)?;
 
         let encrypted_doc = crypto_type.encrypt_sealed(&their_vk, doc)?;
+
+        trace!("encrypt_sealed <<< encrypted_doc: {:?}", encrypted_doc);
+
         Ok(encrypted_doc)
     }
 
     pub fn decrypt_sealed(&self, my_key: &Key, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        trace!("decrypt_sealed >>> my_key: {:?}, doc: {:?}", my_key, doc);
+
         let (my_vk, crypto_type_name) = if my_key.verkey.contains(":") {
             let splits: Vec<&str> = my_key.verkey.split(":").collect();
             (splits[0], splits[1])
@@ -287,11 +335,16 @@ impl CryptoService {
         let my_sk = Base58::decode(my_key.signkey.as_str())?;
 
         let decrypted_doc = crypto_type.decrypt_sealed(&my_vk, &my_sk, doc)?;
+
+        trace!("decrypt_sealed <<< decrypted_doc: {:?}", decrypted_doc);
+
         Ok(decrypted_doc)
     }
 
     pub fn convert_seed(&self, seed: Option<&str>) -> Result<Option<Vec<u8>>, CryptoError> {
-        Ok(match seed {
+        trace!("convert_seed >>> seed: {:?}", seed);
+
+        let res = match seed {
             Some(ref seed) =>
                 if seed.ends_with("=") {
                     Some(base64::decode(&seed)
@@ -300,10 +353,16 @@ impl CryptoService {
                     Some(seed.as_bytes().to_vec())
                 },
             None => None
-        })
+        };
+
+        trace!("convert_seed <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     pub fn validate_key(&self, vk: &str) -> Result<(), CryptoError> {
+        trace!("validate_key >>> vk: {:?}", vk);
+
         let (vk, crypto_type_name) = if vk.contains(":") {
             let splits: Vec<&str> = vk.split(":").collect();
             (splits[0], splits[1])
@@ -320,11 +379,16 @@ impl CryptoService {
         let vk = if vk.starts_with("~") { &vk[1..] } else { vk };
         let vk = Base58::decode(vk)?;
 
-        crypto_type.validate_key(&vk)?;
-        Ok(())
+        let res =crypto_type.validate_key(&vk)?;
+
+        trace!("validate_key <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     pub fn validate_did(&self, did: &str) -> Result<(), CryptoError> {
+        trace!("validate_did >>> did: {:?}", did);
+
         let did = Base58::decode(did)?;
 
         if did.len() != 16 && did.len() != 32 {
@@ -333,7 +397,11 @@ impl CryptoService {
                     format!("Trying to use did with unexpected len: {}", did.len()))));
         }
 
-        Ok(())
+        let res = ();
+
+        trace!("validate_did <<< res: {:?}", res);
+
+        Ok(res)
     }
 }
 
@@ -345,7 +413,7 @@ mod tests {
     #[test]
     fn create_my_did_with_works_for_empty_info() {
         let service = CryptoService::new();
-        let did_info = MyDidInfo::new(None, None, None, None);
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
         service.create_my_did(&did_info).unwrap();
     }
 
@@ -354,7 +422,7 @@ mod tests {
         let service = CryptoService::new();
 
         let did = "NcYxiDXkpYi6ov5FcYDi1e";
-        let did_info = MyDidInfo::new(Some(did.clone().to_string()), None, None, None);
+        let did_info = MyDidInfo { did: Some(did.to_string()), cid: None, seed: None, crypto_type: None };
 
         let (my_did, _) = service.create_my_did(&did_info).unwrap();
         assert_eq!(did, my_did.did);
@@ -367,7 +435,8 @@ mod tests {
         let did = Some("NcYxiDXkpYi6ov5FcYDi1e".to_string());
         let crypto_type = Some("type".to_string());
 
-        let did_info = MyDidInfo::new(did.clone(), None, crypto_type, None);
+        let did_info = MyDidInfo { did: did.clone(), cid: None, seed: None, crypto_type: crypto_type };
+
         assert!(service.create_my_did(&did_info).is_err());
     }
 
@@ -378,8 +447,8 @@ mod tests {
         let did = Some("NcYxiDXkpYi6ov5FcYDi1e".to_string());
         let seed = Some("00000000000000000000000000000My1".to_string());
 
-        let did_info_with_seed = MyDidInfo::new(did.clone(), seed, None, None);
-        let did_info_without_seed = MyDidInfo::new(did.clone(), None, None, None);
+        let did_info_with_seed = MyDidInfo { did: did.clone(), cid: None, seed, crypto_type: None };
+        let did_info_without_seed = MyDidInfo { did: did.clone(), cid: None, seed: None, crypto_type: None };
 
         let (did_with_seed, _) = service.create_my_did(&did_info_with_seed).unwrap();
         let (did_without_seed, _) = service.create_my_did(&did_info_without_seed).unwrap();
@@ -426,9 +495,10 @@ mod tests {
     #[test]
     fn sign_works() {
         let service = CryptoService::new();
-        let did_info = MyDidInfo::new(None, None, None, None);
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+
         let message = r#"message"#;
-        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
+        let (_, my_key) = service.create_my_did(&did_info).unwrap();
         service.sign(&my_key, message.as_bytes()).unwrap();
     }
 
@@ -443,7 +513,7 @@ mod tests {
     #[test]
     fn sign_verify_works() {
         let service = CryptoService::new();
-        let did_info = MyDidInfo::new(None, None, None, None);
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
         let message = r#"message"#;
         let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
         let signature = service.sign(&my_key, message.as_bytes()).unwrap();
@@ -454,7 +524,7 @@ mod tests {
     #[test]
     fn sign_verify_works_for_verkey_contained_crypto_type() {
         let service = CryptoService::new();
-        let did_info = MyDidInfo::new(None, None, None, None);
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
         let message = r#"message"#;
         let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
         let signature = service.sign(&my_key, message.as_bytes()).unwrap();
@@ -467,7 +537,7 @@ mod tests {
     #[test]
     fn sign_verify_works_for_verkey_contained_invalid_crypto_type() {
         let service = CryptoService::new();
-        let did_info = MyDidInfo::new(None, None, None, None);
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
         let message = r#"message"#;
         let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
         let signature = service.sign(&my_key, message.as_bytes()).unwrap();
@@ -478,9 +548,9 @@ mod tests {
     #[test]
     fn verify_not_works_for_invalid_verkey() {
         let service = CryptoService::new();
-        let did_info = MyDidInfo::new(None, None, None, None);
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
         let message = r#"message"#;
-        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
+        let (_, my_key) = service.create_my_did(&did_info).unwrap();
         let signature = service.sign(&my_key, message.as_bytes()).unwrap();
         let verkey = "AnnxV4t3LUHKZaxVQDWoVaG44NrGmeDYMA4Gz6C2tCZd";
         let valid = service.verify(verkey, message.as_bytes(), &signature).unwrap();
@@ -491,9 +561,9 @@ mod tests {
     fn encrypt_works() {
         let service = CryptoService::new();
         let msg = "some message";
-        let did_info = MyDidInfo::new(None, None, None, None);
-        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
-        let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let (_, my_key) = service.create_my_did(&did_info).unwrap();
+        let (their_did, _) = service.create_my_did(&did_info.clone()).unwrap();
         let their_did = Did::new(their_did.did, their_did.verkey);
         service.encrypt(&my_key, &their_did.verkey, msg.as_bytes()).unwrap();
     }
@@ -504,17 +574,16 @@ mod tests {
 
         let msg = "some message";
 
-        let did_info = MyDidInfo::new(None, None, None, None);
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
 
         let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
 
-        let my_did_for_encrypt = my_did.clone();
         let my_key_for_encrypt = my_key.clone();
 
         let their_did_for_decrypt = Did::new(my_did.did, my_did.verkey);
 
         let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
-        let my_did_for_decrypt = their_did.clone();
+
         let my_key_for_decrypt = their_key.clone();
 
         let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
@@ -533,17 +602,15 @@ mod tests {
 
         let msg = "some message";
 
-        let did_info = MyDidInfo::new(None, None, None, None);
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
 
         let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
 
-        let my_did_for_encrypt = my_did.clone();
         let my_key_for_encrypt = my_key.clone();
 
         let their_did_for_decrypt = Did::new(my_did.did, my_did.verkey);
 
         let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
-        let my_did_for_decrypt = their_did.clone();
         let my_key_for_decrypt = their_key.clone();
 
         let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
@@ -561,8 +628,8 @@ mod tests {
     fn encrypt_sealed_works() {
         let service = CryptoService::new();
         let msg = "some message";
-        let did_info = MyDidInfo::new(None, None, None, None);
-        let (did, key) = service.create_my_did(&did_info.clone()).unwrap();
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
+        let (did, _) = service.create_my_did(&did_info.clone()).unwrap();
         let did = Did::new(did.did, did.verkey);
         service.encrypt_sealed(&did.verkey, msg.as_bytes()).unwrap();
     }
@@ -571,7 +638,7 @@ mod tests {
     fn encrypt_decrypt_sealed_works() {
         let service = CryptoService::new();
         let msg = "some message".as_bytes();
-        let did_info = MyDidInfo::new(None, None, None, None);
+        let did_info = MyDidInfo { did: None, cid: None, seed: None, crypto_type: None };
         let (did, key) = service.create_my_did(&did_info.clone()).unwrap();
         let encrypt_did = Did::new(did.did.clone(), did.verkey.clone());
         let encrypted_message = service.encrypt_sealed(&encrypt_did.verkey, msg).unwrap();

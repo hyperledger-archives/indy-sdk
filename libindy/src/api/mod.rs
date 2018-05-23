@@ -8,6 +8,7 @@ pub mod pool;
 pub mod did;
 pub mod wallet;
 pub mod blob_storage;
+pub mod payments;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
@@ -50,7 +51,7 @@ pub enum ErrorCode
     // Caller passed invalid value as param 11 (null, invalid json and etc..)
     CommonInvalidParam11 = 110,
 
-    // Caller passed invalid value as param 11 (null, invalid json and etc..)
+    // Caller passed invalid value as param 12 (null, invalid json and etc..)
     CommonInvalidParam12 = 111,
 
     // Invalid library state was detected in runtime. It signals library bug
@@ -61,6 +62,12 @@ pub enum ErrorCode
 
     // IO Error
     CommonIOError = 114,
+
+    // Caller passed invalid value as param 13 (null, invalid json and etc..)
+    CommonInvalidParam13 = 115,
+
+    // Caller passed invalid value as param 14 (null, invalid json and etc..)
+    CommonInvalidParam14 = 116,
 
     // Wallet errors
     // Caller passed invalid wallet handle
@@ -100,7 +107,7 @@ pub enum ErrorCode
     // No concensus during ledger operation
     LedgerNoConsensusError = 303,
 
-    // Attempt to send unknown or incomplete transaction message
+    // Attempt to parse invalid transaction response
     LedgerInvalidTransaction = 304,
 
     // Attempt to send transaction without the necessary privileges
@@ -115,11 +122,7 @@ pub enum ErrorCode
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 
-    AnoncredsInvalidUserRevocIndex = 401,
-
-    AnoncredsAccumulatorIsFull = 402,
-
-    AnoncredsNotIssuedError = 403,
+    AnoncredsInvalidUserRevocId = 401,
 
     // Attempt to generate master secret with duplicated name
     AnoncredsMasterSecretDuplicateNameError = 404,
@@ -137,4 +140,13 @@ pub enum ErrorCode
 
     // Attempt to create duplicate did
     DidAlreadyExistsError = 600,
+
+    // Unknown payment method was given
+    PaymentUnknownMethodError = 700,
+
+    //No method were scraped from inputs/outputs or more than one were scraped
+    PaymentIncompatibleMethodsError = 701,
+
+    // Insufficient funds on inputs
+    PaymentInsufficientFundsError = 702,
 }

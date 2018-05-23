@@ -87,6 +87,9 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     // No concensus during ledger operation
     LedgerNoConsensusError = 303,
 
+    // Attempt to parse invalid transaction response
+    LedgerInvalidTransaction = 304,
+
     // Attempt to send transaction without the necessary privileges
     LedgerSecurityError = 305,
     
@@ -99,12 +102,10 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
     
-    AnoncredsInvalidUserRevocIndex = 401,
+    AnoncredsInvalidUserRevocId = 401,
     
     AnoncredsAccumulatorIsFull = 402,
-    
-    AnoncredsNotIssuedError = 403,
-    
+
     // Attempt to generate master secret with dupplicated name
     AnoncredsMasterSecretDuplicateNameError = 404,
     
@@ -120,5 +121,14 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     UnknownCryptoTypeError = 500,
 
     // Attempt to create duplicate did
-    DidAlreadyExistsError = 600
+    DidAlreadyExistsError = 600,
+
+    // Unknown payment method was given
+    PaymentUnknownMethodError = 700,
+
+    // No method were scraped from inputs/outputs or more than one were scraped
+    PaymentIncompatibleMethodsError = 701,
+
+    // Insufficient funds on inputs
+    PaymentInsufficientFundsError = 702
 };

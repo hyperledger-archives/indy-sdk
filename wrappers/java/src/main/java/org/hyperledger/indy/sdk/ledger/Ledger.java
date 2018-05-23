@@ -126,7 +126,8 @@ public class Ledger extends IndyJava.API {
 			future.complete(result);
 		}
 	};
-	
+
+
 	/*
 	 * STATIC METHODS
 	 */
@@ -235,6 +236,44 @@ public class Ledger extends IndyJava.API {
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_sign_request(
+				commandHandle,
+				walletHandle,
+				submitterDid,
+				requestJson,
+				signRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Multi signs request message.
+	 * <p>
+	 * Adds submitter information to passed request json, signs it with submitter
+	 * sign key (see wallet_sign).
+	 *
+	 * @param wallet       A Wallet.
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param requestJson  Request data json.
+	 * @return A future resolving to a signed request json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> multiSignRequest(
+			Wallet wallet,
+			String submitterDid,
+			String requestJson) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(requestJson, "requestJson");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_multi_sign_request(
 				commandHandle,
 				walletHandle,
 				submitterDid,
@@ -730,6 +769,36 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
+	 * Builds a POOL_RESTART request.
+	 *
+	 * param submitter_did: Id of Identity that sender transaction
+	 * param action       : Action that pool has to do after received transaction.
+	 * 						Can be "start" or "cancel"
+	 * schedule           : Time when pool must be restarted.
+	 */
+	public static CompletableFuture<String> buildPoolRestartRequest(
+			String submitterDid,
+			String action,
+			String datetime) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_pool_restart_request(
+				commandHandle,
+				submitterDid,
+				action,
+				datetime,
+				buildRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
 	 * Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
 	 * It upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).
 	 *
@@ -1078,4 +1147,3 @@ public class Ledger extends IndyJava.API {
 		return future;
 	}
 }
-

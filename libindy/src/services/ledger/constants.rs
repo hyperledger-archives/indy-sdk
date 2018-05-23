@@ -9,6 +9,7 @@ pub const GET_TXN: &'static str = "3";
 pub const GET_SCHEMA: &'static str = "107";
 pub const GET_CRED_DEF: &'static str = "108";
 pub const POOL_UPGRADE: &'static str = "109";
+pub const POOL_RESTART: &'static str = "118";
 pub const POOL_CONFIG: &'static str = "111";
 pub const REVOC_REG_DEF: &'static str = "113";
 pub const REVOC_REG_ENTRY: &'static str = "114";

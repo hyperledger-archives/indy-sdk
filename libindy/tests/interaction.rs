@@ -168,11 +168,14 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     // Prover store received Credential
     AnoncredsUtils::prover_store_credential(prover_wallet_handle,
                                             CREDENTIAL1_ID,
-                                            &cred_req_json,
                                             &cred_req_metadata_json,
                                             &cred_json,
                                             &cred_def_json,
                                             Some(&revoc_reg_def_json)).unwrap();
+
+    let credentials = AnoncredsUtils::prover_get_credentials(prover_wallet_handle, &format!(r#"{{"schema_name":"{}"}}"#, GVT_SCHEMA_NAME)).unwrap();
+    let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials).unwrap();
+    assert_eq!(credentials.len(), 1);
 
     // Verifying Prover Credential
     thread::sleep(std::time::Duration::from_secs(3));
@@ -505,7 +508,6 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
     // Prover store received Credential
     AnoncredsUtils::prover_store_credential(prover_wallet_handle,
                                             CREDENTIAL1_ID,
-                                            &cred_req_json,
                                             &cred_req_metadata_json,
                                             &cred_json,
                                             &cred_def_json,

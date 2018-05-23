@@ -1,7 +1,6 @@
 #[macro_use]
 mod utils;
 
-#[allow(unused_variables)] /* FIXME */
 pub mod anoncreds;
 pub mod blob_storage;
 pub mod crypto;
@@ -10,6 +9,7 @@ pub mod pool;
 pub mod did;
 pub mod wallet;
 pub mod pairwise;
+pub mod payments;
 
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
 use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
@@ -19,11 +19,13 @@ use commands::pool::{PoolCommand, PoolCommandExecutor};
 use commands::did::{DidCommand, DidCommandExecutor};
 use commands::wallet::{WalletCommand, WalletCommandExecutor};
 use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
+use commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
 
 use errors::common::CommonError;
 
 use services::anoncreds::AnoncredsService;
 use services::blob_storage::BlobStorageService;
+use services::payments::PaymentsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::crypto::CryptoService;
@@ -44,7 +46,8 @@ pub enum Command {
     Pool(PoolCommand),
     Did(DidCommand),
     Wallet(WalletCommand),
-    Pairwise(PairwiseCommand)
+    Pairwise(PairwiseCommand),
+    Payments(PaymentsCommand),
 }
 
 pub struct CommandExecutor {
@@ -75,6 +78,7 @@ impl CommandExecutor {
                 let blob_storage_service = Rc::new(BlobStorageService::new());
                 let crypto_service = Rc::new(CryptoService::new());
                 let ledger_service = Rc::new(LedgerService::new());
+                let payments_service = Rc::new(PaymentsService::new());
                 let pool_service = Rc::new(PoolService::new());
                 let wallet_service = Rc::new(WalletService::new());
 
@@ -86,6 +90,7 @@ impl CommandExecutor {
                 let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
                 let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
                 let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());
+                let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone());
 
                 loop {
                     match receiver.recv() {
@@ -120,6 +125,10 @@ impl CommandExecutor {
                         Ok(Command::Pairwise(cmd)) => {
                             info!("PairwiseCommand command received");
                             pairwise_command_executor.execute(cmd);
+                        }
+                        Ok(Command::Payments(cmd)) => {
+                            info!("PaymentsCommand command received");
+                            payments_command_executor.execute(cmd);
                         }
                         Ok(Command::Exit) => {
                             info!("Exit command received");
@@ -156,17 +165,15 @@ mod tests {
     use super::*;
 
     #[test]
-    #[allow(unused_variables)]
     fn command_executor_can_be_created() {
-        let command_executor = CommandExecutor::new();
+        let _command_executor = CommandExecutor::new();
         assert!(true, "No crashes on CommandExecutor::new");
     }
 
     #[test]
     fn command_executor_can_be_dropped() {
-        #[allow(unused_variables)]
         fn drop_test() {
-            let command_executor = CommandExecutor::new();
+            let _command_executor = CommandExecutor::new();
         }
 
         drop_test();
@@ -174,9 +181,8 @@ mod tests {
     }
 
     #[test]
-    #[allow(unused_variables)]
     fn command_executor_can_get_instance() {
-        let ref command_executor: CommandExecutor = *CommandExecutor::instance();
+        let ref _command_executor: CommandExecutor = *CommandExecutor::instance();
         // Deadlock if another one instance will be requested (try to uncomment the next line)
         // let ref other_ce: CommandExecutor = *CommandExecutor::instance();
     }

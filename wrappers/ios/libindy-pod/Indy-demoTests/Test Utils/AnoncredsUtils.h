@@ -15,8 +15,6 @@
 
 - (NSString *)getGvtSchemaId;
 
-- (NSString *)getXyzSchemaId;
-
 - (NSString *)getGvtSchemaJson;
 
 - (NSString *)getIssuer1GvtCredDefId;
@@ -30,8 +28,6 @@
 - (NSString *)credentialId1;
 
 - (NSString *)credentialId2;
-
-- (NSString *)getGvtCredentialDef;
 
 - (NSString *)gvtCredDef;
 
@@ -109,7 +105,6 @@
 
 - (NSError *)proverStoreCredential:(NSString *)credJson
                             credID:(NSString *)credID
-                       credReqJSON:(NSString *)credReqJSON
                credReqMetadataJSON:(NSString *)credReqMetadataJSON
                        credDefJSON:(NSString *)credDefJSON
                      revRegDefJSON:(NSString *)revRegDefJSON

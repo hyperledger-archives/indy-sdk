@@ -40,6 +40,24 @@ impl Ledger {
         super::results::result_to_string(err, receiver)
     }
 
+
+    pub fn multi_sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let request_json = CString::new(request_json).unwrap();
+
+        let err = unsafe {
+            indy_multi_sign_request(command_handle,
+                                    wallet_handle,
+                                    submitter_did.as_ptr(),
+                                    request_json.as_ptr(),
+                                    cb)
+        };
+
+        super::results::result_to_string(err, receiver)
+    }
+
     pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&str>,
                              data: Option<&str>, role: Option<&str>) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
@@ -223,6 +241,23 @@ impl Ledger {
         super::results::result_to_string(err, receiver)
     }
 
+    pub fn indy_build_pool_restart_request(submitter_did: &str, action: &str, datetime: Option<&str>) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let action = CString::new(action).unwrap();
+        let datetime = datetime.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+
+        let err = unsafe {
+            indy_build_pool_restart_request(command_handle,
+                                            submitter_did.as_ptr(),
+                                            action.as_ptr(),
+                                            datetime.as_ptr(),
+                                            cb)
+        };
+        super::results::result_to_string(err, receiver)
+    }
+
     pub fn indy_build_pool_upgrade_request(submitter_did: &str, name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
                                            justification: Option<&str>, reinstall: bool, force: bool) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
@@ -271,6 +306,14 @@ extern {
                            pool_handle: i32,
                            request_json: *const c_char,
                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_result_json: *const c_char)>) -> ErrorCode;
+
+    #[no_mangle]
+    fn indy_multi_sign_request(command_handle: i32,
+                               wallet_handle: i32,
+                               submitter_did: *const c_char,
+                               request_json: *const c_char,
+                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                    signed_request_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
     fn indy_build_nym_request(command_handle: i32,
@@ -342,6 +385,13 @@ extern {
                                       writes: bool,
                                       force: bool,
                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
+
+    #[no_mangle]
+    fn indy_build_pool_restart_request(command_handle: i32,
+                                       submitter_did: *const c_char,
+                                       action: *const c_char,
+                                       datetime: *const c_char,
+                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
     fn indy_build_pool_upgrade_request(command_handle: i32,
