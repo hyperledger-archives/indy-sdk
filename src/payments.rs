@@ -1,8 +1,11 @@
-use super::ErrorCode;
+use super::{ErrorCode, IndyHandle};
 
-use std::ffi::{CString};
-use utils;
+use std::ffi::CString;
+
 use ffi::payments;
+
+use utils::callbacks::ClosureHandler;
+use utils::results::ResultHandler;
 
 pub struct Payment {}
 
@@ -20,7 +23,7 @@ impl Payment {
                     build_get_txn_fees_req: payments::BuildGetTxnFeesRequestCB,
                     parse_get_txn_fees_response: payments::ParseGetTxnFeesResponseCB) -> Result<(), ErrorCode> {
 
-        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec();
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let payment_method = CString::new(payment_method).unwrap();
         let err = unsafe {
@@ -39,42 +42,11 @@ impl Payment {
                                                     Some(parse_get_txn_fees_response),
                                                      cb)
         };
-        utils::results::result_to_empty(err, receiver)
+        ResultHandler::empty(err, receiver)
     }
 
-//    pub fn register(payment_method: &str,
-//                    create_payment_address: callbacks::CreatePaymentAddressCallback,
-//                    add_request_fees: callbacks::AddRequestFeesCallback,
-//                    parse_response_with_fees: callbacks::ParseResponseWithFeesCallback,
-//                    build_get_utxo_request: callbacks::BuildGetUTXORequestCallback,
-//                    parse_get_utxo_response: callbacks::ParseGetUTXOResponseCallback,
-//                    build_payment_req: callbacks::BuildPaymentRequestCallback,
-//                    parse_payment_response: callbacks::ParsePaymentResponseCallback,
-//                    build_mint_req: callbacks::BuildMintRequestCallback,
-//                    build_set_txn_fees_req: callbacks::BuildSetTxnFeesRequestCallback,
-//                    build_get_txn_fees_req: callbacks::BuildGetTxnFeesRequestCallback,
-//                    parse_get_txn_fees_response: callbacks::ParseGetTxnFeesResponseCallback) -> Result<(), ErrorCode> {
-//
-//    }
-
-//    pub fn sign_multi_request(wallet_handle: i32, submitter_did: &str, resp_json: &str) -> Result<String, ErrorCode> {
-//        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
-//
-//        let submitter_did = CString::new(submitter_did).unwrap();
-//        let resp_json = CString::new(resp_json).unwrap();
-//
-//        let err = unsafe {
-//            payments::indy_sign_multi_request(command_handle,
-//                                              wallet_handle,
-//                                              submitter_did.as_ptr(),
-//                                              resp_json.as_ptr(), cb)
-//        };
-//
-//        utils::results::result_to_one(err, receiver)
-//    }
-
     pub fn create_payment_address(wallet_handle: i32, payment_method: &str, config: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let payment_method = CString::new(payment_method).unwrap();
         let config = CString::new(config).unwrap();
@@ -87,23 +59,23 @@ impl Payment {
                                         cb)
         };
 
-        utils::results::result_to_one(err, receiver)
+        ResultHandler::one(err, receiver)
     }
 
     pub fn list_payment_addresses(wallet_handle: i32) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = unsafe {
             payments::indy_list_payment_addresses(command_handle,
-                                        wallet_handle,
-                                        cb)
+                                                  wallet_handle,
+                                                  cb)
         };
 
-        utils::results::result_to_one(err, receiver)
+        ResultHandler::one(err, receiver)
     }
 
-    pub fn add_request_fees(wallet_handle: i32, submitter_did: &str, req_json: &str, inputs_json: &str, outputs_json: &str) -> Result<(String, String), ErrorCode> {
-        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string_string();
+    pub fn add_request_fees(wallet_handle: IndyHandle, submitter_did: &str, req_json: &str, inputs_json: &str, outputs_json: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let req_json = CString::new(req_json).unwrap();
@@ -120,12 +92,12 @@ impl Payment {
                                   cb)
         };
 
-        utils::results::result_to_two(err, receiver)
+        ResultHandler::two(err, receiver)
     }
 
     pub fn parse_response_with_fees(payment_method: &str,
                                     resp_json: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let payment_method = CString::new(payment_method).unwrap();
         let resp_json = CString::new(resp_json).unwrap();
@@ -137,12 +109,12 @@ impl Payment {
                                                     cb)
         };
 
-        utils::results::result_to_one(err, receiver)
+        ResultHandler::one(err, receiver)
     }
 
-    pub fn build_get_utxo_request(wallet_handle: i32, submitter_did: &str, payment_address: &str) -> Result<(String, String), ErrorCode> {
+    pub fn build_get_utxo_request(wallet_handle: IndyHandle, submitter_did: &str, payment_address: &str) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) =
-            utils::callbacks::_closure_to_cb_ec_string_string();
+            ClosureHandler::cb_ec_string_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let payment_address = CString::new(payment_address).unwrap();
@@ -155,12 +127,12 @@ impl Payment {
                                         cb)
         };
 
-        utils::results::result_to_two(err, receiver)
+        ResultHandler::two(err, receiver)
     }
 
     pub fn parse_get_utxo_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) =
-            utils::callbacks::_closure_to_cb_ec_string();
+            ClosureHandler::cb_ec_string();
 
         let payment_method = CString::new(payment_method).unwrap();
         let resp_json = CString::new(resp_json).unwrap();
@@ -172,12 +144,12 @@ impl Payment {
                                          cb)
         };
 
-        utils::results::result_to_one(err, receiver)
+        ResultHandler::one(err, receiver)
     }
 
-    pub fn build_payment_req(wallet_handle: i32, submitter_did: &str, inputs: &str, outputs: &str) -> Result<(String, String), ErrorCode> {
+    pub fn build_payment_req(wallet_handle: IndyHandle, submitter_did: &str, inputs: &str, outputs: &str) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) =
-            utils::callbacks::_closure_to_cb_ec_string_string();
+            ClosureHandler::cb_ec_string_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let inputs = CString::new(inputs).unwrap();
@@ -192,12 +164,12 @@ impl Payment {
                                    cb)
         };
 
-        utils::results::result_to_two(err, receiver)
+        ResultHandler::two(err, receiver)
     }
 
     pub fn parse_payment_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) =
-            utils::callbacks::_closure_to_cb_ec_string();
+            ClosureHandler::cb_ec_string();
 
         let payment_method = CString::new(payment_method).unwrap();
         let resp_json = CString::new(resp_json).unwrap();
@@ -209,12 +181,12 @@ impl Payment {
                                         cb)
         };
 
-        utils::results::result_to_one(err, receiver)
+        ResultHandler::one(err, receiver)
     }
 
-    pub fn build_mint_req(wallet_handle: i32, submitter_did: &str, outputs_json: &str) -> Result<(String, String), ErrorCode> {
+    pub fn build_mint_req(wallet_handle: IndyHandle, submitter_did: &str, outputs_json: &str) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) =
-            utils::callbacks::_closure_to_cb_ec_string_string();
+            ClosureHandler::cb_ec_string_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let outputs_json = CString::new(outputs_json).unwrap();
@@ -227,12 +199,12 @@ impl Payment {
                                 cb)
         };
 
-        utils::results::result_to_two(err, receiver)
+        ResultHandler::two(err, receiver)
     }
 
-    pub fn build_set_txn_fees_req(wallet_handle: i32, submitter_did: &str, payment_method: &str, fees_json: &str) -> Result<String, ErrorCode> {
+    pub fn build_set_txn_fees_req(wallet_handle: IndyHandle, submitter_did: &str, payment_method: &str, fees_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) =
-            utils::callbacks::_closure_to_cb_ec_string();
+            ClosureHandler::cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let payment_method = CString::new(payment_method).unwrap();
@@ -247,12 +219,12 @@ impl Payment {
                                         cb)
         };
 
-        utils::results::result_to_one(err, receiver)
+        ResultHandler::one(err, receiver)
     }
 
-    pub fn build_get_txn_fees_req(wallet_handle: i32, submitter_did: &str, payment_method: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_txn_fees_req(wallet_handle: IndyHandle, submitter_did: &str, payment_method: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) =
-            utils::callbacks::_closure_to_cb_ec_string();
+            ClosureHandler::cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let payment_method = CString::new(payment_method).unwrap();
@@ -265,12 +237,12 @@ impl Payment {
                                         cb)
         };
 
-        utils::results::result_to_one(err, receiver)
+        ResultHandler::one(err, receiver)
     }
 
     pub fn parse_get_txn_fees_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) =
-            utils::callbacks::_closure_to_cb_ec_string();
+            ClosureHandler::cb_ec_string();
 
         let payment_method = CString::new(payment_method).unwrap();
         let resp_json = CString::new(resp_json).unwrap();
@@ -282,6 +254,6 @@ impl Payment {
                                              cb)
         };
 
-        utils::results::result_to_one(err, receiver)
+        ResultHandler::one(err, receiver)
     }
 }

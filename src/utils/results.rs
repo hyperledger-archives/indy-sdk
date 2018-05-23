@@ -2,58 +2,62 @@ use ErrorCode;
 
 use std::sync::mpsc::Receiver;
 
-pub fn result_to_empty(err: ErrorCode, receiver: Receiver<ErrorCode>) -> Result<(), ErrorCode> {
-    if err != ErrorCode::Success {
-        return Err(err);
+pub struct ResultHandler {}
+
+impl ResultHandler {
+    pub fn empty(err: ErrorCode, receiver: Receiver<ErrorCode>) -> Result<(), ErrorCode> {
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let err = receiver.recv().unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(())
     }
 
-    let err = receiver.recv().unwrap();
+    pub fn one<T>(err: ErrorCode, receiver: Receiver<(ErrorCode, T)>) -> Result<T, ErrorCode> {
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
 
-    if err != ErrorCode::Success {
-        return Err(err);
+        let (err, val) = receiver.recv().unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(val)
     }
 
-    Ok(())
-}
+    pub fn two<T1, T2>(err: ErrorCode, receiver: Receiver<(ErrorCode, T1, T2)>) -> Result<(T1, T2), ErrorCode> {
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
 
-pub fn result_to_one<T>(err: ErrorCode, receiver: Receiver<(ErrorCode, T)>) -> Result<T, ErrorCode> {
-    if err != ErrorCode::Success {
-        return Err(err);
+        let (err, val, val2) = receiver.recv().unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok((val, val2))
     }
 
-    let (err, val) = receiver.recv().unwrap();
+    pub fn three<T1, T2, T3>(err: ErrorCode, receiver: Receiver<(ErrorCode, T1, T2, T3)>) -> Result<(T1, T2, T3), ErrorCode> {
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
 
-    if err != ErrorCode::Success {
-        return Err(err);
+        let (err, val, val2, val3) = receiver.recv().unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok((val, val2, val3))
     }
-
-    Ok(val)
-}
-
-pub fn result_to_two<T1, T2>(err: ErrorCode, receiver: Receiver<(ErrorCode, T1, T2)>) -> Result<(T1, T2), ErrorCode> {
-    if err != ErrorCode::Success {
-        return Err(err);
-    }
-
-    let (err, val, val2) = receiver.recv().unwrap();
-
-    if err != ErrorCode::Success {
-        return Err(err);
-    }
-
-    Ok((val, val2))
-}
-
-pub fn result_to_three<T1, T2, T3>(err: ErrorCode, receiver: Receiver<(ErrorCode, T1, T2, T3)>) -> Result<(T1, T2, T3), ErrorCode> {
-    if err != ErrorCode::Success {
-        return Err(err);
-    }
-
-    let (err, val, val2, val3) = receiver.recv().unwrap();
-
-    if err != ErrorCode::Success {
-        return Err(err);
-    }
-
-    Ok((val, val2, val3))
 }
