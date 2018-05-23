@@ -10,6 +10,19 @@ use utils::callbacks::ClosureHandler;
 pub struct Key {}
 
 impl Key {
+    /// Creates key pair in wallet
+    /// # Arguments
+    /// * `wallet_handle` - Wallet handle (created by open_wallet)
+    /// * `my_key_json` - Key information as json
+    ///
+    /// # Example
+    /// my_key_json
+    /// {
+    ///     "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+    ///     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
+    /// }
+    /// # Returns
+    /// Ver key of generated key pair, also used as key identifier
     pub fn create(wallet_handle: IndyHandle, my_key_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -21,17 +34,29 @@ impl Key {
         ResultHandler::one(err, receiver)
     }
 
-    pub fn set_metadata(wallet_handle: IndyHandle, verkey: &str) -> Result<(), ErrorCode> {
+    /// Saves/replaces the metadata for the `verkey` in the wallet
+    /// # Arguments
+    /// * `wallet_handle` - Wallet handle (created by open_wallet)
+    /// * `verkey` - the public key or key id where to store the metadata
+    /// * `metadata` - the metadata that will be stored with the key
+    pub fn set_metadata(wallet_handle: IndyHandle, verkey: &str, metadata: &str) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let verkey = c_str!(verkey);
+        let metadata = c_str!(metadata);
 
         let err = unsafe {
-            crypto::indy_set_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), cb)
+            crypto::indy_set_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), metadata.as_ptr(), cb)
         };
         ResultHandler::empty(err, receiver)
     }
 
+    /// Retrieves the metadata for the `verkey` in the wallet
+    /// # Argument
+    /// * `wallet_handle` - Wallet handle (created by open_wallet)
+    /// * `verkey` - the public key or key id to retrieve metadata
+    /// # Returns
+    /// Metadata currently stored with the key; Can be empty if no metadata was saved for this key
     pub fn get_metadata(wallet_handle: IndyHandle, verkey: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
