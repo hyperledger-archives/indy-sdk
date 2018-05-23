@@ -9,6 +9,7 @@ use std::slice;
 use std::ffi::CStr;
 use std::sync::Mutex;
 use std::sync::mpsc::{channel, Receiver};
+use callbacks::payments::{PaymentResponseCallback, CreatePaymentAddressCallback};
 
 pub fn _closure_to_cb_ec() -> (Receiver<ErrorCode>, i32,
                                Option<extern fn(command_handle: i32,
@@ -123,8 +124,8 @@ pub fn _closure_to_cb_ec_string_string() -> (Receiver<(ErrorCode, String, String
 pub fn _closure_to_cb_ec_u8() -> (Receiver<(ErrorCode, Vec<u8>)>, i32,
                                   Option<extern fn(command_handle: i32,
                                                    err: ErrorCode,
-                                                   signature_raw: *const u8,
-                                                   signature_len: u32)>) {
+                                                   raw: *const u8,
+                                                   len: u32)>) {
     let (sender, receiver) = channel();
 
     lazy_static! {
@@ -135,10 +136,10 @@ pub fn _closure_to_cb_ec_u8() -> (Receiver<(ErrorCode, Vec<u8>)>, i32,
         sender.send((err, sig)).unwrap();
     });
 
-    extern "C" fn _callback(command_handle: i32, err: ErrorCode, signature_raw: *const u8, signature_len: u32) {
+    extern "C" fn _callback(command_handle: i32, err: ErrorCode, raw: *const u8, len: u32) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
-        let sig = unsafe { slice::from_raw_parts(signature_raw, signature_len as usize) };
+        let sig = unsafe { slice::from_raw_parts(raw, len as usize) };
         cb(err, sig.to_vec())
     }
 
@@ -152,9 +153,9 @@ pub fn _closure_to_cb_ec_u8() -> (Receiver<(ErrorCode, Vec<u8>)>, i32,
 pub fn _closure_to_cb_ec_string_u8() -> (Receiver<(ErrorCode, String, Vec<u8>)>, i32,
                                                   Option<extern fn(command_handle: i32,
                                                                    err: ErrorCode,
-                                                                   sender_vk: *const c_char,
-                                                                   decrypted_msg_raw: *const u8,
-                                                                   decrypted_msg_len: u32)>) {
+                                                                   vk: *const c_char,
+                                                                   msg_raw: *const u8,
+                                                                   msg_len: u32)>) {
     let (sender, receiver) = channel();
 
     lazy_static! {

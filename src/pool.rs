@@ -3,7 +3,7 @@ use super::ErrorCode;
 use std::ffi::CString;
 use std::ptr::null;
 use utils;
-use indy::pool;
+use ffi::pool;
 
 pub struct Pool {}
 
