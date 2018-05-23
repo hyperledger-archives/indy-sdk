@@ -123,6 +123,23 @@ impl Payment {
         utils::results::result_to_two(err, receiver)
     }
 
+    pub fn parse_response_with_fees(payment_method: &str,
+                                    resp_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+
+        let payment_method = CString::new(payment_method).unwrap();
+        let resp_json = CString::new(resp_json).unwrap();
+
+        let err = unsafe {
+            payments::indy_parse_response_with_fees(command_handle,
+                                                  payment_method.as_ptr(),
+                                                    resp_json.as_ptr(),
+                                                    cb)
+        };
+
+        utils::results::result_to_one(err, receiver)
+    }
+
     pub fn build_get_utxo_request(wallet_handle: i32, submitter_did: &str, payment_address: &str) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) =
             utils::callbacks::_closure_to_cb_ec_string_string();
