@@ -438,7 +438,7 @@ mod medium_cases {
             let wallet_name = "indy_open_wallet_works_for_invalid_credentials";
             WalletUtils::create_wallet(POOL, wallet_name, None, None, Some(r#"{"key":"AAIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#)).unwrap();
             let res = WalletUtils::open_wallet(wallet_name, None, Some(r#"{"key":"BBIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#));
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err()); //TODO: Invalid Error: MUST be WalletAccessFailed
+            assert_eq!(ErrorCode::WalletAccessFailed, res.unwrap_err());
 
             TestUtils::cleanup_storage();
         }
