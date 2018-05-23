@@ -8,14 +8,17 @@ lazy_static! {
 }
 
 pub fn add_response(request: String, response: String) -> Result<(), ErrorCode> {
-    let val = str_to_val(request.as_str())?;
-    let object = val_to_obj(&val)?;
-    let req_id = get_val_from_obj(object, "reqId")?;
-    let req_id = val_to_u64(req_id)?;
-
+    let req_id = parse_req_id_from_request(request)?;
     let mut responses = RESPONSES.lock().unwrap();
     responses.insert(req_id.to_string(), response);
     Ok(())
+}
+
+pub fn parse_req_id_from_request(request: String) -> Result<u64, ErrorCode> {
+    let val = str_to_val(request.as_str())?;
+    let object = val_to_obj(&val)?;
+    let req_id = get_val_from_obj(object, "reqId")?;
+    val_to_u64(req_id)
 }
 
 pub fn get_response(response: &str) -> Result<String, ErrorCode> {

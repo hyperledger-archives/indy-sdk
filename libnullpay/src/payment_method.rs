@@ -67,6 +67,10 @@ pub mod add_request_fees {
         let total_payments = _count_total_payments(&outputs_json);
 
         let err = if total_amount >= total_payments + fee {
+            match parse_req_id_from_request(req_json.clone()) {
+                Err(ec) => return ec,
+                _ => ()
+            };
             //we have enough money for this txn, give it back
             let seq_no = payment_ledger::add_txn(inputs_json.clone(), outputs_json.clone());
 
