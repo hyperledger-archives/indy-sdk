@@ -1,4 +1,4 @@
-use super::ErrorCode;
+use super::{ErrorCode, IndyHandle};
 
 use std::ffi::CString;
 use std::ptr::null;
@@ -8,7 +8,7 @@ use ffi::ledger;
 pub struct Ledger {}
 
 impl Ledger {
-    pub fn sign_and_submit_request(pool_handle: i32, wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+    pub fn sign_and_submit_request(pool_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
@@ -26,7 +26,7 @@ impl Ledger {
         utils::results::result_to_one(err, receiver)
     }
 
-    pub fn submit_request(pool_handle: i32, request_json: &str) -> Result<String, ErrorCode> {
+    pub fn submit_request(pool_handle: IndyHandle, request_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let request_json = CString::new(request_json).unwrap();
@@ -41,7 +41,23 @@ impl Ledger {
         utils::results::result_to_one(err, receiver)
     }
 
-    pub fn multi_sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+    pub fn sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let request_json = CString::new(request_json).unwrap();
+
+        let err = unsafe {
+            ledger::indy_sign_request(command_handle,
+                                      wallet_handle,
+                                      submitter_did.as_ptr(),
+                                      request_json.as_ptr(),
+                                      cb)
+        };
+        utils::results::result_to_one(err, receiver)
+    }
+
+    pub fn multi_sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
@@ -53,6 +69,22 @@ impl Ledger {
                                     submitter_did.as_ptr(),
                                     request_json.as_ptr(),
                                     cb)
+        };
+
+        utils::results::result_to_one(err, receiver)
+    }
+
+    pub fn build_get_ddo_request(submitter_did: &str, target_did: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let target_did = CString::new(target_did).unwrap();
+
+        let err = unsafe {
+            ledger::indy_build_get_ddo_request(command_handle,
+                                               submitter_did.as_ptr(),
+                                               target_did.as_ptr(),
+                                               cb)
         };
 
         utils::results::result_to_one(err, receiver)
@@ -188,6 +220,16 @@ impl Ledger {
         utils::results::result_to_one(err, receiver)
     }
 
+    pub fn parse_get_schema_response(get_schema_response: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string_string();
+
+        let get_schema_response = CString::new(get_schema_response).unwrap();
+        let err = unsafe {
+            ledger::indy_parse_get_schema_response(command_handle, get_schema_response.as_ptr(), cb)
+        };
+        utils::results::result_to_two(err, receiver)
+    }
+
     pub fn build_cred_def_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
@@ -218,6 +260,18 @@ impl Ledger {
         };
 
         utils::results::result_to_one(err, receiver)
+    }
+
+    pub fn parse_get_cred_def_response(get_cred_def_response: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string_string();
+
+        let get_cred_def_response = CString::new(get_cred_def_response).unwrap();
+
+        let err = unsafe {
+            ledger::indy_parse_get_cred_def_response(command_handle, get_cred_def_response.as_ptr(), cb)
+        };
+
+        utils::results::result_to_two(err, receiver)
     }
 
     pub fn build_node_request(submitter_did: &str, target_did: &str, data: &str) -> Result<String, ErrorCode> {
@@ -301,6 +355,122 @@ impl Ledger {
         };
 
         utils::results::result_to_one(err, receiver)
+    }
+
+    pub fn build_revoc_reg_def_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let data = CString::new(data).unwrap();
+
+        let err = unsafe {
+            ledger::indy_build_revoc_reg_def_request(command_handle, submitter_did.as_ptr(), data.as_ptr(), cb)
+        };
+
+        utils::results::result_to_one(err, receiver)
+    }
+
+    pub fn build_get_revoc_reg_def_request(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let id = CString::new(id).unwrap();
+
+        let err = unsafe {
+            ledger::indy_build_get_revoc_reg_def_request(command_handle, submitter_did.as_ptr(), id.as_ptr(), cb)
+        };
+
+        utils::results::result_to_one(err, receiver)
+    }
+
+    pub fn parse_get_revoc_reg_def_response(get_revoc_reg_def_response: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string_string();
+
+        let get_revoc_reg_def_response = CString::new(get_revoc_reg_def_response).unwrap();
+
+        let err = unsafe {
+            ledger::indy_parse_get_revoc_reg_def_response(command_handle, get_revoc_reg_def_response.as_ptr(), cb)
+        };
+
+        utils::results::result_to_two(err, receiver)
+    }
+
+    pub fn build_revoc_reg_entry_request(submitter_did: &str, revoc_reg_def_id: &str, rev_def_type: &str, value: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let revoc_reg_def_id = CString::new(revoc_reg_def_id).unwrap();
+        let rev_def_type = CString::new(rev_def_type).unwrap();
+        let value = CString::new(value).unwrap();
+
+        let err = unsafe {
+            ledger::indy_build_revoc_reg_entry_request(command_handle,
+                                                        submitter_did.as_ptr(),
+                                                        revoc_reg_def_id.as_ptr(),
+                                                        rev_def_type.as_ptr(),
+                                                        value.as_ptr(), cb)
+        };
+
+        utils::results::result_to_one(err, receiver)
+    }
+
+    pub fn build_get_revoc_reg_request(submitter_did: &str, revoc_reg_def_id: &str, timestamp: i64) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let revoc_reg_def_id = CString::new(revoc_reg_def_id).unwrap();
+
+        let err = unsafe {
+            ledger::indy_build_get_revoc_reg_request(command_handle,
+                                                     submitter_did.as_ptr(),
+                                                     revoc_reg_def_id.as_ptr(),
+                                                     timestamp, cb)
+        };
+
+        utils::results::result_to_one(err, receiver)
+    }
+
+    pub fn parse_get_revoc_reg_response(get_revoc_reg_response: &str) -> Result<(String, String, u64), ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string_string_u64();
+
+        let get_revoc_reg_response = CString::new(get_revoc_reg_response).unwrap();
+
+        let err = unsafe {
+            ledger::indy_parse_get_revoc_reg_response(command_handle,get_revoc_reg_response.as_ptr(), cb)
+        };
+
+        utils::results::result_to_three(err, receiver)
+    }
+
+    pub fn build_get_revoc_reg_delta_request(submitter_did: &str,
+                                             revoc_reg_def_id: &str,
+                                             from: i64,
+                                             to: i64) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let revoc_reg_def_id = CString::new(revoc_reg_def_id).unwrap();
+
+        let err = unsafe {
+            ledger::indy_build_get_revoc_reg_delta_request(command_handle,
+                                                     submitter_did.as_ptr(),
+                                                     revoc_reg_def_id.as_ptr(),
+                                                     from, to, cb)
+        };
+
+        utils::results::result_to_one(err, receiver)
+    }
+
+    pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) -> Result<(String, String, u64), ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string_string_u64();
+
+        let get_revoc_reg_delta_response = CString::new(get_revoc_reg_delta_response).unwrap();
+
+        let err = unsafe {
+            ledger::indy_parse_get_revoc_reg_delta_response(command_handle,get_revoc_reg_delta_response.as_ptr(), cb)
+        };
+
+        utils::results::result_to_three(err, receiver)
     }
 }
 

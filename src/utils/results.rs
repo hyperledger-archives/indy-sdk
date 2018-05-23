@@ -43,3 +43,17 @@ pub fn result_to_two<T1, T2>(err: ErrorCode, receiver: Receiver<(ErrorCode, T1, 
 
     Ok((val, val2))
 }
+
+pub fn result_to_three<T1, T2, T3>(err: ErrorCode, receiver: Receiver<(ErrorCode, T1, T2, T3)>) -> Result<(T1, T2, T3), ErrorCode> {
+    if err != ErrorCode::Success {
+        return Err(err);
+    }
+
+    let (err, val, val2, val3) = receiver.recv().unwrap();
+
+    if err != ErrorCode::Success {
+        return Err(err);
+    }
+
+    Ok((val, val2, val3))
+}

@@ -104,10 +104,10 @@ extern {
 
     #[no_mangle]
     pub fn indy_build_get_utxo_request(command_handle: i32,
-                                   wallet_handle: i32,
-                                   submitter_did: *const c_char,
-                                   payment_address: *const c_char,
-                                   cb: Option<PaymentsMethodResponseCB>) -> ErrorCode;
+                                       wallet_handle: i32,
+                                       submitter_did: *const c_char,
+                                       payment_address: *const c_char,
+                                       cb: Option<PaymentsMethodResponseCB>) -> ErrorCode;
 
     #[no_mangle]
     pub fn indy_parse_get_utxo_response(command_handle: i32,
