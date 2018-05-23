@@ -570,10 +570,11 @@ impl WalletRecord {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RecordOptions {
-    pub fetch_type: Option<bool>,
-    pub fetch_value: Option<bool>,
-    pub fetch_tags: Option<bool>
+    pub retrieve_type: Option<bool>,
+    pub retrieve_value: Option<bool>,
+    pub retrieve_tags: Option<bool>
 }
 
 impl JsonEncodable for RecordOptions {}
@@ -583,9 +584,9 @@ impl<'a> JsonDecodable<'a> for RecordOptions {}
 impl RecordOptions {
     pub fn id() -> String {
         let options = RecordOptions {
-            fetch_type: Some(false),
-            fetch_value: Some(false),
-            fetch_tags: Some(false)
+            retrieve_type: Some(false),
+            retrieve_value: Some(false),
+            retrieve_tags: Some(false)
         };
 
         options.to_json().unwrap()
@@ -593,9 +594,9 @@ impl RecordOptions {
 
     pub fn id_value() -> String {
         let options = RecordOptions {
-            fetch_type: Some(false),
-            fetch_value: Some(true),
-            fetch_tags: Some(false)
+            retrieve_type: Some(false),
+            retrieve_value: Some(true),
+            retrieve_tags: Some(false)
         };
 
         options.to_json().unwrap()
@@ -603,9 +604,9 @@ impl RecordOptions {
 
     pub fn full() -> String {
         let options = RecordOptions {
-            fetch_type: Some(true),
-            fetch_value: Some(true),
-            fetch_tags: Some(true)
+            retrieve_type: Some(true),
+            retrieve_value: Some(true),
+            retrieve_tags: Some(true)
         };
 
         options.to_json().unwrap()

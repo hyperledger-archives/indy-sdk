@@ -93,6 +93,7 @@ mod high_cases {
             assert_eq!(verkey, received_verkey);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
+            WalletUtils::close_wallet(trustee_wallet_handle).unwrap();
             PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
@@ -1135,6 +1136,8 @@ mod high_cases {
 
             assert_ne!(verkey, abbr_verkey);
 
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
             TestUtils::cleanup_storage();
         }
 
@@ -1149,6 +1152,8 @@ mod high_cases {
             let full_verkey = DidUtils::abbreviate_verkey(&did, &verkey).unwrap();
 
             assert_eq!(verkey, full_verkey);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }

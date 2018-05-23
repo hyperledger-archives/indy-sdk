@@ -227,14 +227,12 @@ impl NonSecretsCommandExecutor {
         let mut options = RecordOptions::from_json(options_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Options Json: {:?}", err)))?;
 
-        options.fetch_type = Some(options.fetch_type.unwrap_or(false));
-        options.fetch_value = Some(options.fetch_value.unwrap_or(true));
-        options.fetch_tags = Some(options.fetch_tags.unwrap_or(false));
+        options.retrieve_type = Some(options.retrieve_type.unwrap_or(false));
+        options.retrieve_value = Some(options.retrieve_value.unwrap_or(true));
+        options.retrieve_tags = Some(options.retrieve_tags.unwrap_or(false));
 
         let options_json = options.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize Options Json: {:?}", err)))?;
-
-        println!("{}", options_json);
 
         let record = self.wallet_service.get_record(wallet_handle, type_, id, &options_json)?;
 

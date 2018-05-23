@@ -213,7 +213,7 @@ impl Wallet {
             Some(tags) => Some(serde_json::to_string(&tags)?)
         };
 
-        Ok(WalletRecord::new(String::from(name), Some(type_.to_string()), value, tags))
+        Ok(WalletRecord::new(String::from(name), result.type_.map(|_| type_.to_string()), value, tags))
     }
 
     pub fn delete(&self, type_: &str, name: &str) -> Result<(), WalletError> {
