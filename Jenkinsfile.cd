@@ -216,11 +216,11 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
         sh "cp libindy/target/release/libindy.so libnullpay"
         dir('libnullpay') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Libindy Test: Build"
+                echo "${env_name} Libnullpay Test: Build"
                 sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run"
 
-                echo "${env_name} Libindy Test: Run tests"
-                sh "LD_LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release"
+                echo "${env_name} Libnullpay Test: Run tests"
+                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
                 
                 if (stashBuildResults) {
                     stash includes: 'target/release/libnullpay.so', name: 'LibnullpayUbuntuBuildResult'
@@ -454,34 +454,38 @@ def windowsPublishing() {
     def libindyVersion
     node('win2016') {
         stage('Publish Libindy Windows Files') {
-            try {
-                echo 'Publish Windows files: Checkout csm'
-                checkout scm
+            def ws_path = "workspace/${env.JOB_NAME}".replace(' ', '_')
+            ws(ws_path) {
+                try {
+                    echo 'Publish Windows files: Checkout csm'
+                    checkout scm
 
-                libindyVersion = getSrcVersion("libindy")
+                    libindyVersion = getSrcVersion("libindy")
 
-                dir('libindy') {
-                    echo 'Publish Libindy Windows files'
-                    windowsPublishArtifact("libindy", "lib", libindyVersion, "LibindyWindowsBuildResult")
+                    dir('libindy') {
+                        echo 'Publish Libindy Windows files'
+                        windowsPublishArtifact("libindy", "lib", libindyVersion, "LibindyWindowsBuildResult")
+                    }
+
+                    dir('cli') {
+                        echo 'Publish Indy Cli Windows files'
+                        windowsPublishArtifact("indy-cli", "executable", libindyVersion, "IndyCliWindowsBuildResult")
+                    }
+
+                    dir('libnullpay') {
+                        def libnullpayVersion = getSrcVersion("libnullpay")
+
+                        echo 'Publish Libnullpay Cli Windows files'
+                        windowsPublishArtifact("libnullpay", "lib", libnullpayVersion, "LibnullpayWindowsBuildResult")
+                    }
                 }
-
-                dir('cli') {
-                    echo 'Publish Indy Cli Windows files'
-                    windowsPublishArtifact("indy-cli", "executable", libindyVersion, "IndyCliWindowsBuildResult")
+                finally {
+                    echo 'Publish Windows files: Cleanup'
+                    cleanWs()
                 }
-
-                dir('libnullpay') {
-                    def libnullpayVersion = getSrcVersion("libnullpay")
-
-                    echo 'Publish Libnullpay Cli Windows files'
-                    windowsPublishArtifact("libnullpay", "lib", libnullpayVersion, "LibnullpayWindowsBuildResult")
-                }
-            }
-            finally {
-                echo 'Publish Windows files: Cleanup'
-                step([$class: 'WsCleanup'])
             }
         }
+        cleanWs()
     }
     return libindyVersion
 }
