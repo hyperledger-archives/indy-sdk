@@ -1,6 +1,8 @@
 use ErrorCode;
 use std::os::raw::c_char;
 
+pub type EmptyResponseCB = extern fn(xcommand_handle: i32, err: ErrorCode);
+
 pub type PaymentResponseCB = extern fn(xcommand_handle: i32,
                                              err: ErrorCode,
                                              json: *const c_char);
@@ -73,7 +75,7 @@ extern {
                                         build_set_txn_fees_req_callback: Option<BuildSetTxnFeesRequestCB>,
                                         build_get_txn_fees_req_callback: Option<BuildGetTxnFeesRequestCB>,
                                         parse_get_txn_fees_response_callback: Option<ParseGetTxnFeesResponseCB>,
-                                        cb: Option<PaymentResponseCB>) -> ErrorCode;
+                                        cb: Option<EmptyResponseCB>) -> ErrorCode;
 
 //    #[no_mangle]
 //    pub fn indy_sign_multi_request(command_handle: i32,
