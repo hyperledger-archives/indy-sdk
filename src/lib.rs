@@ -8,12 +8,11 @@ pub mod payments;
 pub mod pool;
 pub mod wallet;
 pub mod callbacks;
+pub mod utils;
 mod ffi;
 
 pub type IndyHandle = i32;
 
-#[macro_use]
-mod utils;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
