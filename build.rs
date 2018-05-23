@@ -92,7 +92,7 @@ fn try_vcpkg() {
         .probe("indy");
 
     if let Err(e) = lib {
-        println!("note: vcpkg did not find indy-sdk as libindy : {:?}", e);
+        println!("note: vcpkg did not find ffi-sdk as libindy : {:?}", e);
         return;
     }
 
