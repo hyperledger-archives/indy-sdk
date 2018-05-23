@@ -25,7 +25,7 @@ impl Payment {
 
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-        let payment_method = CString::new(payment_method).unwrap();
+        let payment_method = c_str!(payment_method);
         let err = unsafe {
             payments::indy_register_payment_method(command_handle,
                                                     payment_method.as_ptr(),
@@ -48,8 +48,8 @@ impl Payment {
     pub fn create_payment_address(wallet_handle: i32, payment_method: &str, config: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-        let payment_method = CString::new(payment_method).unwrap();
-        let config = CString::new(config).unwrap();
+        let payment_method = c_str!(payment_method);
+        let config = c_str!(config);
 
         let err = unsafe {
             payments::indy_create_payment_address(command_handle,
@@ -77,10 +77,10 @@ impl Payment {
     pub fn add_request_fees(wallet_handle: IndyHandle, submitter_did: &str, req_json: &str, inputs_json: &str, outputs_json: &str) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
-        let submitter_did = CString::new(submitter_did).unwrap();
-        let req_json = CString::new(req_json).unwrap();
-        let inputs_json = CString::new(inputs_json).unwrap();
-        let outputs_json = CString::new(outputs_json).unwrap();
+        let submitter_did = c_str!(submitter_did);
+        let req_json = c_str!(req_json);
+        let inputs_json = c_str!(inputs_json);
+        let outputs_json = c_str!(outputs_json);
 
         let err = unsafe {
             payments::indy_add_request_fees(command_handle,
@@ -99,8 +99,8 @@ impl Payment {
                                     resp_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-        let payment_method = CString::new(payment_method).unwrap();
-        let resp_json = CString::new(resp_json).unwrap();
+        let payment_method = c_str!(payment_method);
+        let resp_json = c_str!(resp_json);
 
         let err = unsafe {
             payments::indy_parse_response_with_fees(command_handle,
@@ -116,8 +116,8 @@ impl Payment {
         let (receiver, command_handle, cb) =
             ClosureHandler::cb_ec_string_string();
 
-        let submitter_did = CString::new(submitter_did).unwrap();
-        let payment_address = CString::new(payment_address).unwrap();
+        let submitter_did = c_str!(submitter_did);
+        let payment_address = c_str!(payment_address);
 
         let err = unsafe {
             payments::indy_build_get_utxo_request(command_handle,
@@ -134,8 +134,8 @@ impl Payment {
         let (receiver, command_handle, cb) =
             ClosureHandler::cb_ec_string();
 
-        let payment_method = CString::new(payment_method).unwrap();
-        let resp_json = CString::new(resp_json).unwrap();
+        let payment_method = c_str!(payment_method);
+        let resp_json = c_str!(resp_json);
 
         let err = unsafe {
             payments::indy_parse_get_utxo_response(command_handle,
@@ -151,9 +151,9 @@ impl Payment {
         let (receiver, command_handle, cb) =
             ClosureHandler::cb_ec_string_string();
 
-        let submitter_did = CString::new(submitter_did).unwrap();
-        let inputs = CString::new(inputs).unwrap();
-        let outputs = CString::new(outputs).unwrap();
+        let submitter_did = c_str!(submitter_did);
+        let inputs = c_str!(inputs);
+        let outputs = c_str!(outputs);
 
         let err = unsafe {
             payments::indy_build_payment_req(command_handle,
@@ -171,8 +171,8 @@ impl Payment {
         let (receiver, command_handle, cb) =
             ClosureHandler::cb_ec_string();
 
-        let payment_method = CString::new(payment_method).unwrap();
-        let resp_json = CString::new(resp_json).unwrap();
+        let payment_method = c_str!(payment_method);
+        let resp_json = c_str!(resp_json);
 
         let err = unsafe {
             payments::indy_parse_payment_response(command_handle,
@@ -188,8 +188,8 @@ impl Payment {
         let (receiver, command_handle, cb) =
             ClosureHandler::cb_ec_string_string();
 
-        let submitter_did = CString::new(submitter_did).unwrap();
-        let outputs_json = CString::new(outputs_json).unwrap();
+        let submitter_did = c_str!(submitter_did);
+        let outputs_json = c_str!(outputs_json);
 
         let err = unsafe {
             payments::indy_build_mint_req(command_handle,
@@ -206,9 +206,9 @@ impl Payment {
         let (receiver, command_handle, cb) =
             ClosureHandler::cb_ec_string();
 
-        let submitter_did = CString::new(submitter_did).unwrap();
-        let payment_method = CString::new(payment_method).unwrap();
-        let fees_json = CString::new(fees_json).unwrap();
+        let submitter_did = c_str!(submitter_did);
+        let payment_method = c_str!(payment_method);
+        let fees_json = c_str!(fees_json);
 
         let err = unsafe {
             payments::indy_build_set_txn_fees_req(command_handle,
@@ -226,8 +226,8 @@ impl Payment {
         let (receiver, command_handle, cb) =
             ClosureHandler::cb_ec_string();
 
-        let submitter_did = CString::new(submitter_did).unwrap();
-        let payment_method = CString::new(payment_method).unwrap();
+        let submitter_did = c_str!(submitter_did);
+        let payment_method = c_str!(payment_method);
 
         let err = unsafe {
             payments::indy_build_get_txn_fees_req(command_handle,
@@ -244,8 +244,8 @@ impl Payment {
         let (receiver, command_handle, cb) =
             ClosureHandler::cb_ec_string();
 
-        let payment_method = CString::new(payment_method).unwrap();
-        let resp_json = CString::new(resp_json).unwrap();
+        let payment_method = c_str!(payment_method);
+        let resp_json = c_str!(resp_json);
 
         let err = unsafe {
             payments::indy_parse_get_txn_fees_response(command_handle,

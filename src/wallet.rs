@@ -14,11 +14,11 @@ impl Wallet {
     pub fn create(pool_name: &str, wallet_name: &str, xtype: Option<&str>, config: Option<&str>, credentials: Option<&str>) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-        let pool_name = CString::new(pool_name).unwrap();
-        let wallet_name = CString::new(wallet_name).unwrap();
-        let xtype_str = xtype.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-        let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-        let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let pool_name = c_str!(pool_name);
+        let wallet_name = c_str!(wallet_name);
+        let xtype_str = opt_c_str!(xtype);
+        let config_str = opt_c_str!(config);
+        let credentials_str = opt_c_str!(credentials);
 
         let err = unsafe {
             wallet::indy_create_wallet(command_handle,
@@ -36,9 +36,9 @@ impl Wallet {
     pub fn open(wallet_name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<IndyHandle, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
 
-        let wallet_name = CString::new(wallet_name).unwrap();
-        let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-        let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let wallet_name = c_str!(wallet_name);
+        let config_str = opt_c_str!(config);
+        let credentials_str = opt_c_str!(credentials);
 
         let err = unsafe {
             wallet::indy_open_wallet(command_handle,
@@ -62,7 +62,7 @@ impl Wallet {
     pub fn delete(wallet_name: &str) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-        let wallet_name = CString::new(wallet_name).unwrap();
+        let wallet_name = c_str!(wallet_name);
 
         let err = unsafe {
             wallet::indy_delete_wallet(command_handle,
