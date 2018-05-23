@@ -22,7 +22,7 @@ public class GetValidatorInfoRequestTest extends IndyIntegrationTestWithPoolAndS
         assertTrue(getValidatorInfoRequest.replace("\\", "").contains(expectedResult));
     }
 
-    @Ignore @Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
+    @Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
     public void testGetValidatorInfoRequestWorks() throws Exception {
         String did = createStoreAndPublishDidFromTrustee();
 
