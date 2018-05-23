@@ -1,29 +1,6 @@
 use rusqlite::{TransactionBehavior, Connection, DropBehavior, Result};
 use std::ops::Deref;
 
-/// Represents a transaction on a database connection.
-///
-/// ## Note
-///
-/// Transactions will roll back by default. Use `commit` method to explicitly commit the
-/// transaction, or use `set_drop_behavior` to change what happens when the transaction
-/// is dropped.
-///
-/// ## Example
-///
-/// ```rust,no_run
-/// # use rusqlite::{Connection, Result};
-/// # fn do_queries_part_1(_conn: &Connection) -> Result<()> { Ok(()) }
-/// # fn do_queries_part_2(_conn: &Connection) -> Result<()> { Ok(()) }
-/// fn perform_queries(conn: &mut Connection) -> Result<()> {
-///     let tx = try!(conn.transaction());
-///
-///     try!(do_queries_part_1(&tx)); // tx causes rollback if this fails
-///     try!(do_queries_part_2(&tx)); // tx causes rollback if this fails
-///
-///     tx.commit()
-/// }
-/// ```
 pub struct Transaction<'conn> {
     conn: &'conn Connection,
     drop_behavior: DropBehavior,
@@ -41,7 +18,7 @@ impl<'conn> Transaction<'conn> {
         conn.execute_batch(query)
             .map(move |_| {
                 Transaction {
-                    conn: conn,
+                    conn,
                     drop_behavior: DropBehavior::Rollback,
                     committed: false,
                 }
