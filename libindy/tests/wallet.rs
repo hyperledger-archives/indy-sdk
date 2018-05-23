@@ -413,9 +413,11 @@ mod medium_cases {
 
             WalletUtils::create_wallet(POOL, WALLET, None, None, None).unwrap();
 
-            WalletUtils::open_wallet(WALLET, None, None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(WALLET, None, None).unwrap();
             let res = WalletUtils::open_wallet(WALLET, None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletAlreadyOpenedError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
