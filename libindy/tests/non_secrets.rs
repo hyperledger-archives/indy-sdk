@@ -433,7 +433,7 @@ mod high_cases {
             let tags_json = r#"{"tagName1": "str2"}"#;
             NonSecretsUtils::add_wallet_record_tags(wallet_handle, TYPE, ID, tags_json).unwrap();
 
-            let expected_result = r#"{"tagName1": "str2", "tagName2": 5, "tagName3": 12}"#;
+            let expected_result = r#"{"tagName1": "str2", "tagName2": "5", "tagName3": "12"}"#;
              check_record_field(wallet_handle, TYPE, ID, "tags", expected_result);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -502,7 +502,7 @@ mod high_cases {
 
             NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
 
-            let expected_tags_json = r#"{"tagName2": 5, "tagName3": 12}"#;
+            let expected_tags_json = r#"{"tagName2": "5", "tagName3": "12"}"#;
              check_record_field(wallet_handle, TYPE, ID, "tags", expected_tags_json);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -549,8 +549,7 @@ mod high_cases {
 
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, Some(TAGS_EMPTY)).unwrap();
 
-            let res = NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName1"]"#);
-            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+            NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -568,7 +567,7 @@ mod high_cases {
             NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
             NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName2"]"#).unwrap();
 
-            let expected_tags = r#"{"tagName3": 12}"#;
+            let expected_tags = r#"{"tagName3": "12"}"#;
             check_record_field(wallet_handle, TYPE, ID, "tags", expected_tags);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -586,8 +585,7 @@ mod high_cases {
 
             NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
 
-            let res = NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName1"]"#);
-            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+            NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
