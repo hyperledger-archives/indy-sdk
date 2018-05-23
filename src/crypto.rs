@@ -13,7 +13,7 @@ impl Key {
     pub fn create(wallet_handle: IndyHandle, my_key_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-        let my_key_json = CString::new(my_key_json).unwrap();
+        let my_key_json = c_str!(my_key_json);
 
         let err = unsafe {
             crypto::indy_create_key(command_handle, wallet_handle, my_key_json.as_ptr(), cb)
@@ -24,7 +24,7 @@ impl Key {
     pub fn set_metadata(wallet_handle: IndyHandle, verkey: &str) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-        let verkey = CString::new(verkey).unwrap();
+        let verkey = c_str!(verkey);
 
         let err = unsafe {
             crypto::indy_set_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), cb)
@@ -35,7 +35,7 @@ impl Key {
     pub fn get_metadata(wallet_handle: IndyHandle, verkey: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-        let verkey = CString::new(verkey).unwrap();
+        let verkey = c_str!(verkey);
 
         let err = unsafe {
             crypto::indy_get_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), cb)
@@ -51,7 +51,7 @@ impl Crypto {
     pub fn sign(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_u8();
 
-        let signer_vk = CString::new(signer_vk).unwrap();
+        let signer_vk = c_str!(signer_vk);
         let err = unsafe {
             crypto::indy_crypto_sign(command_handle, wallet_handle, signer_vk.as_ptr(),
                              message.as_ptr() as *const u8,
@@ -77,8 +77,8 @@ impl Crypto {
     pub fn auth_crypt(wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_u8();
 
-        let sender_vk = CString::new(sender_vk).unwrap();
-        let recipient_vk = CString::new(recipient_vk).unwrap();
+        let sender_vk = c_str!(sender_vk);
+        let recipient_vk = c_str!(recipient_vk);
         let err = unsafe {
             crypto::indy_crypto_auth_crypt(command_handle, wallet_handle,
                                    sender_vk.as_ptr(),
@@ -92,7 +92,7 @@ impl Crypto {
     pub fn auth_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Result<(String, Vec<u8>), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_u8();
 
-        let recipient_vk = CString::new(recipient_vk).unwrap();
+        let recipient_vk = c_str!(recipient_vk);
         let err = unsafe {
             crypto::indy_crypto_auth_decrypt(command_handle,
                                      wallet_handle,
@@ -107,7 +107,7 @@ impl Crypto {
     pub fn anon_crypt(wallet_handle: IndyHandle, recipient_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_u8();
 
-        let recipient_vk = CString::new(recipient_vk).unwrap();
+        let recipient_vk = c_str!(recipient_vk);
         let err = unsafe {
             crypto::indy_crypto_anon_crypt(command_handle,
                                    wallet_handle,
@@ -123,7 +123,7 @@ impl Crypto {
     pub fn anon_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Result<(String, Vec<u8>), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_u8();
 
-        let recipient_vk = CString::new(recipient_vk).unwrap();
+        let recipient_vk = c_str!(recipient_vk);
         let err = unsafe {
             crypto::indy_crypto_anon_decrypt(command_handle,
                                      wallet_handle,
