@@ -41,7 +41,6 @@ impl Ledger {
         utils::results::result_to_one(err, receiver)
     }
 
-
     pub fn multi_sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
 
@@ -95,6 +94,19 @@ impl Ledger {
                                        cb)
         };
 
+        utils::results::result_to_one(err, receiver)
+    }
+
+    pub fn build_get_txn_request(submitter_did: &str, seq_no: i32) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = utils::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let err = unsafe {
+            ledger::indy_build_get_txn_request(command_handle,
+                                               submitter_did.as_ptr(),
+                                               seq_no,
+                                               cb)
+        };
         utils::results::result_to_one(err, receiver)
     }
 
