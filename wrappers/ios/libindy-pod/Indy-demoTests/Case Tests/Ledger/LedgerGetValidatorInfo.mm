@@ -76,28 +76,21 @@
                                                              outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDid() failed for trustee");
     XCTAssertNotNil(trusteeDid, @"trusteeDid is nil!");
-    
-    // 4. Obtain my did
-    NSString* myDid = nil;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                    seed:nil
-                                                                outMyDid:&myDid
-                                                             outMyVerkey:nil];
-    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDid() failed for myDid");
-    XCTAssertNotNil(myDid, @"myDid is nil!");
-    
-    // 5. Build get validator info request
+
+    // 4. Build get validator info request
     
     NSString *getValidatorInfoRequest = nil;
-    ret = [[LedgerUtils sharedInstance] buildGetValidatorInfo:myDid
+    ret = [[LedgerUtils sharedInstance] buildGetValidatorInfo:trusteeDid
                                         resultJson:&getValidatorInfoRequest];
     XCTAssertNotNil(getValidatorInfoRequest, @"getValidatorInfoRequest is nil!");
     
-    // 6. Sign and Submit nym request
+    // 5. Sign and Submit nym request
     NSString *getValidatorInfoResponse = nil;
-    ret = [[LedgerUtils sharedInstance] submitRequest:getValidatorInfoRequest
-                                                    withPoolHandle:poolHandle
-                                                    resultJson:&getValidatorInfoResponse];
+    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
+                                                              walletHandle:walletHandle
+                                                              submitterDid:trusteeDid
+                                                               requestJson:getValidatorInfoRequest
+                                                           outResponseJson:&getValidatorInfoResponse];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::sendRequestWithPoolHandle() failed");
     XCTAssertNotNil(getValidatorInfoResponse, @"getValidatorInfoResponse is nil!");
     

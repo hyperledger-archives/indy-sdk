@@ -220,7 +220,7 @@
     
     ret = indy_build_get_validator_info_request(handle,
                                         [submitterDid UTF8String],
-                                        IndyWrapperCommon3PSCallback);
+                                        IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
         
