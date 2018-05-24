@@ -1502,8 +1502,12 @@ mod medium_cases {
 
         #[test]
         pub fn transaction_works_during_opened_wallet_search() {
-            NonSecretsUtils::populate_wallet_for_search();
-            let wallet_handle = WalletUtils::open_wallet(SEARCH_COMMON_WALLET, None, None).unwrap();
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
+            NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID_2, VALUE_2, None).unwrap();
 
             let search_handle = NonSecretsUtils::open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
 
@@ -1511,6 +1515,8 @@ mod medium_cases {
 
             NonSecretsUtils::close_wallet_search(search_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
         }
     }
 }

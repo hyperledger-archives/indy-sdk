@@ -33,7 +33,7 @@ pub mod create_command {
         let name = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
 
-        let credentials: String = json!({ "key": key }).to_string();
+        let credentials: String = json!({ "key": key.clone() }).to_string();
 
         trace!("Wallet::create_wallet try: name {}, pool_name {}", name, pool_name);
 
@@ -49,6 +49,8 @@ pub mod create_command {
         let res = match res {
             Ok(()) => Ok(println_succ!("Wallet \"{}\" has been created", name)),
             Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", name)),
+            Err(ErrorCode::WalletInputError) => Err(println_err!("Invalid wallet key  \"{}\"", key)),
+            Err(ErrorCode::WalletDecodingError) => Err(println_err!("Invalid wallet key  \"{}\"", key)),
             Err(ErrorCode::CommonIOError) => Err(println_err!("Invalid wallet name  \"{}\"", name)),
             Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
@@ -110,6 +112,8 @@ pub mod open_command {
                         match err {
                             ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid wallet config")),
                             ErrorCode::WalletAlreadyOpenedError => Err(println_err!("Wallet \"{}\" already opened", name)),
+                            ErrorCode::WalletInputError => Err(println_err!("Invalid wallet key  \"{}\"", key)),
+                            ErrorCode::WalletDecodingError => Err(println_err!("Invalid wallet key  \"{}\"", key)),
                             ErrorCode::WalletAccessFailed => Err(println_err!("Cannot open encrypted wallet \"{}\"", name)),
                             ErrorCode::CommonIOError => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
                             err => Err(println_err!("Indy SDK error occurred {:?}", err)),
@@ -237,6 +241,8 @@ pub mod delete_command {
         let res = match Wallet::delete_wallet(name, credentials.as_str()) {
             Ok(()) => Ok(println_succ!("Wallet \"{}\" has been deleted", name)),
             Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
+            Err(ErrorCode::WalletInputError) => Err(println_err!("Invalid wallet key  \"{}\"", key)),
+            Err(ErrorCode::WalletDecodingError) => Err(println_err!("Invalid wallet key  \"{}\"", key)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 

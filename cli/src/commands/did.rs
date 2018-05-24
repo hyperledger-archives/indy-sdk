@@ -66,6 +66,7 @@ pub mod new_command {
                 println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk);
                 Ok(did)
             }
+            Err(ErrorCode::DidAlreadyExistsError) => Err(println_err!("Did already exists: {:?}", did.unwrap_or(""))),
             Err(ErrorCode::UnknownCryptoTypeError) => Err(println_err!("Unknown crypto type")),
             Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
@@ -342,9 +343,8 @@ pub mod tests {
                 params.insert("did", DID_TRUSTEE.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let dids = get_dids(wallet_handle);
-            assert_eq!(1, dids.len());
-            assert_eq!(dids[0]["did"].as_str().unwrap(), DID_TRUSTEE);
+            let did = get_did_info(wallet_handle, DID_TRUSTEE);
+            assert_eq!(did["did"].as_str().unwrap(), DID_TRUSTEE);
 
             close_and_delete_wallet(&ctx);
         }
@@ -360,10 +360,9 @@ pub mod tests {
                 params.insert("seed", SEED_TRUSTEE.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let dids = get_dids(wallet_handle);
-            assert_eq!(1, dids.len());
-            assert_eq!(dids[0]["did"].as_str().unwrap(), DID_TRUSTEE);
-            assert_eq!(dids[0]["verkey"].as_str().unwrap(), VERKEY_TRUSTEE);
+            let did = get_did_info(wallet_handle, DID_TRUSTEE);
+            assert_eq!(did["did"].as_str().unwrap(), DID_TRUSTEE);
+            assert_eq!(did["verkey"].as_str().unwrap(), VERKEY_TRUSTEE);
 
             close_and_delete_wallet(&ctx);
         }
@@ -524,15 +523,15 @@ pub mod tests {
             send_nym(&ctx, DID_MY2, VERKEY_MY2, None);
             use_did(&ctx, DID_MY2);
 
-            let dids = get_dids(wallet_handle);
-            assert_eq!(dids[0]["verkey"].as_str().unwrap(), VERKEY_MY2);
+            let did_info = get_did_info(wallet_handle,DID_MY2);
+            assert_eq!(did_info["verkey"].as_str().unwrap(), VERKEY_MY2);
             {
                 let cmd = rotate_key_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let dids = get_dids(wallet_handle);
-            assert_ne!(dids[0]["verkey"].as_str().unwrap(), VERKEY_MY2);
+            let did_info = get_did_info(wallet_handle,DID_MY2);
+            assert_ne!(did_info["verkey"].as_str().unwrap(), VERKEY_MY2);
 
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
@@ -552,6 +551,11 @@ pub mod tests {
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
+    }
+
+    fn get_did_info(wallet_handle: i32, did: &str) -> serde_json::Value {
+        let did_info = Did::get_did_with_meta(wallet_handle, did).unwrap();
+        serde_json::from_str(&did_info).unwrap()
     }
 
     fn get_dids(wallet_handle: i32) -> Vec<serde_json::Value> {

@@ -366,6 +366,16 @@ mod medium_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn indy_create_wallet_works_for_invalid_key() {
+            TestUtils::cleanup_storage();
+
+            let res = WalletUtils::create_wallet(POOL, WALLET, None, None, Some(r#"{"key":"AA"}"#));
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletInputError);
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod delete_wallet {

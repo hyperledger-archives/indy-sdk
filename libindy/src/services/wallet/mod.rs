@@ -173,12 +173,14 @@ impl WalletService {
         if wallet_path.exists() {
             return Err(WalletError::AlreadyExists(name.to_string()));
         }
+
+        let storage_type = storage_types.get(xtype).unwrap();
+        let credentials = WalletCredentials::from_json(credentials)?;
+
         DirBuilder::new()
             .recursive(true)
             .create(wallet_path)?;
 
-        let storage_type = storage_types.get(xtype).unwrap();
-        let credentials = WalletCredentials::from_json(credentials)?;
         storage_type.create_storage(name, storage_config, &credentials.storage_credentials, &Keys::gen_keys(credentials.master_key))?;
 
         let mut descriptor_file = File::create(_wallet_descriptor_path(name))?;
