@@ -1422,6 +1422,26 @@ mod high_cases {
     }
 }
 
+
+mod medium_cases {
+    use super::*;
+
+    mod rusqlite_transaction_fix {
+        use super::*;
+
+        #[test]
+        pub fn transaction_works_during_opened_wallet_search() {
+            let wallet_handle = NonSecretsUtils::populate_wallet_for_search();
+
+            let search_handle = NonSecretsUtils::open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
+
+            NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, "IDSPEC", VALUE, Some(TAGS_2)).unwrap();
+
+            NonSecretsUtils::close_wallet_search(search_handle).unwrap();
+        }
+    }
+}
+
 fn check_record_field(wallet_handle: i32, type_: &str, id: &str, field: &str, expected_value: &str) {
     let record = NonSecretsUtils::get_wallet_record(wallet_handle, type_, id, OPTIONS_FULL).unwrap();
     let record = serde_json::from_str::<WalletRecord>(&record).unwrap();
