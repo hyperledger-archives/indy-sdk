@@ -647,6 +647,57 @@ mod high_cases {
         }
     }
 
+    mod get_my_did_metadata {
+        use super::*;
+
+        #[test]
+        fn indy_get_my_did_metadata_works() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            DidUtils::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
+
+            DidUtils::get_my_did_with_metadata(wallet_handle, &did).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+
+        #[test]
+        fn indy_get_my_did_metadata_works_for_no_metadata() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
+
+            DidUtils::get_my_did_with_metadata(wallet_handle, &did).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_get_my_did_metadata_works_for_unknown_did() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let res = DidUtils::get_my_did_with_metadata(wallet_handle, DID);
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
     mod create_my_did {
         use super::*;
         use rust_base58::FromBase58;

@@ -110,7 +110,7 @@ indy> prompt <new_prompt>
 #### Show
 Print content of file:
 ```
-indy> show [file=]<file_path>
+indy> show [<file_path>
 ```
 
 ### Wallets management commands (wallet group)
@@ -121,20 +121,26 @@ indy> wallet <command>
 #### Wallet create
 Create new wallet with specified name and pool:
 ```
-indy> wallet create [name=]<wallet name> pool_name=<pool name> [key=<key>]
+indy> wallet create <wallet name> pool_name=<pool name> key=<key>
 ```
 TODO: Think about custom wallet types support. Now we force default wallet security model.. 
 
 #### Wallet open
 Open the wallet with specified name and make it available for commands that require wallet. If there was opened wallet it will be closed:
 ```
-indy> wallet open [name=]<wallet name> [key=<key>] [rekey=<rekey>]
+indy> wallet open <wallet name> key=<key> [rekey=<rekey>]
 ```
 
 #### Wallet close
 Close the opened wallet
 ```
 indy> wallet close
+```
+
+#### Wallet delete
+Delete the opened wallet
+```
+indy> wallet delete <wallet name> key=<key>
 ```
 
 #### Wallet list

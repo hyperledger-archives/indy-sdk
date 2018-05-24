@@ -1042,7 +1042,7 @@ pub mod sign_multi_command {
             }
             Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid Transaction JSON")),
             Err(ErrorCode::WalletInvalidHandle) => Err(println_err!("Wallet: \"{}\" not found", wallet_name)),
-            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Signer DID: \"{}\" not found", submitter_did)),
+            Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Signer DID: \"{}\" not found", submitter_did)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
         };
 
@@ -1168,7 +1168,7 @@ pub fn handle_transaction_error(err: ErrorCode, submitter_did: Option<&str>, poo
         ErrorCode::CommonInvalidStructure => println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc..."),
         ErrorCode::PoolLedgerInvalidPoolHandle => println_err!("Pool: \"{}\" not found", pool_name.unwrap_or("")),
         ErrorCode::WalletInvalidHandle => println_err!("Wallet: \"{}\" not found", wallet_name.unwrap_or("")),
-        ErrorCode::WalletNotFoundError => println_err!("Submitter DID: \"{}\" not found", submitter_did.unwrap_or("")),
+        ErrorCode::WalletItemNotFound => println_err!("Submitter DID: \"{}\" not found", submitter_did.unwrap_or("")),
         ErrorCode::WalletIncompatiblePoolError =>
             println_err!("Wallet \"{}\" is incompatible with pool \"{}\".", wallet_name.unwrap_or(""), pool_name.unwrap_or("")),
         ErrorCode::PoolLedgerTimeout => println_err!("Transaction response has not been received"),
@@ -1936,8 +1936,8 @@ pub mod tests {
 
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
-            let schema_id = send_schema(&ctx);
             let did = crate_send_and_use_new_nym(&ctx);
+            let schema_id = send_schema(&ctx, &did);
             {
                 let cmd = cred_def_command::new();
                 let mut params = CommandParams::new();
@@ -2020,9 +2020,8 @@ pub mod tests {
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
 
-            let schema_id = send_schema(&ctx);
-
-            new_did(&ctx, SEED_TRUSTEE);
+            let did = crate_send_and_use_new_nym(&ctx);
+            let schema_id = send_schema(&ctx, &did);
             use_did(&ctx, DID_TRUSTEE);
             {
                 let cmd = cred_def_command::new();
@@ -2744,10 +2743,9 @@ pub mod tests {
         });
     }
 
-    pub fn send_schema(ctx: &CommandContext) -> String {
+    pub fn send_schema(ctx: &CommandContext, did: &str) -> String {
         let (pool_handle, _) = get_connected_pool(ctx).unwrap();
         let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
-        let did = crate_send_and_use_new_nym(ctx);
         let schema_data = r#"{"id":"id", "name":"cli_gvt","version":"1.0","attrNames":["name"],"ver":"1.0"}"#;
         let schema_request = Ledger::build_schema_request(&did, schema_data).unwrap();
         let schema_response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();

@@ -179,7 +179,7 @@ pub mod use_command {
                 Ok(println_succ!("Did \"{}\" has been set as active", did))
             }
             Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid DID format")),
-            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Requested DID not found")),
+            Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Requested DID not found")),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
         };
 
@@ -214,7 +214,7 @@ pub mod rotate_key_command {
 
         let new_verkey = match Did::replace_keys_start(wallet_handle, &did, &identity_json) {
             Ok(request) => Ok(request),
-            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
+            Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Active DID: \"{}\" not found", did)),
             Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
         }?;
 
@@ -236,7 +236,7 @@ pub mod rotate_key_command {
             match Did::replace_keys_apply(wallet_handle, &did)
                 .and_then(|_| Did::abbreviate_verkey(&did, &new_verkey)) {
                 Ok(vk) => Ok(println_succ!("Verkey for did \"{}\" has been updated. New verkey: \"{}\"", did, vk)),
-                Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
+                Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Active DID: \"{}\" not found", did)),
                 Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
             };
 
