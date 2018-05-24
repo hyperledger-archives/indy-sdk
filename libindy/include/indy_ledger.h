@@ -476,7 +476,7 @@ extern "C" {
                                                                      const char*   request_json)
                                                );
 
-    /// Builds a GET_VALIDATOR_INFO request.
+        /// Builds a GET_VALIDATOR_INFO request.
         ///
         /// #Params
         /// command_handle: command handle to map callback to caller context.

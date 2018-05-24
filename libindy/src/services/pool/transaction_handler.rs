@@ -91,7 +91,6 @@ impl TransactionHandler {
             Ok(raw_msg) => raw_msg["result"].clone(),
             Err(err) => return warn!("{:?}", err)
         };
-
         let mut msg_result_without_proof: SJsonValue = msg_result.clone();
         msg_result_without_proof.as_object_mut().map(|obj| obj.remove("state_proof"));
         if msg_result_without_proof["data"].is_object() {

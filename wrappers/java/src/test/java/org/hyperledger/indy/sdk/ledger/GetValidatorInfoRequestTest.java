@@ -5,10 +5,8 @@ import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class GetValidatorInfoRequestTest extends IndyIntegrationTestWithPoolAndSingleWallet {

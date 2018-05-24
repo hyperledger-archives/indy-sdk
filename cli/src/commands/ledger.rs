@@ -1246,7 +1246,7 @@ fn timestamp_to_datetime(_time: i64) -> String {
 pub enum ResponseType {
     REQNACK,
     REPLY,
-    REJECT,
+    REJECT
 }
 
 #[derive(Deserialize, Debug)]
@@ -1262,7 +1262,7 @@ pub struct ReplyResult<T> {
     pub data: T,
     #[serde(rename = "seqNo")]
     pub seq_no: u64,
-    pub identifier: String,
+    pub identifier: String
 }
 
 #[cfg(test)]

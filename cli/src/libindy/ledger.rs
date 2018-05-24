@@ -383,7 +383,7 @@ extern {
     fn indy_build_cred_def_request(command_handle: i32,
                                    submitter_did: *const c_char,
                                    data: *const c_char,
-                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_result_json: *const c_char)>) -> ErrorCode;
+                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
     fn indy_build_get_cred_def_request(command_handle: i32,
