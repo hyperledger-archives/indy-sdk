@@ -1,4 +1,4 @@
-use super::ErrorCode;
+use ErrorCode;
 use std::os::raw::c_char;
 use utils::callbacks;
 use std::sync::mpsc::channel;

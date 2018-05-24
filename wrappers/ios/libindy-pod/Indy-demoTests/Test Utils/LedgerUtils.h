@@ -167,5 +167,10 @@
                              requestJson:(NSString *)requestJson
                               resultJson:(NSString **)resultJson;
 
+- (NSError *)multiSignRequestWithWalletHandle:(IndyHandle)walletHandle
+                                 submitterdid:(NSString *)submitterDid
+                                  requestJson:(NSString *)requestJson
+                                   resultJson:(NSString **)resultJson;
+
 
 @end

@@ -45,7 +45,7 @@ public class PaymentsResults {
     }
 
     /**
-     * Result from calling buildPaymentReq
+     * Result from calling buildPaymentRequest
      */
     public static class BuildPaymentReqResult {
         private String paymentReqJson;
@@ -66,7 +66,7 @@ public class PaymentsResults {
     }
 
     /**
-     * Result from calling buildMintReq
+     * Result from calling buildMintRequest
      */
     public static class BuildMintReqResult {
         private String mintReqJson;
