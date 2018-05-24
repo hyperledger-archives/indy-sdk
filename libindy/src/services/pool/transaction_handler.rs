@@ -101,16 +101,17 @@ impl TransactionHandler {
 
         if msg_result["type"] == constants::GET_VALIDATOR_INFO || msg_result["type"] == constants::POOL_RESTART {
             let first_resp = self.pending_commands.get(&req_id).unwrap().accum_replies.is_none();
+            let node_name = self.nodes[src_ind].name.clone();
             if first_resp {
                 self.pending_commands.get_mut(&req_id).unwrap().accum_replies = Some(HashableValue {
-                    inner: json!({ src_ind.to_string(): raw_msg}),
+                    inner: json!({ node_name: raw_msg}),
                 });
             } else {
                 self.pending_commands
                     .get_mut(&req_id).as_mut().unwrap()
                     .accum_replies.as_mut().unwrap()
                     .inner.as_object_mut().as_mut().unwrap()
-                    .insert(src_ind.to_string(), SJsonValue::from(raw_msg));
+                    .insert(node_name, SJsonValue::from(raw_msg));
             }
 
             let reply_cnt = self.pending_commands
@@ -587,16 +588,6 @@ impl TransactionHandler {
                 *k
             }).collect();
         for cmd in timeout_cmds {
-            if self.pending_commands.get(&cmd).unwrap().accum_replies.is_some() {
-                let cmd_ids = self.pending_commands.get(&cmd).unwrap().parent_cmd_ids.clone();
-                let str_reply = self.pending_commands.get(&cmd).as_ref().unwrap().accum_replies.as_ref().unwrap().inner.to_string();
-
-                for cmd_id in cmd_ids {
-                    CommandExecutor::instance().send(
-                        Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(str_reply.clone())))).unwrap();
-                }
-            }
-
             self.pending_commands.remove(&cmd);
         }
 
@@ -644,11 +635,14 @@ impl CommandProcess {
     }
 
     fn terminate_parent_cmds(&mut self, is_timeout: bool) -> Result<(), CommonError> {
+        let result = if let Some(ref accum_repl) = self.accum_replies {
+            Ok(accum_repl.inner.to_string())
+        } else {
+            Err(if is_timeout { PoolError::Timeout } else { PoolError::Terminate })
+        };
         for cmd_id in &self.parent_cmd_ids {
             CommandExecutor::instance()
-                .send(Command::Ledger(LedgerCommand::SubmitAck(
-                    *cmd_id,
-                    Err(if is_timeout { PoolError::Timeout } else { PoolError::Terminate }))))
+                .send(Command::Ledger(LedgerCommand::SubmitAck(*cmd_id, result.clone())))
                 .map_err(|err| CommonError::InvalidState(format!("Can't send ACK cmd: {:?}", err)))?;
         }
         self.parent_cmd_ids.clear();
