@@ -339,31 +339,28 @@ pub mod get_validator_info_command {
 
         let submitter_did = ensure_active_did(&ctx)?;
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
         let response = Ledger::build_get_validator_info_request(&submitter_did)
-            .and_then(|request| Ledger::submit_request(pool_handle, &request))
+            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
             .map_err(|err| handle_transaction_error(err, None, None, None))?;
 
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+        let responses = match serde_json::from_str::<HashMap<String, String>>(&response) {
+            Ok(responses) => responses,
+            Err(err) => {
+                let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+                    .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+                return handle_transaction_response(response).map(|result| println_succ!("{}", result));
+            }
+        };
 
-        let validator_info_data = response.result.clone();
-
-        let res = handle_transaction_response(response)
-            .map(|result| print_transaction_response(result,
-                                                     "Following get validator info has been received.",
-                                                     &[
-                                                         ("identifier", "Identifier"),
-                                                         ("reqId", "Request ID")],
-                                                     None,
-                                                     &[
-                                                         ("isSuccess", "IsSuccess"),
-                                                         ("msg", "Message")]));
-
-        if let Some(data) = validator_info_data {
-            println_succ!("Get validator info data:");
-            println!("{}", data);
+        for (node, response) in responses {
+            let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+                .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+            println_succ!("Get validator info response for node {}:", node);
+            let _res = handle_transaction_response(response).map(|result| println!("{}", result));
         }
+        let res = Ok(());
 
         trace!("execute << {:?}", res);
         res
@@ -1998,8 +1995,8 @@ pub mod tests {
         use super::*;
 
         #[test]
-        #[ignore]
         pub fn get_validator_info_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -2014,6 +2011,7 @@ pub mod tests {
             }
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
         }
     }
 
