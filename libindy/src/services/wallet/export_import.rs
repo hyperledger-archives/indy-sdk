@@ -94,7 +94,8 @@ impl Header {
 }
 
 
-pub (super) fn export(wallet: &Wallet, mut writer: Box<Write>, key: [u8; 32], version: u32) -> Result<(), WalletError> {
+pub (super) fn export(wallet: &Wallet, writer: Box<Write>, key: [u8; 32], version: u32) -> Result<(), WalletError> {
+    let mut writer = BufWriter::new(writer);
     let mut wallet_iterator = wallet.get_all()?;
     let mut nonce = ChaCha20Poly1305IETF::gen_nonce();
     let mut buffer = Vec::new();
@@ -138,7 +139,8 @@ pub (super) fn export(wallet: &Wallet, mut writer: Box<Write>, key: [u8; 32], ve
 }
 
 
-pub (super) fn import(wallet: &Wallet, mut reader: Box<Read>, key: [u8; 32]) -> Result<(), WalletError> {
+pub (super) fn import(wallet: &Wallet, reader: Box<Read>, key: [u8; 32]) -> Result<(), WalletError> {
+    let mut reader = BufReader::new(reader);
     let mut existing_items = wallet.get_all()?;
     if existing_items.next()?.is_some() {
         return Err(WalletError::NotEmpty);
@@ -157,7 +159,17 @@ pub (super) fn import(wallet: &Wallet, mut reader: Box<Read>, key: [u8; 32]) -> 
     let mut header_data: Vec<u8> = vec![0; header_length + 2];
     header_data[0] = header_length_bytes[0];
     header_data[1] = header_length_bytes[1];
-    reader.read_exact(&mut header_data[2..])?;
+
+    let mut header_read_count = 0;
+    while header_read_count < header_length {
+        let read_count = reader.read(&mut header_data[2 + header_read_count..])?;
+        if read_count == 0 {
+            return Err(WalletError::StructureError("Header body length less than specified".to_string()));
+        } else {
+            header_read_count += read_count;
+        }
+    }
+
     let header = Header::deserialise(&header_data)?;
     let mut nonce = header.nonce;
 
@@ -334,7 +346,7 @@ fn bytes_to_u16(b: &[u8]) -> u16 {
 mod tests {
     use std;
     use std::io;
-    use std::io::Read;
+    use std::io::{Read, BufReader};
     use std::env;
     use std::collections::HashMap;
     use std::time;
@@ -501,7 +513,6 @@ mod tests {
     /**
         Record serialisation deserialisation tests
     */
-
     #[test]
     fn test_wallet_record_serialization_and_deserialization() {
         let name = String::from("name");
@@ -706,6 +717,30 @@ mod tests {
     }
 
     #[test]
+    fn import_fails_if_header_length_too_small() {
+        _cleanup();
+        let wallet = _create_wallet();
+        let reader = Box::new(BufReader::new("\x00\x20some_hash00000000000000000000000".as_bytes()));
+        let key = _get_test_master_key();
+
+        let res = import(&wallet, reader, key.clone());
+
+        assert_match!(Err(WalletError::StructureError(_)), res);
+    }
+
+    #[test]
+    fn import_fails_if_header_body_too_small() {
+        _cleanup();
+        let wallet = _create_wallet();
+        let reader = Box::new(BufReader::new("\x00\x30this_hash_is_too_short".as_bytes()));
+        let key = _get_test_master_key();
+
+        let res = import(&wallet, reader, key.clone());
+
+        assert_match!(Err(WalletError::StructureError(_)), res);
+    }
+
+    #[test]
     fn export_import_empty_wallet() {
         _cleanup();
         let mut wallet = _create_wallet();
@@ -829,7 +864,6 @@ mod tests {
 
         let mut total_item_length = 0;
         let item_count = rand::thread_rng().gen_range(40, 80);
-        println!("\nItem count: {}\n", item_count);
         for i in 0 .. item_count {
             let name = format!("name_{}", i);
             let value = format!("value_{}", i);
@@ -897,6 +931,7 @@ mod tests {
         wallet.close().unwrap();
         _cleanup();
 
+        // Modifying one of the bytes in the header hash
         let mut content = _get_export_file_content();
         let index = 60;
         let byte_value = content[index];
@@ -911,5 +946,177 @@ mod tests {
 
         let res = import(&wallet, reader, key.clone());
         assert_match!(Err(WalletError::StructureError(_)), res);
+    }
+
+    #[test]
+    fn export_import_returns_error_if_data_does_not_match_header_hash() {
+        _cleanup();
+        let type1 = "type1";
+        let name1 = "name1";
+        let value1 = "value1";
+        let mut tags1 = HashMap::new();
+        tags1.insert("tag_name_1".to_string(), "tag_value_1".to_string());
+        tags1.insert("tag_name_2".to_string(), "tag_value_2".to_string());
+        tags1.insert("~tag_name_3".to_string(), "tag_value_3".to_string());
+        let record_1_length = _record_length_serialized(type1, name1, value1, &tags1);
+        let type2 = "type2";
+        let name2 = "name2";
+        let value2 = "value2";
+        let mut tags2 = HashMap::new();
+        tags2.insert("tag_name_21".to_string(), "tag_value_21".to_string());
+        tags2.insert("tag_name_22".to_string(), "tag_value_22".to_string());
+        tags2.insert("~tag_name_23".to_string(), "tag_value_23".to_string());
+        let record_2_length = _record_length_serialized(type2, name2, value2, &tags2);
+        let mut wallet = _create_wallet();
+        wallet.add(type1, name1, value1, &tags1).unwrap();
+        wallet.add(type2, name2, value2, &tags2).unwrap();
+        let export_writer = _create_export_file();
+        let key = _get_test_master_key();
+
+        export(&wallet, export_writer, key.clone(), 1).unwrap();
+        wallet.close().unwrap();
+        _cleanup();
+
+        // Modifying one of the bytes in the header (version)
+        let mut content = _get_export_file_content();
+        let index = 4;
+        let byte_value = content[index];
+        let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
+        content[index] = new_byte_value;
+        _replace_export_file(content);
+
+        let reader = _get_export_file_reader();
+        let wallet = _create_wallet();
+        let first_res = wallet.get(type1, name1, "{}");
+        assert_match!(Err(WalletError::ItemNotFound), first_res);
+
+        let res = import(&wallet, reader, key.clone());
+        assert_match!(Err(WalletError::StructureError(_)), res);
+    }
+
+    #[test]
+    fn export_import_returns_error_if_encrypted_data_modified() {
+        _cleanup();
+        let type1 = "type1";
+        let name1 = "name1";
+        let value1 = "value1";
+        let mut tags1 = HashMap::new();
+        tags1.insert("tag_name_1".to_string(), "tag_value_1".to_string());
+        tags1.insert("tag_name_2".to_string(), "tag_value_2".to_string());
+        tags1.insert("~tag_name_3".to_string(), "tag_value_3".to_string());
+        let record_1_length = _record_length_serialized(type1, name1, value1, &tags1);
+        let type2 = "type2";
+        let name2 = "name2";
+        let value2 = "value2";
+        let mut tags2 = HashMap::new();
+        tags2.insert("tag_name_21".to_string(), "tag_value_21".to_string());
+        tags2.insert("tag_name_22".to_string(), "tag_value_22".to_string());
+        tags2.insert("~tag_name_23".to_string(), "tag_value_23".to_string());
+        let record_2_length = _record_length_serialized(type2, name2, value2, &tags2);
+        let mut wallet = _create_wallet();
+        wallet.add(type1, name1, value1, &tags1).unwrap();
+        wallet.add(type2, name2, value2, &tags2).unwrap();
+        let export_writer = _create_export_file();
+        let key = _get_test_master_key();
+
+        export(&wallet, export_writer, key.clone(), 1).unwrap();
+        wallet.close().unwrap();
+        _cleanup();
+
+        let mut content = _get_export_file_content();
+        let index = content.len() - 20;
+        let byte_value = content[index];
+        let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
+        content[index] = new_byte_value;
+        _replace_export_file(content);
+
+        let reader = _get_export_file_reader();
+        let wallet = _create_wallet();
+        let res = import(&wallet, reader, key.clone());
+        assert_match!(Err(_), res);
+        let res = wallet.get(type1, name1, _options());
+        assert_match!(Err(WalletError::ItemNotFound), res);
+    }
+
+    #[test]
+    fn export_import_returns_error_if_encrypted_data_cut_short() {
+        _cleanup();
+        let type1 = "type1";
+        let name1 = "name1";
+        let value1 = "value1";
+        let mut tags1 = HashMap::new();
+        tags1.insert("tag_name_1".to_string(), "tag_value_1".to_string());
+        tags1.insert("tag_name_2".to_string(), "tag_value_2".to_string());
+        tags1.insert("~tag_name_3".to_string(), "tag_value_3".to_string());
+        let record_1_length = _record_length_serialized(type1, name1, value1, &tags1);
+        let type2 = "type2";
+        let name2 = "name2";
+        let value2 = "value2";
+        let mut tags2 = HashMap::new();
+        tags2.insert("tag_name_21".to_string(), "tag_value_21".to_string());
+        tags2.insert("tag_name_22".to_string(), "tag_value_22".to_string());
+        tags2.insert("~tag_name_23".to_string(), "tag_value_23".to_string());
+        let record_2_length = _record_length_serialized(type2, name2, value2, &tags2);
+        let mut wallet = _create_wallet();
+        wallet.add(type1, name1, value1, &tags1).unwrap();
+        wallet.add(type2, name2, value2, &tags2).unwrap();
+        let export_writer = _create_export_file();
+        let key = _get_test_master_key();
+
+        export(&wallet, export_writer, key.clone(), 1).unwrap();
+        wallet.close().unwrap();
+        _cleanup();
+
+        let mut content = _get_export_file_content();
+        content.pop().unwrap();
+        _replace_export_file(content);
+
+        let reader = _get_export_file_reader();
+        let wallet = _create_wallet();
+        let res = import(&wallet, reader, key.clone());
+        assert_match!(Err(_), res);
+        let res = wallet.get(type1, name1, _options());
+        assert_match!(Err(WalletError::ItemNotFound), res);
+    }
+
+    #[test]
+    fn export_import_returns_error_if_encrypted_data_extended() {
+        _cleanup();
+        let type1 = "type1";
+        let name1 = "name1";
+        let value1 = "value1";
+        let mut tags1 = HashMap::new();
+        tags1.insert("tag_name_1".to_string(), "tag_value_1".to_string());
+        tags1.insert("tag_name_2".to_string(), "tag_value_2".to_string());
+        tags1.insert("~tag_name_3".to_string(), "tag_value_3".to_string());
+        let record_1_length = _record_length_serialized(type1, name1, value1, &tags1);
+        let type2 = "type2";
+        let name2 = "name2";
+        let value2 = "value2";
+        let mut tags2 = HashMap::new();
+        tags2.insert("tag_name_21".to_string(), "tag_value_21".to_string());
+        tags2.insert("tag_name_22".to_string(), "tag_value_22".to_string());
+        tags2.insert("~tag_name_23".to_string(), "tag_value_23".to_string());
+        let record_2_length = _record_length_serialized(type2, name2, value2, &tags2);
+        let mut wallet = _create_wallet();
+        wallet.add(type1, name1, value1, &tags1).unwrap();
+        wallet.add(type2, name2, value2, &tags2).unwrap();
+        let export_writer = _create_export_file();
+        let key = _get_test_master_key();
+
+        export(&wallet, export_writer, key.clone(), 1).unwrap();
+        wallet.close().unwrap();
+        _cleanup();
+
+        let mut content = _get_export_file_content();
+        content.push(10);
+        _replace_export_file(content);
+
+        let reader = _get_export_file_reader();
+        let wallet = _create_wallet();
+        let res = import(&wallet, reader, key.clone());
+        assert_match!(Err(_), res);
+        let res = wallet.get(type1, name1, _options());
+        assert_match!(Err(WalletError::ItemNotFound), res);
     }
 }
