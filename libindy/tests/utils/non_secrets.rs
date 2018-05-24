@@ -29,6 +29,7 @@ pub const VALUE_4: &'static str = "RecordValue4";
 pub const VALUE_5: &'static str = "RecordValue5";
 pub const QUERY_EMPTY: &'static str = r#"{}"#;
 pub const OPTIONS_EMPTY: &'static str = r#"{}"#;
+pub const OPTIONS_FULL: &'static str = r#"{"retrieveType":true, "retrieveValue":true, "retrieveTags":true}"#;
 pub const TAGS_EMPTY: &'static str = r#"{}"#;
 pub const TAGS: &'static str = r#"{"tagName1":"str1","tagName2":"5","tagName3":"12"}"#;
 pub const TAGS_2: &'static str = r#"{"tagName1":"str2","tagName2":"pre_str3","tagName3":"2"}"#;

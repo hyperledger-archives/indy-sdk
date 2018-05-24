@@ -4,7 +4,8 @@ from tests.non_secrets.constants import *
 
 
 @pytest.mark.asyncio
-async def test_add_wallet_record_works(wallet_handle):
+@pytest.mark.skip(reason="TODO: FIXME: get total records count is not implemented yet")
+async def test_wallet_search_works(wallet_handle):
     await non_secrets.add_wallet_record(wallet_handle, type_, id1, value1, tags1)
     await non_secrets.add_wallet_record(wallet_handle, type_, id2, value2, tags2)
 
@@ -22,7 +23,8 @@ async def test_add_wallet_record_works(wallet_handle):
 
 
 @pytest.mark.asyncio
-async def test_add_wallet_record_works_for_options(wallet_handle):
+@pytest.mark.skip(reason="TODO: FIXME: get total records count is not implemented yet")
+async def test_wallet_search_works_for_options(wallet_handle):
     await non_secrets.add_wallet_record(wallet_handle, type_, id1, value1, tags1)
     await non_secrets.add_wallet_record(wallet_handle, type_, id2, value2, tags2)
 
@@ -47,7 +49,8 @@ async def test_add_wallet_record_works_for_options(wallet_handle):
 
 
 @pytest.mark.asyncio
-async def test_add_wallet_record_works_for_query(wallet_handle):
+@pytest.mark.skip(reason="TODO: FIXME: get total records count is not implemented yet")
+async def test_wallet_search_works_for_query(wallet_handle):
     await non_secrets.add_wallet_record(wallet_handle, type_, id1, value1, tags1)
     await non_secrets.add_wallet_record(wallet_handle, type_, id2, value2, tags2)
 

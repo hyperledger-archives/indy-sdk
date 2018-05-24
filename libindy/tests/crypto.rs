@@ -216,7 +216,7 @@ mod high_cases {
             let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
             let res = CryptoUtils::get_key_metadata(wallet_handle, &verkey);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -634,7 +634,6 @@ mod load {
      - AGENTS_CNT - count of parallel agents
      - OPERATIONS_CNT - operations per agent (consequence in same agent)
      - DATA_SZ - data size for encryption
-     - UNENCRYPTED_WALLET - is wallet unencrypted (unencrypted by default)
     */
     #[test]
     fn parallel_auth_encrypt() {
@@ -643,14 +642,13 @@ mod load {
         let agent_cnt = std::env::var("AGENTS_CNT").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(AGENT_CNT);
         let data_sz = std::env::var("DATA_SZ").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(DATA_SZ);
         let operations_cnt = std::env::var("OPERATIONS_CNT").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(OPERATIONS_CNT);
-        let credentials = if std::env::var("UNENCRYPTED_WALLET").is_ok() { None } else { Some(r#"{ "key": "test_passwd" }"#) };
 
         let mut agents = Vec::new();
         let mut os_rng = OsRng::new().unwrap();
         for _ in 0..agent_cnt {
             let wallet_name = format!("load-wallet-name-{}", SequenceUtils::get_next_id());
-            WalletUtils::create_wallet(POOL, &wallet_name, None, None, credentials).unwrap();
-            let wallet = WalletUtils::open_wallet(&wallet_name, None, credentials).unwrap();
+            WalletUtils::create_wallet(POOL, &wallet_name, None, None, Some(DEFAULT_WALLET_CREDENTIALS)).unwrap();
+            let wallet = WalletUtils::open_wallet(&wallet_name, None, Some(DEFAULT_WALLET_CREDENTIALS)).unwrap();
             let (_did, verkey) = DidUtils::create_and_store_my_did(wallet, None).unwrap();
             let mut data = vec![0u8; data_sz];
             os_rng.fill_bytes(&mut data.as_mut_slice());
@@ -694,9 +692,8 @@ mod load {
         warn!("================= Settings =================\n\
         Agent cnt:               \t{:?}\n\
         Operations per agent cnt:\t{:?}\n\
-        Data size:               \t{:?}\n\
-        Unencrypted wallet:      \t{:?}",
-              agent_cnt, operations_cnt, data_sz, credentials.is_none());
+        Data size:               \t{:?}",
+              agent_cnt, operations_cnt, data_sz);
 
         warn!("================= Summary =================\n\
         Max pending:   \t{:?}\n\

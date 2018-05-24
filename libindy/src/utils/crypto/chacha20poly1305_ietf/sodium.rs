@@ -15,14 +15,11 @@ impl ChaCha20Poly1305IETF {
     pub const KEYBYTES: usize = chacha20poly1305_ietf::KEYBYTES;
     pub const TAGBYTES: usize = chacha20poly1305_ietf::TAGBYTES;
 
-    pub fn new() -> Self {
-        Self {}
-    }
-
     pub fn create_key() -> Vec<u8> {
         chacha20poly1305_ietf::gen_key()[..].to_vec()
     }
 
+    #[allow(dead_code)]
     pub fn gen_nonce() -> Vec<u8> {
         chacha20poly1305_ietf::gen_nonce()[..].to_vec()
     }

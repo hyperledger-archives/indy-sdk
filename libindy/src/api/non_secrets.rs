@@ -267,7 +267,7 @@ pub extern fn indy_delete_wallet_record(command_handle: i32,
 ///  {
 ///    retrieveType: (optional, false by default) Retrieve record type,
 ///    retrieveValue: (optional, true by default) Retrieve record value,
-///    retrieveTags: (optional, true by default) Retrieve record tags
+///    retrieveTags: (optional, false by default) Retrieve record tags
 ///  }
 /// #Returns
 /// wallet record json:
@@ -330,7 +330,7 @@ pub  extern fn indy_get_wallet_record(command_handle: i32,
 ///    retrieveTotalCount: (optional, false by default) Calculate total count,
 ///    retrieveType: (optional, false by default) Retrieve record type,
 ///    retrieveValue: (optional, true by default) Retrieve record value,
-///    retrieveTags: (optional, true by default) Retrieve record tags,
+///    retrieveTags: (optional, false by default) Retrieve record tags,
 ///  }
 /// #Returns
 /// search_handle: Wallet search handle that can be used later
@@ -370,7 +370,7 @@ pub  extern fn indy_open_wallet_search(command_handle: i32,
 ///
 /// #Params
 /// wallet_handle: wallet handle (created by open_wallet)
-/// wallet_search_handle: wallet wallet handle (created by indy_open_wallet_search)
+/// wallet_search_handle: wallet search handle (created by indy_open_wallet_search)
 /// count: Count of records to fetch
 ///
 /// #Returns

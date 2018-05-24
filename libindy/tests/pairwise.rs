@@ -139,7 +139,6 @@ mod high_cases {
         use super::*;
 
         #[test]
-        #[ignore]
         fn indy_list_pairwise_works() {
             TestUtils::cleanup_storage();
 
@@ -163,7 +162,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore]
         fn indy_list_pairwise_works_for_empty_result() {
             TestUtils::cleanup_storage();
 
@@ -180,7 +178,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore]
         fn indy_list_pairwise_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
 

@@ -11,12 +11,20 @@ pub enum TagName {
     PlainTagName(Vec<u8>),
 }
 
-impl From<String> for TagName {
-    fn from(s: String) -> TagName {
-        let v = s.into_bytes();
-        match v[0] as char {
-            '~' => TagName::PlainTagName(v),
-            _ => TagName::EncryptedTagName(v),
+
+impl TagName {
+    fn from(s: String) -> Result<TagName, WalletQueryError> {
+        let mut v = s.into_bytes();
+        match v.first() {
+            Some(&126) => match v.get(1) {
+                Some(_) => {
+                    v.remove(0);
+                    Ok(TagName::PlainTagName(v))
+                },
+                None => Err(WalletQueryError::StructureErr("Tag name must not be empty".to_string())),
+            },
+            Some(_) => Ok(TagName::EncryptedTagName(v)),
+            None => Err(WalletQueryError::StructureErr("Tag name must not be empty".to_string()))
         }
     }
 }
@@ -184,7 +192,7 @@ fn parse_operator(key: String, value: serde_json::Value) -> Result<Operator, Wal
             Ok(Operator::Not(Box::new(operator)))
         },
         ("$not", _) => Err(WalletQueryError::StructureErr("$not must be JSON object".to_string())),
-        (_, serde_json::Value::String(value)) => Ok(Operator::Eq(TagName::from(key), TargetValue::from(value))),
+        (_, serde_json::Value::String(value)) => Ok(Operator::Eq(TagName::from(key)?, TargetValue::from(value))),
         (_, serde_json::Value::Object(map)) => {
             if map.len() == 1 {
                 let (operator_name, value) = map.into_iter().next().unwrap();
@@ -200,19 +208,19 @@ fn parse_operator(key: String, value: serde_json::Value) -> Result<Operator, Wal
 
 fn parse_single_operator(operator_name: String, key: String, value: serde_json::Value) -> Result<Operator, WalletQueryError> {
     match (&*operator_name, value) {
-        ("$neq", serde_json::Value::String(s)) => Ok(Operator::Neq(TagName::from(key), TargetValue::from(s))),
+        ("$neq", serde_json::Value::String(s)) => Ok(Operator::Neq(TagName::from(key)?, TargetValue::from(s))),
         ("$neq", _) => Err(WalletQueryError::ValueErr("$neq must be used with string".to_string())),
-        ("$gt", serde_json::Value::String(s)) => Ok(Operator::Gt(TagName::from(key), TargetValue::from(s))),
+        ("$gt", serde_json::Value::String(s)) => Ok(Operator::Gt(TagName::from(key)?, TargetValue::from(s))),
         ("$gt", _) => Err(WalletQueryError::ValueErr("$gt must be used with string".to_string())),
-        ("$gte", serde_json::Value::String(s)) => Ok(Operator::Gte(TagName::from(key), TargetValue::from(s))),
+        ("$gte", serde_json::Value::String(s)) => Ok(Operator::Gte(TagName::from(key)?, TargetValue::from(s))),
         ("$gte", _) => Err(WalletQueryError::ValueErr("$gte must be used with string".to_string())),
-        ("$lt", serde_json::Value::String(s)) => Ok(Operator::Lt(TagName::from(key), TargetValue::from(s))),
+        ("$lt", serde_json::Value::String(s)) => Ok(Operator::Lt(TagName::from(key)?, TargetValue::from(s))),
         ("$lt", _) => Err(WalletQueryError::ValueErr("$lt must be used with string".to_string())),
-        ("$lte", serde_json::Value::String(s)) => Ok(Operator::Lte(TagName::from(key), TargetValue::from(s))),
+        ("$lte", serde_json::Value::String(s)) => Ok(Operator::Lte(TagName::from(key)?, TargetValue::from(s))),
         ("$lte", _) => Err(WalletQueryError::ValueErr("$lte must be used with string".to_string())),
-        ("$like", serde_json::Value::String(s)) => Ok(Operator::Like(TagName::from(key), TargetValue::from(s))),
+        ("$like", serde_json::Value::String(s)) => Ok(Operator::Like(TagName::from(key)?, TargetValue::from(s))),
         ("$like", _) => Err(WalletQueryError::ValueErr("$like must be used with string".to_string())),
-        ("$regex", serde_json::Value::String(s)) => Ok(Operator::Regex(TagName::from(key), TargetValue::from(s))),
+        ("$regex", serde_json::Value::String(s)) => Ok(Operator::Regex(TagName::from(key)?, TargetValue::from(s))),
         ("$regex", _) => Err(WalletQueryError::ValueErr("$regex must be used with string".to_string())),
         ("$in", serde_json::Value::Array(values)) => {
             let mut target_values: Vec<TargetValue> = Vec::new();
@@ -225,7 +233,7 @@ fn parse_single_operator(operator_name: String, key: String, value: serde_json::
                 }
             }
 
-            Ok(Operator::In(TagName::from(key), target_values))
+            Ok(Operator::In(TagName::from(key)?, target_values))
         },
         ("$in", _) => Err(WalletQueryError::ValueErr("$in must be used with array of strings".to_string())),
         (_, _) => Err(WalletQueryError::ValueErr(format!("Bad operator: {}", operator_name)))

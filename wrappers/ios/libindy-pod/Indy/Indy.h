@@ -23,6 +23,7 @@ FOUNDATION_EXPORT const unsigned char indyVersionString[];
 #import <Indy/IndyPairwise.h>
 #import <Indy/IndyCrypto.h>
 #import <Indy/IndyBlobStorage.h>
+#import <Indy/IndyNonSecrets.h>
 
 
 

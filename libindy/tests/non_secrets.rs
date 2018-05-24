@@ -72,6 +72,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, Some(TAGS)).unwrap();
+            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -252,11 +253,11 @@ mod high_cases {
 
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
-//            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS_EMPTY);
+            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS_EMPTY);
 
             NonSecretsUtils::update_wallet_record_tags(wallet_handle, TYPE, ID, TAGS).unwrap();
 
-//            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS);
+            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -271,15 +272,15 @@ mod high_cases {
 
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
-//            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS_EMPTY);
+            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS_EMPTY);
 
             NonSecretsUtils::update_wallet_record_tags(wallet_handle, TYPE, ID, TAGS).unwrap();
 
-//            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS);
+            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS);
 
             NonSecretsUtils::update_wallet_record_tags(wallet_handle, TYPE, ID, "{}").unwrap();
 
-//            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS_EMPTY);
+            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS_EMPTY);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -362,11 +363,11 @@ mod high_cases {
 
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
-//            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS_EMPTY);
+            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS_EMPTY);
 
             NonSecretsUtils::add_wallet_record_tags(wallet_handle, TYPE, ID, TAGS).unwrap();
 
-            //check_record_field(wallet_handle, TYPE, ID, "tags", TAGS);
+            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -381,19 +382,19 @@ mod high_cases {
 
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
-            //check_record_field(wallet_handle, TYPE, ID, "tags", TAGS_EMPTY);
+            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS_EMPTY);
 
             let tags_json = r#"{"tagName1": "str1"}"#;
             NonSecretsUtils::add_wallet_record_tags(wallet_handle, TYPE, ID, tags_json).unwrap();
 
-            //check_record_field(wallet_handle, TYPE, ID, "tags", tags_json);
+            check_record_field(wallet_handle, TYPE, ID, "tags", tags_json);
 
             let tags_json_2 = r#"{"tagName2": "str2"}"#;
             NonSecretsUtils::add_wallet_record_tags(wallet_handle, TYPE, ID, tags_json_2).unwrap();
 
             let expected_tags = r#"{"tagName1": "str1", "tagName2": "str2"}"#;
 
-            //check_record_field(wallet_handle, TYPE, ID, "tags", expected_tags);
+            check_record_field(wallet_handle, TYPE, ID, "tags", expected_tags);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -408,11 +409,11 @@ mod high_cases {
 
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, Some(TAGS)).unwrap();
 
-            //check_record_field(wallet_handle, TYPE, ID, "tags", TAGS);
+            check_record_field(wallet_handle, TYPE, ID, "tags", TAGS);
 
             NonSecretsUtils::add_wallet_record_tags(wallet_handle, TYPE, ID, TAGS).unwrap();
 
-            // check_record_field(wallet_handle, TYPE, ID, "tags", TAGS);
+             check_record_field(wallet_handle, TYPE, ID, "tags", TAGS);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -427,13 +428,13 @@ mod high_cases {
 
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, Some(TAGS)).unwrap();
 
-            // check_record_field(wallet_handle, TYPE, ID, "tags", TAGS);
+             check_record_field(wallet_handle, TYPE, ID, "tags", TAGS);
 
             let tags_json = r#"{"tagName1": "str2"}"#;
             NonSecretsUtils::add_wallet_record_tags(wallet_handle, TYPE, ID, tags_json).unwrap();
 
-            let expected_result = r#"{"tagName1": "str2", "tagName2": 5, "tagName3": 12}"#;
-            // check_record_field(wallet_handle, TYPE, ID, "tags", expected_result);
+            let expected_result = r#"{"tagName1": "str2", "tagName2": "5", "tagName3": "12"}"#;
+             check_record_field(wallet_handle, TYPE, ID, "tags", expected_result);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -501,8 +502,8 @@ mod high_cases {
 
             NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
 
-            let expected_tags_json = r#"{"tagName2": 5, "tagName3": 12}"#;
-            // check_record_field(wallet_handle, TYPE, ID, "tags", expected_tags_json);
+            let expected_tags_json = r#"{"tagName2": "5", "tagName3": "12"}"#;
+             check_record_field(wallet_handle, TYPE, ID, "tags", expected_tags_json);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -519,7 +520,7 @@ mod high_cases {
 
             NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName1", "tagName2", "tagName3"]"#).unwrap();
 
-            // check_record_field(wallet_handle, TYPE, ID, "tags", TAGS_EMPTY);
+             check_record_field(wallet_handle, TYPE, ID, "tags", TAGS_EMPTY);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -548,8 +549,7 @@ mod high_cases {
 
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, Some(TAGS_EMPTY)).unwrap();
 
-            let res = NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName1"]"#);
-            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+            NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -567,8 +567,8 @@ mod high_cases {
             NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
             NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName2"]"#).unwrap();
 
-            let expected_tags = r#"{"tagName3": 12}"#;
-            //check_record_field(wallet_handle, TYPE, ID, "tags", expected_tags);
+            let expected_tags = r#"{"tagName3": "12"}"#;
+            check_record_field(wallet_handle, TYPE, ID, "tags", expected_tags);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -585,8 +585,7 @@ mod high_cases {
 
             NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
 
-            let res = NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName1"]"#);
-            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+            NonSecretsUtils::delete_wallet_record_tags(wallet_handle, TYPE, ID, r#"["tagName1"]"#).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -750,7 +749,7 @@ mod high_cases {
             let record = NonSecretsUtils::get_wallet_record(wallet_handle, TYPE, ID, OPTIONS_EMPTY).unwrap();
             let record: WalletRecord = serde_json::from_str(&record).unwrap();
 
-            let expected_record = WalletRecord { id: ID.to_string(), value: Some(VALUE.to_string()), tags: Some(TAGS_EMPTY.to_string()), type_: None };
+            let expected_record = WalletRecord { id: ID.to_string(), value: Some(VALUE.to_string()), tags: None, type_: None };
             assert_eq!(expected_record, record);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -767,6 +766,7 @@ mod high_cases {
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
             let options = json!({
+                "retrieveType": false,
                 "retrieveValue": false,
                 "retrieveTags": false
             }).to_string();
@@ -791,6 +791,7 @@ mod high_cases {
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
             let options = json!({
+                "retrieveType": false,
                 "retrieveValue": true,
                 "retrieveTags": false
             }).to_string();
@@ -815,6 +816,7 @@ mod high_cases {
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
             let options = json!({
+                "retrieveType": false,
                 "retrieveValue": false,
                 "retrieveTags": true
             }).to_string();
@@ -879,7 +881,7 @@ mod high_cases {
 
             let options = "not_json";
             let res = NonSecretsUtils::get_wallet_record(wallet_handle, TYPE, ID, options);
-            assert_eq!(ErrorCode::WalletStorageError, res.unwrap_err());
+            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -903,6 +905,7 @@ mod high_cases {
         }
     }
 
+    #[cfg(feature = "non_secrets_search_tests")]
     mod search {
         use super::*;
 
@@ -1419,15 +1422,34 @@ mod high_cases {
     }
 }
 
+
+mod medium_cases {
+    use super::*;
+
+    mod rusqlite_transaction_fix {
+        use super::*;
+
+        #[test]
+        pub fn transaction_works_during_opened_wallet_search() {
+            let wallet_handle = NonSecretsUtils::populate_wallet_for_search();
+
+            let search_handle = NonSecretsUtils::open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
+
+            NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, "IDSPEC", VALUE, Some(TAGS_2)).unwrap();
+
+            NonSecretsUtils::close_wallet_search(search_handle).unwrap();
+        }
+    }
+}
+
 fn check_record_field(wallet_handle: i32, type_: &str, id: &str, field: &str, expected_value: &str) {
-    let record = NonSecretsUtils::get_wallet_record(wallet_handle, type_, id, OPTIONS_EMPTY).unwrap();
+    let record = NonSecretsUtils::get_wallet_record(wallet_handle, type_, id, OPTIONS_FULL).unwrap();
     let record = serde_json::from_str::<WalletRecord>(&record).unwrap();
 
     match field {
         "value" => assert_eq!(expected_value, record.value.unwrap()),
-        "tags" =>
-            assert_eq!(serde_json::from_str::<serde_json::Value>(&expected_value).unwrap(),
-                       serde_json::from_str::<serde_json::Value>(&record.tags.unwrap()).unwrap()),
+        "tags" => assert_eq!(serde_json::from_str::<serde_json::Value>(&expected_value).unwrap(),
+                             serde_json::from_str::<serde_json::Value>(&record.tags.unwrap()).unwrap()),
         _ => panic!()
     };
 }

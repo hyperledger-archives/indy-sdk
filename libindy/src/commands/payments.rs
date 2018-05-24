@@ -8,7 +8,7 @@ use serde_json;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use services::wallet::WalletService;
+use services::wallet::{WalletService, RecordOptions};
 use errors::common::CommonError;
 use std::vec::Vec;
 use std::string::String;
@@ -246,7 +246,7 @@ impl PaymentsCommandExecutor {
             Err(err) => return cb(Err(IndyError::from(err)))
         };
 
-        match self.wallet_service.search_records(wallet_handle, "PaymentAddress", "{}", "{}") {
+        match self.wallet_service.search_records(wallet_handle, "PaymentAddress", "{}", &RecordOptions::id_value()) {
             Ok(mut search) => {
                 let mut list_addresses: Vec<String> = Vec::new();
 

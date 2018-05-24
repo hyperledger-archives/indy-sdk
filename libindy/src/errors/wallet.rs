@@ -187,6 +187,12 @@ impl From<FromUtf8Error> for WalletError {
     }
 }
 
+impl From<Utf8Error> for WalletError {
+    fn from(err: Utf8Error) -> Self {
+        WalletError::EncodingError(format!("Failed to decode input into utf8: {}", err.description()))
+    }
+}
+
 impl From<base64::DecodeError> for WalletError {
     fn from(err: base64::DecodeError) -> Self {
         WalletError::EncodingError(format!("Failed to decode input into base64: {}", err.description()))
@@ -258,7 +264,7 @@ impl error::Error for WalletStorageError {
             WalletStorageError::ConfigError => "Storage configuration is invalid",
             WalletStorageError::ItemNotFound => "Item not found",
             WalletStorageError::ItemAlreadyExists => "Item already exists",
-            WalletStorageError::PluggedStorageError(err_code) => "Plugged storage error",
+            WalletStorageError::PluggedStorageError(_err_code) => "Plugged storage error",
             WalletStorageError::IOError(ref s) => s,
             WalletStorageError::CommonError(ref e) => e.description(),
         }

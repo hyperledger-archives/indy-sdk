@@ -130,9 +130,10 @@ impl WalletService {
                                    get_record_type: WalletGetRecordType,
                                    get_record_value: WalletGetRecordValue,
                                    get_record_tags: WalletGetRecordTags,
+                                   free_record: WalletFreeRecord,
                                    get_storage_metadata: WalletGetStorageMetadata,
                                    set_storage_metadata: WalletSetStorageMetadata,
-                                   free_record: WalletFreeRecord,
+                                   free_storage_metadata: WalletFreeStorageMetadata,
                                    search_records: WalletSearchRecords,
                                    search_all_records: WalletSearchAllRecords,
                                    get_search_total_count: WalletGetSearchTotalCount,
@@ -150,9 +151,9 @@ impl WalletService {
                                                          add_record, update_record_value,
                                                          update_record_tags, add_record_tags, delete_record_tags,
                                                          delete_record, get_record, get_record_id,
-                                                         get_record_type, get_record_value, get_record_tags,
-                                                          get_storage_metadata, set_storage_metadata,
-                                                         free_record, search_records, search_all_records,
+                                                         get_record_type, get_record_value, get_record_tags, free_record,
+                                                          get_storage_metadata, set_storage_metadata, free_storage_metadata,
+                                                         search_records, search_all_records,
                                                          get_search_total_count,
                                                          fetch_search_next_record, free_search)));
         Ok(())
@@ -283,12 +284,17 @@ impl WalletService {
         let storage = storage_type.open_storage(name,
                                                 config.as_ref().map(String::as_str),
                                                 &credentials.storage_credentials)?;
-        let keys = Keys::new(
-            ChaCha20Poly1305IETF::decrypt_merged(
-                &storage.get_storage_metadata()?,
-                &credentials.master_key
-            )?
+
+        let key_decryption_result = ChaCha20Poly1305IETF::decrypt_merged(
+            &storage.get_storage_metadata()?,
+            &credentials.master_key
         );
+        let keys_vector = match key_decryption_result {
+            Ok(keys_vector) => keys_vector,
+            Err(_) => return Err(WalletError::AccessFailed("Invalid master key provided".to_string())),
+        };
+        let keys = Keys::new(keys_vector);
+
         let wallet = Wallet::new(name, &descriptor.pool_name, storage, keys);
         let wallet_handle = SequenceUtils::get_next_id();
         wallets.insert(wallet_handle, Box::new(wallet));
@@ -333,7 +339,7 @@ impl WalletService {
     }
 
     pub fn add_record(&self, wallet_handle: i32, type_: &str, name: &str, value: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
-        match self.wallets.borrow().get(&wallet_handle) {
+        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
             Some(wallet) => {
                 wallet.add(type_, name, value, &tags)
             }
@@ -344,16 +350,11 @@ impl WalletService {
     pub fn add_indy_object<T>(&self, wallet_handle: i32, name: &str, object: &T, tags: &HashMap<String, String>)
         -> Result<String, WalletError> where T: JsonEncodable, T: NamedType {
         let type_ = T::short_type_name();
-        match self.wallets.borrow().get(&wallet_handle) {
-            Some(wallet) => {
-                let object_json = object.to_json()
-                    .map_err(map_err_trace!())
-                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize {:?}: {:?}", type_, err)))?;
-                self.add_record(wallet_handle, &self.add_prefix(type_), name, &object_json, tags)?;
-                Ok(object_json)
-            }
-            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
-        }
+        let object_json = object.to_json()
+            .map_err(map_err_trace!())
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize {:?}: {:?}", type_, err)))?;
+        self.add_record(wallet_handle, &self.add_prefix(type_), name, &object_json, tags)?;
+        Ok(object_json)
     }
 
     pub fn update_record_value(&self, wallet_handle: i32, type_: &str, name: &str, value: &str) -> Result<(), WalletError> {
@@ -455,16 +456,14 @@ impl WalletService {
     }
 
     pub fn search_records(&self, wallet_handle: i32, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> {
-        //        match self.wallets.borrow().get(&wallet_handle) {
-        //            Some(wallet) => wallet.search_records(type_, query_json, options_json),
-        //            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
-        //        }
-        unimplemented!()
+        match self.wallets.borrow().get(&wallet_handle) {
+            Some(wallet) => Ok(WalletSearch { iter: wallet.search(type_, query_json, Some(options_json))? }),
+            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
+        }
     }
 
     pub fn search_indy_records<T>(&self, wallet_handle: i32, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> where T: NamedType {
-        //        self.search_records(wallet_handle, &self.add_prefix(T::short_type_name()), query_json, options_json)
-        unimplemented!()
+        self.search_records(wallet_handle, &self.add_prefix(T::short_type_name()), query_json, options_json)
     }
 
     pub fn search_all_records(&self, wallet_handle: i32) -> Result<WalletSearch, WalletError> {
@@ -527,7 +526,7 @@ impl WalletService {
     }
 
     pub fn import_wallet(&self, wallet_handle: i32, reader: Box<Read>, key: [u8; 32]) -> Result<(), WalletError> {
-        match self.wallets.borrow().get(&wallet_handle) {
+        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
             Some(wallet) => import(wallet, reader, key),
             None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         }
@@ -557,7 +556,9 @@ fn bigend_bytes_to_length(bytes: &[u8]) -> usize {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WalletRecord {
+    #[serde(rename="id")]
     name: String,
+    #[serde(rename="type")]
     type_: Option<String>,
     value: Option<String>,
     tags: Option<HashMap<String, String>>
@@ -601,10 +602,11 @@ impl WalletRecord {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RecordOptions {
-    fetch_type: Option<bool>,
-    fetch_value: Option<bool>,
-    fetch_tags: Option<bool>
+    pub retrieve_type: Option<bool>,
+    pub retrieve_value: Option<bool>,
+    pub retrieve_tags: Option<bool>
 }
 
 impl JsonEncodable for RecordOptions {}
@@ -614,9 +616,9 @@ impl<'a> JsonDecodable<'a> for RecordOptions {}
 impl RecordOptions {
     pub fn id() -> String {
         let options = RecordOptions {
-            fetch_type: Some(false),
-            fetch_value: Some(false),
-            fetch_tags: Some(false)
+            retrieve_type: Some(false),
+            retrieve_value: Some(false),
+            retrieve_tags: Some(false)
         };
 
         options.to_json().unwrap()
@@ -624,9 +626,9 @@ impl RecordOptions {
 
     pub fn id_value() -> String {
         let options = RecordOptions {
-            fetch_type: Some(false),
-            fetch_value: Some(true),
-            fetch_tags: Some(false)
+            retrieve_type: Some(false),
+            retrieve_value: Some(true),
+            retrieve_tags: Some(false)
         };
 
         options.to_json().unwrap()
@@ -634,9 +636,9 @@ impl RecordOptions {
 
     pub fn full() -> String {
         let options = RecordOptions {
-            fetch_type: Some(true),
-            fetch_value: Some(true),
-            fetch_tags: Some(true)
+            retrieve_type: Some(true),
+            retrieve_value: Some(true),
+            retrieve_tags: Some(true)
         };
 
         options.to_json().unwrap()
@@ -645,28 +647,27 @@ impl RecordOptions {
 
 pub struct WalletSearch {
     // TODO
-    total_count: Option<usize>,
-    iter: Option<Box<Iterator<Item=WalletRecord>>>,
+    iter: iterator::WalletIterator,
 }
 
 impl WalletSearch {
     pub fn get_total_count(&self) -> Result<Option<usize>, WalletError> {
-        Ok(self.total_count)
+        unimplemented!()
     }
 
     pub fn fetch_next_record(&mut self) -> Result<Option<WalletRecord>, WalletError> {
-        Ok(self.iter.as_mut().and_then(|i| i.next()))
+        self.iter.next()
     }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchOptions {
-    retrieve_records: Option<bool>,
-    retrieve_total_count: Option<bool>,
-    retrieve_type: Option<bool>,
-    retrieve_value: Option<bool>,
-    retrieve_tags: Option<bool>
+    pub retrieve_records: Option<bool>,
+    pub retrieve_total_count: Option<bool>,
+    pub retrieve_type: Option<bool>,
+    pub retrieve_value: Option<bool>,
+    pub retrieve_tags: Option<bool>
 }
 
 impl SearchOptions {
@@ -677,6 +678,18 @@ impl SearchOptions {
             retrieve_type: Some(true),
             retrieve_value: Some(true),
             retrieve_tags: Some(true)
+        };
+
+        options.to_json().unwrap()
+    }
+
+    pub fn id_value() -> String {
+        let options = SearchOptions {
+            retrieve_records: Some(true),
+            retrieve_total_count: Some(true),
+            retrieve_type: Some(true),
+            retrieve_value: Some(true),
+            retrieve_tags: Some(false)
         };
 
         options.to_json().unwrap()
@@ -730,9 +743,9 @@ mod tests {
 
     fn _fetch_options(type_: bool, value: bool, tags: bool) -> String {
         let mut map = HashMap::new();
-        map.insert("fetch_type", type_);
-        map.insert("fetch_value", value);
-        map.insert("fetch_tags", tags);
+        map.insert("retrieveType", type_);
+        map.insert("retrieveValue", value);
+        map.insert("retrieveTags", tags);
         serde_json::to_string(&map).unwrap()
     }
 

@@ -21,6 +21,7 @@ mod utils;
 
 #[cfg(feature = "local_nodes_pool")]
 use utils::callback::CallbackUtils;
+use utils::constants::DEFAULT_WALLET_CREDENTIALS;
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
@@ -85,7 +86,7 @@ fn anoncreds_demo_works() {
                            CString::new(wallet_name).unwrap().as_ptr(),
                            CString::new(xtype).unwrap().as_ptr(),
                            null(),
-                           null(),
+                           CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
                            create_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -97,7 +98,7 @@ fn anoncreds_demo_works() {
         indy_open_wallet(open_wallet_command_handle,
                          CString::new(wallet_name).unwrap().as_ptr(),
                          null(),
-                         null(),
+                         CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
                          open_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -460,7 +461,7 @@ fn ledger_demo_works() {
                            CString::new(my_wallet_name).unwrap().as_ptr(),
                            CString::new(wallet_type).unwrap().as_ptr(),
                            null(),
-                           null(),
+                           CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
                            create_my_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -472,7 +473,7 @@ fn ledger_demo_works() {
         indy_open_wallet(open_my_wallet_command_handle,
                          CString::new(my_wallet_name).unwrap().as_ptr(),
                          null(),
-                         null(),
+                         CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
                          open_my_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -487,7 +488,7 @@ fn ledger_demo_works() {
                            CString::new(their_wallet_name).unwrap().as_ptr(),
                            CString::new(wallet_type).unwrap().as_ptr(),
                            null(),
-                           null(),
+                           CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
                            create_their_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -499,7 +500,7 @@ fn ledger_demo_works() {
         indy_open_wallet(open_their_wallet_command_handle,
                          CString::new(their_wallet_name).unwrap().as_ptr(),
                          null(),
-                         null(),
+                         CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
                          open_their_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -693,7 +694,7 @@ fn crypto_demo_works() {
                            CString::new(wallet_name).unwrap().as_ptr(),
                            CString::new(xtype).unwrap().as_ptr(),
                            null(),
-                           null(),
+                           CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
                            create_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -705,7 +706,7 @@ fn crypto_demo_works() {
         indy_open_wallet(open_wallet_command_handle,
                          CString::new(wallet_name).unwrap().as_ptr(),
                          null(),
-                         null(),
+                         CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
                          open_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
