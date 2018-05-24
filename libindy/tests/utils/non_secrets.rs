@@ -9,9 +9,7 @@ use utils::types::WalletRecord;
 
 use std::ffi::CString;
 use std::ptr::null;
-use std::sync::Mutex;
 use std::sync::{Once, ONCE_INIT};
-use std::mem;
 
 pub const SEARCH_COMMON_WALLET: &'static str = "SEARCH_COMMON_WALLET";
 pub const TYPE: &'static str = "TestType";
@@ -234,51 +232,49 @@ impl NonSecretsUtils {
 
                 }
 
-        unsafe {
-            COMMON_WALLET_INIT.call_once(|| {
-                TestUtils::cleanup_storage();
+        COMMON_WALLET_INIT.call_once(|| {
+            TestUtils::cleanup_storage();
 
-                //1. Create and Open wallet
-                WalletUtils::create_wallet(POOL, SEARCH_COMMON_WALLET, None, None, None).unwrap();
-                let wallet_handle = WalletUtils::open_wallet(SEARCH_COMMON_WALLET, None, None).unwrap();
+            //1. Create and Open wallet
+            WalletUtils::create_wallet(POOL, SEARCH_COMMON_WALLET, None, None, None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(SEARCH_COMMON_WALLET, None, None).unwrap();
 
-                let record_1 = NonSecretsUtils::record_1();
-                NonSecretsUtils::add_wallet_record(wallet_handle,
-                                                   TYPE,
-                                                   &record_1.id,
-                                                   &record_1.value.clone().unwrap(),
-                                                   record_1.tags.as_ref().map(String::as_str)).unwrap();
+            let record_1 = NonSecretsUtils::record_1();
+            NonSecretsUtils::add_wallet_record(wallet_handle,
+                                               TYPE,
+                                               &record_1.id,
+                                               &record_1.value.clone().unwrap(),
+                                               record_1.tags.as_ref().map(String::as_str)).unwrap();
 
-                let record_2 = NonSecretsUtils::record_2();
-                NonSecretsUtils::add_wallet_record(wallet_handle,
-                                                   TYPE,
-                                                   &record_2.id,
-                                                   &record_2.value.clone().unwrap(),
-                                                   record_2.tags.as_ref().map(String::as_str)).unwrap();
+            let record_2 = NonSecretsUtils::record_2();
+            NonSecretsUtils::add_wallet_record(wallet_handle,
+                                               TYPE,
+                                               &record_2.id,
+                                               &record_2.value.clone().unwrap(),
+                                               record_2.tags.as_ref().map(String::as_str)).unwrap();
 
-                let record_3 = NonSecretsUtils::record_3();
-                NonSecretsUtils::add_wallet_record(wallet_handle,
-                                                   TYPE,
-                                                   &record_3.id,
-                                                   &record_3.value.clone().unwrap(),
-                                                   record_3.tags.as_ref().map(String::as_str)).unwrap();
+            let record_3 = NonSecretsUtils::record_3();
+            NonSecretsUtils::add_wallet_record(wallet_handle,
+                                               TYPE,
+                                               &record_3.id,
+                                               &record_3.value.clone().unwrap(),
+                                               record_3.tags.as_ref().map(String::as_str)).unwrap();
 
-                let record_4 = NonSecretsUtils::record_4();
-                NonSecretsUtils::add_wallet_record(wallet_handle,
-                                                   TYPE,
-                                                   &record_4.id,
-                                                   &record_4.value.clone().unwrap(),
-                                                   record_4.tags.as_ref().map(String::as_str)).unwrap();
+            let record_4 = NonSecretsUtils::record_4();
+            NonSecretsUtils::add_wallet_record(wallet_handle,
+                                               TYPE,
+                                               &record_4.id,
+                                               &record_4.value.clone().unwrap(),
+                                               record_4.tags.as_ref().map(String::as_str)).unwrap();
 
-                let record_5 = NonSecretsUtils::record_5();
-                NonSecretsUtils::add_wallet_record(wallet_handle,
-                                                   TYPE,
-                                                   &record_5.id,
-                                                   &record_5.value.clone().unwrap(),
-                                                   record_5.tags.as_ref().map(String::as_str)).unwrap();
+            let record_5 = NonSecretsUtils::record_5();
+            NonSecretsUtils::add_wallet_record(wallet_handle,
+                                               TYPE,
+                                               &record_5.id,
+                                               &record_5.value.clone().unwrap(),
+                                               record_5.tags.as_ref().map(String::as_str)).unwrap();
 
-                WalletUtils::close_wallet(wallet_handle).unwrap();
-            });
-        }
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+        });
     }
 }
