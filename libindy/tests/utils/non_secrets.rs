@@ -13,8 +13,7 @@ use std::sync::Mutex;
 use std::sync::{Once, ONCE_INIT};
 use std::mem;
 
-pub static mut WALLET_HANDLE: i32 = 0;
-
+pub const SEARCH_COMMON_WALLET: &'static str = "SEARCH_COMMON_WALLET";
 pub const TYPE: &'static str = "TestType";
 pub const TYPE_2: &'static str = "TestType2";
 pub const ID: &'static str = "RecordId";
@@ -29,13 +28,14 @@ pub const VALUE_4: &'static str = "RecordValue4";
 pub const VALUE_5: &'static str = "RecordValue5";
 pub const QUERY_EMPTY: &'static str = r#"{}"#;
 pub const OPTIONS_EMPTY: &'static str = r#"{}"#;
+pub const OPTIONS_ID_TYPE_VALUE: &'static str = r#"{"retrieveType":true, "retrieveValue":true, "retrieveTags":false}"#;
 pub const OPTIONS_FULL: &'static str = r#"{"retrieveType":true, "retrieveValue":true, "retrieveTags":true}"#;
 pub const TAGS_EMPTY: &'static str = r#"{}"#;
-pub const TAGS: &'static str = r#"{"tagName1":"str1","tagName2":"5","tagName3":"12"}"#;
-pub const TAGS_2: &'static str = r#"{"tagName1":"str2","tagName2":"pre_str3","tagName3":"2"}"#;
+pub const TAGS: &'static str = r#"{"tagName1":"str1","~tagName2":"5","~tagName3":"8"}"#;
+pub const TAGS_2: &'static str = r#"{"tagName1":"str2","~tagName2":"pre_str3","~tagName3":"2"}"#;
 pub const TAGS_3: &'static str = r#"{"tagName1":"str1","tagName2":"str2","tagName3":"str3"}"#;
-pub const TAGS_4: &'static str = r#"{"tagName1":"2","tagName2":"4","tagName3":"5"}"#;
-pub const TAGS_5: &'static str = r#"{"tagName1":"prefix_str2","tagName2":"str3","tagName3":"6"}"#;
+pub const TAGS_4: &'static str = r#"{"tagName1":"somestr","~tagName2":"4","~tagName3":"5"}"#;
+pub const TAGS_5: &'static str = r#"{"tagName1":"prefix_str2","~tagName2":"str3","~tagName3":"6"}"#;
 
 pub struct NonSecretsUtils {}
 
@@ -228,7 +228,7 @@ impl NonSecretsUtils {
         WalletRecord { id: ID_5.to_string(), type_: None, value: Some(VALUE_5.to_string()), tags: Some(TAGS_5.to_string()) }
     }
 
-    pub fn populate_wallet_for_search() -> i32 {
+    pub fn populate_wallet_for_search() {
         lazy_static! {
                     static ref COMMON_WALLET_INIT: Once = ONCE_INIT;
 
@@ -239,45 +239,46 @@ impl NonSecretsUtils {
                 TestUtils::cleanup_storage();
 
                 //1. Create and Open wallet
-                WALLET_HANDLE = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+                WalletUtils::create_wallet(POOL, SEARCH_COMMON_WALLET, None, None, None).unwrap();
+                let wallet_handle = WalletUtils::open_wallet(SEARCH_COMMON_WALLET, None, None).unwrap();
 
                 let record_1 = NonSecretsUtils::record_1();
-                NonSecretsUtils::add_wallet_record(WALLET_HANDLE,
+                NonSecretsUtils::add_wallet_record(wallet_handle,
                                                    TYPE,
                                                    &record_1.id,
                                                    &record_1.value.clone().unwrap(),
                                                    record_1.tags.as_ref().map(String::as_str)).unwrap();
 
                 let record_2 = NonSecretsUtils::record_2();
-                NonSecretsUtils::add_wallet_record(WALLET_HANDLE,
+                NonSecretsUtils::add_wallet_record(wallet_handle,
                                                    TYPE,
                                                    &record_2.id,
                                                    &record_2.value.clone().unwrap(),
                                                    record_2.tags.as_ref().map(String::as_str)).unwrap();
 
                 let record_3 = NonSecretsUtils::record_3();
-                NonSecretsUtils::add_wallet_record(WALLET_HANDLE,
+                NonSecretsUtils::add_wallet_record(wallet_handle,
                                                    TYPE,
                                                    &record_3.id,
                                                    &record_3.value.clone().unwrap(),
                                                    record_3.tags.as_ref().map(String::as_str)).unwrap();
 
                 let record_4 = NonSecretsUtils::record_4();
-                NonSecretsUtils::add_wallet_record(WALLET_HANDLE,
+                NonSecretsUtils::add_wallet_record(wallet_handle,
                                                    TYPE,
                                                    &record_4.id,
                                                    &record_4.value.clone().unwrap(),
                                                    record_4.tags.as_ref().map(String::as_str)).unwrap();
 
                 let record_5 = NonSecretsUtils::record_5();
-                NonSecretsUtils::add_wallet_record(WALLET_HANDLE,
+                NonSecretsUtils::add_wallet_record(wallet_handle,
                                                    TYPE,
                                                    &record_5.id,
                                                    &record_5.value.clone().unwrap(),
                                                    record_5.tags.as_ref().map(String::as_str)).unwrap();
-            });
 
-            WALLET_HANDLE
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            });
         }
     }
 }

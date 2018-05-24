@@ -125,7 +125,7 @@ pub struct CredentialOfferInfo {
     pub cred_def_id: String
 }
 
-#[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Eq, PartialEq, Clone)]
 pub struct WalletRecord {
     pub id: String,
     #[serde(rename = "type")]
