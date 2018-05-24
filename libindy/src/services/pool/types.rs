@@ -440,20 +440,6 @@ impl MinValue for Vec<(CatchupRep, usize)> {
         Ok(res.ok_or(CommonError::InvalidStructure("Element not Found".to_string()))?.1)
     }
 }
-/*
-#[derive(Debug)]
-pub struct EqValue {
-    pub inner: serde_json::Value
-}
-
-impl Eq for EqValue {}
-
-impl PartialEq for EqValue {
-    fn eq(&self, other: &EqValue) -> bool {
-        self.inner.to_string() == other.inner.to_string()
-    }
-}
-*/
 
 #[derive(Debug)]
 pub struct HashableValue {
