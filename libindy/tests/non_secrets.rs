@@ -1493,6 +1493,28 @@ mod high_cases {
     }
 }
 
+
+mod medium_cases {
+    use super::*;
+
+    mod rusqlite_transaction_fix {
+        use super::*;
+
+        #[test]
+        pub fn transaction_works_during_opened_wallet_search() {
+            NonSecretsUtils::populate_wallet_for_search();
+            let wallet_handle = WalletUtils::open_wallet(SEARCH_COMMON_WALLET, None, None).unwrap();
+
+            let search_handle = NonSecretsUtils::open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
+
+            NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, "IDSPEC", VALUE, Some(TAGS_2)).unwrap();
+
+            NonSecretsUtils::close_wallet_search(search_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+        }
+    }
+}
+
 fn compare_record(expected: &WalletRecord, actual: &WalletRecord) {
     assert_eq!(expected.id, actual.id);
     assert_eq!(expected.type_, actual.type_);
