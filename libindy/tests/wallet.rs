@@ -161,25 +161,27 @@ mod high_cases {
 
             let wallet_name = "indy_open_wallet_works";
             WalletUtils::create_wallet(POOL, wallet_name, None, None, None).unwrap();
-            WalletUtils::open_wallet(wallet_name, None, None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(wallet_name, None, None).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
 
-//        #[test]
-//        fn indy_open_wallet_works_for_plugged() {
-//            TestUtils::cleanup_storage();
-//            InmemWallet::cleanup();
-//
-//            let wallet_name = "indy_open_wallet_works_for_plugged";
-//
-//            WalletUtils::register_wallet_type(INMEM_TYPE, false).unwrap();
-//            WalletUtils::create_wallet(POOL, wallet_name, Some(INMEM_TYPE), None, None).unwrap();
-//            WalletUtils::open_wallet(wallet_name, None, None).unwrap();
-//
-//            TestUtils::cleanup_storage();
-//            InmemWallet::cleanup();
-//        }
+        //        #[test]
+        //        fn indy_open_wallet_works_for_plugged() {
+        //            TestUtils::cleanup_storage();
+        //            InmemWallet::cleanup();
+        //
+        //            let wallet_name = "indy_open_wallet_works_for_plugged";
+        //
+        //            WalletUtils::register_wallet_type(INMEM_TYPE, false).unwrap();
+        //            WalletUtils::create_wallet(POOL, wallet_name, Some(INMEM_TYPE), None, None).unwrap();
+        //            WalletUtils::open_wallet(wallet_name, None, None).unwrap();
+        //
+        //            TestUtils::cleanup_storage();
+        //            InmemWallet::cleanup();
+        //        }
 
         #[test]
         fn indy_open_wallet_works_for_config() {
@@ -187,7 +189,9 @@ mod high_cases {
 
             let wallet_name = "indy_open_wallet_works_for_config";
             WalletUtils::create_wallet(POOL, wallet_name, None, None, None).unwrap();
-            WalletUtils::open_wallet(wallet_name, Some(CONFIG), None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(wallet_name, Some(CONFIG), None).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -409,9 +413,11 @@ mod medium_cases {
 
             WalletUtils::create_wallet(POOL, WALLET, None, None, None).unwrap();
 
-            WalletUtils::open_wallet(WALLET, None, None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(WALLET, None, None).unwrap();
             let res = WalletUtils::open_wallet(WALLET, None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletAlreadyOpenedError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -425,8 +431,12 @@ mod medium_cases {
 
             WalletUtils::create_wallet(POOL, wallet_name_1, None, None, None).unwrap();
             WalletUtils::create_wallet(POOL, wallet_name_2, None, None, None).unwrap();
-            WalletUtils::open_wallet(wallet_name_1, None, None).unwrap();
-            WalletUtils::open_wallet(wallet_name_2, None, None).unwrap();
+
+            let wallet_handle_1 = WalletUtils::open_wallet(wallet_name_1, None, None).unwrap();
+            let wallet_handle_2 = WalletUtils::open_wallet(wallet_name_2, None, None).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle_1).unwrap();
+            WalletUtils::close_wallet(wallet_handle_2).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -450,7 +460,9 @@ mod medium_cases {
 
             let wallet_name = "indy_open_wallet_works_for_changing_credentials";
             WalletUtils::create_wallet(POOL, wallet_name, None, None, Some(r#"{"key":"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#)).unwrap();
-            WalletUtils::open_wallet(wallet_name, None, Some(r#"{"key":"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=", "rekey":"cCAdWqQWFCgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#)).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(wallet_name, None, Some(r#"{"key":"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=", "rekey":"cCAdWqQWFCgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#)).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }

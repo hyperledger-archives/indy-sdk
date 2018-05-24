@@ -1,6 +1,7 @@
 extern crate owning_ref;
 
 mod query;
+mod transaction;
 
 use std;
 
@@ -12,7 +13,6 @@ use std::rc::Rc;
 
 use utils::environment::EnvironmentUtils;
 use errors::wallet::WalletStorageError;
-use errors::common::CommonError;
 use services::wallet::language;
 use super::super::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
@@ -325,7 +325,7 @@ impl WalletStorage for SQLiteStorage {
                                   if options.fetch_value
                                       {Some(EncryptedValue::new(item.1, item.2))}
                                       else {None},
-                                  None,
+                                  if options.fetch_type {Some(type_.clone())} else { None },
                                   Some(tags))
             )
         }
@@ -334,7 +334,7 @@ impl WalletStorage for SQLiteStorage {
                                   if options.fetch_value
                                       {Some(EncryptedValue::new(item.1, item.2))}
                                       else {None},
-                                  None,
+                                  if options.fetch_type {Some(type_.clone())} else { None },
                                   None)
             )
         }
@@ -370,11 +370,7 @@ impl WalletStorage for SQLiteStorage {
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
     fn add(&mut self, type_: &Vec<u8>, name: &Vec<u8>, value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
-        let tx: rusqlite::Transaction = Rc::<rusqlite::Connection>::get_mut(&mut self.conn)
-            .ok_or(WalletStorageError::CommonError(CommonError::InvalidState(
-                "Try to delete tags while active reading".to_owned())))
-            .map_err(map_err_trace!())?
-            .transaction()?;
+        let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
         let res = tx.prepare_cached("INSERT INTO items (type, name, value, key) VALUES (?1, ?2, ?3, ?4)")?
                             .insert(&[type_, name, &value.data, &value.key]);
 
@@ -414,11 +410,7 @@ impl WalletStorage for SQLiteStorage {
     }
 
     fn add_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
-        let tx: rusqlite::Transaction = Rc::<rusqlite::Connection>::get_mut(&mut self.conn)
-            .ok_or(WalletStorageError::CommonError(CommonError::InvalidState(
-                "Try to delete tags while active reading".to_owned())))
-            .map_err(map_err_trace!())?
-            .transaction()?;
+        let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
 
         let res = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
             .query_row(&[type_, name], |row| row.get(0));
@@ -446,11 +438,7 @@ impl WalletStorage for SQLiteStorage {
     }
 
     fn update_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
-        let tx: rusqlite::Transaction = Rc::<rusqlite::Connection>::get_mut(&mut self.conn)
-            .ok_or(WalletStorageError::CommonError(CommonError::InvalidState(
-                "Try to delete tags while active reading".to_owned())))
-            .map_err(map_err_trace!())?
-            .transaction()?;
+        let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
 
         let res = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
             .query_row(&[type_, name], |row| row.get(0));
@@ -490,11 +478,7 @@ impl WalletStorage for SQLiteStorage {
             Ok(id) => id
         };
 
-        let tx: rusqlite::Transaction = Rc::<rusqlite::Connection>::get_mut(&mut self.conn)
-            .ok_or(WalletStorageError::CommonError(CommonError::InvalidState(
-                "Try to delete tags while active reading".to_owned())))
-            .map_err(map_err_trace!())?
-            .transaction()?;
+        let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
         {
             let mut enc_tag_delete_stmt = tx.prepare_cached("DELETE FROM tags_encrypted WHERE item_id = ?1 AND name = ?2")?;
             let mut plain_tag_delete_stmt = tx.prepare_cached("DELETE FROM tags_plaintext WHERE item_id = ?1 AND name = ?2")?;
