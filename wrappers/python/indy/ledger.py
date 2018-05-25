@@ -125,6 +125,46 @@ async def sign_request(wallet_handle: int,
     return res
 
 
+async def multi_sign_request(wallet_handle: int,
+                             submitter_did: str,
+                             request_json: str) -> str:
+    """
+    Multi signs request message.
+
+    Adds submitter information to passed request json, signs it with submitter
+    sign key (see wallet_sign).
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param submitter_did: Id of Identity stored in secured Wallet.
+    :param request_json: Request data json.
+    :return: Signed request json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("multi_sign_request: >>> wallet_handle: %r, submitter_did: %r, request_json: %r",
+                 wallet_handle,
+                 submitter_did,
+                 request_json)
+
+    if not hasattr(multi_sign_request, "cb"):
+        logger.debug("sign_and_submit_request: Creating callback")
+        multi_sign_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_request_json = c_char_p(request_json.encode('utf-8'))
+
+    request_result = await do_call('indy_multi_sign_request',
+                                   c_wallet_handle,
+                                   c_submitter_did,
+                                   c_request_json,
+                                   multi_sign_request.cb)
+
+    res = request_result.decode()
+    logger.debug("multi_sign_request: <<< res: %r", res)
+    return res
+
+
 async def build_get_ddo_request(submitter_did: str,
                                 target_did: str) -> str:
     """
@@ -599,6 +639,31 @@ async def build_node_request(submitter_did: str,
     return res
 
 
+async def build_get_validator_info_request(submitter_did: str) -> str:
+    """
+    Builds a GET_VALIDATOR_INFO request.
+    :param submitter_did: Id of Identity stored in secured Wallet.
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_get_validator_info_request: >>> submitter_did: %r", submitter_did)
+
+    if not hasattr(build_get_validator_info_request, "cb"):
+        logger.debug("build_get_validator_info_request: Creating callback")
+        build_get_validator_info_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+
+    request_json = await do_call('indy_build_get_validator_info_request',
+                                 c_submitter_did,
+                                 build_get_validator_info_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_get_validator_info_request: <<< res: %r", res)
+    return res
+
+
 async def build_get_txn_request(submitter_did: str,
                                 seq_no: int) -> str:
     """
@@ -670,7 +735,7 @@ async def build_pool_config_request(submitter_did: str,
     return res
 
 
-async def build_pool_restart_request(submitter_did: str, action: str, datetime: str) ->str:
+async def build_pool_restart_request(submitter_did: str, action: str, datetime: str) -> str:
     """
     Builds a POOL_RESTART request
 
@@ -689,7 +754,7 @@ async def build_pool_restart_request(submitter_did: str, action: str, datetime: 
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_action = c_char_p(action.encode('utf-8'))
-    c_datetime = c_char_p(datetime.encode('utf-8'))if datetime else None
+    c_datetime = c_char_p(datetime.encode('utf-8')) if datetime else None
 
     request_json = await do_call('indy_build_pool_restart_request',
                                  c_submitter_did,
@@ -700,6 +765,7 @@ async def build_pool_restart_request(submitter_did: str, action: str, datetime: 
     res = request_json.decode()
     logger.debug("build_pool_upgrade_request: <<< res: %r", res)
     return res
+
 
 async def build_pool_upgrade_request(submitter_did: str,
                                      name: str,

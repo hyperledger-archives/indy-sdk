@@ -176,7 +176,7 @@ Docker machine needs to be rebooted after these changes.
 ## Wrappers documentation
 
 The following wrappers are tested and complete. There is also active work
-on wrappers for Go and node.js; visit
+on a wrapper for Go; visit
 [#indy-sdk on Rocket.Chat](https://chat.hyperledger.org/channel/indy-sdk) for
 details.
 
@@ -184,6 +184,7 @@ details.
 * [Java](wrappers/java/README.md)
 * [Python](wrappers/python/README.md)
 * [iOS](wrappers/ios/README.md)
+* [NodeJS](wrappers/nodejs/README.md)
 
 ## Indy CLI documentation
 * An explanation of how to install the official command line interface for that provides commands to manage wallets and interactions with the ledger: [Indy CLI](cli/README.md)

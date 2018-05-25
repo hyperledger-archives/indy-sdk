@@ -258,6 +258,12 @@ impl LedgerService {
         Ok(request)
     }
 
+    pub fn build_get_validator_info_request(&self, identifier: &str) -> Result<String, CommonError> {
+        let operation = GetValidatorInfoOperation::new();
+        LedgerService::build_request(identifier, operation, "GET_VALIDATOR_INFO")
+            .map_err(|err| CommonError::InvalidState(format!("Invalid get validator info request json: {:?}", err)))
+    }
+
     pub fn build_get_txn_request(&self, identifier: &str, data: i32) -> Result<String, CommonError> {
         info!("build_get_txn_request >>> identifier: {:?}, data {:?}", identifier, data);
 
