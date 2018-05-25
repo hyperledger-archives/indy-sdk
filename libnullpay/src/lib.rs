@@ -49,6 +49,42 @@ pub enum ErrorCode
 
     // Common errors
 
+    // Caller passed invalid value as param 1 (null, invalid json and etc..)
+    CommonInvalidParam1 = 100,
+
+    // Caller passed invalid value as param 2 (null, invalid json and etc..)
+    CommonInvalidParam2 = 101,
+
+    // Caller passed invalid value as param 3 (null, invalid json and etc..)
+    CommonInvalidParam3 = 102,
+
+    // Caller passed invalid value as param 4 (null, invalid json and etc..)
+    CommonInvalidParam4 = 103,
+
+    // Caller passed invalid value as param 5 (null, invalid json and etc..)
+    CommonInvalidParam5 = 104,
+
+    // Caller passed invalid value as param 6 (null, invalid json and etc..)
+    CommonInvalidParam6 = 105,
+
+    // Caller passed invalid value as param 7 (null, invalid json and etc..)
+    CommonInvalidParam7 = 106,
+
+    // Caller passed invalid value as param 8 (null, invalid json and etc..)
+    CommonInvalidParam8 = 107,
+
+    // Caller passed invalid value as param 9 (null, invalid json and etc..)
+    CommonInvalidParam9 = 108,
+
+    // Caller passed invalid value as param 10 (null, invalid json and etc..)
+    CommonInvalidParam10 = 109,
+
+    // Caller passed invalid value as param 11 (null, invalid json and etc..)
+    CommonInvalidParam11 = 110,
+
+    // Caller passed invalid value as param 12 (null, invalid json and etc..)
+    CommonInvalidParam12 = 111,
+
     // Invalid library state was detected in runtime. It signals library bug
     CommonInvalidState = 112,
 
@@ -57,6 +93,12 @@ pub enum ErrorCode
 
     // IO Error
     CommonIOError = 114,
+
+    // Caller passed invalid value as param 13 (null, invalid json and etc..)
+    CommonInvalidParam13 = 115,
+
+    // Caller passed invalid value as param 14 (null, invalid json and etc..)
+    CommonInvalidParam14 = 116,
 
     // Wallet errors
     // Caller passed invalid wallet handle
@@ -83,7 +125,68 @@ pub enum ErrorCode
     // Attempt to open encrypted wallet with invalid credentials
     WalletAccessFailed = 207,
 
-    // Signus errors
+    // Input provided to wallet operations is considered not valid
+    WalletInputError = 208,
+
+    // Decoding of wallet data during input/output failed
+    WalletDecodingError = 209,
+
+    // Storage error occurred during wallet operation
+    WalletStorageError = 210,
+
+    // Error during encryption-related operations
+    WalletEncryptonError = 211,
+
+    // Requested wallet item not found
+    WalletItemNotFound = 212,
+
+    // Returned if wallet's add_record operation is used with record name that already exists
+    WalletItemAlreadyExists = 213,
+
+    // Returned if provided wallet query is invalid
+    WalletQueryError = 214,
+
+    // Ledger errors
+    // Trying to open pool ledger that wasn't created before
+    PoolLedgerNotCreatedError = 300,
+
+    // Caller passed invalid pool ledger handle
+    PoolLedgerInvalidPoolHandle = 301,
+
+    // Pool ledger terminated
+    PoolLedgerTerminated = 302,
+
+    // No concensus during ledger operation
+    LedgerNoConsensusError = 303,
+
+    // Attempt to parse invalid transaction response
+    LedgerInvalidTransaction = 304,
+
+    // Attempt to send transaction without the necessary privileges
+    LedgerSecurityError = 305,
+
+    // Attempt to create pool ledger config with name used for another existing pool
+    PoolLedgerConfigAlreadyExistsError = 306,
+
+    // Timeout for action
+    PoolLedgerTimeout = 307,
+
+    // Revocation registry is full and creation of new registry is necessary
+    AnoncredsRevocationRegistryFullError = 400,
+
+    AnoncredsInvalidUserRevocId = 401,
+
+    // Attempt to generate master secret with duplicated name
+    AnoncredsMasterSecretDuplicateNameError = 404,
+
+    AnoncredsProofRejected = 405,
+
+    AnoncredsCredentialRevoked = 406,
+
+    // Attempt to create credential definition with duplicated id
+    AnoncredsCredDefAlreadyExistsError = 407,
+
+    // Crypto errors
     // Unknown format of DID entity keys
     UnknownCryptoTypeError = 500,
 
