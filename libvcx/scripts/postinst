@@ -3,5 +3,5 @@
 
 /sbin/ldconfig 
 
-ln -sf `ls -rt /usr/lib/libvcx.* | tail -n1` /usr/lib/libvcx.so
+ln -sf `ls -rt /usr/lib/libvcx.so.* | tail -n1` /usr/lib/libvcx.so
 
