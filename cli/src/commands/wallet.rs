@@ -254,6 +254,7 @@ pub mod delete_command {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use utils::test::TestUtils;
     use libindy::wallet::Wallet;
 
     const WALLET: &'static str = "wallet";
@@ -265,6 +266,7 @@ pub mod tests {
 
         #[test]
         pub fn create_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
             {
                 let cmd = create_command::new();
@@ -282,10 +284,12 @@ pub mod tests {
             assert_eq!(wallets[0]["pool_name"].as_str().unwrap(), POOL);
 
             delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn create_works_for_twice() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_wallet(&ctx);
@@ -298,10 +302,12 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn create_works_for_missed_pool_name() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
             {
                 let cmd = create_command::new();
@@ -322,6 +328,7 @@ pub mod tests {
                 params.insert("pool_name", POOL.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            TestUtils::cleanup_storage();
         }
     }
 
@@ -330,6 +337,7 @@ pub mod tests {
 
         #[test]
         pub fn open_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_wallet(&ctx);
@@ -342,10 +350,13 @@ pub mod tests {
             }
             ensure_opened_wallet_handle(&ctx).unwrap();
             close_and_delete_wallet(&ctx);
+
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn open_works_for_twice() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -357,15 +368,20 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap(); //TODO: we close and open same wallet
             }
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn open_works_for_not_created() {
+            TestUtils::cleanup_storage();
+
             let cmd = open_command::new();
             let mut params = CommandParams::new();
             params.insert("name", WALLET.to_string());
             params.insert("key", WALLET_KEY.to_string());
             cmd.execute(&CommandContext::new(), &params).unwrap_err();
+
+            TestUtils::cleanup_storage();
         }
 
         #[test]
@@ -388,7 +404,9 @@ pub mod tests {
 
         #[test]
         pub fn list_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
+
             create_wallet(&ctx);
             {
                 let cmd = list_command::new();
@@ -396,16 +414,19 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap();
             }
             delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn list_works_for_empty_list() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
             {
                 let cmd = list_command::new();
                 let params = CommandParams::new();
-                cmd.execute(&ctx, &params).unwrap();
+                cmd.execute(&ctx, &params).unwrap_err();
             }
+            TestUtils::cleanup_storage();
         }
     }
 
@@ -414,6 +435,7 @@ pub mod tests {
 
         #[test]
         pub fn close_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -424,10 +446,12 @@ pub mod tests {
             }
             ensure_opened_wallet_handle(&ctx).unwrap_err();
             delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn close_works_for_not_opened() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_wallet(&ctx);
@@ -437,10 +461,12 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn close_works_for_twice() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
             create_and_open_wallet(&ctx);
             {
@@ -454,6 +480,7 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
     }
 
@@ -462,6 +489,7 @@ pub mod tests {
 
         #[test]
         pub fn delete_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_wallet(&ctx);
@@ -474,19 +502,26 @@ pub mod tests {
             }
             let wallets = get_wallets();
             assert_eq!(0, wallets.len());
+
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn delete_works_for_not_created() {
+            TestUtils::cleanup_storage();
+
             let cmd = delete_command::new();
             let mut params = CommandParams::new();
             params.insert("name", WALLET.to_string());
             params.insert("key", WALLET_KEY.to_string());
             cmd.execute(&CommandContext::new(), &params).unwrap_err();
+
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn delete_works_for_opened() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -498,6 +533,7 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
     }
 

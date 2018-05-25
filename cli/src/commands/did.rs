@@ -292,6 +292,7 @@ pub mod list_command {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use utils::test::TestUtils;
     use libindy::did::Did;
     use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
     use commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
@@ -318,6 +319,7 @@ pub mod tests {
 
         #[test]
         pub fn new_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             let wallet_handle = create_and_open_wallet(&ctx);
@@ -330,10 +332,12 @@ pub mod tests {
             assert_eq!(1, dids.len());
 
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn new_works_for_did() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             let wallet_handle = create_and_open_wallet(&ctx);
@@ -347,10 +351,12 @@ pub mod tests {
             assert_eq!(did["did"].as_str().unwrap(), DID_TRUSTEE);
 
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn new_works_for_seed() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             let wallet_handle = create_and_open_wallet(&ctx);
@@ -365,10 +371,12 @@ pub mod tests {
             assert_eq!(did["verkey"].as_str().unwrap(), VERKEY_TRUSTEE);
 
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn new_works_for_meta() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             let metadata = "metadata";
@@ -385,21 +393,24 @@ pub mod tests {
             assert_eq!(dids[0]["metadata"].as_str().unwrap(), metadata);
 
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn new_works_for_no_opened_wallet() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
-
             {
                 let cmd = new_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn new_works_for_wrong_seed() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -410,6 +421,7 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
     }
 
@@ -418,6 +430,7 @@ pub mod tests {
 
         #[test]
         pub fn use_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -431,10 +444,12 @@ pub mod tests {
             assert_eq!(ensure_active_did(&ctx).unwrap(), DID_TRUSTEE);
 
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn use_works_for_unknow_did() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -445,10 +460,12 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn use_works_for_closed_wallet() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -459,6 +476,7 @@ pub mod tests {
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            TestUtils::cleanup_storage();
         }
     }
 
@@ -467,6 +485,7 @@ pub mod tests {
 
         #[test]
         pub fn list_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -477,10 +496,12 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn list_works_for_empty_result() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -490,10 +511,12 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn list_works_for_closed_wallet() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -504,6 +527,7 @@ pub mod tests {
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            TestUtils::cleanup_storage();
         }
     }
 
@@ -512,6 +536,7 @@ pub mod tests {
 
         #[test]
         pub fn rotate_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             let wallet_handle = create_and_open_wallet(&ctx);
@@ -535,10 +560,12 @@ pub mod tests {
 
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn rotate_works_for_no_active_did() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -550,6 +577,7 @@ pub mod tests {
             }
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
         }
     }
 

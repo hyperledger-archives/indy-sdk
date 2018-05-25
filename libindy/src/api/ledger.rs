@@ -889,6 +889,39 @@ pub extern fn indy_build_node_request(command_handle: i32,
     res
 }
 
+/// Builds a GET_VALIDATOR_INFO request.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: Id of Identity stored in secured Wallet.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_get_validator_info_request(command_handle: i32,
+                                         submitter_did: *const c_char,
+                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                              request_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildGetValidatorInfoRequest(
+            submitter_did,
+            Box::new(move |result| {
+                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let request_json = CStringUtils::string_to_cstring(request_json);
+                cb(command_handle, err, request_json.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
 /// Builds a GET_TXN request. Request to get any transaction by its seq_no.
 ///
 /// #Params

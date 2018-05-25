@@ -42,7 +42,7 @@ public class ReplaceKeysStartTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testReplaceKeysStartWorksForSeed() throws Exception {
-		String verkey = Did.replaceKeysStart(this.wallet, this.did, String.format("{\"seed\":\"%s\"}", MY1_SEED)).get();
+		String verkey = Did.replaceKeysStart(this.wallet, this.did, MY1_IDENTITY_KEY_JSON).get();
 
 		assertEquals(VERKEY_MY1, verkey);
 		assertNotEquals(this.verkey, verkey);

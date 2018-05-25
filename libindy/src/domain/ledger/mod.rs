@@ -10,4 +10,5 @@ pub mod pool;
 pub mod rev_reg_def;
 pub mod rev_reg;
 pub mod response;
+pub mod validator_info;
 pub mod constants;
