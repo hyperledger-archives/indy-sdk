@@ -22,7 +22,7 @@ pub mod create_command {
                 .add_required_param("pool_name", "The name of associated Indy pool")
                 .add_required_deferred_param("key", "Auth key for the wallet")
                 .add_example("wallet create wallet1 pool_name=pool1 key")
-                .add_example("wallet create wallet1 pool_name=pool1 key=AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=")
+                .add_example("wallet create wallet1 pool_name=pool1 key=key")
                 .finalize()
     );
 
@@ -69,7 +69,7 @@ pub mod open_command {
                             .add_optional_deferred_param("rekey", "New auth key for the wallet (will replace previous one).")
                             .add_example("wallet open wallet1 key")
                             .add_example("wallet open wallet1 key rekey")
-                            .add_example("wallet open wallet1 key=AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg= rekey=cCAdWqQWFCgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=")
+                            .add_example("wallet open wallet1 key=key rekey=other_key")
                             .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
@@ -219,7 +219,7 @@ pub mod delete_command {
                 .add_main_param("name", "The name of deleted wallet")
                 .add_required_deferred_param("key", "Auth key for the wallet")
                 .add_example("wallet delete wallet1 key")
-                .add_example("wallet delete wallet1 key=AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=")
+                .add_example("wallet delete wallet1 key=key")
                 .finalize()
     );
 
@@ -259,7 +259,7 @@ pub mod tests {
 
     const WALLET: &'static str = "wallet";
     const POOL: &'static str = "pool";
-    const WALLET_KEY: &'static str = "AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=";
+    const WALLET_KEY: &'static str = "wallet_key";
 
     mod create {
         use super::*;

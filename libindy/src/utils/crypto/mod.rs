@@ -27,3 +27,7 @@ pub mod verkey_builder;
 #[cfg(feature = "sealedbox_sodium")]
 #[path = "sealedbox/sodium.rs"]
 pub mod sealedbox;
+
+#[cfg(feature = "pwhash_argon2i13")]
+#[path = "pwhash_argon2i13/sodium.rs"]
+pub mod pwhash_argon2i13;

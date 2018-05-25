@@ -154,7 +154,7 @@ def credentials():
     logger = logging.getLogger(__name__)
     logger.debug("credentials: >>>")
 
-    res = '{"key":"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=","storage_credentials":{}}'
+    res = '{"key":"key"}'
 
     logger.debug("credentials: <<< res: %r", res)
     return res

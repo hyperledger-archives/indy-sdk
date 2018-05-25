@@ -4,6 +4,8 @@ use std::ffi::CString;
 use std::ptr::null;
 use std::os::raw::c_char;
 
+pub const DEFAULT_WALLET_CREDENTIALS: &'static str = r#"{"key":"key"}"#;
+
 pub fn create_wallet(pool_name: &str, wallet_name: &str, xtype: Option<&str>, config: Option<&str>, credentials: Option<&str>) -> Result<(), ErrorCode> {
     let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec();
 
@@ -11,7 +13,7 @@ pub fn create_wallet(pool_name: &str, wallet_name: &str, xtype: Option<&str>, co
     let wallet_name = CString::new(wallet_name).unwrap();
     let xtype_str = xtype.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
     let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-    let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let credentials = CString::new(credentials.unwrap_or(DEFAULT_WALLET_CREDENTIALS)).unwrap();
 
     let err =
         unsafe {
@@ -20,7 +22,7 @@ pub fn create_wallet(pool_name: &str, wallet_name: &str, xtype: Option<&str>, co
                                wallet_name.as_ptr(),
                                if xtype.is_some() { xtype_str.as_ptr() } else { null() },
                                if config.is_some() { config_str.as_ptr() } else { null() },
-                               if credentials.is_some() { credentials_str.as_ptr() } else { null() },
+                               credentials.as_ptr(),
                                cb)
         };
 
@@ -32,14 +34,14 @@ pub fn open_wallet(wallet_name: &str, config: Option<&str>, credentials: Option<
 
     let wallet_name = CString::new(wallet_name).unwrap();
     let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-    let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let credentials = CString::new(credentials.unwrap_or(DEFAULT_WALLET_CREDENTIALS)).unwrap();
 
     let err =
         unsafe {
             indy_open_wallet(command_handle,
                              wallet_name.as_ptr(),
                              if config.is_some() { config_str.as_ptr() } else { null() },
-                             if credentials.is_some() { credentials_str.as_ptr() } else { null() },
+                             credentials.as_ptr(),
                              cb)
         };
 
