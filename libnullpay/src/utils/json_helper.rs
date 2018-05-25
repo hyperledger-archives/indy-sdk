@@ -15,7 +15,7 @@ pub fn parse_operation_from_request (req: &str) -> Result<String, ErrorCode> {
     }
 }
 
-pub fn serialize_infos(infos: Vec<UTXOInfo>) -> Result<String, ErrorCode> {
+pub fn serialize_infos(infos: &Vec<UTXOInfo>) -> Result<String, ErrorCode> {
     to_string(&infos).map_err(|_| {
         error!("Can't deserialize UTXO Info");
         ErrorCode::CommonInvalidState

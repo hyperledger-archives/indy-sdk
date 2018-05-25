@@ -72,6 +72,10 @@
                                          data:(NSString *)data
                                    resultJson:(NSString **)resultJson;
 
+// MARK: - Get validator info request
+- (NSError *)buildGetValidatorInfo:(NSString *)submitterDid
+                                    resultJson:(NSString **)resultJson;
+
 // MARK: - CredDef Request
 - (NSError *)buildCredDefRequestWithSubmitterDid:(NSString *)submitterDid
                                             data:(NSString *)data

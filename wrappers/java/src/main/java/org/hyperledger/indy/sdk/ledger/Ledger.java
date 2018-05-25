@@ -708,6 +708,31 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
+	 * Builds a GET_VALIDATOR_INFO request.
+	 *
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildGetValidatorInfoRequest(
+			String submitterDid) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_get_validator_info_request(
+				commandHandle,
+				submitterDid,
+				buildRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
 	 * Builds a GET_TXN request. Request to get any transaction by its seq_no.
 	 *
 	 * @param submitterDid DID of read request sender.
