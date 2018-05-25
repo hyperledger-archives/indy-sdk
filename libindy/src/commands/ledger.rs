@@ -108,6 +108,9 @@ pub enum LedgerCommand {
         String, // target_did
         String, // data
         Box<Fn(Result<String, IndyError>) + Send>),
+    BuildGetValidatorInfoRequest(
+        String, // submitter did
+        Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetTxnRequest(
         String, // submitter did
         i32, // data
@@ -273,6 +276,10 @@ impl LedgerCommandExecutor {
             LedgerCommand::BuildNodeRequest(submitter_did, target_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildNodeRequest command received");
                 cb(self.build_node_request(&submitter_did, &target_did, &data));
+            }
+            LedgerCommand::BuildGetValidatorInfoRequest(submitter_did, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetValidatorInfoRequest command received");
+                cb(self.build_get_validator_info_request(&submitter_did));
             }
             LedgerCommand::BuildGetTxnRequest(submitter_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetTxnRequest command received");
@@ -636,6 +643,19 @@ impl LedgerCommandExecutor {
                                                          data)?;
 
         debug!("build_node_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_get_validator_info_request(&self,
+                             submitter_did: &str) -> Result<String, IndyError> {
+        info!("build_get_validator_info_request >>> submitter_did: {:?}", submitter_did);
+
+        self.crypto_service.validate_did(submitter_did)?;
+
+        let res = self.ledger_service.build_get_validator_info_request(submitter_did)?;
+
+        info!("build_get_validator_info_request <<< res: {:?}", res);
 
         Ok(res)
     }

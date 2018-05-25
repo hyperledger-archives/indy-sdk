@@ -476,6 +476,27 @@ extern "C" {
                                                                      const char*   request_json)
                                                );
 
+        /// Builds a GET_VALIDATOR_INFO request.
+        ///
+        /// #Params
+        /// command_handle: command handle to map callback to caller context.
+        /// submitter_did: Id of Identity stored in secured Wallet.
+        /// cb: Callback that takes command result as parameter.
+        ///
+        /// #Returns
+        /// Request result as json.
+        ///
+        /// #Errors
+        /// Common*
+
+        extern indy_error_t indy_build_get_validator_info_request(indy_handle_t command_handle,
+                                                       const char *  submitter_did,
+                                                       void           (*cb)(indy_handle_t xcommand_handle,
+                                                                            indy_error_t  err,
+                                                                            const char*   request_json)
+                                                       );
+
+
     /// Builds a GET_TXN request. Request to get any transaction by its seq_no.
     ///
     /// #Params

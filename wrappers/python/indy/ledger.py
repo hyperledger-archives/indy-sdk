@@ -639,6 +639,31 @@ async def build_node_request(submitter_did: str,
     return res
 
 
+async def build_get_validator_info_request(submitter_did: str) -> str:
+    """
+    Builds a GET_VALIDATOR_INFO request.
+    :param submitter_did: Id of Identity stored in secured Wallet.
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_get_validator_info_request: >>> submitter_did: %r", submitter_did)
+
+    if not hasattr(build_get_validator_info_request, "cb"):
+        logger.debug("build_get_validator_info_request: Creating callback")
+        build_get_validator_info_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+
+    request_json = await do_call('indy_build_get_validator_info_request',
+                                 c_submitter_did,
+                                 build_get_validator_info_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_get_validator_info_request: <<< res: %r", res)
+    return res
+
+
 async def build_get_txn_request(submitter_did: str,
                                 seq_no: int) -> str:
     """
