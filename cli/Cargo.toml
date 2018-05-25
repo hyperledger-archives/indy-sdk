@@ -5,6 +5,7 @@ authors = ["Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>"]
 
 [features]
 nullpay_plugin = []
+fatal_warnings = []
 
 [dependencies]
 ansi_term = "0.10"
