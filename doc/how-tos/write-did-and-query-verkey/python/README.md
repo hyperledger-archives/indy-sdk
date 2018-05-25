@@ -23,6 +23,8 @@ Save the doc as `write_did.py`
 This is a very simple app framework into which you'll plug the code
 you'll be writing.
 
+Install the required python packages by executing `pip install python3-indy asyncio`
+
 ### Step 2
 
 Now we need to give the SDK some context that it will need

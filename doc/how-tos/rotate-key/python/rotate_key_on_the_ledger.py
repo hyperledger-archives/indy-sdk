@@ -20,7 +20,7 @@ import asyncio
 import json
 import pprint
 
-from indy import pool, ledger, wallet, signus
+from indy import pool, ledger, wallet, did
 from indy.error import IndyError
 
 
@@ -60,13 +60,13 @@ async def rotate_key_on_the_ledger():
         print_log('\n5. Generating and storing steward DID and verkey\n')
         steward_seed = '000000000000000000000000Steward1'
         did_json = json.dumps({'seed': steward_seed})
-        steward_did, steward_verkey = await signus.create_and_store_my_did(wallet_handle, did_json)
+        steward_did, steward_verkey = await did.create_and_store_my_did(wallet_handle, did_json)
         print_log('Steward DID: ', steward_did)
         print_log('Steward Verkey: ', steward_verkey)
 
         # 6.
         print_log('\n6. Generating and storing trust anchor DID and verkey\n')
-        trust_anchor_did, trust_anchor_verkey = await signus.create_and_store_my_did(wallet_handle, "{}")
+        trust_anchor_did, trust_anchor_verkey = await did.create_and_store_my_did(wallet_handle, "{}")
         print_log('Trust Anchor DID: ', trust_anchor_did)
         print_log('Trust Anchor Verkey: ', trust_anchor_verkey)
 
@@ -91,7 +91,7 @@ async def rotate_key_on_the_ledger():
 
         # 9.
         print_log('\n9. Generating new verkey of trust anchor in wallet\n')
-        new_verkey = await signus.replace_keys_start(wallet_handle, trust_anchor_did, "{}")
+        new_verkey = await did.replace_keys_start(wallet_handle, trust_anchor_did, "{}")
         print_log('New Trust Anchor Verkey: ', new_verkey)
 
         # 10.
@@ -108,11 +108,11 @@ async def rotate_key_on_the_ledger():
 
         # 12.
         print_log('\n12. Apply new verkey in wallet\n')
-        await signus.replace_keys_apply(wallet_handle, trust_anchor_did)
+        await did.replace_keys_apply(wallet_handle, trust_anchor_did)
 
         # 13.
         print_log('\n13. Reading new verkey from wallet\n')
-        verkey_in_wallet = await signus.key_for_local_did(wallet_handle, trust_anchor_did)
+        verkey_in_wallet = await did.key_for_local_did(wallet_handle, trust_anchor_did)
         print_log('Trust Anchor Verkey in wallet: ', verkey_in_wallet)
 
         # 14.
