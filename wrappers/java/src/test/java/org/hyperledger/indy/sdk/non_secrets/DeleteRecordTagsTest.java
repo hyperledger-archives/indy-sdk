@@ -18,7 +18,7 @@ public class DeleteRecordTagsTest extends NonSecretsIntegrationTest {
 
 		WalletRecord.deleteTags(wallet, type, id, "[\"tagName1\"]").get();
 
-		String expectedTags = "{\"tagName2\": 5, \"tagName3\": 12}";
+		String expectedTags = "{\"tagName2\": \"5\", \"tagName3\": \"12\"}";
 		checkRecordField(wallet, type, id, "tags", expectedTags);
 	}
 

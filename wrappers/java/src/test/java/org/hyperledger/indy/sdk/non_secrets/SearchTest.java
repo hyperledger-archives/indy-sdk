@@ -20,7 +20,6 @@ public class SearchTest extends NonSecretsIntegrationTest {
 
 		JSONObject searchRecords = new JSONObject(searchRecordsJson);
 
-		assertEquals(1, searchRecords.getInt("totalCount"));
 		JSONArray records = searchRecords.getJSONArray("records");
 
 		assertEquals(1, records.length());
@@ -29,7 +28,7 @@ public class SearchTest extends NonSecretsIntegrationTest {
 				.put("id", id)
 				.putOpt("type", JSONObject.NULL)
 				.put("value", value)
-				.put("tags", tags);
+				.put("tags", JSONObject.NULL);
 
 		assertTrue(expected.similar(records.get(0)));
 
@@ -44,7 +43,7 @@ public class SearchTest extends NonSecretsIntegrationTest {
 				"   \"retrieveRecords\": true,\n" +
 				"   \"retrieveTotalCount\": false,\n" +
 				"   \"retrieveType\": false,\n" +
-				"   \"retrieveValue\": true,\n" +
+				"   \"retrieveValue\": false,\n" +
 				"   \"retrieveTags\": false" +
 				"}";
 		WalletSearch search = WalletSearch.open(wallet, type, queryEmpty, options).get();
@@ -53,7 +52,6 @@ public class SearchTest extends NonSecretsIntegrationTest {
 
 		JSONObject searchRecords = new JSONObject(searchRecordsJson);
 
-		assertTrue(searchRecords.isNull("totalCount"));
 		JSONArray records = searchRecords.getJSONArray("records");
 
 		assertEquals(1, records.length());
@@ -61,7 +59,7 @@ public class SearchTest extends NonSecretsIntegrationTest {
 		JSONObject expected = new JSONObject()
 				.put("id", id)
 				.putOpt("type", JSONObject.NULL)
-				.put("value", value)
+				.put("value", JSONObject.NULL)
 				.putOpt("tags", JSONObject.NULL);
 
 		assertTrue(expected.similar(records.get(0)));
@@ -90,7 +88,7 @@ public class SearchTest extends NonSecretsIntegrationTest {
 				.put("id", id2)
 				.putOpt("type", JSONObject.NULL)
 				.put("value", value2)
-				.put("tags", tags2);
+				.put("tags", JSONObject.NULL);
 
 		assertTrue(expected.similar(records.get(0)));
 

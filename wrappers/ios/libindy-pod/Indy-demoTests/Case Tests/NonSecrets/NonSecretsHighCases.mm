@@ -211,9 +211,33 @@
     XCTAssertEqual(ret.code, Success, @"NonSecretsUtils::getRecordFromWallet() failed");
     NSDictionary *record = [NSDictionary fromString:recordJson];
 
-    NSDictionary *expectedRecord = @{@"id": [NonSecretsUtils id1], @"value": [NonSecretsUtils value1], @"tags": [NonSecretsUtils tags1]};
+    XCTAssertTrue([[NonSecretsUtils id1] isEqualToString:record[@"id"]]);
+    XCTAssertTrue([[NonSecretsUtils value1] isEqualToString:record[@"value"]]);
+    XCTAssertTrue([record[@"type"] isEqual:[NSNull null]]);
+    XCTAssertTrue([record[@"tags"] isEqual:[NSNull null]]);
+}
 
-//    XCTAssertTrue([expectedRecord isEqualToDictionary:record]);
+- (void)testGetWalletRecordWorksForAllFields {
+    ret = [[NonSecretsUtils sharedInstance] addRecordInWallet:walletHandle
+                                                         type:[NonSecretsUtils type]
+                                                           id:[NonSecretsUtils id1]
+                                                        value:[NonSecretsUtils value1]
+                                                     tagsJson:[NonSecretsUtils tags1]];
+    XCTAssertEqual(ret.code, Success, @"NonSecretsUtils::addRecordInWallet() failed");
+
+    NSString *recordJson;
+    ret = [[NonSecretsUtils sharedInstance] getRecordFromWallet:walletHandle
+                                                           type:[NonSecretsUtils type]
+                                                             id:[NonSecretsUtils id1]
+                                                    optionsJson:@"{\"retrieveType\":true, \"retrieveValue\":true, \"retrieveTags\":true}"
+                                                     recordJson:&recordJson];
+    XCTAssertEqual(ret.code, Success, @"NonSecretsUtils::getRecordFromWallet() failed");
+    NSDictionary *record = [NSDictionary fromString:recordJson];
+
+    XCTAssertTrue([[NonSecretsUtils id1] isEqualToString:record[@"id"]]);
+    XCTAssertTrue([[NonSecretsUtils value1] isEqualToString:record[@"value"]]);
+    XCTAssertTrue([[NonSecretsUtils type] isEqualToString:record[@"type"]]);
+    XCTAssertTrue([[NSDictionary fromString:[NonSecretsUtils tags1]] isEqualToDictionary:[NSDictionary fromString:record[@"tags"]]]);
 }
 
 - (void)testGetWalletRecordWorksForNotFoundRecord {
@@ -250,6 +274,15 @@
                                                                  count:@(1)
                                                            recordsJson:&walletRecords];
     XCTAssertEqual(ret.code, Success, @"NonSecretsUtils::fetchNextRecordsFromSearch() failed");
+
+    NSArray *records = [NSDictionary fromString:walletRecords][@"records"];
+    XCTAssertEqual(1, [records count]);
+
+    NSDictionary *record = records[0];
+    XCTAssertTrue([[NonSecretsUtils id1] isEqualToString:record[@"id"]]);
+    XCTAssertTrue([[NonSecretsUtils value1] isEqualToString:record[@"value"]]);
+    XCTAssertTrue([record[@"type"] isEqual:[NSNull null]]);
+    XCTAssertTrue([record[@"tags"] isEqual:[NSNull null]]);
 
     ret = [[NonSecretsUtils sharedInstance] closeSearchWithHandle:searchHandle];
     XCTAssertEqual(ret.code, Success, @"NonSecretsUtils::closeSearchWithHandle() failed");
