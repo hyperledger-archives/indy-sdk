@@ -457,11 +457,11 @@ impl WalletStorage for PluggedStorage {
 
     fn get_storage_metadata(&self) -> Result<Vec<u8>, WalletStorageError> {
         let mut metadata_ptr: *const c_char = ptr::null_mut();
-        let mut metadata_handler = -1;
+        let mut metadata_handle = -1;
 
         let err: ErrorCode = (self.get_storage_metadata_handler)(self.handle,
                                                                  &mut metadata_ptr,
-                                                                 &mut metadata_handler);
+                                                                 &mut metadata_handle);
 
         if err == ErrorCode::WalletItemNotFound {
             return Err(WalletStorageError::ItemNotFound);
@@ -470,11 +470,13 @@ impl WalletStorage for PluggedStorage {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
-        (self.free_storage_metadata_handler)(self.handle, metadata_handler);
-
-        Ok(base64::decode(
+        let metadata = base64::decode(
             unsafe { CStr::from_ptr(metadata_ptr).to_str()? }
-        )?)
+        )?;
+
+        (self.free_storage_metadata_handler)(self.handle, metadata_handle);
+
+        Ok(metadata)
     }
 
     fn set_storage_metadata(&self, metadata: &Vec<u8>) -> Result<(), WalletStorageError> {

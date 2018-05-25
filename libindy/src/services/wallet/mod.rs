@@ -170,7 +170,8 @@ impl WalletService {
         }
 
         let wallet_path = _wallet_path(name);
-        if wallet_path.exists() {
+        let wallet_descriptor_path = _wallet_descriptor_path(name);
+        if wallet_path.exists() && wallet_descriptor_path.exists() {
             return Err(WalletError::AlreadyExists(name.to_string()));
         }
 
@@ -183,7 +184,7 @@ impl WalletService {
 
         storage_type.create_storage(name, storage_config, &credentials.storage_credentials, &Keys::gen_keys(credentials.master_key))?;
 
-        let mut descriptor_file = File::create(_wallet_descriptor_path(name))?;
+        let mut descriptor_file = File::create(wallet_descriptor_path)?;
         descriptor_file
             .write_all({
                 WalletDescriptor::new(pool_name, xtype, name)
