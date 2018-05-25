@@ -259,7 +259,7 @@ impl PaymentsCommandExecutor {
             Ok(res) => {
                 //TODO: think about deleting payment_address on wallet save failure
                 self.wallet_service.check(wallet_handle).and(
-                    self.wallet_service.add_record(wallet_handle, "PaymentAddress", &res, &res, "{}").map(|_| res)
+                    self.wallet_service.add_record(wallet_handle, "Indy::PaymentAddress", &res, &res, "{}").map(|_| res)
                 ).map_err(IndyError::from)
             }
             Err(err) => Err(IndyError::from(err))
@@ -275,7 +275,7 @@ impl PaymentsCommandExecutor {
             _ => (),
         };
 
-        match self.wallet_service.search_records(wallet_handle, "PaymentAddress", "{}", &RecordOptions::id_value()) {
+        match self.wallet_service.search_records(wallet_handle, "Indy::PaymentAddress", "{}", &RecordOptions::id_value()) {
             Ok(mut search) => {
                 let mut list_addresses: Vec<String> = Vec::new();
 

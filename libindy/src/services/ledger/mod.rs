@@ -21,6 +21,7 @@ use domain::ledger::pool::{PoolConfigOperation, PoolUpgradeOperation, PoolRestar
 use domain::ledger::node::{NodeOperation, NodeOperationData};
 use domain::ledger::txn::GetTxnOperation;
 use domain::ledger::response::{Message, Reply};
+use domain::ledger::validator_info::GetValidatorInfoOperation;
 use domain::anoncreds::DELIMITER;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
 use domain::anoncreds::revocation_registry::RevocationRegistry;
@@ -259,9 +260,16 @@ impl LedgerService {
     }
 
     pub fn build_get_validator_info_request(&self, identifier: &str) -> Result<String, CommonError> {
+        info!("build_get_validator_info_request >>> identifier: {:?}", identifier);
+
         let operation = GetValidatorInfoOperation::new();
-        LedgerService::build_request(identifier, operation, "GET_VALIDATOR_INFO")
-            .map_err(|err| CommonError::InvalidState(format!("Invalid get validator info request json: {:?}", err)))
+
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("GET_TXN request json is invalid {:?}.", err)))?;
+
+        info!("build_get_validator_info_request <<< request: {:?}", request);
+
+        Ok(request)
     }
 
     pub fn build_get_txn_request(&self, identifier: &str, data: i32) -> Result<String, CommonError> {
