@@ -1,3 +1,6 @@
+// If compiling with feature "fatal_warnings", the build will fail on all warnings
+#![cfg_attr(feature = "fatal_warnings", deny(warnings))]
+
 extern crate base64;
 
 #[macro_use]
