@@ -326,6 +326,47 @@ pub mod schema_command {
     }
 }
 
+pub mod get_validator_info_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-validator-info", "Get validator info from all nodes.")
+                .add_example(r#"ledger get-validator-info"#)
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let submitter_did = ensure_active_did(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+
+        let response = Ledger::build_get_validator_info_request(&submitter_did)
+            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
+            .map_err(|err| handle_transaction_error(err, None, None, None))?;
+
+        let responses = match serde_json::from_str::<HashMap<String, String>>(&response) {
+            Ok(responses) => responses,
+            Err(err) => {
+                let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+                    .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+                return handle_transaction_response(response).map(|result| println_succ!("{}", result));
+            }
+        };
+
+        for (node, response) in responses {
+            let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+                .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+            println_succ!("Get validator info response for node {}:", node);
+            let _res = handle_transaction_response(response).map(|result| println!("{}", result));
+        }
+        let res = Ok(());
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
 pub mod get_schema_command {
     use super::*;
 
@@ -1943,6 +1984,30 @@ pub mod tests {
                 params.insert("version", "1.0".to_string());
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod get_validator_info {
+        use super::*;
+
+        #[test]
+        pub fn get_validator_info_works() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = get_validator_info_command::new();
+                let mut params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
