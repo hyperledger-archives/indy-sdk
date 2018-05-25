@@ -357,23 +357,31 @@ impl PoolWorker {
 
 
     fn _restore_merkle_tree_from_file(txn_file: &str) -> Result<MerkleTree, PoolError> {
-        PoolWorker::_restore_merkle_tree(&PathBuf::from(txn_file))
+        PoolWorker::_restore_merkle_tree(&PathBuf::from(txn_file), Box::new(PoolWorker::_parse_txn_from_json))
     }
 
     fn _restore_merkle_tree_from_pool_name(pool_name: &str) -> Result<MerkleTree, PoolError> {
         let mut p = EnvironmentUtils::pool_path(pool_name);
-        //TODO firstly try to deserialize merkle tree
-        p.push(pool_name);
-        p.set_extension("txn");
+
+        let mut p_stored = p.clone();
+        p_stored.push("stored");
+        p_stored.set_extension("btxn");
 
         if !p.exists() {
-            return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)));
-        }
+            p.push(pool_name);
+            p.set_extension("txn");
 
-        PoolWorker::_restore_merkle_tree(&p)
+            if !p.exists() {
+                return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)));
+            }
+
+            PoolWorker::_restore_merkle_tree(&p, Box::new(PoolWorker::_parse_txn_from_json))
+        } else {
+            PoolWorker::_restore_merkle_tree(&p, Box::new(PoolWorker::_parse_txn_from_binary))
+        }
     }
 
-    fn _restore_merkle_tree(file_mame: &PathBuf) -> Result<MerkleTree, PoolError> {
+    fn _restore_merkle_tree(file_mame: &PathBuf, mapper: Box<Fn(&str) -> Result<Vec<u8>, CommonError>>) -> Result<MerkleTree, PoolError> {
         let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
 
         let f = fs::File::open(file_mame).map_err(map_err_trace!())?;
@@ -382,13 +390,91 @@ impl PoolWorker {
         for line in reader.lines() {
             let line: String = line.map_err(map_err_trace!())?.trim().to_string();
             if line.is_empty() { continue };
-            let genesis_txn: SJsonValue = serde_json::from_str(line.as_str())
-                .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
-            let bytes = rmp_serde::encode::to_vec_named(&genesis_txn)
-                .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
+            let bytes = mapper(line.as_str())?;
             mt.append(bytes).map_err(map_err_trace!())?;
         }
         Ok(mt)
+    }
+
+    fn _parse_txn_from_json(txn: &str) -> Result<Vec<u8>, CommonError> {
+        let genesis_txn: SJsonValue = serde_json::from_str(txn)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
+        rmp_serde::encode::to_vec_named(&genesis_txn)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))
+    }
+
+    fn _parse_txn_from_binary(txn: &str) -> Result<Vec<u8>, CommonError> {
+        unimplemented!();
+    }
+
+    pub fn dump_new_txns(pool_name: &str, txns: &Vec<Vec<u8>>) -> Result<(), PoolError>{
+        let mut p = EnvironmentUtils::pool_path(pool_name);
+
+        p.push("stored");
+        p.set_extension("btxn");
+        if !p.exists() {
+            PoolWorker::_dump_genesis_to_stored(&p, pool_name)?;
+        }
+
+        let mut file = fs::File::create(p)
+            .map_err(|e| CommonError::IOError(e))
+            .map_err(map_err_err!())?;
+
+        PoolWorker::_dump_vec_to_file(txns, &mut file)
+    }
+
+    fn _dump_genesis_to_stored(p: &PathBuf, pool_name: &str) -> Result<(), PoolError> {
+        let mut file = fs::File::create(p)
+            .map_err(|e| CommonError::IOError(e))
+            .map_err(map_err_err!())?;
+
+        let mut p_genesis = EnvironmentUtils::pool_path(pool_name);
+        p_genesis.push(pool_name);
+        p_genesis.set_extension("txn");
+
+        if !p_genesis.exists() {
+            return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)));
+        }
+        
+        let genesis_vec = PoolWorker::_genesis_to_binary(&p_genesis)?;
+
+        PoolWorker::_dump_vec_to_file(&genesis_vec, &mut file)
+    }
+
+    fn _dump_vec_to_file(v: &Vec<Vec<u8>>, file : &mut fs::File) -> Result<(), PoolError> {
+        v.into_iter().map(|vec| {
+            file.write_all(vec).map_err(map_err_trace!())?;
+            file.write_all("\n".as_bytes()).map_err(map_err_trace!())
+        }).fold(Ok(()), |acc, next| {
+            match (acc, next) {
+                (Err(e), _) => Err(e),
+                (_, Err(e)) => Err(PoolError::CommonError(CommonError::IOError(e))),
+                _ => Ok(()),
+            }
+        })
+    }
+
+    fn _genesis_to_binary(p: &PathBuf) -> Result<Vec<Vec<u8>>, PoolError> {
+        let f = fs::File::open(p).map_err(map_err_trace!())?;
+        let reader = io::BufReader::new(&f);
+        reader
+            .lines()
+            .into_iter()
+            .map(|res| {
+                let line = res.map_err(map_err_trace!())?;
+                PoolWorker::_parse_txn_from_json(line.trim()).map_err(PoolError::from).map_err(map_err_err!())
+            })
+            .fold(Ok(Vec::new()), |acc, next| {
+                match (acc, next) {
+                    (Err(e), _) | (_, Err(e)) => Err(e),
+                    (Ok(mut acc), Ok(res)) => {
+                        let mut vec = vec![];
+                        vec.append(&mut acc);
+                        vec.push(res);
+                        Ok(vec)
+                    }
+                }
+            })
     }
 
     fn get_f(cnt: usize) -> usize {

@@ -16,6 +16,7 @@ use super::{
 };
 use super::rust_base58::{FromBase58, ToBase58};
 use super::types::*;
+use services::pool::PoolWorker;
 
 pub const CATCHUP_ROUND_TIMEOUT: i64 = 50;
 
@@ -90,6 +91,7 @@ impl CatchupHandler {
                 self.check_nodes_responses_on_status()?
             }
             Message::ConsistencyProof(cons_proof) => {
+                //TODO: if consistency proof does not match -- do not count it in voting, node is malicious
                 self.nodes_votes[src_ind] = Some((cons_proof.newMerkleRoot, cons_proof.seqNoEnd));
                 self.check_nodes_responses_on_status()?
             }
@@ -112,10 +114,12 @@ impl CatchupHandler {
     }
 
     fn check_nodes_responses_on_status(&mut self) -> Result<CatchupProgress, PoolError> {
+        //TODO pass consistency proof
         if self.pending_catchup.is_some() {
             return Ok(CatchupProgress::InProgress);
         }
         let mut votes: HashMap<(String, usize), usize> = HashMap::new();
+        //TODO: check if we can filter in for
         for node_vote in &self.nodes_votes {
             if let &Some(ref node_vote) = node_vote {
                 let cnt = *votes.get(&node_vote).unwrap_or(&0) + 1;
@@ -131,6 +135,7 @@ impl CatchupHandler {
                     if cur_mt_hash.eq(target_mt_root) {
                         return Ok(CatchupProgress::NotNeeded);
                     } else {
+                        //TODO: drop to genesis, delete your txns
                         return Err(PoolError::CommonError(CommonError::InvalidState(
                             "Ledger merkle tree doesn't acceptable for current tree.".to_string())));
                     }
@@ -139,8 +144,10 @@ impl CatchupHandler {
                     self.target_mt_root = target_mt_root.from_base58().map_err(|_|
                         CommonError::InvalidStructure(
                             "Can't parse target MerkleTree hash from nodes responses".to_string()))?;
+                    //TODO: check that we can match current to target. if no -- drop txns. use consistency proof
                     return Ok(CatchupProgress::ShouldBeStarted);
                 } else {
+                    //TODO: drop to genesis, delete your txns
                     return Err(PoolError::CommonError(CommonError::InvalidState(
                         "Local merkle tree greater than mt from ledger".to_string())));
                 }
@@ -243,11 +250,13 @@ impl CatchupHandler {
                 if first_resp.min_tx()? - 1 != process.merkle_tree.count() { break; }
 
                 let mut temp_mt = process.merkle_tree.clone();
+                let mut vec_to_dump: Vec<Vec<u8>> = vec![];
                 while !first_resp.txns.is_empty() {
                     let key = first_resp.min_tx()?.to_string();
                     let new_gen_tx = first_resp.txns.remove(&key).unwrap();
                     if let Ok(new_get_txn_bytes) = rmp_serde::to_vec_named(&new_gen_tx) {
-                        temp_mt.append(new_get_txn_bytes)?;
+                        temp_mt.append(new_get_txn_bytes.clone())?;
+                        vec_to_dump.push(new_get_txn_bytes);
                     } else {
                         return Ok(CatchupStepResult::FailedAtNode(node_idx));
                     }
@@ -257,6 +266,8 @@ impl CatchupHandler {
                     .map_err(map_err_err!()).is_err() {
                     return Ok(CatchupStepResult::FailedAtNode(node_idx));
                 }
+
+                PoolWorker::dump_new_txns("", &vec_to_dump);
 
                 process.merkle_tree = temp_mt;
             }
