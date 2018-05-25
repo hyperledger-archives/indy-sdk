@@ -465,6 +465,7 @@ mod medium_cases {
 
 
         #[test]
+        #[ignore]
         fn indy_open_wallet_works_for_changing_credentials() {
             TestUtils::cleanup_storage();
 
@@ -472,6 +473,9 @@ mod medium_cases {
             WalletUtils::create_wallet(POOL, wallet_name, None, None, Some(r#"{"key":"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#)).unwrap();
             let wallet_handle = WalletUtils::open_wallet(wallet_name, None, Some(r#"{"key":"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=", "rekey":"cCAdWqQWFCgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#)).unwrap();
 
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            let wallet_handle = WalletUtils::open_wallet(wallet_name, None, Some(r#"{"key":"cCAdWqQWFCgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#)).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
