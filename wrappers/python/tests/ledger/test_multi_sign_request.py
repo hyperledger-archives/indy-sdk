@@ -36,7 +36,7 @@ async def test_multi_sign_works_for_unknown_did(wallet_handle):
     with pytest.raises(IndyError) as e:
         await ledger.multi_sign_request(wallet_handle, '8wZcEriaNLNKtteJvx7f8i',
                                         json.dumps({"reqId": 1496822211362017764}))
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio

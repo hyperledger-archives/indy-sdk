@@ -41,17 +41,25 @@ pub struct CredentialInfo {
 }
 
 impl CredentialInfo {
-    fn parts(&self) -> Vec<&str> {
-        self.cred_def_id.split_terminator(DELIMITER).collect::<Vec<&str>>()
+    fn schema_parts(&self) -> Vec<&str> {
+        self.schema_id.split_terminator(DELIMITER).collect::<Vec<&str>>()
     }
 }
 
 impl Filtering for CredentialInfo {
     fn schema_id(&self) -> String { self.schema_id.to_string() }
-    fn schema_issuer_did(&self) -> String { self.parts().get(3).map(|s| s.to_string()).unwrap_or(String::new()) }
-    fn schema_name(&self) -> String { self.parts().get(5).map(|s| s.to_string()).unwrap_or(String::new()) }
-    fn schema_version(&self) -> String { self.parts().get(6).map(|s| s.to_string()).unwrap_or(String::new()) }
-    fn issuer_did(&self) -> String { self.parts()[0].to_string() }
+    fn schema_issuer_did(&self) -> String {
+        self.schema_parts().get(0).map(|s| s.to_string()).unwrap_or(String::new())
+    }
+    fn schema_name(&self) -> String {
+        self.schema_parts().get(2).map(|s| s.to_string()).unwrap_or(String::new())
+    }
+    fn schema_version(&self) -> String {
+        self.schema_parts().get(3).map(|s| s.to_string()).unwrap_or(String::new())
+    }
+    fn issuer_did(&self) -> String {
+        self.cred_def_id.split_terminator(DELIMITER).collect::<Vec<&str>>()[0].to_string()
+    }
     fn cred_def_id(&self) -> String { self.cred_def_id.to_string() }
 }
 
