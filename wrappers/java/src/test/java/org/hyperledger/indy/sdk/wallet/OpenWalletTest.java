@@ -31,22 +31,28 @@ public class OpenWalletTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	public void testOpenWalletWorksForEbcryptedWalletInvalidCredentials() throws Exception {
+	public void testOpenWalletWorksForInvalidCredentials() throws Exception {
 		Wallet.createWallet(POOL, "ForEbcryptedWalletInvalidCredentials", TYPE, null, CREDENTIALS).get();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletDecodingException.class));
+		thrown.expectCause(isA(WalletAccessFailedException.class));
 
-		Wallet.openWallet("ForEbcryptedWalletInvalidCredentials", null, "{\"key\": \"OTHERBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=\", \"storage_credentials\": {}}").get();
+		Wallet.openWallet("ForEbcryptedWalletInvalidCredentials", null, "{\"key\": \"other_key\"}").get();
 	}
 
 
 	@Test
+	@Ignore
 	public void testOpenWalletWorksForEbcryptedWalletChangingCredentials() throws Exception {
 		Wallet.createWallet(POOL, "ForEbcryptedWalletChangingCredentials", TYPE, null, CREDENTIALS).get();
 
-		Wallet wallet = Wallet.openWallet("ForEbcryptedWalletChangingCredentials", null, "{\"key\": \"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=\", \"rekey\": \"BBQDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=\", \"storage_credentials\": {}}").get();
+		Wallet wallet = Wallet.openWallet("ForEbcryptedWalletChangingCredentials", null, "{\"key\": \"key\", \"rekey\": \"other_key\"}").get();
 		assertNotNull(wallet);
+
+		wallet.closeWallet().get();
+
+		wallet = Wallet.openWallet("ForEbcryptedWalletChangingCredentials", null, "{\"key\": \"other_key\"}").get();
+		wallet.closeWallet().get();
 	}
 
 	@Test
