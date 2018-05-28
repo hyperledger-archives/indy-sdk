@@ -20,13 +20,14 @@ path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "cdylib"]
 
 [features]
-default = ["bn_openssl", "box_sodium", "sealedbox_sodium", "base58_rust_base58", "xsalsa20_sodium", "chacha20poly1305_ietf_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool", "revocation_tests"]
+default = ["bn_openssl", "box_sodium", "sealedbox_sodium", "base58_rust_base58", "xsalsa20_sodium", "chacha20poly1305_ietf_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool", "revocation_tests", "pwhash_argon2i13_sodium"]
 bn_openssl = ["openssl", "int_traits"]
 box_sodium = ["sodiumoxide"]
 sealedbox_sodium = ["sodiumoxide"]
 base58_rust_base58 = ["rust-base58"]
 xsalsa20_sodium = ["sodiumoxide"]
 chacha20poly1305_ietf_sodium = ["sodiumoxide"]
+pwhash_argon2i13_sodium = ["sodiumoxide"]
 pair_amcl = ["indy-crypto"]
 hash_openssl = ["openssl"]
 local_nodes_pool = []
@@ -37,6 +38,7 @@ indy-crypto = { version = "=0.4.1", optional = true }
 int_traits = { version = "0.1.1", optional = true }
 digest = "0.6.2"
 env_logger = "0.4.2"
+errno = "0.2.3"
 etcommon-rlp = "0.2.3"
 generic-array = "0.8.3"
 hex = "0.2.0"
