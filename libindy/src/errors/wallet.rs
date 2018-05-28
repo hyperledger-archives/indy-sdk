@@ -134,6 +134,13 @@ impl ToErrorCode for WalletError {
     }
 }
 
+
+impl From<CommonError> for WalletError {
+    fn from(err: CommonError) -> WalletError {
+        WalletError::CommonError(err)
+    }
+}
+
 impl From<io::Error> for WalletError {
     fn from(err: io::Error) -> WalletError {
         WalletError::CommonError(CommonError::IOError(err))
@@ -200,7 +207,8 @@ pub enum WalletStorageError {
     ItemAlreadyExists,
     IOError(String),
     PluggedStorageError(ErrorCode),
-    CommonError(CommonError)
+    CommonError(CommonError),
+    QueryError(WalletQueryError),
 }
 
 
@@ -241,6 +249,12 @@ impl From<CommonError> for WalletStorageError {
     fn from(err: CommonError) -> WalletStorageError {WalletStorageError::CommonError(err)}
 }
 
+impl From<WalletQueryError> for WalletStorageError {
+    fn from(err: WalletQueryError) -> Self {
+        WalletStorageError::QueryError(err)
+    }
+}
+
 impl error::Error for WalletStorageError {
     fn description(&self) -> &str {
         match *self {
@@ -252,6 +266,7 @@ impl error::Error for WalletStorageError {
             WalletStorageError::PluggedStorageError(_err_code) => "Plugged storage error",
             WalletStorageError::IOError(ref s) => s,
             WalletStorageError::CommonError(ref e) => e.description(),
+            WalletStorageError::QueryError(ref e) => e.description(),
         }
     }
 }
@@ -268,6 +283,7 @@ impl fmt::Display for WalletStorageError {
             WalletStorageError::IOError(ref s) => write!(f, "IO error occurred during storage operation: {}", s),
             WalletStorageError::PluggedStorageError(err_code) => write!(f, "Plugged storage error: {}", err_code as i32),
             WalletStorageError::CommonError(ref e) => write!(f, "Common error: {}", e.description()),
+            WalletStorageError::QueryError(ref e) => write!(f, "Query error: {}", e.description())
         }
     }
 }
@@ -278,12 +294,14 @@ pub enum WalletQueryError {
     ParsingErr(String),
     StructureErr(String),
     ValueErr(String),
+    CommonError(CommonError),
 }
 
 impl fmt::Display for WalletQueryError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            WalletQueryError::ParsingErr(ref s) | WalletQueryError::StructureErr(ref s) | WalletQueryError::ValueErr(ref s) => f.write_str(s)
+            WalletQueryError::ParsingErr(ref s) | WalletQueryError::StructureErr(ref s) | WalletQueryError::ValueErr(ref s) => f.write_str(s),
+            WalletQueryError::CommonError(ref e) => write!(f, "Common error: {}", e.description()),
         }
     }
 }
@@ -291,6 +309,7 @@ impl error::Error for WalletQueryError {
     fn description(&self) -> &str {
         match *self {
             WalletQueryError::ParsingErr(ref s) | WalletQueryError::StructureErr(ref s) | WalletQueryError::ValueErr(ref s) => s,
+            WalletQueryError::CommonError(ref e) => e.description(),
         }
     }
 }
@@ -301,8 +320,9 @@ impl From<serde_json::Error> for WalletQueryError {
     }
 }
 
-impl From<CommonError> for WalletError {
-    fn from(err: CommonError) -> WalletError {
-        WalletError::CommonError(err)
+
+impl From<CommonError> for WalletQueryError {
+    fn from(err: CommonError) -> WalletQueryError {
+        WalletQueryError::CommonError(err)
     }
 }

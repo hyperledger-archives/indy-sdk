@@ -89,6 +89,35 @@ impl Operator {
         }
     }
 
+    pub fn transform_result<T>(self, f: &Fn(Operator) -> Result<Operator, T>) -> Result<Operator, T> {
+        match self {
+            Operator::And(operators) => {
+                let mut transformed = Vec::new();
+
+                for operator in operators {
+                    let transformed_operator = Operator::transform_result(operator, f)?;
+                    transformed.push(transformed_operator);
+                }
+
+                Ok(Operator::And(transformed))
+            }
+            Operator::Or(operators) => {
+                let mut transformed = Vec::new();
+
+                for operator in operators {
+                    let transformed_operator = Operator::transform_result(operator, f)?;
+                    transformed.push(transformed_operator);
+                }
+
+                Ok(Operator::Or(transformed))
+            }
+            Operator::Not(boxed_operator) => {
+                Ok(Operator::Not(Box::new(Operator::transform_result(*boxed_operator, f)?)))
+            }
+            _ => Ok(f(self)?)
+        }
+    }
+
     fn optimise(self) -> Operator {
         match self {
             Operator::Not(boxed_operator) => if let Operator::Not(nested_operator) = *boxed_operator {

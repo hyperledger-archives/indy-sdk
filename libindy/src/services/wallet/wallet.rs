@@ -226,7 +226,7 @@ impl Wallet {
 
     pub fn search<'a>(&'a self, type_: &str, query: &str, options: Option<&str>) -> Result<WalletIterator, WalletError> {
         let parsed_query = language::parse_from_json(query)?;
-        let encrypted_query = encrypt_query(parsed_query, &self.keys);
+        let encrypted_query = encrypt_query(parsed_query, &self.keys)?;
         let encrypted_type_ = ChaCha20Poly1305IETF::encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let storage_iterator = self.storage.search(&encrypted_type_, &encrypted_query, options)?;
         let wallet_iterator = WalletIterator::new(storage_iterator, &self.keys);
@@ -738,7 +738,7 @@ mod tests {
         let keys = Keys::new(column_keys);
         let raw_query = serde_json::to_string(&test_query).unwrap();
         let query = language::parse_from_json(&raw_query).unwrap();
-        let encrypted_query = encrypt_query(query, &keys);
+        let encrypted_query = encrypt_query(query, &keys).unwrap();
 
         assert_match!(Operator::And(_), encrypted_query);
     }
