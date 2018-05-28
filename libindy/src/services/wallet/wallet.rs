@@ -707,12 +707,12 @@ mod tests {
             "k1": "v1",
             "$or": [
                 {
-                    "k2": {"$like": "like_target"},
-                    "k3": {"$gte": "100"},
+                    "~k2": {"$like": "like_target"},
+                    "~k3": {"$gte": "100"},
                     "$not": {
                         "k4": "v4",
-                        "k5": {
-                            "$regex": "regex_string"
+                        "~k5": {
+                            "$like": "like_string"
                         },
                     },
                 },
@@ -908,7 +908,7 @@ mod tests {
 
     // neq tests //
     #[test]
-    fn wallet_search_single_item_neqencrypted() {
+    fn wallet_search_single_item_neq_encrypted() {
         _cleanup();
         let fetch_options = &_fetch_options(false, true, false);
         let mut wallet = _create_wallet();
@@ -1064,6 +1064,21 @@ mod tests {
         assert!(res.is_none());
     }
 
+    #[test]
+    fn wallet_search_returns_error_if_gt_used_with_encrypted_tag() {
+        _cleanup();
+        let fetch_options = &_fetch_options(false, true, false);
+        let mut wallet = _create_wallet();
+
+        // successful encrypted search
+        let query_json = jsonise!({
+            "tag_name": {"$gt": "1"},
+        });
+        let res = wallet.search("test_type_", &query_json, Some(fetch_options));
+
+        assert_match!(Err(WalletError::QueryError(_)), res);
+    }
+
     // gte tests //
     #[test]
     fn wallet_search_single_item_gte_unencrypted() {
@@ -1111,6 +1126,21 @@ mod tests {
         let mut iterator = wallet.search("test_type__wrong", &query_json, Some(fetch_options)).unwrap();
         let res = iterator.next().unwrap();
         assert!(res.is_none());
+    }
+
+    #[test]
+    fn wallet_search_returns_error_if_gte_used_with_encrypted_tag() {
+        _cleanup();
+        let fetch_options = &_fetch_options(false, true, false);
+        let mut wallet = _create_wallet();
+
+        // successful encrypted search
+        let query_json = jsonise!({
+            "tag_name": {"$gte": "1"},
+        });
+        let res = wallet.search("test_type_", &query_json, Some(fetch_options));
+
+        assert_match!(Err(WalletError::QueryError(_)), res);
     }
 
 
@@ -1163,6 +1193,20 @@ mod tests {
         assert!(res.is_none());
     }
 
+    #[test]
+    fn wallet_search_returns_error_if_lt_used_with_encrypted_tag() {
+        _cleanup();
+        let fetch_options = &_fetch_options(false, true, false);
+        let mut wallet = _create_wallet();
+
+        // successful encrypted search
+        let query_json = jsonise!({
+            "tag_name": {"$lt": "1"},
+        });
+        let res = wallet.search("test_type_", &query_json, Some(fetch_options));
+
+        assert_match!(Err(WalletError::QueryError(_)), res);
+    }
 
     // lte tests //
     #[test]
@@ -1213,6 +1257,84 @@ mod tests {
         assert!(res.is_none());
     }
 
+    #[test]
+    fn wallet_search_returns_error_if_lte_used_with_encrypted_tag() {
+        _cleanup();
+        let fetch_options = &_fetch_options(false, true, false);
+        let mut wallet = _create_wallet();
+
+        // successful encrypted search
+        let query_json = jsonise!({
+            "tag_name": {"$lte": "1"},
+        });
+        let res = wallet.search("test_type_", &query_json, Some(fetch_options));
+
+        assert_match!(Err(WalletError::QueryError(_)), res);
+    }
+
+    // like tests //
+    #[test]
+    fn wallet_search_like() {
+        _cleanup();
+        let fetch_options = &_fetch_options(false, true, false);
+        let mut wallet = _create_wallet();
+        let mut tags = HashMap::new();
+        tags.insert("~tag_name".to_string(), "tag_value_1".to_string());
+        wallet.add("test_type_", "foo1", "bar1", &tags).unwrap();
+        tags.insert("~tag_name".to_string(), "tag_value_2".to_string());
+        wallet.add("test_type_", "foo2", "bar2", &tags).unwrap();
+        tags.insert("~tag_name".to_string(), "not_matching".to_string());
+        wallet.add("test_type_", "foo3", "bar3", &tags).unwrap();
+
+        // successful unencrypted search
+        let query_json = jsonise!({
+            "~tag_name": {"$like": "tag_value_%"},
+        });
+        let iterator = wallet.search("test_type_", &query_json, Some(fetch_options)).unwrap();
+        let results = _search_iterator_to_vector(iterator);
+        assert_eq!(results.len(), 2);
+        assert!(results.contains(&("foo1".to_string(), "bar1".to_string())));
+        assert!(results.contains(&("foo2".to_string(), "bar2".to_string())));
+
+        // unsuccessful unencrypted search with no matches
+        let query_json = jsonise!({
+            "~tag_name": {"$like": "tag_value_no_match%"},
+        });
+        let mut iterator = wallet.search("test_type_", &query_json, Some(fetch_options)).unwrap();
+        let res = iterator.next().unwrap();
+        assert!(res.is_none());
+
+        // unsuccessful unencrypted search with nonexisting value
+        let query_json = jsonise!({
+            "~nonexistant_tag_name": {"$like": "tag_value_%"},
+        });
+        let mut iterator = wallet.search("test_type_", &query_json, Some(fetch_options)).unwrap();
+        let res = iterator.next().unwrap();
+        assert!(res.is_none());
+
+        // unsuccessful search wrong type_
+        let query_json = jsonise!({
+            "~tag_name": {"$like": "tag_value_no_match%"},
+        });
+        let mut iterator = wallet.search("test_type__wrong", &query_json, Some(fetch_options)).unwrap();
+        let res = iterator.next().unwrap();
+        assert!(res.is_none());
+    }
+
+    #[test]
+    fn wallet_search_returns_error_if_like_used_with_encrypted_tag() {
+        _cleanup();
+        let fetch_options = &_fetch_options(false, true, false);
+        let mut wallet = _create_wallet();
+
+        // successful encrypted search
+        let query_json = jsonise!({
+            "tag_name": {"$like": "1"},
+        });
+        let res = wallet.search("test_type_", &query_json, Some(fetch_options));
+
+        assert_match!(Err(WalletError::QueryError(_)), res);
+    }
 
     // in tests //
     #[test]

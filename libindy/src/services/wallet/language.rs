@@ -210,18 +210,46 @@ fn parse_single_operator(operator_name: String, key: String, value: serde_json::
     match (&*operator_name, value) {
         ("$neq", serde_json::Value::String(s)) => Ok(Operator::Neq(TagName::from(key)?, TargetValue::from(s))),
         ("$neq", _) => Err(WalletQueryError::ValueErr("$neq must be used with string".to_string())),
-        ("$gt", serde_json::Value::String(s)) => Ok(Operator::Gt(TagName::from(key)?, TargetValue::from(s))),
+        ("$gt", serde_json::Value::String(s)) => {
+            let target_name = TagName::from(key)?;
+            match target_name {
+                TagName::PlainTagName(_) => Ok(Operator::Gt(target_name, TargetValue::from(s))),
+                TagName::EncryptedTagName(_) => Err(WalletQueryError::StructureErr("$gt must be used only for nonencrypted tag".to_string()))
+            }
+        },
         ("$gt", _) => Err(WalletQueryError::ValueErr("$gt must be used with string".to_string())),
-        ("$gte", serde_json::Value::String(s)) => Ok(Operator::Gte(TagName::from(key)?, TargetValue::from(s))),
+        ("$gte", serde_json::Value::String(s)) => {
+            let target_name = TagName::from(key)?;
+            match target_name {
+                TagName::PlainTagName(_) => Ok(Operator::Gte(target_name, TargetValue::from(s))),
+                TagName::EncryptedTagName(_) => Err(WalletQueryError::StructureErr("$gte must be used only for nonencrypted tag".to_string()))
+            }
+        },
         ("$gte", _) => Err(WalletQueryError::ValueErr("$gte must be used with string".to_string())),
-        ("$lt", serde_json::Value::String(s)) => Ok(Operator::Lt(TagName::from(key)?, TargetValue::from(s))),
+        ("$lt", serde_json::Value::String(s)) => {
+            let target_name = TagName::from(key)?;
+            match target_name {
+                TagName::PlainTagName(_) => Ok(Operator::Lt(target_name, TargetValue::from(s))),
+                TagName::EncryptedTagName(_) => Err(WalletQueryError::StructureErr("$lt must be used only for nonencrypted tag".to_string()))
+            }
+        },
         ("$lt", _) => Err(WalletQueryError::ValueErr("$lt must be used with string".to_string())),
-        ("$lte", serde_json::Value::String(s)) => Ok(Operator::Lte(TagName::from(key)?, TargetValue::from(s))),
+        ("$lte", serde_json::Value::String(s)) => {
+            let target_name = TagName::from(key)?;
+            match target_name {
+                TagName::PlainTagName(_) => Ok(Operator::Lte(target_name, TargetValue::from(s))),
+                TagName::EncryptedTagName(_) => Err(WalletQueryError::StructureErr("$lte must be used only for nonencrypted tag".to_string()))
+            }
+        },
         ("$lte", _) => Err(WalletQueryError::ValueErr("$lte must be used with string".to_string())),
-        ("$like", serde_json::Value::String(s)) => Ok(Operator::Like(TagName::from(key)?, TargetValue::from(s))),
+        ("$like", serde_json::Value::String(s)) => {
+            let target_name = TagName::from(key)?;
+            match target_name {
+                TagName::PlainTagName(_) => Ok(Operator::Like(target_name, TargetValue::from(s))),
+                TagName::EncryptedTagName(_) => Err(WalletQueryError::StructureErr("$like must be used only for nonencrypted tag".to_string()))
+            }
+        },
         ("$like", _) => Err(WalletQueryError::ValueErr("$like must be used with string".to_string())),
-        ("$regex", serde_json::Value::String(s)) => Ok(Operator::Regex(TagName::from(key)?, TargetValue::from(s))),
-        ("$regex", _) => Err(WalletQueryError::ValueErr("$regex must be used with string".to_string())),
         ("$in", serde_json::Value::Array(values)) => {
             let mut target_values: Vec<TargetValue> = Vec::new();
 
