@@ -210,6 +210,7 @@ impl PoolWorker {
             is_refresh: refresh_cmd_id.is_some(),
             pool_id: self.pool_id,
             timeout: time::now_utc().add(Duration::seconds(catchup::CATCHUP_ROUND_TIMEOUT)),
+            pool_name: self.name.clone(),
             ..Default::default()
         };
         self.handler = PoolWorkerHandler::CatchupHandler(catchup_handler);
@@ -367,7 +368,7 @@ impl PoolWorker {
         p_stored.push("stored");
         p_stored.set_extension("btxn");
 
-        if !p.exists() {
+        if !p_stored.exists() {
             p.push(pool_name);
             p.set_extension("txn");
 
@@ -404,7 +405,7 @@ impl PoolWorker {
     }
 
     fn _parse_txn_from_binary(txn: &str) -> Result<Vec<u8>, CommonError> {
-        unimplemented!();
+        Ok(txn.as_bytes().to_vec())
     }
 
     pub fn dump_new_txns(pool_name: &str, txns: &Vec<Vec<u8>>) -> Result<(), PoolError>{
@@ -477,6 +478,14 @@ impl PoolWorker {
             })
     }
 
+    pub fn drop_saved_txns(pool_name: &str) -> Result<(), PoolError> {
+        let mut p = EnvironmentUtils::pool_path(pool_name);
+
+        p.push("stored");
+        p.set_extension("btxn");
+        fs::remove_file(p).map_err(CommonError::IOError).map_err(PoolError::from).map_err(map_err_trace!())
+    }
+
     fn get_f(cnt: usize) -> usize {
         if cnt < 4 {
             return 0;
@@ -504,6 +513,7 @@ impl Pool {
             handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
                 initiate_cmd_id: cmd_id,
                 pool_id,
+                pool_name: name.to_string(),
                 ..Default::default()
             }),
         };
