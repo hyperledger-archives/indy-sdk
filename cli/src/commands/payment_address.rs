@@ -106,6 +106,7 @@ pub fn handle_payment_error(err: ErrorCode, payment_method: Option<&str>) {
 }
 
 #[cfg(test)]
+#[cfg(feature = "nullpay_plugin")]
 pub mod tests {
     use super::*;
     use utils::test::TestUtils;
@@ -117,7 +118,6 @@ pub mod tests {
         use super::*;
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn create_works() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -139,7 +139,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn create_works_for_seed() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -162,7 +161,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn create_works_for_unknown_payment_method() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -179,7 +177,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn create_works_for_no_opened_wallet() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -198,7 +195,6 @@ pub mod tests {
         use super::*;
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn list_works() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -219,7 +215,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn list_works_for_empty_list() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -239,7 +234,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn list_works_for_no_opened_wallet() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();

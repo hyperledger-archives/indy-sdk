@@ -30,7 +30,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 
 	/**
 	 * Gets the handle for the wallet.
-	 * 
+	 *
 	 * @return The handle for the wallet.
 	 */
 	public int getWalletHandle() {
@@ -132,7 +132,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 
 	/**
 	 * Registers custom wallet implementation.
-	 * 
+	 *
 	 * @param xtype Wallet type name.
 	 * @param walletType An instance of a WalletType subclass
 	 * @return A future that resolves no value.
@@ -143,26 +143,38 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 		String xtype,
 		WalletType walletType) throws IndyException, InterruptedException {
 
-		ParamGuard.notNullOrWhiteSpace(xtype, "xtype");	
+		ParamGuard.notNullOrWhiteSpace(xtype, "xtype");
 		ParamGuard.notNull(walletType, "walletType");
-		
+
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
-		
+
 		REGISTERED_WALLET_TYPES.add(walletType);
 
-		int result = LibIndy.api.indy_register_wallet_type(
+		int result = LibIndy.api.indy_register_wallet_storage( //TODO:FIXME
 				commandHandle,
 				xtype,
-				walletType.getCreateCb(),
-				walletType.getOpenCb(),
-				walletType.getSetCb(),
-				walletType.getGetCb(),
-				walletType.getGetNotExpiredCb(),
-				walletType.getListCb(),
-				walletType.getCloseCb(),
-				walletType.getDeleteCb(),
-				walletType.getFreeCb(),
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
 				registerWalletTypeCb);
 
 		checkResult(result);
@@ -172,7 +184,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 
 	/**
 	 * Creates a new secure wallet with the given unique name.
-	 * 
+	 *
 	 * @param poolName Name of the pool that corresponds to this wallet.
 	 * @param name Name of the wallet.
 	 * @param xtype Type of the wallet. Defaults to 'default'.
@@ -188,15 +200,15 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 			String config,
 			String credentials) throws IndyException {
 
-		ParamGuard.notNullOrWhiteSpace(poolName, "poolName");	
-		ParamGuard.notNullOrWhiteSpace(name, "name");	
-		
+		ParamGuard.notNullOrWhiteSpace(poolName, "poolName");
+		ParamGuard.notNullOrWhiteSpace(name, "name");
+
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_create_wallet(
-				commandHandle, 
-				poolName, 
+				commandHandle,
+				poolName,
 				name,
 				xtype,
 				config,
@@ -210,7 +222,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 
 	/**
 	 * Opens the wallet with specific name.
-	 * 
+	 *
 	 * @param name Name of the wallet.
 	 * @param runtimeConfig Runtime wallet configuration json. if NULL, then default runtime_config will be used.
 	 * @param credentials Wallet credentials json. List of supported keys are defined by wallet type.
@@ -222,13 +234,13 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 			String runtimeConfig,
 			String credentials) throws IndyException {
 
-		ParamGuard.notNullOrWhiteSpace(name, "name");	
-		
+		ParamGuard.notNullOrWhiteSpace(name, "name");
+
 		CompletableFuture<Wallet> future = new CompletableFuture<Wallet>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_open_wallet(
-				commandHandle, 
+				commandHandle,
 				name,
 				runtimeConfig,
 				credentials,
@@ -241,7 +253,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 
 	/**
 	 * Closes the specified open wallet and frees allocated resources.
-	 * 
+	 *
 	 * @param wallet The wallet to close.
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -250,15 +262,15 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 			Wallet wallet) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
-		
+
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
 		int handle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_close_wallet(
-				commandHandle, 
-				handle, 
+				commandHandle,
+				handle,
 				closeWalletCb);
 
 		checkResult(result);
@@ -268,7 +280,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 
 	/**
 	 * Deletes an existing wallet.
-	 * 
+	 *
 	 * @param name Name of the wallet to delete.
 	 * @param credentials Wallet credentials json. List of supported keys are defined by wallet type.
 	 * @return A future that resolves no value.
@@ -278,13 +290,13 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 			String name,
 			String credentials) throws IndyException {
 
-		ParamGuard.notNullOrWhiteSpace(name, "name");	
-		
+		ParamGuard.notNullOrWhiteSpace(name, "name");
+
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_delete_wallet(
-				commandHandle, 
+				commandHandle,
 				name,
 				credentials,
 				deleteWalletCb);
@@ -300,7 +312,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 
 	/**
 	 * Closes the wallet and frees allocated resources.
-	 * 
+	 *
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
 	 */

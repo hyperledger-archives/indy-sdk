@@ -434,4 +434,3 @@ def setupBrewPackages() {
     sh "brew switch openssl 1.0.2l"
     sh "brew switch zeromq 4.2.3"
 }
-

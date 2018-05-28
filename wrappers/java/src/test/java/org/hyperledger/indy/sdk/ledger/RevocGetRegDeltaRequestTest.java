@@ -26,11 +26,11 @@ public class RevocGetRegDeltaRequestTest extends LedgerIntegrationTest {
 
 	@Test
 	public void testRevocRegRequestsDeltaWorks() throws Exception {
-		String myDid = createStoreAndPublishDidFromTrustee();
+		postEntities();
 
 		int to = (int) (new Date().getTime()/1000) + 100;
 
-		String getRevRegRequest = Ledger.buildGetRevocRegDeltaRequest(myDid, revRegDefId, -1, to).get();
+		String getRevRegRequest = Ledger.buildGetRevocRegDeltaRequest(DID, revRegDefId, -1, to).get();
 		String getRevReResponse = PoolUtils.ensurePreviousRequestApplied(pool, getRevRegRequest, response -> {
 			JSONObject responseObject = new JSONObject(response);
 			return !responseObject.getJSONObject("result").isNull("seqNo");

@@ -1,6 +1,6 @@
 package org.hyperledger.indy.sdk.pairwise;
 
-import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -44,7 +44,7 @@ public class SetPairwiseMetadataTest extends PairwiseIntegrationTest {
 	@Test
 	public void testSetPairwiseMetadataWorksForNotCreatedPairwise() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		Pairwise.setPairwiseMetadata(wallet, theirDid, metadata).get();
 	}

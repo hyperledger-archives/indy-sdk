@@ -2,8 +2,8 @@ extern crate indy_crypto;
 
 use errors::common::CommonError;
 
-use domain::credential::AttributeValues;
-use domain::proof_request::{AttributeInfo, PredicateInfo};
+use domain::anoncreds::credential::AttributeValues;
+use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo};
 
 use self::indy_crypto::cl::{issuer, verifier, CredentialSchema, CredentialValues, SubProofRequest};
 

@@ -72,6 +72,7 @@ pub mod connect_command {
                             set_connected_pool(ctx, None);
                             Ok(println_succ!("Pool \"{}\" has been disconnected", name))
                         }
+                        Err(ErrorCode::PoolLedgerNotCreatedError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                         Err(ErrorCode::PoolLedgerTerminated) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                         Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid pool ledger config.")),
                         Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))

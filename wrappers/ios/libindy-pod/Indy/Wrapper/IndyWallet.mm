@@ -38,32 +38,32 @@
     
     BOOL addedType = [[IndyWalletCallbacks sharedInstance] setupCustomWalletImplementation: implementation];
     
-    if (addedType == NO)
-    {
-        // custom wallet implementation is already registered
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError: WalletTypeAlreadyRegisteredError]);
-        });
-    }
-    
-    ret = indy_register_wallet_type(handle,
-            [type UTF8String],
-            CustomWalletCreateCallback,
-            CustomWalletOpenCallback,
-            CustomWalletSetCallback,
-            CustomWalletGetCallback,
-            CustomWalletGetNotExpiredCallback,
-            CustomWalletListCallback,
-            CustomWalletCloseCallback,
-            CustomWalletDeleteCallback,
-            CustomWalletFreeCallback,
-            IndyWrapperCommonCallback);
-    
+//    if (addedType == NO)
+//    {
+//        // custom wallet implementation is already registered
+//        dispatch_async(dispatch_get_main_queue(), ^{
+//            completion([NSError errorFromIndyError: WalletTypeAlreadyRegisteredError]);
+//        });
+//    }
+//
+//    ret = indy_register_wallet_type(handle,
+//            [type UTF8String],
+//            CustomWalletCreateCallback,
+//            CustomWalletOpenCallback,
+//            CustomWalletSetCallback,
+//            CustomWalletGetCallback,
+//            CustomWalletGetNotExpiredCallback,
+//            CustomWalletListCallback,
+//            CustomWalletCloseCallback,
+//            CustomWalletDeleteCallback,
+//            CustomWalletFreeCallback,
+//            IndyWrapperCommonCallback);
+//
     if( ret != Success )
     {
         [[IndyWalletCallbacks sharedInstance] removeCustomWalletImplementation];
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
-        
+
         dispatch_async(dispatch_get_main_queue(), ^{
             completion([NSError errorFromIndyError: ret]);
         });
@@ -77,19 +77,19 @@
     
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor: completion];
     
-    ret = indy_register_wallet_type(handle,
-            [type UTF8String],
-            IndyKeychainWalletCreateCallback,
-            IndyKeychainWalletOpenCallback,
-            IndyKeychainWalletSetCallback,
-            IndyKeychainWalletGetCallback,
-            IndyKeychainWalletGetNotExpiredCallback,
-            IndyKeychainWalletListCallback,
-            IndyKeychainWalletCloseCallback,
-            IndyKeychainWalletDeleteCallback,
-            IndyKeychainWalletFreeCallback,
-            IndyWrapperCommonCallback);
-    
+//    ret = indy_register_wallet_type(handle,
+//            [type UTF8String],
+//            IndyKeychainWalletCreateCallback,
+//            IndyKeychainWalletOpenCallback,
+//            IndyKeychainWalletSetCallback,
+//            IndyKeychainWalletGetCallback,
+//            IndyKeychainWalletGetNotExpiredCallback,
+//            IndyKeychainWalletListCallback,
+//            IndyKeychainWalletCloseCallback,
+//            IndyKeychainWalletDeleteCallback,
+//            IndyKeychainWalletFreeCallback,
+//            IndyWrapperCommonCallback);
+//
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];

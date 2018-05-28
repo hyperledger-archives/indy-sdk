@@ -37,18 +37,16 @@ public class SchemaRequestsTest extends LedgerIntegrationTest {
 
 	@Test
 	public void testSchemaRequestWorksWithoutSignature() throws Exception {
-		String did = createStoreAndPublishDidFromTrustee();
-
-		String schemaRequest = Ledger.buildSchemaRequest(did, SCHEMA_DATA).get();
+		String schemaRequest = Ledger.buildSchemaRequest(DID, SCHEMA_DATA).get();
 		String response = Ledger.submitRequest(pool, schemaRequest).get();
 		checkResponseType(response, "REQNACK");
 	}
 
 	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testSchemaRequestsWorks() throws Exception {
-		String did = createStoreAndPublishDidFromTrustee();
+		postEntities();
 
-		String getSchemaRequest = Ledger.buildGetSchemaRequest(did, String.valueOf(schemaId)).get();
+		String getSchemaRequest = Ledger.buildGetSchemaRequest(DID, String.valueOf(schemaId)).get();
 		String getSchemaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaRequest, response -> {
 			JSONObject getSchemaResponseObject = new JSONObject(response);
 			return ! getSchemaResponseObject.getJSONObject("result").isNull("seqNo");

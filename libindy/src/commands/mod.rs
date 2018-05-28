@@ -9,6 +9,7 @@ pub mod pool;
 pub mod did;
 pub mod wallet;
 pub mod pairwise;
+pub mod non_secrets;
 pub mod payments;
 
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
@@ -19,6 +20,7 @@ use commands::pool::{PoolCommand, PoolCommandExecutor};
 use commands::did::{DidCommand, DidCommandExecutor};
 use commands::wallet::{WalletCommand, WalletCommandExecutor};
 use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
+use commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
 use commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
 
 use errors::common::CommonError;
@@ -47,7 +49,8 @@ pub enum Command {
     Did(DidCommand),
     Wallet(WalletCommand),
     Pairwise(PairwiseCommand),
-    Payments(PaymentsCommand),
+    NonSecrets(NonSecretsCommand),
+    Payments(PaymentsCommand)
 }
 
 pub struct CommandExecutor {
@@ -90,6 +93,7 @@ impl CommandExecutor {
                 let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
                 let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
                 let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());
+                let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());
                 let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone());
 
                 loop {
@@ -125,6 +129,10 @@ impl CommandExecutor {
                         Ok(Command::Pairwise(cmd)) => {
                             info!("PairwiseCommand command received");
                             pairwise_command_executor.execute(cmd);
+                        }
+                        Ok(Command::NonSecrets(cmd)) => {
+                            info!("NonSecretCommand command received");
+                            non_secret_command_executor.execute(cmd);
                         }
                         Ok(Command::Payments(cmd)) => {
                             info!("PaymentsCommand command received");

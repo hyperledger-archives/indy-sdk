@@ -215,7 +215,7 @@
                                                        submitterdid:[TestUtils trusteeDid]
                                                         requestJson:[[AnoncredsUtils sharedInstance] toJson:message]
                                                          resultJson:nil];
-    XCTAssertEqual(ret.code, WalletNotFoundError, @"LedgerUtils::signRequestWithWalletHandle() returned wrong code!");
+    XCTAssertEqual(ret.code, WalletItemNotFound, @"LedgerUtils::signRequestWithWalletHandle() returned wrong code!");
 }
 
 - (void)testSignRequestWorksFowInvalidMessageFormat {

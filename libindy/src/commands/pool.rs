@@ -164,6 +164,8 @@ impl PoolCommandExecutor {
             Err(err) => { cb(Err(err)); }
             Ok((mut cbs, handle)) => { cbs.insert(handle, cb); /* TODO check if map contains same key */ }
         };
+
+        debug!("open <<<");
     }
 
     fn list(&self) -> Result<String, IndyError> {
@@ -193,6 +195,8 @@ impl PoolCommandExecutor {
             Err(err) => { cb(Err(err)); }
             Ok((mut cbs, handle)) => { cbs.insert(handle, cb); /* TODO check if map contains same key */ }
         };
+
+        debug!("close <<<");
     }
 
     fn refresh(&self, handle: i32, cb: Box<Fn(Result<(), IndyError>) + Send>) {
@@ -210,5 +214,7 @@ impl PoolCommandExecutor {
             Err(err) => { cb(Err(err)); }
             Ok((mut cbs, handle)) => { cbs.insert(handle, cb); /* TODO check if map contains same key */ }
         };
+
+        debug!("refresh <<<");
     }
 }

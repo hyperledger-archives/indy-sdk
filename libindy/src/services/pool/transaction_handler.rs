@@ -25,7 +25,7 @@ use commands::ledger::LedgerCommand;
 use errors::pool::PoolError;
 use errors::common::CommonError;
 use super::types::*;
-use services::ledger::constants;
+use domain::ledger::constants;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use self::indy_crypto::bls::Generator;
 
