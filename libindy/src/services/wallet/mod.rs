@@ -345,7 +345,7 @@ impl WalletService {
     }
 
     pub fn add_record(&self, wallet_handle: i32, type_: &str, name: &str, value: &str, tags_json: &str) -> Result<(), WalletError> {
-        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
+        match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
                 let tags: Tags = serde_json::from_str(tags_json)?;
                 wallet.add(type_, name, value, &tags)
@@ -386,7 +386,7 @@ impl WalletService {
     }
 
     pub fn add_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tags_json: &str) -> Result<(), WalletError> {
-        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
+        match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
                 let tags: Tags = serde_json::from_str(tags_json)?;
                 wallet.add_tags(type_, name, &tags)
@@ -400,7 +400,7 @@ impl WalletService {
     }
 
     pub fn update_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tags_json: &str) -> Result<(), WalletError> {
-        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
+        match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
                 let tags: Tags = serde_json::from_str(tags_json)?;
                 wallet.update_tags(type_, name, &tags)
@@ -414,7 +414,7 @@ impl WalletService {
     }
 
     pub fn delete_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tag_names_json: &str) -> Result<(), WalletError> {
-        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
+        match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
                 let tag_names: Vec<String> = serde_json::from_str(tag_names_json)?;
                 wallet.delete_tags(type_, name, &tag_names[..])

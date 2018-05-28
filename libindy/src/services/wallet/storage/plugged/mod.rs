@@ -351,7 +351,7 @@ impl WalletStorage for PluggedStorage {
         Ok(result)
     }
 
-    fn add(&mut self, type_: &Vec<u8>, id: &Vec<u8>, value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn add(&self, type_: &Vec<u8>, id: &Vec<u8>, value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
         let joined_value = value.to_bytes();
@@ -371,7 +371,7 @@ impl WalletStorage for PluggedStorage {
         Ok(())
     }
 
-    fn add_tags(&mut self, type_: &Vec<u8>, id: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn add_tags(&self, type_: &Vec<u8>, id: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
         let tags_json = CString::new(_tags_to_json(&tags)?)?;
@@ -388,7 +388,7 @@ impl WalletStorage for PluggedStorage {
         Ok(())
     }
 
-    fn update_tags(&mut self, type_: &Vec<u8>, id: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn update_tags(&self, type_: &Vec<u8>, id: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
         let tags_json = CString::new(_tags_to_json(&tags)?)?;
@@ -405,7 +405,7 @@ impl WalletStorage for PluggedStorage {
         Ok(())
     }
 
-    fn delete_tags(&mut self, type_: &Vec<u8>, id: &Vec<u8>, tag_names: &[TagName]) -> Result<(), WalletStorageError> {
+    fn delete_tags(&self, type_: &Vec<u8>, id: &Vec<u8>, tag_names: &[TagName]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
         let tag_names_json = CString::new(_tags_names_to_json(tag_names)?)?;
