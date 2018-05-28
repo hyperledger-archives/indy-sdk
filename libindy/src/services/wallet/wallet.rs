@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::io::{Write,Read};
+use std::rc::Rc;
 
 use serde_json;
 use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
@@ -89,7 +90,7 @@ pub(super) struct Wallet {
     name: String,
     pool_name: String,
     storage: Box<storage::WalletStorage>,
-    keys: Keys,
+    keys: Rc<Keys>,
 }
 
 
@@ -150,7 +151,7 @@ impl Wallet {
             name: name.to_string(),
             pool_name: pool_name.to_string(),
             storage: storage,
-            keys: keys,
+            keys: Rc::new(keys),
         }
     }
 
@@ -229,7 +230,7 @@ impl Wallet {
         let encrypted_query = encrypt_query(parsed_query, &self.keys);
         let encrypted_type_ = ChaCha20Poly1305IETF::encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let storage_iterator = self.storage.search(&encrypted_type_, &encrypted_query, options)?;
-        let wallet_iterator = WalletIterator::new(storage_iterator, &self.keys);
+        let wallet_iterator = WalletIterator::new(storage_iterator, Rc::clone(&self.keys));
         Ok(wallet_iterator)
     }
 

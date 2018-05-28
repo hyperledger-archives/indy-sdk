@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use serde_json;
 
 use errors::wallet::WalletError;
@@ -11,15 +13,15 @@ use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 
 pub(super) struct WalletIterator {
     storage_iterator: Box<StorageIterator>,
-    keys: Keys,
+    keys: Rc<Keys>,
 }
 
 
 impl WalletIterator {
-    pub fn new(storage_iter: Box<StorageIterator>, keys: &Keys) -> Self {
+    pub fn new(storage_iter: Box<StorageIterator>, keys: Rc<Keys>) -> Self {
         WalletIterator {
             storage_iterator: storage_iter,
-            keys: keys.clone() /* TODO FIXME: Avoid clone, especially for sensitive information. */,
+            keys: keys,
         }
     }
 
