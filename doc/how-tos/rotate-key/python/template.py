@@ -20,7 +20,7 @@ import asyncio
 import json
 import pprint
 
-from indy import pool, ledger, wallet, signus
+from indy import pool, ledger, wallet, did
 from indy.error import IndyError
 
 
