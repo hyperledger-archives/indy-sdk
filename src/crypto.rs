@@ -148,6 +148,24 @@ impl Crypto {
         ResultHandler::one(err, receiver)
     }
 
+    /// Decrypt a message by authenticated-encryption scheme.
+    ///
+    /// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
+    /// Using Recipient's public key, Sender can compute a shared secret key.
+    /// Using Sender's public key and his secret key, Recipient can compute the exact same shared secret key.
+    /// That shared secret key can be used to verify that the encrypted message was not tampered with,
+    /// before eventually decrypting it.
+    ///
+    /// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
+    /// for specific DID.
+    ///
+    /// # Arguments
+    /// `wallet_handle`: wallet handle (created by Wallet::open)
+    /// `recipient_vk`: key id or verkey of my key. The key must be created by calling Key::create or Did::new
+    /// `encrypted_message`: the message to be decrypted
+    ///
+    /// # Returns
+    /// sender's verkey and decrypted message
     pub fn auth_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Result<(String, Vec<u8>), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_slice();
 
@@ -163,6 +181,22 @@ impl Crypto {
         ResultHandler::two(err, receiver)
     }
 
+    /// Encrypts a message by anonymous-encryption scheme.
+    ///
+    /// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
+    /// Only the Recipient can decrypt these messages, using its private key.
+    /// While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
+    ///
+    /// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
+    /// for specific DID.
+    ///
+    /// # Arguments
+    /// `wallet_handle`: wallet handle (created by Wallet::open)
+    /// `recipient_vk`: verkey of message recipient
+    /// `message`: a pointer to first byte of message that to be encrypted
+    ///
+    /// # Returns
+    /// the encrypted message
     pub fn anon_crypt(wallet_handle: IndyHandle, recipient_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
@@ -179,6 +213,22 @@ impl Crypto {
         ResultHandler::one(err, receiver)
     }
 
+    /// Decrypts a message by anonymous-encryption scheme.
+    ///
+    /// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
+    /// Only the Recipient can decrypt these messages, using its private key.
+    /// While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
+    ///
+    /// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
+    /// for specific DID.
+    ///
+    /// # Arguments
+    /// `wallet_handle`: wallet handle (created by Wallet::open).
+    /// `recipient_vk`: key id or verkey of my key. The key must be created by calling Key::create or Did::new
+    /// `encrypted_message`: a pointer to first byte of message that to be decrypted
+    ///
+    /// # Returns
+    /// decrypted message
     pub fn anon_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Result<(String, Vec<u8>), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_slice();
 
@@ -194,3 +244,5 @@ impl Crypto {
         ResultHandler::two(err, receiver)
     }
 }
+
+
