@@ -80,15 +80,6 @@ pub enum Operator {
 
 
 impl Operator {
-    pub fn transform(self, f: &Fn(Operator) -> Operator) -> Operator {
-        match self {
-            Operator::And(operators) => f(Operator::And(operators.into_iter().map(|o| Operator::transform(o, f)).collect())),
-            Operator::Or(operators) => f(Operator::Or(operators.into_iter().map(|o| Operator::transform(o, f)).collect())),
-            Operator::Not(boxed_operator) => f(Operator::Not(Box::new(Operator::transform(*boxed_operator, f)))),
-            _ => f(self)
-        }
-    }
-
     pub fn transform_result<T>(self, f: &Fn(Operator) -> Result<Operator, T>) -> Result<Operator, T> {
         match self {
             Operator::And(operators) => {

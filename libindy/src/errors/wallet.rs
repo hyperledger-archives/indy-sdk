@@ -294,14 +294,12 @@ pub enum WalletQueryError {
     ParsingErr(String),
     StructureErr(String),
     ValueErr(String),
-    CommonError(CommonError),
 }
 
 impl fmt::Display for WalletQueryError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             WalletQueryError::ParsingErr(ref s) | WalletQueryError::StructureErr(ref s) | WalletQueryError::ValueErr(ref s) => f.write_str(s),
-            WalletQueryError::CommonError(ref e) => write!(f, "Common error: {}", e.description()),
         }
     }
 }
@@ -309,7 +307,6 @@ impl error::Error for WalletQueryError {
     fn description(&self) -> &str {
         match *self {
             WalletQueryError::ParsingErr(ref s) | WalletQueryError::StructureErr(ref s) | WalletQueryError::ValueErr(ref s) => s,
-            WalletQueryError::CommonError(ref e) => e.description(),
         }
     }
 }
@@ -317,12 +314,5 @@ impl error::Error for WalletQueryError {
 impl From<serde_json::Error> for WalletQueryError {
     fn from(err: serde_json::Error) -> WalletQueryError {
         WalletQueryError::ParsingErr(err.to_string())
-    }
-}
-
-
-impl From<CommonError> for WalletQueryError {
-    fn from(err: CommonError) -> WalletQueryError {
-        WalletQueryError::CommonError(err)
     }
 }
