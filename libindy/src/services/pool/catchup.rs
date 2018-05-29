@@ -26,6 +26,7 @@ enum CatchupStepResult {
     FailedAtNode(usize),
 }
 
+#[derive(Debug)]
 enum CatchupProgress {
     ShouldBeStarted,
     NotNeeded,
@@ -129,43 +130,54 @@ impl CatchupHandler {
 
         if let Some((most_popular_vote, votes_cnt)) = votes.iter().max_by_key(|entry| entry.1) {
             if *votes_cnt == self.nodes.len() - self.f {
-                let &(ref target_mt_root, target_mt_size, ref hashes) = most_popular_vote;
-                let cur_mt_size = self.merkle_tree.count();
-                let cur_mt_hash = self.merkle_tree.root_hash().to_base58();
-                if target_mt_size == cur_mt_size {
-                    if cur_mt_hash.eq(target_mt_root) {
-                        return Ok(CatchupProgress::NotNeeded);
-                    } else {
-                        PoolWorker::drop_saved_txns(&self.pool_name)?;
-                        return Err(PoolError::CommonError(CommonError::InvalidState(
-                            "Ledger merkle tree doesn't acceptable for current tree.".to_string())));
+                return match self._try_to_catch_up(most_popular_vote) {
+                    //WARNING: If we receive invalid cache then it means that cache was cleared. We need to rebuild merkle tree and try to catch up once again
+                    Err(PoolError::InvalidCacheCleared) => {
+                        self.merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name(&self.pool_name)?;
+                        self._try_to_catch_up(most_popular_vote)
                     }
-                } else if target_mt_size > cur_mt_size {
-                    self.target_mt_size = target_mt_size;
-                    self.target_mt_root = target_mt_root.from_base58().map_err(|_|
-                        CommonError::InvalidStructure(
-                            "Can't parse target MerkleTree hash from nodes responses".to_string()))?;
-                    match hashes {
-                        &None => (),
-                        &Some(ref hashes) => {
-                            match CatchupHandler::check_cons_proofs(&self.merkle_tree, hashes, &target_mt_root.clone().into_bytes(), target_mt_size) {
-                                Ok(_) => (),
-                                Err(err) => {
-                                    PoolWorker::drop_saved_txns(&self.pool_name)?;
-                                    return Err(PoolError::from(err));
-                                }
-                            }
-                        }
-                    };
-                    return Ok(CatchupProgress::ShouldBeStarted);
-                } else {
-                    PoolWorker::drop_saved_txns(&self.pool_name)?;
-                    return Err(PoolError::CommonError(CommonError::InvalidState(
-                        "Local merkle tree greater than mt from ledger".to_string())));
+                    a => a
                 }
             }
         }
         Ok(CatchupProgress::InProgress)
+    }
+
+    fn _try_to_catch_up(&mut self, most_popular_vote: &(String, usize, Option<Vec<String>>)) -> Result<CatchupProgress, PoolError> {
+        let &(ref target_mt_root, target_mt_size, ref hashes) = most_popular_vote;
+        let cur_mt_size = self.merkle_tree.count();
+        let cur_mt_hash = self.merkle_tree.root_hash().to_base58();
+        if target_mt_size == cur_mt_size {
+            if cur_mt_hash.eq(target_mt_root) {
+                return Ok(CatchupProgress::NotNeeded);
+            } else {
+                PoolWorker::drop_saved_txns(&self.pool_name)?;
+                return Err(PoolError::CommonError(CommonError::InvalidState(
+                    "Ledger merkle tree doesn't acceptable for current tree.".to_string())));
+            }
+        } else if target_mt_size > cur_mt_size {
+            self.target_mt_size = target_mt_size;
+            self.target_mt_root = target_mt_root.from_base58().map_err(|_|
+                CommonError::InvalidStructure(
+                    "Can't parse target MerkleTree hash from nodes responses".to_string()))?;
+            match hashes {
+                &None => (),
+                &Some(ref hashes) => {
+                    match CatchupHandler::check_cons_proofs(&self.merkle_tree, hashes, &self.target_mt_root, self.target_mt_size) {
+                        Ok(_) => (),
+                        Err(err) => {
+                            PoolWorker::drop_saved_txns(&self.pool_name)?;
+                            return Err(PoolError::from(err));
+                        }
+                    }
+                }
+            };
+            return Ok(CatchupProgress::ShouldBeStarted);
+        } else {
+            PoolWorker::drop_saved_txns(&self.pool_name)?;
+            return Err(PoolError::CommonError(CommonError::InvalidState(
+                "Local merkle tree greater than mt from ledger".to_string())));
+        }
     }
 
     pub fn reset_nodes_votes(&mut self) {
@@ -279,7 +291,7 @@ impl CatchupHandler {
                     return Ok(CatchupStepResult::FailedAtNode(node_idx));
                 }
 
-                PoolWorker::dump_new_txns( &self.pool_name, &vec_to_dump)?;
+                PoolWorker::dump_new_txns(&self.pool_name, &vec_to_dump)?;
 
                 process.merkle_tree = temp_mt;
             }
