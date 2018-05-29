@@ -46,6 +46,23 @@ impl ClosureHandler {
         (receiver, command_handle, Some(_callback))
     }
 
+    pub fn convert_cb_ec(closure: Box<Fn(ErrorCode) + Send>) -> (IndyHandle, Option<ResponseEmptyCB>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+        extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = SequenceUtils::get_next_id();
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(_callback))
+    }
+
     pub fn cb_ec_i32() -> (Receiver<(ErrorCode, IndyHandle)>, IndyHandle, Option<ResponseI32CB>) {
         let (sender, receiver) = channel();
 
@@ -93,6 +110,25 @@ impl ClosureHandler {
         callbacks.insert(command_handle, closure);
 
         (receiver, command_handle, Some(_callback))
+    }
+
+    pub fn convert_cb_ec_string(closure: Box<FnMut(ErrorCode, String) + Send>) -> (IndyHandle, Option<ResponseStringCB>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String) + Send>>> = Default::default();
+        }
+
+        extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, c_str: *const c_char) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let metadata = rust_str!(c_str);
+            cb(err, metadata)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = SequenceUtils::get_next_id();
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(_callback))
     }
 
     pub fn cb_ec_string_string() -> (Receiver<(ErrorCode, String, String)>, IndyHandle, Option<ResponseStringStringCB>) {
@@ -170,6 +206,25 @@ impl ClosureHandler {
         callbacks.insert(command_handle, closure);
 
         (receiver, command_handle, Some(_callback))
+    }
+
+    pub fn convert_cb_ec_slice(closure: Box<Fn(ErrorCode, Vec<u8>) + Send>) -> (IndyHandle, Option<ResponseSliceCB>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, Vec<u8>) + Send> >> = Default::default();
+        }
+
+        extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, raw: *const u8, len: u32) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let sig = rust_slice!(raw, len);
+            cb(err, sig.to_vec())
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = SequenceUtils::get_next_id();
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(_callback))
     }
 
     pub fn cb_ec_string_slice() -> (Receiver<(ErrorCode, String, Vec<u8>)>, IndyHandle, Option<ResponseStringSliceCB>) {

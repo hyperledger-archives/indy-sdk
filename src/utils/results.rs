@@ -1,6 +1,7 @@
 use ErrorCode;
 
 use std::sync::mpsc::Receiver;
+use std::time::Duration;
 
 pub struct ResultHandler {}
 
@@ -19,6 +20,22 @@ impl ResultHandler {
         Ok(())
     }
 
+    pub fn empty_timeout(err: ErrorCode, receiver: Receiver<ErrorCode>, timeout: Duration) -> Result<(), ErrorCode> {
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        match receiver.recv_timeout(timeout) {
+            Ok(err) => {
+                if err != ErrorCode::Success {
+                    return Err(err);
+                }
+                Ok(())
+            },
+            Err(e) => Err(ErrorCode::from(e))
+        }
+    }
+
     pub fn one<T>(err: ErrorCode, receiver: Receiver<(ErrorCode, T)>) -> Result<T, ErrorCode> {
         if err != ErrorCode::Success {
             return Err(err);
@@ -31,6 +48,22 @@ impl ResultHandler {
         }
 
         Ok(val)
+    }
+
+    pub fn one_timeout<T>(err: ErrorCode, receiver: Receiver<(ErrorCode, T)>, timeout: Duration) -> Result<T, ErrorCode> {
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        match receiver.recv_timeout(timeout) {
+            Ok((err, val)) =>  {
+                if err != ErrorCode::Success {
+                    return Err(err);
+                }
+                Ok(val)
+            },
+            Err(e) => Err(ErrorCode::from(e))
+        }
     }
 
     pub fn two<T1, T2>(err: ErrorCode, receiver: Receiver<(ErrorCode, T1, T2)>) -> Result<(T1, T2), ErrorCode> {
