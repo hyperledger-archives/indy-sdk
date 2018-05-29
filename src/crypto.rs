@@ -1,6 +1,7 @@
 use super::{ErrorCode, IndyHandle};
 
 use std::ffi::CString;
+use std::time::Duration;
 
 use ffi::crypto;
 
@@ -13,7 +14,7 @@ impl Key {
     /// Creates key pair in wallet
     /// # Arguments
     /// * `wallet_handle` - wallet handle (created by Wallet::open)
-    /// * `my_key_json` - key information as json
+    /// * `my_key_json` - Optional key information as json. If none then defaults are used.
     ///
     /// # Example
     /// my_key_json
@@ -23,15 +24,64 @@ impl Key {
     /// }
     /// # Returns
     /// verkey of generated key pair, also used as key identifier
-    pub fn create(wallet_handle: IndyHandle, my_key_json: &str) -> Result<String, ErrorCode> {
+    pub fn create(wallet_handle: IndyHandle, my_key_json: Option<&str>) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-        let my_key_json = c_str!(my_key_json);
+        let my_key_json = opt_c_str_json!(my_key_json);
 
         let err = unsafe {
             crypto::indy_create_key(command_handle, wallet_handle, my_key_json.as_ptr(), cb)
         };
         ResultHandler::one(err, receiver)
+    }
+
+    /// Creates key pair in wallet
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by Wallet::open)
+    /// * `my_key_json` - key information as json
+    /// * `timeout` - the maximum time this function waits for a response
+    ///
+    /// # Example
+    /// my_key_json
+    /// {
+    ///     "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+    ///     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
+    /// }
+    /// # Returns
+    /// verkey of generated key pair, also used as key identifier
+    pub fn create_timeout(wallet_handle: IndyHandle, my_key_json: Option<&str>, timeout: Duration) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let my_key_json = opt_c_str_json!(my_key_json);
+
+        let err = unsafe {
+            crypto::indy_create_key(command_handle, wallet_handle, my_key_json.as_ptr(), cb)
+        };
+        ResultHandler::one_timeout(err, receiver, timeout)
+    }
+
+    /// Creates key pair in wallet
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by Wallet::open)
+    /// * `my_key_json` - Optional key information as json. If none then defaults are used.
+    /// * `closure` - The closure that is called when finished
+    ///
+    /// # Example
+    /// my_key_json
+    /// {
+    ///     "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+    ///     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
+    /// }
+    /// # Returns
+    /// errorcode from calling ffi function. The closure receives the return result
+    pub fn create_async<F: 'static>(wallet_handle: IndyHandle, my_key_json: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
+
+        let my_key_json = opt_c_str_json!(my_key_json);
+
+        unsafe {
+            crypto::indy_create_key(command_handle, wallet_handle, my_key_json.as_ptr(), cb)
+        }
     }
 
     /// Saves/replaces the metadata for the `verkey` in the wallet
@@ -51,6 +101,43 @@ impl Key {
         ResultHandler::empty(err, receiver)
     }
 
+    /// Saves/replaces the metadata for the `verkey` in the wallet
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by Wallet::open)
+    /// * `verkey` - the public key or key id where to store the metadata
+    /// * `metadata` - the metadata that will be stored with the key
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn set_metadata_timeout(wallet_handle: IndyHandle, verkey: &str, metadata: &str, timeout: Duration) -> Result<(), ErrorCode> {
+         let (receiver, command_handle, cb) = ClosureHandler::ec_string();
+
+        let my_key_json = opt_c_str_json!(my_key_json);
+
+        let verkey = c_str!(verkey);
+        let metadata = c_str!(metadata);
+
+        let err = unsafe {
+            crypto::indy_set_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), metadata.as_ptr(), cb)
+        };
+        ResultHandler::empty_timeout(err, receiver, timeout)
+    }
+
+    /// Saves/replaces the metadata for the `verkey` in the wallet
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by Wallet::open)
+    /// * `verkey` - the public key or key id where to store the metadata
+    /// * `metadata` - the metadata that will be stored with the key
+    /// * `closure` - The closure that is called when finished
+    pub fn set_metadata_async<F: 'static>(wallet_handle: IndyHandle, verkey: &str, metadata: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
+
+        let verkey = c_str!(verkey);
+        let metadata = c_str!(metadata);
+
+        unsafe {
+            crypto::indy_set_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), metadata.as_ptr(), cb)
+        }
+    }
+
     /// Retrieves the metadata for the `verkey` in the wallet
     /// # Argument
     /// * `wallet_handle` - wallet handle (created by Wallet::open)
@@ -67,6 +154,42 @@ impl Key {
         };
 
         ResultHandler::one(err, receiver)
+    }
+
+    /// Retrieves the metadata for the `verkey` in the wallet
+    /// # Argument
+    /// * `wallet_handle` - wallet handle (created by Wallet::open)
+    /// * `verkey` - the public key or key id to retrieve metadata
+    /// * `timeout` - the maximum time this function waits for a response
+    /// # Returns
+    /// metadata currently stored with the key; Can be empty if no metadata was saved for this key
+    pub fn get_metadata_timeout(wallet_handle: IndyHandle, verkey: &str, timeout: Duration) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let verkey = c_str!(verkey);
+
+        let err = unsafe {
+            crypto::indy_get_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), cb)
+        };
+
+        ResultHandler::one_timeout(err, receiver, timeout)
+    }
+
+    /// Retrieves the metadata for the `verkey` in the wallet
+    /// # Argument
+    /// * `wallet_handle` - wallet handle (created by Wallet::open)
+    /// * `verkey` - the public key or key id to retrieve metadata
+    /// * `closure` - The closure that is called when finished
+    /// # Returns
+    /// errorcode from calling ffi function
+    pub fn get_metadata_async<F: 'static>(wallet_handle: IndyHandle, verkey: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
+
+        let verkey = c_str!(verkey);
+
+        unsafe {
+            crypto::indy_get_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), cb)
+        }
     }
 }
 
@@ -92,6 +215,48 @@ impl Crypto {
         };
 
         ResultHandler::one(err, receiver)
+    }
+
+    /// Signs a message with a key
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by Wallet::open)
+    /// * `signer_vk` - key id or verkey of my key. The key must be created by calling Key::create or Did::new
+    /// * `message` - the data to be signed
+    /// * `timeout` - the maximum time this function waits for a response
+    /// # Returns
+    /// the signature
+    pub fn sign_timeout(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
+
+        let signer_vk = c_str!(signer_vk);
+        let err = unsafe {
+            crypto::indy_crypto_sign(command_handle, wallet_handle, signer_vk.as_ptr(),
+                             message.as_ptr() as *const u8,
+                             message.len() as u32,
+                             cb)
+        };
+
+        ResultHandler::one_timeout(err, receiver, timeout)
+    }
+
+    /// Signs a message with a key
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by Wallet::open)
+    /// * `signer_vk` - key id or verkey of my key. The key must be created by calling Key::create or Did::new
+    /// * `message` - the data to be signed
+    /// * `closure` - The closure that is called when finished
+    /// # Returns
+    /// errorcode from calling ffi function
+    pub fn sign_async<F: 'static>(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
+
+        let signer_vk = c_str!(signer_vk);
+        unsafe {
+            crypto::indy_crypto_sign(command_handle, wallet_handle, signer_vk.as_ptr(),
+                             message.as_ptr() as *const u8,
+                             message.len() as u32,
+                             cb)
+        }
     }
 
     /// Verify a signature with a verkey
@@ -244,5 +409,4 @@ impl Crypto {
         ResultHandler::two(err, receiver)
     }
 }
-
 
