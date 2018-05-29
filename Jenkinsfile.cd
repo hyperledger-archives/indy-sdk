@@ -170,11 +170,13 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
                 echo "${env_name} Test: Test"
 
                 try {
+                    def libindyFeatures = "--features sodium_static"
+
                     echo "${env_name} Libindy Test: Build"
-                    sh "RUST_BACKTRACE=1 cargo test --release --no-run"
+                    sh "RUST_BACKTRACE=1 cargo test --release --no-run $libindyFeatures"
 
                     echo "${env_name} Libindy Test: Run tests"
-                    sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release"
+                    sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release $libindyFeatures"
 
                     if (stashBuildResults) {
                         stash includes: 'target/release/libindy.so,target/release/libindy.a', name: 'LibindyUbuntuBuildResult'

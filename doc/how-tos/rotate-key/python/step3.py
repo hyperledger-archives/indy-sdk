@@ -1,5 +1,5 @@
         print_log('\n9. Generating new verkey of trust anchor in wallet\n')
-        new_verkey = await signus.replace_keys_start(wallet_handle, trust_anchor_did, "{}")
+        new_verkey = await did.replace_keys_start(wallet_handle, trust_anchor_did, "{}")
         print_log('New Trust Anchor Verkey: ', new_verkey)
 
         print_log('\n10. Building NYM request to update new verkey to ledger\n')
@@ -13,4 +13,4 @@
         pprint.pprint(json.loads(nym_response))
 
         print_log('\n12. Apply new verkey in wallet\n')
-        await signus.replace_keys_apply(wallet_handle, trust_anchor_did)
+        await did.replace_keys_apply(wallet_handle, trust_anchor_did)

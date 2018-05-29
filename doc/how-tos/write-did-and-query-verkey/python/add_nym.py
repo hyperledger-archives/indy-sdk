@@ -42,7 +42,7 @@ Refer to below for detail steps.
 import asyncio
 import json
 
-from indy import wallet, signus, pool, ledger
+from indy import wallet, did, pool, ledger
 from indy.error import IndyError
 
 
@@ -108,11 +108,11 @@ async def build_nym_request():
                   "(for verification of signature)")
         seed_default_steward = "000000000000000000000000Steward1"
 
-        (default_steward_did, _) = await signus.create_and_store_my_did(
+        (default_steward_did, _) = await did.create_and_store_my_did(
                     Variables.wallet_handle, json.dumps(
                         {"seed": seed_default_steward}))
         (trust_anchor_did, trust_anchor_verkey) = \
-            await signus.create_and_store_my_did(
+            await did.create_and_store_my_did(
                 Variables.wallet_handle, json.dumps({}))
         print_log("DONE - Trust_Anchor[%s][%s]" % (trust_anchor_did,
                                                    trust_anchor_verkey))
