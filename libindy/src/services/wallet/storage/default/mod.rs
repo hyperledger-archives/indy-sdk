@@ -177,10 +177,9 @@ impl StorageIterator for SQLiteStorageIterator {
                     None
                 };
                 let tags = if self.options.fetch_tags {
-                    if let Some(ref mut tag_retriever) = &mut self.tag_retriever {
-                        Some(tag_retriever.retrieve(row.get(0))?)
-                    } else {
-                        return Err(WalletStorageError::CommonError(
+                    match self.tag_retriever {
+                        Some(ref mut tag_retriever) => Some(tag_retriever.retrieve(row.get(0))?),
+                        None => return Err(WalletStorageError::CommonError(
                             CommonError::InvalidState("Fetch tags option set and tag retriever is None".to_string())
                         ))
                     }
