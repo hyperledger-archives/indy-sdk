@@ -10,6 +10,12 @@ macro_rules! opt_c_str {
     }
 }
 
+macro_rules! opt_c_str_json {
+    ($x:ident) => {
+        $x.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("{}").unwrap())
+    }
+}
+
 macro_rules! opt_c_ptr {
     ($x:ident, $y:ident) => {
         if $x.is_some() { $y.as_ptr() } else { null() }

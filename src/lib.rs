@@ -1,5 +1,7 @@
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate log;
 
 #[macro_use]
 mod macros;
@@ -14,6 +16,8 @@ pub mod wallet;
 pub mod utils;
 
 mod ffi;
+
+use std::sync::mpsc;
 
 pub type IndyHandle = i32;
 
@@ -202,6 +206,21 @@ impl ErrorCode {
             DidAlreadyExistsError => "Did already exists",
             UnknownPaymentMethod => "Unknown payment method was given",
             IncompatiblePaymentError => "Multiple different payment methods were specified",
+        }
+    }
+}
+
+impl From<mpsc::RecvTimeoutError> for ErrorCode {
+    fn from(err: mpsc::RecvTimeoutError) -> Self {
+        match err {
+            mpsc::RecvTimeoutError::Timeout => {
+                warn!("Timed out waiting for libindy to call back");
+                ErrorCode::CommonIOError
+            },
+            mpsc::RecvTimeoutError::Disconnected => {
+                warn!("Channel to libindy was disconnected unexpectedly");
+                ErrorCode::CommonIOError
+            }
         }
     }
 }
