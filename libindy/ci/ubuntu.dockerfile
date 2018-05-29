@@ -32,6 +32,14 @@ RUN pip3 install -U \
 	plumbum \
 	deb-pkg-tools
 
+RUN cd /tmp && \
+   curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.14.tar.gz | tar -xz && \
+    cd /tmp/libsodium-1.0.14 && \
+    ./configure && \
+    make && \
+    make install && \
+    rm -rf /tmp/libsodium-1.0.14
+
 RUN apt-get update && apt-get install openjdk-8-jdk -y
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 RUN apt-get update && apt-get install -y maven

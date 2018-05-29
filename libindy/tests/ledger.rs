@@ -14,6 +14,9 @@ extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
 extern crate log;
+extern crate named_type;
+#[macro_use]
+extern crate named_type_derive;
 
 #[macro_use]
 mod utils;
@@ -37,11 +40,11 @@ use utils::constants::*;
 use self::openssl::hash::{MessageDigest, Hasher};
 use self::sodiumoxide::crypto::secretbox;
 
-use utils::domain::schema::SchemaV1;
-use utils::domain::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
-use utils::domain::revocation_registry_definition::RevocationRegistryDefinitionV1;
-use utils::domain::revocation_registry::RevocationRegistryV1;
-use utils::domain::revocation_registry_delta::RevocationRegistryDeltaV1;
+use utils::domain::anoncreds::schema::SchemaV1;
+use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
+use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
+use utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
 
 use std::collections::HashMap;
 use std::thread;
@@ -227,7 +230,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = LedgerUtils::sign_request(wallet_handle, DID, REQUEST);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -301,7 +304,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = LedgerUtils::multi_sign_request(wallet_handle, DID, REQUEST);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -411,6 +414,7 @@ mod high_cases {
             let response = LedgerUtils::submit_request(pool_handle, &nym_request).unwrap();
             PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
+            WalletUtils::close_wallet(wallet_handle).unwrap();
             PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
@@ -721,10 +725,8 @@ mod high_cases {
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let (did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
-
-            let schema_request = LedgerUtils::build_schema_request(&did, SCHEMA_DATA).unwrap();
+            
+            let schema_request = LedgerUtils::build_schema_request(&DID_TRUSTEE, SCHEMA_DATA).unwrap();
             let response = LedgerUtils::submit_request(pool_handle, &schema_request).unwrap();
 
             PoolUtils::check_response_type(&response, ResponseType::REQNACK);
@@ -1461,7 +1463,7 @@ mod medium_cases {
             let nym_request = LedgerUtils::build_nym_request(&DID, &DID, None, None, None).unwrap();
 
             let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &DID, &nym_request);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
