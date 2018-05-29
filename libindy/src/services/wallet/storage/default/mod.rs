@@ -305,8 +305,9 @@ impl WalletStorage for SQLiteStorage {
             Err(rusqlite::Error::QueryReturnedNoRows) => return Err(WalletStorageError::ItemNotFound),
             Err(err) => return Err(WalletStorageError::from(err))
         };
-
-        if options.fetch_tags {
+        let value = if options.fetch_value { Some(EncryptedValue::new(item.1, item.2)) } else { None };
+        let type_ = if options.fetch_type { Some(type_.clone()) } else { None };
+        let tags = if options.fetch_tags {
             let mut tags = Vec::new();
 
             // get all encrypted.
@@ -326,24 +327,10 @@ impl WalletStorage for SQLiteStorage {
                 let row = row?;
                 tags.push(Tag::PlainText(row.get(0), row.get(1)));
             }
+            Some(tags)
+        } else { None };
 
-            Ok(StorageEntity::new(name.clone(),
-                                  if options.fetch_value
-                                      {Some(EncryptedValue::new(item.1, item.2))}
-                                      else {None},
-                                  if options.fetch_type {Some(type_.clone())} else { None },
-                                  Some(tags))
-            )
-        }
-        else {
-            Ok(StorageEntity::new(name.clone(),
-                                  if options.fetch_value
-                                      {Some(EncryptedValue::new(item.1, item.2))}
-                                      else {None},
-                                  if options.fetch_type {Some(type_.clone())} else { None },
-                                  None)
-            )
-        }
+         Ok(StorageEntity::new(name.clone(), value, type_, tags))
     }
 
     ///
@@ -375,7 +362,7 @@ impl WalletStorage for SQLiteStorage {
     ///  * `WalletStorageError::ItemAlreadyExists` - Item is already present in database
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
-    fn add(&mut self, type_: &Vec<u8>, name: &Vec<u8>, value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn add(&self, type_: &Vec<u8>, name: &Vec<u8>, value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
         let res = tx.prepare_cached("INSERT INTO items (type, name, value, key) VALUES (?1, ?2, ?3, ?4)")?
                             .insert(&[type_, name, &value.data, &value.key]);
@@ -415,7 +402,7 @@ impl WalletStorage for SQLiteStorage {
         }
     }
 
-    fn add_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn add_tags(&self, type_: &Vec<u8>, name: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
 
         let res = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
@@ -443,7 +430,7 @@ impl WalletStorage for SQLiteStorage {
         Ok(())
     }
 
-    fn update_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn update_tags(&self, type_: &Vec<u8>, name: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
 
         let res = tx.prepare_cached("SELECT id FROM items WHERE type = ?1 AND name = ?2")?
@@ -474,7 +461,7 @@ impl WalletStorage for SQLiteStorage {
         Ok(())
     }
 
-    fn delete_tags(&mut self, type_: &Vec<u8>, name: &Vec<u8>, tag_names: &[TagName]) -> Result<(), WalletStorageError> {
+    fn delete_tags(&self, type_: &Vec<u8>, name: &Vec<u8>, tag_names: &[TagName]) -> Result<(), WalletStorageError> {
         let res = self.conn.prepare_cached("SELECT id FROM items WHERE type =?1 AND name = ?2")?
             .query_row(&[type_, name], |row| row.get(0));
 
