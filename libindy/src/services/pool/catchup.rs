@@ -26,7 +26,6 @@ enum CatchupStepResult {
     FailedAtNode(usize),
 }
 
-#[derive(Debug)]
 enum CatchupProgress {
     ShouldBeStarted,
     NotNeeded,
