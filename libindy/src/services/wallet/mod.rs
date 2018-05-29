@@ -30,6 +30,7 @@ use self::storage::default::SQLiteStorageType;
 use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Wallet, Keys, Tags};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -63,20 +64,28 @@ impl<'a> JsonDecodable<'a> for WalletConfig {}
 #[derive(Debug)]
 pub struct WalletCredentials {
     master_key: [u8; 32],
+    rekey: Option<Box<[u8; 32]>>,
     storage_credentials: String,
 }
 
-use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 
 impl WalletCredentials {
     fn from_json(json: &str, salt: &[u8; PwhashArgon2i13::SALTBYTES]) -> Result<WalletCredentials, WalletError> {
         if let serde_json::Value::Object(m) = serde_json::from_str(json)? {
-            let master_key = if let Some(key) = m["key"].as_str() {
+            let master_key = if let Some(key) = m.get("key").and_then(|s| s.as_str()) {
                 let mut master_key: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
                 PwhashArgon2i13::derive_key(&mut master_key, key.as_bytes(), salt)?;
                 master_key
             } else {
                 return Err(WalletError::InputError(String::from("Credentials missing 'key' field")));
+            };
+
+            let rekey = if let Some(key) =  m.get("rekey").and_then(|s| s.as_str()) {
+                let mut rekey: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
+                PwhashArgon2i13::derive_key(&mut rekey, key.as_bytes(), salt)?;
+                Some(Box::new(rekey))
+            } else {
+                None
             };
 
             let storage_credentials = serde_json::to_string(
@@ -87,6 +96,7 @@ impl WalletCredentials {
 
             Ok(WalletCredentials {
                 master_key,
+                rekey,
                 storage_credentials
             })
         } else {
@@ -276,8 +286,7 @@ impl WalletService {
         let config = serde_json::from_str::<WalletConfig>(&config_json)
             .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize Storage Config")))?;
 
-        let credentials = WalletCredentials::from_json(credentials, &config.salt)?
-        ;
+        let credentials = WalletCredentials::from_json(credentials, &config.salt)?;
         let storage = storage_type.open_storage(name,
                                                 Some(&config_json),
                                                 &credentials.storage_credentials)?;
@@ -290,9 +299,13 @@ impl WalletService {
             Ok(keys_vector) => keys_vector,
             Err(_) => return Err(WalletError::AccessFailed("Invalid master key provided".to_string())),
         };
+
         let keys = Keys::new(keys_vector);
 
         let wallet = Wallet::new(name, &descriptor.pool_name, storage, keys);
+        if let Some(ref rekey) = credentials.rekey {
+            wallet.rotate_key(&**rekey)?;
+        }
         let wallet_handle = SequenceUtils::get_next_id();
         wallets.insert(wallet_handle, Box::new(wallet));
 
@@ -729,6 +742,14 @@ mod tests {
         String::from(r#"{"key":"my_key"}"#)
     }
 
+    fn _rekey_credentials() -> String {
+        String::from(r#"{"key":"my_key", "rekey": "my_new_key"}"#)
+    }
+
+    fn _credentials_for_new_key() -> String {
+        String::from(r#"{"key": "my_new_key"}"#)
+    }
+
     fn _cleanup() {
         let mut path = std::env::home_dir().unwrap();
         path.push(".indy_client");
@@ -878,6 +899,16 @@ mod tests {
         let wallet_service = WalletService::new();
         wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
         wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_open_wallet_without_master_key_in_credentials_returns_error() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let res = wallet_service.open_wallet("test_wallet", None, "{}");
+        assert_match!(Err(WalletError::InputError(_)), res);
     }
     //
     //    //    #[test]
@@ -1510,5 +1541,40 @@ mod tests {
 
         let get_pool_name_res = wallet_service.get_pool_name(1);
         assert_match!(Err(WalletError::InvalidHandle(_)), get_pool_name_res);
+    }
+
+    /**
+        Key rotation test
+    */
+    #[test]
+    fn wallet_service_key_rotation() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", "{}").unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, false, false)).unwrap();
+        assert!(record.get_value().is_none());
+        assert!(record.get_tags().is_none());
+
+        wallet_service.close_wallet(wallet_handle).unwrap();
+
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_rekey_credentials()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, false, false)).unwrap();
+        assert!(record.get_value().is_none());
+        assert!(record.get_tags().is_none());
+        wallet_service.close_wallet(wallet_handle).unwrap();
+
+        // Access failed for old key
+        let res = wallet_service.open_wallet("test_wallet", None, &_credentials());
+        assert_match!(Err(WalletError::AccessFailed(_)), res);
+
+        // Works ok with new key when reopening
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials_for_new_key()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, false, false)).unwrap();
+        assert!(record.get_value().is_none());
+        assert!(record.get_tags().is_none());
     }
 }
