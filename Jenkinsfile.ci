@@ -1,5 +1,7 @@
 #!groovy
 
+def buildCommand = "cargo build --features fatal_warnings"
+
 testing()
 
 def testing() {
@@ -45,7 +47,7 @@ def windowsTesting() {
                                 "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo build"
+                            bat "${buildCommand}"
                             bat "cargo test --no-run"
 
                             echo "Windows Libindy Test: Run tests"
@@ -64,7 +66,7 @@ def windowsTesting() {
                         withEnv([
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo build"
+                            bat "${buildCommand}"
                             bat "cargo test --no-run"
 
                             echo "Windows Libnullpay Test: Run tests"
@@ -133,7 +135,7 @@ def macosTesting() {
                     echo "MacOS Test: Build"
                     setupRust()
                     setupBrewPackages()
-                    sh "cargo build"
+                    sh "${buildCommand}"
                     sh "cargo test --no-run"
                     // TODO testing
                 }
@@ -227,7 +229,7 @@ def linuxTesting(file, env_name, network_name) {
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libindy Test: Build"
-                sh "cargo build"
+                sh "${buildCommand}"
             }
         }
 
@@ -241,7 +243,7 @@ def linuxTesting(file, env_name, network_name) {
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libnullpay Test: Build"
-                sh "LIBRARY_PATH=./ cargo build"
+                sh "LIBRARY_PATH=./ ${buildCommand}"
             }
         }
 
