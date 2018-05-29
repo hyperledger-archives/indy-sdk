@@ -9,7 +9,7 @@ use super::language::{Operator,TargetValue,TagName};
 // WQL query is provided as top-level Operator
 // Recursively transforms operators using encrypt_operator function
 pub(super) fn encrypt_query(operator: Operator, keys: &Keys) -> Result<Operator, WalletQueryError> {
-    operator.transform_result(&|op: Operator| -> Result<Operator, WalletQueryError> {encrypt_operator(op, keys)})
+    operator.transform(&|op: Operator| -> Result<Operator, WalletQueryError> {encrypt_operator(op, keys)})
 }
 
 
