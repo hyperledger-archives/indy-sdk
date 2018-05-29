@@ -32,6 +32,7 @@ pair_amcl = ["indy-crypto"]
 hash_openssl = ["openssl"]
 local_nodes_pool = []
 revocation_tests = []
+sodium_static = []
 
 [dependencies]
 indy-crypto = { version = "=0.4.1", optional = true }

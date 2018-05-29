@@ -10,7 +10,6 @@ RUN apt-get update && \
       curl \
       build-essential \
       libsqlite3-dev \
-      libsodium-dev \
       cmake \
       git \
       python3.5 \
@@ -35,7 +34,7 @@ RUN pip3 install -U \
 RUN cd /tmp && \
    curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.14.tar.gz | tar -xz && \
     cd /tmp/libsodium-1.0.14 && \
-    ./configure && \
+    ./configure --disable-shared && \
     make && \
     make install && \
     rm -rf /tmp/libsodium-1.0.14
