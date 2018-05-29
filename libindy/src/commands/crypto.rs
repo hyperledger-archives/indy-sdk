@@ -1,10 +1,13 @@
 extern crate indy_crypto;
+extern crate serde_json;
 
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use self::indy_crypto::utils::json::JsonDecodable;
 use errors::common::CommonError;
+use errors::wallet::WalletError;
 use errors::indy::IndyError;
-use services::crypto::types::{KeyInfo, Key, ComboBox};
-use services::wallet::WalletService;
+use domain::crypto::key::{KeyInfo, Key};
+use domain::crypto::combo_box::ComboBox;
+use services::wallet::{WalletService, RecordOptions};
 use services::crypto::CryptoService;
 
 use std::error::Error;
@@ -125,7 +128,7 @@ impl CryptoCommandExecutor {
                     format!("Invalid KeyInfo json: {}", err.description())))?;
 
         let key = self.crypto_service.create_key(&key_info)?;
-        self._wallet_set_key(wallet_handle, &key)?;
+        self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, "{}")?;
 
         let res = key.verkey;
 
@@ -142,7 +145,7 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(my_vk)?;
 
-        let key = self._wallet_get_key(wallet_handle, &my_vk)?;
+        let key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value(), &mut String::new())?;
 
         let res = self.crypto_service.sign(&key, msg)?;
 
@@ -176,7 +179,7 @@ impl CryptoCommandExecutor {
         self.crypto_service.validate_key(&my_vk)?;
         self.crypto_service.validate_key(&their_vk)?;
 
-        let my_key = CryptoCommandExecutor::_wallet_get_key(&self, wallet_handle, &my_vk)?;
+        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value(), &mut String::new())?;
 
         let msg = self.crypto_service.create_combo_box(&my_key, &their_vk, msg.as_slice())?;
 
@@ -198,7 +201,7 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(&my_vk)?;
 
-        let my_key = CryptoCommandExecutor::_wallet_get_key(&self, wallet_handle, &my_vk)?;
+        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value(), &mut String::new())?;
 
         let decrypted_msg = self.crypto_service.decrypt_sealed(&my_key, &msg)?;
 
@@ -213,7 +216,7 @@ impl CryptoCommandExecutor {
 
         let decrypted_msg = self.crypto_service.decrypt(&my_key, &parsed_msg.sender, &doc, &nonce)?;
 
-        let res = (parsed_msg.sender.clone(), decrypted_msg);
+        let res = (parsed_msg.sender, decrypted_msg);
 
         debug!("authenticated_decrypt <<< res: {:?}", res);
 
@@ -242,7 +245,7 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(&my_vk)?;
 
-        let my_key = CryptoCommandExecutor::_wallet_get_key(&self, wallet_handle, &my_vk)?;
+        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value(), &mut String::new())?;
 
         let res = self.crypto_service.decrypt_sealed(&my_key, &encrypted_msg)?;
 
@@ -255,7 +258,12 @@ impl CryptoCommandExecutor {
         debug!("set_key_metadata >>> wallet_handle: {:?}, verkey: {:?}, metadata: {:?}", wallet_handle, verkey, metadata);
 
         self.crypto_service.validate_key(&verkey)?;
-        let res = self._wallet_set_key_metadata(wallet_handle, &verkey, &metadata)?;
+
+        self.wallet_service.get_indy_record::<Key>(wallet_handle, &verkey, &RecordOptions::id())?;
+
+        let tags_json = json!({"metadata": metadata}).to_string();
+
+        let res = self.wallet_service.add_indy_record_tags::<Key>(wallet_handle, &verkey, &tags_json)?;
 
         debug!("set_key_metadata <<< res: {:?}", res);
 
@@ -268,61 +276,14 @@ impl CryptoCommandExecutor {
         debug!("get_key_metadata >>> wallet_handle: {:?}, verkey: {:?}", wallet_handle, verkey);
 
         self.crypto_service.validate_key(&verkey)?;
-        let res = self._wallet_get_key_metadata(wallet_handle, &verkey)?;
+
+        let res = self.wallet_service.get_indy_record::<Key>(wallet_handle, &verkey, &RecordOptions::full())?
+            .get_tags()
+            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
+            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
+            .ok_or(WalletError::ItemNotFound)?;
 
         debug!("get_key_metadata <<< res: {:?}", res);
-
-        Ok(res)
-    }
-
-    fn _wallet_set_key(&self, wallet_handle: i32, key: &Key) -> Result<(), IndyError> {
-        debug!("_wallet_set_key >>> wallet_handle: {:?}, key: {:?}", wallet_handle, key);
-
-        let key_json = Key::to_json(&key)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't serialize Key: {}", err.description())))?;
-
-        let res = self.wallet_service.set(wallet_handle, &format!("key::{}", key.verkey), &key_json)?;
-
-        debug!("_wallet_set_key <<< res: {:?}", res);
-
-        Ok(res)
-    }
-
-    fn _wallet_get_key(&self, wallet_handle: i32, key: &str) -> Result<Key, IndyError> {
-        debug!("_wallet_get_key >>> wallet_handle: {:?}, key: {:?}", wallet_handle, key);
-
-        let key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", key))?;
-
-        let res = Key::from_json(&key_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't deserialize Key: {}", err.description())))?;
-
-        debug!("_wallet_get_key <<< res: {:?}", res);
-
-        Ok(res)
-    }
-
-    fn _wallet_set_key_metadata(&self, wallet_handle: i32, verkey: &str, metadata: &str) -> Result<(), IndyError> {
-        debug!("_wallet_set_key_metadata >>> wallet_handle: {:?}, verkey: {:?}, metadata: {:?}", wallet_handle, verkey, metadata);
-
-        let res = self.wallet_service.set(wallet_handle, &format!("key::{}::metadata", verkey), metadata)?;
-
-        debug!("_wallet_set_key_metadata <<< res: {:?}", res);
-
-        Ok(res)
-    }
-
-    fn _wallet_get_key_metadata(&self, wallet_handle: i32, verkey: &str) -> Result<String, IndyError> {
-        debug!("_wallet_get_key_metadata >>> wallet_handle: {:?}, verkey: {:?}", wallet_handle, verkey);
-
-        let res = self.wallet_service.get(wallet_handle, &format!("key::{}::metadata", verkey))?;
-
-        debug!("_wallet_get_key_metadata <<< res: {:?}", res);
 
         Ok(res)
     }

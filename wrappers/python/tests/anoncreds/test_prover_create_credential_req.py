@@ -5,11 +5,8 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_prover_create_credential_req_works(wallet_handle, prepopulated_wallet, prover_did, master_secret_id):
-    credential_def_json, credential_offer, _, _, _ = prepopulated_wallet
-
-    await prover_create_credential_req(wallet_handle, prover_did, credential_offer, credential_def_json,
-                                       master_secret_id)
+async def test_prover_create_credential_req_works(wallet_handle, prepopulated_wallet):
+    pass
 
 
 @pytest.mark.asyncio

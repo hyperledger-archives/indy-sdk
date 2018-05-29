@@ -27,6 +27,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 	}
 
 	@Test
+	@Ignore
 	public void testRegisterWalletTypeDoesNotWorkForTwiceWithSameName() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(DuplicateWalletTypeException.class));
@@ -38,6 +39,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 	public Timeout globalTimeout = new Timeout(2, TimeUnit.MINUTES);
 
 	@Test
+	@Ignore
 	public void customWalletWorkoutTest() throws Exception {
 
 		StorageUtils.cleanupStorage();
@@ -45,8 +47,8 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		String walletName = "inmemWorkoutWallet";
 
 		//  Creates and opens wallet
-		Wallet.createWallet(POOL, walletName, type, null, null).get();
-		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
+		Wallet.createWallet(POOL, walletName, type, null, CREDENTIALS).get();
+		Wallet wallet = Wallet.openWallet(walletName, null, CREDENTIALS).get();
 
 		//  Issuer creates Schema
 		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(DID, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();

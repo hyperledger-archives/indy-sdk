@@ -42,7 +42,7 @@ async def test_set_pairwise_metadata_works_for_not_created_pairwise(wallet_handl
     (their_did, _) = identity_trustee1
     with pytest.raises(IndyError) as e:
         await pairwise.set_pairwise_metadata(wallet_handle, their_did, metadata)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio

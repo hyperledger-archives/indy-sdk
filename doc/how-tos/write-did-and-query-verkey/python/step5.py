@@ -4,7 +4,7 @@
         # to read the trust anchor's info from the ledger.
         print_log('\n9. Generating and storing DID and verkey representing a Client '
                   'that wants to obtain Trust Anchor Verkey\n')
-        client_did, client_verkey = await signus.create_and_store_my_did(wallet_handle, "{}")
+        client_did, client_verkey = await did.create_and_store_my_did(wallet_handle, "{}")
         print_log('Client DID: ', client_did)
         print_log('Client Verkey: ', client_verkey)
 

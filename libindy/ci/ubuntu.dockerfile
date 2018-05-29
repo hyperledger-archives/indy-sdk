@@ -10,7 +10,6 @@ RUN apt-get update && \
       curl \
       build-essential \
       libsqlite3-dev \
-      libsodium-dev \
       cmake \
       git \
       python3.5 \
@@ -31,6 +30,14 @@ RUN pip3 install -U \
 	twine \
 	plumbum \
 	deb-pkg-tools
+
+RUN cd /tmp && \
+   curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.14.tar.gz | tar -xz && \
+    cd /tmp/libsodium-1.0.14 && \
+    ./configure --disable-shared && \
+    make && \
+    make install && \
+    rm -rf /tmp/libsodium-1.0.14
 
 RUN apt-get update && apt-get install openjdk-8-jdk -y
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64

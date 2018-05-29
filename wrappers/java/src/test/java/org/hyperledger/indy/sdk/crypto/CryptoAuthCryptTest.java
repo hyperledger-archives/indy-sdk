@@ -4,7 +4,7 @@ import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.did.DidResults;
-import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -44,7 +44,7 @@ public class CryptoAuthCryptTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testAuthCryptWorksForUnknownSenderVerkey() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		Crypto.authCrypt(wallet, VERKEY, VERKEY_MY2, MESSAGE).get();
 	}

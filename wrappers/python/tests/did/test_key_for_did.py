@@ -30,18 +30,19 @@ async def test_key_for_did_works_for_unknown_did(pool_handle, wallet_handle, did
 
 
 @pytest.mark.asyncio
-async def test_key_for_did_works_for_incompatible_wallet_and_pool(pool_name, wallet_name, pool_handle, did_my1):
+async def test_key_for_did_works_for_incompatible_wallet_and_pool(pool_name, wallet_name, pool_handle, did_my1,
+                                                                  credentials):
     pool_name = "other_" + pool_name
     wallet_name = "other_" + wallet_name
-    await wallet.create_wallet(pool_name, wallet_name, None, None, None)
-    wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+    await wallet.create_wallet(pool_name, wallet_name, None, None, credentials)
+    wallet_handle = await wallet.open_wallet(wallet_name, None, credentials)
 
     with pytest.raises(IndyError) as e:
         await did.key_for_did(pool_handle, wallet_handle, did_my1)
     assert ErrorCode.WalletIncompatiblePoolError == e.value.error_code
 
     await wallet.close_wallet(wallet_handle)
-    await wallet.delete_wallet(wallet_name, None)
+    await wallet.delete_wallet(wallet_name, credentials)
 
 
 @pytest.mark.asyncio

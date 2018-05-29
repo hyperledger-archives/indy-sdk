@@ -134,6 +134,7 @@
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
 }
 
+/*
 - (void)testLedgerDemoForKeychainWallet {
     [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
 
@@ -245,5 +246,6 @@
     [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
 }
+*/
 
 @end

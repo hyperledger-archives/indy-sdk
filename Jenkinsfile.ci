@@ -1,6 +1,7 @@
 #!groovy
 
-def buildCommand = "cargo build --features fatal_warnings"
+def features = "--features fatal_warnings"
+def buildCommand = "cargo build ${features}"
 
 testing()
 
@@ -222,6 +223,7 @@ def linuxTesting(file, env_name, network_name) {
         poolInst = openPool(env_name, network_name)
 
         def testEnv
+        def additionalLibindyFeatures = "sodium_static"
 
         dir('libindy') {
             echo "${env_name} Libindy Test: Build docker image"
@@ -229,7 +231,7 @@ def linuxTesting(file, env_name, network_name) {
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libindy Test: Build"
-                sh "${buildCommand}"
+                sh "cargo build ${features} $additionalLibindyFeatures"
             }
         }
 
@@ -261,10 +263,10 @@ def linuxTesting(file, env_name, network_name) {
                             echo "${env_name} Libindy Test: Test"
 
                             echo "${env_name} Libindy Test: Build Test"
-                            sh "RUST_BACKTRACE=1 cargo test --no-run"
+                            sh "RUST_BACKTRACE=1 cargo test --no-run $libindyFeatures"
 
                             echo "${env_name} Libindy Test: Run tests"
-                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
+                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test $libindyFeatures"
                         }
                     }
                 },
@@ -436,4 +438,3 @@ def setupBrewPackages() {
     sh "brew switch openssl 1.0.2l"
     sh "brew switch zeromq 4.2.3"
 }
-

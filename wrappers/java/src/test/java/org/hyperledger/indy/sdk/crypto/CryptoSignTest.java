@@ -1,7 +1,7 @@
 package org.hyperledger.indy.sdk.crypto;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
-import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -26,7 +26,7 @@ public class CryptoSignTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testCryptoSignWorksForUnknowSigner() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		Crypto.cryptoSign(this.wallet, VERKEY_TRUSTEE, MESSAGE).get();
 	}

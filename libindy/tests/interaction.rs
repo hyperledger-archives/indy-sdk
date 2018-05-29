@@ -1,6 +1,9 @@
 extern crate indy;
 extern crate uuid;
 extern crate time;
+extern crate named_type;
+#[macro_use]
+extern crate named_type_derive;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
 use indy::api as api;
@@ -24,14 +27,14 @@ use utils::test::TestUtils;
 
 use utils::constants::*;
 
-use utils::domain::schema::Schema;
-use utils::domain::credential_definition::CredentialDefinition;
-use utils::domain::credential_offer::CredentialOffer;
-use utils::domain::credential::Credential;
-use utils::domain::revocation_registry_definition::RevocationRegistryDefinition;
-use utils::domain::proof::Proof;
-use utils::domain::revocation_state::RevocationState;
-use utils::domain::revocation_registry::RevocationRegistry;
+use utils::domain::anoncreds::schema::Schema;
+use utils::domain::anoncreds::credential_definition::CredentialDefinition;
+use utils::domain::anoncreds::credential_offer::CredentialOffer;
+use utils::domain::anoncreds::credential::Credential;
+use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
+use utils::domain::anoncreds::proof::Proof;
+use utils::domain::anoncreds::revocation_state::RevocationState;
+use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
 use utils::pool::PoolUtils;
 use utils::ledger::LedgerUtils;
 use utils::did::DidUtils;
