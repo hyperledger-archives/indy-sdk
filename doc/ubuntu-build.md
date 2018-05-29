@@ -11,10 +11,21 @@
       cmake \
       libssl-dev \
       libsqlite3-dev \
-      libsodium-dev \
       libzmq3-dev \
       libncursesw5-dev
    ```
+   
+1. `libindy` requires the modern `1.0.14` version of `libsodium` but Ubuntu 16.04 does not support installation it's from `apt` repository.
+ Because of this, it requires to build and install `libsodium` from source:
+ ```
+cd /tmp && \
+   curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.14.tar.gz | tar -xz && \
+    cd /tmp/libsodium-1.0.14 && \
+    ./configure --disable-shared && \
+    make && \
+    make install && \
+    rm -rf /tmp/libsodium-1.0.14
+```
 
 1. Build `libindy`
 
@@ -24,7 +35,11 @@
    cargo build
    cd ..
    ```
-
+   
+**Note:** `libindy` debian package, installed from the apt repository, is statically linked with `libsodium`. 
+For manually building this can be achieved by passing `--features sodium_static` into `cargo build` command.
+   
+   
 1. Run integration tests:
    * Start local nodes pool on `127.0.0.1:9701-9708` with Docker:
 

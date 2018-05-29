@@ -13,7 +13,7 @@ import asyncio
 import json
 import pprint
 
-from indy import pool, ledger, wallet, signus, anoncreds
+from indy import pool, ledger, wallet, did, anoncreds
 from indy.error import IndyError
 
 
@@ -53,13 +53,13 @@ async def write_schema_and_cred_def():
         print_log('\n5. Generating and storing steward DID and verkey\n')
         steward_seed = '000000000000000000000000Steward1'
         did_json = json.dumps({'seed': steward_seed})
-        steward_did, steward_verkey = await signus.create_and_store_my_did(wallet_handle, did_json)
+        steward_did, steward_verkey = await did.create_and_store_my_did(wallet_handle, did_json)
         print_log('Steward DID: ', steward_did)
         print_log('Steward Verkey: ', steward_verkey)
 
         # 6.
         print_log('\n6. Generating and storing trust anchor DID and verkey\n')
-        trust_anchor_did, trust_anchor_verkey = await signus.create_and_store_my_did(wallet_handle, "{}")
+        trust_anchor_did, trust_anchor_verkey = await did.create_and_store_my_did(wallet_handle, "{}")
         print_log('Trust anchor DID: ', trust_anchor_did)
         print_log('Trust anchor Verkey: ', trust_anchor_verkey)
 
