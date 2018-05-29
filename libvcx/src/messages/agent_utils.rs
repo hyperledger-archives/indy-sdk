@@ -92,6 +92,11 @@ pub fn connect_register_provision(endpoint: &str,
 
     wallet::init_wallet(&wallet_name)?;
 
+    match ::utils::libindy::anoncreds::libindy_prover_create_master_secret(wallet::get_wallet_handle(), ::settings::DEFAULT_LINK_SECRET_ALIAS) {
+        Ok(_) => (),
+        Err(_) => (),  // If MS is already in wallet then just continue
+    };
+
     let seed = match seed {
         Some(x) => x,
         None => "".to_string(),
