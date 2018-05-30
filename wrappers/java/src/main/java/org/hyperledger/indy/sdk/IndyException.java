@@ -81,7 +81,21 @@ public class IndyException extends Exception {
 			case WalletAlreadyExistsError:
 				return new WalletExistsException();
 			case WalletNotFoundError:
-				return new WalletValueNotFoundException();
+				return new WalletNotFoundException();
+			case WalletInputError:
+				return new WalletInputException();
+			case WalletDecodingError:
+				return new WalletDecodingException();
+			case WalletStorageError:
+				return new WalletStorageException();
+			case WalletEncryptonError:
+				return new WalletEncryptionException();
+			case WalletItemNotFound:
+				return new WalletItemNotFoundException();
+			case WalletItemAlreadyExists:
+				return new WalletItemAlreadyExistsException();
+			case WalletQueryError:
+				return new WalletInvalidQueryException();
 			case WalletIncompatiblePoolError:
 				return new WrongWalletForPoolException();
 			case WalletAlreadyOpenedError:

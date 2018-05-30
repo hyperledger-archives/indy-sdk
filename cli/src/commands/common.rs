@@ -148,6 +148,7 @@ pub mod exit_command {
 }
 
 #[cfg(test)]
+#[cfg(feature = "nullpay_plugin")]
 pub mod tests {
     use super::*;
 
@@ -164,7 +165,6 @@ pub mod tests {
         use utils::test::TestUtils;
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn load_works() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -179,7 +179,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn load_works_for_unknown_plugin() {
             let ctx = CommandContext::new();
 
@@ -191,7 +190,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn load_works_for_unknown_init_function() {
             let ctx = CommandContext::new();
 

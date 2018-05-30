@@ -8,7 +8,7 @@ use serde_json;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use services::wallet::WalletService;
+use services::wallet::{WalletService, RecordOptions};
 use errors::common::CommonError;
 use std::vec::Vec;
 use std::string::String;
@@ -257,9 +257,9 @@ impl PaymentsCommandExecutor {
         trace!("create_address_ack >>> wallet_handle: {:?}, result: {:?}", wallet_handle, result);
         let total_result: Result<String, IndyError> = match result {
             Ok(res) => {
-            //TODO: think about deleting payment_address on wallet save failure
+                //TODO: think about deleting payment_address on wallet save failure
                 self.wallet_service.check(wallet_handle).and(
-                    self.wallet_service.set(wallet_handle, &format!("pay_addr::{}", &res), &res).map(|_| res)
+                    self.wallet_service.add_record(wallet_handle, "Indy::PaymentAddress", &res, &res, "{}").map(|_| res)
                 ).map_err(IndyError::from)
             }
             Err(err) => Err(IndyError::from(err))
@@ -275,12 +275,17 @@ impl PaymentsCommandExecutor {
             _ => (),
         };
 
-        match self.wallet_service.list(wallet_handle, "pay_addr::").map_err(map_err_err!()) {
-            Ok(vec) => {
-                let list_addresses =
-                    vec.iter()
-                        .map(|&(_, ref value)| value.to_string())
-                        .collect::<Vec<String>>();
+        match self.wallet_service.search_records(wallet_handle, "Indy::PaymentAddress", "{}", &RecordOptions::id_value()) {
+            Ok(mut search) => {
+                let mut list_addresses: Vec<String> = Vec::new();
+
+                while let Ok(Some(payment_address)) = search.fetch_next_record() {
+                    match payment_address.get_value() {
+                        Some(value) => list_addresses.push(value.to_string()),
+                        None => cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Record value not found")))))
+                    }
+                }
+
                 let json_string =
                     serde_json::to_string(&list_addresses)
                         .map_err(|err|
@@ -368,7 +373,7 @@ impl PaymentsCommandExecutor {
 
         self._process_method(
             Box::new(move |get_utxo_txn_json| cb(get_utxo_txn_json.map(|s| (s, method.to_string())))),
-                    &|i| self.payments_service.build_get_utxo_request(i, &method_copy, wallet_handle, &submitter_did, payment_address)
+            &|i| self.payments_service.build_get_utxo_request(i, &method_copy, wallet_handle, &submitter_did, payment_address)
         );
         trace!("build_get_utxo_request <<<");
     }

@@ -9,44 +9,46 @@ use std::collections::HashSet;
 use std::ffi::CString;
 use std::ptr::null;
 use std::sync::Mutex;
+use utils::constants::DEFAULT_WALLET_CREDENTIALS;
 
 pub struct WalletUtils {}
 
 impl WalletUtils {
     pub fn register_wallet_type(xtype: &str, force_create: bool) -> Result<(), ErrorCode> {
-        lazy_static! {
-            static ref REGISERED_WALLETS: Mutex<HashSet<String>> = Default::default();
-        }
-
-        let mut wallets = REGISERED_WALLETS.lock().unwrap();
-
-        if wallets.contains(xtype) & !force_create {
-            // as registering of plugged wallet with
-            return Ok(());
-        }
-
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
-
-        let xxtype = CString::new(xtype).unwrap();
-
-        let err = indy_register_wallet_type(
-            command_handle,
-            xxtype.as_ptr(),
-            Some(InmemWallet::create),
-            Some(InmemWallet::open),
-            Some(InmemWallet::set),
-            Some(InmemWallet::get),
-            Some(InmemWallet::get_not_expired),
-            Some(InmemWallet::list),
-            Some(InmemWallet::close),
-            Some(InmemWallet::delete),
-            Some(InmemWallet::free),
-            cb
-        );
-
-        wallets.insert(xtype.to_string());
-
-        super::results::result_to_empty(err, receiver)
+        unimplemented!()
+        //        lazy_static! {
+        //            static ref REGISERED_WALLETS: Mutex<HashSet<String>> = Default::default();
+        //        }
+        //
+        //        let mut wallets = REGISERED_WALLETS.lock().unwrap();
+        //
+        //        if wallets.contains(xtype) & !force_create {
+        //            // as registering of plugged wallet with
+        //            return Ok(());
+        //        }
+        //
+        //        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+        //
+        //        let xxtype = CString::new(xtype).unwrap();
+        //
+        //        let err = indy_register_wallet_storage(
+        //            command_handle,
+        //            xxtype.as_ptr(),
+        //            Some(InmemWallet::create),
+        //            Some(InmemWallet::open),
+        //            Some(InmemWallet::set),
+        //            Some(InmemWallet::get),
+        //            Some(InmemWallet::get_not_expired),
+        //            Some(InmemWallet::list),
+        //            Some(InmemWallet::close),
+        //            Some(InmemWallet::delete),
+        //            Some(InmemWallet::free),
+        //            cb
+        //        );
+        //
+        //        wallets.insert(xtype.to_string());
+        //
+        //        super::results::result_to_empty(err, receiver)
     }
 
     pub fn create_wallet(pool_name: &str, wallet_name: &str, xtype: Option<&str>, config: Option<&str>, credentials: Option<&str>) -> Result<(), ErrorCode> {
@@ -56,7 +58,7 @@ impl WalletUtils {
         let wallet_name = CString::new(wallet_name).unwrap();
         let xtype_str = xtype.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-        let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let credentials_str = CString::new(credentials.unwrap_or(DEFAULT_WALLET_CREDENTIALS)).unwrap();
 
         let err =
             indy_create_wallet(command_handle,
@@ -64,7 +66,7 @@ impl WalletUtils {
                                wallet_name.as_ptr(),
                                if xtype.is_some() { xtype_str.as_ptr() } else { null() },
                                if config.is_some() { config_str.as_ptr() } else { null() },
-                               if credentials.is_some() { credentials_str.as_ptr() } else { null() },
+                               credentials_str.as_ptr(),
                                cb);
 
         super::results::result_to_empty(err, receiver)
@@ -75,13 +77,13 @@ impl WalletUtils {
 
         let wallet_name = CString::new(wallet_name).unwrap();
         let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-        let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let credentials_str = CString::new(credentials.unwrap_or(DEFAULT_WALLET_CREDENTIALS)).unwrap();
 
         let err =
             indy_open_wallet(command_handle,
                              wallet_name.as_ptr(),
                              if config.is_some() { config_str.as_ptr() } else { null() },
-                             if credentials.is_some() { credentials_str.as_ptr() } else { null() },
+                             credentials_str.as_ptr(),
                              cb);
 
         super::results::result_to_int(err, receiver)
@@ -98,8 +100,9 @@ impl WalletUtils {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let wallet_name = CString::new(wallet_name).unwrap();
+        let credentials_str = CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap();
 
-        let err = indy_delete_wallet(command_handle, wallet_name.as_ptr(), null(), cb);
+        let err = indy_delete_wallet(command_handle, wallet_name.as_ptr(), credentials_str.as_ptr(), cb);
 
         super::results::result_to_empty(err, receiver)
     }
