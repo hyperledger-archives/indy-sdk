@@ -1,6 +1,8 @@
+#[allow(unused_imports)]
 #[macro_use]
 extern crate serde_json;
 
+#[allow(unused_imports)]
 #[cfg(test)]
 mod tests {
     extern crate vcx;
@@ -12,20 +14,18 @@ mod tests {
     use self::vcx::issuer_credential;
     use self::vcx::disclosed_proof;
     use self::vcx::proof;
-    use self::vcx::utils::libindy::wallet;
     use self::vcx::api::VcxStateType;
     use self::vcx::api::ProofStateType;
     use serde_json::Value;
     use std::thread;
     use std::time::Duration;
 
-    // Ignoring until Dev Agency is updated to libindy 1.4
-    #[ignore]
+    #[cfg(feature = "pool_tests")]
     #[test]
     fn test_delete_connection() {
         self::vcx::utils::logger::LoggerUtils::init();
         let test_name = "test_delete_connection";
-        settings::set_to_defaults();
+        settings::set_defaults();
         self::vcx::utils::devsetup::setup_dev_env(test_name);
         let alice = connection::build_connection("alice").unwrap();
         connection::delete_connection(alice).unwrap();
@@ -34,14 +34,14 @@ mod tests {
     }
 
     // Ignoring until Dev Agency is updated to libindy 1.4
-    #[ignore]
+    #[cfg(feature = "pool_tests")]
     #[test]
     fn test_real_proof() {
         self::vcx::utils::logger::LoggerUtils::init();
-        settings::set_to_defaults();
+        settings::set_defaults();
+        let cred_def_id = vcx::utils::constants::ADDRESS_CRED_DEF_ID.to_string();
         //BE INSTITUTION AND GENERATE INVITE FOR CONSUMER
         self::vcx::utils::devsetup::setup_dev_env("test_real_proof");
-        self::vcx::utils::libindy::anoncreds::libindy_prover_create_master_secret(wallet::get_wallet_handle(), settings::DEFAULT_LINK_SECRET_ALIAS).unwrap();
         let alice = connection::build_connection("alice").unwrap();
         connection::connect(alice, Some("{}".to_string())).unwrap();
         let details = connection::get_invite_details(alice, true).unwrap();
@@ -58,8 +58,7 @@ mod tests {
         assert_eq!(VcxStateType::VcxStateAccepted as u32, connection::get_state(alice));
         // AS INSTITUTION SEND CREDENTIAL OFFER
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
-        let schema_seq_no = 22;
-        let credential_offer = issuer_credential::issuer_credential_create(schema_seq_no,
+        let credential_offer = issuer_credential::issuer_credential_create(cred_def_id.clone(),
                                                             "1".to_string(),
                                                             settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap(),
                                                             "credential_name".to_string(),
@@ -89,29 +88,54 @@ mod tests {
         self::vcx::utils::devsetup::be_institution();
         let requested_attrs = json!([
            {
-              "schema_seq_no":schema_seq_no,
               "name":"address1",
-              "issuer_did": self::vcx::utils::devsetup::INSTITUTION_DID
+              "restrictions": [{
+                "schema_name":"Home Address",
+                "issuer_did": self::vcx::utils::devsetup::INSTITUTION_DID,
+                "schema_id": self::vcx::utils::constants::ADDRESS_SCHEMA_ID,
+                "cred_def_id": self::vcx::utils::constants::ADDRESS_CRED_DEF_ID,
+
+              }]
            },
            {
-              "schema_seq_no":schema_seq_no,
               "name":"address2",
-              "issuer_did": self::vcx::utils::devsetup::INSTITUTION_DID
+              "restrictions": [{
+                "schema_name":"Home Address",
+                "issuer_did": self::vcx::utils::devsetup::INSTITUTION_DID,
+                "schema_id": self::vcx::utils::constants::ADDRESS_SCHEMA_ID,
+                "cred_def_id": self::vcx::utils::constants::ADDRESS_CRED_DEF_ID,
+
+              }]
            },
            {
-              "schema_seq_no":schema_seq_no,
               "name":"city",
-              "issuer_did": self::vcx::utils::devsetup::INSTITUTION_DID
+              "restrictions": [{
+                "schema_name":"Home Address",
+                "issuer_did": self::vcx::utils::devsetup::INSTITUTION_DID,
+                "schema_id": self::vcx::utils::constants::ADDRESS_SCHEMA_ID,
+                "cred_def_id": self::vcx::utils::constants::ADDRESS_CRED_DEF_ID,
+
+              }]
            },
            {
-              "schema_seq_no":schema_seq_no,
               "name":"state",
-              "issuer_did": self::vcx::utils::devsetup::INSTITUTION_DID
+              "restrictions": [{
+                "schema_name":"Home Address",
+                "issuer_did": self::vcx::utils::devsetup::INSTITUTION_DID,
+                "schema_id": self::vcx::utils::constants::ADDRESS_SCHEMA_ID,
+                "cred_def_id": self::vcx::utils::constants::ADDRESS_CRED_DEF_ID,
+
+              }]
            },
            {
-              "schema_seq_no":schema_seq_no,
               "name":"zip",
-              "issuer_did": self::vcx::utils::devsetup::INSTITUTION_DID
+              "restrictions": [{
+                "schema_name":"Home Address",
+                "issuer_did": self::vcx::utils::devsetup::INSTITUTION_DID,
+                "schema_id": self::vcx::utils::constants::ADDRESS_SCHEMA_ID,
+                "cred_def_id": self::vcx::utils::constants::ADDRESS_CRED_DEF_ID,
+
+              }]
            }
         ]).to_string();
 
@@ -124,6 +148,99 @@ mod tests {
         let requests: Value = serde_json::from_str(&requests).unwrap();
         let requests = serde_json::to_string(&requests[0]).unwrap();
         let proof_handle = disclosed_proof::create_proof(self::vcx::utils::constants::DEFAULT_PROOF_NAME.to_string(), requests).unwrap();
+        let selected_credentials : Value = json!({
+               "attrs":{
+                  "address1_1":{
+                    "cred_info":{
+                       "referent":vcx::utils::constants::ADDRESS_CRED_ID,
+                       "attrs":{
+                          "address1":"101 Tela Lane",
+                          "address2":"101 Wilson Lane",
+                          "zip":"87121",
+                          "state":"UT",
+                          "city":"SLC"
+                       },
+                       "schema_id":vcx::utils::constants::ADDRESS_SCHEMA_ID,
+                       "cred_def_id":vcx::utils::constants::ADDRESS_CRED_DEF_ID,
+                       "rev_reg_id":null,
+                       "cred_rev_id":null
+                    },
+                    "interval":null
+                 },
+                  "address2_2":{
+                    "cred_info":{
+                       "referent":vcx::utils::constants::ADDRESS_CRED_ID,
+                       "attrs":{
+                          "address1":"101 Tela Lane",
+                          "address2":"101 Wilson Lane",
+                          "zip":"87121",
+                          "state":"UT",
+                          "city":"SLC"
+                       },
+                       "schema_id":vcx::utils::constants::ADDRESS_SCHEMA_ID,
+                       "cred_def_id":vcx::utils::constants::ADDRESS_CRED_DEF_ID,
+                       "rev_reg_id":null,
+                       "cred_rev_id":null
+                    },
+                    "interval":null
+                 },
+                  "city_3":{
+                    "cred_info":{
+                       "referent":vcx::utils::constants::ADDRESS_CRED_ID,
+                       "attrs":{
+                          "address1":"101 Tela Lane",
+                          "address2":"101 Wilson Lane",
+                          "zip":"87121",
+                          "state":"UT",
+                          "city":"SLC"
+                       },
+                       "schema_id":vcx::utils::constants::ADDRESS_SCHEMA_ID,
+                       "cred_def_id":vcx::utils::constants::ADDRESS_CRED_DEF_ID,
+                       "rev_reg_id":null,
+                       "cred_rev_id":null
+                    },
+                    "interval":null
+                 },
+                  "state_4":{
+                    "cred_info":{
+                       "referent":vcx::utils::constants::ADDRESS_CRED_ID,
+                       "attrs":{
+                          "address1":"101 Tela Lane",
+                          "address2":"101 Wilson Lane",
+                          "zip":"87121",
+                          "state":"UT",
+                          "city":"SLC"
+                       },
+                       "schema_id":vcx::utils::constants::ADDRESS_SCHEMA_ID,
+                       "cred_def_id":vcx::utils::constants::ADDRESS_CRED_DEF_ID,
+                       "rev_reg_id":null,
+                       "cred_rev_id":null
+                    },
+                    "interval":null
+                 },
+                  "zip_5":{
+                    "cred_info":{
+                       "referent":vcx::utils::constants::ADDRESS_CRED_ID,
+                       "attrs":{
+                          "address1":"101 Tela Lane",
+                          "address2":"101 Wilson Lane",
+                          "zip":"87121",
+                          "state":"UT",
+                          "city":"SLC"
+                       },
+                       "schema_id":vcx::utils::constants::ADDRESS_SCHEMA_ID,
+                       "cred_def_id":vcx::utils::constants::ADDRESS_CRED_DEF_ID,
+                       "rev_reg_id":null,
+                       "cred_rev_id":null
+                    },
+                    "interval":null
+                 }
+               },
+               "predicates":{
+
+               }
+            });
+        disclosed_proof::generate_proof(proof_handle, selected_credentials.to_string(), "{}".to_string()).unwrap();
         disclosed_proof::send_proof(proof_handle, faber).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, disclosed_proof::get_state(proof_handle).unwrap());
         thread::sleep(Duration::from_millis(5000));

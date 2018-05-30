@@ -32,22 +32,8 @@ export interface IProofData {
 }
 
 export interface IProofResponses {
-  proofAttrs: IProofResponseAttr[],
+  proof?: string,
   proofState: ProofState,
-}
-
-export interface IProofResponseAttr {
-  schema_seq_no?: number,
-  issuer_did?: string,
-  credential_uuid?: string,
-  attr_info: ICredentialInfo
-}
-
-export interface ICredentialInfo {
-  name: string,
-  value: string,
-  type: ProofFieldType,
-  predicate_type?: PredicateTypes
 }
 
 export enum ProofFieldType {
@@ -69,9 +55,17 @@ export enum PredicateTypes {
  * @interface
  */
 export interface IProofAttr {
-  issuerDid?: string,
-  schemaSeqNo?: number,
+  restrictions?: IFilter[],
   name: string,
+}
+
+export interface IFilter {
+  schemaId?: string,
+  schemaIssuerDid?: string,
+  schemaName: string,
+  schemaVersion: string,
+  issuerDid?: string,
+  credDefId?: string,
 }
 
 export enum ProofState {
@@ -80,13 +74,12 @@ export enum ProofState {
   Invalid = 2
 }
 
-// export interface IProofPredicate {
-//   attr_name: string,
-//   p_type: string,
-//   value: number,
-//   schema_seq_no: number,
-//   issuer_did: string,
-// }
+export interface IProofPredicate {
+  attr_name: string,
+  p_type: string,
+  value: number,
+  restrictions?: IFilter[],
+}
 
 /**
  * @class Class representing a Connection
@@ -109,7 +102,7 @@ export class Proof extends VCXBaseWithState {
    * @function create
    * @param {IProofConfig} data
    * @example <caption>Example of IProofConfig</caption>
-   * {sourceId: string,attrs: [{issuerDid: "123",schemaSeqNo: 1, name: "name of attr expected"}], name: "name of proof"}
+   * {sourceId: string,attrs: [{restrictions: [IFilter ...], name: "attrName"}], name: "name of proof"}
    * @returns {Promise<Proof>} A Proof Object
    */
   static async create (data: IProofConfig): Promise<Proof> {
@@ -135,16 +128,13 @@ export class Proof extends VCXBaseWithState {
 
   /**
    * @description Builds a Proof object with defined attributes.
-   * Attributes are often provided by a previous call to the serialize function.
+   * Attributes are provided by a previous call to the serialize function.
    * @static
    * @async
    * @memberof Proof
    * @function deserialize
-   * @param {IProofData} proofData - contains the information that will be used to build a proof object
-   * @example <caption>Example of proofData.</caption>
-   * proofData = {source_id:"12",handle:1,"requested_attrs":[{issuerDid:"did",schemaSeqNo:1,name:"test"}],
-   * requested_predicates:[],msg_uid:"",requester_did:"",prover_did:"",state:1,tid:0,mid:0,name:"Proof of Address"}
-   * @returns {Promise<Connection>} A Connection Object
+   * @param {IProofData} proofData - Data obtained by serialize api. Used to create proof object.
+   * @returns {Promise<Proof>} A Proof Object
    */
   static async deserialize (proofData: IProofData) {
     try {
@@ -235,6 +225,14 @@ export class Proof extends VCXBaseWithState {
     }
   }
 
+  /**
+   * @memberof Proof
+   * @description Returns the requested proof if available
+   * @async
+   * @function getProof
+   * @param {Connection} connection
+   * @returns {Promise<IProofResponses>} The proof and the state of the proof (valid | invalid | undefined)
+   */
   async getProof (connection: Connection): Promise<IProofResponses> {
     try {
       const proof = await createFFICallbackPromise<string>(
@@ -254,7 +252,7 @@ export class Proof extends VCXBaseWithState {
             resolve(proofData)
           })
         )
-      return {proofAttrs: JSON.parse(proof), proofState: this.getProofState()}
+      return {proof, proofState: this.getProofState()}
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_get_proof')
     }

@@ -8,13 +8,14 @@ pub enum CredentialError {
     NotReady(),
     InvalidHandle(),
     InvalidCredentialJson(),
-
+    InvalidState(),
     CommonError(u32),
 }
 
 impl fmt::Display for CredentialError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
+            CredentialError::InvalidState() => write!(f, "This Credential is not in proper state for this operation"),
             CredentialError::NotReady() => write!(f, "{}", NOT_READY.message),
             CredentialError::InvalidHandle() => write!(f, "{}", INVALID_CREDENTIAL_HANDLE.message),
             CredentialError::InvalidCredentialJson() => write!(f, "{}", INVALID_JSON.message),
@@ -32,6 +33,7 @@ impl PartialEq for CredentialError{
 impl ToErrorCode for CredentialError {
     fn to_error_code(&self) -> u32 {
         match *self {
+            CredentialError::InvalidState() => 3001,
             CredentialError::NotReady() => NOT_READY.code_num,
             CredentialError::InvalidHandle() => INVALID_CREDENTIAL_HANDLE.code_num,
             CredentialError::InvalidCredentialJson() => INVALID_JSON.code_num,

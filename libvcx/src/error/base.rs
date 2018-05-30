@@ -1,16 +1,37 @@
-use error::{cred_def, connection};
+use std::fmt;
+use std::error::Error;
 
 #[derive(Debug)]
 pub enum BaseError {
-    ConnectionError(connection::ConnectionError),
-    CredentialDefinitionError(cred_def::CredDefError),
+    WalletError(String),
+    ConnectionError(),
     GeneralError(),
 }
 
-impl From<connection::ConnectionError> for BaseError {
-    fn from(err: connection::ConnectionError) -> BaseError { BaseError::ConnectionError(err) }
+impl fmt::Display for BaseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            BaseError::GeneralError() => write!(f, "General Error"),
+            BaseError::WalletError(ref s) => write!(f, "Wallet Error: {}", s),
+            BaseError::ConnectionError() => write!(f, "Connection Error"),
+        }
+    }
 }
 
-impl From<cred_def::CredDefError> for BaseError {
-    fn from(err: cred_def::CredDefError) -> BaseError { BaseError::CredentialDefinitionError(err)}
+impl Error for BaseError {
+    fn cause(&self) -> Option<&Error> {
+        match *self {
+            BaseError::GeneralError() => None,
+            BaseError::WalletError(ref s) => None,
+            BaseError::ConnectionError() => None,
+        }
+    }
+    // TODO: Either implement this correctly or remove.
+    fn description(&self) -> &str {
+        match *self {
+            BaseError::WalletError(ref s) => "Wallet Error",
+            BaseError::GeneralError() => "General Base Error",
+            BaseError::ConnectionError() => "Connection Not Ready",
+        }
+    }
 }

@@ -126,7 +126,7 @@ pub fn create_pool_ledger_config(pool_name: &str, path: Option<&Path>) -> Result
     match rtn_obj.receive(None) {
         Ok(()) => Ok(0),
         Err(e) => {
-            if e == error::CREATE_POOL_CONFIG.code_num { Ok(0) } else { Err(error::CREATE_POOL_CONFIG.code_num) }
+            if e == error::CREATE_POOL_CONFIG.code_num { Ok(error::SUCCESS.code_num) } else { Err(error::CREATE_POOL_CONFIG.code_num) }
         }
     }
 }

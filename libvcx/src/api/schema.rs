@@ -19,9 +19,13 @@ use error::ToErrorCode;
 ///
 /// schema_name: Name of schema
 ///
+/// version: version of schema
+///
 /// schema_data: list of attributes that will make up the schema
 ///
 /// # Example schema_data -> "["attr1", "attr2", "attr3"]"
+///
+/// payment_handle: future use (currently uses any address in the wallet)
 ///
 /// cb: Callback that provides Schema handle and error status of request.
 ///
@@ -31,12 +35,16 @@ use error::ToErrorCode;
 pub extern fn vcx_schema_create(command_handle: u32,
                                 source_id: *const c_char,
                                 schema_name: *const c_char,
+                                version: *const c_char,
                                 schema_data: *const c_char,
+                                payment_handle: u32,
                                 cb: Option<extern fn(xcommand_handle: u32, err: u32, credentialdef_handle: u32)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(schema_name, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(version, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(schema_data, error::INVALID_OPTION.code_num);
+
     let issuer_did = match settings::get_config_value(settings::CONFIG_INSTITUTION_DID) {
         Ok(x) => x,
         Err(x) => return x
@@ -46,9 +54,10 @@ pub extern fn vcx_schema_create(command_handle: u32,
 
     thread::spawn( move|| {
         let ( rc, handle) = match schema::create_new_schema(&source_id,
-                                                                 schema_name,
-                                                                 issuer_did,
-                                                                 schema_data) {
+                                                            issuer_did,
+                                                            schema_name,
+                                                            version,
+                                                            schema_data) {
             Ok(x) => {
                 info!("vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
                       command_handle, error_string(0), x, &source_id);
@@ -117,9 +126,7 @@ pub extern fn vcx_schema_serialize(command_handle: u32,
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// schema: json string representing a schema object
-///
-/// # Examples schema -> {"data":{"seqNo":15,"identifier":"4fUDR9R7fjwELRvH9JT6HH","txnTime":1510246647,"type":"101","data":{"name":"Home Address","version":"0.1","attr_names":["address1","address2","city","state","zip"]}},"handle":1,"name":"schema_name","source_id":"testId","sequence_num":306}
+/// schema_data: json string representing a schema object
 ///
 /// cb: Callback that provides schema handle and provides error status
 ///
@@ -172,40 +179,40 @@ pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
     error::SUCCESS.code_num
 }
 
-/// Retrieves schema's sequence number
+/// Retrieves schema's id
 ///
 /// #Params
 /// schema_handle: Schema handle that was provided during creation. Used to access proof object
 ///
-/// cb: Callback that provides schema number and provides error status
+/// cb: Callback that provides schema id and provides error status
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_schema_get_sequence_no(command_handle: u32,
-                                         schema_handle: u32,
-                                         cb: Option<extern fn(xcommand_handle: u32, err: u32, sequence_no: u32)>) -> u32 {
+pub extern fn vcx_schema_get_schema_id(command_handle: u32,
+                                       schema_handle: u32,
+                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, schema_id: *const c_char)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_schema_get_sequence_no(command_handle: {}, schema_handle: {})", command_handle, schema_handle);
+    info!("vcx_schema_get_schema_id(command_handle: {}, schema_handle: {})", command_handle, schema_handle);
     if !schema::is_valid_handle(schema_handle) {
         return error::INVALID_SCHEMA_HANDLE.code_num;
     }
 
     thread::spawn(move|| {
-        let (schema_no, rc) = match schema::get_sequence_num(schema_handle) {
+        match schema::get_schema_id(schema_handle) {
             Ok(x) => {
-                info!("vcx_schema_get_sequence_no_cb(command_handle: {}, schema_handle: {}, rc: {}, schema_seq_no: {})",
+                info!("vcx_schema_get_schema_id(command_handle: {}, schema_handle: {}, rc: {}, schema_seq_no: {})",
                       command_handle, schema_handle, error_string(0), x);
-                (x, error::SUCCESS.code_num)
+                let msg = CStringUtils::string_to_cstring(x);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                warn!("vcx_schema_get_sequence_no_cb(command_handle: {}, schema_handle: {}, rc: {}, schema_seq_no: {})",
-                      command_handle, schema_handle, error_string(x.to_error_code()), 0);
-                (0, x.to_error_code())
+                warn!("vcx_schema_get_schema_id(command_handle: {}, schema_handle: {}, rc: {}, schema_seq_no: {})",
+                      command_handle, schema_handle, error_string(x), "");
+                cb(command_handle, x, ptr::null_mut());
             },
         };
-        cb(command_handle, rc, schema_no);
     });
 
     error::SUCCESS.code_num
@@ -214,9 +221,9 @@ pub extern fn vcx_schema_get_sequence_no(command_handle: u32,
 /// Retrieves schema's attributes
 ///
 /// #Params
-/// sequence_no: The schema sequence number for wanted schema
-///
 /// source_id: Enterprise's personal identification for the user.
+///
+/// schema_id: id of schema given during the creation of the schema
 ///
 /// cb: Callback that provides schema number and provides error status
 ///
@@ -225,15 +232,16 @@ pub extern fn vcx_schema_get_sequence_no(command_handle: u32,
 #[no_mangle]
 pub extern fn vcx_schema_get_attributes(command_handle: u32,
                                         source_id: *const c_char,
-                                        sequence_no: u32,
+                                        schema_id: *const c_char,
                                         cb: Option<extern fn(xcommand_handle: u32, err: u32, s_handle: u32, schema_attrs: *const c_char)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
-    info!("vcx_schema_get_attributes(command_handle: {}, source_id: {}, sequence_no: {})",
-          command_handle, source_id, sequence_no);
+    check_useful_c_str!(schema_id, error::INVALID_OPTION.code_num);
+    info!("vcx_schema_get_attributes(command_handle: {}, source_id: {}, schema_id: {})",
+          command_handle, source_id, schema_id);
 
     thread::spawn( move|| {
-        match schema::get_schema_attrs(source_id, sequence_no) {
+        match schema::get_schema_attrs(source_id, schema_id) {
             Ok((handle, data)) => {
                 info!("vcx_schema_get_attributes_cb(command_handle: {}, rc: {}, handle: {}, attrs: {})",
                       command_handle, error_string(0), handle, data);
@@ -256,17 +264,16 @@ pub extern fn vcx_schema_get_attributes(command_handle: u32,
 #[cfg(test)]
 mod tests {
     extern crate serde_json;
+    extern crate rand;
 
     use super::*;
-    use api::credential_def::vcx_credentialdef_create;
+    #[allow(unused_imports)]
+    use rand::Rng;
     use std::ffi::CString;
     use std::thread;
     use std::time::Duration;
     use settings;
-    use utils::libindy::pool;
-    use utils::libindy::signus::SignusUtils;
-    use utils::constants::{ DEMO_AGENT_PW_SEED, DEMO_ISSUER_PW_SEED, SCHEMA_TXN };
-    use utils::libindy::wallet::{init_wallet, get_wallet_handle, delete_wallet};
+    use utils::constants::{ SCHEMA_ID };
 
     extern "C" fn create_cb(command_handle: u32, err: u32, schema_handle: u32) {
         assert_eq!(err, 0);
@@ -294,38 +301,28 @@ mod tests {
             panic!("schema_data is null");
         }
         check_useful_c_str!(schema_data, ());
-        let mut data = r#""data":{"name":"New Credential - Credential5","version":"1.0","attr_names":["New Credential","credential5","a5","b5","c5","d5"]}"#;
-        if settings::test_indy_mode_enabled() {
-            data = SCHEMA_TXN;
-        }
-        assert!(schema_data.contains(&data));
+        let data = r#"{"data":["height","name","sex","age"],"version":"4.4.4","schema_id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4","name":"test-licence","source_id":"Test Source ID","sequence_num":0}"#;
+        assert_eq!(schema_data, data);
         println!("successfully called get_attrs_cb: {}", schema_data);
     }
 
+    extern "C" fn get_attrs_pool_cb(command_handle: u32, err: u32, handle: u32, schema_data: *const c_char) {
+        assert_eq!(err, 0);
+        assert!(handle > 0);
+        if schema_data.is_null() {
+            panic!("schema_data is null");
+        }
+        check_useful_c_str!(schema_data, ());
+        println!("successfully called get_attrs_pool_cb: {}", schema_data);
+    }
 
-    extern "C" fn create_cb_get_seq_no(command_handle: u32, err: u32, schema_handle: u32) {
+
+    extern "C" fn create_cb_get_id(command_handle: u32, err: u32, schema_handle: u32) {
         assert_eq!(err, 0);
         assert!(schema_handle > 0);
         println!("successfully called create_cb_get_seq_no");
-        assert_eq!(vcx_schema_get_sequence_no(0, schema_handle, Some(get_seq_no_cb)), error::SUCCESS.code_num);
+        assert_eq!(vcx_schema_get_schema_id(0, schema_handle, Some(get_id_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
-    }
-
-    extern "C" fn create_schema_and_credentialdef_cb(command_handle: u32, err: u32, schema_handle: u32) {
-        assert_eq!(err, 0);
-        assert!(schema_handle > 0);
-        println!("successfully called create_schema_and_credentialdef_cb");
-        let schema_seq_no = schema::get_sequence_num(schema_handle).unwrap();
-        println!("created schema with schema_seq_no: {}", schema_seq_no);
-        assert_eq!(vcx_credentialdef_create(0,
-                                       CString::new("Test Source ID").unwrap().into_raw(),
-                                       CString::new("Test Credential Def").unwrap().into_raw(),
-                                       schema_seq_no,
-                                       ptr::null(),
-                                       false,
-                                       Some(create_cb)),
-                   error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(800));
     }
 
     extern "C" fn serialize_cb(handle: u32, err: u32, schema_str: *const c_char) {
@@ -337,17 +334,20 @@ mod tests {
         println!("successfully called serialize_cb: {}", schema_str);
     }
 
-    extern "C" fn get_seq_no_cb(handle: u32, err: u32, schema_no: u32) {
+    extern "C" fn get_id_cb(handle: u32, err: u32, schema_id: *const c_char) {
         assert_eq!(err, 0);
-        assert_eq!(schema_no, 299);
-        println!("successfully called get_seq_no_cb: {}", schema_no);
+        if schema_id.is_null() {
+            panic!("id is null");
+        }
+        check_useful_c_str!(schema_id, ());
+        println!("successfully called get_id_cb: {}", schema_id);
     }
 
     extern "C" fn deserialize_cb(command_handle: u32, err: u32, schema_handle: u32) {
         assert_eq!(err, 0);
         assert!(schema_handle > 0);
         println!("successfully called deserialize_cb");
-        let expected = r#"{"data":{"seqNo":15,"identifier":"4fUDR9R7fjwELRvH9JT6HH","txnTime":1510246647,"type":"101","data":{"name":"Home Address","version":"0.1","attr_names":["address1","address2","city","state","zip"]}},"name":"schema_name","source_id":"testId","sequence_num":306}"#;
+        let expected = r#"{"data":["age","name","height","sex"],"version":"0.0.11","schema_id":"2hoqvcwupRTUNkXn6ArYzs:2:schema_name:0.0.11","name":"schema_name","source_id":"Test Source ID","sequence_num":0}"#;
         let new = schema::to_string(schema_handle).unwrap();
         assert_eq!(expected, new);
     }
@@ -363,74 +363,63 @@ mod tests {
         assert_eq!(vcx_schema_create(0,
                                        CString::new("Test Source ID").unwrap().into_raw(),
                                        CString::new("Test Schema").unwrap().into_raw(),
-                                       CString::new("{}").unwrap().into_raw(),
+                                       CString::new("0.0").unwrap().into_raw(),
+                                       CString::new("[att1, att2]").unwrap().into_raw(),
+                                       0,
                                        Some(create_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 
     #[ignore]
+    // This test is ignored because The call-back can take more than 5 seconds which causes side-effects in future tests
+    #[cfg(feature="pool_tests")]
     #[test]
     fn test_vcx_create_schema_with_pool() {
-        settings::set_defaults();
-        pool::open_sandbox_pool();
-        init_wallet("a_test_wallet").unwrap();
-        let wallet_handle = get_wallet_handle();
-        let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_ISSUER_PW_SEED)).unwrap();
-        SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_AGENT_PW_SEED)).unwrap();
-        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
-        let data = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#.to_string();
+        let wallet_name = "test_api_create_schema";
+        ::utils::devsetup::setup_dev_env(wallet_name);
+
+        let data = r#"["name","male"]"#;
+        let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
+        let schema_version: String = format!("{}.{}",rand::thread_rng().gen::<u32>().to_string(),
+                                             rand::thread_rng().gen::<u32>().to_string());
+
         assert_eq!(vcx_schema_create(0,
                                      CString::new("Test Source ID").unwrap().into_raw(),
-                                     CString::new("Test Schema").unwrap().into_raw(),
+                                     CString::new(schema_name).unwrap().into_raw(),
+                                     CString::new(schema_version).unwrap().into_raw(),
                                      CString::new(data).unwrap().into_raw(),
-                                     Some(create_schema_and_credentialdef_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_secs(1));
-        delete_wallet("a_test_wallet").unwrap();
+                                     0,
+                                     Some(create_cb)), error::SUCCESS.code_num);
+
+        thread::sleep(Duration::from_secs(5));
+        ::utils::devsetup::cleanup_dev_env(wallet_name);
     }
 
-    #[ignore]
-    #[test]
-    fn test_vcx_create_schema_and_create_credentialdef_with_pool() {
-        settings::set_defaults();
-        pool::open_sandbox_pool();
-        init_wallet("a_test_wallet").unwrap();
-        let wallet_handle = get_wallet_handle();
-        let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_ISSUER_PW_SEED)).unwrap();
-        SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_AGENT_PW_SEED)).unwrap();
-        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
-        let data = r#"{"name":"Credential For Driver's License","version":"1.0","attr_names":["address1","address2","city","state","zip"]}"#.to_string();
-        assert_eq!(vcx_schema_create(0,
-                                     CString::new("Test Source ID").unwrap().into_raw(),
-                                     CString::new("Test Schema").unwrap().into_raw(),
-                                     CString::new(data).unwrap().into_raw(),
-                                     Some(create_schema_and_credentialdef_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_secs(60));
-        delete_wallet("a_test_wallet").unwrap();
-    }
-
-    #[ignore]
+    #[cfg(feature="pool_tests")]
     #[test]
     fn test_vcx_schema_get_attrs_with_pool() {
-        settings::set_defaults();
-        pool::open_sandbox_pool();
-        init_wallet("a_test_wallet").unwrap();
-        let data = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#.to_string();
+        let wallet_name = "get_schema_atters_api";
+        ::utils::devsetup::setup_dev_env(wallet_name);
+
         assert_eq!(vcx_schema_get_attributes(0,
                                      CString::new("Test Source ID").unwrap().into_raw(),
-                                     116,
-                                     Some(get_attrs_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
-        delete_wallet("a_test_wallet").unwrap();
+                                     CString::new(SCHEMA_ID).unwrap().into_raw(),
+                                     Some(get_attrs_pool_cb)), error::SUCCESS.code_num);
+
+        thread::sleep(Duration::from_millis(1000));
+        ::utils::devsetup::cleanup_dev_env(wallet_name);
     }
 
     #[test]
     fn test_vcx_schema_serialize() {
         set_default_and_enable_test_mode();
-        let data = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#.to_string();
+        let data = r#"["name","male"]"#;
         assert_eq!(vcx_schema_create(0,
                                      CString::new("Test Source ID").unwrap().into_raw(),
                                      CString::new("Test Schema").unwrap().into_raw(),
+                                     CString::new("0.0.0").unwrap().into_raw(),
                                      CString::new(data).unwrap().into_raw(),
+                                     0,
                                      Some(create_and_serialize_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
@@ -438,19 +427,22 @@ mod tests {
     #[test]
     fn test_vcx_schema_deserialize_succeeds() {
         set_default_and_enable_test_mode();
-        let original = r#"{"data":{"seqNo":15,"identifier":"4fUDR9R7fjwELRvH9JT6HH","txnTime":1510246647,"type":"101","data":{"name":"Home Address","version":"0.1","attr_names":["address1","address2","city","state","zip"]}},"handle":1,"name":"schema_name","source_id":"testId","sequence_num":306}"#;
-        vcx_schema_deserialize(0,CString::new(original).unwrap().into_raw(), Some(deserialize_cb));
+        let original = r#"{"data":["age","name","height","sex"],"version":"0.0.11","schema_id":"2hoqvcwupRTUNkXn6ArYzs:2:schema_name:0.0.11","name":"schema_name","source_id":"Test Source ID","sequence_num":0}"#;
+        let schema_handle = vcx_schema_deserialize(0,CString::new(original).unwrap().into_raw(), Some(deserialize_cb));
         thread::sleep(Duration::from_millis(200));
     }
 
     #[test]
-    fn test_vcx_schema_get_schema_no_succeeds() {
+    fn test_vcx_schema_get_schema_id_succeeds() {
         set_default_and_enable_test_mode();
+        let data = r#"["name","male"]"#;
         assert_eq!(vcx_schema_create(0,
                                      CString::new("Test Source ID").unwrap().into_raw(),
                                      CString::new("Test Schema").unwrap().into_raw(),
-                                     CString::new("{}").unwrap().into_raw(),
-                                     Some(create_cb_get_seq_no)), error::SUCCESS.code_num);
+                                     CString::new("0.0.0").unwrap().into_raw(),
+                                     CString::new(data).unwrap().into_raw(),
+                                     0,
+                                     Some(create_cb_get_id)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
 
     }
@@ -461,7 +453,7 @@ mod tests {
         let data = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#.to_string();
         assert_eq!(vcx_schema_get_attributes(0,
                                              CString::new("Test Source ID").unwrap().into_raw(),
-                                             116,
+                                             CString::new(SCHEMA_ID).unwrap().into_raw(),
                                              Some(get_attrs_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }

@@ -57,7 +57,7 @@ fn main() {
     let target = env::var("TARGET").unwrap();
     println!("target={}", target);
 
-    if target.contains("aarch64"){
+    if target.contains("aarch64-linux-android"){
 
         let libindy_lib_path = env::var("LIBINDY_DIR").unwrap();
         println!("cargo:rustc-link-search=native={}",libindy_lib_path);
@@ -71,6 +71,9 @@ fn main() {
         //Linux specific logic
         println!("cargo:rustc-link-lib=indy");
         println!("cargo:rustc-link-search=native=/usr/lib");
+        if cfg!(feature = "nullpay") {
+          println!("cargo:rustc-link-lib=nullpay");
+        }
     }
 
     match env::var("CARGO_FEATURE_CI") {

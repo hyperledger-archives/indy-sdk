@@ -2,12 +2,13 @@ extern crate rust_base58;
 extern crate serde_json;
 
 use std::collections::HashMap;
+use std::vec::Vec;
 use utils::error;
 use messages::validation;
 
 static PROOF_REQUEST: &str = "PROOF_REQUEST";
 static PROOF_DATA: &str = "proof_request_data";
-static REQUESTED_ATTRS: &str = "requested_attrs";
+static REQUESTED_ATTRS: &str = "requested_attributes";
 static REQUESTED_PREDICATES: &str = "requested_predicates";
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
@@ -24,34 +25,34 @@ struct ProofTopic {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct Attr {
+pub struct AttrInfo {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub schema_seq_no: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub issuer_did: Option<String>,
+    pub restrictions: Option<Vec<Filter>>,
 }
 
-//Todo: Move Predicate to a common place for both proof_req and proof msg
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct Predicate {
-    pub attr_name: String,
+pub struct Filter {
+    pub schema_id: Option<String>,
+    pub schema_issuer_did: Option<String>,
+    pub schema_name: Option<String>,
+    pub schema_version: Option<String>,
+    pub issuer_did: Option<String>,
+    pub cred_def_id: Option<String>
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct PredicateInfo {
+    pub name: String,
     pub p_type: String,
-    pub value: i32,
+    pub p_value: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub schema_seq_no: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub issuer_did: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct ProofAttrs {
-    attrs: Vec<Attr>
+    pub restrictions: Option<Vec<Filter>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct ProofPredicates {
-    predicates: Vec<Predicate>
+    predicates: Vec<PredicateInfo>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -60,8 +61,8 @@ pub struct ProofRequestData{
     name: String,
     #[serde(rename = "version")]
     data_version: String,
-    pub requested_attrs: HashMap<String, Attr>,
-    pub requested_predicates: HashMap<String, Predicate>,
+    pub requested_attributes: HashMap<String, AttrInfo>,
+    pub requested_predicates: HashMap<String, PredicateInfo>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -74,14 +75,6 @@ pub struct ProofRequestMessage{
     #[serde(skip_serializing, default)]
     validate_rc: u32,
     pub msg_ref_id: Option<String>,
-}
-
-impl ProofAttrs {
-    pub fn create() -> ProofAttrs {
-        ProofAttrs {
-            attrs: Vec::new()
-        }
-    }
 }
 
 impl ProofPredicates {
@@ -107,7 +100,7 @@ impl ProofRequestMessage {
                 nonce: String::new(),
                 name: String::new(),
                 data_version: String::new(),
-                requested_attrs:HashMap::new(),
+                requested_attributes:HashMap::new(),
                 requested_predicates: HashMap::new(),
             },
             validate_rc: 0,
@@ -155,34 +148,43 @@ impl ProofRequestMessage {
 
 
     pub fn requested_attrs(&mut self, attrs: &str) -> &mut Self {
-        let mut proof_attrs = ProofAttrs::create();
-        proof_attrs.attrs = match serde_json::from_str(attrs) {
-            Ok(x) => x,
-            Err(x) => {
+        let mut check_req_attrs: HashMap<String, AttrInfo> = HashMap::new();
+        let proof_attrs:Vec<AttrInfo> = match serde_json::from_str(attrs) {
+            Ok(a) => a,
+            Err(e) => {
+                debug!("Cannot parse attributes: {}", e);
                 self.validate_rc = error::INVALID_JSON.code_num;
-                return self;
+                return self
             }
         };
-        for (i, attr) in proof_attrs.attrs.iter().enumerate() {
-            self.proof_request_data.requested_attrs.insert(format!("{}_{}", attr.name, i), attr.clone());
+
+        let mut index = 1;
+        for attr in proof_attrs {
+            check_req_attrs.insert(format!("{}_{}", attr.name, index), attr);
+            index= index + 1;
         }
+        self.proof_request_data.requested_attributes = check_req_attrs;
         self
     }
 
     pub fn requested_predicates(&mut self, predicates: &str) -> &mut Self {
-        let mut proof_predicates = ProofPredicates::create();
-        proof_predicates.predicates = match serde_json::from_str(predicates) {
-            Ok(x) => x,
-            Err(x) => {
-                warn!("Invalid predicate JSON");
+        let mut check_predicates: HashMap<String, PredicateInfo> = HashMap::new();
+        let attr_values: Vec<PredicateInfo> = match serde_json::from_str(predicates) {
+            Ok(a) => a,
+            Err(e) => {
+                debug!("Cannot parse predicates: {}", e);
                 self.validate_rc = error::INVALID_JSON.code_num;
-                return self;
-            }
+                return self
+            },
         };
-        for (i, attr) in proof_predicates.predicates.iter().enumerate() {
-            self.proof_request_data.requested_predicates.insert(
-                format!("{}_{}", attr.attr_name, i), attr.clone());
+
+        let mut index = 1;
+        for attr in attr_values {
+            check_predicates.insert(format!("{}_{}", attr.name, index), attr);
+            index = index + 1;
         }
+
+        self.proof_request_data.requested_predicates = check_predicates;
         self
     }
 
@@ -214,9 +216,7 @@ impl ProofRequestMessage {
 mod tests {
     use super::*;
     use messages::{proof_request};
-
-    static REQUESTED_ATTRS: &'static str = "[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]";
-    static REQUESTED_PREDICATES: &'static str = "[{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"DID1\"}]";
+    use utils::constants::{REQUESTED_ATTRS, REQUESTED_PREDICATES};
 
     #[test]
     fn test_create_proof_request_data() {
@@ -225,7 +225,7 @@ mod tests {
             nonce: String::new(),
             name: String::new(),
             data_version: String::new(),
-            requested_attrs: HashMap::new(),
+            requested_attributes: HashMap::new(),
             requested_predicates: HashMap::new(),
         };
         assert_eq!(request.proof_request_data, proof_data);
@@ -253,50 +253,41 @@ mod tests {
             .requested_predicates(REQUESTED_PREDICATES)
             .clone();
 
-        let proof_request_test: serde_json::Value = json!({
-            "@type": { "name": "PROOF_REQUEST", "version": "1.3" },
-            "@topic": { "tid": 89, "mid": 98 },
-            "proof_request_data": {
-                "nonce": "123432421212",
-                "name": "Test",
-                "version": "3.75",
-                "requested_attrs": {
-                    "person name_0": { "name": "person name" },
-                    "address_1_1": { "schema_seq_no": 1, "name": "address_1" },
-                    "address_2_2": {
-                        "schema_seq_no": 2,
-                        "issuer_did": "8XFh8yBzrpJQmNyZzgoTqB",
-                        "name": "address_2",
-                    },
-                    "city_3": {
-                        "schema_seq_no": 1,
-                        "name": "city",
-                    },
-                    "state_4": {
-                        "schema_seq_no": 1,
-                        "name": "state",
-                    },
-                    "zip_5": {
-                        "schema_seq_no": 1,
-                        "name": "zip",
-                    },
-                },
-                "requested_predicates": {
-                        "age_0": {
-                            "schema_seq_no": 2,
-                            "issuer_did": "8XFh8yBzrpJQmNyZzgoTqB",
-                            "attr_name": "age",
-                            "p_type": "GE",
-                            "value": 18
-                        }
-                },
-            },
-        });
         let serialized_msg = request.serialize_message().unwrap();
+        println!("{}", serialized_msg);
         assert!(serialized_msg.contains(r#""@type":{"name":"PROOF_REQUEST","version":"1.3"}"#));
         assert!(serialized_msg.contains(r#"@topic":{"mid":98,"tid":89}"#));
-        assert!(serialized_msg.contains(r#"proof_request_data":{"nonce":"123432421212","name":"Test","version":"3.75","requested_attrs""#));
-        assert!(serialized_msg.contains(r#""zip_5":{"name":"zip","schema_seq_no":1}"#));
-        assert!(serialized_msg.contains(r#""age_0":{"attr_name":"age","p_type":"GE","value":18,"schema_seq_no":1,"issuer_did":"DID1"}"#));
+        assert!(serialized_msg.contains(r#"proof_request_data":{"nonce":"123432421212","name":"Test","version":"3.75","requested_attributes""#));
+
+        assert!(serialized_msg.contains(r#""age_1":{"name":"age","restrictions":[{"schema_id":"6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11","schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB","schema_name":"Faber Student Info","schema_version":"1.0","issuer_did":"8XFh8yBzrpJQmNyZzgoTqB","cred_def_id":"8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766"},{"schema_id":"5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11","schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB","schema_name":"BYU Student Info","schema_version":"1.0","issuer_did":"66Fh8yBzrpJQmNyZzgoTqB","cred_def_id":"66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]}"#));
+        assert!(serialized_msg.contains(r#""age_1":{"name":"age","restrictions":[{"schema_id":"6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11","schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB","schema_name":"Faber Student Info","schema_version":"1.0","issuer_did":"8XFh8yBzrpJQmNyZzgoTqB","cred_def_id":"8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766"},{"schema_id":"5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11","schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB","schema_name":"BYU Student Info","schema_version":"1.0","issuer_did":"66Fh8yBzrpJQmNyZzgoTqB","cred_def_id":"66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]"#));
+    }
+
+    #[test]
+    fn test_requested_attrs_constructed_correctly() {
+        let mut check_req_attrs: HashMap<String, AttrInfo> = HashMap::new();
+        let attr_info1: AttrInfo = serde_json::from_str(r#"{ "name":"age", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }"#).unwrap();
+        let attr_info2: AttrInfo = serde_json::from_str(r#"{ "name":"name", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }"#).unwrap();
+
+        check_req_attrs.insert("age_1".to_string(), attr_info1);
+        check_req_attrs.insert("name_2".to_string(), attr_info2);
+
+        let request = proof_request().requested_attrs(REQUESTED_ATTRS).clone();
+        assert_eq!(request.proof_request_data.requested_attributes, check_req_attrs);
+    }
+
+    #[test]
+    fn test_requested_predicates_constructed_correctly() {
+        let mut check_predicates: HashMap<String, PredicateInfo> = HashMap::new();
+        let attr_info1: PredicateInfo = serde_json::from_str(r#"{ "name":"age","p_type":"GE","p_value":22, "restrictions":[ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }"#).unwrap();
+        check_predicates.insert("age_1".to_string(), attr_info1);
+
+        let request = proof_request().requested_predicates(REQUESTED_PREDICATES).clone();
+        assert_eq!(request.proof_request_data.requested_predicates, check_predicates);
+    }
+
+    #[test]
+    fn test_indy_proof_req_parses_correctly() {
+        let proof_req: ProofRequestData = serde_json::from_str(::utils::constants::INDY_PROOF_REQ_JSON).unwrap();
     }
 }

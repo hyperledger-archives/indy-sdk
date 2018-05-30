@@ -8,7 +8,7 @@ const { IssuerCredential, Connection, StateType, Error, rustAPI, VCXMock, VCXMoc
 
 const credentialConfigDefault = {
   sourceId: 'jsonCreation',
-  schemaNum: 1234,
+  credDefId: '1234',
   issuerDid: 'arandomdidfoobar',
   attr: {
     key: 'value',

@@ -43,8 +43,9 @@ pub extern "C" fn generic_cb(command_handle:u32, err:u32) {
 
 
 #[allow(dead_code)]
-pub fn create_credential_offer(credential_name: &str, source_id: &str, credential_data_value: serde_json::Value, issuer_did: &str, schema_seq_no: u32) -> (u32, u32){
+pub fn create_credential_offer(credential_name: &str, source_id: &str, credential_data_value: serde_json::Value, issuer_did: &str, cred_def_id: &str) -> (u32, u32){
     let source_id_cstring = CString::new(source_id).unwrap();
+    let cred_def_id_cstring = CString::new(cred_def_id).unwrap();
     let (sender, receiver) = channel();
     let cb = Box::new(move|err, credential_handle|{sender.send((err, credential_handle)).unwrap();});
     let (command_handle, cb) = closure_to_create_credential(cb);
@@ -55,10 +56,11 @@ pub fn create_credential_offer(credential_name: &str, source_id: &str, credentia
     let credential_name_cstring = CString::new(credential_name).unwrap();
     let rc = api::issuer_credential::vcx_issuer_create_credential(command_handle,
                                                         source_id_cstring.as_ptr(),
-                                                        schema_seq_no,
+                                                        cred_def_id_cstring.as_ptr(),
                                                         ptr::null(),
                                                         credential_data_cstring.as_ptr(),
                                                         credential_name_cstring.as_ptr(),
+                                                        0.0,
                                                         cb);
     assert_eq!(rc, 0);
     receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap()
@@ -405,38 +407,46 @@ pub fn get_proof(proof_handle: u32, connection_handle: u32) -> u32 {
 }
 
 #[allow(dead_code)]
-pub fn create_credentialdef(source_id: &str, credentialdef_name: &str, schema_seq_no: u32) -> (u32, u32){
+pub fn create_credentialdef(source_id: &str, credentialdef_name: &str, schema_id: &str, tag: Option<String>, config: Option<String>) -> (u32, u32){
     let source_id_cstring = CString::new(source_id).unwrap();
     let (sender, receiver) = channel();
     let cb = Box::new(move|err, credentialdef_handle|{sender.send((err, credentialdef_handle)).unwrap();});
     let (command_handle, cb) = closure_to_create_credentialdef(cb);
     let credentialdef_name_cstring = CString::new(credentialdef_name).unwrap();
+    let schema_id_cstring = CString::new(schema_id).unwrap();
+    let tag_cstring = CString::new(tag.unwrap_or("tag1".to_string())).unwrap();
+    let config_cstring = CString::new(config.unwrap_or("{}".to_string())).unwrap();
     let rc = api::credential_def::vcx_credentialdef_create(command_handle,
                                                      source_id_cstring.as_ptr(),
                                                      credentialdef_name_cstring.as_ptr(),
-                                                        schema_seq_no,
-                                                        ptr::null(),
-                                                 false,
+                                                           schema_id_cstring.as_ptr(),
+                                                           ptr::null(),
+                                                 tag_cstring.as_ptr(),
+                                                           config_cstring.as_ptr(),
+                                                     0,
                                                      cb);
     assert_eq!(rc, 0);
     receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap()
 }
 
 #[allow(dead_code)]
-pub fn create_schema(source_id: &str, schema_name: &str, schema_data: &str) -> (u32, u32, u32){
+pub fn create_schema(source_id: &str, schema_name: &str, schema_data: &str, version: &str) -> (u32, u32, String){
     let source_id_cstring = CString::new(source_id).unwrap();
     let (sender, receiver) = channel();
     let cb = Box::new(move|err, credentialdef_handle|{sender.send((err, credentialdef_handle)).unwrap();});
     let (command_handle, cb) = closure_to_create_credentialdef(cb);
     let schema_name_cstring = CString::new(schema_name).unwrap();
     let schema_data_cstring = CString::new(schema_data).unwrap();
+    let version_cstring = CString::new(version).unwrap();
     let rc = api::schema::vcx_schema_create(command_handle,
                                                      source_id_cstring.as_ptr(),
                                                      schema_name_cstring.as_ptr(),
+                                            version_cstring.as_ptr(),
                                                      schema_data_cstring.as_ptr(),
+                                                     0,
                                                      cb);
     assert_eq!(rc, 0);
     let (rc, handle) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    let schema_no = ::vcx::schema::get_sequence_num(handle).unwrap();
-    (rc, handle, schema_no)
+    let schema_id = ::vcx::schema::get_schema_id(handle).unwrap();
+    (rc, handle, schema_id)
 }

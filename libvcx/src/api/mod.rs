@@ -9,6 +9,7 @@ pub mod credential_def;
 pub mod schema;
 pub mod credential;
 pub mod disclosed_proof;
+pub mod wallet;
 
 use std::fmt;
 

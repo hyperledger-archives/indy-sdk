@@ -10,20 +10,20 @@ describe('A Credential', function () {
   const OFFER = {
     msg_type: 'CLAIM_OFFER',
     version: '0.1',
-    to_did: 'LtMgSjtFcyPwenK9SHCyb8',
-    from_did: 'LtMgSjtFcyPwenK9SHCyb8',
-    claim: {
-      account_num: [
-        '8BEaoLf8TBmK4BUyX8WWnA'
-      ],
-      name_on_account: [
-        'Alice'
-      ]
+    to_did: '8XFh8yBzrpJQmNyZzgoTqB',
+    from_did: '8XFh8yBzrpJQmNyZzgoTqB',
+    libindy_offer: '{}',
+    cred_def_id: 'id',
+    credential_attrs: {
+      address1: ['101 Tela Lane'],
+      address2: ['101 Wilson Lane'],
+      city: ['SLC'],
+      state: ['UT'],
+      zip: ['87121']
     },
-    schema_seq_no: 48,
-    issuer_did: 'Pd4fnFtRBcMKRVC2go5w3j',
-    claim_name: 'Account Certificate',
-    claim_id: '3675417066',
+    schema_seq_no: 1487,
+    claim_name: 'Credential',
+    claim_id: 'defaultCredentialId',
     msg_ref_id: null
   }
 
@@ -35,14 +35,21 @@ describe('A Credential', function () {
     credential_offer: {
       msg_type: 'CLAIM_OFFER',
       version: '0.1',
-      to_did: 'LtMgSjtFcyPwenK9SHCyb8',
-      from_did: 'LtMgSjtFcyPwenK9SHCyb8',
-      claim: {'account_num': ['8BEaoLf8TBmK4BUyX8WWnA'], 'name_on_account': ['Alice']},
-      schema_seq_no: 48,
-      issuer_did: 'Pd4fnFtRBcMKRVC2go5w3j',
-      claim_name: 'Account Certificate',
-      claim_id: '3675417066',
-      msg_ref_id: 'ymy5nth'
+      to_did: '8XFh8yBzrpJQmNyZzgoTqB',
+      from_did: '8XFh8yBzrpJQmNyZzgoTqB',
+      libindy_offer: '{}',
+      cred_def_id: 'id',
+      credential_attrs: {
+        address1: ['101 Tela Lane'],
+        address2: ['101 Wilson Lane'],
+        city: ['SLC'],
+        state: ['UT'],
+        zip: ['87121']
+      },
+      schema_seq_no: 1487,
+      claim_name: 'Credential',
+      claim_id: 'defaultCredentialId',
+      msg_ref_id: '123'
     },
     link_secret_alias: 'main',
     msg_uid: null,
@@ -71,6 +78,7 @@ describe('A Credential', function () {
 
     const obj = await Credential.createWithMsgId(connection, 'Test', 'id')
     assert(obj)
+    assert(obj.getCredOffer())
   })
 
   // create tests
@@ -141,7 +149,9 @@ describe('A Credential', function () {
     assert(connection)
     await connection.connect()
     const obj = await Credential.deserialize(SERIALIZED_CREDENTIAL)
+    console.log(1)
     await obj.sendRequest(connection)
+    console.log(2)
     const state = await obj.getState()
     assert(state === 2)
   })

@@ -52,28 +52,60 @@ extern {
 
 pub fn get_wallet_handle() -> i32 { unsafe { WALLET_HANDLE } }
 
-pub fn open_wallet(wallet_name: &str) -> Result<i32, u32> {
+pub fn create_wallet(wallet_name: &str, pool_name: &str, credentials: Option<&str>) -> Result<(), u32> {
+    let create_obj = Return_I32::new()?;
+    let xtype = Some("default");
+    let c_pool_name = CString::new(pool_name).unwrap();
+    let c_wallet_name = CString::new(wallet_name).unwrap();
+    let c_xtype_str = xtype.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+
+    unsafe {
+        let err = indy_create_wallet(create_obj.command_handle,
+                                     c_pool_name.as_ptr(),
+                                     c_wallet_name.as_ptr(),
+                                     if xtype.is_some() { c_xtype_str.as_ptr() } else { null() },
+                                     null(),
+                                     if credentials.is_some() { credentials_str.as_ptr() } else { null() },
+                                     Some(create_obj.get_callback()));
+
+        if err != 203 && err != 0 {
+            warn!("libindy create wallet returned: {}", err);
+            return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
+        }
+        match receive(&create_obj.receiver, TimeoutUtils::some_long()) {
+            Ok(_) => {
+                if err != 203 && err != 0 {
+                    warn!("libindy open wallet returned: {}", err);
+                    return Err(error::UNKNOWN_LIBINDY_ERROR.code_num)
+                }
+                Ok(())
+            }
+            Err(err) => return Err(error::UNKNOWN_LIBINDY_ERROR.code_num),
+        }
+    }
+}
+
+pub fn open_wallet(wallet_name: &str, credentials: Option<&str>) -> Result<i32, u32> {
     if settings::test_indy_mode_enabled() {
         unsafe {WALLET_HANDLE = 1;}
         return Ok(1);
     }
 
-    let mut use_key = false;
-    let credentials = match settings::get_wallet_credentials() {
-        Some(x) => {debug!("using key for indy wallet"); use_key = true; CString::new(x).map_err(map_string_error)? },
-        None => CString::new("").map_err(map_string_error)?,
-    };
-
     let open_obj = Return_I32_I32::new()?;
-    let wallet_name = CString::new(wallet_name).map_err(map_string_error)?;
 
     unsafe {
-         // Open Wallet
+        let open_obj = Return_I32_I32::new()?;
+
+        let wallet_name = CString::new(wallet_name).unwrap();
+        let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+
+        // Open Wallet
         let err = indy_open_wallet(open_obj.command_handle,
-                               wallet_name.as_ptr(),
-                               null(),
-                               if use_key { credentials.as_ptr() } else { null() },
-                               Some(open_obj.get_callback()));
+                                   wallet_name.as_ptr(),
+                                   null(),
+                                   if credentials.is_some() { credentials_str.as_ptr() } else { null() },
+                                   Some(open_obj.get_callback()));
 
         if err != 206 && err != 0 {
             warn!("libindy open wallet returned: {}", err);
@@ -87,7 +119,7 @@ pub fn open_wallet(wallet_name: &str) -> Result<i32, u32> {
                     return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
                 }
                 handle
-            },
+            }
             Err(err) => return Err(error::UNKNOWN_LIBINDY_ERROR.code_num),
         };
 
@@ -111,44 +143,15 @@ pub fn init_wallet(wallet_name: &str) -> Result<i32, u32> {
         Ok(x) => x,
         Err(_) => "default".to_owned(),
     };
-    let mut use_key = false;
-    let credentials = match settings::get_wallet_credentials() {
-        Some(x) => {debug!("using key for indy wallet"); use_key = true; CString::new(x).map_err(map_string_error)? },
-        None => CString::new("").map_err(map_string_error)?,
-    };
+    let use_key = false;
 
-    let open_obj = Return_I32_I32::new()?;
-    let create_obj = Return_I32::new()?;
-    let pool_name = CString::new(pool_name).map_err(map_string_error)?;
-    let xtype = CString::new("default").map_err(map_string_error)?;
+
+    let c_pool_name = CString::new(pool_name.clone()).map_err(map_string_error)?;
     let c_wallet_name = CString::new(wallet_name).map_err(map_string_error)?;
+    let xtype = CString::new("default").map_err(map_string_error)?;
 
-    unsafe {
-        let err = indy_create_wallet(create_obj.command_handle,
-                                     pool_name.as_ptr(),
-                                     c_wallet_name.as_ptr(),
-                                     xtype.as_ptr(),
-                                     null(),
-                                     if use_key { credentials.as_ptr() } else { null() },
-                                     Some(create_obj.get_callback()));
-
-        // ignore 203 - wallet already exists
-        if err != 203 && err != 0 {
-            warn!("libindy create wallet returned: {}", err);
-            return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
-        }
-        match receive(&create_obj.receiver, TimeoutUtils::some_long()) {
-            Ok(_) => {
-                if err != 203 && err != 0 {
-                    warn!("libindy open wallet returned: {}", err);
-                    return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
-                }
-            },
-            Err(err) => return Err(error::UNKNOWN_LIBINDY_ERROR.code_num),
-        };
-    }
-
-    open_wallet(wallet_name)
+    create_wallet(wallet_name, &pool_name, settings::get_wallet_credentials().as_ref().map_or(None, |x| Some(&**x)))?;
+    open_wallet(wallet_name, settings::get_wallet_credentials().as_ref().map_or(None, |x| Some(&**x)))
 }
 
 pub fn close_wallet() -> Result<(), u32> {
@@ -238,6 +241,7 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         settings::set_config_value(settings::CONFIG_WALLET_KEY,"pass");
+        println!("settigns: config wallet key: {}", settings::get_config_value(settings::CONFIG_WALLET_KEY).unwrap());
 
         let handle = init_wallet("password_wallet").unwrap();
 

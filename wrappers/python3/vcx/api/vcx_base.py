@@ -76,14 +76,14 @@ class VcxBase:
             obj.handle = 0
             return obj_to_return
 
-    async def _serialize(self, cls, fn: str) -> dict:
+    async def _serialize(self, cls, fn_str: str) -> dict:
         if not hasattr(cls.serialize, "cb"):
-            self.logger.debug("{}: Creating callback".format(fn))
+            self.logger.debug("{}: Creating callback".format(fn_str))
             cls.serialize.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
         c_handle = c_uint32(self.handle)
 
-        data = await do_call(fn,
+        data = await do_call(fn_str,
                              c_handle,
                              cls.serialize.cb)
 

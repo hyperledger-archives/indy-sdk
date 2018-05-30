@@ -80,7 +80,6 @@ pub extern fn vcx_connection_create(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {})",
-                    //TODO remove to_error_code()
                       command_handle, x.to_string(), 0);
                 cb(command_handle, x.to_error_code(), 0)
             },
@@ -112,11 +111,19 @@ pub extern fn vcx_connection_create_with_invite(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(invite_details, error::INVALID_OPTION.code_num);
-    info!("vcx create connection with invite called");
+    info!("vcx_connection_create_with_invite(command_handle: {}, source_id: {})", command_handle, source_id);
     thread::spawn(move|| {
         match build_connection_with_invite(&source_id, &invite_details) {
-            Ok(handle) => cb(command_handle, error::SUCCESS.code_num, handle),
-            Err(x) => cb(command_handle, x.to_error_code(), 0),
+            Ok(handle) => {
+                info!("vcx_connection_create_with_invite_cb(command_handle: {}, rc: {}, handle: {})",
+                      command_handle, error_string(0), handle);
+                cb(command_handle, error::SUCCESS.code_num, handle)
+            },
+            Err(x) => {
+                warn!("vcx_connection_create_with_invite_cb(command_handle: {}, rc: {}, handle: {})",
+                      command_handle, x.to_string(), 0);
+                cb(command_handle, x.to_error_code(), 0)
+            },
         };
     });
 
@@ -243,7 +250,6 @@ pub extern fn vcx_connection_serialize(command_handle: u32,
 /// command_handle: command handle to map callback to user context.
 ///
 /// connection_data: json string representing a connection object
-/// # Examples connection_data -> {"source_id":"1","handle":2,"pw_did":"did","pw_verkey":"verkey","did_endpoint":"","state":2,"uuid":"","endpoint":"","invite_detail":{"e":"","rid":"","sakdp":"","sn":"","sD":"","lu":"","sVk":"","tn":""}}
 ///
 /// cb: Callback that provides credential handle and provides error status
 ///

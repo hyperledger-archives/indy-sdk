@@ -152,7 +152,7 @@ export class Connection extends VCXBaseWithState {
    * @param {IConnectOptions} options - data determining if connection is established by SMS or QR code. Default is SMS
    * @example <caption>Example of IConnectionOptions</caption>
    * { phone: "800", timeout: 30 }
-   * @returns {Promise<void>}
+   * @returns {Promise<string}
    */
   async connect ( options: IConnectOptions = {} ): Promise<string> {
     const phone = options.phone

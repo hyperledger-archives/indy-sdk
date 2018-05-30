@@ -10,7 +10,6 @@ use utils::libindy::signus::SignusUtils;
 use utils::libindy::crypto;
 use utils::json::mapped_key_rewrite;
 use api::VcxStateType;
-use rand::Rng;
 use settings;
 use messages::GeneralMessage;
 use messages;
@@ -386,8 +385,6 @@ pub fn update_agent_profile(handle: u32) -> Result<u32, ConnectionError> {
 //       mock the agency during the connection phase
 //
 fn create_connection(source_id: &str) -> Result<u32, ConnectionError> {
-    let new_handle = rand::thread_rng().gen::<u32>();
-
     // This is a new connection
 
     let c = Connection {
@@ -759,10 +756,12 @@ mod tests {
     use utils::error::UNKNOWN_LIBINDY_ERROR;
     use utils::constants::INVITE_DETAIL_STRING;
     use super::*;
+    use rand::Rng;
 
     #[test]
     fn test_build_connection(){
-
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         assert_eq!(build_connection("This Should Fail").err(),
                    Some(ConnectionError::CommonError(UNKNOWN_LIBINDY_ERROR.code_num)));
        assert!(build_connection_with_invite("This Should Fail", "BadDetailsFoobar").is_err());

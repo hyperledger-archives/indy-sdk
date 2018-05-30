@@ -4,7 +4,7 @@ use self::libc::c_char;
 use std::ffi::CString;
 use utils::timeout::TimeoutUtils;
 use settings;
-use utils::error;
+use utils::libindy::check_str;
 use utils::libindy::{indy_function_eval};
 use utils::libindy::return_types::{ Return_I32, Return_I32_STR_STR };
 use utils::libindy::error_codes::{map_indy_error_code};
@@ -68,14 +68,4 @@ impl SignusUtils {
         rtn_obj.receive(TimeoutUtils::some_long())
     }
 
-}
-
-fn check_str(str_opt: Option<String>) -> Result<String, u32>{
-    match str_opt {
-        Some(str) => Ok(str),
-        None => {
-            warn!("libindy did not return a string");
-            return Err(error::UNKNOWN_LIBINDY_ERROR.code_num)
-        }
-    }
 }

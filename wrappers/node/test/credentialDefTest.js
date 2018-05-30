@@ -7,7 +7,7 @@ const { CredentialDef, Error, rustAPI } = vcx
 const CREDENTIAL_DEF = {
   name: 'test',
   revocation: false,
-  schemaNo: 15,
+  schemaId: 'schema id1',
   sourceId: 'sourceId'
 }
 
@@ -53,6 +53,11 @@ describe('A CredentialDef', function () {
       assert.equal(error.vcxFunction, 'vcx_credentialdef_serialize')
       assert.equal(error.message, 'Invalid Credential Definition handle')
     }
+  })
+
+  it('will return cred_def_id', async () => {
+    const credentialDef = await CredentialDef.create(CREDENTIAL_DEF)
+    assert(await credentialDef.getCredDefId(), '2hoqvcwupRTUNkXn6ArYzs:3:CL:1766')
   })
 
   const credentialDefCreateCheckAndDelete = async () => {

@@ -5,6 +5,7 @@ pub mod cred_def;
 pub mod issuer_cred;
 pub mod proof;
 pub mod credential;
+pub mod wallet;
 pub mod messages;
 
 

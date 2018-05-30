@@ -22,12 +22,12 @@ describe('A Schema', function () {
   })
 
   it('can be created.', async () => {
-    const schema = await Schema.create(SCHEMA)
+    const schema = await Schema.create(SCHEMA, 0)
     assert(schema)
   })
 
   it('can retrieve schema attrs', async () => {
-    const schema = await Schema.create(SCHEMA)
+    const schema = await Schema.create(SCHEMA, 0)
     assert(schema)
     assert.equal(schema.getSchemaAttrs(), SCHEMA.data)
   })
@@ -45,10 +45,10 @@ describe('A Schema', function () {
     const schema2 = await Schema.deserialize(jsonDef)
     assert.equal(schema.name, schema2.name)
     assert.equal(schema.source_id, schema2.source_id)
-    assert.equal(schema.getSchemaNo, schema2.getSchemaNo)
+    assert.equal(schema.getSchemaId, schema2.getSchemaId)
     // The attrNames are mocked values returned from sdk
     assert.equal(JSON.stringify(schema2.getSchemaAttrs()),
-    JSON.stringify({name: 'name', version: '1.0', attrNames: ['name', 'male']}))
+    JSON.stringify({name: 'data name', version: '1.1.1', attrNames: ['attr1', 'attr2', 'height', 'weight']}))
   })
 
   it('will throw error on serialize when schema has been released', async () => {
@@ -67,24 +67,23 @@ describe('A Schema', function () {
     }
   })
 
-  it('will return schemaNo greater than 0 when getSchemaNo is called', async () => {
+  it('will return schema_id', async () => {
     const schema = await Schema.create(SCHEMA)
-    const schemaNo = await schema.getSchemaNo()
-    assert(schemaNo)
+    assert(await schema.getSchemaId())
   })
 
   it('can be retrieved by calling lookup', async () => {
-    const schema = await Schema.lookup({sourceId: 'test lookup', seqNo: 999})
+    const schema = await Schema.lookup({sourceId: 'test lookup', schemaId: 'schema_id1'})
     // The attrNames are mocked values returned from sdk
     assert.equal(JSON.stringify(schema.getSchemaAttrs()),
-    JSON.stringify({name: 'get schema attrs', version: '1.0', attrNames: ['test', 'get', 'schema', 'attrs']}))
+    JSON.stringify({name: 'test-licence', version: '4.4.4', attrNames: ['height', 'name', 'sex', 'age']}))
   })
 
   it('can be retrieved by calling lookup and then serialized', async () => {
-    const schema = await Schema.lookup({sourceId: '1cda', seqNo: 58})
+    const schema = await Schema.lookup({sourceId: '1cda', schemaId: 'schema_id123'})
     // The attrNames are mocked values returned from sdk
     assert.equal(JSON.stringify(schema.getSchemaAttrs()),
-    JSON.stringify({name: 'get schema attrs', version: '1.0', attrNames: ['test', 'get', 'schema', 'attrs']}))
+    JSON.stringify({name: 'test-licence', version: '4.4.4', attrNames: ['height', 'name', 'sex', 'age']}))
     const serializedLookup = await schema.serialize()
     assert.equal(schema.sourceId, serializedLookup.source_id)
     const deserializedSchema = await Schema.deserialize(serializedLookup)

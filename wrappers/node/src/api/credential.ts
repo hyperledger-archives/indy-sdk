@@ -25,6 +25,7 @@ export class Credential extends VCXBaseWithState {
   protected _getStFn = rustAPI().vcx_credential_get_state
   protected _serializeFn = rustAPI().vcx_credential_serialize
   protected _deserializeFn = rustAPI().vcx_credential_deserialize
+  private _credOffer: string
 
   static async create ({ sourceId, offer }: ICredentialCreateData): Promise<Credential> {
     const credential = new Credential(sourceId)
@@ -43,17 +44,27 @@ export class Credential extends VCXBaseWithState {
   }
 
   static async createWithMsgId (connection: Connection, sourceId, msgId): Promise<Credential> {
-    const credential = new Credential(sourceId)
     try {
-      await credential._create((cb) => rustAPI().vcx_credential_create_with_msgid(
-        0,
-        sourceId,
-        connection.handle,
-        msgId,
-        cb
-        )
+      return await createFFICallbackPromise<Credential>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_credential_create_with_msgid(0, sourceId, connection.handle, msgId, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback('void', ['uint32', 'uint32', 'uint32', 'string'],
+          (xHandle, err, handle, credOffer) => {
+
+            if (err) {
+              reject(err)
+              return
+            }
+            const newObj = new Credential(sourceId)
+            newObj._setHandle(handle)
+            newObj._setCredOffer(credOffer)
+            resolve( newObj )
+          })
       )
-      return credential
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_credential_create_with_msgid`)
     }
@@ -112,11 +123,11 @@ export class Credential extends VCXBaseWithState {
     }
   }
 
-  async sendRequest (connection: Connection): Promise<void> {
+  async sendRequest (connection: Connection, payment: number): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
           (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_credential_send_request(0, this.handle, connection.handle, cb)
+            const rc = rustAPI().vcx_credential_send_request(0, this.handle, connection.handle, payment, cb)
             if (rc) {
               reject(rc)
             }
@@ -133,5 +144,13 @@ export class Credential extends VCXBaseWithState {
       // TODO handle error
       throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_credential_send_request`)
     }
+  }
+
+  getCredOffer (): string {
+    return this._credOffer
+  }
+
+  _setCredOffer (credOffer: string) {
+    this._credOffer = credOffer
   }
 }

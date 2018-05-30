@@ -1,3 +1,4 @@
+use std::fmt;
 use error::ToErrorCode;
 use utils::error::{ INVALID_SCHEMA_CREATION, INVALID_SCHEMA_HANDLE, INVALID_SCHEMA_SEQ_NO};
 #[derive(Debug)]
@@ -5,6 +6,8 @@ pub enum SchemaError {
     InvalidSchemaCreation(),
     InvalidHandle(),
     InvalidSchemaSeqNo(),
+    DuplicateSchema(String),
+    UnknownRejection(),
     CommonError(u32),
 }
 
@@ -14,7 +17,22 @@ impl ToErrorCode for SchemaError {
             SchemaError::InvalidSchemaCreation() => INVALID_SCHEMA_CREATION.code_num,
             SchemaError::InvalidHandle() => INVALID_SCHEMA_HANDLE.code_num,
             SchemaError::InvalidSchemaSeqNo() => INVALID_SCHEMA_SEQ_NO.code_num,
+            SchemaError::UnknownRejection() => 8887,
+            SchemaError::DuplicateSchema(ref s) => 8888,
             SchemaError::CommonError(x) => x,
+        }
+    }
+}
+
+impl fmt::Display for SchemaError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            SchemaError::InvalidSchemaCreation() => write!(f, "{}", INVALID_SCHEMA_CREATION.code_num),
+            SchemaError::InvalidHandle() => write!(f, "{}", INVALID_SCHEMA_HANDLE.code_num),
+            SchemaError::InvalidSchemaSeqNo() => write!(f, "{}", INVALID_SCHEMA_SEQ_NO.code_num),
+            SchemaError::UnknownRejection() => write!(f, "Unknown Rejection of Schema Creation, refer to libindy documentation."),
+            SchemaError::DuplicateSchema(ref s) => write!(f, "{}", s),
+            SchemaError::CommonError(x) => write!(f, "This Schema Common Error had a value of {}", x),
         }
     }
 }
