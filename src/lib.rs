@@ -208,6 +208,21 @@ impl ErrorCode {
             IncompatiblePaymentError => "Multiple different payment methods were specified",
         }
     }
+
+    pub fn is_ok(&self) -> bool {
+        *self == ErrorCode::Success
+    }
+
+    pub fn is_err(&self) -> bool {
+        *self != ErrorCode::Success
+    }
+
+    pub fn try_err(&self) -> Result<(), ErrorCode> {
+        if self.is_err() {
+            return Err(*self)
+        }
+        Ok(())
+    }
 }
 
 impl From<mpsc::RecvTimeoutError> for ErrorCode {
