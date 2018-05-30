@@ -18,6 +18,33 @@ export interface IRecord {
   tags: any,
 }
 
+export interface ISendTokens {
+  payment: PaymentHandle,
+  tokens: PaymentAmount,
+  recipient: PaymentAddress
+}
+
+export interface IDeleteRecordTagsOptions {
+  tagList: string[]
+}
+
+export interface IDeleteRecordData {
+  type: string,
+  id: string
+}
+
+export type IGerRecordData = IDeleteRecordData
+
+export interface IOpenSearchData {
+  type: string,
+  queryJson: string,
+  options: string
+}
+
+export interface ISearchNextRecordsOptions {
+  count: number
+}
+
 /**
  * @class Class representing a Wallet
  */
@@ -90,11 +117,10 @@ export class Wallet {
    * @description Sends token to a specified address
    * @static
    * @async
-   * @param {PaymentAddress} payment
-   * @param {PaymentAmount} amount
+   * @param {ISendTokens} sendTokensData
    * @returns {Promise<string>} The receipt
    */
-  static async sendTokens ( payment: PaymentHandle, tokens: PaymentAmount, recipient: PaymentAddress): Promise<string> {
+  static async sendTokens ({ payment, tokens, recipient }: ISendTokens): Promise<string> {
     try {
       return await createFFICallbackPromise<string>(
         (resolve, reject, cb) => {
@@ -266,10 +292,10 @@ export class Wallet {
    * @static
    * @async
    * @param {Record} record
-   * @param {List} tagList
+   * @param {IDeleteRecordTagsOptions} options
    * @returns {Promise<void>}
    */
-  static async deleteRecordTags ( record: IRecord, tagList: string[]): Promise<void> {
+  static async deleteRecordTags ( record: IRecord, { tagList }: IDeleteRecordTagsOptions): Promise<void> {
     const commandHandle = 0
     try {
       await createFFICallbackPromise<number>(
@@ -306,7 +332,7 @@ export class Wallet {
    * @param {List} tagList
    * @returns {Promise<void>}
    */
-  static async deleteRecord (type: string, id: string): Promise<void> {
+  static async deleteRecord ({ type, id }: IDeleteRecordData): Promise<void> {
     const commandHandle = 0
     try {
       await createFFICallbackPromise<number>(
@@ -342,7 +368,7 @@ export class Wallet {
    * @param {String} id
    * @returns {Promise<string>}
    */
-  static async getRecord (type: string, id: string): Promise<string> {
+  static async getRecord ({ type, id }: IGerRecordData): Promise<string> {
     const commandHandle = 0
     try {
       return await createFFICallbackPromise<string>(
@@ -374,11 +400,10 @@ export class Wallet {
     * @description Open a search handle
     * @static
     * @async
-    * @param {String} type
-    * @param {String} id
+    * @param {IOpenSearchData} searchData
     * @returns {Promise<string>}
     */
-  static async openSearch (type: string, queryJson: string, options: string): Promise<number> {
+  static async openSearch ({ type, queryJson, options }: IOpenSearchData): Promise<number> {
     const commandHandle = 0
     try {
       return await createFFICallbackPromise<number>(
@@ -450,7 +475,7 @@ export class Wallet {
    * @param {number} count
    * @returns {Promise<string>}
    */
-  static async searchNextRecords (handle: number, count: number): Promise<string> {
+  static async searchNextRecords (handle: number, { count }: ISearchNextRecordsOptions): Promise<string> {
     const commandHandle = 0
     try {
       return await createFFICallbackPromise<string>(

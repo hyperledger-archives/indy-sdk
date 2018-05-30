@@ -1,8 +1,8 @@
 const assert = require('chai').assert
 const ffi = require('ffi')
 const vcx = require('../dist/index')
-const { stubInitVCX } = require('./helpers')
-const { Credential, Connection, rustAPI } = vcx
+const { stubInitVCX, connectionCreateAndConnect } = require('./helpers')
+const { Credential, rustAPI } = vcx
 
 describe('A Credential', function () {
   this.timeout(30000)
@@ -67,25 +67,24 @@ describe('A Credential', function () {
   })
 
   it('can be created.', async () => {
-    const obj = await Credential.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
+    const connection = await connectionCreateAndConnect()
+    const obj = await Credential.create({ sourceId: 'Test', offer: JSON.stringify(OFFER), connection })
     assert(obj)
   })
 
   it(' can be created with a msgid.', async () => {
-    let connection = await Connection.create({ id: '234' })
-    assert(connection)
-    await connection.connect()
-
-    const obj = await Credential.createWithMsgId(connection, 'Test', 'id')
+    const connection = await connectionCreateAndConnect()
+    const obj = await Credential.createWithMsgId({ connection, sourceId: 'Test', msgId: 'id' })
     assert(obj)
-    assert(obj.getCredOffer())
+    assert(obj.credOffer)
   })
 
   // create tests
 
   it(' a call to create with no sourceId returns an error', async () => {
     try {
-      await Credential.create({offer: JSON.stringify(OFFER)})
+      const connection = await connectionCreateAndConnect()
+      await Credential.create({ offer: JSON.stringify(OFFER), connection })
     } catch (error) {
       assert.equal(error.vcxCode, 1007)
     }
@@ -93,7 +92,8 @@ describe('A Credential', function () {
 
   it(' a call to create with no offer returns an error', async () => {
     try {
-      await Credential.create({sourceId: 'Test'})
+      const connection = await connectionCreateAndConnect()
+      await Credential.create({ connection, sourceId: 'Test' })
     } catch (error) {
       assert.equal(error.vcxCode, 1007)
     }
@@ -101,7 +101,8 @@ describe('A Credential', function () {
 
   it(' a call to create with a bad offer returns an error', async () => {
     try {
-      await Credential.create({sourceId: 'Test', offer: '{}'})
+      const connection = await connectionCreateAndConnect()
+      await Credential.create({ connection, sourceId: 'Test', offer: '{}' })
     } catch (error) {
       assert.equal(error.vcxCode, 1016)
     }
@@ -110,14 +111,16 @@ describe('A Credential', function () {
   // serialize/deserialize tests
 
   it('can be serialized.', async () => {
-    const obj = await Credential.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
+    const connection = await connectionCreateAndConnect()
+    const obj = await Credential.create({ connection, sourceId: 'Test', offer: JSON.stringify(OFFER) })
     assert(obj)
     const val = await obj.serialize()
     assert(val)
   })
 
   it('can be deserialized.', async () => {
-    const obj = await Credential.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
+    const connection = await connectionCreateAndConnect()
+    const obj = await Credential.create({ sourceId: 'Test', offer: JSON.stringify(OFFER), connection })
     assert(obj)
     const val = await obj.serialize()
     assert(val)
@@ -128,14 +131,16 @@ describe('A Credential', function () {
   // state tests
 
   it('can get state.', async () => {
-    const obj = await Credential.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
+    const connection = await connectionCreateAndConnect()
+    const obj = await Credential.create({ connection, sourceId: 'Test', offer: JSON.stringify(OFFER) })
     assert(obj)
     const state = await obj.getState()
     assert(state === 3)
   })
 
   it('can update state.', async () => {
-    const obj = await Credential.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
+    const connection = await connectionCreateAndConnect()
+    const obj = await Credential.create({ connection, sourceId: 'Test', offer: JSON.stringify(OFFER) })
     assert(obj)
     await obj.updateState()
     const state = await obj.getState()
@@ -145,9 +150,7 @@ describe('A Credential', function () {
   // sendRequest tests
 
   it('can send a credential request.', async () => {
-    let connection = await Connection.create({ id: '234' })
-    assert(connection)
-    await connection.connect()
+    const connection = await connectionCreateAndConnect()
     const obj = await Credential.deserialize(SERIALIZED_CREDENTIAL)
     console.log(1)
     await obj.sendRequest(connection)
@@ -157,15 +160,14 @@ describe('A Credential', function () {
   })
 
   it('can query for credential offers.', async () => {
-    let connection = await Connection.create({ id: '234' })
-    assert(connection)
-    await connection.connect()
+    const connection = await connectionCreateAndConnect()
     let val = await Credential.getOffers(connection)
     assert(val)
   })
 
   const credentialCreateCheckAndDelete = async () => {
-    let credential = await Credential.create({sourceId: 'Test', offer: JSON.stringify(OFFER)})
+    const connection = await connectionCreateAndConnect()
+    let credential = await Credential.create({ connection, sourceId: 'Test', offer: JSON.stringify(OFFER) })
     assert(credential)
     const val = await credential.serialize()
     assert(val)

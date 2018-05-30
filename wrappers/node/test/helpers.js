@@ -1,6 +1,7 @@
 const { stub } = require('sinon')
-
+const assert = require('chai').assert
 const vcx = require('../dist')
+const { Connection } = vcx
 
 let _initVCXCalled = false
 let _spyInitVCX
@@ -34,4 +35,11 @@ const shouldThrow = (fn) => new Promise(async (resolve, reject) => {
   }
 })
 
-module.exports = { stubInitVCX, shouldThrow }
+const connectionCreateAndConnect = async () => {
+  let connection = await Connection.create({ id: '234' })
+  assert(connection)
+  await connection.connect()
+  return connection
+}
+
+module.exports = { stubInitVCX, shouldThrow, connectionCreateAndConnect }

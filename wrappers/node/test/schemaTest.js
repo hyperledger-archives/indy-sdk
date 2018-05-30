@@ -10,7 +10,8 @@ const SCHEMA = {
     name: 'data name',
     version: '1.1.1',
     attrNames: ['attr1', 'attr2', 'height', 'weight']
-  }
+  },
+  paymentHandle: 0
 }
 
 describe('A Schema', function () {
@@ -22,12 +23,12 @@ describe('A Schema', function () {
   })
 
   it('can be created.', async () => {
-    const schema = await Schema.create(SCHEMA, 0)
+    const schema = await Schema.create(SCHEMA)
     assert(schema)
   })
 
   it('can retrieve schema attrs', async () => {
-    const schema = await Schema.create(SCHEMA, 0)
+    const schema = await Schema.create(SCHEMA)
     assert(schema)
     assert.equal(schema.getSchemaAttrs(), SCHEMA.data)
   })
@@ -75,15 +76,19 @@ describe('A Schema', function () {
   it('can be retrieved by calling lookup', async () => {
     const schema = await Schema.lookup({sourceId: 'test lookup', schemaId: 'schema_id1'})
     // The attrNames are mocked values returned from sdk
-    assert.equal(JSON.stringify(schema.getSchemaAttrs()),
-    JSON.stringify({name: 'test-licence', version: '4.4.4', attrNames: ['height', 'name', 'sex', 'age']}))
+    assert.equal(
+      JSON.stringify(schema.schemaAttrs),
+      JSON.stringify({name: 'test-licence', version: '4.4.4', attrNames: ['height', 'name', 'sex', 'age']})
+    )
   })
 
   it('can be retrieved by calling lookup and then serialized', async () => {
     const schema = await Schema.lookup({sourceId: '1cda', schemaId: 'schema_id123'})
     // The attrNames are mocked values returned from sdk
-    assert.equal(JSON.stringify(schema.getSchemaAttrs()),
-    JSON.stringify({name: 'test-licence', version: '4.4.4', attrNames: ['height', 'name', 'sex', 'age']}))
+    assert.equal(
+      JSON.stringify(schema.schemaAttrs),
+      JSON.stringify({name: 'test-licence', version: '4.4.4', attrNames: ['height', 'name', 'sex', 'age']})
+    )
     const serializedLookup = await schema.serialize()
     assert.equal(schema.sourceId, serializedLookup.source_id)
     const deserializedSchema = await Schema.deserialize(serializedLookup)

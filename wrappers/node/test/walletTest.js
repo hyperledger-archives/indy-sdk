@@ -50,7 +50,11 @@ describe('A Connection object with ', function () {
 
   // sendToken tests
   it('can send tokens', async () => {
-    const receipt = await Wallet.sendTokens(0, 30, 'address')
+    const receipt = await Wallet.sendTokens({
+      payment: 0,
+      tokens: 30,
+      recipient: 'address'
+    })
     assert(receipt)
   })
 
@@ -63,15 +67,19 @@ describe('A Connection object with ', function () {
   // wallet store
   it('can perform record operations', async () => {
     await Wallet.addRecord(WALLET_RECORD)
-    await Wallet.getRecord(WALLET_RECORD.type_, WALLET_RECORD.id)
+    await Wallet.getRecord({ type: WALLET_RECORD.type_, id: WALLET_RECORD.id })
     await Wallet.updateRecordValue(UPDATE_WALLET_RECORD)
     await Wallet.updateRecordTags(UPDATE_WALLET_TAGS)
     await Wallet.addRecordTags(UPDATE_WALLET_TAGS)
-    await Wallet.deleteRecordTags(WALLET_RECORD, ['one', 'two'])
-    await Wallet.deleteRecord(WALLET_RECORD.type_, WALLET_RECORD.id)
-    var searchHandle = await Wallet.openSearch(WALLET_RECORD.type_, JSON.stringify(QUERY_JSON), 'null')
+    await Wallet.deleteRecordTags(WALLET_RECORD, { tagList: ['one', 'two'] })
+    await Wallet.deleteRecord({ type: WALLET_RECORD.type_, id: WALLET_RECORD.id })
+    const searchHandle = await Wallet.openSearch({
+      type: WALLET_RECORD.type_,
+      queryJson: JSON.stringify(QUERY_JSON),
+      options: 'null'
+    })
     assert(searchHandle === 1)
-    var retrievedRecords = JSON.parse(await Wallet.searchNextRecords(searchHandle, 1))
+    const retrievedRecords = JSON.parse(await Wallet.searchNextRecords(searchHandle, { count: 1 }))
     assert(JSON.stringify(retrievedRecords) === JSON.stringify(SEARCHED_RECORD))
     await Wallet.closeSearch(searchHandle)
   })

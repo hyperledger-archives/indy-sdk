@@ -26,7 +26,6 @@
         "@types/node": "^8.0.47",
         "@types/ref": "0.0.28",
         "@types/ref-struct": "0.0.28",
-        "change-case": "^3.0.1",
         "ffi": "^2.2.0",
         "fs-extra": "^4.0.2",
         "lodash": "^4.17.4",
@@ -41,14 +40,15 @@
         "doc-gen": "./node_modules/.bin/jsdoc -r -d doc dist/*"
     },
     "devDependencies": {
-        "tslint": "^5.8.0",
-        "typescript": "^2.5.3",
-        "tslint-config-standard": "^6.0.1",
+        "@types/lodash": "^4.14.109",
         "chai": "^4.1.2",
-        "standard": "^10.0.3",
-        "sinon": "^4.1.2",
         "jsdoc": "^3.5.5",
-        "mocha": "^3.5.3"
+        "mocha": "^3.5.3",
+        "sinon": "^4.1.2",
+        "standard": "^10.0.3",
+        "tslint": "^5.8.0",
+        "tslint-config-standard": "^6.0.1",
+        "typescript": "^2.5.3"
     },
     "main": "dist/index.js",
     "homepage": "https://github.com/evernym/vcx#readme",

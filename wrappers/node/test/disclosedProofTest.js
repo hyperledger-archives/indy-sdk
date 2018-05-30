@@ -1,7 +1,7 @@
 const assert = require('chai').assert
 const vcx = require('../dist/index')
-const { stubInitVCX } = require('./helpers')
-const { Connection, DisclosedProof } = vcx
+const { stubInitVCX, connectionCreateAndConnect } = require('./helpers')
+const { DisclosedProof } = vcx
 
 describe('A disclosedProof', function () {
   this.timeout(30000)
@@ -43,23 +43,22 @@ describe('A disclosedProof', function () {
   // create tests
 
   it('can be created.', async () => {
-    const obj = await DisclosedProof.create({sourceId: 'Test', request: PROOF_REQ})
+    const connection = await connectionCreateAndConnect()
+    const obj = await DisclosedProof.create({ connection, sourceId: 'Test', request: PROOF_REQ })
     assert(obj)
   })
 
   it(' can be created with a msgid.', async () => {
-    let connection = await Connection.create({ id: '234' })
-    assert(connection)
-    await connection.connect()
-
-    const obj = await DisclosedProof.createWithMsgId(connection, 'Test', 'id')
+    const connection = await connectionCreateAndConnect()
+    const obj = await DisclosedProof.createWithMsgId({ connection, sourceId: 'Test', msgId: 'id' })
     assert(obj.getProofRequest())
     assert(obj)
   })
 
   it(' a call to create with no sourceId returns an error', async () => {
     try {
-      await DisclosedProof.create({request: PROOF_REQ})
+      const connection = await connectionCreateAndConnect()
+      await DisclosedProof.create({ request: PROOF_REQ, connection })
     } catch (error) {
       assert.equal(error.vcxCode, 1007)
     }
@@ -67,7 +66,8 @@ describe('A disclosedProof', function () {
 
   it(' a call to create with no request returns an error', async () => {
     try {
-      await DisclosedProof.create({sourceId: 'Test'})
+      const connection = await connectionCreateAndConnect()
+      await DisclosedProof.create({ connection, sourceId: 'Test' })
     } catch (error) {
       assert.equal(error.vcxCode, 1007)
     }
@@ -75,7 +75,8 @@ describe('A disclosedProof', function () {
 
   it(' a call to create with a bad request returns an error', async () => {
     try {
-      await DisclosedProof.create({sourceId: 'Test', request: '{}'})
+      const connection = await connectionCreateAndConnect()
+      await DisclosedProof.create({ connection, sourceId: 'Test', request: '{}' })
     } catch (error) {
       assert.equal(error.vcxCode, 1016)
     }
@@ -84,14 +85,16 @@ describe('A disclosedProof', function () {
   // serialize/deserialize tests
 
   it('can be serialized.', async () => {
-    const obj = await DisclosedProof.create({sourceId: 'Test', request: PROOF_REQ})
+    const connection = await connectionCreateAndConnect()
+    const obj = await DisclosedProof.create({ connection, sourceId: 'Test', request: PROOF_REQ })
     assert(obj)
     const val = await obj.serialize()
     assert(val)
   })
 
   it('can be deserialized.', async () => {
-    const obj = await DisclosedProof.create({sourceId: 'Test', request: PROOF_REQ})
+    const connection = await connectionCreateAndConnect()
+    const obj = await DisclosedProof.create({ connection, sourceId: 'Test', request: PROOF_REQ })
     assert(obj)
     const val = await obj.serialize()
     assert(val)
@@ -102,14 +105,16 @@ describe('A disclosedProof', function () {
   // state tests
 
   it('can get state.', async () => {
-    const obj = await DisclosedProof.create({sourceId: 'Test', request: PROOF_REQ})
+    const connection = await connectionCreateAndConnect()
+    const obj = await DisclosedProof.create({ connection, sourceId: 'Test', request: PROOF_REQ })
     assert(obj)
     const state = await obj.getState()
     assert(state === 3)
   })
 
   it('can update state.', async () => {
-    const obj = await DisclosedProof.create({sourceId: 'Test', request: PROOF_REQ})
+    const connection = await connectionCreateAndConnect()
+    const obj = await DisclosedProof.create({ connection, sourceId: 'Test', request: PROOF_REQ })
     assert(obj)
     await obj.updateState()
     const state = await obj.getState()
@@ -119,10 +124,8 @@ describe('A disclosedProof', function () {
   // sendProof tests
 
   it('can send a proof.', async () => {
-    let connection = await Connection.create({ id: '234' })
-    assert(connection)
-    await connection.connect()
-    const obj = await DisclosedProof.create({sourceId: 'Test', request: PROOF_REQ})
+    const connection = await connectionCreateAndConnect()
+    const obj = await DisclosedProof.create({ connection, sourceId: 'Test', request: PROOF_REQ })
     assert(obj)
     await obj.sendProof(connection)
     const state = await obj.getState()
@@ -130,21 +133,21 @@ describe('A disclosedProof', function () {
   })
 
   it('can query for proof requests.', async () => {
-    let connection = await Connection.create({ id: '234' })
-    assert(connection)
-    await connection.connect()
+    const connection = await connectionCreateAndConnect()
     let val = await DisclosedProof.getRequests(connection)
     assert(val)
   })
 
   it('retrieve credentials associated with a proof request', async () => {
-    const obj = await DisclosedProof.create({sourceId: 'Test', request: PROOF_REQ})
+    const connection = await connectionCreateAndConnect()
+    const obj = await DisclosedProof.create({ sourceId: 'Test', request: PROOF_REQ, connection })
     let creds = await obj.getCredentials()
     assert(JSON.stringify(creds) === `{"attrs":{"height_1":[{"cred_info":{"referent":"92556f60-d290-4b58-9a43-05c25aac214e","attrs":{"name":"Bob","height":"4'11","sex":"male","age":"111"},"schema_id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4","cred_def_id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:2471","rev_reg_id":null,"cred_rev_id":null},"interval":null}],"zip_2":[{"cred_info":{"referent":"2dea21e2-1404-4f85-966f-d03f403aac71","attrs":{"address2":"101 Wilson Lane","city":"SLC","state":"UT","zip":"87121","address1":"101 Tela Lane"},"schema_id":"2hoqvcwupRTUNkXn6ArYzs:2:Home Address:5.5.5","cred_def_id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:2479","rev_reg_id":null,"cred_rev_id":null},"interval":null}]},"predicates":{}}`)
   })
 
   it('generate a proof', async () => {
-    const obj = await DisclosedProof.create({sourceId: 'Test', request: PROOF_REQ})
+    const connection = await connectionCreateAndConnect()
+    const obj = await DisclosedProof.create({ connection, sourceId: 'Test', request: PROOF_REQ })
     let retrievedCreds = await obj.getCredentials()
     let selectedCreds = {'height_1': retrievedCreds['attrs']['height_1'][0]}
     // Acception will be thrown if this doesn't work rather than undefined

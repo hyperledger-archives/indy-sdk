@@ -16,7 +16,8 @@ export interface ICredentialDefinition {
   sourceId: string,
   name: string,
   schemaId: string,
-  revocation: boolean
+  revocation: boolean,
+  paymentHandle: number
 }
 
 export interface ICredentialDefObj {
@@ -49,7 +50,7 @@ export class CredentialDef extends VCXBase {
   private _schemaId: string
   private _credDefId: string
 
-  constructor (sourceId, { name, schemaId }: ICredentialDefParams) {
+  constructor (sourceId: string, { name, schemaId }: ICredentialDefParams) {
     super(sourceId)
     this._name = name
     this._schemaId = schemaId
@@ -64,21 +65,31 @@ export class CredentialDef extends VCXBase {
    * @function create
    * @param {ICredentialDefinition} data
    * @example <caption>Example of ICredentialDefinition</caption>
-   * { sourceId: "12", schemaId: "2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4", name: "test-licence", revocation: false}
-   * @param {number} paymentHandle
+   * {
+   *    sourceId: "12",
+   *    schemaId: "2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4",
+   *    name: "test-licence",
+   *    revocation: false,
+   *    paymentHandle: 0
+   * }
    * @returns {Promise<credentialDef>} A credentialDef Object
    */
-  static async create (data: ICredentialDefinition, paymentHandle: number): Promise<CredentialDef> {
+  static async create ({
+    name,
+    paymentHandle,
+    schemaId,
+    sourceId
+  }: ICredentialDefinition): Promise<CredentialDef> {
     // Todo: need to add params for tag and config
-    const credentialDef = new CredentialDef(data.sourceId, { name: data.name, schemaId: data.schemaId })
+    const credentialDef = new CredentialDef(sourceId, { name, schemaId })
     const commandHandle = 0
     const issuerDid = null
     try {
       await credentialDef._create((cb) => rustAPI().vcx_credentialdef_create(
       commandHandle,
-      data.sourceId,
-      data.name,
-      data.schemaId,
+      sourceId,
+      name,
+      schemaId,
       issuerDid,
       'tag1',
       '{}',
@@ -149,22 +160,18 @@ export class CredentialDef extends VCXBase {
             }
           },
           (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'string'],
-          (xcommandHandle, err, _credDefId) => {
+          (xcommandHandle, err, credDefIdVal) => {
             if (err) {
               reject(err)
               return
             }
-            this._setCredDefId(_credDefId)
-            resolve(_credDefId)
+            this._credDefId = credDefIdVal
+            resolve(credDefId)
           })
         )
       return credDefId
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_credentialdef_get_cred_def_id')
     }
-  }
-
-  _setCredDefId (credDefId: string) {
-    this._credDefId = credDefId
   }
 }

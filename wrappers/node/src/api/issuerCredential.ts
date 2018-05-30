@@ -15,7 +15,7 @@ import { VCXBaseWithState } from './VCXBaseWithState'
  * issuerDid: DID associated with the credential def.
  * attributes: key: [value] list of items offered in credential
  */
-export interface ICredentialConfig {
+export interface IIssuerCredentialCreateData {
   sourceId: string,
   credDefId: string,
   attr: {
@@ -25,14 +25,14 @@ export interface ICredentialConfig {
   price: number,
 }
 
-export interface ICredentialVCXAttributes {
+export interface IIssuerCredentialVCXAttributes {
   [ index: string ]: [ string ]
 }
 
-export interface IcredentialParams {
+export interface IIssuerCredentialParams {
   credDefId: string,
   credentialName: string,
-  attr: ICredentialVCXAttributes,
+  attr: IIssuerCredentialVCXAttributes,
   price: number
 }
 
@@ -41,7 +41,7 @@ export interface IcredentialParams {
  * This interface is expected as the type for deserialize's parameter and serialize's return value
  * @interface
  */
-export interface ICredentialData {
+export interface IIssuerCredentialData {
   source_id: string
   handle: number
   schema_seq_no: number
@@ -66,10 +66,10 @@ export class IssuerCredential extends VCXBaseWithState {
   private _credDefId: string
   private _issuerDID: string
   private _credentialName: string
-  private _attr: ICredentialVCXAttributes
+  private _attr: IIssuerCredentialVCXAttributes
   private _price: number
 
-  constructor (sourceId, { credDefId, credentialName, attr, price }: IcredentialParams) {
+  constructor (sourceId: string, { credDefId, credentialName, attr, price }: IIssuerCredentialParams) {
     super(sourceId)
     this._credDefId = credDefId
     this._credentialName = credentialName
@@ -83,14 +83,14 @@ export class IssuerCredential extends VCXBaseWithState {
    * @static
    * @async
    * @function create
-   * @param {ICredentialConfig} config
+   * @param {IIssuerCredentialCreateData} config
    * @example <caption>Example of ICredentialConfig</caption>
    * { sourceId: "12", credDefId: "credDefId", attr: {key: "value"}, credentialName: "name", price: 0}
    * @returns {Promise<IssuerCredential>} An Issuer credential Object
    */
   static async create ({ attr, sourceId, credDefId,
-                         credentialName, price }: ICredentialConfig): Promise<IssuerCredential> {
-    const attrsVCX: ICredentialVCXAttributes = Object.keys(attr)
+                         credentialName, price }: IIssuerCredentialCreateData): Promise<IssuerCredential> {
+    const attrsVCX: IIssuerCredentialVCXAttributes = Object.keys(attr)
       .reduce((accum, attrKey) => ({ ...accum, [attrKey]: [attr[attrKey]] }), {})
     const credential = new IssuerCredential(sourceId, { credDefId, credentialName, attr: attrsVCX, price })
     const attrsStringified = JSON.stringify(attrsVCX)
@@ -121,19 +121,19 @@ export class IssuerCredential extends VCXBaseWithState {
  * @static
  * @async
  * @function deserialize
- * @param {ICredentialData} credentialData - Data from the serialize api. Used to create IssuerCredential Object
+ * @param {IIssuerCredentialData} credentialData - Data from the serialize api. Used to create IssuerCredential Object
  * @returns {Promise<IssuerCredential>} An Issuer credential Object
  */
-  static async deserialize (credentialData: ICredentialData) {
+  static async deserialize (credentialData: IIssuerCredentialData) {
     try {
       const attr = JSON.parse(credentialData.credential_attributes)
-      const params: IcredentialParams = {
+      const params: IIssuerCredentialParams = {
         attr,
         credDefId: credentialData.cred_def_id,
         credentialName: credentialData.credential_name,
         price: credentialData.price
       }
-      const credential = await super._deserialize<IssuerCredential, IcredentialParams>(IssuerCredential,
+      const credential = await super._deserialize<IssuerCredential, IIssuerCredentialParams>(IssuerCredential,
          credentialData,
          params)
       return credential
@@ -181,7 +181,7 @@ export class IssuerCredential extends VCXBaseWithState {
    * @returns {Promise<IProofData>} - Jason object with all of the underlying Rust attributes.
    * Same json object structure that is passed to the deserialize function.
    */
-  async serialize (): Promise<ICredentialData> {
+  async serialize (): Promise<IIssuerCredentialData> {
     try {
       return JSON.parse(await super._serialize())
     } catch (err) {

@@ -15,8 +15,16 @@ export interface IDisclosedProofData {
 export type IDisclosedProofRequest = string
 
 export interface IDisclosedProofCreateData {
+  // We're going to need it in the future
+  connection: Connection,
   sourceId: string,
   request: IDisclosedProofRequest
+}
+
+export interface IDisclosedProofCreateWithMsgIdData {
+  connection: Connection,
+  msgId: string,
+  sourceId: string
 }
 
 export interface IRetrievedCreds {
@@ -31,6 +39,15 @@ export interface ICredData {
     [ index: string ]: any
   },
   interval: any
+}
+
+export interface IGenerateProofData {
+  selectedCreds: {
+    [index: string]: ICredData
+  },
+  selfAttestedAttrs: {
+    [index: string]: string
+  }
 }
 
 export class DisclosedProof extends VCXBaseWithState {
@@ -57,7 +74,8 @@ export class DisclosedProof extends VCXBaseWithState {
     }
   }
 
-  static async createWithMsgId (connection: Connection, sourceId, msgId): Promise<DisclosedProof> {
+  static async createWithMsgId ({ connection, sourceId, msgId }: IDisclosedProofCreateWithMsgIdData):
+  Promise<DisclosedProof> {
     try {
       return await createFFICallbackPromise<DisclosedProof>(
           (resolve, reject, cb) => {
@@ -75,7 +93,7 @@ export class DisclosedProof extends VCXBaseWithState {
             }
             const newObj = new DisclosedProof(sourceId)
             newObj._setHandle(handle)
-            newObj._setProofRequest(proofReq)
+            newObj._proofReq = proofReq
             resolve( newObj )
           })
       )
@@ -181,15 +199,17 @@ export class DisclosedProof extends VCXBaseWithState {
     }
   }
 
-  async generateProof (selectedCreds: {[index: string]: ICredData},
-                       selfAttestedAttrs: {[index: string]: string}): Promise<void> {
+  async generateProof ({ selectedCreds, selfAttestedAttrs }: IGenerateProofData): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
           (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_disclosed_proof_generate_proof(0,
-                                                                    this.handle,
-                                                                    JSON.stringify(selectedCreds),
-                                                                    JSON.stringify(selfAttestedAttrs), cb)
+            const rc = rustAPI().vcx_disclosed_proof_generate_proof(
+              0,
+              this.handle,
+              JSON.stringify(selectedCreds),
+              JSON.stringify(selfAttestedAttrs),
+              cb
+            )
             if (rc) {
               reject(rc)
             }
@@ -197,9 +217,9 @@ export class DisclosedProof extends VCXBaseWithState {
           (resolve, reject) => Callback('void', ['uint32', 'uint32'], (xcommandHandle, err) => {
             if (err) {
               reject(err)
-            } else {
-              resolve()
+              return
             }
+            resolve()
           })
         )
     } catch (err) {
@@ -207,11 +227,7 @@ export class DisclosedProof extends VCXBaseWithState {
     }
   }
 
-  getProofRequest (): string {
+  get proofRequest (): string {
     return this._proofReq
-  }
-
-  _setProofRequest (proofReq: string) {
-    this._proofReq = proofReq
   }
 }
