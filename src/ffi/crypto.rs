@@ -60,7 +60,6 @@ extern {
 
     #[no_mangle]
     pub fn indy_crypto_anon_crypt(command_handle: IndyHandle,
-                                  wallet_handle: IndyHandle,
                                   recipient_vk: *const c_char,
                                   message_raw: *const u8,
                                   message_len: u32,
