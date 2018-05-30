@@ -34,7 +34,6 @@ extern {
 
     #[no_mangle]
     pub fn indy_crypto_verify(command_handle: IndyHandle,
-                              wallet_handle: IndyHandle,
                               signer_vk: *const c_char,
                               message_raw: *const u8,
                               message_len: u32,
