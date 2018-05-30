@@ -7,7 +7,7 @@ from vcx.api.connection import Connection
 phone_number = '8019119191'
 source_id = '1'
 msg_id = '1'
-offer = {
+offer = [{
    "msg_type": "CLAIM_OFFER",
    "version": "0.1",
    "to_did": "8XFh8yBzrpJQmNyZzgoTqB",
@@ -35,7 +35,7 @@ offer = {
    "claim_name": "Credential",
    "claim_id": "defaultCredentialId",
    "msg_ref_id": None
-}
+}]
 
 credential_json = {
     'source_id': 'wrapper_tests',

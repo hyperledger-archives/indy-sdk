@@ -30,7 +30,7 @@ export const FFI_CREDENTIALDEF_HANDLE = 'uint32'
 export const FFI_SCHEMA_HANDLE = 'uint32'
 export const FFI_SCHEMA_NUMBER = 'uint32'
 export const FFI_PAYMENT_HANDLE = 'uint32'
-export const FFI_PRICE = 'float'
+export const FFI_PRICE = 'uint32'
 
 // Rust Lib Native Types
 export type rust_did = string

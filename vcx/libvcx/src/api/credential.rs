@@ -50,8 +50,8 @@ pub extern fn vcx_credential_create_with_offer(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_credential_create_with_offer_cb(command_handle: {}, source_id: {}, rc: {}, handle: {})",
-                      command_handle, source_id, error_string(x), 0);
-                cb(command_handle, x, 0);
+                      command_handle, source_id, x.to_error_code(), 0);
+                cb(command_handle, x.to_error_code(), 0);
             },
         };
     });
@@ -143,8 +143,8 @@ pub extern fn vcx_credential_create_with_msgid(command_handle: u32,
                     },
                     Err(e) => {
                         warn!("vcx_credential_create_with_offer_cb(command_handle: {}, source_id: {}, rc: {}, handle: {})",
-                              command_handle, source_id, error_string(e), 0);
-                        cb(command_handle, e, 0, ptr::null_mut());
+                              command_handle, source_id, e.to_error_code(), 0);
+                        cb(command_handle, e.to_error_code(), 0, ptr::null_mut());
                     },
                 };
             },

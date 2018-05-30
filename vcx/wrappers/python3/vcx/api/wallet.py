@@ -234,7 +234,7 @@ class Wallet():
         return result
 
     @staticmethod
-    async def send_tokens(handle: int, tokens: float, address: str) -> str:
+    async def send_tokens(handle: int, tokens: int, address: str) -> str:
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.send_tokens, "cb"):
@@ -242,7 +242,7 @@ class Wallet():
             Wallet.send_tokens.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
         c_handle = c_uint32(0)
-        c_tokens = c_float(tokens)
+        c_tokens = c_uint64(tokens)
         c_address = c_char_p(address.encode('utf-8'))
 
         result = await do_call('vcx_wallet_send_tokens',

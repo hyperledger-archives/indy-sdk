@@ -7,7 +7,7 @@ const { Credential, rustAPI } = vcx
 describe('A Credential', function () {
   this.timeout(30000)
 
-  const OFFER = {
+  const OFFER = [{
     msg_type: 'CLAIM_OFFER',
     version: '0.1',
     to_did: '8XFh8yBzrpJQmNyZzgoTqB',
@@ -25,7 +25,7 @@ describe('A Credential', function () {
     claim_name: 'Credential',
     claim_id: 'defaultCredentialId',
     msg_ref_id: null
-  }
+  }]
 
   const SERIALIZED_CREDENTIAL = {
     source_id: 'wrapper_tests',

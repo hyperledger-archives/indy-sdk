@@ -37,7 +37,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_real_proof() {
-        self::vcx::utils::logger::LoggerUtils::init();
+        self::vcx::utils::logger::LoggerUtils::init_test_logging();
         settings::set_defaults();
         let cred_def_id = vcx::utils::constants::ADDRESS_CRED_DEF_ID.to_string();
         //BE INSTITUTION AND GENERATE INVITE FOR CONSUMER
@@ -62,7 +62,8 @@ mod tests {
                                                             "1".to_string(),
                                                             settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap(),
                                                             "credential_name".to_string(),
-                                                            credential_data.to_owned()).unwrap();
+                                                            credential_data.to_owned(),
+                                                            0).unwrap();
         issuer_credential::send_credential_offer(credential_offer, alice).unwrap();
         thread::sleep(Duration::from_millis(2000));
         // AS CONSUMER SEND CREDENTIAL REQUEST

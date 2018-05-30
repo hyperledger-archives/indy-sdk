@@ -145,6 +145,7 @@ mod tests {
 
     #[test]
     fn test_init_pool_and_wallet() {
+        ::utils::logger::LoggerUtils::init_test_logging();
         let wallet_name = "test_init_pool_and_wallet";
         // make sure there's a valid wallet and pool before trying to use them.
         ::utils::devsetup::setup_dev_env(wallet_name);
