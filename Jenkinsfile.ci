@@ -423,7 +423,7 @@ def closePool(env_name, network_name, poolInst) {
 }
 
 def setupRust() {
-    sh "rustup default 1.25.0"
+    sh "rustup default 1.26.0"
 }
 
 def setupRustIOS() {
