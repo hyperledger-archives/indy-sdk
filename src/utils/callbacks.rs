@@ -46,7 +46,7 @@ impl ClosureHandler {
         (receiver, command_handle, Some(_callback))
     }
 
-    pub fn convert_cb_ec(closure: Box<Fn(ErrorCode) + Send>) -> (IndyHandle, Option<ResponseEmptyCB>) {
+    pub fn convert_cb_ec(closure: Box<FnMut(ErrorCode) + Send>) -> (IndyHandle, Option<ResponseEmptyCB>) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
         }
@@ -208,9 +208,9 @@ impl ClosureHandler {
         (receiver, command_handle, Some(_callback))
     }
 
-    pub fn convert_cb_ec_slice(closure: Box<Fn(ErrorCode, Vec<u8>) + Send>) -> (IndyHandle, Option<ResponseSliceCB>) {
+    pub fn convert_cb_ec_slice(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (IndyHandle, Option<ResponseSliceCB>) {
         lazy_static! {
-            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, Vec<u8>) + Send> >> = Default::default();
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, Vec<u8>) + Send>>> = Default::default();
         }
 
         extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, raw: *const u8, len: u32) {

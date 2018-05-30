@@ -108,9 +108,7 @@ impl Key {
     /// * `metadata` - the metadata that will be stored with the key
     /// * `timeout` - the maximum time this function waits for a response
     pub fn set_metadata_timeout(wallet_handle: IndyHandle, verkey: &str, metadata: &str, timeout: Duration) -> Result<(), ErrorCode> {
-         let (receiver, command_handle, cb) = ClosureHandler::ec_string();
-
-        let my_key_json = opt_c_str_json!(my_key_json);
+         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let verkey = c_str!(verkey);
         let metadata = c_str!(metadata);
@@ -247,7 +245,7 @@ impl Crypto {
     /// * `closure` - The closure that is called when finished
     /// # Returns
     /// errorcode from calling ffi function
-    pub fn sign_async<F: 'static>(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) {
+    pub fn sign_async<F: 'static>(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
 
         let signer_vk = c_str!(signer_vk);
