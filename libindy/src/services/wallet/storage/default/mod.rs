@@ -13,6 +13,7 @@ use std::rc::Rc;
 
 use utils::environment::EnvironmentUtils;
 use errors::wallet::WalletStorageError;
+use errors::common::CommonError;
 use services::wallet::language;
 
 use super::{StorageIterator, WalletStorageType, WalletStorage, StorageEntity, EncryptedValue, Tag, TagName, FetchOptions};
@@ -92,7 +93,8 @@ struct TagRetriever<'a> {
     encrypted_tags_stmt: rusqlite::Statement<'a>,
 }
 
-type TagRetrieverOwned = OwningHandle<Rc<rusqlite::Connection>, Box<TagRetriever<'static>>>;
+type TagRetrieverOwned = OwningHandle<Rc<rusqlite::Connection>, Box<TagRetriever<'static>>>
+;
 
 impl<'a> TagRetriever<'a> {
     fn new_owned(conn: Rc<rusqlite::Connection>) -> Result<TagRetrieverOwned, WalletStorageError> {
@@ -184,7 +186,12 @@ impl StorageIterator for SQLiteStorageIterator {
                     None
                 };
                 let tags = if self.options.retrieve_tags {
-                    Some(self.tag_retriever.as_mut().unwrap().retrieve(row.get(0))?)
+                    match self.tag_retriever {
+                        Some(ref mut tag_retriever) => Some(tag_retriever.retrieve(row.get(0))?),
+                        None => return Err(WalletStorageError::CommonError(
+                            CommonError::InvalidState("Fetch tags option set and tag retriever is None".to_string())
+                        ))
+                    }
                 } else {
                     None
                 };
@@ -367,7 +374,7 @@ impl WalletStorage for SQLiteStorage {
         match res {
             Ok(1) => Ok(()),
             Ok(0) => Err(WalletStorageError::ItemNotFound),
-            Ok(_) => unreachable!(),
+            Ok(count) => Err(WalletStorageError::CommonError(CommonError::InvalidState(format!("SQLite returned update row count: {}", count)))),
             Err(err) => Err(WalletStorageError::from(err)),
         }
     }
@@ -539,7 +546,7 @@ impl WalletStorage for SQLiteStorage {
         };
 
         let total_count: Option<usize> = if search_options.retrieve_total_count.unwrap_or(false) {
-            let (query_string, query_arguments) = query::wql_to_sql_count(type_, query);
+            let (query_string, query_arguments) = query::wql_to_sql_count(type_, query)?;
 
             self.conn.query_row(
                 &query_string,
@@ -556,7 +563,7 @@ impl WalletStorage for SQLiteStorage {
                 retrieve_type: search_options.retrieve_type.unwrap_or(false),
             };
 
-            let (query_string, query_arguments) = query::wql_to_sql(type_, query, options);
+            let (query_string, query_arguments) = query::wql_to_sql(type_, query, options)?;
 
             let statement = self._prepare_statement(&query_string)?;
             let tag_retriever = if fetch_options.retrieve_tags {
