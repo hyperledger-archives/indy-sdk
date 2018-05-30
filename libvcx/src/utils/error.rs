@@ -73,6 +73,8 @@ pub static CANNOT_DELETE_CONNECTION: Error = Error{code_num: 1060, message: "Can
 pub static CREATE_CONNECTION_ERROR: Error = Error{code_num:1061, message: "Could not create connection"};
 pub static INVALID_WALLET_SETUP: Error = Error{code_num:1062, message: "Invalid wallet keys...have you provisioned correctly?"};
 pub static COMMON_ERROR: Error = Error{ code_num: 1063, message: "Common Error"};
+pub static INSUFFICIENT_TOKEN_AMOUNT: Error = Error{code_num: 1064, message: "Insufficient amount of tokens to process request"};
+pub static UNKNOWN_TXN_TYPE: Error = Error{code_num: 1065, message: "Unknown ledger transaction type"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -139,6 +141,8 @@ lazy_static! {
         insert_c_message(&mut m, &CREATE_CONNECTION_ERROR);
         insert_c_message(&mut m, &INVALID_WALLET_SETUP);
         insert_c_message(&mut m, &COMMON_ERROR);
+        insert_c_message(&mut m, &INSUFFICIENT_TOKEN_AMOUNT);
+        insert_c_message(&mut m, &UNKNOWN_TXN_TYPE);
        m
     };
 }
