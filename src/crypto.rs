@@ -623,8 +623,8 @@ impl Crypto {
     ///
     /// # Returns
     /// decrypted message
-    pub fn anon_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Result<(String, Vec<u8>), ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_slice();
+    pub fn anon_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
         let recipient_vk = c_str!(recipient_vk);
         let err = unsafe {
@@ -635,7 +635,7 @@ impl Crypto {
                                      encrypted_message.len() as u32, cb)
         };
 
-        ResultHandler::two(err, receiver)
+        ResultHandler::one(err, receiver)
     }
 
     /// Decrypts a message by anonymous-encryption scheme.
@@ -654,8 +654,8 @@ impl Crypto {
     /// * `timeout` - the maximum time this function waits for a response
     /// # Returns
     /// decrypted message
-    pub fn anon_decrypt_timeout(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], timeout: Duration) -> Result<(String, Vec<u8>), ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_slice();
+    pub fn anon_decrypt_timeout(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
         let recipient_vk = c_str!(recipient_vk);
         let err = unsafe {
@@ -666,7 +666,7 @@ impl Crypto {
                                      encrypted_message.len() as u32, cb)
         };
 
-        ResultHandler::two_timeout(err, receiver, timeout)
+        ResultHandler::one_timeout(err, receiver, timeout)
     }
 
     /// Decrypts a message by anonymous-encryption scheme.
@@ -685,8 +685,8 @@ impl Crypto {
     /// * `closure` - The closure that is called when finished
     /// # Returns
     /// decrypted message
-    pub fn anon_decrypt_async<F: 'static>(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, Vec<u8>) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_slice(Box::new(closure));
+    pub fn anon_decrypt_async<F: 'static>(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
 
         let recipient_vk = c_str!(recipient_vk);
         unsafe {
