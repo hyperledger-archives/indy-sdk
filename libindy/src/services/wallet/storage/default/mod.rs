@@ -19,7 +19,7 @@ use super::super::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use super::{StorageIterator, WalletStorageType, WalletStorage, StorageEntity, EncryptedValue, Tag, TagName};
 
-
+const _SQLITE_DB: &str = "sqlite.db";
 const _PLAIN_TAGS_QUERY: &str = "SELECT name, value from tags_plaintext where item_id = ?";
 const _ENCRYPTED_TAGS_QUERY: &str = "SELECT name, value from tags_encrypted where item_id = ?";
 const _CREATE_SCHEMA: &str = "
@@ -251,7 +251,7 @@ impl SQLiteStorageType {
 
     fn create_path(name: &str) -> std::path::PathBuf {
         let mut path = EnvironmentUtils::wallet_path(name);
-        path.push("sqlite.db");
+        path.push(_SQLITE_DB );
         path
     }
 }
@@ -759,7 +759,7 @@ mod tests {
 
     fn _db_file_path() -> std::path::PathBuf {
         let mut db_file_path = _wallet_base_path();
-        db_file_path.push("sqlite.db");
+        db_file_path.push(_SQLITE_DB );
         db_file_path
     }
 
