@@ -1,4 +1,8 @@
 extern crate rust_indy_sdk as indy;
+
+#[macro_use]
+mod utils;
+
 use indy::crypto::{Key, Crypto};
 use indy::wallet::Wallet;
 use indy::ErrorCode;
@@ -6,33 +10,7 @@ use indy::ErrorCode;
 use std::time::Duration;
 use std::sync::mpsc::channel;
 
-macro_rules! safe_wallet_create {
-    ($x:ident) => {
-        match Wallet::delete($x) {
-            Ok(..) => {},
-            Err(..) => {}
-        };
-        Wallet::create("pool1", $x, None, None, None).unwrap();
-    }
-}
-
-macro_rules! wallet_cleanup {
-    ($x:ident, $y:ident) => {
-        Wallet::close($x).unwrap();
-        Wallet::delete($y).unwrap();
-    }
-}
-
-fn time_it_out<F>(msg: &str, test: F) -> bool where F: Fn() -> bool {
-    for _ in 1..250 {
-        if test() {
-            return true;
-        }
-    }
-    // It tried to do a timeout test 250 times and the system was too fast, so just succeed
-    println!("{} - system too fast for timeout test", msg);
-    true
-}
+use utils::time_it_out;
 
 mod high_cases {
     use super::*;
