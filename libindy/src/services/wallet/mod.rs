@@ -1555,16 +1555,16 @@ mod tests {
         let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", "{}").unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, false, false)).unwrap();
-        assert!(record.get_value().is_none());
-        assert!(record.get_tags().is_none());
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
+        assert_eq!("type", record.get_type().unwrap());
+        assert_eq!("value1", record.get_value().unwrap());
 
         wallet_service.close_wallet(wallet_handle).unwrap();
 
         let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_rekey_credentials()).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, false, false)).unwrap();
-        assert!(record.get_value().is_none());
-        assert!(record.get_tags().is_none());
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
+        assert_eq!("type", record.get_type().unwrap());
+        assert_eq!("value1", record.get_value().unwrap());
         wallet_service.close_wallet(wallet_handle).unwrap();
 
         // Access failed for old key
@@ -1573,8 +1573,8 @@ mod tests {
 
         // Works ok with new key when reopening
         let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials_for_new_key()).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, false, false)).unwrap();
-        assert!(record.get_value().is_none());
-        assert!(record.get_tags().is_none());
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
+        assert_eq!("type", record.get_type().unwrap());
+        assert_eq!("value1", record.get_value().unwrap());
     }
 }
