@@ -25,25 +25,13 @@ impl ClosureHandler {
     pub fn cb_ec() -> (Receiver<ErrorCode>, IndyHandle, Option<ResponseEmptyCB>) {
         let (sender, receiver) = channel();
 
-        lazy_static! {
-            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
-        }
-
         let closure = Box::new(move |err| {
             sender.send(err).unwrap();
         });
 
-        extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode) {
-            let mut callbacks = CALLBACKS.lock().unwrap();
-            let mut cb = callbacks.remove(&command_handle).unwrap();
-            cb(err)
-        }
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec(closure);
 
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        let command_handle = SequenceUtils::get_next_id();
-        callbacks.insert(command_handle, closure);
-
-        (receiver, command_handle, Some(_callback))
+        (receiver, command_handle, cb)
     }
 
     pub fn convert_cb_ec(closure: Box<FnMut(ErrorCode) + Send>) -> (IndyHandle, Option<ResponseEmptyCB>) {
@@ -66,13 +54,19 @@ impl ClosureHandler {
     pub fn cb_ec_i32() -> (Receiver<(ErrorCode, IndyHandle)>, IndyHandle, Option<ResponseI32CB>) {
         let (sender, receiver) = channel();
 
-        lazy_static! {
-            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, IndyHandle) + Send>>> = Default::default();
-        }
-
         let closure = Box::new(move |err, val| {
             sender.send((err, val)).unwrap();
         });
+
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32(closure);
+
+        (receiver, command_handle, cb)
+    }
+
+    pub fn convert_cb_ec_i32(closure: Box<FnMut(ErrorCode, IndyHandle) + Send>) -> (IndyHandle, Option<ResponseI32CB>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, IndyHandle) + Send>>> = Default::default();
+        }
 
         extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, c_i32: i32) {
             let mut callbacks = CALLBACKS.lock().unwrap();
@@ -84,32 +78,19 @@ impl ClosureHandler {
         let command_handle = SequenceUtils::get_next_id();
         callbacks.insert(command_handle, closure);
 
-        (receiver, command_handle, Some(_callback))
+        (command_handle, Some(_callback))
     }
 
     pub fn cb_ec_string() -> (Receiver<(ErrorCode, String)>, IndyHandle, Option<ResponseStringCB>) {
         let (sender, receiver) = channel();
 
-        lazy_static! {
-            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String) + Send>>> = Default::default();
-        }
-
         let closure = Box::new(move |err, val| {
             sender.send((err, val)).unwrap();
         });
 
-        extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, c_str: *const c_char) {
-            let mut callbacks = CALLBACKS.lock().unwrap();
-            let mut cb = callbacks.remove(&command_handle).unwrap();
-            let metadata = rust_str!(c_str);
-            cb(err, metadata)
-        }
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(closure);
 
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        let command_handle = SequenceUtils::get_next_id();
-        callbacks.insert(command_handle, closure);
-
-        (receiver, command_handle, Some(_callback))
+        (receiver, command_handle, cb)
     }
 
     pub fn convert_cb_ec_string(closure: Box<FnMut(ErrorCode, String) + Send>) -> (IndyHandle, Option<ResponseStringCB>) {
@@ -134,13 +115,19 @@ impl ClosureHandler {
     pub fn cb_ec_string_string() -> (Receiver<(ErrorCode, String, String)>, IndyHandle, Option<ResponseStringStringCB>) {
         let (sender, receiver) = channel();
 
-        lazy_static! {
-            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String, String) + Send>>> = Default::default();
-        }
-
         let closure = Box::new(move |err, val1, val2| {
             sender.send((err, val1, val2)).unwrap();
         });
+
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(closure);
+
+        (receiver, command_handle, cb)
+    }
+
+    pub fn convert_cb_ec_string_string(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (IndyHandle, Option<ResponseStringStringCB>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String, String) + Send>>> = Default::default();
+        }
 
         extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, str1: *const c_char, str2: *const c_char) {
             let mut callbacks = CALLBACKS.lock().unwrap();
@@ -154,19 +141,25 @@ impl ClosureHandler {
         let command_handle = SequenceUtils::get_next_id();
         callbacks.insert(command_handle, closure);
 
-        (receiver, command_handle, Some(_callback))
+        (command_handle, Some(_callback))
     }
 
     pub fn cb_ec_string_string_u64() -> (Receiver<(ErrorCode, String, String, u64)>, IndyHandle, Option<ResponseStringStringU64CB>) {
         let (sender, receiver) = channel();
 
-        lazy_static! {
-            static ref CALLBACKS: Mutex <HashMap<i32, Box<FnMut(ErrorCode, String, String, u64) + Send>>> = Default::default();
-        }
-
         let closure = Box::new(move |err, val1, val2, val3| {
             sender.send((err, val1, val2, val3)).unwrap();
         });
+
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string_u64(closure);
+
+        (receiver, command_handle, cb)
+    }
+
+    pub fn convert_cb_ec_string_string_u64(closure: Box<FnMut(ErrorCode, String, String, u64) + Send>) -> (IndyHandle, Option<ResponseStringStringU64CB>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex <HashMap<i32, Box<FnMut(ErrorCode, String, String, u64) + Send>>> = Default::default();
+        }
 
         extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, str1: *const c_char, str2: *const c_char, arg1: u64) {
             let mut callbacks = CALLBACKS.lock().unwrap();
@@ -180,32 +173,19 @@ impl ClosureHandler {
         let command_handle = SequenceUtils::get_next_id();
         callbacks.insert(command_handle, closure);
 
-        (receiver, command_handle, Some(_callback))
+        (command_handle, Some(_callback))
     }
 
     pub fn cb_ec_slice() -> (Receiver<(ErrorCode, Vec<u8>)>, IndyHandle, Option<ResponseSliceCB>) {
         let (sender, receiver) = channel();
 
-        lazy_static! {
-            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, Vec<u8>) + Send> >> = Default::default();
-        }
-
         let closure = Box::new(move |err, sig| {
             sender.send((err, sig)).unwrap();
         });
 
-        extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, raw: *const u8, len: u32) {
-            let mut callbacks = CALLBACKS.lock().unwrap();
-            let mut cb = callbacks.remove(&command_handle).unwrap();
-            let sig = rust_slice!(raw, len);
-            cb(err, sig.to_vec())
-        }
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(closure);
 
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        let command_handle = SequenceUtils::get_next_id();
-        callbacks.insert(command_handle, closure);
-
-        (receiver, command_handle, Some(_callback))
+        (receiver, command_handle, cb)
     }
 
     pub fn convert_cb_ec_slice(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (IndyHandle, Option<ResponseSliceCB>) {
@@ -230,13 +210,19 @@ impl ClosureHandler {
     pub fn cb_ec_string_slice() -> (Receiver<(ErrorCode, String, Vec<u8>)>, IndyHandle, Option<ResponseStringSliceCB>) {
         let (sender, receiver) = channel();
 
-        lazy_static! {
-            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String, Vec<u8>) + Send> >> = Default::default();
-        }
-
         let closure = Box::new(move |err, key, msg| {
             sender.send((err, key, msg)).unwrap();
         });
+
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_slice(closure);
+
+        (receiver, command_handle, cb)
+    }
+
+    pub fn convert_cb_ec_string_slice(closure: Box<FnMut(ErrorCode, String, Vec<u8>) + Send>) -> (IndyHandle, Option<ResponseStringSliceCB>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String, Vec<u8>) + Send> >> = Default::default();
+        }
 
         extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, vk: *const c_char, d_msg_raw: *const u8, d_msg_len: u32) {
             let mut callbacks = CALLBACKS.lock().unwrap();
@@ -250,19 +236,25 @@ impl ClosureHandler {
         let command_handle = SequenceUtils::get_next_id();
         callbacks.insert(command_handle, closure);
 
-        (receiver, command_handle, Some(_callback))
+        (command_handle, Some(_callback))
     }
 
     pub fn cb_ec_bool() -> (Receiver<(ErrorCode, bool)>, IndyHandle, Option<ResponseBoolCB>) {
         let (sender, receiver) = channel();
 
-        lazy_static! {
-            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, bool) + Send> >> = Default::default();
-        }
-
         let closure = Box::new(move |err, v| {
             sender.send((err, v)).unwrap();
         });
+
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(closure);
+
+        (receiver, command_handle, cb)
+    }
+
+    pub fn convert_cb_ec_bool(closure: Box<FnMut(ErrorCode, bool) + Send>) -> (IndyHandle, Option<ResponseBoolCB>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, bool) + Send> >> = Default::default();
+        }
 
         extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, valid: u8) {
             let mut callbacks = CALLBACKS.lock().unwrap();
@@ -275,6 +267,6 @@ impl ClosureHandler {
         let command_handle = SequenceUtils::get_next_id();
         callbacks.insert(command_handle, closure);
 
-        (receiver, command_handle, Some(_callback))
+        (command_handle, Some(_callback))
     }
 }
