@@ -7,6 +7,7 @@ use std::os::raw::c_char;
 use std::collections::HashMap;
 use std::slice;
 use std::ffi::CStr;
+use std::fmt::Display;
 use std::sync::Mutex;
 use std::sync::mpsc::{channel, Receiver};
 
@@ -19,6 +20,10 @@ use ffi::{ResponseEmptyCB,
           ResponseStringSliceCB,
           ResponseBoolCB};
 
+fn log_error<T: Display>(e: T) {
+    warn!("Unable to send through libindy callback: {}", e);
+}
+
 pub struct ClosureHandler {}
 
 impl ClosureHandler {
@@ -26,7 +31,7 @@ impl ClosureHandler {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err| {
-            sender.send(err).unwrap();
+            sender.send(err).unwrap_or_else(log_error);
         });
 
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(closure);
@@ -55,7 +60,7 @@ impl ClosureHandler {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, val| {
-            sender.send((err, val)).unwrap();
+            sender.send((err, val)).unwrap_or_else(log_error);
         });
 
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32(closure);
@@ -85,7 +90,7 @@ impl ClosureHandler {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, val| {
-            sender.send((err, val)).unwrap();
+            sender.send((err, val)).unwrap_or_else(log_error);
         });
 
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(closure);
@@ -116,7 +121,7 @@ impl ClosureHandler {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, val1, val2| {
-            sender.send((err, val1, val2)).unwrap();
+            sender.send((err, val1, val2)).unwrap_or_else(log_error);
         });
 
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(closure);
@@ -148,7 +153,7 @@ impl ClosureHandler {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, val1, val2, val3| {
-            sender.send((err, val1, val2, val3)).unwrap();
+            sender.send((err, val1, val2, val3)).unwrap_or_else(log_error);
         });
 
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string_u64(closure);
@@ -180,7 +185,7 @@ impl ClosureHandler {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, sig| {
-            sender.send((err, sig)).unwrap();
+            sender.send((err, sig)).unwrap_or_else(log_error);
         });
 
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(closure);
@@ -211,7 +216,7 @@ impl ClosureHandler {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, key, msg| {
-            sender.send((err, key, msg)).unwrap();
+            sender.send((err, key, msg)).unwrap_or_else(log_error);
         });
 
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_slice(closure);
@@ -243,7 +248,7 @@ impl ClosureHandler {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, v| {
-            sender.send((err, v)).unwrap();
+            sender.send((err, v)).unwrap_or_else(log_error);
         });
 
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(closure);
