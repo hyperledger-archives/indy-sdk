@@ -15,6 +15,7 @@ const credentialConfigDefault = {
     key2: 'value2',
     key3: 'value3'
   },
+  price: 1,
   credentialName: 'Credential Name'
 }
 const connectionConfigDefault = {

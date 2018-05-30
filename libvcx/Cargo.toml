@@ -13,7 +13,7 @@ path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "dylib"]
 
 [features]
-default = ["no_payments", "pool_tests"]
+default = ["no_payments"]
 pool_tests = []
 no_payments = []
 nullpay = []

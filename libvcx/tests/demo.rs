@@ -285,7 +285,8 @@ fn test_libindy_direct(){
                                                                                "IssuerCredentialName".to_string(),
                                                                                expected_did.to_string(),
                                                                                "CredentialNameHere".to_string(),
-                                                                                prepped_data).unwrap();
+                                                                                prepped_data,
+										1).unwrap();
 
     println!("issuer credential attributes: {}", issuer_credential::get_credential_attributes(issuer_credential_handle).unwrap());
 

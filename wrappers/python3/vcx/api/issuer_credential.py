@@ -21,13 +21,13 @@ class IssuerCredential(VcxStateful):
         self.logger.debug("Deleted {} obj: {}".format(IssuerCredential, self.handle))
 
     @staticmethod
-    async def create(source_id: str, attrs: dict, cred_def_id: str, name: str, price: float):
+    async def create(source_id: str, attrs: dict, cred_def_id: str, name: str, price: int):
         attrs = {k: [v] for k, v in attrs.items()}
         constructor_params = (source_id, attrs, cred_def_id, name, price)
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
         c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
-        c_price = c_float(price)
+        c_price = c_uint64(price)
         # default institution_did in config is used as issuer_did
         c_issuer_did = None
         c_data = c_char_p(json.dumps(attrs).encode('utf-8'))

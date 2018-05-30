@@ -360,13 +360,12 @@ pub extern fn vcx_wallet_delete_record(command_handle: u32,
 #[no_mangle]
 pub extern fn vcx_wallet_send_tokens(command_handle: u32,
                                      payment_handle: u32,
-                                     tokens: f32,
+                                     tokens: u64,
                                      recipient: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: u32, err: u32, receipt: *const c_char)>) -> u32 {
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(recipient, error::INVALID_OPTION.code_num);
-    if tokens < 0.0 { return error::INVALID_OPTION.code_num; }
 
     info!("vcx_wallet_send_tokens(command_handle: {}, payment_handle: {}, tokens: {}, recipient: {})",
           command_handle, payment_handle, tokens, recipient);
@@ -521,7 +520,7 @@ mod tests {
     fn test_send_tokens() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        assert_eq!(vcx_wallet_send_tokens(0, 0, 50.0, CString::new("address").unwrap().into_raw(), Some(generic_cb)), error::SUCCESS.code_num);
+        assert_eq!(vcx_wallet_send_tokens(0, 0, 50, CString::new("address").unwrap().into_raw(), Some(generic_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 

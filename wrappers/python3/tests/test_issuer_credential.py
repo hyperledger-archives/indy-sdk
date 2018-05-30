@@ -11,7 +11,7 @@ attrs = {'key': 'value', 'key2': 'value2', 'key3': 'value3'}
 name = 'Credential Name'
 issuer_did = '8XFh8yBzrpJQmNyZzgoTqB'
 phone_number = '8019119191'
-price = 0.0
+price = 1
 
 
 @pytest.mark.asyncio

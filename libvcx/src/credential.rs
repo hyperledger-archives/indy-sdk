@@ -7,7 +7,7 @@ extern crate rmp_serde;
 use object_cache::ObjectCache;
 use api::VcxStateType;
 use utils::error;
-use issuer_credential::{ CredentialOffer, CredentialMessage };
+use issuer_credential::{ CredentialOffer, CredentialMessage, PaymentInfo };
 
 use credential_request::{ CredentialRequest };
 
@@ -30,6 +30,8 @@ use utils::constants::{ SEND_MESSAGE_RESPONSE };
 
 use error::ToErrorCode;
 use error::credential::CredentialError;
+
+use serde_json::Value;
 
 lazy_static! {
     static ref HANDLE_MAP: ObjectCache<Credential>  = Default::default();
@@ -54,6 +56,7 @@ impl Default for Credential {
             msg_uid: None,
             cred_id: None,
             credential: None,
+            payment_info: None,
         }
     }
 }
@@ -77,6 +80,7 @@ pub struct Credential {
     their_vk: Option<String>,
     credential: Option<String>,
     cred_id: Option<String>,
+    payment_info: Option<PaymentInfo>,
 }
 
 impl Credential {
@@ -274,16 +278,17 @@ fn handle_err(code_num: u32) -> CredentialError {
     }
 }
 
-pub fn credential_create_with_offer(source_id: &str, offer: &str) -> Result<u32, u32> {
+pub fn credential_create_with_offer(source_id: &str, offer: &str) -> Result<u32, CredentialError> {
     let mut new_credential = _credential_create(source_id);
 
-    let offer: CredentialOffer = serde_json::from_str(offer).map_err(|_|error::INVALID_JSON.code_num)?;
+    let (offer, payment_info) = parse_json_offer(offer)?;
     new_credential.set_credential_offer(offer);
+    new_credential.payment_info = payment_info;
 
     new_credential.state = VcxStateType::VcxStateRequestReceived;
 
     debug!("inserting credential into handle map");
-    Ok(HANDLE_MAP.add(new_credential)?)
+    Ok(HANDLE_MAP.add(new_credential).map_err(|ec|CredentialError::CommonError(ec))?)
 }
 
 fn _credential_create(source_id: &str) -> Credential {
@@ -352,11 +357,14 @@ pub fn get_credential_offer(connection_handle: u32, msg_id: &str) -> Result<Stri
         };
 
         let offer = extract_json_payload(&msg_data).map_err(|ec| CredentialError::CommonError(ec))?;
-        let mut offer: CredentialOffer = serde_json::from_str(&offer)
-           .or(Err(CredentialError::InvalidCredentialJson()))?;
+        let (mut offer, payment_info) = parse_json_offer(&offer)?;
 
         offer.msg_ref_id = Some(message.uid.to_owned());
-        Ok(serde_json::to_string_pretty(&offer).unwrap())
+        let mut payload = Vec::new();
+        payload.push(json!(offer));
+        if payment_info.is_some() { payload.push(json!(payment_info.unwrap())); }
+
+        Ok(serde_json::to_string_pretty(&payload).unwrap())
     } else {
         Err(CredentialError::CommonError(error::INVALID_MESSAGES.code_num))
     }
@@ -375,7 +383,7 @@ pub fn get_credential_offer_messages(connection_handle: u32, match_name: Option<
                                                      &agent_did,
                                                      &agent_vk).map_err(|ec| CredentialError::CommonError(ec))?;
 
-    let mut messages: Vec<CredentialOffer> = Default::default();
+    let mut messages = Vec::new();
 
     for msg in payload {
         if msg.msg_type.eq("claimOffer") {
@@ -388,15 +396,43 @@ pub fn get_credential_offer_messages(connection_handle: u32, match_name: Option<
             };
 
             let offer = extract_json_payload(&msg_data).map_err(|ec| CredentialError::CommonError(ec))?;
-            let mut offer: CredentialOffer = serde_json::from_str(&offer)
-                .or(Err(CredentialError::InvalidCredentialJson()))?;
+            let (mut offer, payment_info) = parse_json_offer(&offer)?;
 
             offer.msg_ref_id = Some(msg.uid.to_owned());
-            messages.push(offer);
+            let mut payload = Vec::new();
+            payload.push(json!(offer));
+            if payment_info.is_some() { payload.push(json!(payment_info.unwrap())); }
+
+            messages.push(payload);
         }
     }
 
     Ok(serde_json::to_string_pretty(&messages).unwrap())
+}
+
+pub fn parse_json_offer(offer: &str) -> Result<(CredentialOffer, Option<PaymentInfo>), CredentialError> {
+    let paid_offer: Value = serde_json::from_str(offer).or(Err(CredentialError::InvalidCredentialJson()))?;
+
+    let mut payment: Option<PaymentInfo> = None;
+    let mut offer: Option<CredentialOffer> = None;
+
+    if let Some(i) = paid_offer.as_array() {
+        for entry in i.iter() {
+            if entry.get("libindy_offer").is_some() {
+                offer = Some(serde_json::from_value(entry.clone()).or(Err(CredentialError::InvalidCredentialJson()))?);
+            }
+
+            if entry.get("payment_addr").is_some() {
+                payment = Some(serde_json::from_value(entry.clone()).or(Err(CredentialError::InvalidCredentialJson()))?);
+            }
+        }
+    }
+    if offer.is_some() {
+        Ok((offer.unwrap(), payment))
+    }
+    else {
+        Err(CredentialError::InvalidCredentialJson())
+    }
 }
 
 pub fn release(handle: u32) -> Result<(), CredentialError> {
@@ -469,7 +505,7 @@ mod tests {
     fn test_credential_create_with_bad_offer() {
         match credential_create_with_offer("test_credential_create_with_bad_offer",BAD_CREDENTIAL_OFFER) {
             Ok(_) => panic!("should have failed with bad credential offer"),
-            Err(x) => assert_eq!(x,error::INVALID_JSON.code_num),
+            Err(x) => assert_eq!(x.to_error_code(),error::INVALID_JSON.code_num),
         };
     }
 

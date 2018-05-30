@@ -390,6 +390,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_schema_and_cred_def_on_ledger() {
+        ::utils::logger::LoggerUtils::init_test_logging();
         let wallet_name = "create_schema_and_cred_def";
         ::utils::devsetup::setup_dev_env(wallet_name);
 

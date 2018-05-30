@@ -60,7 +60,7 @@ pub fn create_credential_offer(credential_name: &str, source_id: &str, credentia
                                                         ptr::null(),
                                                         credential_data_cstring.as_ptr(),
                                                         credential_name_cstring.as_ptr(),
-                                                        0.0,
+                                                        1,
                                                         cb);
     assert_eq!(rc, 0);
     receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap()
