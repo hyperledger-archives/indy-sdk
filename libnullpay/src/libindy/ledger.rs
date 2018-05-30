@@ -1,4 +1,4 @@
-use super::ErrorCode;
+use ErrorCode;
 
 use libc::c_char;
 use std::ffi::CString;

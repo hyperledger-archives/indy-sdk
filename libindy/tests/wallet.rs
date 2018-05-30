@@ -446,22 +446,25 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let wallet_name = "indy_open_wallet_works_for_invalid_credentials";
-            WalletUtils::create_wallet(POOL, wallet_name, None, None, Some(r#"{"key":"AAIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#)).unwrap();
-            let res = WalletUtils::open_wallet(wallet_name, None, Some(r#"{"key":"BBIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#));
+            WalletUtils::create_wallet(POOL, wallet_name, None, None, Some(r#"{"key":"key"}"#)).unwrap();
+            let res = WalletUtils::open_wallet(wallet_name, None, Some(r#"{"key":"other_key"}"#));
             assert_eq!(ErrorCode::WalletAccessFailed, res.unwrap_err());
 
             TestUtils::cleanup_storage();
         }
 
-
         #[test]
+        #[ignore]
         fn indy_open_wallet_works_for_changing_credentials() {
             TestUtils::cleanup_storage();
 
             let wallet_name = "indy_open_wallet_works_for_changing_credentials";
-            WalletUtils::create_wallet(POOL, wallet_name, None, None, Some(r#"{"key":"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#)).unwrap();
-            let wallet_handle = WalletUtils::open_wallet(wallet_name, None, Some(r#"{"key":"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=", "rekey":"cCAdWqQWFCgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}"#)).unwrap();
+            WalletUtils::create_wallet(POOL, wallet_name, None, None, Some(r#"{"key":"key"}"#)).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(wallet_name, None, Some(r#"{"key":"key", "rekey":"other_key"}"#)).unwrap();
 
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            let wallet_handle = WalletUtils::open_wallet(wallet_name, None, Some(r#"{"key":"other_key"}"#)).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();

@@ -27,14 +27,18 @@ async def test_open_wallet_works_for_twice(wallet_name, wallet_handle, credentia
 
 
 @pytest.mark.asyncio
-async def test_open_wallet_works_for_encrypted_wallet_with_invalid_credentials(xwallet, wallet_name):
+async def test_open_wallet_works_for_missed_credentials(xwallet, wallet_name):
     with pytest.raises(IndyError) as e:
-        await wallet.open_wallet(wallet_name, None, '{"key":"BBIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}')
-    assert ErrorCode.WalletAccessFailed == e.value.error_code
+        await wallet.open_wallet(wallet_name, None, None)
+    assert ErrorCode.CommonInvalidParam4 == e.value.error_code
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="TODO: FIXME: Create a bug!!!")
 async def test_open_wallet_works_for_changing_credentials(pool_name):
-    await wallet.create_wallet(pool_name, 'works_for_changing_credentials', None, None, '{"key":"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}')
-    handle = await wallet.open_wallet('works_for_changing_credentials', None, '{"key":"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=", "rekey":"cCAdWqQWFCgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg="}')
+    await wallet.create_wallet(pool_name, 'works_for_changing_credentials', None, None, '{"key":"key"}')
+    handle = await wallet.open_wallet('works_for_changing_credentials', None, '{"key":"key", "rekey":"other_key"}')
+    await wallet.close_wallet(handle)
+
+    handle = await wallet.open_wallet('works_for_changing_credentials', None, '{"key":"other_key"}')
     await wallet.close_wallet(handle)

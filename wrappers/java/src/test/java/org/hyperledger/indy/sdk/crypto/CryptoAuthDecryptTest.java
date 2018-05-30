@@ -21,10 +21,9 @@ public class CryptoAuthDecryptTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testAuthDecryptWorks() throws Exception {
-		String paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();
-		String theirVk = Crypto.createKey(wallet, paramJson).get();
+		String theirVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
 
-		paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(MY2_SEED, null).toJson();
+		String paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(MY2_SEED, null).toJson();
 		String myVk = Crypto.createKey(wallet, paramJson).get();
 
 		byte[] encryptedMsg = Crypto.authCrypt(wallet, theirVk, myVk, MESSAGE).get();
@@ -52,8 +51,7 @@ public class CryptoAuthDecryptTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testAuthDecryptWorksForUnknownTheirVk() throws Exception {
-		String paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();
-		String theirVk = Crypto.createKey(wallet, paramJson).get();
+		String theirVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
 
 		byte[] encryptedMsg = Crypto.authCrypt(wallet, theirVk, VERKEY, MESSAGE).get();
 

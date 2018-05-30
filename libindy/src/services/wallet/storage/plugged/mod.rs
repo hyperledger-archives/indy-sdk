@@ -351,7 +351,7 @@ impl WalletStorage for PluggedStorage {
         Ok(result)
     }
 
-    fn add(&mut self, type_: &Vec<u8>, id: &Vec<u8>, value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn add(&self, type_: &Vec<u8>, id: &Vec<u8>, value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
         let joined_value = value.to_bytes();
@@ -371,7 +371,7 @@ impl WalletStorage for PluggedStorage {
         Ok(())
     }
 
-    fn add_tags(&mut self, type_: &Vec<u8>, id: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn add_tags(&self, type_: &Vec<u8>, id: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
         let tags_json = CString::new(_tags_to_json(&tags)?)?;
@@ -388,7 +388,7 @@ impl WalletStorage for PluggedStorage {
         Ok(())
     }
 
-    fn update_tags(&mut self, type_: &Vec<u8>, id: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn update_tags(&self, type_: &Vec<u8>, id: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
         let tags_json = CString::new(_tags_to_json(&tags)?)?;
@@ -405,7 +405,7 @@ impl WalletStorage for PluggedStorage {
         Ok(())
     }
 
-    fn delete_tags(&mut self, type_: &Vec<u8>, id: &Vec<u8>, tag_names: &[TagName]) -> Result<(), WalletStorageError> {
+    fn delete_tags(&self, type_: &Vec<u8>, id: &Vec<u8>, tag_names: &[TagName]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
         let tag_names_json = CString::new(_tags_names_to_json(tag_names)?)?;
@@ -457,11 +457,11 @@ impl WalletStorage for PluggedStorage {
 
     fn get_storage_metadata(&self) -> Result<Vec<u8>, WalletStorageError> {
         let mut metadata_ptr: *const c_char = ptr::null_mut();
-        let mut metadata_handler = -1;
+        let mut metadata_handle = -1;
 
         let err: ErrorCode = (self.get_storage_metadata_handler)(self.handle,
                                                                  &mut metadata_ptr,
-                                                                 &mut metadata_handler);
+                                                                 &mut metadata_handle);
 
         if err == ErrorCode::WalletItemNotFound {
             return Err(WalletStorageError::ItemNotFound);
@@ -470,11 +470,13 @@ impl WalletStorage for PluggedStorage {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
-        (self.free_storage_metadata_handler)(self.handle, metadata_handler);
-
-        Ok(base64::decode(
+        let metadata = base64::decode(
             unsafe { CStr::from_ptr(metadata_ptr).to_str()? }
-        )?)
+        )?;
+
+        (self.free_storage_metadata_handler)(self.handle, metadata_handle);
+
+        Ok(metadata)
     }
 
     fn set_storage_metadata(&self, metadata: &Vec<u8>) -> Result<(), WalletStorageError> {

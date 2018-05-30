@@ -8,7 +8,7 @@ use errors::indy::IndyError;
 use errors::anoncreds::AnoncredsError;
 use services::anoncreds::AnoncredsService;
 use services::anoncreds::helpers::parse_cred_rev_id;
-use services::wallet::{WalletService, RecordOptions};
+use services::wallet::{WalletService, RecordOptions, SearchOptions};
 use services::crypto::CryptoService;
 use std::rc::Rc;
 use services::blob_storage::BlobStorageService;
@@ -300,10 +300,7 @@ impl ProverCommandExecutor {
                             wallet_handle: i32) -> Result<Vec<CredentialInfo>, IndyError> {
         debug!("get_credentials_info >>> wallet_handle: {:?}", wallet_handle);
 
-        let mut credentials_search =
-            self.wallet_service.search_indy_records::<Credential>(wallet_handle,
-                                                                  "{}",
-                                                                  &RecordOptions::id_value())?;
+        let mut credentials_search = self.wallet_service.search_indy_records::<Credential>(wallet_handle, "{}", &SearchOptions::id_value())?;
 
         let mut credentials_info: Vec<CredentialInfo> = Vec::new();
 

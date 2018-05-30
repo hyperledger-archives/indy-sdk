@@ -7,6 +7,7 @@ import org.junit.Test;
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 
@@ -24,7 +25,7 @@ public class GetRecordTest extends NonSecretsIntegrationTest {
 				.put("id", id)
 				.putOpt("type", JSONObject.NULL)
 				.put("value", value)
-				.put("tags", tags);
+				.put("tags", JSONObject.NULL);
 
 		assertTrue(expected.similar(actual));
 
@@ -41,15 +42,11 @@ public class GetRecordTest extends NonSecretsIntegrationTest {
 				"}";
 		String recordJson = WalletRecord.get(wallet, type, id, optionsJson).get();
 
-		JSONObject actual = new JSONObject(recordJson);
-
-		JSONObject expected = new JSONObject()
-				.put("id", id)
-				.put("type", type)
-				.put("value", value)
-				.put("tags", tags);
-
-		assertTrue(expected.similar(actual));
+		JSONObject record = new JSONObject(recordJson);
+		assertEquals(id, record.getString("id"));
+		assertEquals(type, record.getString("type"));
+		assertEquals(value, record.getString("value"));
+		assertTrue(new JSONObject(tags).similar(new JSONObject(record.getString("tags"))));
 	}
 
 	@Test

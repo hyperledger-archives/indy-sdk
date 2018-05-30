@@ -3,188 +3,202 @@ extern crate rand;
 
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
+extern crate serde;
 
 mod libindy;
-
+#[macro_use]
+mod utils;
 #[macro_use]
 mod payment_method;
-mod utils;
-
-use libindy::ErrorCode;
+mod services;
 
 use std::ffi::CString;
-use std::os::raw::c_char;
 
-    #[no_mangle]
-    pub extern fn nullpay_init() -> ErrorCode {
-        let payment_method_name = CString::new(payment_method::PAYMENT_METHOD_NAME).unwrap();
+#[no_mangle]
+pub extern fn nullpay_init() -> ErrorCode {
+    utils::logger::init();
+    let payment_method_name = CString::new(payment_method::PAYMENT_METHOD_NAME).unwrap();
 
-        libindy::payments::register_payment_method(
-            payment_method_name.as_ptr(),
-            payment_method::create_payment_address::handle_mocked,
-            payment_method::add_request_fees::handle_mocked,
-            payment_method::parse_response_with_fees::handle_mocked,
-            payment_method::build_get_utxo_request::handle_mocked,
-            payment_method::parse_get_utxo_response::handle_mocked,
-            payment_method::build_payment_req::handle_mocked,
-            payment_method::parse_payment_response::handle_mocked,
-            payment_method::build_mint_req::handle_mocked,
-            payment_method::build_set_txn_fees_req::handle_mocked,
-            payment_method::build_get_txn_fees_req::handle_mocked,
-            payment_method::parse_get_txn_fees_response::handle_mocked
-        )
-    }
-
-pub mod create_payment_address {
-    use super::*;
-
-    #[no_mangle]
-    pub extern fn nullpay_injmock_create_payment_address(err: ErrorCode, res: *const c_char) {
-        payment_method::create_payment_address::inject_mock(err, res)
-    }
-
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_create_payment_address() {
-        payment_method::create_payment_address::clear_mocks()
-    }
+    libindy::payments::register_payment_method(
+        payment_method_name.as_ptr(),
+        payment_method::create_payment_address::handle,
+        payment_method::add_request_fees::handle,
+        payment_method::parse_response_with_fees::handle,
+        payment_method::build_get_utxo_request::handle,
+        payment_method::parse_get_utxo_response::handle,
+        payment_method::build_payment_req::handle,
+        payment_method::parse_payment_response::handle,
+        payment_method::build_mint_req::handle,
+        payment_method::build_set_txn_fees_req::handle,
+        payment_method::build_get_txn_fees_req::handle,
+        payment_method::parse_get_txn_fees_response::handle
+    )
 }
 
-pub mod add_request_fees {
-    use super::*;
+#[derive(Debug, PartialEq, Copy, Clone)]
+#[repr(i32)]
+#[allow(dead_code)]
+pub enum ErrorCode
+{
+    Success = 0,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_add_request_fees(err: ErrorCode, res: *const c_char) {
-        payment_method::add_request_fees::inject_mock(err, res)
-    }
+    // Common errors
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_add_request_fees() {
-        payment_method::add_request_fees::clear_mocks()
-    }
-}
+    // Caller passed invalid value as param 1 (null, invalid json and etc..)
+    CommonInvalidParam1 = 100,
 
-pub mod parse_response_with_fees {
-    use super::*;
+    // Caller passed invalid value as param 2 (null, invalid json and etc..)
+    CommonInvalidParam2 = 101,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_parse_response_with_fees(err: ErrorCode, res: *const c_char) {
-        payment_method::parse_response_with_fees::inject_mock(err, res)
-    }
+    // Caller passed invalid value as param 3 (null, invalid json and etc..)
+    CommonInvalidParam3 = 102,
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_parse_response_with_fees() {
-        payment_method::parse_response_with_fees::clear_mocks()
-    }
-}
+    // Caller passed invalid value as param 4 (null, invalid json and etc..)
+    CommonInvalidParam4 = 103,
 
-pub mod build_get_utxo_request {
-    use super::*;
+    // Caller passed invalid value as param 5 (null, invalid json and etc..)
+    CommonInvalidParam5 = 104,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_build_get_utxo_request(err: ErrorCode, res: *const c_char) {
-        payment_method::build_get_utxo_request::inject_mock(err, res)
-    }
+    // Caller passed invalid value as param 6 (null, invalid json and etc..)
+    CommonInvalidParam6 = 105,
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_build_get_utxo_request() {
-        payment_method::build_get_utxo_request::clear_mocks()
-    }
-}
+    // Caller passed invalid value as param 7 (null, invalid json and etc..)
+    CommonInvalidParam7 = 106,
 
-pub mod parse_get_utxo_response {
-    use super::*;
+    // Caller passed invalid value as param 8 (null, invalid json and etc..)
+    CommonInvalidParam8 = 107,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_parse_get_utxo_response(err: ErrorCode, res: *const c_char) {
-        payment_method::parse_get_utxo_response::inject_mock(err, res)
-    }
+    // Caller passed invalid value as param 9 (null, invalid json and etc..)
+    CommonInvalidParam9 = 108,
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_parse_get_utxo_response() {
-        payment_method::parse_get_utxo_response::clear_mocks()
-    }
-}
+    // Caller passed invalid value as param 10 (null, invalid json and etc..)
+    CommonInvalidParam10 = 109,
 
-pub mod build_payment_req {
-    use super::*;
+    // Caller passed invalid value as param 11 (null, invalid json and etc..)
+    CommonInvalidParam11 = 110,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_build_payment_req(err: ErrorCode, res: *const c_char) {
-        payment_method::build_payment_req::inject_mock(err, res)
-    }
+    // Caller passed invalid value as param 12 (null, invalid json and etc..)
+    CommonInvalidParam12 = 111,
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_build_payment_req() {
-        payment_method::build_payment_req::clear_mocks()
-    }
-}
+    // Invalid library state was detected in runtime. It signals library bug
+    CommonInvalidState = 112,
 
-pub mod parse_payment_response {
-    use super::*;
+    // Object (json, config, key, credential and etc...) passed by library caller has invalid structure
+    CommonInvalidStructure = 113,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_parse_payment_response(err: ErrorCode, res: *const c_char) {
-        payment_method::parse_payment_response::inject_mock(err, res)
-    }
+    // IO Error
+    CommonIOError = 114,
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_parse_payment_response() {
-        payment_method::parse_payment_response::clear_mocks()
-    }
-}
+    // Caller passed invalid value as param 13 (null, invalid json and etc..)
+    CommonInvalidParam13 = 115,
 
-pub mod build_mint_req {
-    use super::*;
+    // Caller passed invalid value as param 14 (null, invalid json and etc..)
+    CommonInvalidParam14 = 116,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_build_mint_req(err: ErrorCode, res: *const c_char) {
-        payment_method::build_mint_req::inject_mock(err, res)
-    }
+    // Wallet errors
+    // Caller passed invalid wallet handle
+    WalletInvalidHandle = 200,
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_build_mint_req() {
-        payment_method::build_mint_req::clear_mocks()
-    }
-}
+    // Unknown type of wallet was passed on create_wallet
+    WalletUnknownTypeError = 201,
 
-pub mod build_set_txn_fees_req {
-    use super::*;
+    // Attempt to register already existing wallet type
+    WalletTypeAlreadyRegisteredError = 202,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_build_set_txn_fees_req(err:ErrorCode, res: *const c_char) {
-        payment_method::build_set_txn_fees_req::inject_mock(err, res)
-    }
+    // Attempt to create wallet with name used for another exists wallet
+    WalletAlreadyExistsError = 203,
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_build_set_txn_fees_req() {
-        payment_method::build_set_txn_fees_req::clear_mocks()
-    }
-}
+    // Requested entity id isn't present in wallet
+    WalletNotFoundError = 204,
 
-pub mod build_get_txn_fees_req {
-    use super::*;
+    // Trying to use wallet with pool that has different name
+    WalletIncompatiblePoolError = 205,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_build_get_txn_fees_req(err: ErrorCode, res: *const c_char) {
-        payment_method::build_get_txn_fees_req::inject_mock(err, res)
-    }
+    // Trying to open wallet that was opened already
+    WalletAlreadyOpenedError = 206,
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_build_get_txn_fees_req() {
-        payment_method::build_get_txn_fees_req::clear_mocks()
-    }
-}
+    // Attempt to open encrypted wallet with invalid credentials
+    WalletAccessFailed = 207,
 
-pub mod parse_get_txn_fees_response {
-    use super::*;
+    // Input provided to wallet operations is considered not valid
+    WalletInputError = 208,
 
-    #[no_mangle]
-    pub extern fn nullpay_injmock_parse_get_txn_fees_response(err: ErrorCode, res: *const c_char) {
-        payment_method::parse_get_txn_fees_response::inject_mock(err, res)
-    }
+    // Decoding of wallet data during input/output failed
+    WalletDecodingError = 209,
 
-    #[no_mangle]
-    pub extern fn nullpay_clrmock_parse_get_txn_fees_response() {
-        payment_method::parse_get_txn_fees_response::clear_mocks()
-    }
+    // Storage error occurred during wallet operation
+    WalletStorageError = 210,
+
+    // Error during encryption-related operations
+    WalletEncryptonError = 211,
+
+    // Requested wallet item not found
+    WalletItemNotFound = 212,
+
+    // Returned if wallet's add_record operation is used with record name that already exists
+    WalletItemAlreadyExists = 213,
+
+    // Returned if provided wallet query is invalid
+    WalletQueryError = 214,
+
+    // Ledger errors
+    // Trying to open pool ledger that wasn't created before
+    PoolLedgerNotCreatedError = 300,
+
+    // Caller passed invalid pool ledger handle
+    PoolLedgerInvalidPoolHandle = 301,
+
+    // Pool ledger terminated
+    PoolLedgerTerminated = 302,
+
+    // No concensus during ledger operation
+    LedgerNoConsensusError = 303,
+
+    // Attempt to parse invalid transaction response
+    LedgerInvalidTransaction = 304,
+
+    // Attempt to send transaction without the necessary privileges
+    LedgerSecurityError = 305,
+
+    // Attempt to create pool ledger config with name used for another existing pool
+    PoolLedgerConfigAlreadyExistsError = 306,
+
+    // Timeout for action
+    PoolLedgerTimeout = 307,
+
+    // Revocation registry is full and creation of new registry is necessary
+    AnoncredsRevocationRegistryFullError = 400,
+
+    AnoncredsInvalidUserRevocId = 401,
+
+    // Attempt to generate master secret with duplicated name
+    AnoncredsMasterSecretDuplicateNameError = 404,
+
+    AnoncredsProofRejected = 405,
+
+    AnoncredsCredentialRevoked = 406,
+
+    // Attempt to create credential definition with duplicated id
+    AnoncredsCredDefAlreadyExistsError = 407,
+
+    // Crypto errors
+    // Unknown format of DID entity keys
+    UnknownCryptoTypeError = 500,
+
+    // Attempt to create duplicate did
+    DidAlreadyExistsError = 600,
+
+    // Unknown payment method was given
+    PaymentUnknownMethodError = 700,
+
+    //No method were scraped from inputs/outputs or more than one were scraped
+    PaymentIncompatibleMethodsError = 701,
+
+    // Insufficient funds on inputs
+    PaymentInsufficientFundsError = 702,
 }

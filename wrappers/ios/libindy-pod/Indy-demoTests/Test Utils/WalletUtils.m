@@ -14,7 +14,7 @@
 
 @implementation WalletUtils
 
-NSString *credentials = @"{\"key\":\"AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=\",\"storage_credentials\":{}}";
+NSString *credentials = @"{\"key\":\"key\"}";
 
 + (WalletUtils *)sharedInstance
 {

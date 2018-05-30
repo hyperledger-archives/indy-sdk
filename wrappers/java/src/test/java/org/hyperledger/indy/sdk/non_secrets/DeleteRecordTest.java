@@ -14,7 +14,11 @@ public class DeleteRecordTest extends NonSecretsIntegrationTest {
 	public void testDeleteRecordWorks() throws Exception {
 		WalletRecord.add(wallet, type, id, value, tags).get();
 		WalletRecord.delete(wallet, type, id).get();
-		WalletRecord.add(wallet, type, id, value, tags).get();
+
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
+
+		WalletRecord.get(wallet, type, id, optionsEmpty).get();
 	}
 
 	@Test

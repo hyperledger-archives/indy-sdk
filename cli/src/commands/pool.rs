@@ -72,6 +72,7 @@ pub mod connect_command {
                             set_connected_pool(ctx, None);
                             Ok(println_succ!("Pool \"{}\" has been disconnected", name))
                         }
+                        Err(ErrorCode::PoolLedgerNotCreatedError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                         Err(ErrorCode::PoolLedgerTerminated) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                         Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid pool ledger config.")),
                         Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
@@ -212,6 +213,7 @@ pub mod delete_command {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use utils::test::TestUtils;
     use libindy::pool::Pool;
 
     const POOL: &'static str = "pool";
@@ -221,6 +223,7 @@ pub mod tests {
 
         #[test]
         pub fn create_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             {
@@ -235,11 +238,13 @@ pub mod tests {
             assert_eq!(1, pools.len());
             assert_eq!(pools[0]["pool"].as_str().unwrap(), POOL);
 
-            delete_pool(&ctx)
+            delete_pool(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn create_works_for_twice() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_pool(&ctx);
@@ -250,11 +255,13 @@ pub mod tests {
                 params.insert("gen_txn_file", "docker_pool_transactions_genesis".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
-            delete_pool(&ctx)
+            delete_pool(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn create_works_for_missed_gen_txn_file() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             {
@@ -263,10 +270,12 @@ pub mod tests {
                 params.insert("name", POOL.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn create_works_for_unknow_txn_file() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             {
@@ -276,6 +285,7 @@ pub mod tests {
                 params.insert("gen_txn_file", "unknow_pool_transactions_genesis".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            TestUtils::cleanup_storage();
         }
     }
 
@@ -284,6 +294,7 @@ pub mod tests {
 
         #[test]
         pub fn connect_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_pool(&ctx);
@@ -295,10 +306,12 @@ pub mod tests {
             }
             ensure_connected_pool_handle(&ctx).unwrap();
             disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn connect_works_for_twice() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_connect_pool(&ctx);
@@ -309,14 +322,17 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap();
             }
             disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn connect_works_for_not_created() {
+            TestUtils::cleanup_storage();
             let cmd = connect_command::new();
             let mut params = CommandParams::new();
             params.insert("name", POOL.to_string());
             cmd.execute(&CommandContext::new(), &params).unwrap_err();
+            TestUtils::cleanup_storage();
         }
     }
 
@@ -325,6 +341,7 @@ pub mod tests {
 
         #[test]
         pub fn list_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_pool(&ctx);
@@ -334,17 +351,20 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap();
             }
             delete_pool(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn list_works_for_empty_list() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             {
                 let cmd = list_command::new();
                 let params = CommandParams::new();
-                cmd.execute(&ctx, &params).unwrap();
+                cmd.execute(&ctx, &params).unwrap_err();
             }
+            TestUtils::cleanup_storage();
         }
     }
 
@@ -353,6 +373,7 @@ pub mod tests {
 
         #[test]
         pub fn disconnect_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_connect_pool(&ctx);
@@ -363,10 +384,12 @@ pub mod tests {
             }
             ensure_connected_pool_handle(&ctx).unwrap_err();
             delete_pool(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn disconnect_works_for_not_opened() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_pool(&ctx);
@@ -376,10 +399,12 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             delete_pool(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn disconnect_works_for_twice() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_connect_pool(&ctx);
@@ -394,6 +419,7 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             delete_pool(&ctx);
+            TestUtils::cleanup_storage();
         }
     }
 
@@ -402,6 +428,7 @@ pub mod tests {
 
         #[test]
         pub fn delete_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_pool(&ctx);
@@ -413,19 +440,26 @@ pub mod tests {
             }
             let pools = get_pools();
             assert_eq!(0, pools.len());
+
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn delete_works_for_not_created() {
+            TestUtils::cleanup_storage();
+
             let cmd = delete_command::new();
             let mut params = CommandParams::new();
             params.insert("name", POOL.to_string());
             cmd.execute(&CommandContext::new(), &params).unwrap_err();
+
+            TestUtils::cleanup_storage();
         }
 
 
         #[test]
         pub fn delete_works_for_connected() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_connect_pool(&ctx);
@@ -436,6 +470,7 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
         }
     }
 

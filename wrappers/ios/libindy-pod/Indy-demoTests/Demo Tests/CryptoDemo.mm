@@ -123,6 +123,7 @@
 }
 
 
+/*
 - (void)testCryptoDemoForKeychainWallet {
     [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
 
@@ -220,5 +221,6 @@
 
     [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
 }
+*/
 
 @end
