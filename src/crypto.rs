@@ -4,6 +4,11 @@ use std::ffi::CString;
 use std::time::Duration;
 
 use ffi::crypto;
+use ffi::{ResponseEmptyCB,
+          ResponseStringCB,
+          ResponseSliceCB,
+          ResponseBoolCB,
+          ResponseStringSliceCB};
 
 use utils::results::ResultHandler;
 use utils::callbacks::ClosureHandler;
@@ -27,11 +32,8 @@ impl Key {
     pub fn create(wallet_handle: IndyHandle, my_key_json: Option<&str>) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-        let my_key_json = opt_c_str_json!(my_key_json);
+        let err = Key::_create(command_handle, wallet_handle, my_key_json, cb);
 
-        let err = unsafe {
-            crypto::indy_create_key(command_handle, wallet_handle, my_key_json.as_ptr(), cb)
-        };
         ResultHandler::one(err, receiver)
     }
 
@@ -52,11 +54,8 @@ impl Key {
     pub fn create_timeout(wallet_handle: IndyHandle, my_key_json: Option<&str>, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-        let my_key_json = opt_c_str_json!(my_key_json);
+        let err = Key::_create(command_handle, wallet_handle, my_key_json, cb);
 
-        let err = unsafe {
-            crypto::indy_create_key(command_handle, wallet_handle, my_key_json.as_ptr(), cb)
-        };
         ResultHandler::one_timeout(err, receiver, timeout)
     }
 
@@ -77,6 +76,10 @@ impl Key {
     pub fn create_async<F: 'static>(wallet_handle: IndyHandle, my_key_json: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
+        Key::_create(command_handle, wallet_handle, my_key_json, cb)
+    }
+
+    fn _create(command_handle: IndyHandle, wallet_handle: IndyHandle, my_key_json: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
         let my_key_json = opt_c_str_json!(my_key_json);
 
         unsafe {
@@ -92,12 +95,8 @@ impl Key {
     pub fn set_metadata(wallet_handle: IndyHandle, verkey: &str, metadata: &str) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-        let verkey = c_str!(verkey);
-        let metadata = c_str!(metadata);
+        let err = Key::_set_metadata(command_handle, wallet_handle, verkey, metadata, cb);
 
-        let err = unsafe {
-            crypto::indy_set_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), metadata.as_ptr(), cb)
-        };
         ResultHandler::empty(err, receiver)
     }
 
@@ -108,14 +107,10 @@ impl Key {
     /// * `metadata` - the metadata that will be stored with the key
     /// * `timeout` - the maximum time this function waits for a response
     pub fn set_metadata_timeout(wallet_handle: IndyHandle, verkey: &str, metadata: &str, timeout: Duration) -> Result<(), ErrorCode> {
-         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-        let verkey = c_str!(verkey);
-        let metadata = c_str!(metadata);
+        let err = Key::_set_metadata(command_handle, wallet_handle, verkey, metadata, cb);
 
-        let err = unsafe {
-            crypto::indy_set_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), metadata.as_ptr(), cb)
-        };
         ResultHandler::empty_timeout(err, receiver, timeout)
     }
 
@@ -128,6 +123,10 @@ impl Key {
     pub fn set_metadata_async<F: 'static>(wallet_handle: IndyHandle, verkey: &str, metadata: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
+        Key::_set_metadata(command_handle, wallet_handle, verkey, metadata, cb)
+    }
+
+    fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, verkey: &str, metadata: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let verkey = c_str!(verkey);
         let metadata = c_str!(metadata);
 
@@ -145,11 +144,7 @@ impl Key {
     pub fn get_metadata(wallet_handle: IndyHandle, verkey: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-        let verkey = c_str!(verkey);
-
-        let err = unsafe {
-            crypto::indy_get_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), cb)
-        };
+        let err = Key::_get_metadata(command_handle, wallet_handle, verkey, cb);
 
         ResultHandler::one(err, receiver)
     }
@@ -164,11 +159,7 @@ impl Key {
     pub fn get_metadata_timeout(wallet_handle: IndyHandle, verkey: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-        let verkey = c_str!(verkey);
-
-        let err = unsafe {
-            crypto::indy_get_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), cb)
-        };
+        let err = Key::_get_metadata(command_handle, wallet_handle, verkey, cb);
 
         ResultHandler::one_timeout(err, receiver, timeout)
     }
@@ -183,6 +174,10 @@ impl Key {
     pub fn get_metadata_async<F: 'static>(wallet_handle: IndyHandle, verkey: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
+        Key::_get_metadata(command_handle, wallet_handle, verkey, cb)
+    }
+
+    fn _get_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, verkey: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let verkey = c_str!(verkey);
 
         unsafe {
@@ -204,13 +199,7 @@ impl Crypto {
     pub fn sign(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-        let signer_vk = c_str!(signer_vk);
-        let err = unsafe {
-            crypto::indy_crypto_sign(command_handle, wallet_handle, signer_vk.as_ptr(),
-                             message.as_ptr() as *const u8,
-                             message.len() as u32,
-                             cb)
-        };
+        let err = Crypto::_sign(command_handle, wallet_handle, signer_vk, message, cb);
 
         ResultHandler::one(err, receiver)
     }
@@ -226,13 +215,7 @@ impl Crypto {
     pub fn sign_timeout(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-        let signer_vk = c_str!(signer_vk);
-        let err = unsafe {
-            crypto::indy_crypto_sign(command_handle, wallet_handle, signer_vk.as_ptr(),
-                             message.as_ptr() as *const u8,
-                             message.len() as u32,
-                             cb)
-        };
+        let err = Crypto::_sign(command_handle, wallet_handle, signer_vk, message, cb);
 
         ResultHandler::one_timeout(err, receiver, timeout)
     }
@@ -248,6 +231,10 @@ impl Crypto {
     pub fn sign_async<F: 'static>(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
 
+        Crypto::_sign(command_handle, wallet_handle, signer_vk, message, cb)
+    }
+
+    fn _sign(command_handle: IndyHandle, wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
         let signer_vk = c_str!(signer_vk);
         unsafe {
             crypto::indy_crypto_sign(command_handle, wallet_handle, signer_vk.as_ptr(),
@@ -268,13 +255,7 @@ impl Crypto {
     pub fn verify(signer_vk: &str, message: &[u8], signature: &[u8]) -> Result<bool, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
-        let signer_vk = c_str!(signer_vk);
-
-        let err = unsafe {
-            crypto::indy_crypto_verify(command_handle, signer_vk.as_ptr(),
-                               message.as_ptr() as *const u8, message.len() as u32,
-                               signature.as_ptr() as *const u8, signature.len() as u32, cb)
-        };
+        let err = Crypto::_verify(command_handle, signer_vk, message, signature, cb);
 
         ResultHandler::one(err, receiver)
     }
@@ -291,13 +272,7 @@ impl Crypto {
     pub fn verify_timeout(signer_vk: &str, message: &[u8], signature: &[u8], timeout: Duration) -> Result<bool, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
-        let signer_vk = c_str!(signer_vk);
-
-        let err = unsafe {
-            crypto::indy_crypto_verify(command_handle, signer_vk.as_ptr(),
-                               message.as_ptr() as *const u8, message.len() as u32,
-                               signature.as_ptr() as *const u8, signature.len() as u32, cb)
-        };
+        let err = Crypto::_verify(command_handle, signer_vk, message, signature, cb);
 
         ResultHandler::one_timeout(err, receiver, timeout)
     }
@@ -314,6 +289,10 @@ impl Crypto {
     pub fn verify_async<F: 'static>(signer_vk: &str, message: &[u8], signature: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, bool) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(Box::new(closure));
 
+        Crypto::_verify(command_handle, signer_vk, message, signature, cb)
+    }
+
+    fn _verify(command_handle: IndyHandle, signer_vk: &str, message: &[u8], signature: &[u8], cb: Option<ResponseBoolCB>) -> ErrorCode {
         let signer_vk = c_str!(signer_vk);
 
         unsafe {
@@ -343,15 +322,8 @@ impl Crypto {
     pub fn auth_crypt(wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-        let sender_vk = c_str!(sender_vk);
-        let recipient_vk = c_str!(recipient_vk);
-        let err = unsafe {
-            crypto::indy_crypto_auth_crypt(command_handle, wallet_handle,
-                                   sender_vk.as_ptr(),
-                                    recipient_vk.as_ptr(),
-                                    message.as_ptr() as *const u8,
-                                    message.len() as u32, cb)
-        };
+        let err = Crypto::_auth_crypt(command_handle, wallet_handle, sender_vk, recipient_vk, message, cb);
+
         ResultHandler::one(err, receiver)
     }
 
@@ -376,15 +348,8 @@ impl Crypto {
     pub fn auth_crypt_timeout(wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-        let sender_vk = c_str!(sender_vk);
-        let recipient_vk = c_str!(recipient_vk);
-        let err = unsafe {
-            crypto::indy_crypto_auth_crypt(command_handle, wallet_handle,
-                                   sender_vk.as_ptr(),
-                                    recipient_vk.as_ptr(),
-                                    message.as_ptr() as *const u8,
-                                    message.len() as u32, cb)
-        };
+        let err = Crypto::_auth_crypt(command_handle, wallet_handle, sender_vk, recipient_vk, message, cb);
+
         ResultHandler::one_timeout(err, receiver, timeout)
     }
 
@@ -409,6 +374,10 @@ impl Crypto {
     pub fn auth_crypt_async<F: 'static>(wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
 
+        Crypto::_auth_crypt(command_handle, wallet_handle, sender_vk, recipient_vk, message, cb)
+    }
+
+    fn _auth_crypt(command_handle: IndyHandle, wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
         let sender_vk = c_str!(sender_vk);
         let recipient_vk = c_str!(recipient_vk);
         unsafe {
@@ -440,14 +409,7 @@ impl Crypto {
     pub fn auth_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Result<(String, Vec<u8>), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_slice();
 
-        let recipient_vk = c_str!(recipient_vk);
-        let err = unsafe {
-            crypto::indy_crypto_auth_decrypt(command_handle,
-                                     wallet_handle,
-                                     recipient_vk.as_ptr(),
-                                     encrypted_message.as_ptr() as *const u8,
-                                     encrypted_message.len() as u32, cb)
-        };
+        let err = Crypto::_auth_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
 
         ResultHandler::two(err, receiver)
     }
@@ -473,14 +435,7 @@ impl Crypto {
     pub fn auth_decrypt_timeout(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], timeout: Duration) -> Result<(String, Vec<u8>), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_slice();
 
-        let recipient_vk = c_str!(recipient_vk);
-        let err = unsafe {
-            crypto::indy_crypto_auth_decrypt(command_handle,
-                                     wallet_handle,
-                                     recipient_vk.as_ptr(),
-                                     encrypted_message.as_ptr() as *const u8,
-                                     encrypted_message.len() as u32, cb)
-        };
+        let err = Crypto::_auth_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
 
         ResultHandler::two_timeout(err, receiver, timeout)
     }
@@ -506,6 +461,10 @@ impl Crypto {
     pub fn auth_decrypt_async<F: 'static>(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, Vec<u8>) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_slice(Box::new(closure));
 
+        Crypto::_auth_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb)
+    }
+
+    fn _auth_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], cb: Option<ResponseStringSliceCB>) -> ErrorCode {
         let recipient_vk = c_str!(recipient_vk);
         unsafe {
             crypto::indy_crypto_auth_decrypt(command_handle,
@@ -535,14 +494,7 @@ impl Crypto {
     pub fn anon_crypt(recipient_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-        let recipient_vk = c_str!(recipient_vk);
-        let err = unsafe {
-            crypto::indy_crypto_anon_crypt(command_handle,
-                                   recipient_vk.as_ptr(),
-                                   message.as_ptr() as *const u8,
-                                    message.len() as u32,
-                                    cb)
-        };
+        let err = Crypto::_anon_crypt(command_handle, recipient_vk, message, cb);
 
         ResultHandler::one(err, receiver)
     }
@@ -566,14 +518,7 @@ impl Crypto {
     pub fn anon_crypt_timeout(recipient_vk: &str, message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-        let recipient_vk = c_str!(recipient_vk);
-        let err = unsafe {
-            crypto::indy_crypto_anon_crypt(command_handle,
-                                   recipient_vk.as_ptr(),
-                                   message.as_ptr() as *const u8,
-                                    message.len() as u32,
-                                    cb)
-        };
+        let err = Crypto::_anon_crypt(command_handle, recipient_vk, message, cb);
 
         ResultHandler::one_timeout(err, receiver, timeout)
     }
@@ -597,6 +542,10 @@ impl Crypto {
     pub fn anon_crypt_async<F: 'static>(recipient_vk: &str, message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
 
+        Crypto::_anon_crypt(command_handle, recipient_vk, message, cb)
+    }
+
+    fn _anon_crypt(command_handle: IndyHandle, recipient_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
         let recipient_vk = c_str!(recipient_vk);
         unsafe {
             crypto::indy_crypto_anon_crypt(command_handle,
@@ -626,14 +575,7 @@ impl Crypto {
     pub fn anon_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-        let recipient_vk = c_str!(recipient_vk);
-        let err = unsafe {
-            crypto::indy_crypto_anon_decrypt(command_handle,
-                                     wallet_handle,
-                                     recipient_vk.as_ptr(),
-                                     encrypted_message.as_ptr() as *const u8,
-                                     encrypted_message.len() as u32, cb)
-        };
+        let err = Crypto::_anon_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
 
         ResultHandler::one(err, receiver)
     }
@@ -657,14 +599,7 @@ impl Crypto {
     pub fn anon_decrypt_timeout(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
-        let recipient_vk = c_str!(recipient_vk);
-        let err = unsafe {
-            crypto::indy_crypto_anon_decrypt(command_handle,
-                                     wallet_handle,
-                                     recipient_vk.as_ptr(),
-                                     encrypted_message.as_ptr() as *const u8,
-                                     encrypted_message.len() as u32, cb)
-        };
+        let err = Crypto::_anon_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
 
         ResultHandler::one_timeout(err, receiver, timeout)
     }
@@ -688,6 +623,10 @@ impl Crypto {
     pub fn anon_decrypt_async<F: 'static>(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
 
+        Crypto::_anon_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb)
+    }
+
+    fn _anon_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
         let recipient_vk = c_str!(recipient_vk);
         unsafe {
             crypto::indy_crypto_anon_decrypt(command_handle,
