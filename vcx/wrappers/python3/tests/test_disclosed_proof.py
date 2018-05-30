@@ -3,6 +3,7 @@ from vcx.error import ErrorCode, VcxError
 from vcx.state import State
 from vcx.api.disclosed_proof import DisclosedProof
 from vcx.api.connection import Connection
+import json
 
 phone_number = '8019119191'
 source_id = '1'
@@ -20,18 +21,15 @@ request = {
     "proof_request_data": {
         "name": "Account Certificate",
         "nonce": "838186471541979035208225",
-        "requested_attrs": {
+        "requested_attributes": {
             "business_2": {
-                "name": "business",
-                "schema_seq_no": 52
+                "name": "business"
             },
             "email_1": {
-                "name": "email",
-                "schema_seq_no": 52
+                "name": "email"
             },
             "name_0": {
-                "name": "name",
-                "schema_seq_no": 52
+                "name": "name"
             }
         },
         "requested_predicates": {},
@@ -57,18 +55,15 @@ proof_json = {
             "nonce": "838186471541979035208225",
             "name": "Account Certificate",
             "version": "0.1",
-            "requested_attrs": {
+            "requested_attributes": {
                 "business_2": {
-                    "name": "business",
-                    "schema_seq_no": 52
+                    "name": "business"
                 },
                 "email_1": {
-                    "name": "email",
-                    "schema_seq_no": 52
+                    "name": "email"
                 },
                 "name_0": {
-                    "name": "name",
-                    "schema_seq_no": 52
+                    "name": "name"
                 }
             },
             "requested_predicates": {}
@@ -100,6 +95,7 @@ async def test_create_disclosed_proof_with_msgid():
     disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
     assert disclosed_proof.source_id == source_id
     assert disclosed_proof.handle > 0
+    assert disclosed_proof.proof_request
     assert await disclosed_proof.get_state() == State.RequestReceived
 
 @pytest.mark.asyncio
@@ -204,8 +200,25 @@ async def test_send_proof_with_bad_connection():
         await disclosed_proof.send_proof(connection)
     assert ErrorCode.InvalidConnectionHandle == e.value.error_code
 
+
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_get_requests():
     connection = await Connection.create(source_id)
     await DisclosedProof.get_requests(connection)
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_get_creds_for_req():
+    disclosed_proof = await DisclosedProof.create(source_id, request)
+    creds = await disclosed_proof.get_creds()
+    assert creds == {"attrs":{"height_1":[{"cred_info":{"referent":"92556f60-d290-4b58-9a43-05c25aac214e","attrs":{"name":"Bob","height":"4'11","sex":"male","age":"111"},"schema_id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4","cred_def_id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:2471","rev_reg_id":None,"cred_rev_id":None},"interval":None}],"zip_2":[{"cred_info":{"referent":"2dea21e2-1404-4f85-966f-d03f403aac71","attrs":{"address2":"101 Wilson Lane","city":"SLC","state":"UT","zip":"87121","address1":"101 Tela Lane"},"schema_id":"2hoqvcwupRTUNkXn6ArYzs:2:Home Address:5.5.5","cred_def_id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:2479","rev_reg_id":None,"cred_rev_id":None},"interval":None}]},"predicates":{}}
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_generate_proof():
+    disclosed_proof = await DisclosedProof.create(source_id, request)
+    # An error would be thrown if generate_proof failed
+    assert await disclosed_proof.generate_proof({}, {}) is None

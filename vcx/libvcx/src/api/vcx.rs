@@ -34,11 +34,12 @@ pub extern fn vcx_init_with_config(command_handle: u32,
 
     if config == "ENABLE_TEST_MODE" {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        settings::set_defaults();
     } else {
         match settings::process_config_string(&config) {
             Err(e) => {
                 println!("Invalid configuration specified: {}", e);
-                return error::INVALID_CONFIGURATION.code_num;
+                return e;
             },
             Ok(_) => (),
         }
@@ -72,6 +73,7 @@ pub extern fn vcx_init (command_handle: u32,
 
         if config_path == "ENABLE_TEST_MODE" {
             settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+            settings::set_defaults();
         } else {
             match settings::process_config_file(&config_path) {
                 Err(e) => {
@@ -92,8 +94,11 @@ pub extern fn vcx_init (command_handle: u32,
 fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u32)) -> u32 {
 
     ::utils::logger::LoggerUtils::init();
+    match ::utils::libindy::payments::init_payments() {
+        Ok(_) => (),
+        Err(x) => return x,
+    };
 
-    settings::set_defaults();
     settings::log_settings();
 
     if wallet::get_wallet_handle() > 0 {
@@ -150,6 +155,14 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
         Err(_) => {},
     };
 
+    ::schema::release_all();
+    ::connection::release_all();
+    ::issuer_credential::release_all();
+    ::credential_def::release_all();
+    ::proof::release_all();
+    ::disclosed_proof::release_all();
+    ::credential::release_all();
+
     if delete {
         match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
             Ok(w) => match wallet::delete_wallet(&w) {
@@ -168,7 +181,7 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
         }
     }
 
-    settings::set_defaults();
+    settings::clear_config();
     info!("vcx_shutdown(delete: {})", delete);
     error::SUCCESS.code_num
 }
@@ -200,52 +213,167 @@ mod tests {
 
     extern "C" fn init_cb(command_handle: u32, err: u32) {
         if err != 0 {panic!("create_cb failed: {}", err)}
-        println!("successfully called init_cb")
     }
 
     #[test]
     fn test_init_with_file() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        settings::tests::remove_file_if_exists(settings::DEFAULT_GENESIS_PATH);
-        settings::tests::create_default_genesis_file();
+        let wallet_name = "test_init_with_file";
+        ::utils::devsetup::setup_dev_env(wallet_name);
+        wallet::close_wallet().unwrap();
+        pool::close().unwrap();
 
         let config_path = "/tmp/test_init.json";
-        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"config1\", \"wallet_name\":\"my_wallet\", \
-        \"agency_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"remote_to_sdk_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
-        \"sdk_to_remote_did\" : \"AB3JM851T4EQmhh8CdagSP\", \"institution_name\" : \"evernym enterprise\",\
-        \"agency_verkey\" : \"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE\", \"remote_to_sdk_verkey\" : \"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE\"}";
+        let content = json!({
+            "pool_name" : "pool1",
+            "config_name":"config1",
+            "wallet_name":"test_init_with_file",
+            "agency_did" : "72x8p4HubxzUK1dwxcc5FU",
+            "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
+            "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
+            "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "institution_name" : "evernym enterprise",
+            "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "genesis_path":"/tmp/pool1.txn",
+            "wallet_key":"<KEY_IS_NOT_SET>"
+        }).to_string();
 
-        settings::write_config_to_file(content, config_path).unwrap();
+        settings::write_config_to_file(&content, config_path).unwrap();
 
         let result = vcx_init(0,CString::new(config_path).unwrap().into_raw(),Some(init_cb));
         assert_eq!(result,0);
         thread::sleep(Duration::from_secs(1));
-        // Leave file around or other concurrent tests will fail
 
-        // cleanup
-        wallet::delete_wallet("my_wallet").unwrap();
-        settings::tests::remove_file_if_exists(settings::DEFAULT_GENESIS_PATH);
+        ::utils::devsetup::cleanup_dev_env(wallet_name);
     }
 
     #[test]
     fn test_init_with_config() {
         let wallet_name = "test_init_with_config";
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        // make sure there's a valid wallet and pool before trying to use them.
         ::utils::devsetup::setup_dev_env(wallet_name);
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
 
-        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"config1\", \"wallet_name\":\"test_init_with_config\", \
-        \"agency_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"remote_to_sdk_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
-        \"sdk_to_remote_did\" : \"AB3JM851T4EQmhh8CdagSP\", \"institution_name\" : \"evernym enterprise\",\
-        \"agency_verkey\" : \"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE\", \"remote_to_sdk_verkey\" : \"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE\"}";
+        let content = json!({
+            "pool_name" : "pool1",
+            "config_name":"config1",
+            "wallet_name":"test_init_with_config",
+            "agency_did" : "72x8p4HubxzUK1dwxcc5FU",
+            "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
+            "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
+            "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "institution_name" : "evernym enterprise",
+            "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "genesis_path":"/tmp/pool1.txn",
+            "wallet_key":"<KEY_IS_NOT_SET>"
+        }).to_string();
 
         let result = vcx_init_with_config(0,CString::new(content).unwrap().into_raw(),Some(init_cb));
         assert_eq!(result,0);
         thread::sleep(Duration::from_secs(1));
+
+        ::utils::devsetup::cleanup_dev_env(wallet_name);
+    }
+
+    #[test]
+    fn test_vcx_init_with_default_values() {
+        let wallet_name = "test_vcx_init_with_default_values";
+        ::utils::devsetup::setup_dev_env(wallet_name);
+        wallet::close_wallet().unwrap();
+        pool::close().unwrap();
+
+        let content = "{}".to_string();
+
+        let result = vcx_init_with_config(0,CString::new(content).unwrap().into_raw(),Some(init_cb));
+        assert_eq!(result,0);
+        thread::sleep(Duration::from_secs(1));
+
+        ::utils::devsetup::cleanup_dev_env(wallet_name);
+    }
+
+    #[test]
+    fn test_vcx_init_called_twice_fails() {
+        let wallet_name = "test_vcx_init_called_twice_fails";
+        ::utils::devsetup::setup_dev_env(wallet_name);
+        wallet::close_wallet().unwrap();
+        pool::close().unwrap();
+
+        let content = "{}";
+
+        let result = vcx_init_with_config(0,CString::new(content).unwrap().into_raw(),Some(init_cb));
+        assert_eq!(result,0);
+        thread::sleep(Duration::from_secs(1));
+
+        // Repeat call
+        let result = vcx_init_with_config(0,CString::new(content).unwrap().into_raw(),Some(init_cb));
+        assert_eq!(result,error::ALREADY_INITIALIZED.code_num);
+        thread::sleep(Duration::from_secs(1));
+
+        ::utils::devsetup::cleanup_dev_env(wallet_name);
+    }
+
+    #[test]
+    fn test_vcx_init_called_twice_passes_after_shutdown() {
+        let wallet_name = "test_vcx_init_called_twice_fails";
+        ::utils::devsetup::setup_dev_env(wallet_name);
+        wallet::close_wallet().unwrap();
+        pool::close().unwrap();
+
+        let content = json!({"wallet_name": wallet_name, "pool_name":"pool232"});
+
+        let result = vcx_init_with_config(0,CString::new(content.to_string()).unwrap().into_raw(),Some(init_cb));
+        assert_eq!(result,0);
+        thread::sleep(Duration::from_secs(1));
+
+        //Assert config values were set correctly
+        assert_eq!(settings::get_config_value("wallet_name").unwrap(), wallet_name.to_string());
+        assert_eq!(settings::get_config_value("pool_name").unwrap(), "pool232".to_string());
+
+        //Verify shutdown was successful
+        vcx_shutdown(true);
+        assert_eq!(settings::get_config_value("wallet_name"), Err(error::INVALID_CONFIGURATION.code_num));
+        assert_eq!(settings::get_config_value("pool_name"), Err(error::INVALID_CONFIGURATION.code_num));
+
+        // Init for the second time works
+        ::utils::devsetup::setup_dev_env(wallet_name);
+        wallet::close_wallet().unwrap();
+        pool::close().unwrap();
+        let result = vcx_init_with_config(0,CString::new(content.to_string()).unwrap().into_raw(),Some(init_cb));
+        assert_eq!(result,0);
+        thread::sleep(Duration::from_secs(1));
+
+        vcx_shutdown(true);
+    }
+
+    #[test]
+    fn test_init_fails_with_open_wallet() {
+        let wallet_name = "test_init_fails_with_open_wallet";
+        ::utils::devsetup::setup_dev_env(wallet_name);
+
+
+        let config_path = "/tmp/test_init.json";
+        let content = json!({
+            "pool_name" : "pool1",
+            "config_name":"config1",
+            "wallet_name":"test_init_fails_with_open_wallet",
+            "agency_did" : "72x8p4HubxzUK1dwxcc5FU",
+            "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
+            "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
+            "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "institution_name" : "evernym enterprise",
+            "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+            "genesis_path":"/tmp/pool1.txn",
+            "wallet_key":"<KEY_IS_NOT_SET>"
+        }).to_string();
+
+        settings::write_config_to_file(&content, config_path).unwrap();
+
+        let result = vcx_init(0,CString::new(config_path).unwrap().into_raw(),Some(init_cb));
+        assert_eq!(result,error::ALREADY_INITIALIZED.code_num);
+        thread::sleep(Duration::from_secs(1));
+        // Leave file around or other concurrent tests will fail
 
         ::utils::devsetup::cleanup_dev_env(wallet_name);
     }
@@ -275,8 +403,30 @@ mod tests {
 
     #[test]
     fn test_shutdown() {
-        ::utils::devsetup::setup_dev_env("test_shutdown");
+        ::utils::devsetup::set_institution_dev_config("test_shutdown");
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        settings::set_config_value(settings::CONFIG_WALLET_KEY,"default");
+        settings::set_config_value(settings::CONFIG_LINK_SECRET_ALIAS, settings::DEFAULT_LINK_SECRET_ALIAS);
+
+        let data = r#"["name","male"]"#;
+        let connection = ::connection::build_connection("h1").unwrap();
+        let issuer_credential = ::issuer_credential::issuer_credential_create("cred_id".to_string(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
+        let proof = ::proof::create_proof("1".to_string(),"[]".to_string(), "[]".to_string(),"Optional".to_owned()).unwrap();
+        let credentialdef = ::credential_def::create_new_credentialdef("SID".to_string(),"NAME".to_string(),"4fUDR9R7fjwELRvH9JT6HH".to_string(), "id".to_string(), "tag".to_string(),"{}".to_string() ).unwrap();
+        let schema = ::schema::create_new_schema("5",  "VsKV7grR1BUE29mG2Fm2kX".to_string(),"name".to_string(), "0.1".to_string(), data.to_string()).unwrap();
+        let disclosed_proof = ::disclosed_proof::create_proof("id".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
+        let credential = ::credential::credential_create_with_offer("name", ::utils::constants::CREDENTIAL_OFFER_JSON).unwrap();
+
         vcx_shutdown(true);
+        assert_eq!(::connection::release(connection),Err(::error::connection::ConnectionError::CommonError(error::INVALID_CONNECTION_HANDLE.code_num)));
+        assert_eq!(::issuer_credential::release(issuer_credential),Err(::error::issuer_cred::IssuerCredError::InvalidHandle()));
+        assert_eq!(::schema::release(schema).err(),Some(::error::schema::SchemaError::InvalidHandle()));
+        assert_eq!(::proof::release(proof).err(),Some(::error::proof::ProofError::InvalidHandle()));
+        assert_eq!(::credential_def::release(credentialdef),Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num));
+        assert_eq!(::credential::release(credential), Err(::error::credential::CredentialError::CommonError(error::INVALID_CREDENTIAL_HANDLE.code_num)));
+        assert_eq!(::disclosed_proof::release(disclosed_proof), Result::Err(error::INVALID_DISCLOSED_PROOF_HANDLE.code_num));
+        assert_eq!(wallet::get_wallet_handle(), 0);
+
         ::utils::devsetup::setup_dev_env("test_shutdown");
         vcx_shutdown(true);
     }

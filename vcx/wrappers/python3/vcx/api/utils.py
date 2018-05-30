@@ -34,3 +34,16 @@ async def vcx_agent_update_info(config: str) -> None:
 
     logger.debug("vcx_agent_update_info completed")
     return result
+
+async def vcx_ledger_get_fees() -> str:
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_ledger_get_fees, "cb"):
+        logger.debug("vcx_ledger_get_fees: Creating callback")
+        vcx_ledger_get_fees.cb = create_cb(CFUNCTYPE(None, c_uint32))
+
+    result = await do_call('vcx_ledger_get_fees',
+                           vcx_ledger_get_fees.cb)
+
+    logger.debug("vcx_ledger_get_fees completed")
+    return result

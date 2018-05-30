@@ -55,6 +55,29 @@ export function getVersion (): string {
   return rustAPI().vcx_version()
 }
 
+export async function getLedgerFees (): Promise<string> {
+  try {
+    return await createFFICallbackPromise<string>(
+      (resolve, reject, cb) => {
+        const rc = rustAPI().vcx_ledger_get_fees(0, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback('void', ['uint32','uint32','string'], (xhandle, err, fees) => {
+        if (err) {
+          reject(err)
+          return
+        } else {
+          resolve(fees)
+        }
+      })
+    )
+  } catch (err) {
+    throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_ledger_get_fees')
+  }
+}
+
 export function shutdownVcx (deleteWallet: boolean): number {
   return rustAPI().vcx_shutdown(deleteWallet)
 }

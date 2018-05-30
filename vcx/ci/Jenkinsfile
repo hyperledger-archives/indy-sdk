@@ -5,7 +5,7 @@ def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
-def build(name, file, context='.', customParams = '') {
+def build(name, file, context='.', customParams = '--no-cache') {
     return docker.build("$name", "${customParams} --build-arg uid=${getUserUid()} -f $file $context")
 }
 

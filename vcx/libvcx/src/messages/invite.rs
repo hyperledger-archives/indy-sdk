@@ -237,7 +237,7 @@ impl SendInvite{
 
     pub fn generate_signature(&mut self) -> Result<u32, u32> {
         let signature = format!("{}{}", self.payload.msg_detail_payload.key_proof.agent_did, self.payload.msg_detail_payload.key_proof.agent_delegated_key);
-        let signature = crypto::sign(wallet::get_wallet_handle(), &self.to_did, signature.as_bytes())?;
+        let signature = crypto::sign(wallet::get_wallet_handle(), &self.to_vk, signature.as_bytes())?;
         let signature = base64::encode(&signature);
         self.payload.msg_detail_payload.key_proof.signature = signature.to_string();
         Ok(error::SUCCESS.code_num)
@@ -346,7 +346,7 @@ impl AcceptInvite{
 
     pub fn generate_signature(&mut self) -> Result<u32, u32> {
         let signature = format!("{}{}", self.payload.msg_detail_payload.key_proof.agent_did, self.payload.msg_detail_payload.key_proof.agent_delegated_key);
-        let signature = crypto::sign(wallet::get_wallet_handle(), &self.to_did, signature.as_bytes())?;
+        let signature = crypto::sign(wallet::get_wallet_handle(), &self.to_vk, signature.as_bytes())?;
         let signature = base64::encode(&signature);
         self.payload.msg_detail_payload.key_proof.signature = signature.to_string();
         Ok(error::SUCCESS.code_num)

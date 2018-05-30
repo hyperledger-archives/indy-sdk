@@ -9,11 +9,7 @@ from vcx.api.connection import Connection
 source_id = '123'
 name = 'proof name'
 phone_number = '8019119191'
-requested_attrs = [{'name': 'a', 'issuer_did': '8XFh8yBzrpJQmNyZzgoTqB', 'schema_seq_no': 1},
-                   {'name': 'b'},
-                   {'name': 'c', 'issuer_did': '77Fh8yBzrpJQmNyZzgoTqB'}]
-proof_msg = '{"version":"0.1","to_did":"BnRXf8yDMUwGyZVDkSENeq","from_did":"GxtnGN6ypZYgEqcftSQFnC","proof_request_id":"cCanHnpFAD","proofs":{"claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"state":"96473275571522321025213415717206189191162"},"a_prime":"921....546","e":"158....756","v":"114....069","m":{"address2":"140....691","city":"209....294","address1":"111...738","zip":"149....066"},"m1":"777....518","m2":"515....229"},"ge_proofs":[]},"non_revoc_proof":null},"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH"}},"aggregated_proof":{"c_hash":"25105671496406009212798488318112715144459298495509265715919744143493847046467","c_list":[[72,245,38,"....",46,195,18]]},"requested_proof":{"revealed_attrs":{"attr_key_id":["claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b","UT","96473275571522321025213415717206189191162"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{}}}'
-
+requested_attrs = [{"name": "age", "restrictions": [{"schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766" } ] }, { "name":"name", "restrictions": [ { "schema_id": "6XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"Faber Student Info", "schema_version":"1.0", "schema_issuer_did":"6XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"8XFh8yBzrpJQmNyZzgoTqB", "cred_def_id": "8XFh8yBzrpJQmNyZzgoTqB:3:CL:1766" }, { "schema_id": "5XFh8yBzrpJQmNyZzgoTqB:2:schema_name:0.0.11", "schema_name":"BYU Student Info", "schema_version":"1.0", "schema_issuer_did":"5XFh8yBzrpJQmNyZzgoTqB", "issuer_did":"66Fh8yBzrpJQmNyZzgoTqB", "cred_def_id": "66Fh8yBzrpJQmNyZzgoTqB:3:CL:1766"}]}]
 
 @pytest.mark.asyncio
 async def test_create_proof_has_libindy_error_with_no_init():
@@ -156,15 +152,12 @@ async def test_get_proof_with_invalid_proof():
     await connection.connect(phone_number)
     proof = await Proof.create(source_id, name, requested_attrs)
     data = await proof.serialize()
-    data['proof'] = json.loads(proof_msg)
+    data['proof'] = {'version': '1.0', 'to_did': None, 'from_did': None, 'proof_request_id': None, "libindy_proof": "{\"proof_data\":123}"}
     data['state'] = State.Accepted
     data['proof_state'] = ProofState.Invalid
     proof2 = await Proof.deserialize(data)
     await proof2.update_state()
     proof_data = await proof2.get_proof(connection)
+    print(proof_data)
     assert proof2.proof_state == ProofState.Invalid
-    attrs = [{"schema_seq_no": 15,
-              "issuer_did": "4fUDR9R7fjwELRvH9JT6HH",
-              "credential_uuid": "claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b",
-              "attr_info": {"name": "state", "value": "UT", "type": "revealed"}}]
-    assert proof_data[0] == attrs[0]
+    assert proof_data == {"proof_data": 123}

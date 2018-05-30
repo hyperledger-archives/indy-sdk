@@ -13,8 +13,10 @@ path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "dylib"]
 
 [features]
-# no features by default
-default = []
+default = ["no_payments", "pool_tests"]
+pool_tests = []
+no_payments = []
+nullpay = []
 
 # turn on release versioning
 ci = []
@@ -29,8 +31,8 @@ libc = "0.2.21"
 rand = "0.3"
 serde = "1.0"
 serde_json = "1.0"
+json = "*"
 serde_derive = "1.0"
-config = "0.6"
 url = "1.5.1"
 reqwest = "0.8.5"
 rust-base58 = "0.0.4"
@@ -39,11 +41,14 @@ rmp = "0.8"
 rmp-serde = "0.13.7"
 base64 = "0.8.0"
 openssl = "0.10"
-rusqlite = { version = "0.13.0", features=["bundled"] }
+#rusqlite = { version = "0.13.0", features=["bundled"] }
+rusqlite = "0.13.0"
 num-traits = "0.2.0"
+rust-indy-sdk = {git = "https://github.com/mikelodder7/rust-indy-sdk.git", rev = "a872b13b52cbecaa24a9b1ca1019592b228e79a7"}
 
 [build-dependencies]
 serde = "1.0"
+json = "*"
 toml = "0.4"
 serde_json = "1.0"
 serde_derive = "1.0"

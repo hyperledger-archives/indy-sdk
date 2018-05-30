@@ -171,6 +171,45 @@ pub extern fn vcx_agent_update_info(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Get ledger fees from the sovrin network
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// cb: Callback that provides the fee structure for the sovrin network
+///
+/// #Returns
+/// Error code as a u32
+
+#[no_mangle]
+pub extern fn vcx_ledger_get_fees(command_handle: u32,
+                                  cb: Option<extern fn(xcommand_handle: u32, err: u32, fees: *const c_char)>) -> u32 {
+
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+    info!("vcx_ledger_get_fees(command_handle: {})",
+          command_handle);
+
+    thread::spawn(move|| {
+        match ::utils::libindy::payments::get_ledger_fees() {
+            Ok(x) => {
+                info!("vcx_ledger_get_fees_cb(command_handle: {}, rc: {}, fees: {})",
+                      command_handle, error::error_string(0), x);
+
+                let msg = CStringUtils::string_to_cstring(x);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            },
+            Err(e) => {
+                warn!("vcx_ledget_get_fees_cb(command_handle: {}, rc: {}, fees: {})",
+                      command_handle, error_string(e), "null");
+
+                cb(command_handle, e, ptr::null_mut());
+            },
+        };
+    });
+
+    error::SUCCESS.code_num
+}
+
 #[no_mangle]
 pub extern fn vcx_set_next_agency_response(message_index: u32) {
     let message = match message_index {
@@ -209,10 +248,10 @@ mod tests {
         assert!(result.len() > 0);
     }
 
-    extern "C" fn create_agent_cb(command_handle: u32, err: u32, config: *const c_char) {
-        if err != 0 {panic!("create_agent_cb failed")}
+    extern "C" fn generic_cb(command_handle: u32, err: u32, config: *const c_char) {
+        if err != 0 {panic!("generic_cb failed")}
         check_useful_c_str!(config, ());
-        assert!(config.len() > 20);
+        println!("successfully called generic_cb: {}", config);
     }
 
     #[test]
@@ -223,7 +262,7 @@ mod tests {
         let json_string = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":null}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
 
-        let result = vcx_agent_provision_async(0, c_json, Some(create_agent_cb));
+        let result = vcx_agent_provision_async(0, c_json, Some(generic_cb));
         assert_eq!(0, result);
         thread::sleep(Duration::from_secs(1));
     }
@@ -237,7 +276,7 @@ mod tests {
         let json_string = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":null}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
 
-        let result = vcx_agent_provision_async(0, c_json, Some(create_agent_cb));
+        let result = vcx_agent_provision_async(0, c_json, Some(generic_cb));
 
         thread::sleep(Duration::from_secs(1));
     }
@@ -271,5 +310,15 @@ mod tests {
 
         let result = vcx_agent_update_info(0, c_json, Some(update_cb));
         assert_eq!(result,error::INVALID_OPTION.code_num);
+    }
+
+    #[test]
+    fn test_get_ledger_fees() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+
+        let result = vcx_ledger_get_fees(0, Some(generic_cb));
+        assert_eq!(result,0);
+        thread::sleep(Duration::from_secs(1));
     }
 }

@@ -19,8 +19,6 @@ use error::ToErrorCode;
 ///
 /// req: proof request received via "vcx_get_proof_requests"
 ///
-/// # Example proof_request {"@topic":{"mid":9,"tid":1},"@type":{"name":"PROOF_REQUEST","version":"1.0"},"msg_ref_id":"ymy5nth","proof_request_data":{"name":"Account Certificate","nonce":"838186471541979035208225","requested_attrs":{"business_2":{"name":"business","schema_seq_no":52},"email_1":{"name":"email","schema_seq_no":52},"name_0":{"name":"name","schema_seq_no":52}},"requested_predicates":{},"version":"0.1"}}
-///
 /// cb: Callback that provides proof handle or error status
 ///
 /// #Returns
@@ -70,7 +68,7 @@ pub extern fn vcx_disclosed_proof_create_with_request(command_handle: u32,
 ///
 /// msg_id: msg_id that contains the proof request
 ///
-/// cb: Callback that provides proof handle or error status
+/// cb: Callback that provides proof handle and proof request or error status
 ///
 /// #Returns
 /// Error code as a u32
@@ -81,7 +79,7 @@ pub extern fn vcx_disclosed_proof_create_with_msgid(command_handle: u32,
                                                     source_id: *const c_char,
                                                     connection_handle: u32,
                                                     msg_id: *const c_char,
-                                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, credential_handle: u32)>) -> u32 {
+                                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, proof_handle: u32, proof_req: *const c_char)>) -> u32 {
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
@@ -94,20 +92,22 @@ pub extern fn vcx_disclosed_proof_create_with_msgid(command_handle: u32,
 
         match disclosed_proof::get_proof_request(connection_handle, &msg_id) {
             Ok(request) => {
-                match disclosed_proof::create_proof(source_id, request) {
+                match disclosed_proof::create_proof(source_id, request.clone()) {
                     Ok(handle) => {
-                        info!("vcx_disclosed_proof_create_with_msgid_cb(command_handle: {}, rc: {}, handle: {})",
-                              command_handle, error_string(0), handle);
-                        cb(command_handle, error::SUCCESS.code_num, handle)
+                        info!("vcx_disclosed_proof_create_with_msgid_cb(command_handle: {}, rc: {}, handle: {}, proof_req: {})",
+                              command_handle, error_string(0), handle, request);
+                        let msg = CStringUtils::string_to_cstring(request);
+                        cb(command_handle, error::SUCCESS.code_num, handle, msg.as_ptr())
                     },
                     Err(e) => {
-                        warn!("vcx_disclosed_proof_create_with_msgid_cb(command_handle: {}, rc: {}, handle: {})",
-                              command_handle, e.to_string(), 0);
-                        cb(command_handle, e.to_error_code(), 0);
+                        warn!("vcx_disclosed_proof_create_with_msgid_cb(command_handle: {}, rc: {}, handle: {}, proof_req: {})",
+                              command_handle, e.to_string(), 0, request);
+                        let msg = CStringUtils::string_to_cstring(request);
+                        cb(command_handle, e.to_error_code(), 0, msg.as_ptr());
                     },
                 };
             },
-            Err(e) => cb(command_handle, e.to_error_code(), 0),
+            Err(e) => cb(command_handle, e.to_error_code(), 0, ptr::null()),
         };
     });
 
@@ -364,6 +364,107 @@ pub extern fn vcx_disclosed_proof_deserialize(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Takes the disclosed proof object and returns a json string of all credentials matching associated proof request from wallet
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// handle: Proof handle that was provided during creation. Used to identify the disclosed proof object
+///
+/// cb: Callback that provides json string of the credentials in wallet associated with proof request
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_disclosed_proof_retrieve_credentials(command_handle: u32,
+                                                       proof_handle: u32,
+                                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, data: *const c_char)>) -> u32 {
+
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    if !disclosed_proof::is_valid_handle(proof_handle) {
+        return error::INVALID_DISCLOSED_PROOF_HANDLE.code_num;
+    }
+
+    let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
+    info!("vcx_disclosed_proof_retrieve_credentials(command_handle: {}, proof_handle: {}), source_id: {:?}",
+          command_handle, proof_handle, source_id);
+
+    thread::spawn(move|| {
+        match disclosed_proof::retrieve_credentials(proof_handle) {
+            Ok(x) => {
+                info!("vcx_disclosed_proof_retrieve_credentials(command_handle: {}, rc: {}, data: {}), source_id: {:?}",
+                      command_handle, error_string(0), x, source_id);
+                let msg = CStringUtils::string_to_cstring(x);
+                cb(command_handle, error::SUCCESS.code_num,msg.as_ptr());
+            },
+            Err(x) => {
+                error!("vcx_disclosed_proof_retrieve_credentials(command_handle: {}, rc: {}, data: {}), source_id: {:?}",
+                       command_handle, error_string(x.to_error_code()), 0, source_id);
+                cb(command_handle,x.to_error_code(),ptr::null_mut());
+            },
+        };
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Takes the disclosed proof object and generates a proof from the selected credentials and self attested attributes
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+///
+/// handle: Proof handle that was provided during creation. Used to identify the disclosed proof object
+///
+/// selected_credentials: a json string with a credential for each proof request attribute.
+/// List of possible credentials for each attribute is returned from vcx_disclosed_proof_retrieve_credentials
+/// # Examples selected_credential -> "{"req_attr_0":cred_info}" Where cred_info is returned from retrieve credentials
+///
+/// self_attested_attrs: a json string with attributes self attested by user
+/// # Examples self_attested_attrs -> "{"self_attested_attr_0":"attested_val"}"
+///
+/// cb: Callback that returns error status
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_disclosed_proof_generate_proof(command_handle: u32,
+                                                 proof_handle: u32,
+                                                 selected_credentials: *const c_char,
+                                                 self_attested_attrs: *const c_char,
+                                                 cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+
+    check_useful_c_str!(selected_credentials, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(self_attested_attrs, error::INVALID_OPTION.code_num);
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    if !disclosed_proof::is_valid_handle(proof_handle) {
+        return error::INVALID_DISCLOSED_PROOF_HANDLE.code_num;
+    }
+
+    let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
+    info!("vcx_disclosed_proof_generate_proof(command_handle: {}, proof_handle: {}, selected_credentials: {}, self_attested_attrs: {}), source_id: {:?}",
+          command_handle, proof_handle, selected_credentials, self_attested_attrs, source_id);
+
+    thread::spawn(move|| {
+        match disclosed_proof::generate_proof(proof_handle, selected_credentials, self_attested_attrs) {
+            Ok(_) => {
+                info!("vcx_disclosed_proof_generate_proof(command_handle: {}, rc: {}), source_id: {:?}",
+                      command_handle, error::SUCCESS.code_num, source_id);
+                cb(command_handle, error::SUCCESS.code_num);
+            },
+            Err(x) => {
+                error!("vcx_disclosed_proof_generate_proof(command_handle: {}, rc: {}), source_id: {:?}",
+                       command_handle, error_string(x.to_error_code()), source_id);
+                cb(command_handle,x.to_error_code());
+            },
+        };
+    });
+
+    error::SUCCESS.code_num
+}
+
 
 /// Releases the disclosed proof object by de-allocating memory
 ///
@@ -401,6 +502,49 @@ mod tests {
         assert_eq!(err, 0);
         assert!(proof_handle > 0);
         println!("successfully called create_cb")
+    }
+
+    extern "C" fn create_with_id_cb(command_handle: u32, err: u32, proof_handle: u32, req: *const c_char) {
+        assert_eq!(err, 0);
+        assert!(proof_handle > 0);
+        check_useful_c_str!(req, ());
+        println!("successfully called create_cb")
+    }
+
+    extern "C" fn create_and_retrieve_cb(command_handle: u32, err: u32, proof_handle: u32) {
+        assert_eq!(err, 0);
+        assert!(proof_handle > 0);
+        assert_eq!(vcx_disclosed_proof_retrieve_credentials(0, proof_handle, Some(retrieve_cb)),
+                   error::SUCCESS.code_num);
+        thread::sleep(Duration::from_millis(200));
+    }
+
+    extern "C" fn retrieve_cb(handle: u32, err: u32, credentials: *const c_char) {
+        assert_eq!(err, 0);
+        if credentials.is_null() {
+            panic!("credentials is null");
+        }
+        check_useful_c_str!(credentials, ());
+        println!("successfully called retrieve_cb: {}", credentials);
+    }
+
+    extern "C" fn create_and_generate_cb(command_handle: u32, err: u32, proof_handle: u32) {
+        assert_eq!(err, 0);
+        assert!(proof_handle > 0);
+
+        assert_eq!(vcx_disclosed_proof_generate_proof(0,
+                                                      proof_handle,
+                                                      CString::new("{}").unwrap().into_raw(),
+                                                      CString::new("{}").unwrap().into_raw(),
+                                                      Some(generate_cb)),
+                   error::SUCCESS.code_num);
+        thread::sleep(Duration::from_millis(200));
+    }
+
+    extern "C" fn generate_cb(command_handle: u32, err: u32) {
+        assert_eq!(err, 0);
+        println!("successfully called generate_cb");
+
     }
 
     extern "C" fn bad_create_cb(command_handle: u32, err: u32, proof_handle: u32) {
@@ -451,7 +595,7 @@ mod tests {
                                                          CString::new("test_create_with_msgid").unwrap().into_raw(),
                                                          cxn,
                                                          CString::new("123").unwrap().into_raw(),
-                                                         Some(create_cb)), error::SUCCESS.code_num);
+                                                         Some(create_with_id_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 
@@ -543,5 +687,29 @@ mod tests {
         let rc = vcx_disclosed_proof_get_state(0,handle,Some(get_state_cb));
         assert_eq!(rc, error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(300));
+    }
+
+    #[test]
+    fn test_vcx_disclosed_proof_retrieve_credentials() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+
+        assert_eq!(vcx_disclosed_proof_create_with_request(0,
+                                                           CString::new("test_create").unwrap().into_raw(),
+                                                           CString::new(::utils::constants::PROOF_REQUEST_JSON).unwrap().into_raw(),
+                                                           Some(create_and_retrieve_cb)), error::SUCCESS.code_num);
+        thread::sleep(Duration::from_millis(200));
+    }
+
+    #[test]
+    fn test_vcx_disclosed_proof_generate_proof() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+
+        assert_eq!(vcx_disclosed_proof_create_with_request(0,
+                                                           CString::new("test_create").unwrap().into_raw(),
+                                                           CString::new(::utils::constants::PROOF_REQUEST_JSON).unwrap().into_raw(),
+                                                           Some(create_and_generate_cb)), error::SUCCESS.code_num);
+        thread::sleep(Duration::from_millis(200));
     }
 }

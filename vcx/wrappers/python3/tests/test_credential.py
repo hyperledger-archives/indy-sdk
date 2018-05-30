@@ -8,41 +8,77 @@ phone_number = '8019119191'
 source_id = '1'
 msg_id = '1'
 offer = {
-    'msg_type': 'CLAIM_OFFER',
-    'version': '0.1',
-    'to_did': 'LtMgSjtFcyPwenK9SHCyb8',
-    'from_did': 'LtMgSjtFcyPwenK9SHCyb8',
-    'claim': {
-      'account_num': [
-        '8BEaoLf8TBmK4BUyX8WWnA'
+   "msg_type": "CLAIM_OFFER",
+   "version": "0.1",
+   "to_did": "8XFh8yBzrpJQmNyZzgoTqB",
+   "from_did": "8XFh8yBzrpJQmNyZzgoTqB",
+   "libindy_offer": '{}',
+   "credential_attrs": {
+      "address1": [
+         "101 Tela Lane"
       ],
-      'name_on_account': [
-        'Alice'
+      "address2": [
+         "101 Wilson Lane"
+      ],
+      "city": [
+         "SLC"
+      ],
+      "state": [
+         "UT"
+      ],
+      "zip": [
+         "87121"
       ]
-    },
-    'schema_seq_no': 48,
-    'issuer_did': 'Pd4fnFtRBcMKRVC2go5w3j',
-    'claim_name': 'Account Certificate',
-    'claim_id': '3675417066',
-    'msg_ref_id':  None
-  }
+   },
+   "schema_seq_no": 1487,
+   "cred_def_id": "id1",
+   "claim_name": "Credential",
+   "claim_id": "defaultCredentialId",
+   "msg_ref_id": None
+}
 
 credential_json = {
     'source_id': 'wrapper_tests',
     'state': 3,
     'credential_name': None,
-    'credential_request': None,
+    'credential_request': {
+        "libindy_cred_req": "",
+        "libindy_cred_req_meta": "",
+        "cred_def_id": "id",
+        "tid": "",
+        "to_did": "",
+        "from_did": "",
+        "mid": "",
+        "version": "",
+    },
     'credential_offer': {
-        'msg_type': 'CLAIM_OFFER',
-        'version': '0.1',
-        'to_did': 'LtMgSjtFcyPwenK9SHCyb8',
-        'from_did': 'LtMgSjtFcyPwenK9SHCyb8',
-        'claim': {'account_num': ['8BEaoLf8TBmK4BUyX8WWnA'], 'name_on_account': ['Alice']},
-        'schema_seq_no': 48,
-        'issuer_did': 'Pd4fnFtRBcMKRVC2go5w3j',
-        'claim_name': 'Account Certificate',
-        'claim_id': '3675417066',
-        'msg_ref_id': 'ymy5nth'
+       "msg_type": "CLAIM_OFFER",
+       "version": "0.1",
+       "to_did": "8XFh8yBzrpJQmNyZzgoTqB",
+       "from_did": "8XFh8yBzrpJQmNyZzgoTqB",
+       "libindy_offer": '{}',
+       "credential_attrs": {
+          "address1": [
+             "101 Tela Lane"
+          ],
+          "address2": [
+             "101 Wilson Lane"
+          ],
+          "city": [
+             "SLC"
+          ],
+          "state": [
+             "UT"
+          ],
+          "zip": [
+             "87121"
+          ]
+       },
+       "schema_seq_no": 1487,
+       "cred_def_id": "id1",
+       "claim_name": "Credential",
+       "claim_id": "defaultCredentialId",
+       "msg_ref_id": "id"
     },
     'link_secret_alias': 'main',
     'msg_uid': None,
@@ -51,6 +87,8 @@ credential_json = {
     'my_did': None,
     'my_vk': None,
     'their_did': None,
+    'cred_id': None,
+    'credential': None,
     'their_vk': None
   }
 
@@ -63,6 +101,7 @@ async def test_create_credential():
     assert credential.handle > 0
     assert await credential.get_state() == State.RequestReceived
 
+
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_create_credential_with_msgid():
@@ -72,7 +111,9 @@ async def test_create_credential_with_msgid():
     credential = await Credential.create_with_msgid(source_id, connection, msg_id)
     assert credential.source_id == source_id
     assert credential.handle > 0
+    assert credential.cred_offer
     assert await credential.get_state() == State.RequestReceived
+
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -162,8 +203,9 @@ async def test_credential_release():
 async def test_send_request():
     connection = await Connection.create(source_id)
     await connection.connect(phone_number)
+    cred_with_msg_id = credential_json
     credential = await Credential.deserialize(credential_json)
-    await credential.send_request(connection)
+    await credential.send_request(connection, 0)
     assert await credential.update_state() == State.OfferSent
 
 
@@ -174,8 +216,9 @@ async def test_send_request_with_invalid_state():
         connection = await Connection.create(source_id)
         await connection.connect(phone_number)
         credential = await Credential.create(source_id, offer)
-        await credential.send_request(connection)
+        await credential.send_request(connection, 0)
     assert ErrorCode.CreateCredentialFailed == e.value.error_code
+
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -183,7 +226,7 @@ async def test_send_request_with_bad_connection():
     with pytest.raises(VcxError) as e:
         connection = Connection(source_id)
         credential = await Credential.create(source_id, offer)
-        await credential.send_request(connection)
+        await credential.send_request(connection, 0)
     assert ErrorCode.InvalidConnectionHandle == e.value.error_code
 
 @pytest.mark.asyncio

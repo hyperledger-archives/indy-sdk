@@ -17,11 +17,12 @@ import { VCXBaseWithState } from './VCXBaseWithState'
  */
 export interface ICredentialConfig {
   sourceId: string,
-  schemaNum: number,
+  credDefId: string,
   attr: {
     [ index: string ]: string
   },
   credentialName: string,
+  price: number,
 }
 
 export interface ICredentialVCXAttributes {
@@ -29,9 +30,10 @@ export interface ICredentialVCXAttributes {
 }
 
 export interface IcredentialParams {
-  schemaNum: number,
+  credDefId: string,
   credentialName: string,
-  attr: ICredentialVCXAttributes
+  attr: ICredentialVCXAttributes,
+  price: number
 }
 
 /**
@@ -48,6 +50,8 @@ export interface ICredentialData {
   issuer_did: string
   state: StateType
   msg_uid: string
+  cred_def_id: string
+  price: number
 }
 
 /**
@@ -59,16 +63,18 @@ export class IssuerCredential extends VCXBaseWithState {
   protected _getStFn = rustAPI().vcx_issuer_credential_get_state
   protected _serializeFn = rustAPI().vcx_issuer_credential_serialize
   protected _deserializeFn = rustAPI().vcx_issuer_credential_deserialize
-  private _schemaNum: number
+  private _credDefId: string
   private _issuerDID: string
   private _credentialName: string
   private _attr: ICredentialVCXAttributes
+  private _price: number
 
-  constructor (sourceId, { schemaNum, credentialName, attr }: IcredentialParams) {
+  constructor (sourceId, { credDefId, credentialName, attr, price }: IcredentialParams) {
     super(sourceId)
-    this._schemaNum = schemaNum
+    this._credDefId = credDefId
     this._credentialName = credentialName
     this._attr = attr
+    this._price = price
   }
 
   /**
@@ -79,13 +85,14 @@ export class IssuerCredential extends VCXBaseWithState {
    * @function create
    * @param {ICredentialConfig} config
    * @example <caption>Example of ICredentialConfig</caption>
-   * { sourceId: "12", schemaNum: 1, issuerDid: "did", attr: {key: "value"}, credentialName: "name of credential"}
+   * { sourceId: "12", credDefId: "credDefId", attr: {key: "value"}, credentialName: "name", price: 0}
    * @returns {Promise<IssuerCredential>} An Issuer credential Object
    */
-  static async create ({ attr, sourceId, schemaNum, credentialName }: ICredentialConfig): Promise<IssuerCredential> {
+  static async create ({ attr, sourceId, credDefId,
+                         credentialName, price }: ICredentialConfig): Promise<IssuerCredential> {
     const attrsVCX: ICredentialVCXAttributes = Object.keys(attr)
       .reduce((accum, attrKey) => ({ ...accum, [attrKey]: [attr[attrKey]] }), {})
-    const credential = new IssuerCredential(sourceId, { schemaNum, credentialName, attr: attrsVCX })
+    const credential = new IssuerCredential(sourceId, { credDefId, credentialName, attr: attrsVCX, price })
     const attrsStringified = JSON.stringify(attrsVCX)
     const commandHandle = 0
     const issuerDid = null
@@ -93,10 +100,11 @@ export class IssuerCredential extends VCXBaseWithState {
       await credential._create((cb) => rustAPI().vcx_issuer_create_credential(
         commandHandle,
         sourceId,
-        schemaNum,
+        credDefId,
         issuerDid,
         attrsStringified,
         credentialName,
+        price,
         cb
         )
       )
@@ -109,15 +117,11 @@ export class IssuerCredential extends VCXBaseWithState {
 /**
  * @memberof IssuerCredential
  * @description Builds an Issuer credential object with defined attributes.
- * Attributes are often provided by a previous call to the serialize function.
+ * Attributes are provided by a previous call to the serialize function.
  * @static
  * @async
  * @function deserialize
- * @param {ICredentialData} credentialData - contains the information that will be used to build an IssuerCredential
- *  object
- * @example <caption>Example of credentialData.</caption>
- * { source_id: "12", handle: 22, schema_seq_no: 1, credential_attributes: "{key: [\"value\"]}",
- * issuer_did: "did", state: 1 }
+ * @param {ICredentialData} credentialData - Data from the serialize api. Used to create IssuerCredential Object
  * @returns {Promise<IssuerCredential>} An Issuer credential Object
  */
   static async deserialize (credentialData: ICredentialData) {
@@ -125,8 +129,9 @@ export class IssuerCredential extends VCXBaseWithState {
       const attr = JSON.parse(credentialData.credential_attributes)
       const params: IcredentialParams = {
         attr,
+        credDefId: credentialData.cred_def_id,
         credentialName: credentialData.credential_name,
-        schemaNum: credentialData.schema_seq_no
+        price: credentialData.price
       }
       const credential = await super._deserialize<IssuerCredential, IcredentialParams>(IssuerCredential,
          credentialData,
@@ -253,8 +258,8 @@ export class IssuerCredential extends VCXBaseWithState {
     return this._issuerDID
   }
 
-  get schemaNum () {
-    return this._schemaNum
+  get credDefId () {
+    return this._credDefId
   }
 
   get attr () {

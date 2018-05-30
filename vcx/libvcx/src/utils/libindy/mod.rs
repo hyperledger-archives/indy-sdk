@@ -9,6 +9,8 @@ pub mod return_types;
 pub mod return_types_u32;
 pub mod pool;
 pub mod crypto;
+pub mod payments;
+
 mod error_codes;
 
 extern crate libc;
@@ -86,20 +88,14 @@ fn check_str(str_opt: Option<String>) -> Result<String, u32>{
 pub fn init_pool_and_wallet() -> Result<(), u32>  {
     if settings::test_indy_mode_enabled() {return Ok (()); }
 
-    let pool_name = match settings::get_config_value(settings::CONFIG_POOL_NAME) {
-        Err(x) => return Err(error::INVALID_CONFIGURATION.code_num),
-        Ok(v) => v,
-    };
+    let pool_name = settings::get_config_value(settings::CONFIG_POOL_NAME)
+        .unwrap_or(settings::DEFAULT_POOL_NAME.to_string());
 
-    let wallet_name = match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
-        Err(x) => return Err(error::INVALID_CONFIGURATION.code_num),
-        Ok(v) => v,
-    };
+    let wallet_name = settings::get_config_value(settings::CONFIG_WALLET_NAME)
+        .unwrap_or(settings::DEFAULT_WALLET_NAME.to_string());
 
-    let path: String = match settings::get_config_value(settings::CONFIG_GENESIS_PATH) {
-        Err(e) => return Err(error::INVALID_CONFIGURATION.code_num),
-        Ok(p) => p,
-    };
+    let path: String = settings::get_config_value(settings::CONFIG_GENESIS_PATH)
+        .unwrap_or(settings::DEFAULT_GENESIS_PATH.to_string());
 
     debug!("opening pool {} with genesis_path: {}", pool_name, path);
     let option_path = Some(Path::new(&path));
@@ -122,7 +118,7 @@ pub fn init_pool_and_wallet() -> Result<(), u32>  {
         }
     }
 
-    match wallet::open_wallet(&wallet_name) {
+    match wallet::open_wallet(&wallet_name, settings::get_wallet_credentials().as_ref().map_or(None, |x| Some(&**x))) {
         Err(e) => {
             warn!("Init Wallet Error {}.", e);
             return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);

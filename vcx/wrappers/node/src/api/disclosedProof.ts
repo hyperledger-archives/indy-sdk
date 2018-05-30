@@ -19,12 +19,27 @@ export interface IDisclosedProofCreateData {
   request: IDisclosedProofRequest
 }
 
+export interface IRetrievedCreds {
+  attrs: {
+    [ index: string ]: ICredData[]
+  },
+  predicates: any
+}
+
+export interface ICredData {
+  cred_info: {
+    [ index: string ]: any
+  },
+  interval: any
+}
+
 export class DisclosedProof extends VCXBaseWithState {
   protected _releaseFn = rustAPI().vcx_disclosed_proof_release
   protected _updateStFn = rustAPI().vcx_disclosed_proof_update_state
   protected _getStFn = rustAPI().vcx_disclosed_proof_get_state
   protected _serializeFn = rustAPI().vcx_disclosed_proof_serialize
   protected _deserializeFn = rustAPI().vcx_disclosed_proof_deserialize
+  private _proofReq: string
 
   static async create ({ sourceId, request }: IDisclosedProofCreateData): Promise<DisclosedProof> {
     const newObj = new DisclosedProof(sourceId)
@@ -43,17 +58,27 @@ export class DisclosedProof extends VCXBaseWithState {
   }
 
   static async createWithMsgId (connection: Connection, sourceId, msgId): Promise<DisclosedProof> {
-    const newObj = new DisclosedProof(sourceId)
     try {
-      await newObj._create((cb) => rustAPI().vcx_disclosed_proof_create_with_msgid(
-        0,
-        sourceId,
-        connection.handle,
-        msgId,
-        cb
-        )
+      return await createFFICallbackPromise<DisclosedProof>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_disclosed_proof_create_with_msgid(0, sourceId, connection.handle, msgId, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback('void', ['uint32', 'uint32', 'uint32', 'string'],
+          (xHandle, err, handle, proofReq) => {
+
+            if (err) {
+              reject(err)
+              return
+            }
+            const newObj = new DisclosedProof(sourceId)
+            newObj._setHandle(handle)
+            newObj._setProofRequest(proofReq)
+            resolve( newObj )
+          })
       )
-      return newObj
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_disclosed_proof_create_with_msgid`)
     }
@@ -112,6 +137,28 @@ export class DisclosedProof extends VCXBaseWithState {
     }
   }
 
+  async getCredentials (): Promise<IRetrievedCreds> {
+    try {
+      return await createFFICallbackPromise<IRetrievedCreds>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_disclosed_proof_retrieve_credentials(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback('void', ['uint32', 'uint32', 'string'], (xcommandHandle, err, creds) => {
+            if (err) {
+              reject(err)
+            } else {
+              resolve(JSON.parse(creds))
+            }
+          })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_disclosed_proof_retrieve_credentials`)
+    }
+  }
+
   async sendProof (connection: Connection): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
@@ -132,5 +179,39 @@ export class DisclosedProof extends VCXBaseWithState {
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_disclosed_proof_send_proof`)
     }
+  }
+
+  async generateProof (selectedCreds: {[index: string]: ICredData},
+                       selfAttestedAttrs: {[index: string]: string}): Promise<void> {
+    try {
+      await createFFICallbackPromise<void>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_disclosed_proof_generate_proof(0,
+                                                                    this.handle,
+                                                                    JSON.stringify(selectedCreds),
+                                                                    JSON.stringify(selfAttestedAttrs), cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback('void', ['uint32', 'uint32'], (xcommandHandle, err) => {
+            if (err) {
+              reject(err)
+            } else {
+              resolve()
+            }
+          })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_disclosed_proof_generate_proof`)
+    }
+  }
+
+  getProofRequest (): string {
+    return this._proofReq
+  }
+
+  _setProofRequest (proofReq: string) {
+    this._proofReq = proofReq
   }
 }

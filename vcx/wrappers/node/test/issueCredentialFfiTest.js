@@ -12,7 +12,7 @@ describe('The wrapper', async function () {
                         console.log('commandHandle: ' + handle)
                         /* tslint:enable */
                       })
-    const res = await ffi.vcx_issuer_create_credential(0, 'sourceId', 32, 'regularstring', 'regularstring', 'regularstring', callback)
+    const res = await ffi.vcx_issuer_create_credential(0, 'sourceId', 'id', 'regularstring', 'regularstring', 'regularstring', 0.0, callback)
     assert.equal(res, 0)
   })
 })

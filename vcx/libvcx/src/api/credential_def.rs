@@ -17,29 +17,40 @@ use error::ToErrorCode;
 ///
 /// source_id: Enterprise's personal identification for the user.
 ///
-/// credentialdef_name: Name of credential definitions
+/// credentialdef_name: Name of credential definition
 ///
-/// schema_seq_no: The schema sequence number to create credentialdef against
+/// schema_id: The schema id given during the creation of the schema
 ///
 /// issuer_did: did corresponding to entity issuing a credential. Needs to have Trust Anchor permissions on ledger
 ///
-/// create_non_revoc: Todo: need to add what this done. Right now, provide false
+/// tag: way to create a unique credential def with the same schema and issuer did.
+///
+//Todo: Provide more info about the config
+/// config: revocation info
 ///
 /// cb: Callback that provides CredentialDef handle and error status of request.
+///
+/// payment_handle: future use (currently uses any address in wallet)
 ///
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
 pub extern fn vcx_credentialdef_create(command_handle: u32,
-                                  source_id: *const c_char,
-                                  credentialdef_name: *const c_char,
-                                  schema_seq_no: u32,
-                                  issuer_did: *const c_char,
-                                  create_non_revoc: bool,
-                                  cb: Option<extern fn(xcommand_handle: u32, err: u32, credentialdef_handle: u32)>) -> u32 {
+                                       source_id: *const c_char,
+                                       credentialdef_name: *const c_char,
+                                       schema_id: *const c_char,
+                                       issuer_did: *const c_char,
+                                       tag: *const c_char,
+                                       config: *const c_char,
+                                       payment_handle: u32,
+                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, credentialdef_handle: u32)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(credentialdef_name, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(schema_id, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(tag, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(config, error::INVALID_OPTION.code_num);
+
     let issuer_did: String = if !issuer_did.is_null() {
         check_useful_c_str!(issuer_did, error::INVALID_OPTION.code_num);
         issuer_did.to_owned()
@@ -49,20 +60,22 @@ pub extern fn vcx_credentialdef_create(command_handle: u32,
             Err(x) => return x
         }
     };
-    info!("vcx_credential_def_create(command_handle: {}, source_id: {}, credentialdef_name: {} schema_seq_no: {}, issuer_did: {}, create_non_rev: {})",
+    info!("vcx_credential_def_create(command_handle: {}, source_id: {}, credentialdef_name: {} schema_id: {}, issuer_did: {}, tag: {}, config: {})",
           command_handle,
           source_id,
           credentialdef_name,
-          schema_seq_no,
+          schema_id,
           issuer_did,
-          create_non_revoc);
+          tag,
+          config);
 
     thread::spawn( move|| {
         let ( rc, handle) = match credential_def::create_new_credentialdef(source_id,
                                                                  credentialdef_name,
-                                                                 schema_seq_no,
                                                                  issuer_did,
-                                                                 create_non_revoc) {
+                                                                 schema_id,
+                                                                 tag,
+                                                                 config) {
             Ok(x) => {
                 info!("vcx_credential_def_create_cb(command_handle: {}, rc: {}, credentialdef_handle: {}), source_id: {:?}",
                       command_handle, error_string(0), x, credential_def::get_source_id(x).unwrap_or_default());
@@ -132,8 +145,6 @@ pub extern fn vcx_credentialdef_serialize(command_handle: u32,
 ///
 /// credentialdef_data: json string representing a credentialdef object
 ///
-/// # Examples credentialdef -> {"source_id":"test id","credential_def":{"ref":15,"origin":"4fUDR9R7fjwELRvH9JT6HH","signature_type":"CL","data":{"primary":{"n":"9","s":"5","rms":"4","r":{"city":"6","address2":"8","address1":"7","state":"6","zip":"1"},"rctxt":"7","z":"7"},"revocation":null}},"handle":1378455216,"name":"NAME"}
-///
 /// cb: Callback that provides credentialdef handle and provides error status
 ///
 /// #Returns
@@ -167,6 +178,43 @@ pub extern fn vcx_credentialdef_deserialize(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Retrieves credential definition's id
+///
+/// #Params
+/// cred_def_handle: CredDef handle that was provided during creation. Used to access proof object
+///
+/// cb: Callback that provides credential definition id and provides error status
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32, cred_def_handle: u32, cb: Option<extern fn(xcommand_handle: u32, err: u32, cred_def_id: *const c_char)>) -> u32 {
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    info!("vcx_credentialdef_get_cred_def_id(command_handle: {}, cred_def_handle: {})", command_handle, cred_def_handle);
+    if !credential_def::is_valid_handle(cred_def_handle) {
+        return error::INVALID_CREDENTIAL_DEF_HANDLE.code_num;
+    }
+
+    thread::spawn(move|| {
+        match credential_def::get_cred_def_id(cred_def_handle) {
+            Ok(x) => {
+                info!("vcx_credentialdef_get_cred_def_id(command_handle: {}, cred_def_handle: {}, rc: {}, cred_def_id: {})",
+                      command_handle, cred_def_handle, error_string(0), x);
+                let msg = CStringUtils::string_to_cstring(x);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            },
+            Err(x) => {
+                warn!("vcx_credentialdef_get_cred_def_id(command_handle: {}, cred_def_handle: {}, rc: {}, cred_def_id: {})",
+                      command_handle, cred_def_handle, error_string(x), "");
+                cb(command_handle, x, ptr::null_mut());
+            },
+        };
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Releases the credentialdef object by de-allocating memory
 ///
 /// #Params
@@ -186,13 +234,6 @@ pub extern fn vcx_credentialdef_release(credentialdef_handle: u32) -> u32 {
     error::SUCCESS.code_num
 }
 
-#[allow(unused_variables, unused_mut)]
-pub extern fn vcx_credentialdef_commit(credentialdef_handle: u32) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables, unused_mut)]
-pub extern fn vcx_credentialdef_get_sequence_no(credentialdef_handle: u32, sequence_no: *mut u32) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables, unused_mut)]
-pub extern fn vcx_credentialdef_get(credentialdef_handle: u32, data: *mut c_char) -> u32 { error::SUCCESS.code_num }
-
 #[cfg(test)]
 mod tests {
     extern crate serde_json;
@@ -202,10 +243,7 @@ mod tests {
     use std::thread;
     use std::time::Duration;
     use settings;
-    use utils::libindy::pool;
-    use utils::libindy::wallet::{ init_wallet, get_wallet_handle, delete_wallet };
-    use utils::libindy::signus::SignusUtils;
-    use utils::constants::{ DEMO_AGENT_PW_SEED, DEMO_ISSUER_PW_SEED };
+    use utils::constants::{SCHEMA_ID};
 
     extern "C" fn create_cb(command_handle: u32, err: u32, credentialdef_handle: u32) {
         assert_eq!(err, 0);
@@ -216,6 +254,23 @@ mod tests {
     extern "C" fn create_cb_err(command_handle: u32, err: u32, credentialdef_handle: u32) {
         assert_ne!(err, 0);
         println!("successfully called create_cb_err")
+    }
+
+    extern "C" fn create_cb_get_id(command_handle: u32, err: u32, cred_def_handle: u32) {
+        assert_eq!(err, 0);
+        assert!(cred_def_handle > 0);
+        println!("successfully called create_cb_get_id");
+        assert_eq!(vcx_credentialdef_get_cred_def_id(0, cred_def_handle, Some(get_id_cb)), error::SUCCESS.code_num);
+        thread::sleep(Duration::from_millis(200));
+    }
+
+    extern "C" fn get_id_cb(handle: u32, err: u32, id: *const c_char) {
+        assert_eq!(err, 0);
+        if id.is_null() {
+            panic!("id is null");
+        }
+        check_useful_c_str!(id, ());
+        println!("successfully called get_id_cb: {}", id);
     }
 
     extern "C" fn credential_def_on_ledger_err_cb(command_handle: u32, err: u32, credentialdef_handle: u32) {
@@ -244,10 +299,10 @@ mod tests {
         assert_eq!(err, 0);
         assert!(credentialdef_handle > 0);
         println!("successfully called deserialize_cb");
-        let expected = "{\"credential_def\":{\"ref\":15,\"origin\":\"4fUDR9R7fjwELRvH9JT6HH\",\"signature_type\":\"CL\",\"data\":{\"primary\":{\"n\":\"9\",\"s\":\"5\",\"rms\":\"4\",\"r\":{\"zip\":\"1\",\"address1\":\"7\",\"address2\":\"8\",\"city\":\"6\",\"state\":\"6\"},\"rctxt\":\"7\",\"z\":\"7\"},\"revocation\":null}},\"name\":\"NAME\",\"source_id\":\"test id\"}";
+        let expected = r#"{"id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:1697","tag":"tag","name":"Test Credential Definition","source_id":"SourceId"}"#;
         let new = credential_def::to_string(credentialdef_handle).unwrap();
-        let mut def1: credential_def::CreateCredentialDef = serde_json::from_str(expected).unwrap();
-        let def2: credential_def::CreateCredentialDef = serde_json::from_str(&new).unwrap();
+        let mut def1: credential_def::CredentialDef = serde_json::from_str(expected).unwrap();
+        let def2: credential_def::CredentialDef = serde_json::from_str(&new).unwrap();
         def1.handle = def2.handle;
         assert_eq!(def1,def2);
     }
@@ -261,34 +316,15 @@ mod tests {
     fn test_vcx_create_credentialdef_success() {
         set_default_and_enable_test_mode();
         assert_eq!(vcx_credentialdef_create(0,
-                                       CString::new("Test Source ID").unwrap().into_raw(),
-                                       CString::new("Test Credential Def").unwrap().into_raw(),
-                                       15,
-                                       CString::new("6vkhW3L28AophhA68SSzRS").unwrap().into_raw(),
-                                       false,
-                                       Some(create_cb)), error::SUCCESS.code_num);
+                                            CString::new("Test Source ID").unwrap().into_raw(),
+                                            CString::new("Test Credential Def").unwrap().into_raw(),
+                                            CString::new(SCHEMA_ID).unwrap().into_raw(),
+                                            CString::new("6vkhW3L28AophhA68SSzRS").unwrap().into_raw(),
+                                            CString::new("tag").unwrap().into_raw(),
+                                            CString::new("{}").unwrap().into_raw(),
+                                            0,
+                                            Some(create_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
-    }
-
-    #[ignore]
-    #[test]
-    fn test_vcx_create_credentialdef_with_pool() {
-        settings::set_defaults();
-        pool::open_sandbox_pool();
-        init_wallet("test_vcx_create_credentialdef_with_pool").unwrap();
-        let wallet_handle = get_wallet_handle();
-        let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_ISSUER_PW_SEED)).unwrap();
-        SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_AGENT_PW_SEED)).unwrap();
-        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
-        assert_eq!(vcx_credentialdef_create(0,
-                                       CString::new("qqqqq").unwrap().into_raw(),
-                                       CString::new("Test Credential Def").unwrap().into_raw(),
-                                       22,
-                                       ptr::null(),
-                                       false,
-                                       Some(credential_def_on_ledger_err_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_secs(1));
-        delete_wallet("test_vcx_create_credentialdef_with_pool").unwrap();
     }
 
     #[test]
@@ -296,12 +332,14 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         assert_eq!(vcx_credentialdef_create(0,
-                                       CString::new("Test Source ID").unwrap().into_raw(),
-                                       CString::new("Test Credential Def").unwrap().into_raw(),
-                                       0,
-                                       ptr::null(),
-                                       false,
-                                       Some(create_cb_err)), error::SUCCESS.code_num);
+                                            CString::new("Test Source ID").unwrap().into_raw(),
+                                            CString::new("Test Credential Def").unwrap().into_raw(),
+                                            CString::new(SCHEMA_ID).unwrap().into_raw(),
+                                            ptr::null(),
+                                            CString::new("tag").unwrap().into_raw(),
+                                            CString::new("{}").unwrap().into_raw(),
+                                            0,
+                                            Some(create_cb_err)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 
@@ -309,20 +347,37 @@ mod tests {
     fn test_vcx_credentialdef_serialize() {
         set_default_and_enable_test_mode();
         assert_eq!(vcx_credentialdef_create(0,
-                                       CString::new("Test Source ID").unwrap().into_raw(),
-                                       CString::new("Test Credential Def").unwrap().into_raw(),
-                                       15,
-                                       ptr::null(),
-                                       false,
-                                       Some(create_and_serialize_cb)), error::SUCCESS.code_num);
+                                            CString::new("Test Source ID").unwrap().into_raw(),
+                                            CString::new("Test Credential Def").unwrap().into_raw(),
+                                            CString::new(SCHEMA_ID).unwrap().into_raw(),
+                                            ptr::null(),
+                                            CString::new("tag").unwrap().into_raw(),
+                                            CString::new("{}").unwrap().into_raw(),
+                                            0,
+                                            Some(create_and_serialize_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 
     #[test]
     fn test_vcx_credentialdef_deserialize_succeeds() {
         set_default_and_enable_test_mode();
-        let original = "{\"source_id\":\"test id\",\"credential_def\":{\"ref\":15,\"origin\":\"4fUDR9R7fjwELRvH9JT6HH\",\"signature_type\":\"CL\",\"data\":{\"primary\":{\"n\":\"9\",\"s\":\"5\",\"rms\":\"4\",\"r\":{\"city\":\"6\",\"address2\":\"8\",\"address1\":\"7\",\"state\":\"6\",\"zip\":\"1\"},\"rctxt\":\"7\",\"z\":\"7\"},\"revocation\":null}},\"name\":\"NAME\"}";
+        let original = r#"{"id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:1697","tag":"tag","name":"Test Credential Definition","source_id":"SourceId"}"#;
         vcx_credentialdef_deserialize(0,CString::new(original).unwrap().into_raw(), Some(deserialize_cb));
+        thread::sleep(Duration::from_millis(200));
+    }
+
+    #[test]
+    fn test_vcx_creddef_get_id(){
+        set_default_and_enable_test_mode();
+        assert_eq!(vcx_credentialdef_create(0,
+                                            CString::new("Test Source ID").unwrap().into_raw(),
+                                            CString::new("Test Credential Def").unwrap().into_raw(),
+                                            CString::new(SCHEMA_ID).unwrap().into_raw(),
+                                            CString::new("6vkhW3L28AophhA68SSzRS").unwrap().into_raw(),
+                                            CString::new("tag").unwrap().into_raw(),
+                                            CString::new("{}").unwrap().into_raw(),
+                                            0,
+                                            Some(create_cb_get_id)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 }

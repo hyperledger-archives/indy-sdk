@@ -17,6 +17,7 @@ lazy_static! {
     pub static ref CALLBACKS_I32_I32: Mutex<HashMap<i32, Box<FnMut(i32, i32) + Send>>> = Default::default();
     pub static ref CALLBACKS_I32_STR: Mutex<HashMap<i32, Box<FnMut(i32, Option<String>) + Send>>> = Default::default();
     pub static ref CALLBACKS_I32_STR_STR: Mutex<HashMap <i32, Box<FnMut(i32, Option<String>, Option<String>) + Send>>> = Default::default();
+    pub static ref CALLBACKS_I32_STR_STR_STR: Mutex<HashMap <i32, Box<FnMut(i32, Option<String>, Option<String>, Option<String>) + Send>>> = Default::default();
     pub static ref CALLBACKS_I32_BOOL: Mutex<HashMap<i32, Box<FnMut(i32, bool) + Send>>> = Default::default();
     pub static ref CALLBACKS_I32_BIN: Mutex<HashMap<i32, Box<FnMut(i32, Vec<u8>) + Send>>> = Default::default();
     pub static ref CALLBACKS_I32_OPTSTR_BIN: Mutex<HashMap<i32,Box<FnMut(i32, Option<String>, Vec<u8>) + Send>>> = Default::default();
@@ -51,6 +52,20 @@ pub extern "C" fn call_cb_i32_str_str(command_handle: i32, arg1: i32, arg2: *con
     let str2 = build_string(arg3);
     if let Some(mut cb_fn) = cb {
         cb_fn(arg1, str1, str2)
+    }
+}
+
+pub extern "C" fn call_cb_i32_str_str_str(command_handle: i32,
+                                          arg1: i32,
+                                          arg2: *const c_char,
+                                          arg3: *const c_char,
+                                          arg4: *const c_char) {
+    let cb = get_cb(command_handle, CALLBACKS_I32_STR_STR_STR.deref());
+    let str1 = build_string(arg2);
+    let str2 = build_string(arg3);
+    let str3 = build_string(arg4);
+    if let Some(mut cb_fn) = cb {
+        cb_fn(arg1, str1, str2, str3)
     }
 }
 

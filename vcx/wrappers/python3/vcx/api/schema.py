@@ -8,15 +8,25 @@ import json
 
 class Schema(VcxBase):
 
-    def __init__(self, source_id: str, name: str, attr_names: dict):
+    def __init__(self, source_id: str, name: str, version: str, attrs: list):
         VcxBase.__init__(self, source_id)
         self._source_id = source_id
-        self._attrs = attr_names
+        self._schema_id = None
+        self._attrs = attrs
         self._name = name
+        self._version = version
 
     def __del__(self):
         self.release()
         self.logger.debug("Deleted {} obj: {}".format(Schema, self.handle))
+
+    @property
+    def schema_id(self):
+        return self._schema_id
+
+    @schema_id.setter
+    def schema_id(self, x):
+        self._schema_id = x
 
     @property
     def name(self):
@@ -34,55 +44,67 @@ class Schema(VcxBase):
     def attrs(self, x):
         self._attrs = x
 
+    @property
+    def version(self):
+        return self._version
+
+    @version.setter
+    def version(self, x):
+        self._version = x
+
     @staticmethod
-    async def create(source_id: str, name: str, attr_names: dict):
-        constructor_params = (source_id, name, attr_names)
+    async def create(source_id: str, name: str, version: str, attrs: list, payment_handle: int):
+        constructor_params = (source_id, name, version, attrs)
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
         c_name = c_char_p(name.encode('utf-8'))
-        c_schema_data = c_char_p(json.dumps(attr_names).encode('utf-8'))
-        c_params = (c_source_id, c_name, c_schema_data)
+        c_version = c_char_p(version.encode('utf-8'))
+        c_schema_data = c_char_p(json.dumps(attrs).encode('utf-8'))
+        c_payment = c_uint32(payment_handle)
+        c_params = (c_source_id, c_name, c_version, c_schema_data, c_payment)
 
-        return await Schema._create("vcx_schema_create",
-                                    constructor_params,
-                                    c_params)
+        schema = await Schema._create("vcx_schema_create", constructor_params, c_params)
+        schema.schema_id = await schema.get_schema_id()
+        return schema
 
     @staticmethod
     async def deserialize(data: dict):
         try:
             # Todo: Find better way to access attr_names. Potential for issues.
-            attrs = data['data']['data']
             schema = await Schema._deserialize("vcx_schema_deserialize",
                                                json.dumps(data),
                                                data['source_id'],
                                                data['name'],
-                                               attrs)
+                                               data['version'],
+                                               data['data'])
+
+            schema.schema_id = await schema.get_schema_id()
             return schema
         except KeyError:
             raise VcxError(ErrorCode.InvalidSchema, error_message(ErrorCode.InvalidSchema))
 
     @staticmethod
-    async def lookup(source_id: str, schema_no: int):
+    async def lookup(source_id: str, schema_id: str):
         try:
-            schema = Schema(source_id, '', [])
+            schema = Schema(source_id, '', '', [])
 
             if not hasattr(Schema.lookup, "cb"):
                 schema.logger.debug("vcx_schema_get_attributes: Creating callback")
                 Schema.lookup.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint32, c_char_p))
 
             c_source_id = c_char_p(source_id.encode('utf-8'))
-            c_schema_no = c_uint32(schema_no)
+            c_schema_id = c_char_p(schema_id.encode('utf-8'))
 
             handle, data = await do_call('vcx_schema_get_attributes',
                                          c_source_id,
-                                         c_schema_no,
+                                         c_schema_id,
                                          Schema.lookup.cb)
             schema.logger.debug("created schema object")
 
             schema_result = json.loads(data.decode())
-            schema_data = schema_result['data']['data']
-            schema.attrs = schema_data['attr_names']
-            schema.name = schema_data['name']
+            schema.attrs = schema_result['data']
+            schema.name = schema_result['name']
+            schema.version = schema_result['version']
             schema.handle = handle
             return schema
         except KeyError:
@@ -94,7 +116,8 @@ class Schema(VcxBase):
     def release(self) -> None:
         self._release(Schema, 'vcx_schema_release')
 
-    async def get_sequence_number(self):
-        cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint32))
+    async def get_schema_id(self):
+        cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
         c_handle = c_uint32(self.handle)
-        return await do_call('vcx_schema_get_sequence_no', c_handle, cb)
+        id = await do_call('vcx_schema_get_schema_id', c_handle, cb)
+        return id.decode()

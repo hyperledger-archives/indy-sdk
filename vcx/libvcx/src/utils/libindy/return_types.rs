@@ -177,6 +177,44 @@ impl Return_I32_STR_STR {
 }
 
 #[allow(non_camel_case_types)]
+pub struct Return_I32_STR_STR_STR {
+    pub command_handle: i32,
+    receiver: Receiver<(i32, Option<String>, Option<String>, Option<String>)>,
+}
+impl Return_I32_STR_STR_STR {
+    pub fn new() -> Result<Return_I32_STR_STR_STR , u32> {
+        let (sender, receiver) = channel();
+        let closure:Box<FnMut(i32, Option<String>, Option<String>, Option<String>) + Send> = Box::new(move |err, str1, str2, str3 | {
+            sender.send((err, str1, str2, str3)).unwrap_or_else(log_error);
+        });
+
+        let command_handle = insert_closure(closure, callback::CALLBACKS_I32_STR_STR_STR.deref());
+
+        Ok(Return_I32_STR_STR_STR {
+            command_handle,
+            receiver,
+        })
+    }
+
+    pub fn get_callback(&self) -> extern fn(command_handle: i32,
+                                            arg1: i32,
+                                            arg2: *const c_char,
+                                            arg3: *const c_char,
+                                            arg4: *const c_char) {
+        callback::call_cb_i32_str_str_str
+    }
+
+    pub fn receive(&self, timeout: Option<Duration>) -> Result<(Option<String>, Option<String>, Option<String>), u32> {
+        let (err, mut str1, mut str2, mut str3) = receive(&self.receiver, timeout)?;
+
+        str1 = map_indy_error(str1, err)?;
+        str2 = map_indy_error(str2, err)?;
+        str3 = map_indy_error(str3, err)?;
+        Ok((str1, str2, str3))
+    }
+}
+
+#[allow(non_camel_case_types)]
 pub struct Return_I32_BOOL {
     pub command_handle: i32,
     receiver: Receiver<(i32, bool)>,

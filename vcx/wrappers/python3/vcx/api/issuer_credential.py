@@ -9,28 +9,30 @@ import json
 
 class IssuerCredential(VcxStateful):
 
-    def __init__(self, source_id: str, attrs: dict, schema_no: int, name: str):
+    def __init__(self, source_id: str, attrs: dict, cred_def_id: str, name: str, price: float):
         VcxStateful.__init__(self, source_id)
-        self._schema_no = schema_no
+        self._cred_def_id = cred_def_id
         self._attrs = attrs
         self._name = name
+        self._price = price
 
     def __del__(self):
         self.release()
         self.logger.debug("Deleted {} obj: {}".format(IssuerCredential, self.handle))
 
     @staticmethod
-    async def create(source_id: str, attrs: dict, schema_no: int, name: str):
+    async def create(source_id: str, attrs: dict, cred_def_id: str, name: str, price: float):
         attrs = {k: [v] for k, v in attrs.items()}
-        constructor_params = (source_id, attrs, schema_no, name)
+        constructor_params = (source_id, attrs, cred_def_id, name, price)
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
-        c_schema_no = c_uint32(schema_no)
+        c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
+        c_price = c_float(price)
         # default institution_did in config is used as issuer_did
         c_issuer_did = None
         c_data = c_char_p(json.dumps(attrs).encode('utf-8'))
         c_name = c_char_p(name.encode('utf-8'))
-        c_params = (c_source_id, c_schema_no, c_issuer_did, c_data, c_name)
+        c_params = (c_source_id, c_cred_def_id, c_issuer_did, c_data, c_name, c_price)
 
         return await IssuerCredential._create("vcx_issuer_create_credential",
                                          constructor_params,
@@ -41,6 +43,7 @@ class IssuerCredential(VcxStateful):
         issuer_credential = await IssuerCredential._deserialize("vcx_issuer_credential_deserialize",
                                                       json.dumps(data),
                                                       data.get('source_id'),
+                                                      data.get('price'),
                                                       data.get('credential_attributes'),
                                                       data.get('schema_seq_no'),
                                                       data.get('credential_request'))
