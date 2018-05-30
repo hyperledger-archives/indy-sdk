@@ -46,7 +46,7 @@ RUN apt-get update && apt-get install -y maven
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.25.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.26.0
 ENV PATH /home/indy/.cargo/bin:$PATH
 
 WORKDIR /home/indy
