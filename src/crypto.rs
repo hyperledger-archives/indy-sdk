@@ -265,13 +265,13 @@ impl Crypto {
     /// * `signature` - the signature to verify
     /// # Returns
     /// true if signature is valid, false otherwise
-    pub fn verify(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], signature: &[u8]) -> Result<bool, ErrorCode> {
+    pub fn verify(signer_vk: &str, message: &[u8], signature: &[u8]) -> Result<bool, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
         let signer_vk = c_str!(signer_vk);
 
         let err = unsafe {
-            crypto::indy_crypto_verify(command_handle, wallet_handle, signer_vk.as_ptr(),
+            crypto::indy_crypto_verify(command_handle, signer_vk.as_ptr(),
                                message.as_ptr() as *const u8, message.len() as u32,
                                signature.as_ptr() as *const u8, signature.len() as u32, cb)
         };
@@ -288,13 +288,13 @@ impl Crypto {
     /// * `timeout` - the maximum time this function waits for a response
     /// # Returns
     /// true if signature is valid, false otherwise
-    pub fn verify_timeout(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], signature: &[u8], timeout: Duration) -> Result<bool, ErrorCode> {
+    pub fn verify_timeout(signer_vk: &str, message: &[u8], signature: &[u8], timeout: Duration) -> Result<bool, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
         let signer_vk = c_str!(signer_vk);
 
         let err = unsafe {
-            crypto::indy_crypto_verify(command_handle, wallet_handle, signer_vk.as_ptr(),
+            crypto::indy_crypto_verify(command_handle, signer_vk.as_ptr(),
                                message.as_ptr() as *const u8, message.len() as u32,
                                signature.as_ptr() as *const u8, signature.len() as u32, cb)
         };
@@ -311,13 +311,13 @@ impl Crypto {
     /// * `closure` - The closure that is called when finished
     /// # Returns
     /// errorcode from calling ffi function
-    pub fn verify_async<F: 'static>(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], signature: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, bool) + Send {
+    pub fn verify_async<F: 'static>(signer_vk: &str, message: &[u8], signature: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, bool) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(Box::new(closure));
 
         let signer_vk = c_str!(signer_vk);
 
         unsafe {
-            crypto::indy_crypto_verify(command_handle, wallet_handle, signer_vk.as_ptr(),
+            crypto::indy_crypto_verify(command_handle, signer_vk.as_ptr(),
                                message.as_ptr() as *const u8, message.len() as u32,
                                signature.as_ptr() as *const u8, signature.len() as u32, cb)
         }
