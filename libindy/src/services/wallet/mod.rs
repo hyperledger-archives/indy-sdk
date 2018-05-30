@@ -167,17 +167,16 @@ impl WalletService {
         let xtype = storage_type.unwrap_or("default");
 
         let storage_types = self.storage_types.borrow();
-        if !storage_types.contains_key(xtype) {
-            return Err(WalletError::UnknownType(xtype.to_string()));
-        }
+        let storage_type = match storage_types.get(xtype) {
+            None => return Err(WalletError::UnknownType(xtype.to_string())),
+            Some(storage_type) => storage_type,
+        };
 
         let wallet_path = _wallet_path(name);
         let wallet_descriptor_path = _wallet_descriptor_path(name);
         if wallet_path.exists() && wallet_descriptor_path.exists() {
             return Err(WalletError::AlreadyExists(name.to_string()));
         }
-
-        let storage_type = storage_types.get(xtype).unwrap();
 
         let mut config = match storage_config {
             Some(config) => serde_json::from_str::<serde_json::Value>(config)
@@ -229,11 +228,10 @@ impl WalletService {
         })?;
 
         let storage_types = self.storage_types.borrow();
-        if !storage_types.contains_key(descriptor.xtype.as_str()) {
-            return Err(WalletError::UnknownType(descriptor.xtype));
-        }
-
-        let storage_type = storage_types.get(descriptor.xtype.as_str()).unwrap();
+        let storage_type = match storage_types.get(descriptor.xtype.as_str()) {
+            None => return Err(WalletError::UnknownType(descriptor.xtype)),
+            Some(storage_type) => storage_type
+        };
 
         let config_json = WalletService::read_config(name)?;
 
@@ -262,10 +260,10 @@ impl WalletService {
         })?;
 
         let storage_types = self.storage_types.borrow();
-        if !storage_types.contains_key(descriptor.xtype.as_str()) {
-            return Err(WalletError::UnknownType(descriptor.xtype));
-        }
-        let storage_type = storage_types.get(descriptor.xtype.as_str()).unwrap();
+        let storage_type = match storage_types.get(descriptor.xtype.as_str()) {
+            None => return Err(WalletError::UnknownType(descriptor.xtype)),
+            Some(storage_type) => storage_type,
+        };
 
         let mut wallets = self.wallets.borrow_mut();
         if wallets.values().any(|ref wallet| wallet.get_name() == name) {

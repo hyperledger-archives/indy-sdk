@@ -80,12 +80,32 @@ pub enum Operator {
 
 
 impl Operator {
-    pub fn transform(self, f: &Fn(Operator) -> Operator) -> Operator {
+    pub fn transform(self, f: &Fn(Operator) -> Result<Operator, WalletQueryError>) -> Result<Operator, WalletQueryError> {
         match self {
-            Operator::And(operators) => f(Operator::And(operators.into_iter().map(|o| Operator::transform(o, f)).collect())),
-            Operator::Or(operators) => f(Operator::Or(operators.into_iter().map(|o| Operator::transform(o, f)).collect())),
-            Operator::Not(boxed_operator) => f(Operator::Not(Box::new(Operator::transform(*boxed_operator, f)))),
-            _ => f(self)
+            Operator::And(operators) => {
+                let mut transformed = Vec::new();
+
+                for operator in operators {
+                    let transformed_operator = Operator::transform(operator, f)?;
+                    transformed.push(transformed_operator);
+                }
+
+                Ok(Operator::And(transformed))
+            }
+            Operator::Or(operators) => {
+                let mut transformed = Vec::new();
+
+                for operator in operators {
+                    let transformed_operator = Operator::transform(operator, f)?;
+                    transformed.push(transformed_operator);
+                }
+
+                Ok(Operator::Or(transformed))
+            }
+            Operator::Not(boxed_operator) => {
+                Ok(Operator::Not(Box::new(Operator::transform(*boxed_operator, f)?)))
+            }
+            _ => Ok(f(self)?)
         }
     }
 

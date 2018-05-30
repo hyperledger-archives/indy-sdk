@@ -13,6 +13,7 @@ use std::rc::Rc;
 
 use utils::environment::EnvironmentUtils;
 use errors::wallet::WalletStorageError;
+use errors::common::CommonError;
 use services::wallet::language;
 use super::super::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
@@ -176,7 +177,12 @@ impl StorageIterator for SQLiteStorageIterator {
                     None
                 };
                 let tags = if self.options.fetch_tags {
-                    Some(self.tag_retriever.as_mut().unwrap().retrieve(row.get(0))?)
+                    match self.tag_retriever {
+                        Some(ref mut tag_retriever) => Some(tag_retriever.retrieve(row.get(0))?),
+                        None => return Err(WalletStorageError::CommonError(
+                            CommonError::InvalidState("Fetch tags option set and tag retriever is None".to_string())
+                        ))
+                    }
                 } else {
                     None
                 };
@@ -391,7 +397,7 @@ impl WalletStorage for SQLiteStorage {
         match res {
             Ok(1) => Ok(()),
             Ok(0) => Err(WalletStorageError::ItemNotFound),
-            Ok(_) => unreachable!(),
+            Ok(count) => Err(WalletStorageError::CommonError(CommonError::InvalidState(format!("SQLite returned update row count: {}", count)))),
             Err(err) => Err(WalletStorageError::from(err)),
         }
     }
@@ -561,7 +567,7 @@ impl WalletStorage for SQLiteStorage {
             None => FetchOptions::default(),
             Some(option_str) => serde_json::from_str(option_str)?
         };
-        let (query_string, query_arguments) = query::wql_to_sql(type_, query, options);
+        let (query_string, query_arguments) = query::wql_to_sql(type_, query, options)?;
 
         let statement = self._prepare_statement(&query_string)?;
         let tag_retriever = if fetch_options.fetch_tags {
