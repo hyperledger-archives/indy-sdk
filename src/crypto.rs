@@ -532,13 +532,12 @@ impl Crypto {
     ///
     /// # Returns
     /// the encrypted message
-    pub fn anon_crypt(wallet_handle: IndyHandle, recipient_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+    pub fn anon_crypt(recipient_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
         let recipient_vk = c_str!(recipient_vk);
         let err = unsafe {
             crypto::indy_crypto_anon_crypt(command_handle,
-                                   wallet_handle,
                                    recipient_vk.as_ptr(),
                                    message.as_ptr() as *const u8,
                                     message.len() as u32,
@@ -564,13 +563,12 @@ impl Crypto {
     /// * `timeout` - the maximum time this function waits for a response
     /// # Returns
     /// the encrypted message
-    pub fn anon_crypt_timeout(wallet_handle: IndyHandle, recipient_vk: &str, message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
+    pub fn anon_crypt_timeout(recipient_vk: &str, message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
         let recipient_vk = c_str!(recipient_vk);
         let err = unsafe {
             crypto::indy_crypto_anon_crypt(command_handle,
-                                   wallet_handle,
                                    recipient_vk.as_ptr(),
                                    message.as_ptr() as *const u8,
                                     message.len() as u32,
@@ -596,13 +594,12 @@ impl Crypto {
     /// * `closure` - The closure that is called when finished
     /// # Returns
     /// errorcode from calling ffi function
-    pub fn anon_crypt_async<F: 'static>(wallet_handle: IndyHandle, recipient_vk: &str, message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
+    pub fn anon_crypt_async<F: 'static>(recipient_vk: &str, message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
 
         let recipient_vk = c_str!(recipient_vk);
         unsafe {
             crypto::indy_crypto_anon_crypt(command_handle,
-                                   wallet_handle,
                                    recipient_vk.as_ptr(),
                                    message.as_ptr() as *const u8,
                                     message.len() as u32,
