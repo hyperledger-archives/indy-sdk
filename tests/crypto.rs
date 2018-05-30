@@ -34,6 +34,77 @@ fn time_it_out<F>(msg: &str, test: F) -> bool where F: Fn() -> bool {
     true
 }
 
+mod high_cases {
+    use super::*;
+
+    mod key_tests {
+        use super::*;
+
+        #[test]
+        fn all_async_works() {
+            let wallet_name = "all_async_works";
+            safe_wallet_create!(wallet_name);
+            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let (sender_a, receiver) = channel();
+
+            Key::create_async(handle, None, move|_, vkey| {
+
+                let (sender1, receiver1) = channel();
+                sender1.send(vkey.to_string()).unwrap();
+                let sender_b = sender_a.clone();
+
+                Key::set_metadata_async(handle, &vkey, r#"{"name": "dummy"}"#, move |_| {
+
+                    let sender_c = sender_b.clone();
+                    let v = receiver1.recv().unwrap();
+                    Key::get_metadata_async(handle, &v, move|_, meta|{
+                        sender_c.send(meta).unwrap();
+                    });
+                });
+            });
+
+            let metadata = receiver.recv().unwrap();
+
+            assert_eq!(metadata, r#"{"name": "dummy"}"#);
+
+            wallet_cleanup!(handle, wallet_name);
+        }
+    }
+
+    mod crypto_tests {
+        use super::*;
+
+        #[test]
+        fn sign_verify_async_works() {
+            let wallet_name = "sign_verify_async_works";
+            safe_wallet_create!(wallet_name);
+            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let (sender_a, receiver_a) = channel();
+            let (sender_1, receiver_1) = channel();
+
+            Key::create_async(handle, None, move|_, vkey| {
+
+                let sender_b = sender_a.clone();
+                let sender_2 = sender_1.clone();
+                Crypto::sign_async(handle, &vkey.to_string(), r#"Hello World"#.as_bytes(), move|_, sig| {
+
+                    sender_2.send(sig.clone()).unwrap();
+                    let sender_c = sender_b.clone();
+                    Crypto::verify_async(&vkey, r#"Hello World"#.as_bytes(), sig.as_slice(), move|_, valid| {
+
+                        sender_c.send(valid).unwrap();
+                    });
+                });
+            });
+
+            assert_eq!(receiver_1.recv().unwrap().len(), 64);
+
+            assert!(receiver_a.recv().unwrap());
+            wallet_cleanup!(handle, wallet_name);
+        }
+    }
+}
+
 mod low_cases {
     use super::*;
 
@@ -42,7 +113,7 @@ mod low_cases {
 
         #[test]
         fn create_key_works() {
-            let wallet_name = "create_key_works_wallet";
+            let wallet_name = "create_key_works";
             safe_wallet_create!(wallet_name);
             let handle = Wallet::open(wallet_name, None, None).unwrap();
 
