@@ -504,7 +504,7 @@ impl PoolWorker {
         p.set_extension("btxn");
         if p.exists() {
             fs::remove_file(p).map_err(CommonError::IOError).map_err(PoolError::from)?;
-            Err(PoolError::InvalidCacheCleared)
+            Ok(())
         } else {
             Err(PoolError::CommonError(CommonError::InvalidState("Can't recover to genesis -- no txns stored. Possible problems in genesis txns.".to_string())))
         }

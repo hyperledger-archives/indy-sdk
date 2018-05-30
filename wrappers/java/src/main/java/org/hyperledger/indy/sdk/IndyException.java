@@ -7,7 +7,6 @@ import org.hyperledger.indy.sdk.ledger.LedgerInvalidTransactionException;
 import org.hyperledger.indy.sdk.ledger.LedgerSecurityException;
 import org.hyperledger.indy.sdk.ledger.TimeoutException;
 import org.hyperledger.indy.sdk.payments.*;
-import org.hyperledger.indy.sdk.pool.InvalidPoolCacheException;
 import org.hyperledger.indy.sdk.pool.InvalidPoolException;
 import org.hyperledger.indy.sdk.pool.PoolConfigNotCreatedException;
 import org.hyperledger.indy.sdk.pool.PoolLedgerConfigExistsException;
@@ -141,8 +140,6 @@ public class IndyException extends Exception {
 				return new IncompatiblePaymentException();
 			case InsufficientFundsError:
 				return new InsufficientFundsException();
-			case PoolLedgerInvalidCacheError:
-				return new InvalidPoolCacheException();
 			default:
 				String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
 				return new IndyException(message, sdkErrorCode);

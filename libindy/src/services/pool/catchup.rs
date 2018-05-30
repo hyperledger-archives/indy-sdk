@@ -130,7 +130,7 @@ impl CatchupHandler {
         if let Some((most_popular_vote, votes_cnt)) = votes.iter().max_by_key(|entry| entry.1) {
             if *votes_cnt == self.nodes.len() - self.f {
                 return self._try_to_catch_up(most_popular_vote).or_else(|err| {
-                    if let Err(PoolError::InvalidCacheCleared) = PoolWorker::drop_saved_txns(&self.pool_name) {
+                    if PoolWorker::drop_saved_txns(&self.pool_name).is_ok() {
                         self.merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name(&self.pool_name)?;
                         self._try_to_catch_up(most_popular_vote)
                     } else {
