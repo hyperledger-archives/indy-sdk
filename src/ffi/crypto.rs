@@ -71,5 +71,5 @@ extern {
                                     recipient_vk: *const c_char,
                                     encrypted_msg_raw: *const u8,
                                     encrypted_msg_len: u32,
-                                    cb: Option<ResponseStringSliceCB>) -> ErrorCode;
+                                    cb: Option<ResponseSliceCB>) -> ErrorCode;
 }

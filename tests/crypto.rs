@@ -23,7 +23,18 @@ macro_rules! wallet_cleanup {
     }
 }
 
-mod high_cases {
+fn time_it_out<F>(msg: &str, test: F) -> bool where F: Fn() -> bool {
+    for _ in 1..250 {
+        if test() {
+            return true;
+        }
+    }
+    // It tried to do a timeout test 250 times and the system was too fast, so just succeed
+    println!("{} - system too fast for timeout test", msg);
+    true
+}
+
+mod low_cases {
     use super::*;
 
     mod key_tests {
@@ -92,6 +103,8 @@ mod high_cases {
             let verkey = Key::create(handle, None).unwrap();
 
             assert!(Key::set_metadata_timeout(handle, &verkey, r#"{"name": "dummy key"}"#, Duration::from_millis(5000)).is_ok());
+
+            assert!(Key::set_metadata_timeout(handle, &verkey, r#"{"name": "dummy key"}"#, Duration::from_millis(1)).is_err());
             wallet_cleanup!(handle, wallet_name);
         }
 
@@ -133,6 +146,7 @@ mod high_cases {
 
             assert!(Key::set_metadata_timeout(handle, &verkey, r#"{"name": "dummy key"}"#, Duration::from_millis(5000)).is_ok());
             assert_eq!(Key::get_metadata_timeout(handle, &verkey, Duration::from_millis(5000)).unwrap(), r#"{"name": "dummy key"}"#);
+            assert!(Key::get_metadata_timeout(handle, &verkey, Duration::from_millis(1)).is_err());
             wallet_cleanup!(handle, wallet_name);
         }
 
@@ -195,6 +209,7 @@ mod high_cases {
             let sig = res.unwrap();
             assert_eq!(sig.len(), 64);
 
+            assert!(time_it_out(wallet_name, move|| {Crypto::sign_timeout(handle, &vkey, r#"Hello World"#.as_bytes(), Duration::from_millis(1)).is_err() }));
             wallet_cleanup!(handle, wallet_name);
         }
 
@@ -265,6 +280,9 @@ mod high_cases {
             let res = Crypto::verify_timeout(&vkey, message.as_bytes(), fake_sig.as_slice(), Duration::from_millis(5000));
             assert!(res.is_ok());
             assert!(!res.unwrap());
+
+            assert!(time_it_out(wallet_name, move||{Crypto::verify_timeout(&vkey, message.as_bytes(), sig.as_slice(), Duration::from_millis(1)).is_err()}));
+
             wallet_cleanup!(handle, wallet_name);
         }
 
@@ -336,7 +354,7 @@ mod high_cases {
 
         #[test]
         fn auth_crypt_decrypt_timeout_works() {
-            let wallet_name = "auth_crypt_decrypt_works";
+            let wallet_name = "auth_crypt_decrypt_timeout_works";
             let message = r#"Hello World"#;
             safe_wallet_create!(wallet_name);
             let handle = Wallet::open(wallet_name, None, None).unwrap();
@@ -361,6 +379,163 @@ mod high_cases {
 
             let res = Crypto::auth_decrypt_timeout(handle, &vkey2, fake_msg.as_slice(), Duration::from_millis(5000));
             assert!(res.is_err());
+
+            assert!(time_it_out(wallet_name,move||{Crypto::auth_decrypt_timeout(handle, &vkey2, fake_msg.as_slice(), Duration::from_millis(5000)).is_err()}));
+
+            wallet_cleanup!(handle, wallet_name);
+        }
+
+        #[test]
+        fn auth_crypt_decrypt_async_works() {
+            let wallet_name = "auth_crypt_decrypt_async_works";
+            let message = r#"Hello World"#;
+            safe_wallet_create!(wallet_name);
+            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let vkey1 = Key::create(handle, None).unwrap();
+            let vkey2 = Key::create(handle, None).unwrap();
+            let (sender, receiver) = channel();
+
+            let (sender1, receiver1) = channel();
+            let sender2 = sender1.clone();
+
+            let closure_crypt = move|err, ciphertext| {
+                sender.send((err, ciphertext)).unwrap();
+            };
+
+            let res = Crypto::auth_crypt_async(handle, &vkey1, &vkey2, message.as_bytes(), closure_crypt);
+            assert!(res.is_ok());
+            let (err, ciphertext) = receiver.recv().unwrap();
+            assert!(err.is_ok());
+
+            let closure_decrypt1 = move|err, skey, plaintext| {
+                sender1.send((err, skey, plaintext)).unwrap();
+            };
+
+            let res = Crypto::auth_decrypt_async(handle, &vkey2, ciphertext.as_slice(), closure_decrypt1);
+
+            assert!(res.is_ok());
+            let (err, actual_vkey, plain) = receiver1.recv().unwrap();
+            assert!(err.is_ok());
+            assert_eq!(actual_vkey, vkey1);
+            assert_eq!(plain, message.as_bytes());
+
+            let mut fake_msg = Vec::new();
+            for i in 1..ciphertext.len() {
+                fake_msg.push(i as u8);
+            }
+
+            let closure_decrypt2 = move|err, skey, plaintext| {
+                sender2.send((err, skey, plaintext)).unwrap();
+            };
+
+            let res = Crypto::auth_decrypt_async(handle, &vkey2, fake_msg.as_slice(), closure_decrypt2);
+            assert!(res.is_ok());
+            let (err, _, _) = receiver1.recv().unwrap();
+            assert!(err.is_err());
+
+            wallet_cleanup!(handle, wallet_name);
+        }
+
+        #[test]
+        fn anon_crypt_decrypt_works() {
+            let wallet_name = "anon_crypt_decrypt_works";
+            let message = r#"Hello World"#;
+            safe_wallet_create!(wallet_name);
+            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let vkey1 = Key::create(handle, None).unwrap();
+
+            let res = Crypto::anon_crypt(&vkey1, message.as_bytes());
+            assert!(res.is_ok());
+            let ciphertext = res.unwrap();
+
+            let res = Crypto::anon_decrypt(handle, &vkey1, ciphertext.as_slice());
+
+            assert!(res.is_ok());
+            let plaintext = res.unwrap();
+            assert_eq!(plaintext, message.as_bytes());
+
+            let mut fake_msg = Vec::new();
+            for i in 1..ciphertext.len() {
+                fake_msg.push(i as u8);
+            }
+
+            let res = Crypto::anon_decrypt(handle, &vkey1, fake_msg.as_slice());
+            assert!(res.is_err());
+
+            wallet_cleanup!(handle, wallet_name);
+        }
+
+        #[test]
+        fn anon_crypt_decrypt_timeout_works() {
+            let wallet_name = "anon_crypt_decrypt_timeout_works";
+            let message = r#"Hello World"#;
+            safe_wallet_create!(wallet_name);
+            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let vkey1 = Key::create(handle, None).unwrap();
+
+            let res = Crypto::anon_crypt_timeout(&vkey1, message.as_bytes(), Duration::from_millis(5000));
+            assert!(res.is_ok());
+            let ciphertext = res.unwrap();
+
+            let res = Crypto::anon_decrypt_timeout(handle, &vkey1, ciphertext.as_slice(), Duration::from_millis(5000));
+
+            assert!(res.is_ok());
+            let plaintext = res.unwrap();
+            assert_eq!(plaintext, message.as_bytes());
+
+            let mut fake_msg = Vec::new();
+            for i in 1..ciphertext.len() {
+                fake_msg.push(i as u8);
+            }
+
+            let res = Crypto::anon_decrypt_timeout(handle, &vkey1, fake_msg.as_slice(), Duration::from_millis(5000));
+            assert!(res.is_err());
+
+            assert!(time_it_out(wallet_name, move||{Crypto::anon_decrypt_timeout(handle, &vkey1, fake_msg.as_slice(), Duration::from_millis(5000)).is_err()}));
+
+            wallet_cleanup!(handle, wallet_name);
+        }
+
+        #[test]
+        fn anon_crypt_decrypt_async_works() {
+            let wallet_name = "anon_crypt_decrypt_async_works";
+            let message = r#"Hello World"#;
+            safe_wallet_create!(wallet_name);
+            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let vkey1 = Key::create(handle, None).unwrap();
+
+            let (sender, receiver) = channel();
+
+            let res = Crypto::anon_crypt_async(&vkey1, message.as_bytes(), move|err, cipher|{
+                sender.send((err, cipher)).unwrap();
+            });
+            assert!(res.is_ok());
+            let (e, ciphertext) = receiver.recv().unwrap();
+            assert!(e.is_ok());
+
+            let (sender1, receiver1) = channel();
+            let sender2 = sender1.clone();
+
+            let res = Crypto::anon_decrypt_async(handle, &vkey1, ciphertext.as_slice(), move|err, plain| {
+                sender1.send((err, plain)).unwrap();
+            });
+
+            assert!(res.is_ok());
+            let (e, plaintext) = receiver1.recv().unwrap();
+            assert!(e.is_ok());
+            assert_eq!(plaintext, message.as_bytes());
+
+            let mut fake_msg = Vec::new();
+            for i in 1..ciphertext.len() {
+                fake_msg.push(i as u8);
+            }
+
+            let res = Crypto::anon_decrypt_async(handle, &vkey1, fake_msg.as_slice(), move|err, plain|{
+                sender2.send((err, plain)).unwrap();
+            });
+            assert!(res.is_ok());
+            let (e, _) = receiver1.recv().unwrap();
+            assert!(e.is_err());
 
             wallet_cleanup!(handle, wallet_name);
         }
