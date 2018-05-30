@@ -213,5 +213,62 @@ mod high_cases {
 
             wallet_cleanup!(handle, wallet_name);
         }
+
+        #[test]
+        fn verify_works() {
+            let wallet_name = "verify_works";
+            let message = r#"Hello World"#;
+            safe_wallet_create!(wallet_name);
+            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let vkey = Key::create(handle, None).unwrap();
+            let res = Crypto::sign(handle, &vkey, message.as_bytes());
+            assert!(res.is_ok());
+            let sig = res.unwrap();
+
+            let res = Crypto::verify(&vkey, message.as_bytes(), sig.as_slice());
+            assert!(res.is_ok());
+            assert!(res.unwrap());
+            wallet_cleanup!(handle, wallet_name);
+        }
+
+        #[test]
+        fn verify_timeout_works() {
+            let wallet_name = "verify_timeout_works";
+            let message = r#"Hello World"#;
+            safe_wallet_create!(wallet_name);
+            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let vkey = Key::create(handle, None).unwrap();
+            let res = Crypto::sign(handle, &vkey, message.as_bytes());
+            assert!(res.is_ok());
+            let sig = res.unwrap();
+
+            let res = Crypto::verify_timeout(&vkey, message.as_bytes(), sig.as_slice(), Duration::from_millis(5000));
+            assert!(res.is_ok());
+            assert!(res.unwrap());
+            wallet_cleanup!(handle, wallet_name);
+        }
+
+        #[test]
+        fn verify_works_async() {
+            let wallet_name = "verify_works_async";
+            let message = r#"Hello World"#;
+            safe_wallet_create!(wallet_name);
+            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let vkey = Key::create(handle, None).unwrap();
+            let res = Crypto::sign(handle, &vkey, message.as_bytes());
+            assert!(res.is_ok());
+            let sig = res.unwrap();
+            let (sender, receiver) = channel();
+
+            let res = Crypto::verify_async(&vkey, message.as_bytes(), sig.as_slice(), move|err, result|{
+                sender.send((err, result)).unwrap();
+            });
+            println!("{:?}", res);
+            assert!(res.is_ok());
+            let (e, r) = receiver.recv().unwrap();
+            assert!(e.is_ok());
+            assert!(r);
+            wallet_cleanup!(handle, wallet_name);
+        }
     }
 }
