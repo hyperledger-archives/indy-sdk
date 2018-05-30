@@ -15,7 +15,7 @@ extern crate rmp_serde;
 extern crate indy_crypto;
 
 
-use self::byteorder::{ByteOrder, LittleEndian};
+use self::byteorder::{ByteOrder, LittleEndian, WriteBytesExt, ReadBytesExt};
 use self::rust_base58::FromBase58;
 use std::str::from_utf8;
 use self::time::{Duration, Tm};
@@ -359,21 +359,36 @@ impl PoolWorker {
 
 
     fn _restore_merkle_tree_from_file(txn_file: &str) -> Result<MerkleTree, PoolError> {
-        PoolWorker::_restore_merkle_tree(&PathBuf::from(txn_file), Box::new(PoolWorker::_parse_txn_from_json))
+        PoolWorker::_restore_merkle_tree_from_genesis(&PathBuf::from(txn_file))
     }
 
-    fn _restore_merkle_tree(file_name: &PathBuf, mapper: Box<Fn(&[u8]) -> Result<Vec<u8>, CommonError>>) -> Result<MerkleTree, PoolError> {
+    fn _restore_merkle_tree_from_genesis(file_name: &PathBuf) -> Result<MerkleTree, PoolError> {
+        let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
+
+        let f = fs::File::open(file_name).map_err(map_err_trace!())?;
+
+        let reader = io::BufReader::new(&f);
+        for line in reader.lines() {
+            let line: String = line.map_err(map_err_trace!())?.trim().to_string();
+            if line.is_empty() { continue };
+            let genesis_txn: SJsonValue = serde_json::from_str(line.as_str())
+                .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
+            let bytes = rmp_serde::encode::to_vec_named(&genesis_txn)
+                .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
+            mt.append(bytes).map_err(map_err_trace!())?;
+        }
+        Ok(mt)
+    }
+
+    fn _restore_merkle_tree_from_cache(file_name: &PathBuf) -> Result<MerkleTree, PoolError> {
         let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
 
         let mut f = fs::File::open(file_name).map_err(map_err_trace!())?;
 
-        let mut txns: Vec<u8> = vec![];
-        f.read_to_end(&mut txns).map_err(map_err_trace!())?;
-        let vec = txns.split(|num| (*num as char) == '\n').collect::<Vec<&[u8]>>();
-        for line in vec {
-            let bytes = mapper(line)?;
-            if line.is_empty() { continue };
-            mt.append(bytes).map_err(map_err_trace!())?;
+        while let Ok(bytes) = f.read_u64::<LittleEndian>().map_err(CommonError::IOError).map_err(PoolError::from) {
+            let mut buf = vec![0; bytes as usize];
+            f.read(buf.as_mut()).map_err(map_err_trace!())?;
+            mt.append(buf.to_vec()).map_err(map_err_trace!())?;
         }
         Ok(mt)
     }
@@ -393,9 +408,9 @@ impl PoolWorker {
                 return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)));
             }
 
-            PoolWorker::_restore_merkle_tree(&p, Box::new(PoolWorker::_parse_txn_from_json))
+            PoolWorker::_restore_merkle_tree_from_genesis(&p)
         } else {
-            PoolWorker::_restore_merkle_tree(&p_stored, Box::new(|u| Ok(u.to_vec())))
+            PoolWorker::_restore_merkle_tree_from_cache(&p_stored)
         }
     }
 
@@ -421,7 +436,7 @@ impl PoolWorker {
             PoolWorker::_dump_genesis_to_stored(&p, pool_name)?;
         }
 
-        let mut file = fs::File::create(p)
+        let mut file = fs::OpenOptions::new().append(true).open(p)
             .map_err(|e| CommonError::IOError(e))
             .map_err(map_err_err!())?;
 
@@ -442,14 +457,13 @@ impl PoolWorker {
         }
         
         let genesis_vec = PoolWorker::_genesis_to_binary(&p_genesis)?;
-
         PoolWorker::_dump_vec_to_file(&genesis_vec, &mut file)
     }
 
     fn _dump_vec_to_file(v: &Vec<Vec<u8>>, file : &mut fs::File) -> Result<(), PoolError> {
         v.into_iter().map(|vec| {
-            file.write_all(vec).map_err(map_err_trace!())?;
-            file.write_all("\n".as_bytes()).map_err(map_err_trace!())
+            file.write_u64::<LittleEndian>(vec.len() as u64).map_err(map_err_trace!())?;
+            file.write_all(vec).map_err(map_err_trace!())
         }).fold(Ok(()), |acc, next| {
             match (acc, next) {
                 (Err(e), _) => Err(e),
@@ -998,7 +1012,7 @@ mod tests {
         f.flush().unwrap();
         f.sync_all().unwrap();
 
-        let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
+        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
 
         assert_eq!(merkle_tree.count(), 2, "test restored MT size");
         assert_eq!(merkle_tree.root_hash_hex(), "ae7fb19d399b0b03ed298285d0da19ee6c6ba9ed7c063c95228c435d7ff97b4d", "test restored MT root hash");
@@ -1054,11 +1068,11 @@ mod tests {
         path.set_extension("btxn");
         let mut f = fs::File::create(path.as_path()).unwrap();
         pool_cache.iter().for_each(|vec| {
+            f.write_u64::<LittleEndian>(vec.len() as u64).unwrap();
             f.write_all(vec).unwrap();
-            f.write_all("\n".as_bytes()).unwrap();
         });
 
-        let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
+        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
         let node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
     }
 
@@ -1089,7 +1103,7 @@ mod tests {
         f.flush().unwrap();
         f.sync_all().unwrap();
 
-        let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
+        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
         let node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
 
         assert_eq!(2, node_state.len());
@@ -1124,7 +1138,7 @@ mod tests {
         f.flush().unwrap();
         f.sync_all().unwrap();
 
-        let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
+        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
         let node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
 
         assert_eq!(2, node_state.len());

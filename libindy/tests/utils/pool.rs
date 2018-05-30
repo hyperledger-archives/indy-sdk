@@ -2,6 +2,7 @@ extern crate time;
 extern crate indy_crypto;
 extern crate serde_json;
 extern crate rmp_serde;
+extern crate byteorder;
 
 use indy::api::ErrorCode;
 use indy::api::pool::*;
@@ -9,6 +10,7 @@ use indy::api::pool::*;
 use utils::callback::CallbackUtils;
 use utils::environment::EnvironmentUtils;
 use self::indy_crypto::utils::json::JsonEncodable;
+use self::byteorder::{LittleEndian, WriteBytesExt};
 
 use std::fs;
 use std::ffi::CString;
@@ -195,8 +197,8 @@ impl PoolUtils {
 
         let mut f = fs::File::create(&txn_file_path).map_err(|_| ErrorCode::CommonIOError)?;
         txns.iter().for_each(|vec| {
+            f.write_u64::<LittleEndian>(vec.len() as u64);
             f.write_all(vec);
-            f.write_all("\n".as_bytes());
         });
 
         Ok(())

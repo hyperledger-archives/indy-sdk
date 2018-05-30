@@ -219,6 +219,11 @@ public enum ErrorCode {
 	 */
 	PoolLedgerTimeout(307),
 
+	/**
+	 * Ledger cache is invalid and it was cleared. This ErrorCode should not be passed outside of libindy, it should be covered inside.
+	 */
+	PoolLedgerInvalidCacheError(308),
+
 	// Crypto errors
 
 	/**
