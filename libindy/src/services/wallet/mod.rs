@@ -539,20 +539,6 @@ impl WalletService {
     }
 }
 
-fn length_to_bigend_bytes(length: usize) -> [u8; 4] {
-    let length = (length as i32).to_be();
-    let res: [u8; 4] = unsafe { mem::transmute(length) };
-    res
-}
-
-fn bigend_bytes_to_length(bytes: &[u8]) -> usize {
-    let mut byte_array: [u8; 4] = [0; 4];
-    byte_array.clone_from_slice(&bytes[0..4]);
-    let length: i32 = unsafe { mem::transmute(byte_array) };
-    let length = i32::from_be(length);
-    (length as usize)
-}
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WalletRecord {
