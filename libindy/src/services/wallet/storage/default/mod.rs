@@ -13,12 +13,13 @@ use std::rc::Rc;
 
 use utils::environment::EnvironmentUtils;
 use errors::wallet::WalletStorageError;
+use errors::common::CommonError;
 use services::wallet::language;
 use super::super::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use super::{StorageIterator, WalletStorageType, WalletStorage, StorageEntity, EncryptedValue, Tag, TagName};
 
-
+const _SQLITE_DB: &str = "sqlite.db";
 const _PLAIN_TAGS_QUERY: &str = "SELECT name, value from tags_plaintext where item_id = ?";
 const _ENCRYPTED_TAGS_QUERY: &str = "SELECT name, value from tags_encrypted where item_id = ?";
 const _CREATE_SCHEMA: &str = "
@@ -176,7 +177,12 @@ impl StorageIterator for SQLiteStorageIterator {
                     None
                 };
                 let tags = if self.options.fetch_tags {
-                    Some(self.tag_retriever.as_mut().unwrap().retrieve(row.get(0))?)
+                    match self.tag_retriever {
+                        Some(ref mut tag_retriever) => Some(tag_retriever.retrieve(row.get(0))?),
+                        None => return Err(WalletStorageError::CommonError(
+                            CommonError::InvalidState("Fetch tags option set and tag retriever is None".to_string())
+                        ))
+                    }
                 } else {
                     None
                 };
@@ -245,7 +251,7 @@ impl SQLiteStorageType {
 
     fn create_path(name: &str) -> std::path::PathBuf {
         let mut path = EnvironmentUtils::wallet_path(name);
-        path.push("sqlite.db");
+        path.push(_SQLITE_DB );
         path
     }
 }
@@ -391,7 +397,7 @@ impl WalletStorage for SQLiteStorage {
         match res {
             Ok(1) => Ok(()),
             Ok(0) => Err(WalletStorageError::ItemNotFound),
-            Ok(_) => unreachable!(),
+            Ok(count) => Err(WalletStorageError::CommonError(CommonError::InvalidState(format!("SQLite returned update row count: {}", count)))),
             Err(err) => Err(WalletStorageError::from(err)),
         }
     }
@@ -561,7 +567,7 @@ impl WalletStorage for SQLiteStorage {
             None => FetchOptions::default(),
             Some(option_str) => serde_json::from_str(option_str)?
         };
-        let (query_string, query_arguments) = query::wql_to_sql(type_, query, options);
+        let (query_string, query_arguments) = query::wql_to_sql(type_, query, options)?;
 
         let statement = self._prepare_statement(&query_string)?;
         let tag_retriever = if fetch_options.fetch_tags {
@@ -753,7 +759,7 @@ mod tests {
 
     fn _db_file_path() -> std::path::PathBuf {
         let mut db_file_path = _wallet_base_path();
-        db_file_path.push("sqlite.db");
+        db_file_path.push(_SQLITE_DB );
         db_file_path
     }
 
