@@ -55,19 +55,15 @@ mod high_cases {
             let handle = Wallet::open(wallet_name, None, None).unwrap();
             let (sender, receiver) = channel();
 
-            let closure = move |err, result| {
-                println!("err={:?}", err);
-                println!("result={:?}", result);
-
-                sender.send(result);
+            let closure = move |_error, result| {
+                sender.send(result).unwrap();
             };
 
             let res = Key::create_async(handle, None, closure);
             assert_eq!(res, ErrorCode::Success);
-            let verkey = receiver.recv().unwrap();
+            receiver.recv().unwrap();
             Wallet::close(handle).unwrap();
             Wallet::delete(wallet_name).unwrap();
-            println!("verkey={:?}", verkey);
         }
     }
 
