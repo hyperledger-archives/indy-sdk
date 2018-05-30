@@ -76,24 +76,24 @@ extern {
 
     #[no_mangle]
     pub fn indy_create_payment_address(command_handle: IndyHandle,
-                                   wallet_handle: IndyHandle,
-                                   payment_method: *const c_char,
-                                   config: *const c_char,
-                                   cb: Option<ResponseStringCB>) -> ErrorCode;
+                                       wallet_handle: IndyHandle,
+                                       payment_method: *const c_char,
+                                       config: *const c_char,
+                                       cb: Option<ResponseStringCB>) -> ErrorCode;
 
     #[no_mangle]
     pub fn indy_list_payment_addresses(command_handle: IndyHandle,
-                                   wallet_handle: IndyHandle,
-                                   cb: Option<ResponseStringCB>) -> ErrorCode;
+                                       wallet_handle: IndyHandle,
+                                       cb: Option<ResponseStringCB>) -> ErrorCode;
 
     #[no_mangle]
     pub fn indy_add_request_fees(command_handle: IndyHandle,
-                             wallet_handle: IndyHandle,
-                             submitter_did: *const c_char,
-                             req_json: *const c_char,
-                             inputs_json: *const c_char,
-                             outputs_json: *const c_char,
-                             cb: Option<ResponseStringStringCB>) -> ErrorCode;
+                                 wallet_handle: IndyHandle,
+                                 submitter_did: *const c_char,
+                                 req_json: *const c_char,
+                                 inputs_json: *const c_char,
+                                 outputs_json: *const c_char,
+                                 cb: Option<ResponseStringStringCB>) -> ErrorCode;
 
     #[no_mangle]
     pub fn indy_parse_response_with_fees(command_handle: IndyHandle,
@@ -116,43 +116,43 @@ extern {
 
     #[no_mangle]
     pub fn indy_build_payment_req(command_handle: IndyHandle,
-                              wallet_handle: IndyHandle,
-                              submitter_did: *const c_char,
-                              inputs_json: *const c_char,
-                              outputs_json: *const c_char,
-                              cb: Option<ResponseStringStringCB>) -> ErrorCode;
+                                  wallet_handle: IndyHandle,
+                                  submitter_did: *const c_char,
+                                  inputs_json: *const c_char,
+                                  outputs_json: *const c_char,
+                                  cb: Option<ResponseStringStringCB>) -> ErrorCode;
 
     #[no_mangle]
     pub fn indy_parse_payment_response(command_handle: IndyHandle,
-                                   payment_method: *const c_char,
-                                   resp_json: *const c_char,
-                                   cb: Option<ResponseStringCB>) -> ErrorCode;
+                                       payment_method: *const c_char,
+                                       resp_json: *const c_char,
+                                       cb: Option<ResponseStringCB>) -> ErrorCode;
 
     #[no_mangle]
     pub fn indy_build_mint_req(command_handle: IndyHandle,
-                           wallet_handle: IndyHandle,
-                           submitter_did: *const c_char,
-                           outputs_json: *const c_char,
-                           cb: Option<ResponseStringStringCB>) -> ErrorCode;
+                               wallet_handle: IndyHandle,
+                               submitter_did: *const c_char,
+                               outputs_json: *const c_char,
+                               cb: Option<ResponseStringStringCB>) -> ErrorCode;
 
     #[no_mangle]
     pub fn indy_build_set_txn_fees_req(command_handle: IndyHandle,
-                                   wallet_handle: IndyHandle,
-                                   submitter_did: *const c_char,
-                                   payment_method: *const c_char,
-                                   fees_json: *const c_char,
-                                   cb: Option<ResponseStringCB>) -> ErrorCode;
+                                       wallet_handle: IndyHandle,
+                                       submitter_did: *const c_char,
+                                       payment_method: *const c_char,
+                                       fees_json: *const c_char,
+                                       cb: Option<ResponseStringCB>) -> ErrorCode;
 
     #[no_mangle]
     pub fn indy_build_get_txn_fees_req(command_handle: IndyHandle,
-                                   wallet_handle: IndyHandle,
-                                   submitter_did: *const c_char,
-                                   payment_method: *const c_char,
-                                   cb: Option<ResponseStringCB>) -> ErrorCode;
+                                       wallet_handle: IndyHandle,
+                                       submitter_did: *const c_char,
+                                       payment_method: *const c_char,
+                                       cb: Option<ResponseStringCB>) -> ErrorCode;
 
     #[no_mangle]
     pub fn indy_parse_get_txn_fees_response(command_handle: IndyHandle,
-                                        payment_method: *const c_char,
-                                        resp_json: *const c_char,
-                                        cb: Option<ResponseStringCB>) -> ErrorCode;
+                                            payment_method: *const c_char,
+                                            resp_json: *const c_char,
+                                            cb: Option<ResponseStringCB>) -> ErrorCode;
 }
