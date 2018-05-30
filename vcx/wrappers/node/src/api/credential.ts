@@ -14,9 +14,22 @@ export interface ICredentialStructData {
 
 export type ICredentialOffer = string
 
-export interface ICredentialCreateData {
+export interface ICredentialCreateWithOffer {
   sourceId: string,
-  offer: ICredentialOffer
+  offer: ICredentialOffer,
+  // We're going to need it in the future
+  connection: Connection
+}
+
+export interface ICredentialCreateWithMsgId {
+  sourceId: string,
+  msgId: string,
+  connection: Connection
+}
+
+export interface ICredentialSendData {
+  connection: Connection,
+  payment: number
 }
 
 export class Credential extends VCXBaseWithState {
@@ -27,7 +40,7 @@ export class Credential extends VCXBaseWithState {
   protected _deserializeFn = rustAPI().vcx_credential_deserialize
   private _credOffer: string
 
-  static async create ({ sourceId, offer }: ICredentialCreateData): Promise<Credential> {
+  static async create ({ sourceId, offer }: ICredentialCreateWithOffer): Promise<Credential> {
     const credential = new Credential(sourceId)
     try {
       await credential._create((cb) => rustAPI().vcx_credential_create_with_offer(
@@ -43,7 +56,7 @@ export class Credential extends VCXBaseWithState {
     }
   }
 
-  static async createWithMsgId (connection: Connection, sourceId, msgId): Promise<Credential> {
+  static async createWithMsgId ({ connection, sourceId, msgId }: ICredentialCreateWithMsgId): Promise<Credential> {
     try {
       return await createFFICallbackPromise<Credential>(
           (resolve, reject, cb) => {
@@ -61,7 +74,7 @@ export class Credential extends VCXBaseWithState {
             }
             const newObj = new Credential(sourceId)
             newObj._setHandle(handle)
-            newObj._setCredOffer(credOffer)
+            newObj.credOffer = credOffer
             resolve( newObj )
           })
       )
@@ -123,7 +136,7 @@ export class Credential extends VCXBaseWithState {
     }
   }
 
-  async sendRequest (connection: Connection, payment: number): Promise<void> {
+  async sendRequest ({ connection, payment }: ICredentialSendData): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
           (resolve, reject, cb) => {
@@ -146,11 +159,11 @@ export class Credential extends VCXBaseWithState {
     }
   }
 
-  getCredOffer (): string {
+  get credOffer (): string {
     return this._credOffer
   }
 
-  _setCredOffer (credOffer: string) {
+  set credOffer (credOffer: string) {
     this._credOffer = credOffer
   }
 }

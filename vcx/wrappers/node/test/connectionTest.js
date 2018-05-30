@@ -6,7 +6,7 @@ const assert = chai.assert
 
 const { Connection, StateType, Error, rustAPI, VCXMock, VCXMockMessage } = vcx
 
-describe('A Connection object with ', function () {
+describe.only('A Connection object with ', function () {
   this.timeout(10000)
 
   before(async () => {

@@ -1,15 +1,14 @@
 
-import { snakeCase } from 'change-case'
 import * as ffi from 'ffi'
-import { _ } from 'lodash'
 import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { VCXBase } from './VCXBase'
 
-export interface ISchema {
+export interface ISchemaCreateData {
   sourceId: string,
-  data: ISchemaAttrs
+  data: ISchemaAttrs,
+  paymentHandle: number
 }
 
 /**
@@ -52,6 +51,11 @@ export interface ISchemaParams {
   schemaAttrs?: ISchemaAttrs,
 }
 
+export interface ISchemaLookupData {
+  sourceId: string,
+  schemaId: string
+}
+
 export class Schema extends VCXBase {
   protected _releaseFn = rustAPI().vcx_schema_release
   protected _serializeFn = rustAPI().vcx_schema_serialize
@@ -60,7 +64,7 @@ export class Schema extends VCXBase {
   private _schemaId: string
   private _schemaAttrs: ISchemaAttrs
 
-  constructor (sourceId, { name, schemaId, schemaAttrs }: ISchemaParams) {
+  constructor (sourceId: string, { name, schemaId, schemaAttrs }: ISchemaParams) {
     // Todo: update constructor to take name, schemaId, version, and attrs
     super(sourceId)
     this._name = name
@@ -74,21 +78,21 @@ export class Schema extends VCXBase {
    * @static
    * @async
    * @function create
-   * @param {ISchema} data
+   * @param {ISchemaCreateData} data
    * @example <caption>Example of ISchema</caption>
    * {sourceId: '123', data: {name: 'name', version: '1.0', attrNames:['name', 'address', 'city']}}
    * @returns {Promise<Schema>} A Schema Object
    */
-  static async create (data: ISchema, paymentHandle: number): Promise<Schema> {
-    const schema = new Schema(data.sourceId, { name: data.data.name, schemaId: '', schemaAttrs: data.data })
+  static async create ({ paymentHandle, data, sourceId }: ISchemaCreateData): Promise<Schema> {
+    const schema = new Schema(sourceId, { name: data.name, schemaId: '', schemaAttrs: data })
     const commandHandle = 0
     try {
       await schema._create((cb) => rustAPI().vcx_schema_create(
       commandHandle,
       schema.sourceId,
       schema._name,
-      data.data.version,
-      JSON.stringify(data.data.attrNames),
+      data.version,
+      JSON.stringify(data.attrNames),
       paymentHandle,
       cb
       ))
@@ -116,7 +120,7 @@ export class Schema extends VCXBase {
         schemaAttrs: {name: schema.name, version: schema.version, attrNames: schema.data},
         schemaId: schema.schema_id
       }
-      return await super._deserialize(Schema, schema, schemaParams)
+      return await super._deserialize<Schema, ISchemaParams>(Schema, schema, schemaParams)
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_schema_deserialize')
     }
@@ -130,12 +134,12 @@ export class Schema extends VCXBase {
    * @param {obj} data - contains sourceId and schema id
    * @returns {Promise<Schema>} - A schema object with the attributes set
    */
-  static async lookup (data: { sourceId: string, schemaId: string }): Promise<Schema> {
+  static async lookup ({ sourceId, schemaId }: ISchemaLookupData): Promise<Schema> {
     try {
       let rc = null
-      const schemaData = await createFFICallbackPromise<string>(
+      const [ schemaDataStr, schemaHandle ] = await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
-            rc = rustAPI().vcx_schema_get_attributes(0, data.sourceId, data.schemaId, cb)
+            rc = rustAPI().vcx_schema_get_attributes(0, sourceId, schemaId, cb)
             if (rc) {
               reject(rc)
             }
@@ -151,15 +155,18 @@ export class Schema extends VCXBase {
             resolve([_schemaData, _schemaHandle])
           })
     )
-      const schemaObj: ISchemaObj = JSON.parse(schemaData[0])
-      schemaObj.handle = schemaData[1]
+      const { name, version, data }: ISchemaObj = JSON.parse(schemaDataStr)
       const schemaParams = {
-        name: schemaObj.name,
-        schemaAttrs: {name: schemaObj.name, version: schemaObj.version, attrNames: schemaObj.data},
-        schemaId: data.schemaId
+        name,
+        schemaAttrs: {
+          attrNames: data,
+          name,
+          version
+        },
+        schemaId
       }
-      const newSchema = new Schema(data.sourceId, schemaParams)
-      newSchema._handle = JSON.stringify(schemaObj.handle)
+      const newSchema = new Schema(sourceId, schemaParams)
+      newSchema._handle = schemaHandle.toString()
       return newSchema
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_schema_get_attributes')
@@ -201,13 +208,13 @@ export class Schema extends VCXBase {
             }
           },
           (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'string'],
-          (xcommandHandle, err, _schemaId) => {
+          (xcommandHandle, err, schemaIdVal) => {
             if (err) {
               reject(err)
               return
             }
-            this._setScemaId(_schemaId)
-            resolve(_schemaId)
+            this._schemaId = schemaIdVal
+            resolve(schemaIdVal)
           })
         )
       return schemaId
@@ -216,17 +223,7 @@ export class Schema extends VCXBase {
     }
   }
 
-  getSchemaAttrs (): ISchemaAttrs {
+  get schemaAttrs (): ISchemaAttrs {
     return this._schemaAttrs
-  }
-
-  _setScemaId (schemaId: string) {
-    this._schemaId = schemaId
-  }
-
-  _convertAttrToSnakeCase (data: ISchemaAttrs): any {
-    return _.mapKeys(data, (value, key) => {
-      return snakeCase(key)
-    })
   }
 }

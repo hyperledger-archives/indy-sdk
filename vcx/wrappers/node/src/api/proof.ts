@@ -1,8 +1,7 @@
-import { snakeCase } from 'change-case'
 import { Callback } from 'ffi'
-import { _ } from 'lodash'
 import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
+import { collectionRenameItemKeys } from '../utils/collection-helpers'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { StateType } from './common'
 import { Connection } from './connection'
@@ -105,17 +104,17 @@ export class Proof extends VCXBaseWithState {
    * {sourceId: string,attrs: [{restrictions: [IFilter ...], name: "attrName"}], name: "name of proof"}
    * @returns {Promise<Proof>} A Proof Object
    */
-  static async create (data: IProofConfig): Promise<Proof> {
-    const proof = new Proof(data.sourceId)
-    proof._requestedAttributes = data.attrs
-    proof._name = data.name
+  static async create ({ sourceId, attrs, name }: IProofConfig): Promise<Proof> {
+    const proof = new Proof(sourceId)
+    proof._requestedAttributes = attrs
+    proof._name = name
     const commandHandle = 0
 
     try {
       await proof._create((cb) => rustAPI().vcx_proof_create(
         commandHandle,
         proof.sourceId,
-        JSON.stringify(proof._convertAttrToSnakeCase(data.attrs)),
+        JSON.stringify(collectionRenameItemKeys(attrs)),
         JSON.stringify([]),
         proof._name,
         cb
@@ -248,31 +247,17 @@ export class Proof extends VCXBaseWithState {
               reject(err)
               return
             }
-            this._setProofState(proofState)
+            this._proofState = proofState
             resolve(proofData)
           })
         )
-      return {proof, proofState: this.getProofState()}
+      return {proof, proofState: this.proofState}
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_get_proof')
     }
   }
 
-  getProofState (): number {
+  get proofState (): number {
     return this._proofState
-  }
-
-  _setProofState (state: number) {
-    this._proofState = state
-  }
-
-  _convertAttrToSnakeCase (data: IProofAttr[]): any[] {
-    const requestedAttrs = []
-    data.forEach((x) => {
-      requestedAttrs.push(_.mapKeys(x, (value, key) => {
-        return snakeCase(key)
-      }))
-    })
-    return requestedAttrs
   }
 }

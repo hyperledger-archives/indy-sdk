@@ -61,11 +61,11 @@ export class Connection extends VCXBaseWithState {
    * {id: "123"}
    * @returns {Promise<Connection>} A Connection Object
    */
-  static async create ( recipientInfo: IRecipientInfo): Promise<Connection> {
-    const connection = new Connection(recipientInfo.id)
+  static async create ({ id }: IRecipientInfo): Promise<Connection> {
+    const connection = new Connection(id)
     const commandHandle = 0
     try {
-      await connection._create((cb) => rustAPI().vcx_connection_create(commandHandle, recipientInfo.id, cb))
+      await connection._create((cb) => rustAPI().vcx_connection_create(commandHandle, id, cb))
       return connection
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_create')
@@ -83,12 +83,12 @@ export class Connection extends VCXBaseWithState {
    * {id: "123"}
    * @returns {Promise<Connection>} A Connection Object
    */
-  static async createWithInvite ( recipientInfo: IRecipientInfo, invite: string): Promise<Connection> {
-    const connection = new Connection(recipientInfo.id)
+  static async createWithInvite ({ id, invite }: IRecipientInviteInfo): Promise<Connection> {
+    const connection = new Connection(id)
     const commandHandle = 0
     try {
       await connection._create((cb) => rustAPI().vcx_connection_create_with_invite(commandHandle,
-                                                 recipientInfo.id, invite, cb))
+                                                 id, invite, cb))
 
       return connection
     } catch (err) {
