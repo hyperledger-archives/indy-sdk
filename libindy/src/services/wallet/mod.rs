@@ -64,7 +64,7 @@ impl<'a> JsonDecodable<'a> for WalletConfig {}
 #[derive(Debug)]
 pub struct WalletCredentials {
     master_key: [u8; 32],
-    rekey: Option<Box<[u8; 32]>>,
+    rekey: Option<[u8; 32]>,
     storage_credentials: String,
 }
 
@@ -83,7 +83,7 @@ impl WalletCredentials {
             let rekey = if let Some(key) =  m.get("rekey").and_then(|s| s.as_str()) {
                 let mut rekey: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
                 PwhashArgon2i13::derive_key(&mut rekey, key.as_bytes(), salt)?;
-                Some(Box::new(rekey))
+                Some(rekey)
             } else {
                 None
             };
@@ -304,7 +304,7 @@ impl WalletService {
 
         let wallet = Wallet::new(name, &descriptor.pool_name, storage, keys);
         if let Some(ref rekey) = credentials.rekey {
-            wallet.rotate_key(&**rekey)?;
+            wallet.rotate_key(&rekey[..])?;
         }
         let wallet_handle = SequenceUtils::get_next_id();
         wallets.insert(wallet_handle, Box::new(wallet));

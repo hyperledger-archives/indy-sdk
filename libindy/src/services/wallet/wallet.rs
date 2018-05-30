@@ -253,8 +253,8 @@ impl Wallet {
     }
 
     pub(super) fn rotate_key(&self, new_master_key: &[u8]) -> Result<(), WalletError> {
-        let new_keys = self.keys.encrypt(new_master_key);
-        self.storage.set_storage_metadata(&new_keys)?;
+        let new_metadata = self.keys.encrypt(new_master_key);
+        self.storage.set_storage_metadata(&new_metadata)?;
         Ok(())
     }
 
