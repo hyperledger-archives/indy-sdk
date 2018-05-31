@@ -30,7 +30,7 @@ describe('A Schema', function () {
   it('can retrieve schema attrs', async () => {
     const schema = await Schema.create(SCHEMA)
     assert(schema)
-    assert.equal(schema.getSchemaAttrs(), SCHEMA.data)
+    assert.equal(schema.schemaAttrs, SCHEMA.data)
   })
 
   it('has a name of data name after instanstiated', async () => {
@@ -48,8 +48,10 @@ describe('A Schema', function () {
     assert.equal(schema.source_id, schema2.source_id)
     assert.equal(schema.getSchemaId, schema2.getSchemaId)
     // The attrNames are mocked values returned from sdk
-    assert.equal(JSON.stringify(schema2.getSchemaAttrs()),
-    JSON.stringify({name: 'data name', version: '1.1.1', attrNames: ['attr1', 'attr2', 'height', 'weight']}))
+    assert.deepEqual(
+      schema2.schemaAttrs,
+      {name: 'data name', version: '1.1.1', attrNames: ['attr1', 'attr2', 'height', 'weight']}
+    )
   })
 
   it('will throw error on serialize when schema has been released', async () => {
@@ -76,18 +78,18 @@ describe('A Schema', function () {
   it('can be retrieved by calling lookup', async () => {
     const schema = await Schema.lookup({sourceId: 'test lookup', schemaId: 'schema_id1'})
     // The attrNames are mocked values returned from sdk
-    assert.equal(
-      JSON.stringify(schema.schemaAttrs),
-      JSON.stringify({name: 'test-licence', version: '4.4.4', attrNames: ['height', 'name', 'sex', 'age']})
+    assert.deepEqual(
+      schema.schemaAttrs,
+      {name: 'test-licence', version: '4.4.4', attrNames: ['height', 'name', 'sex', 'age']}
     )
   })
 
   it('can be retrieved by calling lookup and then serialized', async () => {
     const schema = await Schema.lookup({sourceId: '1cda', schemaId: 'schema_id123'})
     // The attrNames are mocked values returned from sdk
-    assert.equal(
-      JSON.stringify(schema.schemaAttrs),
-      JSON.stringify({name: 'test-licence', version: '4.4.4', attrNames: ['height', 'name', 'sex', 'age']})
+    assert.deepEqual(
+      schema.schemaAttrs,
+      {name: 'test-licence', version: '4.4.4', attrNames: ['height', 'name', 'sex', 'age']}
     )
     const serializedLookup = await schema.serialize()
     assert.equal(schema.sourceId, serializedLookup.source_id)

@@ -153,7 +153,7 @@ describe('A Proof', function () {
     const proof2 = await Proof.deserialize(jsonProof)
     await proof2.updateState()
     let proofData = await proof2.getProof(connection)
-    assert.equal(proof2.getProofState(), ProofState.Invalid)
+    assert.equal(proof2.proofState, ProofState.Invalid)
     assert.equal(proofData.proofState, 2)
   })
 

@@ -51,7 +51,7 @@ describe('A disclosedProof', function () {
   it(' can be created with a msgid.', async () => {
     const connection = await connectionCreateAndConnect()
     const obj = await DisclosedProof.createWithMsgId({ connection, sourceId: 'Test', msgId: 'id' })
-    assert(obj.getProofRequest())
+    assert(obj.proofRequest)
     assert(obj)
   })
 
@@ -151,6 +151,6 @@ describe('A disclosedProof', function () {
     let retrievedCreds = await obj.getCredentials()
     let selectedCreds = {'height_1': retrievedCreds['attrs']['height_1'][0]}
     // Acception will be thrown if this doesn't work rather than undefined
-    assert(await obj.generateProof(selectedCreds, retrievedCreds) === undefined)
+    assert(await obj.generateProof({ selectedCreds, selfAttestedAttrs: retrievedCreds }) === undefined)
   })
 })
