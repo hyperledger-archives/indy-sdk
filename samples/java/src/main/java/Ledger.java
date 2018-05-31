@@ -25,19 +25,21 @@ class Ledger {
 		Pool pool = Pool.openPoolLedger(poolName, "{}").get();
 
 		// 2. Create and Open My Wallet
-		Wallet.createWallet(poolName, myWalletName, "default", null, null).get();
-		Wallet myWallet = Wallet.openWallet(myWalletName, null, null).get();
+		String myWalletCredentials = "{\"key\":\"my_wallet_key\"}";
+		Wallet.createWallet(poolName, myWalletName, "default", null, myWalletCredentials).get();
+		Wallet myWallet = Wallet.openWallet(myWalletName, null, myWalletCredentials).get();
 
 		// 3. Create and Open Trustee Wallet
-		Wallet.createWallet(poolName, theirWalletName, "default", null, null).get();
-		Wallet trusteeWallet = Wallet.openWallet(theirWalletName, null, null).get();
+		String trusteeWalletCredentials = "{\"key\":\"trustee_wallet_key\"}";
+		Wallet.createWallet(poolName, theirWalletName, "default", null, trusteeWalletCredentials).get();
+		Wallet trusteeWallet = Wallet.openWallet(theirWalletName, null, trusteeWalletCredentials).get();
 
 		// 4. Create My Did
 		CreateAndStoreMyDidResult createMyDidResult = Did.createAndStoreMyDid(myWallet, "{}").get();
 		String myDid = createMyDidResult.getDid();
 		String myVerkey = createMyDidResult.getVerkey();
 
-		// 5. Create Crypto from Trustee1 seed
+		// 5. Create Did from Trustee1 seed
 		DidJSONParameters.CreateAndStoreMyDidJSONParameter theirDidJson =
 				new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, trusteeSeed, null, null);
 
@@ -57,11 +59,11 @@ class Ledger {
 
 		// 8. Close and delete My Wallet
 		myWallet.closeWallet().get();
-		Wallet.deleteWallet(myWalletName, null).get();
+		Wallet.deleteWallet(myWalletName, myWalletCredentials).get();
 
 		// 9. Close and delete Their Wallet
 		trusteeWallet.closeWallet().get();
-		Wallet.deleteWallet(theirWalletName, null).get();
+		Wallet.deleteWallet(theirWalletName, trusteeWalletCredentials).get();
 
 		// 10. Close Pool
 		pool.closePoolLedger().get();

@@ -19,6 +19,7 @@ use services::wallet::language;
 use super::{StorageIterator, WalletStorageType, WalletStorage, StorageEntity, EncryptedValue, Tag, TagName};
 use super::super::RecordOptions;
 
+const _SQLITE_DB: &str = "sqlite.db";
 const _PLAIN_TAGS_QUERY: &str = "SELECT name, value from tags_plaintext where item_id = ?";
 const _ENCRYPTED_TAGS_QUERY: &str = "SELECT name, value from tags_encrypted where item_id = ?";
 const _CREATE_SCHEMA: &str = "
@@ -213,7 +214,7 @@ impl SQLiteStorageType {
 
     fn create_path(name: &str) -> std::path::PathBuf {
         let mut path = EnvironmentUtils::wallet_path(name);
-        path.push("sqlite.db");
+        path.push(_SQLITE_DB );
         path
     }
 }
@@ -503,7 +504,7 @@ impl WalletStorage for SQLiteStorage {
     }
 
     fn set_storage_metadata(&self, metadata: &Vec<u8>) -> Result<(), WalletStorageError> {
-        match self.conn.execute("INSERT OR REPLACE INTO metadata(value) VALUES(?1)",&[metadata]) {
+        match self.conn.execute("UPDATE metadata SET value = ?1",&[metadata]) {
             Ok(_) => Ok(()),
             Err(error) => {
                 Err(WalletStorageError::IOError(format!("Error occurred while inserting the keys: {}", error)))
@@ -721,7 +722,7 @@ mod tests {
 
     fn _db_file_path() -> std::path::PathBuf {
         let mut db_file_path = _wallet_base_path();
-        db_file_path.push("sqlite.db");
+        db_file_path.push(_SQLITE_DB );
         db_file_path
     }
 
