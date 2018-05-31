@@ -31,6 +31,7 @@ pub fn map_indy_error_code<C: PrimInt>(error_code: C) -> u32 {
         203 =>  error::WALLET_ALREADY_EXISTS.code_num,
         206 =>  error::WALLET_ALREADY_OPEN.code_num,
         407 =>  error::CREDENTIAL_DEF_ALREADY_CREATED.code_num,
+        702 =>  error::INSUFFICIENT_TOKEN_AMOUNT.code_num,
         _ =>    error::UNKNOWN_LIBINDY_ERROR.code_num
     }
 }
