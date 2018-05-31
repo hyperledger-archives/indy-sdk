@@ -97,3 +97,26 @@ For manually building this can be achieved by passing `--features sodium_static`
    To run indy-cli, navigate to `cli/target/debug` and run `./indy-cli`
 
 See [libindy/ci/ubuntu.dockerfile](https://github.com/hyperledger/indy-sdk/tree/master/libindy/ci/ubuntu.dockerfile) for example of Ubuntu based environment creation in Docker.
+
+### Troubleshooting
+
+1. On `cargo test` :  `error: linking with 'cc'`
+
+   You may need a later version of `libsodium`.
+   Check the current version with:
+   ```
+   apt list --installed | grep sodium
+   ```
+   If the listed version is less than 1.0.12 then you need to upgrade.
+
+   The easiest approach is to search [Ubuntu packages](https://packages.ubuntu.com/search?keywords=libsodium&searchon=names) for an appropriate version.  From there either manually install, or easier, add the appropriate mirror to `/etc/apt/sources.list` and install:
+
+   ```
+    # add appropriate mirror to /etc/apt/sources.list
+   sudo apt-get update
+   sudo apt-get install libsodium8 libsodium-dev
+   cargo clean
+   cargo build
+   RUST_TEST_THREADS=1 cargo test
+   ```
+   
