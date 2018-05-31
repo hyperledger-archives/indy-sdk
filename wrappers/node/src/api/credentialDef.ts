@@ -166,7 +166,7 @@ export class CredentialDef extends VCXBase {
               return
             }
             this._credDefId = credDefIdVal
-            resolve(credDefId)
+            resolve(credDefIdVal)
           })
         )
       return credDefId

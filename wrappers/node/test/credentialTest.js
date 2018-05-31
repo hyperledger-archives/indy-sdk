@@ -152,9 +152,7 @@ describe('A Credential', function () {
   it('can send a credential request.', async () => {
     const connection = await connectionCreateAndConnect()
     const obj = await Credential.deserialize(SERIALIZED_CREDENTIAL)
-    console.log(1)
-    await obj.sendRequest(connection)
-    console.log(2)
+    await obj.sendRequest({ connection, payment: 0 })
     const state = await obj.getState()
     assert(state === 2)
   })
