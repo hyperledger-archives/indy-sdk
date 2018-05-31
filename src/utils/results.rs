@@ -26,11 +26,22 @@ impl ResultHandler {
     pub fn one<T>(err: ErrorCode, receiver: Receiver<(ErrorCode, T)>) -> Result<T, ErrorCode> {
         err.try_err()?;
 
-        let (err, val) = receiver.recv()?;
-
-        err.try_err()?;
-
-        Ok(val)
+        let res = receiver.recv();
+        match res {
+            Ok((err, val)) => {
+                err.try_err()?;
+                Ok(val)
+            },
+            Err(e) => {
+                error!("An error was received {:?}", e);
+                Err(ErrorCode::Success)
+            }
+        }
+//        let (err, val) = receiver.recv()?;
+//
+//        err.try_err()?;
+//
+//        Ok(val)
     }
 
     pub fn one_timeout<T>(err: ErrorCode, receiver: Receiver<(ErrorCode, T)>, timeout: Duration) -> Result<T, ErrorCode> {
