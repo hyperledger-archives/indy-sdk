@@ -28,4 +28,10 @@ Add following line to AndroidManifest.xml
 
 Android emulator generally use x86 images
 
+##Known Issues
+
+- The android build does successfully compile on OSX
+    - It fails on the libzmq linking
+    - `libindy/build_scripts/android/build.nondocker.sh` can be used to make android builds without Docker
+
 
