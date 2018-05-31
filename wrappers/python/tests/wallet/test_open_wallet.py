@@ -27,10 +27,10 @@ async def test_open_wallet_works_for_twice(wallet_name, wallet_handle, credentia
 
 
 @pytest.mark.asyncio
-async def test_open_wallet_works_for_empty_credentials(xwallet, wallet_name):
+async def test_open_wallet_works_for_missed_key(xwallet, wallet_name):
     with pytest.raises(IndyError) as e:
         await wallet.open_wallet(wallet_name, None, "{}")
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
+    assert ErrorCode.WalletInputError == e.value.error_code
 
 
 @pytest.mark.asyncio

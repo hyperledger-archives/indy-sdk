@@ -361,7 +361,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let res = WalletUtils::create_wallet(POOL, WALLET, None, None, Some(r#"{}"#));
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletInputError);
 
             TestUtils::cleanup_storage();
         }

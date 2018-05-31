@@ -77,7 +77,7 @@ impl WalletCredentials {
                 PwhashArgon2i13::derive_key(&mut master_key, key.as_bytes(), salt)?;
                 master_key
             } else {
-                return Err(WalletError::CommonError(CommonError::InvalidStructure(String::from("Credentials missing 'key' field"))));
+                return Err(WalletError::InputError(String::from("Credentials missing 'key' field")));
             };
 
             let rekey = if let Some(key) =  m.get("rekey").and_then(|s| s.as_str()) {
