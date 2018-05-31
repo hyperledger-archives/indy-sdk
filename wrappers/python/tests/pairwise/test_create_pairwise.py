@@ -30,7 +30,7 @@ async def test_create_pairwise_works_for_not_found_my_did(wallet_handle, identit
     await did.store_their_did(wallet_handle, json.dumps({'did': their_did}))
     with pytest.raises(IndyError) as e:
         await pairwise.create_pairwise(wallet_handle, their_did, UNKNOWN_DID, None)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio
@@ -38,7 +38,7 @@ async def test_create_pairwise_works_for_not_found_their_did(wallet_handle, iden
     (my_did, _) = identity_trustee1
     with pytest.raises(IndyError) as e:
         await pairwise.create_pairwise(wallet_handle, UNKNOWN_DID, my_did, None)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio

@@ -161,6 +161,16 @@ impl DidUtils {
         super::results::result_to_string(err, receiver)
     }
 
+    pub fn get_my_did_with_metadata(wallet_handle: i32, did: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let did = CString::new(did).unwrap();
+
+        let err = indy_get_my_did_with_meta(command_handle, wallet_handle, did.as_ptr(), cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
     pub fn abbreviate_verkey(did: &str, verkey: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 

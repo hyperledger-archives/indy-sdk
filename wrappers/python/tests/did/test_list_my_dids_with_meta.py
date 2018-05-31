@@ -4,7 +4,6 @@ from indy import IndyError
 from indy import did
 from indy.error import ErrorCode
 
-import base58
 import pytest
 
 

@@ -1,13 +1,15 @@
 mod ed25519;
-pub mod types;
 
 use base64;
 
 use self::ed25519::ED25519CryptoType;
-use self::types::*;
+
 
 use utils::crypto::base58::Base58;
 use utils::crypto::verkey_builder::build_full_verkey;
+use domain::crypto::key::{Key, KeyInfo};
+use domain::crypto::did::{Did, MyDidInfo, TheirDidInfo, TheirDid};
+use domain::crypto::combo_box::ComboBox;
 
 use errors::common::CommonError;
 use errors::crypto::CryptoError;
@@ -119,7 +121,7 @@ impl CryptoService {
         Ok(did)
     }
 
-    pub fn create_their_did(&self, their_did_info: &TheirDidInfo) -> Result<Did, CryptoError> {
+    pub fn create_their_did(&self, their_did_info: &TheirDidInfo) -> Result<TheirDid, CryptoError> {
         trace!("create_their_did >>> their_did_info: {:?}", their_did_info);
 
         // Check did is correct Base58
@@ -130,11 +132,11 @@ impl CryptoService {
 
         self.validate_key(&verkey)?;
 
-        let their_did = Did::new(their_did_info.did.clone(), verkey);
+        let did = TheirDid { did: their_did_info.did.clone(), verkey };
 
-        trace!("create_their_did <<< their_did: {:?}", their_did);
+        trace!("create_their_did <<< did: {:?}", did);
 
-        Ok(their_did)
+        Ok(did)
     }
 
     pub fn sign(&self, my_key: &Key, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
@@ -408,7 +410,7 @@ impl CryptoService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use services::crypto::types::MyDidInfo;
+    use domain::crypto::did::MyDidInfo;
 
     #[test]
     fn create_my_did_with_works_for_empty_info() {

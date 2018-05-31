@@ -1,4 +1,4 @@
-use libindy::ErrorCode;
+use ErrorCode;
 use utils::sequence;
 
 use libc::c_char;
@@ -13,7 +13,7 @@ type EcStringCallback = Option<extern fn(command_handle: i32, err: ErrorCode, c_
 
 pub fn closure_to_cb_ec(closure: EcClosure) -> (i32, EcCallback) {
     lazy_static! {
-       static ref CALLBACKS: Mutex<HashMap<i32, Box<EcClosure>>> = Default::default();
+       static ref CALLBACKS: Mutex<HashMap<i32, EcClosure>> = Default::default();
     }
 
     extern "C" fn _callback(command_handle: i32, err: ErrorCode) {
@@ -24,14 +24,14 @@ pub fn closure_to_cb_ec(closure: EcClosure) -> (i32, EcCallback) {
 
     let command_handle = sequence::get_next_id();
     let mut callbacks = CALLBACKS.lock().unwrap();
-    callbacks.insert(command_handle, Box::new(closure));
+    callbacks.insert(command_handle, closure);
 
     (command_handle, Some(_callback))
 }
 
 pub fn closure_to_cb_ec_string(closure: EcStringClosure) -> (i32, EcStringCallback) {
     lazy_static! {
-       static ref CALLBACKS: Mutex<HashMap<i32, Box<EcStringClosure>>> = Default::default();
+       static ref CALLBACKS: Mutex<HashMap<i32, EcStringClosure>> = Default::default();
     }
 
     extern "C" fn _callback(command_handle: i32, err: ErrorCode, c_str: *const c_char) {
@@ -43,7 +43,7 @@ pub fn closure_to_cb_ec_string(closure: EcStringClosure) -> (i32, EcStringCallba
 
     let mut callbacks = CALLBACKS.lock().unwrap();
     let command_handle = sequence::get_next_id();
-    callbacks.insert(command_handle, Box::new(closure));
+    callbacks.insert(command_handle, closure);
 
     (command_handle, Some(_callback))
 }

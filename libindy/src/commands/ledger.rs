@@ -10,8 +10,9 @@ use errors::indy::IndyError;
 
 use services::pool::PoolService;
 use services::crypto::CryptoService;
-use services::crypto::types::{Did, Key};
-use services::wallet::WalletService;
+use domain::crypto::key::Key;
+use domain::crypto::did::Did;
+use services::wallet::{WalletService, RecordOptions};
 use services::ledger::LedgerService;
 
 
@@ -25,7 +26,6 @@ use std::rc::Rc;
 use utils::crypto::base58::Base58;
 
 use utils::crypto::signature_serializer::serialize_signature;
-use self::indy_crypto::utils::json::JsonDecodable;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
@@ -107,6 +107,9 @@ pub enum LedgerCommand {
         String, // submitter did
         String, // target_did
         String, // data
+        Box<Fn(Result<String, IndyError>) + Send>),
+    BuildGetValidatorInfoRequest(
+        String, // submitter did
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetTxnRequest(
         String, // submitter did
@@ -274,6 +277,10 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildNodeRequest command received");
                 cb(self.build_node_request(&submitter_did, &target_did, &data));
             }
+            LedgerCommand::BuildGetValidatorInfoRequest(submitter_did, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetValidatorInfoRequest command received");
+                cb(self.build_get_validator_info_request(&submitter_did));
+            }
             LedgerCommand::BuildGetTxnRequest(submitter_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetTxnRequest command received");
                 cb(self.build_get_txn_request(&submitter_did, data));
@@ -350,15 +357,11 @@ impl LedgerCommandExecutor {
                      submitter_did: &str,
                      request_json: &str,
                      signature_type: SignatureType) -> Result<String, IndyError> {
-        trace!("_sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+        debug!("_sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
 
-        let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", submitter_did))?;
-        let my_did = Did::from_json(&my_did_json)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid my_did_json: {}", err.to_string())))?;
+        let my_did: Did = self.wallet_service.get_indy_object(wallet_handle, &submitter_did, &RecordOptions::id_value(), &mut String::new())?;
 
-        let my_key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", my_did.verkey))?;
-        let my_key = Key::from_json(&my_key_json)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid my_key_json: {}", err.to_string())))?;
+        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_did.verkey, &RecordOptions::id_value(), &mut String::new())?;
 
         let mut request: Value = serde_json::from_str(request_json)
             .map_err(|err|
@@ -399,7 +402,7 @@ impl LedgerCommandExecutor {
                 CryptoError::CommonError(
                     CommonError::InvalidState(format!("Can't serialize message after signing: {}", err.description()))))?;
 
-        trace!("_sign_request <<< res: {:?}", res);
+        debug!("_sign_request <<< res: {:?}", res);
 
         Ok(res)
     }
@@ -636,6 +639,19 @@ impl LedgerCommandExecutor {
                                                          data)?;
 
         debug!("build_node_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_get_validator_info_request(&self,
+                             submitter_did: &str) -> Result<String, IndyError> {
+        info!("build_get_validator_info_request >>> submitter_did: {:?}", submitter_did);
+
+        self.crypto_service.validate_did(submitter_did)?;
+
+        let res = self.ledger_service.build_get_validator_info_request(submitter_did)?;
+
+        info!("build_get_validator_info_request <<< res: {:?}", res);
 
         Ok(res)
     }
