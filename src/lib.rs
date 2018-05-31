@@ -239,3 +239,10 @@ impl From<mpsc::RecvTimeoutError> for ErrorCode {
         }
     }
 }
+
+impl From<mpsc::RecvError> for ErrorCode {
+    fn from(_: mpsc::RecvError) -> Self {
+        warn!("Channel returned an error.");
+        ErrorCode::CommonIOError
+    }
+}
