@@ -395,13 +395,11 @@ mod medium_cases {
         }
 
         #[test]
-        #[ignore]
         fn indy_open_wallet_works_for_changing_credentials() {
             TestUtils::cleanup_storage();
 
             WalletUtils::create_wallet(POOL, WALLET, None, None, Some(r#"{"key":"key"}"#)).unwrap();
             let wallet_handle = WalletUtils::open_wallet(WALLET, None, Some(r#"{"key":"key", "rekey":"other_key"}"#)).unwrap();
-
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
             let wallet_handle = WalletUtils::open_wallet(WALLET, None, Some(r#"{"key":"other_key"}"#)).unwrap();
