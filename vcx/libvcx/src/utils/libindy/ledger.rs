@@ -317,7 +317,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_create_schema_req";
-        ::utils::devsetup::setup_wallet(wallet_name);
+        ::utils::devsetup::tests::setup_wallet(wallet_name);
         init_wallet(wallet_name).unwrap();
 
         let schema_data = r#"["name", "age", "sex", "height"]"#;
@@ -340,7 +340,7 @@ mod tests {
     #[test]
     fn test_build_get_schema_and_parse_response() {
         let wallet_name = "test_create_schema_req";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
 
         let get_schema_req = libindy_build_get_schema_request(
             &settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap(),
@@ -350,7 +350,7 @@ mod tests {
         let get_schema_response = libindy_submit_request(&get_schema_req).unwrap();
         println!("get_schema_response: {}", get_schema_response);
 
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
 
         let (id, schema_json) = libindy_parse_get_schema_response(&get_schema_response).unwrap();
         println!("schema_id: {}", id);
@@ -365,7 +365,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_create_cred_def_req";
         let schema_json = r#"{"ver":"1.0","id":"2hoqvcwupRTUNkXn6ArYzs:2:unique_schema_name:0.0.1","name":"unique_schema_name","version":"0.0.1","attrNames":["age","height","name","sex"],"seqNo":1699}"#;
-        ::utils::devsetup::setup_wallet(wallet_name);
+        ::utils::devsetup::tests::setup_wallet(wallet_name);
         init_wallet(wallet_name).unwrap();
 
         let (id, create_cred_def_json) = libindy_create_and_store_credential_def(
@@ -392,7 +392,7 @@ mod tests {
     fn test_create_schema_and_cred_def_on_ledger() {
         ::utils::logger::LoggerUtils::init_test_logging();
         let wallet_name = "create_schema_and_cred_def";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
 
         //Create Schema-------------
         let schema_data = r#"["name", "age", "sex", "height"]"#;
@@ -454,14 +454,14 @@ mod tests {
         println!("{}", submit_cred_def_response);
 
 
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_get_cred_def_req_and_parse_response() {
         let wallet_name = "test_create_schema_req";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
 
         let get_cred_def_req = libindy_build_get_credential_def_txn(CRED_DEF_ID).unwrap();
         println!("get_cred_def_req: {}", get_cred_def_req);
@@ -473,7 +473,7 @@ mod tests {
         println!("cred_def_id: {}", id);
         println!("cred_def_json: {}", cred_def_json);
 
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         assert_eq!(id, CRED_DEF_ID);
     }
 }

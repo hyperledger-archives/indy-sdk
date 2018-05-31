@@ -917,7 +917,7 @@ mod tests {
     #[test]
     fn test_proof_verification() {
         let wallet_name = "test_proof_verification";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
 
         let proof_req = json!({
                "nonce":"123432421212",
@@ -950,7 +950,7 @@ mod tests {
         proof.proof_request = Some(proof_req_obj);
 
         let rc = proof.proof_validation();
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
 
         println!("{}", serde_json::to_string(&proof).unwrap());
         assert!(rc.is_ok());

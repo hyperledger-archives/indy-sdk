@@ -634,7 +634,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_retrieve_creds_disclosed_proof";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
 
         let mut proof_req = ProofRequestMessage::create();
         let mut proof: DisclosedProof = Default::default();
@@ -661,7 +661,7 @@ mod tests {
         let expected_creds: Value = serde_json::from_str(CREDS_FROM_PROOF_REQ).unwrap();
         assert_eq!(retrieved_creds, expected_creds);
 
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[test]
@@ -669,12 +669,12 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_retrieve_creds_disclosed_proof";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
 
         let proof: DisclosedProof = Default::default();
         assert_eq!(proof.retrieve_credentials(), Err(ProofError::ProofNotReadyError()));
 
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[test]
@@ -730,7 +730,7 @@ mod tests {
     fn test_generate_proof() {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_generate_proof";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
 
         let mut proof_req = ProofRequestMessage::create();
         let indy_proof_req = json!({
@@ -804,7 +804,7 @@ mod tests {
         proof.link_secret_alias = "main".to_string();
         let generated_proof = proof.generate_proof(&selected_credentials.to_string(), &self_attested.to_string());
 
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         assert!(generated_proof.is_ok());
     }
 }

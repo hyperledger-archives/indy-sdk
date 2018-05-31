@@ -148,10 +148,10 @@ mod tests {
         ::utils::logger::LoggerUtils::init_test_logging();
         let wallet_name = "test_init_pool_and_wallet";
         // make sure there's a valid wallet and pool before trying to use them.
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
         init_pool_and_wallet().unwrap();
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 }

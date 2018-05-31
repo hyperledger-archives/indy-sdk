@@ -231,11 +231,11 @@ pub mod tests {
     fn test_get_credential_def() {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "get_cred_def_test";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
 
         let (id, cred_def_json) = retrieve_credential_def(CRED_DEF_ID).unwrap();
 
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         assert_eq!(&id, CRED_DEF_ID);
         let def1: serde_json::Value = serde_json::from_str(&cred_def_json).unwrap();
         let def2: serde_json::Value = serde_json::from_str(CRED_DEF_JSON).unwrap();
@@ -257,7 +257,7 @@ pub mod tests {
     #[test]
     fn test_create_credential_def_fails_with_already_created_credential_def() {
         let wallet_name = "a_test_wallet";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
         let wallet_handle = get_wallet_handle();
 
         let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -268,7 +268,7 @@ pub mod tests {
                                           "tag_1".to_string(),
                                           r#"{"support_revocation":false}"#.to_string());
 
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         assert_eq!(rc.err(), Some(CredDefError::CredDefAlreadyCreatedError()));
     }
 

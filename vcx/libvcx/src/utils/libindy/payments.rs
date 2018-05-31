@@ -266,14 +266,14 @@ pub mod tests {
     #[test]
     fn test_get_wallet_token_info_real() {
         let name = "test_get_wallet_info_real";
-        ::utils::devsetup::setup_dev_env(name);
+        ::utils::devsetup::tests::setup_dev_env(name);
         init_payments().unwrap();
         create_address().unwrap();
         create_address().unwrap();
         create_address().unwrap();
         let balance = get_wallet_token_info().unwrap();
         assert!(balance.contains(r#""balance":0"#));
-        ::utils::devsetup::cleanup_dev_env(name);
+        ::utils::devsetup::tests::cleanup_dev_env(name);
     }
 
     #[test]
@@ -289,13 +289,13 @@ pub mod tests {
     #[test]
     fn test_get_ledger_fees_real() {
         let name = "test_get_ledger_fees_real";
-        ::utils::devsetup::setup_dev_env(name);
+        ::utils::devsetup::tests::setup_dev_env(name);
         init_payments().unwrap();
         set_ledger_fees().unwrap();
         let fees = get_ledger_fees().unwrap();
         assert!(fees.contains(r#""101":2"#));
         assert!(fees.contains(r#""1":1"#));
-        ::utils::devsetup::cleanup_dev_env(name);
+        ::utils::devsetup::tests::cleanup_dev_env(name);
     }
 
     #[test]
