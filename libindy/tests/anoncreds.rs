@@ -2219,13 +2219,12 @@ mod demos {
     }
 
     #[test]
-    #[ignore]
     fn anoncreds_works_for_custom_wallet() {
         TestUtils::cleanup_storage();
         InmemWallet::cleanup();
 
         //1. Registers new wallet type
-        WalletUtils::register_wallet_type(INMEM_TYPE, false).unwrap();
+        WalletUtils::register_wallet_storage(INMEM_TYPE, false).unwrap();
 
         //2. Creates and opens Issuer wallet
         let issuer_wallet_name = "custom_issuer_wallet";
@@ -4302,7 +4301,7 @@ mod demos {
                                                              &cred_defs_json,
                                                              &rev_states_json).unwrap();
 
-        let proof: Proof = serde_json::from_str(&proof_json).unwrap();
+        let _proof: Proof = serde_json::from_str(&proof_json).unwrap();
 
         //9. Verifier verifies proof
         let rev_reg_defs_json = json!({}).to_string();

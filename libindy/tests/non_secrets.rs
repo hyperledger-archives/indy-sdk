@@ -16,7 +16,6 @@ extern crate named_type_derive;
 #[macro_use]
 mod utils;
 
-use utils::inmem_wallet::InmemWallet;
 use utils::wallet::WalletUtils;
 use utils::non_secrets::*;
 use utils::test::TestUtils;
@@ -1057,13 +1056,12 @@ mod high_cases {
             }
 
             #[test]
-            #[ignore] //TODO: doesn't work
             fn indy_wallet_search_for_like_query() {
                 NonSecretsUtils::populate_wallet_for_search();
                 let wallet_handle = WalletUtils::open_wallet(SEARCH_COMMON_WALLET, None, None).unwrap();
 
                 let query_json = r#"{
-                    "~tagName2": {"$like": "str3"}
+                    "~tagName2": {"$like": "%str3%"}
                 }"#;
 
                 let search_handle = NonSecretsUtils::open_wallet_search(wallet_handle, TYPE, query_json, OPTIONS_FULL).unwrap();

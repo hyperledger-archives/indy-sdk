@@ -214,18 +214,16 @@ impl DidCommandExecutor {
                 CommonError::InvalidStructure(
                     format!("Invalid MyDidInfo json: {:?}", err)))?;
 
-        if let Some(ref did) = my_did_info.did.as_ref() {
-            if self.wallet_service.record_exists::<Did>(wallet_handle, did)? {
-                return Err(IndyError::DidError(DidError::AlreadyExistsError(format!("Did already exists"))));
-            };
-        }
+        let (did, key) = self.crypto_service.create_my_did(&my_did_info)?;
 
-        let (my_did, key) = self.crypto_service.create_my_did(&my_did_info)?;
+        if self.wallet_service.record_exists::<Did>(wallet_handle, &did.did)? {
+            return Err(IndyError::DidError(DidError::AlreadyExistsError(format!("Did already exists"))));
+        };
 
-        self.wallet_service.add_indy_object(wallet_handle, &my_did.did, &my_did, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &did.did, &did, "{}")?;
         self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, "{}")?;
 
-        let res = (my_did.did, my_did.verkey);
+        let res = (did.did, did.verkey);
 
         debug!("create_and_store_my_did <<< res: {:?}", res);
 

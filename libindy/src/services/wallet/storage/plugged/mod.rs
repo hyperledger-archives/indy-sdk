@@ -16,6 +16,7 @@ use services::wallet::language;
 
 
 use super::{StorageIterator, WalletStorageType, WalletStorage, StorageEntity, EncryptedValue, Tag, TagName};
+use super::super::RecordOptions;
 
 use self::libc::c_char;
 use self::indy_crypto::utils::json::JsonDecodable;
@@ -34,30 +35,11 @@ pub struct PluggedWalletJSONValues {
 
 impl<'a> JsonDecodable<'a> for PluggedWalletJSONValues {}
 
-fn default_true() -> bool {
-    true
-}
-fn default_false() -> bool {
-    false
-}
-
-#[derive(Deserialize, PartialEq, Debug)]
-pub struct FetchOptions {
-    #[serde(default="default_true")]
-    fetch_value: bool,
-
-    #[serde(default="default_true")]
-    fetch_tags: bool,
-
-    #[serde(default="default_false")]
-    fetch_type: bool,
-}
-
 #[derive(PartialEq, Debug)]
 struct PluggedStorageIterator {
     storage: PluggedStorage,
     search_handle: i32,
-    options: FetchOptions,
+    options: RecordOptions,
 }
 
 impl StorageIterator for PluggedStorageIterator {
@@ -71,11 +53,11 @@ impl StorageIterator for PluggedStorageIterator {
         if err == ErrorCode::WalletItemNotFound {
             return Ok(None);
         }
-        else if err != ErrorCode::Success {
-            return Err(WalletStorageError::PluggedStorageError(err));
-        }
+            else if err != ErrorCode::Success {
+                return Err(WalletStorageError::PluggedStorageError(err));
+            }
 
-        let type_ = if self.options.fetch_type {
+        let type_ = if self.options.retrieve_type {
             let mut type_ptr: *const c_char = ptr::null_mut();
 
             let err = (self.storage.get_record_type_handler)(self.storage.handle,
@@ -86,8 +68,7 @@ impl StorageIterator for PluggedStorageIterator {
                 return Err(WalletStorageError::PluggedStorageError(err));
             }
             Some(base64::decode(unsafe { CStr::from_ptr(type_ptr).to_str()? })?)
-        }
-        else { None };
+        } else { None };
 
         let id = {
             let mut id_ptr: *const c_char = ptr::null_mut();
@@ -102,7 +83,7 @@ impl StorageIterator for PluggedStorageIterator {
             base64::decode(unsafe { CStr::from_ptr(id_ptr).to_str()? })?
         };
 
-        let value = if self.options.fetch_value {
+        let value = if self.options.retrieve_value {
             let mut value_bytes: *const u8 = ptr::null();
             let mut value_bytes_len: usize = 0;
             let err = (self.storage.get_record_value_handler)(self.storage.handle,
@@ -116,9 +97,9 @@ impl StorageIterator for PluggedStorageIterator {
 
             let mut value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
             Some(EncryptedValue::from_bytes(value)?)
-        } else {None};
+        } else { None };
 
-        let tags = if self.options.fetch_tags {
+        let tags = if self.options.retrieve_tags {
             let mut tags_ptr: *const c_char = ptr::null_mut();
             let err = (self.storage.get_record_tags_handler)(self.storage.handle,
                                                              record_handle,
@@ -130,11 +111,11 @@ impl StorageIterator for PluggedStorageIterator {
 
             let tags_json = unsafe { CStr::from_ptr(tags_ptr).to_str()? };
             Some(_tags_from_json(tags_json)?)
-        } else {None};
+        } else { None };
 
         (self.storage.free_record_handler)(self.storage.handle, record_handle);
 
-        Ok(Some(StorageEntity{
+        Ok(Some(StorageEntity {
             type_: type_,
             name: id,
             value: value,
@@ -250,8 +231,7 @@ fn _tags_from_json(json: &str) -> Result<Vec<Tag>, WalletStorageError> {
                     v
                 )
             );
-        }
-        else {
+        } else {
             tags.push(
                 Tag::Encrypted(
                     base64::decode(&k).map_err(|err| WalletStorageError::IOError(err.to_string()))?,
@@ -286,7 +266,7 @@ impl WalletStorage for PluggedStorage {
         let options_json = CString::new(options)?;
         let mut record_handle: i32 = -1;
 
-        let options: FetchOptions = serde_json::from_str(options)
+        let options: RecordOptions = serde_json::from_str(options)
             .map_err(|err|
                 WalletStorageError::CommonError(
                     CommonError::InvalidStructure(format!("Cannot deserialize RecordRetrieveOptions: {:?}", err))))?;
@@ -301,11 +281,11 @@ impl WalletStorage for PluggedStorage {
         if err == ErrorCode::WalletItemNotFound {
             return Err(WalletStorageError::ItemNotFound);
         }
-        else if err != ErrorCode::Success {
-            return Err(WalletStorageError::PluggedStorageError(err));
-        }
+            else if err != ErrorCode::Success {
+                return Err(WalletStorageError::PluggedStorageError(err));
+            }
 
-        let value = if options.fetch_value {
+        let value = if options.retrieve_value {
             let mut value_bytes: *const u8 = ptr::null();
             let mut value_bytes_len: usize = 0;
             let err = (self.get_record_value_handler)(self.handle,
@@ -319,9 +299,9 @@ impl WalletStorage for PluggedStorage {
 
             let mut value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
             Some(EncryptedValue::from_bytes(value)?)
-        } else {None};
+        } else { None };
 
-        let tags = if options.fetch_tags {
+        let tags = if options.retrieve_tags {
             let mut tags_ptr: *const c_char = ptr::null_mut();
             let err = (self.get_record_tags_handler)(self.handle,
                                                      record_handle,
@@ -333,11 +313,11 @@ impl WalletStorage for PluggedStorage {
 
             let tags_json = unsafe { CStr::from_ptr(tags_ptr).to_str()? };
             Some(_tags_from_json(tags_json)?)
-        } else {None};
+        } else { None };
 
         let result = StorageEntity {
             name: name.to_owned(),
-            type_: if options.fetch_type {Some(type_param.clone())} else {None},
+            type_: if options.retrieve_type { Some(type_param.clone()) } else { None },
             value,
             tags
         };
@@ -463,10 +443,7 @@ impl WalletStorage for PluggedStorage {
                                                                  &mut metadata_ptr,
                                                                  &mut metadata_handle);
 
-        if err == ErrorCode::WalletItemNotFound {
-            return Err(WalletStorageError::ItemNotFound);
-        }
-        else if err != ErrorCode::Success {
+        if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
@@ -501,13 +478,13 @@ impl WalletStorage for PluggedStorage {
         }
 
         Ok(Box::new(
-            PluggedStorageIterator{
+            PluggedStorageIterator {
                 storage: self.clone() /* TODO avoid clone. Use Rc or better approach. */,
                 search_handle,
-                options: FetchOptions{
-                    fetch_type: true,
-                    fetch_value: true,
-                    fetch_tags:  true,
+                options: RecordOptions {
+                    retrieve_type: true,
+                    retrieve_value: true,
+                    retrieve_tags: true,
                 }
             }
         ))
@@ -516,7 +493,7 @@ impl WalletStorage for PluggedStorage {
     fn search(&self, type_: &Vec<u8>, query: &language::Operator, options_json: Option<&str>) -> Result<Box<StorageIterator>, WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let query_json = CString::new(query.to_string())?;
-        let options: FetchOptions = serde_json::from_str(options_json.unwrap_or(""))?;
+        let options: RecordOptions = serde_json::from_str(options_json.unwrap_or(""))?;
         let options_json = CString::new(options_json.unwrap_or(""))?;
         let mut search_handle: i32 = -1;
 
@@ -748,7 +725,7 @@ mod tests {
                         tags2.sort_unstable();
 
                         tags1 == tags2
-                    },
+                    }
                     (&None, &None) => true,
                     (_, _) => false,
                 }
@@ -837,9 +814,8 @@ mod tests {
 
     fn _convert_c_string(str: *const c_char) -> Option<String> {
         if str != ptr::null() {
-            Some(unsafe{ CStr::from_ptr(str).to_str().unwrap() }.to_string())
-        }
-        else {
+            Some(unsafe { CStr::from_ptr(str).to_str().unwrap() }.to_string())
+        } else {
             None
         }
     }
@@ -849,9 +825,9 @@ mod tests {
     }
 
     extern "C" fn _mock_create_handler(name: *const c_char,
-                            config: *const c_char,
-                            credentials: *const c_char,
-                            metadata: *const c_char) -> ErrorCode {
+                                       config: *const c_char,
+                                       credentials: *const c_char,
+                                       metadata: *const c_char) -> ErrorCode {
         assert_ne!(name, ptr::null());
         assert_ne!(credentials, ptr::null());
 
@@ -1156,7 +1132,6 @@ mod tests {
 
     extern "C" fn _mock_free_storage_metadata_handler(storage_handle: i32,
                                                       metadata_handle: i32) -> ErrorCode {
-
         DEBUG_VEC.write().unwrap().push(
             Call::FreeStorageMetadataHandler(
                 storage_handle,
@@ -1204,7 +1179,6 @@ mod tests {
 
     extern "C" fn _mock_search_all_records_handler(storage_handle: i32,
                                                    search_handle_p: *mut i32) -> ErrorCode {
-
         unsafe { *search_handle_p = RETURN_SEARCH_HANDLE; }
 
         DEBUG_VEC.write().unwrap().push(
@@ -1395,13 +1369,13 @@ mod tests {
     fn plugged_storage_add_works() {
         DEBUG_VEC.write().unwrap().clear();
 
-        let mut storage = _open_storage();
+        let storage = _open_storage();
 
         DEBUG_VEC.write().unwrap().clear();
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let value = EncryptedValue{data: _random_vector(256), key: _random_vector(60)};
+        let value = EncryptedValue { data: _random_vector(256), key: _random_vector(60) };
         let mut tags = Vec::new();
         tags.push(Tag::Encrypted(_random_vector(32), _random_vector(64)));
         tags.push(Tag::PlainText(_random_vector(32), _random_string(64)));
@@ -1433,7 +1407,7 @@ mod tests {
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let value = EncryptedValue{data: _random_vector(256), key: _random_vector(44)};
+        let value = EncryptedValue { data: _random_vector(256), key: _random_vector(44) };
 
         storage.update(&type_, &id, &value).unwrap();
 
@@ -1454,7 +1428,7 @@ mod tests {
     fn plugged_storage_update_record_tags_works() {
         DEBUG_VEC.write().unwrap().clear();
 
-        let mut storage = _open_storage();
+        let storage = _open_storage();
 
         DEBUG_VEC.write().unwrap().clear();
 
@@ -1485,7 +1459,7 @@ mod tests {
     fn plugged_storage_add_record_tags_works() {
         DEBUG_VEC.write().unwrap().clear();
 
-        let mut storage = _open_storage();
+        let storage = _open_storage();
 
         DEBUG_VEC.write().unwrap().clear();
 
@@ -1510,7 +1484,6 @@ mod tests {
 
         assert_eq!(debug.len(), 1);
         assert_eq!(&expected_call, debug.get(0).unwrap());
-
     }
 
     #[test]
@@ -1523,7 +1496,7 @@ mod tests {
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let options = r##"{"fetch_value": true, "fetch_tags": true, "fetch_type": true}"##;
+        let options = r##"{"retrieveValue": true, "retrieveTags": true, "retrieveType": true}"##;
 
         let storage_entity = storage.get(&type_, &id, &options).unwrap();
 
@@ -1569,13 +1542,13 @@ mod tests {
     fn plugged_storage_get_record_value_tags_works() {
         DEBUG_VEC.write().unwrap().clear();
 
-        let mut storage = _open_storage();
+        let storage = _open_storage();
 
         DEBUG_VEC.write().unwrap().clear();
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let options = r##"{"fetch_value": true, "fetch_tags": true, "fetch_type": false}"##;
+        let options = r##"{"retrieveValue": true, "retrieveTags": true, "retrieveType": false}"##;
 
         let storage_entity = storage.get(&type_, &id, &options).unwrap();
 
@@ -1620,13 +1593,13 @@ mod tests {
     fn plugged_storage_get_record_value_works() {
         DEBUG_VEC.write().unwrap().clear();
 
-        let mut storage = _open_storage();
+        let storage = _open_storage();
 
         DEBUG_VEC.write().unwrap().clear();
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let options = r##"{"fetch_value": true, "fetch_tags": false, "fetch_type": false}"##;
+        let options = r##"{"retrieveValue": true, "retrieveTags": false, "retrieveType": false}"##;
 
         let storage_entity = storage.get(&type_, &id, &options).unwrap();
 
@@ -1666,13 +1639,13 @@ mod tests {
     fn plugged_storage_get_record_tags_works() {
         DEBUG_VEC.write().unwrap().clear();
 
-        let mut storage = _open_storage();
+        let storage = _open_storage();
 
         DEBUG_VEC.write().unwrap().clear();
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let options = r##"{"fetch_value": false, "fetch_tags": true, "fetch_type": false}"##;
+        let options = r##"{"retrieveValue": false, "retrieveTags": true, "retrieveType": false}"##;
 
         let storage_entity = storage.get(&type_, &id, &options).unwrap();
 
@@ -1713,13 +1686,13 @@ mod tests {
     fn plugged_storage_get_record_none_works() {
         DEBUG_VEC.write().unwrap().clear();
 
-        let mut storage = _open_storage();
+        let storage = _open_storage();
 
         DEBUG_VEC.write().unwrap().clear();
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let options = r##"{"fetch_value": false, "fetch_tags": false, "fetch_type": false}"##;
+        let options = r##"{"retrieveValue": false, "retrieveTags": false, "retrieveType": false}"##;
 
         let storage_entity = storage.get(&type_, &id, &options).unwrap();
 
@@ -1754,7 +1727,7 @@ mod tests {
     fn plugged_storage_get_record_default_works() {
         DEBUG_VEC.write().unwrap().clear();
 
-        let mut storage = _open_storage();
+        let storage = _open_storage();
 
         DEBUG_VEC.write().unwrap().clear();
 
@@ -1768,7 +1741,7 @@ mod tests {
             type_: None,
             name: id.clone(),
             value: Some(RETURN_VALUE.read().unwrap().1.clone()),
-            tags: Some(RETURN_TAGS.read().unwrap().1.clone()),
+            tags: None,
         };
 
         assert_eq!(expected_storage_entity, storage_entity);
@@ -1794,11 +1767,10 @@ mod tests {
 
         let debug = DEBUG_VEC.read().unwrap();
 
-        assert_eq!(debug.len(), 4);
+        assert_eq!(debug.len(), 3);
         assert_eq!(&expected_get_record_call, debug.get(0).unwrap());
         assert_eq!(&expected_get_value_call, debug.get(1).unwrap());
-        assert_eq!(&expected_get_tags_call, debug.get(2).unwrap());
-        assert_eq!(&expected_free_record_call, debug.get(3).unwrap());
+        assert_eq!(&expected_free_record_call, debug.get(2).unwrap());
     }
 
     #[test]
@@ -1833,7 +1805,7 @@ mod tests {
     fn plugged_storage_set_storage_metadata_works() {
         DEBUG_VEC.write().unwrap().clear();
 
-        let mut storage = _open_storage();
+        let storage = _open_storage();
 
         DEBUG_VEC.write().unwrap().clear();
 
@@ -1856,7 +1828,7 @@ mod tests {
     fn plugged_storage_search_works() {
         DEBUG_VEC.write().unwrap().clear();
 
-        let mut storage = _open_storage();
+        let storage = _open_storage();
 
         DEBUG_VEC.write().unwrap().clear();
 
@@ -1869,7 +1841,7 @@ mod tests {
             language::TagName::EncryptedTagName(tag_name.clone()),
             language::TargetValue::Encrypted(tag_value.clone()),
         );
-        let options = r##"{"fetch_type": false, "fetch_value": true, "fetch_tags": true}"##;
+        let options = r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##;
 
 
         {
@@ -1948,7 +1920,7 @@ mod tests {
     fn plugged_storage_get_all_works() {
         DEBUG_VEC.write().unwrap().clear();
 
-        let mut storage = _open_storage();
+        let storage = _open_storage();
 
         DEBUG_VEC.write().unwrap().clear();
 
