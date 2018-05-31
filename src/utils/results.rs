@@ -33,7 +33,7 @@ impl ResultHandler {
                 Ok(val)
             },
             Err(e) => {
-                error!("An error was received {:?}", e);
+                println!("An error was received {:?}", e);
                 Err(ErrorCode::Success)
             }
         }
