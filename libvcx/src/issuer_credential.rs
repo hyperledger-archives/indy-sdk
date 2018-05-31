@@ -705,7 +705,7 @@ pub mod tests {
         ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         let wallet_name = "test_create_cred_offer";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
         let wallet_h = get_wallet_handle();
 
         let issuer_did = &settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -734,7 +734,7 @@ pub mod tests {
             cred_def_id: CRED_DEF_ID.to_string(),
         };
         let cred_offer = issuer_cred.generate_credential_offer(to_did).unwrap();
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         let mut cred_offer: serde_json::Value = serde_json::from_str(&cred_offer.libindy_offer).unwrap();
         let cred_offer2: serde_json::Value = serde_json::from_str(CRED_OFFER).unwrap();
         cred_offer["nonce"] = cred_offer2["nonce"].clone();
@@ -888,7 +888,7 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_INSTITUTION_DID, "2hoqvcwupRTUNkXn6ArYzs");
 
         let wallet_name = "test_create_cred";
-        ::utils::devsetup::setup_wallet(wallet_name);
+        ::utils::devsetup::tests::setup_wallet(wallet_name);
         wallet::init_wallet(wallet_name).unwrap();
 
         let mut issuer_credential = create_standard_issuer_credential();

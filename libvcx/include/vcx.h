@@ -72,7 +72,7 @@ vcx_error_t vcx_wallet_get_token_info(vcx_command_handle_t chandle, vcx_payment_
 
 /** Creates a new payment address in the wallet */
 vcx_error_t vcx_wallet_create_payment_address(vcx_command_handle_t chandle, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *address));
-vcx_error_t vcx_wallet_send_tokens(vcx_command_handle_t chandle, vcx_payment_handle_t phandle, vcx_float_t tokens, const char *recipient, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *receipt));
+vcx_error_t vcx_wallet_send_tokens(vcx_command_handle_t chandle, vcx_payment_handle_t phandle, vcx_price_t tokens, const char *recipient, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *receipt));
 
 /** Passthroughs to libindy wallet record API (see libindy documentation) */
 vcx_error_t vcx_wallet_add_record(vcx_command_handle_t chandle, const char * type_, const char *id, const char *value, const char *tags_json, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
@@ -188,7 +188,7 @@ vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handl
  */
 
 /** Creates a credential object from the specified credentialdef handle. Populates a handle the new credential. */
-vcx_error_t vcx_issuer_create_credential(vcx_command_handle_t command_handle, const char *source_id, const char *cred_def_id, const char *issuer_did, const char * credential_data, const char * credential_name, vcx_float_t price, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle));
+vcx_error_t vcx_issuer_create_credential(vcx_command_handle_t command_handle, const char *source_id, const char *cred_def_id, const char *issuer_did, const char * credential_data, const char * credential_name, vcx_price_t price, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle));
 
 /** Asynchronously sends the credential offer to the connection. */
 vcx_error_t vcx_issuer_send_credential_offer(vcx_command_handle_t command_handle, vcx_credential_handle_t credential_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));

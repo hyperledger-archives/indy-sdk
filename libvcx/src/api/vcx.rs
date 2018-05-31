@@ -218,7 +218,7 @@ mod tests {
     #[test]
     fn test_init_with_file() {
         let wallet_name = "test_init_with_file";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
 
@@ -244,13 +244,13 @@ mod tests {
         assert_eq!(result,0);
         thread::sleep(Duration::from_secs(1));
 
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[test]
     fn test_init_with_config() {
         let wallet_name = "test_init_with_config";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
 
@@ -273,13 +273,13 @@ mod tests {
         assert_eq!(result,0);
         thread::sleep(Duration::from_secs(1));
 
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[test]
     fn test_vcx_init_with_default_values() {
         let wallet_name = "test_vcx_init_with_default_values";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
 
@@ -289,13 +289,13 @@ mod tests {
         assert_eq!(result,0);
         thread::sleep(Duration::from_secs(1));
 
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[test]
     fn test_vcx_init_called_twice_fails() {
         let wallet_name = "test_vcx_init_called_twice_fails";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
 
@@ -310,13 +310,13 @@ mod tests {
         assert_eq!(result,error::ALREADY_INITIALIZED.code_num);
         thread::sleep(Duration::from_secs(1));
 
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[test]
     fn test_vcx_init_called_twice_passes_after_shutdown() {
         let wallet_name = "test_vcx_init_called_twice_fails";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
 
@@ -336,7 +336,7 @@ mod tests {
         assert_eq!(settings::get_config_value("pool_name"), Err(error::INVALID_CONFIGURATION.code_num));
 
         // Init for the second time works
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
         let result = vcx_init_with_config(0,CString::new(content.to_string()).unwrap().into_raw(),Some(init_cb));
@@ -349,7 +349,7 @@ mod tests {
     #[test]
     fn test_init_fails_with_open_wallet() {
         let wallet_name = "test_init_fails_with_open_wallet";
-        ::utils::devsetup::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_dev_env(wallet_name);
 
 
         let config_path = "/tmp/test_init.json";
@@ -375,7 +375,7 @@ mod tests {
         thread::sleep(Duration::from_secs(1));
         // Leave file around or other concurrent tests will fail
 
-        ::utils::devsetup::cleanup_dev_env(wallet_name);
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[test]
@@ -403,7 +403,7 @@ mod tests {
 
     #[test]
     fn test_shutdown() {
-        ::utils::devsetup::set_institution_dev_config("test_shutdown");
+        ::utils::devsetup::tests::set_institution_dev_config("test_shutdown");
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         settings::set_config_value(settings::CONFIG_WALLET_KEY,"default");
         settings::set_config_value(settings::CONFIG_LINK_SECRET_ALIAS, settings::DEFAULT_LINK_SECRET_ALIAS);
@@ -427,7 +427,7 @@ mod tests {
         assert_eq!(::disclosed_proof::release(disclosed_proof), Result::Err(error::INVALID_DISCLOSED_PROOF_HANDLE.code_num));
         assert_eq!(wallet::get_wallet_handle(), 0);
 
-        ::utils::devsetup::setup_dev_env("test_shutdown");
+        ::utils::devsetup::tests::setup_dev_env("test_shutdown");
         vcx_shutdown(true);
     }
 

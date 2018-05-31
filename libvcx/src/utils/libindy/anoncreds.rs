@@ -443,8 +443,8 @@ mod tests {
         ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        ::utils::devsetup::setup_wallet(wallet_name);
-        ::utils::devsetup::set_institution_dev_config(wallet_name);
+        ::utils::devsetup::tests::setup_wallet(wallet_name);
+        ::utils::devsetup::tests::set_institution_dev_config(wallet_name);
         open_wallet(wallet_name, None).unwrap();
     }
 
@@ -471,7 +471,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_libindy_create_credential";
-        ::utils::devsetup::setup_wallet(wallet_name);
+        ::utils::devsetup::tests::setup_wallet(wallet_name);
         open_wallet(wallet_name, None).unwrap();
 
         let libindy_offer = libindy_issuer_create_credential_offer(CRED_DEF_ID).unwrap();
@@ -504,7 +504,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_create_schema";
-        ::utils::devsetup::setup_wallet(wallet_name);
+        ::utils::devsetup::tests::setup_wallet(wallet_name);
         init_wallet(wallet_name).unwrap();
 
         let schema_data = r#"["name", "age", "sex", "height"]"#;
@@ -524,7 +524,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_create_cred_def";
-        ::utils::devsetup::setup_wallet(wallet_name);
+        ::utils::devsetup::tests::setup_wallet(wallet_name);
         open_wallet(wallet_name, None).unwrap();
 
         let result = libindy_create_and_store_credential_def(
@@ -547,7 +547,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_create_ms";
-        ::utils::devsetup::setup_wallet(wallet_name);
+        ::utils::devsetup::tests::setup_wallet(wallet_name);
         open_wallet(wallet_name, None).unwrap();
 
         let rc = libindy_prover_create_master_secret("random_ms");
@@ -561,7 +561,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_create_cred_req";
-        ::utils::devsetup::setup_wallet(wallet_name);
+        ::utils::devsetup::tests::setup_wallet(wallet_name);
         open_wallet(wallet_name, None).unwrap();
 
         let result = libindy_prover_create_credential_req(
@@ -581,7 +581,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_store_cred2";
-        ::utils::devsetup::setup_wallet(wallet_name);
+        ::utils::devsetup::tests::setup_wallet(wallet_name);
         open_wallet(wallet_name, None).unwrap();
 
         let libindy_offer = libindy_issuer_create_credential_offer(CRED_DEF_ID).unwrap();
@@ -622,7 +622,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_get_creds_from_req";
-        ::utils::devsetup::setup_wallet(wallet_name);
+        ::utils::devsetup::tests::setup_wallet(wallet_name);
         open_wallet(wallet_name, None).unwrap();
 
         let proof_req = json!({
@@ -654,7 +654,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_prover_create_proof";
-        ::utils::devsetup::setup_wallet(wallet_name);
+        ::utils::devsetup::tests::setup_wallet(wallet_name);
         open_wallet(wallet_name, None).unwrap();
 
         let proof_req = json!({
@@ -720,7 +720,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_verify_proof";
-        ::utils::devsetup::setup_wallet(wallet_name);
+        ::utils::devsetup::tests::setup_wallet(wallet_name);
         open_wallet(wallet_name, None).unwrap();
 
         let proof_req = json!({
