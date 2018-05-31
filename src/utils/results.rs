@@ -8,7 +8,10 @@ pub struct ResultHandler {}
 impl ResultHandler {
     pub fn empty(err: ErrorCode, receiver: Receiver<ErrorCode>) -> Result<(), ErrorCode> {
         err.try_err()?;
-        receiver.recv().unwrap().try_err()
+        match receiver.recv() {
+            Ok(err) => err.try_err(),
+            Err(e) => Err(ErrorCode::from(e))
+        }
     }
 
     pub fn empty_timeout(err: ErrorCode, receiver: Receiver<ErrorCode>, timeout: Duration) -> Result<(), ErrorCode> {
@@ -23,7 +26,7 @@ impl ResultHandler {
     pub fn one<T>(err: ErrorCode, receiver: Receiver<(ErrorCode, T)>) -> Result<T, ErrorCode> {
         err.try_err()?;
 
-        let (err, val) = receiver.recv().unwrap();
+        let (err, val) = receiver.recv()?;
 
         err.try_err()?;
 
@@ -45,7 +48,7 @@ impl ResultHandler {
     pub fn two<T1, T2>(err: ErrorCode, receiver: Receiver<(ErrorCode, T1, T2)>) -> Result<(T1, T2), ErrorCode> {
         err.try_err()?;
 
-        let (err, val, val2) = receiver.recv().unwrap();
+        let (err, val, val2) = receiver.recv()?;
 
         err.try_err()?;
 
@@ -67,7 +70,7 @@ impl ResultHandler {
     pub fn three<T1, T2, T3>(err: ErrorCode, receiver: Receiver<(ErrorCode, T1, T2, T3)>) -> Result<(T1, T2, T3), ErrorCode> {
         err.try_err()?;
 
-        let (err, val, val2, val3) = receiver.recv().unwrap();
+        let (err, val, val2, val3) = receiver.recv()?;
 
         err.try_err()?;
 
