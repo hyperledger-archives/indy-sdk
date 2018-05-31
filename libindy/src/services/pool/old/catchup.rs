@@ -122,8 +122,6 @@ impl CatchupHandler {
         let votes: HashMap<(String, usize, Option<Vec<String>>), usize> = self.nodes_votes.iter().cloned()
             .filter_map(|e| e)
             .fold(HashMap::new(), |mut acc, vote| {
-                //WARN: It can be processed without excessive cloning two steps before, but then we will face double write borrowing.
-                //WARN: This is the most readable variant. However, not the most effective.
                 let cnt = acc.get(&vote).unwrap_or(&0) + 1;
                 acc.insert(vote, cnt);
                 acc
@@ -161,7 +159,7 @@ impl CatchupHandler {
                 CommonError::InvalidStructure(
                     "Can't parse target MerkleTree hash from nodes responses".to_string()))?;
             match hashes {
-                &None => {return Err(PoolError::from(CommonError::InvalidState("Empty consistency proof but catch up needed".to_string())));},
+                &None => (),
                 &Some(ref hashes) => {
                     match CatchupHandler::check_cons_proofs(&self.merkle_tree, hashes, &self.target_mt_root, self.target_mt_size) {
                         Ok(_) => (),
