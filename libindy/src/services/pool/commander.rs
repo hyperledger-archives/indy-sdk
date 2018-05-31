@@ -1,9 +1,20 @@
-pub struct Commander {
+use std::collections::VecDeque;
+use services::pool::pool::PoolEvent;
 
+pub struct Commander {
+    events: VecDeque<PoolEvent>
 }
 
 impl Commander {
     pub fn new() -> Self {
-        Commander {}
+        Commander {
+            events: VecDeque::new(),
+        }
     }
+
+    pub fn get_next_event(&self) -> Option<PoolEvent> {
+        self.events.pop_front()
+    }
+
+    //TODO: push event -- formats of what will come to us?
 }

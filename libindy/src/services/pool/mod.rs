@@ -7,6 +7,7 @@ mod pool_worker;
 mod pool;
 mod consensus_collector;
 mod networker;
+mod commander;
 
 extern crate byteorder;
 extern crate digest;

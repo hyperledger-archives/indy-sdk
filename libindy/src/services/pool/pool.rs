@@ -1,6 +1,7 @@
 use super::consensus_collector::ConsensusCollector;
 use std::thread::JoinHandle;
 use std::thread;
+use services::pool::commander::Commander;
 
 trait PoolState {
     fn is_terminal(&self) -> bool;
@@ -263,10 +264,10 @@ pub struct Pool <'a>{
 }
 
 impl Pool {
-    pub fn new() -> Self {
+    pub fn new(commander: &Commander) -> Self {
         Pool {
             pool_wrapper: PoolWrapper::Initialization(PoolSM::new()),
-            commander: (),
+            commander,
             consensus_collector: ConsensusCollector::new(),
             worker: None,
         }
@@ -295,7 +296,7 @@ impl Pool {
     }
 
     fn _get_event(&self) -> Option<PoolEvent> {
-        let pe: Option<PoolEvent> = self.commander.get_event();
+        let pe = self.commander.get_next_event();
         self.consensus_collector.get_event(pe)
     }
 
