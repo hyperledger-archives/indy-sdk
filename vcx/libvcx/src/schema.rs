@@ -9,16 +9,16 @@ use std::sync::Mutex;
 use std::string::ToString;
 use std::collections::HashMap;
 use utils::error;
-use utils::constants::{ SCHEMA_ID, SCHEMA_JSON };
+use utils::constants::{ SCHEMA_ID, SCHEMA_JSON, SCHEMA_TXN_TYPE };
 use utils::libindy::{
     ledger::{
         libindy_build_get_schema_request,
         libindy_submit_request,
         libindy_build_schema_request,
         libindy_parse_get_schema_response,
-        libindy_sign_and_submit_request
     },
-    anoncreds::libindy_issuer_create_schema
+    anoncreds::libindy_issuer_create_schema,
+    payments::pay_for_txn
 };
 use error::schema::SchemaError;
 
@@ -81,8 +81,8 @@ pub trait Schema: ToString {
         let request = libindy_build_schema_request(submitter_did, &create_schema)
             .or(Err(SchemaError::InvalidSchemaCreation()))?;
 
-        let response = libindy_sign_and_submit_request(submitter_did, &request)
-            .or(Err(SchemaError::InvalidSchemaCreation()))?;
+        let (payment_info, response) = pay_for_txn(&request, SCHEMA_TXN_TYPE)
+            .map_err(|err| SchemaError::CommonError(err))?;
 
         Self::check_submit_schema_response(&response)?;
 
@@ -93,7 +93,6 @@ pub trait Schema: ToString {
         let txn_val:  Value = serde_json::from_str(txn)
             .or(Err(SchemaError::CommonError(error::INVALID_JSON.code_num)))?;
 
-        println!("txn: {}", txn);
         match txn_val.get("result") {
             Some(_) => return Ok(()),
             None => warn!("No result found in ledger txn. Must be Rejectd"),
@@ -314,6 +313,8 @@ mod tests {
     use rand::Rng;
     use settings;
     use utils::error::INVALID_JSON;
+    #[allow(unused_imports)]
+    use utils::libindy::payments::tests::token_setup;
 
     #[test]
     fn test_ledger_schema_to_string(){
@@ -385,11 +386,13 @@ mod tests {
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
+    #[cfg(feature = "nullpay")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_schema_with_pool(){
         let wallet_name = "test_create_schema";
         ::utils::devsetup::tests::setup_dev_env(wallet_name);
+        token_setup();
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
@@ -404,11 +407,13 @@ mod tests {
         let schema_id = get_schema_id(handle).unwrap();
     }
 
+    #[cfg(feature = "nullpay")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_duplicate_fails(){
         let wallet_name = "test_create_duplicate_schema_fails";
         ::utils::devsetup::tests::setup_dev_env(wallet_name);
+        token_setup();
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let version = r#"0.0.2"#.to_string();
