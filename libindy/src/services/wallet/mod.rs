@@ -71,12 +71,12 @@ use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 impl WalletCredentials {
     fn from_json(json: &str, salt: &[u8; PwhashArgon2i13::SALTBYTES]) -> Result<WalletCredentials, WalletError> {
         if let serde_json::Value::Object(m) = serde_json::from_str(json)? {
-            let master_key = if let Some(key) = m["key"].as_str() {
+            let master_key = if let Some(key) = m.get("key").and_then(|s| s.as_str()) {
                 let mut master_key: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
                 PwhashArgon2i13::derive_key(&mut master_key, key.as_bytes(), salt)?;
                 master_key
             } else {
-                return Err(WalletError::InputError(String::from("Credentials missing 'key' field")));
+                return Err(WalletError::CommonError(CommonError::InvalidStructure(String::from("Credentials missing 'key' field"))));
             };
 
             let storage_credentials = serde_json::to_string(
