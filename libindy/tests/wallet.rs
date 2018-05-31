@@ -357,6 +357,16 @@ mod medium_cases {
         }
 
         #[test]
+        fn indy_create_wallet_works_for_missed_key() {
+            TestUtils::cleanup_storage();
+
+            let res = WalletUtils::create_wallet(POOL, WALLET, None, None, Some(r#"{}"#));
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletInputError);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
         fn indy_create_wallet_works_for_empty_name() {
             TestUtils::cleanup_storage();
 
