@@ -518,7 +518,7 @@ impl WalletStorage for SQLiteStorage {
     }
 
     fn set_storage_metadata(&self, metadata: &Vec<u8>) -> Result<(), WalletStorageError> {
-        match self.conn.execute("INSERT OR REPLACE INTO metadata(value) VALUES(?1)",&[metadata]) {
+        match self.conn.execute("UPDATE metadata SET value = ?1",&[metadata]) {
             Ok(_) => Ok(()),
             Err(error) => {
                 Err(WalletStorageError::IOError(format!("Error occurred while inserting the keys: {}", error)))

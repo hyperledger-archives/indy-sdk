@@ -66,6 +66,19 @@ impl Keys {
 
         return ChaCha20Poly1305IETF::encrypt_as_not_searchable(&keys, &master_key);
     }
+
+    pub fn encrypt(&self, master_key: &[u8]) -> Vec<u8> {
+        let mut keys = Vec::new();
+        keys.extend_from_slice(&self.type_key);
+        keys.extend_from_slice(&self.name_key);
+        keys.extend_from_slice(&self.value_key);
+        keys.extend_from_slice(&self.item_hmac_key);
+        keys.extend_from_slice(&self.tag_name_key);
+        keys.extend_from_slice(&self.tag_value_key);
+        keys.extend_from_slice(&self.tags_hmac_key);
+
+        return ChaCha20Poly1305IETF::encrypt_as_not_searchable(&keys, &master_key);
+    }
 }
 
 
@@ -239,6 +252,12 @@ impl Wallet {
         Ok(())
     }
 
+    pub(super) fn rotate_key(&self, new_master_key: &[u8]) -> Result<(), WalletError> {
+        let new_metadata = self.keys.encrypt(new_master_key);
+        self.storage.set_storage_metadata(&new_metadata)?;
+        Ok(())
+    }
+
     pub fn get_pool_name(&self) -> String {
         self.pool_name.clone()
     }
@@ -286,8 +305,8 @@ mod tests {
 
 
     fn _cleanup() {
-        std::fs::remove_dir_all(_wallet_path());
-        std::fs::create_dir(_wallet_path());
+        std::fs::remove_dir_all(_wallet_path()).unwrap();
+        std::fs::create_dir(_wallet_path()).unwrap();
     }
 
     fn _credentials() -> String {
@@ -319,6 +338,15 @@ mod tests {
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8
+        ];
+    }
+
+    fn _get_test_new_master_key() -> [u8; 32] {
+        return [
+            2, 2, 3, 4, 5, 6, 7, 8,
+            2, 2, 3, 4, 5, 6, 7, 8,
+            2, 2, 3, 4, 5, 6, 7, 8,
+            2, 2, 3, 4, 5, 6, 7, 8
         ];
     }
 
@@ -592,7 +620,7 @@ mod tests {
 
     #[test]
     fn wallet_update_tags() {
-                _cleanup();
+        _cleanup();
         let mut wallet = _create_wallet();
         let type_ = "test";
         let name = "name";
