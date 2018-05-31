@@ -139,34 +139,12 @@ impl TransactionHandler {
         let consensus_reached = same_replies_cnt >= self.f || {
             debug!("TransactionHandler::process_reply: Try to verify proof and signature");
 
-            let data_to_check_proof = TransactionHandler::parse_reply_for_proof_checking(&msg_result);
-            let data_to_check_proof_signature = TransactionHandler::parse_reply_for_proof_signature_checking(&msg_result);
-
-            data_to_check_proof.is_some() && data_to_check_proof_signature.is_some() && {
-                debug!("TransactionHandler::process_reply: Proof and signature are present");
-
-                let (proofs, root_hash, key, value) = data_to_check_proof.unwrap();
-
-                let proof_valid = state_proof::verify_proof(
-                    base64::decode(proofs).unwrap().as_slice(),
-                    root_hash.from_base58().unwrap().as_slice(),
-                    key.as_slice(),
-                    value.as_ref().map(String::as_str));
-
-
-                debug!("TransactionHandler::process_reply: proof_valid: {:?}", proof_valid);
-
-                proof_valid && {
-                    let (signature, participants, value) = data_to_check_proof_signature.unwrap();
-                    let signature_valid = state_proof::verify_proof_signature(
-                        signature,
-                        participants.as_slice(),
-                        &value,
-                        self.nodes.as_slice(), self.f, &self.gen).map_err(|err| warn!("{:?}", err)).unwrap_or(false);
-
-                    debug!("TransactionHandler::process_reply: signature_valid: {:?}", signature_valid);
-                    signature_valid
-                }
+            match TransactionHandler::parse_reply_for_proof_checking(&msg_result) {
+                Some(parsed_sps) => {
+                    debug!("TransactionHandler::process_reply: Proof and signature are present");
+                    self.verify_parsed_sp(parsed_sps)
+                },
+                None => false
             }
         };
 
@@ -288,8 +266,7 @@ impl TransactionHandler {
         }
     }
 
-    fn parse_reply_for_proof_checking(json_msg: &SJsonValue)
-                                      -> Option<(&str, &str, Vec<u8>, Option<String>)> {
+    fn parse_reply_for_proof_checking(json_msg: &SJsonValue) -> Option<Vec<ParsedSP>> {
         trace!("TransactionHandler::parse_reply_for_proof_checking: >>> json_msg: {:?}", json_msg);
 
         let xtype = if let Some(xtype) = json_msg["type"].as_str() {
@@ -479,7 +456,14 @@ impl TransactionHandler {
         };
 
         trace!("parse_reply_for_proof_checking: <<< proof {:?}, root_hash: {:?}, dest: {:?}, value: {:?}", proof, root_hash, key, value);
-        Some((proof, root_hash, key, value))
+        Some(vec![ParsedSP {
+            root_hash: root_hash.to_owned(),
+            proof_nodes: proof.to_owned(),
+            multi_signature: json_msg["state_proof"]["multi_signature"].clone(),
+            kvs_to_verify: KeyValuesInSP::Simple(KeyValueSimpleData {
+                kvs: vec![(base64::encode(&key), value)]
+            }),
+        }])
     }
 
     fn parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, parsed_data: SJsonValue, xtype: &str) -> Result<Option<String>, String> {
@@ -539,10 +523,54 @@ impl TransactionHandler {
         }
     }
 
+    fn verify_parsed_sp(&self, parsed_sps: Vec<ParsedSP>) -> bool {
+        for parsed_sp in parsed_sps {
+            if parsed_sp.multi_signature["value"]["state_root_hash"].as_str().ne(
+                &Some(&parsed_sp.root_hash)) {
+                return false
+            }
+
+            let data_to_check_proof_signature =
+                TransactionHandler::parse_reply_for_proof_signature_checking(
+                    &parsed_sp.multi_signature);
+            let (signature, participants, value) = unwrap_opt_or_return!(data_to_check_proof_signature, false);
+            if !state_proof::verify_proof_signature(signature,
+                                                    participants.as_slice(),
+                                                    &value,
+                                                    self.nodes.as_slice(), self.f, &self.gen)
+                .map_err(|err| warn!("{:?}", err)).unwrap_or(false) {
+                return false;
+            }
+
+            let proof_nodes = unwrap_or_return!(base64::decode(&parsed_sp.proof_nodes), false);
+            let root_hash = unwrap_or_return!(parsed_sp.root_hash.from_base58(), false);
+            match parsed_sp.kvs_to_verify {
+                KeyValuesInSP::Simple(kvs) => {
+                    for (k, v) in kvs.kvs {
+                        let key = unwrap_or_return!(base64::decode(&k), false);
+                        if !state_proof::verify_proof(proof_nodes.as_slice(),
+                                                      root_hash.as_slice(),
+                                                      &key,
+                                                      v.as_ref().map(String::as_str)) {
+                            return false;
+                        }
+                    }
+                }
+                //TODO IS-713 support KeyValuesInSP::SubTrie
+                kvs @ _ => {
+                    warn!("Unsupported parsed state proof format for key-values {:?} ", kvs);
+                    return false;
+                },
+            }
+        }
+
+        true
+    }
+
     fn parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option<(&str, Vec<&str>, Vec<u8>)> {
-        match (json_msg["state_proof"]["multi_signature"]["signature"].as_str(),
-               json_msg["state_proof"]["multi_signature"]["participants"].as_array(),
-               rmp_serde::to_vec_named(&json_msg["state_proof"]["multi_signature"]["value"])
+        match (json_msg["signature"].as_str(),
+               json_msg["participants"].as_array(),
+               rmp_serde::to_vec_named(&json_msg["value"])
                    .map_err(map_err_trace!())) {
             (Some(signature), Some(participants), Ok(value)) => {
                 let participants_unwrap: Vec<&str> = participants

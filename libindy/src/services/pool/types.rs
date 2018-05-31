@@ -390,6 +390,60 @@ impl JsonEncodable for Message {}
 
 impl<'a> JsonDecodable<'a> for Message {}
 
+/**
+ Single item to verification:
+ - SP Trie with RootHash
+ - BLS MS
+ - set of key-value to verify
+*/
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ParsedSP {
+    /// encoded SP Trie transferred from Node to Client
+    pub proof_nodes: String,
+    /// RootHash of the Trie, start point for verification. Should be same with appropriate filed in BLS MS data
+    pub root_hash: String,
+    /// entities to verification against current SP Trie
+    pub kvs_to_verify: KeyValuesInSP,
+    /// BLS MS data for verification
+    pub multi_signature: serde_json::Value,
+}
+
+/**
+ Variants of representation for items to verify against SP Trie
+ Right now 2 options are specified:
+ - simple array of key-value pair
+ - whole subtrie
+*/
+#[derive(Serialize, Deserialize, Debug)]
+pub enum KeyValuesInSP {
+    Simple(KeyValueSimpleData),
+    SubTrie(KeyValuesSubTrieData),
+}
+
+/**
+ Simple variant of `KeyValuesInSP`.
+
+ All required data already present in parent SP Trie (built from `proof_nodes`).
+ `kvs` can be verified directly in parent trie
+*/
+#[derive(Serialize, Deserialize, Debug)]
+pub struct KeyValueSimpleData {
+    pub kvs: Vec<(String /* b64-encoded key */, Option<String /* val */>)>
+}
+
+/**
+ Subtrie variant of `KeyValuesInSP`.
+
+ In this case Client (libindy) should construct subtrie and append it into trie based on `proof_nodes`.
+ After this preparation each kv pair can be checked.
+*/
+#[derive(Serialize, Deserialize, Debug)]
+pub struct KeyValuesSubTrieData {
+    /// base64-encoded common prefix of each pair in `kvs`. Should be used to correct merging initial trie and subtrie
+    pub sub_trie_prefix: Option<String>,
+    pub kvs: Vec<(String /* b64-encoded key_suffix */, Option<String /* val */>)>,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct PoolConfig {
     pub genesis_txn: String
