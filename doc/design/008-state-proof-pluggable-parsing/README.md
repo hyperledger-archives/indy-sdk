@@ -7,7 +7,7 @@ StateProof (SP) is small amount of data which allows to verify particular values
 Combination of BLS MS and SP allows clients to be sure about response of single node is a part of State signed by enough Nodes. 
 
 ## Goals
-Libindy allows to create and send custom transaction via plugged interface.
+Libindy allows to extend building of supported requests via plugged interface and send them.
 It is nice to have a way to support BLS MS and SP verification for these plugged transactions.
 
 Implementation of math for SP verification is a bit complicate for plugin logic.
@@ -39,17 +39,21 @@ It can be represented as `Vec<ParsedSP>` serialized to JSON.
 
 
 ```rust
-/** 
+/**
  Single item to verification:
  - SP Trie with RootHash
- - BLS MS 
+ - BLS MS
  - set of key-value to verify
-*/ 
+*/
 struct ParsedSP {
-    proof_nodes: String, /// encoded SP Trie transferred from Node to Client
-    root_hash: String, /// RootHash of the Trie, start point for verification. Should be same with appropriate filed in BLS MS data 
-    kvs_to_verify: KeyValuesInSP, /// entities to verification against current SP Trie
-    multi_signature: JsonObject, /// BLS MS data for verification
+    /// encoded SP Trie transferred from Node to Client
+    proof_nodes: String,
+    /// RootHash of the Trie, start point for verification. Should be same with appropriate filed in BLS MS data
+    root_hash: String,
+    /// entities to verification against current SP Trie
+    kvs_to_verify: KeyValuesInSP,
+    /// BLS MS data for verification
+    multi_signature: serde_json::Value,
 }
 
 /**
@@ -65,23 +69,24 @@ enum KeyValuesInSP {
 
 /**
  Simple variant of `KeyValuesInSP`.
- 
+
  All required data already present in parent SP Trie (built from `proof_nodes`).
- `kvs` can be verified directly in parent trie 
+ `kvs` can be verified directly in parent trie
 */
 struct KeyValueSimpleData {
-    kvs: Vec<(String /* key */, String /* val */)>
+    kvs: Vec<(String /* b64-encoded key */, Option<String /* val */>)>
 }
 
 /**
  Subtrie variant of `KeyValuesInSP`.
- 
+
  In this case Client (libindy) should construct subtrie and append it into trie based on `proof_nodes`.
  After this preparation each kv pair can be checked.
 */
 struct KeyValuesSubTrieData {
-    sub_trie_prefix: Option<String>, /// common prefix of each pair in `kvs`. Should be used to correct merging initial trie and subtrie
-    kvs: Vec<(String /* key_suffix */, String /* val */)>,
+    /// base64-encoded common prefix of each pair in `kvs`. Should be used to correct merging initial trie and subtrie
+    sub_trie_prefix: Option<String>,
+    kvs: Vec<(String /* b64-encoded key_suffix */, Option<String /* val */>)>,
 }
 ```
 
