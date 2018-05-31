@@ -10,7 +10,6 @@ RUN apt-get update && \
       curl \
       build-essential \
       libsqlite3-dev \
-      libsodium-dev \
       cmake \
       git \
       python3.5 \
@@ -35,7 +34,7 @@ RUN pip3 install -U \
 RUN cd /tmp && \
    curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.14.tar.gz | tar -xz && \
     cd /tmp/libsodium-1.0.14 && \
-    ./configure && \
+    ./configure --disable-shared && \
     make && \
     make install && \
     rm -rf /tmp/libsodium-1.0.14
@@ -47,7 +46,7 @@ RUN apt-get update && apt-get install -y maven
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.25.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.26.0
 ENV PATH /home/indy/.cargo/bin:$PATH
 
 WORKDIR /home/indy
