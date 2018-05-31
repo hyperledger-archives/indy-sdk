@@ -35,20 +35,75 @@ pub struct PluggedWalletJSONValues {
 
 impl<'a> JsonDecodable<'a> for PluggedWalletJSONValues {}
 
+
+// This struct is used as a helper to free the resource even in case of error.
+// It is workaround for Rust's lack of try/catch.
+struct ResourceGuard {
+    storage_handle: i32,
+    item_handle: i32,
+    free_handler: extern fn(storage_handle: i32, item_handle: i32) -> ErrorCode
+}
+
+impl ResourceGuard {
+    fn new(storage_handle: i32,
+           item_handle: i32,
+           free_handler: extern fn(s_handle: i32, i_handle: i32) -> ErrorCode
+    ) -> Self {
+        Self {
+            storage_handle,
+            item_handle,
+            free_handler
+        }
+    }
+}
+
+impl Drop for ResourceGuard {
+    fn drop(&mut self) {
+        (self.free_handler)(self.storage_handle, self.item_handle);
+    }
+}
+
+
 #[derive(PartialEq, Debug)]
 struct PluggedStorageIterator {
-    storage: PluggedStorage,
+    storage_handle: i32,
     search_handle: i32,
     options: SearchOptions,
+    fetch_search_next_record_handler: WalletFetchSearchNextRecord,
+    get_search_total_count_handler: WalletGetSearchTotalCount,
+    get_record_type_handler: WalletGetRecordType,
+    get_record_id_handler: WalletGetRecordId,
+    get_record_value_handler: WalletGetRecordValue,
+    get_record_tags_handler: WalletGetRecordTags,
+    free_record_handler: WalletFreeRecord,
+    free_search_handler: WalletFreeSearch,
+}
+
+impl PluggedStorageIterator {
+    fn new(storage: &PluggedStorage, search_handle: i32, options: SearchOptions) -> Self {
+        Self {
+            storage_handle: storage.handle,
+            search_handle: search_handle,
+            options: options,
+            fetch_search_next_record_handler: storage.fetch_search_next_record_handler,
+            get_search_total_count_handler: storage.get_search_total_count_handler,
+            get_record_type_handler: storage.get_record_type_handler,
+            get_record_id_handler: storage.get_record_id_handler,
+            get_record_value_handler: storage.get_record_value_handler,
+            get_record_tags_handler: storage.get_record_tags_handler,
+            free_record_handler: storage.free_record_handler,
+            free_search_handler: storage.free_search_handler,
+        }
+    }
 }
 
 impl StorageIterator for PluggedStorageIterator {
     fn next(&mut self) -> Result<Option<StorageEntity>, WalletStorageError> {
         let mut record_handle = -1;
 
-        let err = (self.storage.fetch_search_next_record_handler)(self.storage.handle,
-                                                                  self.search_handle,
-                                                                  &mut record_handle);
+        let err = (self.fetch_search_next_record_handler)(self.storage_handle,
+                                                          self.search_handle,
+                                                          &mut record_handle);
 
         if err == ErrorCode::WalletItemNotFound {
             return Ok(None);
@@ -57,12 +112,18 @@ impl StorageIterator for PluggedStorageIterator {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
+        let record_free_helper = ResourceGuard {
+            storage_handle: self.storage_handle,
+            item_handle: record_handle,
+            free_handler: self.free_record_handler
+        };
+
         let type_ = if self.options.retrieve_type.unwrap_or(false) {
             let mut type_ptr: *const c_char = ptr::null_mut();
 
-            let err = (self.storage.get_record_type_handler)(self.storage.handle,
-                                                             record_handle,
-                                                             &mut type_ptr);
+            let err = (self.get_record_type_handler)(self.storage_handle,
+                                                     record_handle,
+                                                     &mut type_ptr);
 
             if err != ErrorCode::Success {
                 return Err(WalletStorageError::PluggedStorageError(err));
@@ -74,9 +135,9 @@ impl StorageIterator for PluggedStorageIterator {
         let id = {
             let mut id_ptr: *const c_char = ptr::null_mut();
 
-            let err = (self.storage.get_record_id_handler)(self.storage.handle,
-                                                           record_handle,
-                                                           &mut id_ptr);
+            let err = (self.get_record_id_handler)(self.storage_handle,
+                                                   record_handle,
+                                                   &mut id_ptr);
 
             if err != ErrorCode::Success {
                 return Err(WalletStorageError::PluggedStorageError(err));
@@ -87,10 +148,10 @@ impl StorageIterator for PluggedStorageIterator {
         let value = if self.options.retrieve_value.unwrap_or(true) {
             let mut value_bytes: *const u8 = ptr::null();
             let mut value_bytes_len: usize = 0;
-            let err = (self.storage.get_record_value_handler)(self.storage.handle,
-                                                              record_handle,
-                                                              &mut value_bytes,
-                                                              &mut value_bytes_len);
+            let err = (self.get_record_value_handler)(self.storage_handle,
+                                                      record_handle,
+                                                      &mut value_bytes,
+                                                      &mut value_bytes_len);
 
             if err != ErrorCode::Success {
                 return Err(WalletStorageError::PluggedStorageError(err));
@@ -102,9 +163,9 @@ impl StorageIterator for PluggedStorageIterator {
 
         let tags = if self.options.retrieve_tags.unwrap_or(false) {
             let mut tags_ptr: *const c_char = ptr::null_mut();
-            let err = (self.storage.get_record_tags_handler)(self.storage.handle,
-                                                             record_handle,
-                                                             &mut tags_ptr);
+            let err = (self.get_record_tags_handler)(self.storage_handle,
+                                                     record_handle,
+                                                     &mut tags_ptr);
 
             if err != ErrorCode::Success {
                 return Err(WalletStorageError::PluggedStorageError(err));
@@ -113,8 +174,6 @@ impl StorageIterator for PluggedStorageIterator {
             let tags_json = unsafe { CStr::from_ptr(tags_ptr).to_str()? };
             Some(_tags_from_json(tags_json)?)
         } else {None};
-
-        (self.storage.free_record_handler)(self.storage.handle, record_handle);
 
         Ok(Some(StorageEntity{
             type_: type_,
@@ -128,9 +187,9 @@ impl StorageIterator for PluggedStorageIterator {
         let mut total_count = 0;
 
         if self.options.retrieve_total_count.unwrap_or(false) {
-            let err = (self.storage.get_search_total_count_handler)(self.storage.handle,
-                                                                    self.search_handle,
-                                                                    &mut total_count);
+            let err = (self.get_search_total_count_handler)(self.storage_handle,
+                                                            self.search_handle,
+                                                            &mut total_count);
 
             if err != ErrorCode::Success {
                 return Err(WalletStorageError::PluggedStorageError(err));
@@ -146,11 +205,11 @@ impl StorageIterator for PluggedStorageIterator {
 
 impl Drop for PluggedStorageIterator {
     fn drop(&mut self) {
-        (self.storage.free_search_handler)(self.storage.handle, self.search_handle);
+        (self.free_search_handler)(self.storage_handle, self.search_handle);
     }
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug)]
 struct PluggedStorage {
     handle: i32,
     add_record_handler: WalletAddRecord,
@@ -306,6 +365,12 @@ impl WalletStorage for PluggedStorage {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
+        let record_free_helper = ResourceGuard {
+            storage_handle: self.handle,
+            item_handle: record_handle,
+            free_handler: self.free_record_handler
+        };
+
         let value = if options.retrieve_value {
             let mut value_bytes: *const u8 = ptr::null();
             let mut value_bytes_len: usize = 0;
@@ -342,8 +407,6 @@ impl WalletStorage for PluggedStorage {
             value,
             tags
         };
-
-        let err = (self.free_record_handler)(self.handle, record_handle);
 
         if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
@@ -471,11 +534,15 @@ impl WalletStorage for PluggedStorage {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
+        let metadata_free_helper = ResourceGuard {
+            storage_handle: self.handle,
+            item_handle: metadata_handle,
+            free_handler: self.free_storage_metadata_handler
+        };
+
         let metadata = base64::decode(
             unsafe { CStr::from_ptr(metadata_ptr).to_str()? }
         )?;
-
-        (self.free_storage_metadata_handler)(self.handle, metadata_handle);
 
         Ok(metadata)
     }
@@ -502,17 +569,17 @@ impl WalletStorage for PluggedStorage {
         }
 
         Ok(Box::new(
-            PluggedStorageIterator {
-                storage: self.clone() /* TODO avoid clone. Use Rc or better approach. */,
+            PluggedStorageIterator::new(
+                &self,
                 search_handle,
-                options: SearchOptions {
+                SearchOptions {
                     retrieve_records: Some(true),
                     retrieve_total_count: Some(false),
                     retrieve_type: Some(true),
                     retrieve_value: Some(true),
                     retrieve_tags: Some(true),
                 }
-            }
+            )
         ))
     }
 
@@ -533,11 +600,13 @@ impl WalletStorage for PluggedStorage {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
-        Ok(Box::new(PluggedStorageIterator {
-            storage: self.clone() /* TODO avoid clone. Use Rc or better approach. */,
-            search_handle,
-            options
-        }))
+        Ok(Box::new(
+            PluggedStorageIterator::new(
+                &self,
+                search_handle,
+                options
+            )
+        ))
     }
 
     fn close(&mut self) -> Result<(), WalletStorageError> {
@@ -547,7 +616,19 @@ impl WalletStorage for PluggedStorage {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
+        // invalidate the handle, just in case.
+        self.handle = -1;
+
         Ok(())
+    }
+}
+
+impl Drop for PluggedStorage {
+    fn drop(&mut self) {
+        // if storage is not closed, close it before drop.
+        if self.handle >= 0 {
+            self.close();
+        }
     }
 }
 
