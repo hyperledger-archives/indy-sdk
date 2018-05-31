@@ -2,14 +2,14 @@ extern crate rust_indy_sdk as indy;
 #[macro_use]
 mod utils;
 
-use indy::ErrorCode;
-use indy::payments::Payment;
+//use indy::ErrorCode;
+//use indy::payments::Payment;
 use indy::wallet::Wallet;
 
-use std::time::Duration;
-use std::sync::mpsc::channel;
-
-use utils::time_it_out;
+//use std::time::Duration;
+//use std::sync::mpsc::channel;
+//
+//use utils::time_it_out;
 
 mod low_tests {
     use super::*;
