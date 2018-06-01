@@ -49,6 +49,19 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_add_wallet_record_works_for_plugged_wallet() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_plugged_wallet(POOL).unwrap();
+
+            NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
         fn indy_add_wallet_record_works_for_duplicate() {
             TestUtils::cleanup_storage();
 
@@ -137,6 +150,20 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_add_wallet_record_works_for_invalid_tags() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let res = NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, Some(r#"tag:1"#));
+            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
         fn indy_add_wallet_record_works_for_empty_params() {
             TestUtils::cleanup_storage();
 
@@ -162,6 +189,25 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
+
+            check_record_field(wallet_handle, TYPE, ID, "value", VALUE);
+
+            NonSecretsUtils::update_wallet_record_value(wallet_handle, TYPE, ID, VALUE_2).unwrap();
+
+            check_record_field(wallet_handle, TYPE, ID, "value", VALUE_2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_update_record_value_works_for_plugged_wallet() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_plugged_wallet(POOL).unwrap();
 
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 
@@ -742,6 +788,25 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
+
+            let record = NonSecretsUtils::get_wallet_record(wallet_handle, TYPE, ID, OPTIONS_EMPTY).unwrap();
+            let record: WalletRecord = serde_json::from_str(&record).unwrap();
+
+            let expected_record = WalletRecord { id: ID.to_string(), value: Some(VALUE.to_string()), tags: None, type_: None };
+            assert_eq!(expected_record, record);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_get_wallet_record_works_for_plugged_wallet_default_options() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_plugged_wallet(POOL).unwrap();
 
             NonSecretsUtils::add_wallet_record(wallet_handle, TYPE, ID, VALUE, None).unwrap();
 

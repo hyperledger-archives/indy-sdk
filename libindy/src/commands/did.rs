@@ -714,7 +714,9 @@ impl DidCommandExecutor {
 
     fn _wallet_get_did_metadata(&self, wallet_handle: i32, did: &str) -> Option<String> {
         self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::full()).ok()
-            .and_then(|rec| rec.get_tags())
-            .and_then(|tags| tags.get("metadata").cloned())
+            .and_then(|rec|
+                rec.get_tags()
+                    .and_then(|tags| tags.get("metadata").cloned())
+            )
     }
 }

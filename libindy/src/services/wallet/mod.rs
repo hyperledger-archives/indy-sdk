@@ -254,8 +254,8 @@ impl WalletService {
     pub fn open_wallet(&self, name: &str, runtime_config: Option<&str>, credentials: &str) -> Result<i32, WalletError> {
         trace!("open_wallet >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
 
-        let descriptor_json = _read_file(_wallet_descriptor_path(name))?;
-        let descriptor: WalletDescriptor = WalletDescriptor::from_json(&descriptor_json)?;// FIXME: Better error!)?;
+        let descriptor_json = _read_file(_wallet_descriptor_path(name))?; // FIXME: Better error!)?;
+        let descriptor: WalletDescriptor = WalletDescriptor::from_json(&descriptor_json)?;
 
         let storage_types = self.storage_types.borrow();
         let storage_type = match storage_types.get(descriptor.xtype.as_str()) {
@@ -515,8 +515,6 @@ pub struct WalletRecord {
 
 impl JsonEncodable for WalletRecord {}
 
-impl<'a> JsonDecodable<'a> for WalletRecord {}
-
 impl WalletRecord {
     pub fn new(name: String, type_: Option<String>, value: Option<String>, tags: Option<HashMap<String, String>>) -> WalletRecord {
         WalletRecord {
@@ -544,8 +542,8 @@ impl WalletRecord {
         self.value.as_ref().map(String::as_str)
     }
 
-    pub fn get_tags(&self) -> Option<HashMap<String, String>> {
-        self.tags.clone()
+    pub fn get_tags(&self) -> Option<&HashMap<String, String>> {
+        self.tags.as_ref()
     }
 }
 
@@ -711,11 +709,6 @@ mod tests {
     use errors::wallet::WalletError;
     use utils::inmem_wallet::InmemWallet;
     use utils::test::TestUtils;
-
-    //
-    //    use std::time::Duration;
-    //    use std::thread;
-    //
 
     //    const POOL: &'static str = "pool";
     //    const WALLET: &'static str = "wallet";

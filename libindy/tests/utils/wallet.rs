@@ -110,6 +110,14 @@ impl WalletUtils {
         WalletUtils::open_wallet(&wallet_name, None, None)
     }
 
+    pub fn create_and_open_plugged_wallet(pool_name: &str) -> Result<i32, ErrorCode> {
+        let wallet_name = format!("default-wallet-name-{}", SequenceUtils::get_next_id());
+
+        WalletUtils::register_wallet_storage("inmem", false).unwrap();
+        WalletUtils::create_wallet(pool_name, &wallet_name, Some("inmem"), None, None).unwrap();
+        WalletUtils::open_wallet(&wallet_name, None, None)
+    }
+
     pub fn delete_wallet(wallet_name: &str, credentials: Option<&str>) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
