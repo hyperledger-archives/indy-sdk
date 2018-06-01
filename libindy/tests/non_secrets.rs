@@ -823,7 +823,7 @@ mod high_cases {
             let record = NonSecretsUtils::get_wallet_record(wallet_handle, TYPE, ID, &options).unwrap();
             let record: WalletRecord = serde_json::from_str(&record).unwrap();
 
-            let expected_record = WalletRecord { id: ID.to_string(), value: None, tags: Some(TAGS_EMPTY.to_string()), type_: None };
+            let expected_record = WalletRecord { id: ID.to_string(), value: None, tags: Some(HashMap::new()), type_: None };
             assert_eq!(expected_record, record);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -848,7 +848,7 @@ mod high_cases {
             let record = NonSecretsUtils::get_wallet_record(wallet_handle, TYPE, ID, &options).unwrap();
             let record: WalletRecord = serde_json::from_str(&record).unwrap();
 
-            let expected_record = WalletRecord { id: ID.to_string(), value: Some(VALUE.to_string()), tags: Some(TAGS_EMPTY.to_string()), type_: Some(TYPE.to_string()) };
+            let expected_record = WalletRecord { id: ID.to_string(), value: Some(VALUE.to_string()), tags: Some(HashMap::new()), type_: Some(TYPE.to_string()) };
             assert_eq!(expected_record, record);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1278,11 +1278,11 @@ mod high_cases {
                 let records = NonSecretsUtils::fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
                 check_search_records(&records, vec![
-                    WalletRecord { id: ID.to_string(), type_: None, value: Some(VALUE.to_string()), tags: Some(TAGS.to_string()) },
-                    WalletRecord { id: ID_2.to_string(), type_: None, value: Some(VALUE_2.to_string()), tags: Some(TAGS_2.to_string()) },
-                    WalletRecord { id: ID_3.to_string(), type_: None, value: Some(VALUE_3.to_string()), tags: Some(TAGS_3.to_string()) },
-                    WalletRecord { id: ID_4.to_string(), type_: None, value: Some(VALUE_4.to_string()), tags: Some(TAGS_4.to_string()) },
-                    WalletRecord { id: ID_5.to_string(), type_: None, value: Some(VALUE_5.to_string()), tags: Some(TAGS_5.to_string()) }]);
+                    WalletRecord { id: ID.to_string(), type_: None, value: Some(VALUE.to_string()), tags: Some(NonSecretsUtils::tags_1()) },
+                    WalletRecord { id: ID_2.to_string(), type_: None, value: Some(VALUE_2.to_string()), tags: Some(NonSecretsUtils::tags_2()) },
+                    WalletRecord { id: ID_3.to_string(), type_: None, value: Some(VALUE_3.to_string()), tags: Some(NonSecretsUtils::tags_3()) },
+                    WalletRecord { id: ID_4.to_string(), type_: None, value: Some(VALUE_4.to_string()), tags: Some(NonSecretsUtils::tags_4()) },
+                    WalletRecord { id: ID_5.to_string(), type_: None, value: Some(VALUE_5.to_string()), tags: Some(NonSecretsUtils::tags_5()) }]);
 
                 NonSecretsUtils::close_wallet_search(search_handle).unwrap();
                 WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1520,24 +1520,14 @@ mod medium_cases {
     }
 }
 
-fn compare_record(expected: &WalletRecord, actual: &WalletRecord) {
-    assert_eq!(expected.id, actual.id);
-    assert_eq!(expected.type_, actual.type_);
-    assert_eq!(expected.value, actual.value);
-    if expected.tags.is_some() {
-        assert_eq!(serde_json::from_str::<HashMap<String, String>>(&expected.tags.clone().unwrap()).unwrap(),
-                   serde_json::from_str::<HashMap<String, String>>(&actual.tags.clone().unwrap()).unwrap());
-    }
-}
-
 fn check_record_field(wallet_handle: i32, type_: &str, id: &str, field: &str, expected_value: &str) {
     let record = NonSecretsUtils::get_wallet_record(wallet_handle, type_, id, OPTIONS_FULL).unwrap();
     let record = serde_json::from_str::<WalletRecord>(&record).unwrap();
 
     match field {
         "value" => assert_eq!(expected_value, record.value.unwrap()),
-        "tags" => assert_eq!(serde_json::from_str::<serde_json::Value>(&expected_value).unwrap(),
-                             serde_json::from_str::<serde_json::Value>(&record.tags.unwrap()).unwrap()),
+        "tags" => assert_eq!(serde_json::from_str::<HashMap<String, String>>(&expected_value).unwrap(),
+                             record.tags.unwrap()),
         _ => panic!()
     };
 }
@@ -1549,9 +1539,6 @@ fn check_search_records(search_records: &str, expected_records: Vec<WalletRecord
     records.sort_by_key(|record| record.id.to_string());
 
     assert_eq!(records.len(), expected_records.len());
-
-    for i in 0..records.len() {
-        compare_record(&records[i], &expected_records[i])
-    }
+    assert_eq!(records, expected_records);
 }
 

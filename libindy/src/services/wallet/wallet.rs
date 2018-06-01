@@ -430,7 +430,7 @@ mod tests {
 
         assert_eq!(entity.name, name);
         assert_eq!(entity.value.unwrap(), value);
-        assert_eq!(serde_json::from_str::<Tags>(tags).unwrap(), serde_json::from_str::<Tags>(&entity.tags.unwrap()).unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(tags).unwrap(), entity.tags.unwrap());
     }
 
     #[test]
@@ -447,7 +447,7 @@ mod tests {
 
         assert_eq!(entity.name, name);
         assert_eq!(entity.value.unwrap(), value);
-        assert_eq!(serde_json::from_str::<Tags>(tags).unwrap(), serde_json::from_str::<Tags>(&entity.tags.unwrap()).unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(tags).unwrap(), entity.tags.unwrap());
 
         wallet.close().unwrap();
 
@@ -466,7 +466,7 @@ mod tests {
 
         assert_eq!(entity.name, name);
         assert_eq!(entity.value.unwrap(), value);
-        assert_eq!(serde_json::from_str::<Tags>(tags).unwrap(), serde_json::from_str::<Tags>(&entity.tags.unwrap()).unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(tags).unwrap(), entity.tags.unwrap());
 
     }
 
@@ -572,7 +572,7 @@ mod tests {
         let item = wallet.get(type_, name, &_fetch_options(false, true, true)).unwrap();
         let tags = item.tags.unwrap();
         let expected_tags = r#"{"tag_name_1": "tag_value_1", "tag_name_2": "tag_value_2", "~tag_name_3": "~tag_value_3"}"#;
-        assert_eq!(serde_json::from_str::<Tags>(expected_tags).unwrap(), serde_json::from_str::<Tags>(&tags).unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(expected_tags).unwrap(), tags);
     }
 
     /**
@@ -594,7 +594,7 @@ mod tests {
 
         let item = wallet.get(type_, name, &_fetch_options(false, true, true)).unwrap();
         let retrieved_tags = item.tags.unwrap();
-        assert_eq!(serde_json::from_str::<Tags>(updated_tags).unwrap(), serde_json::from_str::<Tags>(&retrieved_tags).unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(updated_tags).unwrap(), retrieved_tags);
     }
 
     /**
@@ -617,7 +617,7 @@ mod tests {
         let item = wallet.get(type_, name, &_fetch_options(false, true, true)).unwrap();
         let retrieved_tags = item.tags.unwrap();
         let expected_tags = r#"{"tag_name_2": "tag_value_2"}"#;
-        assert_eq!(serde_json::from_str::<Tags>(expected_tags).unwrap(), serde_json::from_str::<Tags>(&retrieved_tags).unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(expected_tags).unwrap(), retrieved_tags);
     }
 
     #[test]
@@ -634,7 +634,7 @@ mod tests {
 
         assert_eq!(entity.name, name);
         assert_eq!(entity.value.unwrap(), value);
-        assert_eq!(serde_json::from_str::<Tags>(tags).unwrap(), serde_json::from_str::<Tags>(&entity.tags.unwrap()).unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(tags).unwrap(), entity.tags.unwrap());
 
         wallet.delete(type_, name).unwrap();
         let res = wallet.get(type_, name, &_fetch_options(false, true, true));
@@ -1711,7 +1711,7 @@ mod tests {
         let res = iterator.next().unwrap().unwrap();
         assert_eq!(res.name, "foo".to_string());
         assert_eq!(res.value.unwrap(), "bar");
-        assert_eq!(serde_json::from_str::<Tags>(tags).unwrap(), serde_json::from_str::<Tags>(&res.tags.unwrap()).unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(tags).unwrap(), res.tags.unwrap());
 
         let res = iterator.next().unwrap();
         assert!(res.is_none());
