@@ -1444,6 +1444,21 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
+
+    mod indy_register_transaction_parser_for_sp {
+        use super::*;
+
+        #[test]
+        fn indy_register_transaction_parser_for_sp_works() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+
+            LedgerUtils::register_transaction_parser_for_sp(pool_handle, "my_txn_type").unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
 }
 
 mod medium_cases {
