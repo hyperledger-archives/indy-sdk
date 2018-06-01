@@ -155,7 +155,10 @@ pub enum ErrorCode
     UnknownPaymentMethod = 700,
 
     //No method were scraped from inputs/outputs or more than one were scraped
-    IncompatiblePaymentError = 701
+    IncompatiblePaymentError = 701,
+
+    // Insufficient funds on inputs
+    PaymentInsufficientFundsError = 702,
 }
 
 impl ErrorCode {
