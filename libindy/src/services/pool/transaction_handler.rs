@@ -278,47 +278,56 @@ impl TransactionHandler {
             trace!("TransactionHandler::parse_generic_reply_for_proof_checking: type_: {:?}", type_);
             type_
         } else {
-            trace!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< No type field");
+            debug!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< No type field");
             return None;
         };
 
         if REQUESTS_FOR_STATE_PROOFS.contains(&type_) {
-            TransactionHandler::parse_reply_for_proof_checking(json_msg, type_)
+            trace!("TransactionHandler::parse_generic_reply_for_proof_checking: built-in");
+            TransactionHandler::parse_reply_for_builtin_sp(json_msg, type_)
         } else if let Some(handler) = self.parser_sps.get(type_) {
+            trace!("TransactionHandler::parse_generic_reply_for_proof_checking: plugged: handler {:?}", handler);
             let msg = CString::new(raw_msg).ok()?;
-            let parsed_str: String = {
-                let mut parsed_str = ::std::ptr::null();
-                let err = handler(msg.as_ptr(), &mut parsed_str);
-                if err != ErrorCode::Success {
+            let mut parsed_str = ::std::ptr::null();
+            let err = handler(msg.as_ptr(), &mut parsed_str);
+            if err != ErrorCode::Success {
+                debug!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< plugin return err {:?}", err);
+                return None;
+            }
+            check_useful_c_str!(parsed_str, None);
+            let parsed_sp = match serde_json::from_str::<Vec<ParsedSP>>(&parsed_str) {
+                Ok(ps) => ps,
+                Err(err) => {
+                    debug!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< can't parse plugin response {}", err);
                     return None;
-                }
-                check_useful_c_str!(parsed_str, None);
-                parsed_str
+                },
             };
-            Some(unwrap_or_return!(serde_json::from_str(&parsed_str).map_err(map_err_trace!()), None))
+
+            Some(parsed_sp)
         } else {
+            trace!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< type not supported");
             None
         }
     }
 
-    fn parse_reply_for_proof_checking(json_msg: &SJsonValue, type_: &str) -> Option<Vec<ParsedSP>> {
-        trace!("TransactionHandler::parse_reply_for_proof_checking: >>> json_msg: {:?}", json_msg);
+    fn parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str) -> Option<Vec<ParsedSP>> {
+        trace!("TransactionHandler::parse_reply_for_builtin_sp: >>> json_msg: {:?}", json_msg);
 
         assert!(REQUESTS_FOR_STATE_PROOFS.contains(&type_));
 
         let proof = if let Some(proof) = json_msg["state_proof"]["proof_nodes"].as_str() {
-            trace!("TransactionHandler::parse_reply_for_proof_checking: proof: {:?}", proof);
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: proof: {:?}", proof);
             proof
         } else {
-            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No proof");
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< No proof");
             return None;
         };
 
         let root_hash = if let Some(root_hash) = json_msg["state_proof"]["root_hash"].as_str() {
-            trace!("TransactionHandler::parse_reply_for_proof_checking: root_hash: {:?}", root_hash);
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: root_hash: {:?}", root_hash);
             root_hash
         } else {
-            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No root hash");
+            trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< No root hash");
             return None;
         };
 
@@ -328,66 +337,66 @@ impl TransactionHandler {
         // See https://jira.hyperledger.org/browse/INDY-699
         let (data, parsed_data): (Option<String>, SJsonValue) = match json_msg["data"] {
             SJsonValue::Null => {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: Data is null");
+                trace!("TransactionHandler::parse_reply_for_builtin_sp: Data is null");
                 (None, SJsonValue::Null)
             }
             SJsonValue::String(ref str) => {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: Data is string");
+                trace!("TransactionHandler::parse_reply_for_builtin_sp: Data is string");
                 if let Ok(parsed_data) = serde_json::from_str(str) {
                     (Some(str.to_owned()), parsed_data)
                 } else {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Data field is invalid json");
+                    trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< Data field is invalid json");
                     return None;
                 }
             }
             SJsonValue::Object(ref map) => {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: Data is object");
+                trace!("TransactionHandler::parse_reply_for_builtin_sp: Data is object");
                 (Some(json_msg["data"].to_string()), SJsonValue::from(map.clone()))
             }
             _ => {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Data field is invalid type");
+                trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< Data field is invalid type");
                 return None;
             }
         };
 
-        trace!("TransactionHandler::parse_reply_for_proof_checking: data: {:?}, parsed_data: {:?}", data, parsed_data);
+        trace!("TransactionHandler::parse_reply_for_builtin_sp: data: {:?}, parsed_data: {:?}", data, parsed_data);
 
         let key_suffix: String = match type_ {
             constants::GET_ATTR => {
                 if let Some(attr_name) = json_msg["raw"].as_str()
                     .or(json_msg["enc"].as_str())
                     .or(json_msg["hash"].as_str()) {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_ATTR attr_name {:?}", attr_name);
+                    trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_ATTR attr_name {:?}", attr_name);
 
                     let mut hasher = sha2::Sha256::default();
                     hasher.process(attr_name.as_bytes());
                     format!(":\x01:{}", hasher.fixed_result().to_hex())
                 } else {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_ATTR No key suffix");
+                    trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_ATTR No key suffix");
                     return None;
                 }
             }
             constants::GET_CRED_DEF => {
                 if let (Some(sign_type), Some(sch_seq_no)) = (json_msg["signature_type"].as_str(),
                                                               json_msg["ref"].as_u64()) {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_CRED_DEF sign_type {:?}, sch_seq_no: {:?}", sign_type, sch_seq_no);
+                    trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_CRED_DEF sign_type {:?}, sch_seq_no: {:?}", sign_type, sch_seq_no);
                     format!(":\x03:{}:{}", sign_type, sch_seq_no)
                 } else {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_CRED_DEF No key suffix");
+                    trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_CRED_DEF No key suffix");
                     return None;
                 }
             }
             constants::GET_NYM => {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: GET_NYM");
+                trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_NYM");
                 "".to_string()
             }
             constants::GET_SCHEMA => {
                 if let (Some(name), Some(ver)) = (parsed_data["name"].as_str(),
                                                   parsed_data["version"].as_str()) {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_SCHEMA name {:?}, ver: {:?}", name, ver);
+                    trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_SCHEMA name {:?}, ver: {:?}", name, ver);
                     format!(":\x02:{}:{}", name, ver)
                 } else {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_SCHEMA No key suffix");
+                    trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_SCHEMA No key suffix");
                     return None;
                 }
             }
@@ -397,20 +406,20 @@ impl TransactionHandler {
                     parsed_data["credDefId"].as_str(),
                     parsed_data["revocDefType"].as_str(),
                     parsed_data["tag"].as_str()) {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_REVOC_REG_DEF cred_def_id {:?}, revoc_def_type: {:?}, tag: {:?}", cred_def_id, revoc_def_type, tag);
+                    trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_REVOC_REG_DEF cred_def_id {:?}, revoc_def_type: {:?}, tag: {:?}", cred_def_id, revoc_def_type, tag);
                     format!(":4:{}:{}:{}", cred_def_id, revoc_def_type, tag)
                 } else {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_REVOC_REG_DEF No key suffix");
+                    trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_REVOC_REG_DEF No key suffix");
                     return None;
                 }
             }
             constants::GET_REVOC_REG | constants::GET_REVOC_REG_DELTA if parsed_data["value"]["accum_from"].is_null() => {
                 //{MARKER}:{REVOC_REG_DEF_ID}
                 if let Some(revoc_reg_def_id) = parsed_data["revocRegDefId"].as_str() {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_REVOC_REG revoc_reg_def_id {:?}", revoc_reg_def_id);
+                    trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_REVOC_REG revoc_reg_def_id {:?}", revoc_reg_def_id);
                     format!("5:{}", revoc_reg_def_id)
                 } else {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_REVOC_REG No key suffix");
+                    trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_REVOC_REG No key suffix");
                     return None;
                 }
             }
@@ -418,16 +427,16 @@ impl TransactionHandler {
             constants::GET_REVOC_REG_DELTA if !parsed_data["value"]["accum_from"].is_null() => {
                 //{MARKER}:{REVOC_REG_DEF_ID}
                 if let Some(revoc_reg_def_id) = parsed_data["value"]["accum_to"]["revocRegDefId"].as_str() {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_REVOC_REG_DELTA revoc_reg_def_id {:?}", revoc_reg_def_id);
+                    trace!("TransactionHandler::parse_reply_for_builtin_sp: GET_REVOC_REG_DELTA revoc_reg_def_id {:?}", revoc_reg_def_id);
                     format!("6:{}", revoc_reg_def_id)
                 } else {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_REVOC_REG_DELTA No key suffix");
+                    trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< GET_REVOC_REG_DELTA No key suffix");
                     return None;
                 }
             }
             */
             _ => {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Unsupported transaction");
+                trace!("TransactionHandler::parse_reply_for_builtin_sp: <<< Unsupported transaction");
                 return None;
             }
         };
@@ -440,7 +449,7 @@ impl TransactionHandler {
                     hasher.process(dest.as_bytes());
                     hasher.fixed_result().to_vec()
                 } else {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No dest");
+                    debug!("TransactionHandler::parse_reply_for_builtin_sp: <<< No dest");
                     return None;
                 }
             }
@@ -453,7 +462,7 @@ impl TransactionHandler {
                     id.splitn(2, ":").next().unwrap()
                         .as_bytes().to_vec()
                 } else {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No dest");
+                    debug!("TransactionHandler::parse_reply_for_builtin_sp: <<< No dest");
                     return None;
                 }
             }
@@ -461,7 +470,7 @@ impl TransactionHandler {
                 if let Some(dest) = dest {
                     dest.as_bytes().to_vec()
                 } else {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No dest");
+                    debug!("TransactionHandler::parse_reply_for_builtin_sp: <<< No dest");
                     return None;
                 }
             }
@@ -473,12 +482,12 @@ impl TransactionHandler {
         let value: Option<String> = match TransactionHandler::parse_reply_for_proof_value(json_msg, data, parsed_data, type_) {
             Ok(value) => value,
             Err(err_str) => {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< {}", err_str);
+                debug!("TransactionHandler::parse_reply_for_builtin_sp: <<< {}", err_str);
                 return None;
             }
         };
 
-        trace!("parse_reply_for_proof_checking: <<< proof {:?}, root_hash: {:?}, dest: {:?}, value: {:?}", proof, root_hash, key, value);
+        trace!("parse_reply_for_builtin_sp: <<< proof {:?}, root_hash: {:?}, dest: {:?}, value: {:?}", proof, root_hash, key, value);
         Some(vec![ParsedSP {
             root_hash: root_hash.to_owned(),
             proof_nodes: proof.to_owned(),
