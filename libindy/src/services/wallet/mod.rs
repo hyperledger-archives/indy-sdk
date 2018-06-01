@@ -884,6 +884,17 @@ mod tests {
         wallet_service.delete_wallet("test_wallet", &_credentials()).unwrap();
         wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
     }
+
+    #[test]
+    fn wallet_service_delete_wallet_invalid_key() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let res = wallet_service.delete_wallet("test_wallet", r#"{"key":"wrong_key"}"#);
+        assert_match!(Err(WalletError::AccessFailed(_)), res);
+        wallet_service.delete_wallet("test_wallet", &_credentials()).unwrap();
+    }
     //
     //    //    #[test]
     //    //    fn wallet_service_delete_works_for_plugged() {
