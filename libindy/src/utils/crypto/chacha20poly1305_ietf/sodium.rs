@@ -1,54 +1,75 @@
 extern crate sodiumoxide;
+use sodiumoxide::crypto::aead::chacha20poly1305_ietf;
+use sodiumoxide::crypto::auth::hmacsha256;
 
 use errors::common::CommonError;
-
-use self::sodiumoxide::crypto::aead::chacha20poly1305_ietf;
-use sodiumoxide::crypto::auth::hmacsha256;
 use utils::byte_array::_clone_into_array;
+use utils::crypto::hmacsha256::{HMACSHA256, HMACSHA256Key};
 
-pub struct ChaCha20Poly1305IETF {
+
+
+// TODO - figure out the best approach
+pub struct ChaCha20Poly1305IETFKey {
+    key: chacha20poly1305_ietf::Key,
 }
+
+impl ChaCha20Poly1305IETFKey {
+    pub fn get_bytes(&self) -> &[u8] {
+        &self.key.0
+    }
+}
+
+
+pub(super) type ChaCha20Poly1305IETFNonce = chacha20poly1305_ietf::Nonce;
+
+
+pub struct ChaCha20Poly1305IETF {}
 
 impl ChaCha20Poly1305IETF {
     pub const NONCEBYTES: usize = chacha20poly1305_ietf::NONCEBYTES;
     pub const KEYBYTES: usize = chacha20poly1305_ietf::KEYBYTES;
     pub const TAGBYTES: usize = chacha20poly1305_ietf::TAGBYTES;
 
-    pub fn create_key() -> Vec<u8> {
-        chacha20poly1305_ietf::gen_key()[..].to_vec()
+    pub fn create_key(bytes: [u8; chacha20poly1305_ietf::KEYBYTES]) -> ChaCha20Poly1305IETFKey {
+        ChaCha20Poly1305IETFKey { key: chacha20poly1305_ietf::Key(bytes) }
+    }
+
+    pub fn clone_key_from_slice(bytes: &[u8]) -> ChaCha20Poly1305IETFKey {
+        ChaCha20Poly1305IETFKey { key: chacha20poly1305_ietf::Key(_clone_into_array(bytes)) }
+    }
+
+    pub fn generate_key() -> ChaCha20Poly1305IETFKey {
+        ChaCha20Poly1305IETFKey { key : chacha20poly1305_ietf::gen_key() }
     }
 
     #[allow(dead_code)]
-    pub fn gen_nonce() -> Vec<u8> {
-        chacha20poly1305_ietf::gen_nonce()[..].to_vec()
+    pub fn gen_nonce() -> ChaCha20Poly1305IETFNonce {
+        chacha20poly1305_ietf::gen_nonce()
     }
 
-    pub fn encrypt_as_searchable(data: &[u8], key: &[u8], hmac_key: &[u8]) -> Vec<u8> {
-        let hmacsha256::Tag(hash) = hmacsha256::authenticate(
-            data,
-            &hmacsha256::Key(_clone_into_array(hmac_key))
-        );
+    pub fn encrypt_as_searchable(data: &[u8], key: &ChaCha20Poly1305IETFKey, hmac_key: &HMACSHA256Key) -> Vec<u8> {
+        let tag = HMACSHA256::create_tag(data, hmac_key);
 
         let ct = chacha20poly1305_ietf::seal(
             data,
             None,
-            &chacha20poly1305_ietf::Nonce(_clone_into_array(&hash[..chacha20poly1305_ietf::NONCEBYTES])),
-            &chacha20poly1305_ietf::Key(_clone_into_array(key))
+            &chacha20poly1305_ietf::Nonce(_clone_into_array(&tag[..chacha20poly1305_ietf::NONCEBYTES])),
+            &key.key
         );
 
         let mut result: Vec<u8> = Default::default();
-        result.extend_from_slice(&hash[..chacha20poly1305_ietf::NONCEBYTES]);
+        result.extend_from_slice(&tag[..chacha20poly1305_ietf::NONCEBYTES]);
         result.extend_from_slice(&ct);
         result
     }
 
-    pub fn encrypt_as_not_searchable(data: &[u8], key: &[u8]) -> Vec<u8> {
+    pub fn encrypt_as_not_searchable(data: &[u8], key: &ChaCha20Poly1305IETFKey) -> Vec<u8> {
         let nonce = chacha20poly1305_ietf::gen_nonce();
         let ct = chacha20poly1305_ietf::seal(
             data,
             None,
             &nonce,
-            &chacha20poly1305_ietf::Key(_clone_into_array(key))
+            &key.key
         );
 
         let mut result: Vec<u8> = Default::default();
@@ -57,7 +78,7 @@ impl ChaCha20Poly1305IETF {
         result
     }
 
-    pub fn decrypt(enc_text: &[u8], key: &[u8]) -> Result<Vec<u8>, CommonError> {
+    pub fn decrypt(enc_text: &[u8], key: &ChaCha20Poly1305IETFKey) -> Result<Vec<u8>, CommonError> {
         if enc_text.len() <= chacha20poly1305_ietf::NONCEBYTES {
             return Err(CommonError::InvalidStructure(format!("Unable to decrypt data: Cyphertext too short")));
         }
@@ -66,7 +87,7 @@ impl ChaCha20Poly1305IETF {
             &enc_text[chacha20poly1305_ietf::NONCEBYTES..],
             None,
             &chacha20poly1305_ietf::Nonce(_clone_into_array(&enc_text[..chacha20poly1305_ietf::NONCEBYTES])),
-            &chacha20poly1305_ietf::Key(_clone_into_array(key))
+            &key.key
         )
             .map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))
     }
@@ -82,8 +103,8 @@ mod tests {
     #[test]
     fn encrypt_as_searchable_decrypt_works() {
         let data = randombytes::randombytes(100);
-        let key = ChaCha20Poly1305IETF::create_key();
-        let hmac_key = ChaCha20Poly1305IETF::create_key();
+        let key = ChaCha20Poly1305IETF::generate_key();
+        let hmac_key = HMACSHA256::generate_key();
 
         let c = ChaCha20Poly1305IETF::encrypt_as_searchable(&data, &key, &hmac_key);
         let u = ChaCha20Poly1305IETF::decrypt(&c, &key).unwrap();
@@ -93,7 +114,7 @@ mod tests {
     #[test]
     fn encrypt_as_not_searchable_decrypt_works() {
         let data = randombytes::randombytes(16);
-        let key = ChaCha20Poly1305IETF::create_key();
+        let key = ChaCha20Poly1305IETF::generate_key();
 
         let c = ChaCha20Poly1305IETF::encrypt_as_not_searchable(&data, &key);
         let u = ChaCha20Poly1305IETF::decrypt(&c, &key).unwrap();

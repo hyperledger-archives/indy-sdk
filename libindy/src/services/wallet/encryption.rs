@@ -1,7 +1,8 @@
 use std::str;
 use std::collections::HashMap;
 
-use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
+use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF, ChaCha20Poly1305IETFKey};
+use utils::crypto::hmacsha256::HMACSHA256Key;
 
 use errors::wallet::WalletError;
 
@@ -9,7 +10,7 @@ use super::storage::Tag;
 use super::storage::TagName;
 
 
-pub(super) fn encrypt_tag_names(tag_names: &[String], tag_name_key: &[u8], tags_hmac_key: &[u8]) -> Vec<TagName> {
+pub(super) fn encrypt_tag_names(tag_names: &[String], tag_name_key: &ChaCha20Poly1305IETFKey, tags_hmac_key: &HMACSHA256Key) -> Vec<TagName> {
     let mut encrypted_tag_names = Vec::new();
 
     for tag_name in tag_names {
@@ -29,7 +30,10 @@ pub(super) fn encrypt_tag_names(tag_names: &[String], tag_name_key: &[u8], tags_
     encrypted_tag_names
 }
 
-pub(super) fn encrypt_tags(tags: &HashMap<String, String>, tag_name_key: &[u8], tag_value_key: &[u8], tags_hmac_key: &[u8]) -> Vec<Tag> {
+pub(super) fn encrypt_tags(tags: &HashMap<String, String>,
+                           tag_name_key: &ChaCha20Poly1305IETFKey,
+                           tag_value_key: &ChaCha20Poly1305IETFKey,
+                           tags_hmac_key: &HMACSHA256Key) -> Vec<Tag> {
     let mut etags: Vec<Tag> = Vec::new();
 
     for (tag_name, tag_value) in tags {
@@ -55,7 +59,9 @@ pub(super) fn encrypt_tags(tags: &HashMap<String, String>, tag_name_key: &[u8], 
     etags
 }
 
-pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &[u8], tag_value_key: &[u8]) -> Result<Option<HashMap<String, String>>, WalletError> {
+pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>,
+                           tag_name_key: &ChaCha20Poly1305IETFKey,
+                           tag_value_key: &ChaCha20Poly1305IETFKey) -> Result<Option<HashMap<String, String>>, WalletError> {
     match etags {
         &None => Ok(None),
         &Some(ref etags) => {
@@ -93,6 +99,7 @@ pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &[u8], tag_va
 
 #[cfg(test)]
 mod tests {
+    use utils::crypto::hmacsha256::HMACSHA256;
     use super::*;
 
     #[test]
@@ -102,9 +109,9 @@ mod tests {
         tags.insert("tag2".to_string(), "value2".to_string());
         tags.insert("~tag3".to_string(), "value3".to_string());
 
-        let tag_name_key = ChaCha20Poly1305IETF::create_key();
-        let tag_value_key = ChaCha20Poly1305IETF::create_key();
-        let hmac_key = ChaCha20Poly1305IETF::create_key();
+        let tag_name_key = ChaCha20Poly1305IETF::generate_key();
+        let tag_value_key = ChaCha20Poly1305IETF::generate_key();
+        let hmac_key = HMACSHA256::generate_key();
 
         let c = encrypt_tags(&tags, &tag_name_key, &tag_value_key, &hmac_key);
         let u = decrypt_tags(&Some(c), &tag_name_key, &tag_value_key).unwrap().unwrap();
@@ -113,8 +120,8 @@ mod tests {
 
     #[test]
     fn test_decrypt_tags_works_for_none() {
-        let tag_name_key = ChaCha20Poly1305IETF::create_key();
-        let tag_value_key = ChaCha20Poly1305IETF::create_key();
+        let tag_name_key = ChaCha20Poly1305IETF::generate_key();
+        let tag_value_key = ChaCha20Poly1305IETF::generate_key();
 
         let u = decrypt_tags(&None, &tag_name_key, &tag_value_key).unwrap();
         assert!(u.is_none());

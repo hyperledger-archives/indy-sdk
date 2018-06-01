@@ -3,7 +3,8 @@ use std::io::{Write,Read};
 use std::rc::Rc;
 
 use serde_json;
-use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
+use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF,ChaCha20Poly1305IETFKey};
+use utils::crypto::hmacsha256::{HMACSHA256, HMACSHA256Key};
 
 use errors::wallet::WalletError;
 use errors::common::CommonError;
@@ -19,65 +20,63 @@ use super::WalletRecord;
 pub(super) type Tags = HashMap<String, String>;
 
 
-#[derive(Debug, Default, Clone)]
 pub(super) struct Keys {
-   pub type_key: [u8; 32],
-   pub name_key: [u8; 32],
-   pub value_key: [u8; 32],
-   pub item_hmac_key: [u8; 32],
-   pub tag_name_key: [u8; 32],
-   pub tag_value_key: [u8; 32],
-   pub tags_hmac_key: [u8; 32]
+   pub type_key: ChaCha20Poly1305IETFKey,
+   pub name_key: ChaCha20Poly1305IETFKey,
+   pub value_key: ChaCha20Poly1305IETFKey,
+   pub item_hmac_key: HMACSHA256Key,
+   pub tag_name_key: ChaCha20Poly1305IETFKey,
+   pub tag_value_key: ChaCha20Poly1305IETFKey,
+   pub tags_hmac_key: HMACSHA256Key,
 }
 
 
 impl Keys {
     pub fn new(keys_vector: Vec<u8>) -> Keys {
-        let mut keys: Keys = Default::default();
-
-        keys.type_key.clone_from_slice(&keys_vector[0..32]);
-        keys.name_key.clone_from_slice(&keys_vector[32..64]);
-        keys.value_key.clone_from_slice(&keys_vector[64..96]);
-        keys.item_hmac_key.clone_from_slice(&keys_vector[96..128]);
-        keys.tag_name_key.clone_from_slice(&keys_vector[128..160]);
-        keys.tag_value_key.clone_from_slice(&keys_vector[160..192]);
-        keys.tags_hmac_key.clone_from_slice(&keys_vector[192..224]);
-
-        return keys;
+        Keys {
+            type_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_vector[0..32]),
+            name_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_vector[32..64]),
+            value_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_vector[64..96]),
+            item_hmac_key: HMACSHA256::clone_key_from_slice(&keys_vector[96..128]),
+            tag_name_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_vector[128..160]),
+            tag_value_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_vector[160..192]),
+            tags_hmac_key: HMACSHA256::clone_key_from_slice(&keys_vector[192..224]),
+        }
     }
 
-    pub fn gen_keys(master_key: [u8; 32]) -> Vec<u8>{
-        let type_key = ChaCha20Poly1305IETF::create_key();
-        let name_key = ChaCha20Poly1305IETF::create_key();
-        let value_key = ChaCha20Poly1305IETF::create_key();
-        let item_hmac_key = ChaCha20Poly1305IETF::create_key();
-        let tag_name_key = ChaCha20Poly1305IETF::create_key();
-        let tag_value_key = ChaCha20Poly1305IETF::create_key();
-        let tags_hmac_key = ChaCha20Poly1305IETF::create_key();
+    pub fn gen_keys(master_key: &ChaCha20Poly1305IETFKey) -> Vec<u8>{
+        let type_key = ChaCha20Poly1305IETF::generate_key();
+        let name_key = ChaCha20Poly1305IETF::generate_key();
+        let value_key = ChaCha20Poly1305IETF::generate_key();
+        let item_hmac_key = HMACSHA256::generate_key();
+        let tag_name_key = ChaCha20Poly1305IETF::generate_key();
+        let tag_value_key = ChaCha20Poly1305IETF::generate_key();
+        let tags_hmac_key = HMACSHA256::generate_key();
 
+        // TODO - clear this as well
         let mut keys: Vec<u8> = Vec::new();
-        keys.extend_from_slice(&type_key);
-        keys.extend_from_slice(&name_key);
-        keys.extend_from_slice(&value_key);
-        keys.extend_from_slice(&item_hmac_key);
-        keys.extend_from_slice(&tag_name_key);
-        keys.extend_from_slice(&tag_value_key);
-        keys.extend_from_slice(&tags_hmac_key);
+        keys.extend_from_slice(&type_key.get_bytes());
+        keys.extend_from_slice(&name_key.get_bytes());
+        keys.extend_from_slice(&value_key.get_bytes());
+        keys.extend_from_slice(&item_hmac_key.get_bytes());
+        keys.extend_from_slice(&tag_name_key.get_bytes());
+        keys.extend_from_slice(&tag_value_key.get_bytes());
+        keys.extend_from_slice(&tags_hmac_key.get_bytes());
 
-        return ChaCha20Poly1305IETF::encrypt_as_not_searchable(&keys, &master_key);
+        return ChaCha20Poly1305IETF::encrypt_as_not_searchable(&keys, master_key);
     }
 
-    pub fn encrypt(&self, master_key: &[u8]) -> Vec<u8> {
+    pub fn encrypt(&self, master_key: &ChaCha20Poly1305IETFKey) -> Vec<u8> {
         let mut keys = Vec::new();
-        keys.extend_from_slice(&self.type_key);
-        keys.extend_from_slice(&self.name_key);
-        keys.extend_from_slice(&self.value_key);
-        keys.extend_from_slice(&self.item_hmac_key);
-        keys.extend_from_slice(&self.tag_name_key);
-        keys.extend_from_slice(&self.tag_value_key);
-        keys.extend_from_slice(&self.tags_hmac_key);
+        keys.extend_from_slice(self.type_key.get_bytes());
+        keys.extend_from_slice(self.name_key.get_bytes());
+        keys.extend_from_slice(self.value_key.get_bytes());
+        keys.extend_from_slice(self.item_hmac_key.get_bytes());
+        keys.extend_from_slice(self.tag_name_key.get_bytes());
+        keys.extend_from_slice(self.tag_value_key.get_bytes());
+        keys.extend_from_slice(self.tags_hmac_key.get_bytes());
 
-        return ChaCha20Poly1305IETF::encrypt_as_not_searchable(&keys, &master_key);
+        return ChaCha20Poly1305IETF::encrypt_as_not_searchable(&keys, master_key);
     }
 }
 
@@ -113,6 +112,9 @@ pub struct EncryptedValue {
     pub key: Vec<u8>
 }
 
+
+const ENCRYPTED_KEY_LEN: usize = ChaCha20Poly1305IETF::TAGBYTES + ChaCha20Poly1305IETF::NONCEBYTES + ChaCha20Poly1305IETF::KEYBYTES;
+
 impl EncryptedValue {
     pub fn new(data: Vec<u8>, key: Vec<u8>) -> Self {
         Self {
@@ -121,20 +123,20 @@ impl EncryptedValue {
         }
     }
 
-    pub fn encrypt(data: &str, key: &[u8]) -> Self {
-        let value_key = ChaCha20Poly1305IETF::create_key();
+    pub fn encrypt(data: &str, key: &ChaCha20Poly1305IETFKey) -> Self {
+        let value_key = ChaCha20Poly1305IETF::generate_key();
         EncryptedValue::new(
             ChaCha20Poly1305IETF::encrypt_as_not_searchable(data.as_bytes(), &value_key),
-            ChaCha20Poly1305IETF::encrypt_as_not_searchable(&value_key, key)
+            ChaCha20Poly1305IETF::encrypt_as_not_searchable(value_key.get_bytes(), key)
         )
     }
 
-    pub fn decrypt(&self, key: &[u8]) -> Result<String, WalletError> {
+    pub fn decrypt(&self, key: &ChaCha20Poly1305IETFKey) -> Result<String, WalletError> {
         let value_key = ChaCha20Poly1305IETF::decrypt(&self.key, key)?;
         if value_key.len() != ChaCha20Poly1305IETF::KEYBYTES {
             return Err(WalletError::EncryptionError("Value key is not right size".to_string()));
         }
-
+        let value_key = ChaCha20Poly1305IETF::clone_key_from_slice(&value_key[..]);
         String::from_utf8(ChaCha20Poly1305IETF::decrypt(&self.data, &value_key)?)
             .map_err(|_| WalletError::CommonError(CommonError::InvalidStructure("Invalid UTF8 string inside of value".to_string())))
     }
@@ -147,7 +149,6 @@ impl EncryptedValue {
 
     pub fn from_bytes(joined_data: &[u8]) -> Result<Self, CommonError> {
         // value_key is stored as NONCE || CYPHERTEXT. Lenth of CYPHERTHEXT is length of DATA + length of TAG.
-        const ENCRYPTED_KEY_LEN: usize = ChaCha20Poly1305IETF::TAGBYTES + ChaCha20Poly1305IETF::NONCEBYTES + ChaCha20Poly1305IETF::KEYBYTES;
         if joined_data.len() < ENCRYPTED_KEY_LEN {
             return Err(CommonError::InvalidStructure(format!("Unable to split value_key from value: value too short")));
         }
@@ -252,7 +253,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub(super) fn rotate_key(&self, new_master_key: &[u8]) -> Result<(), WalletError> {
+    pub(super) fn rotate_key(&self, new_master_key: &ChaCha20Poly1305IETFKey) -> Result<(), WalletError> {
         let new_metadata = self.keys.encrypt(new_master_key);
         self.storage.set_storage_metadata(&new_metadata)?;
         Ok(())
@@ -318,7 +319,7 @@ mod tests {
         let pool_name = "test_pool";
         let storage_type = SQLiteStorageType::new();
         let master_key = _get_test_master_key();
-        storage_type.create_storage("test_wallet", None, "", &Keys::gen_keys(master_key)).unwrap();
+        storage_type.create_storage("test_wallet", None, "", &Keys::gen_keys(&master_key)).unwrap();
         let credentials = _credentials();
         let storage = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
 
@@ -332,35 +333,22 @@ mod tests {
         Wallet::new(name, pool_name, storage, keys)
     }
 
-    fn _get_test_master_key() -> [u8; 32] {
-        return [
+    fn _get_test_master_key() -> ChaCha20Poly1305IETFKey {
+        ChaCha20Poly1305IETF::create_key([
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8
-        ];
+        ])
     }
 
-    fn _get_test_new_master_key() -> [u8; 32] {
-        return [
+    fn _get_test_new_master_key() -> ChaCha20Poly1305IETFKey {
+        ChaCha20Poly1305IETF::create_key([
             2, 2, 3, 4, 5, 6, 7, 8,
             2, 2, 3, 4, 5, 6, 7, 8,
             2, 2, 3, 4, 5, 6, 7, 8,
             2, 2, 3, 4, 5, 6, 7, 8
-        ];
-    }
-
-    fn _get_test_keys() -> Vec<u8> {
-        return vec![
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8
-        ];
+        ])
     }
 
     fn _fetch_options(type_: bool, value: bool, tags: bool) -> String {
@@ -772,7 +760,7 @@ mod tests {
             }
         });
         let master_key = _get_test_master_key();
-        let column_keys = Keys::gen_keys(master_key);
+        let column_keys = Keys::gen_keys(&master_key);
         let keys = Keys::new(column_keys);
         let raw_query = serde_json::to_string(&test_query).unwrap();
         let query = language::parse_from_json(&raw_query).unwrap();

@@ -23,7 +23,7 @@ use errors::wallet::WalletError;
 use errors::common::CommonError;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
-use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
+use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF, ChaCha20Poly1305IETFKey};
 
 use self::storage::WalletStorageType;
 use self::storage::default::SQLiteStorageType;
@@ -61,10 +61,10 @@ pub struct WalletConfig {
 
 impl<'a> JsonDecodable<'a> for WalletConfig {}
 
-#[derive(Debug)]
+
 pub struct WalletCredentials {
-    master_key: [u8; 32],
-    rekey: Option<[u8; 32]>,
+    master_key: ChaCha20Poly1305IETFKey,
+    rekey: Option<ChaCha20Poly1305IETFKey>,
     storage_credentials: String,
 }
 
@@ -75,7 +75,7 @@ impl WalletCredentials {
             let master_key = if let Some(key) = m.get("key").and_then(|s| s.as_str()) {
                 let mut master_key: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
                 PwhashArgon2i13::derive_key(&mut master_key, key.as_bytes(), salt)?;
-                master_key
+                ChaCha20Poly1305IETF::create_key(master_key)
             } else {
                 return Err(WalletError::InputError(String::from("Credentials missing 'key' field")));
             };
@@ -83,7 +83,7 @@ impl WalletCredentials {
             let rekey = if let Some(key) =  m.get("rekey").and_then(|s| s.as_str()) {
                 let mut rekey: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
                 PwhashArgon2i13::derive_key(&mut rekey, key.as_bytes(), salt)?;
-                Some(rekey)
+                Some(ChaCha20Poly1305IETF::create_key(rekey))
             } else {
                 None
             };
@@ -207,7 +207,7 @@ impl WalletService {
             .recursive(true)
             .create(wallet_path)?;
 
-        storage_type.create_storage(name, storage_config, &credentials.storage_credentials, &Keys::gen_keys(credentials.master_key))?;
+        storage_type.create_storage(name, storage_config, &credentials.storage_credentials, &Keys::gen_keys(&credentials.master_key))?;
 
         let mut descriptor_file = File::create(wallet_descriptor_path)?;
         descriptor_file
@@ -302,7 +302,7 @@ impl WalletService {
 
         let wallet = Wallet::new(name, &descriptor.pool_name, storage, keys);
         if let Some(ref rekey) = credentials.rekey {
-            wallet.rotate_key(&rekey[..])?;
+            wallet.rotate_key(rekey)?;
         }
         let wallet_handle = SequenceUtils::get_next_id();
         wallets.insert(wallet_handle, Box::new(wallet));
