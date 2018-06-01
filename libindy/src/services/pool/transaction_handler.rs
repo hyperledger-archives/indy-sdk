@@ -32,6 +32,7 @@ use super::types::*;
 use domain::ledger::constants;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use self::indy_crypto::bls::Generator;
+use utils::cstring::CStringUtils;
 
 const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
     constants::GET_NYM,
@@ -51,6 +52,7 @@ pub struct TransactionHandler {
     pub f: usize,
     pub nodes: Vec<RemoteNode>,
     pending_commands: HashMap<u64 /* requestId */, CommandProcess>,
+    parser_sps: HashMap<String, extern fn(*const c_char, *mut *const c_char) -> ErrorCode>,
 }
 
 impl TransactionHandler {
@@ -143,7 +145,7 @@ impl TransactionHandler {
         let consensus_reached = same_replies_cnt >= self.f || {
             debug!("TransactionHandler::process_reply: Try to verify proof and signature");
 
-            match TransactionHandler::parse_reply_for_proof_checking(&msg_result) {
+            match self.parse_generic_reply_for_proof_checking(&msg_result, raw_msg) {
                 Some(parsed_sps) => {
                     debug!("TransactionHandler::process_reply: Proof and signature are present");
                     self.verify_parsed_sp(parsed_sps)
@@ -234,7 +236,8 @@ impl TransactionHandler {
             full_cmd_timeout: Some(time::now_utc().add(Duration::seconds(REQUEST_TIMEOUT_ACK))),
         };
 
-        if REQUESTS_FOR_STATE_PROOFS.contains(&req_json["operation"]["type"].as_str().unwrap_or("")) {
+        let type_ = req_json["operation"]["type"].as_str().unwrap_or("");
+        if REQUESTS_FOR_STATE_PROOFS.contains(&type_) || self.parser_sps.contains_key(type_) {
             let start_node = rand::StdRng::new().unwrap().gen_range(0, self.nodes.len());
             let resendable_request = ResendableRequest {
                 request: req_str.to_string(),
@@ -270,22 +273,38 @@ impl TransactionHandler {
         }
     }
 
-    fn parse_reply_for_proof_checking(json_msg: &SJsonValue) -> Option<Vec<ParsedSP>> {
-        trace!("TransactionHandler::parse_reply_for_proof_checking: >>> json_msg: {:?}", json_msg);
-
-        let xtype = if let Some(xtype) = json_msg["type"].as_str() {
-            trace!("TransactionHandler::parse_reply_for_proof_checking: xtype: {:?}", xtype);
-            xtype
+    fn parse_generic_reply_for_proof_checking(&self, json_msg: &SJsonValue, raw_msg: &str) -> Option<Vec<ParsedSP>> {
+        let type_ = if let Some(type_) = json_msg["type"].as_str() {
+            trace!("TransactionHandler::parse_generic_reply_for_proof_checking: type_: {:?}", type_);
+            type_
         } else {
-            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No type field");
+            trace!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< No type field");
             return None;
         };
 
-        if !REQUESTS_FOR_STATE_PROOFS.contains(&xtype) {
-            //TODO GET_DDO, GET_TXN
-            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< type not supported");
-            return None;
+        if REQUESTS_FOR_STATE_PROOFS.contains(&type_) {
+            TransactionHandler::parse_reply_for_proof_checking(json_msg, type_)
+        } else if let Some(handler) = self.parser_sps.get(type_) {
+            let msg = CString::new(raw_msg).ok()?;
+            let parsed_str: String = {
+                let mut parsed_str = ::std::ptr::null();
+                let err = handler(msg.as_ptr(), &mut parsed_str);
+                if err != ErrorCode::Success {
+                    return None;
+                }
+                check_useful_c_str!(parsed_str, None);
+                parsed_str
+            };
+            Some(unwrap_or_return!(serde_json::from_str(&parsed_str).map_err(map_err_trace!()), None))
+        } else {
+            None
         }
+    }
+
+    fn parse_reply_for_proof_checking(json_msg: &SJsonValue, type_: &str) -> Option<Vec<ParsedSP>> {
+        trace!("TransactionHandler::parse_reply_for_proof_checking: >>> json_msg: {:?}", json_msg);
+
+        assert!(REQUESTS_FOR_STATE_PROOFS.contains(&type_));
 
         let proof = if let Some(proof) = json_msg["state_proof"]["proof_nodes"].as_str() {
             trace!("TransactionHandler::parse_reply_for_proof_checking: proof: {:?}", proof);
@@ -333,7 +352,7 @@ impl TransactionHandler {
 
         trace!("TransactionHandler::parse_reply_for_proof_checking: data: {:?}, parsed_data: {:?}", data, parsed_data);
 
-        let key_suffix: String = match xtype {
+        let key_suffix: String = match type_ {
             constants::GET_ATTR => {
                 if let Some(attr_name) = json_msg["raw"].as_str()
                     .or(json_msg["enc"].as_str())
@@ -414,7 +433,7 @@ impl TransactionHandler {
         };
 
         let dest = json_msg["dest"].as_str().or(json_msg["origin"].as_str());
-        let key_prefix = match xtype {
+        let key_prefix = match type_ {
             constants::GET_NYM => {
                 if let Some(dest) = dest {
                     let mut hasher = sha2::Sha256::default();
@@ -451,7 +470,7 @@ impl TransactionHandler {
         let mut key = key_prefix;
         key.extend_from_slice(key_suffix.as_bytes());
 
-        let value: Option<String> = match TransactionHandler::parse_reply_for_proof_value(json_msg, data, parsed_data, xtype) {
+        let value: Option<String> = match TransactionHandler::parse_reply_for_proof_value(json_msg, data, parsed_data, type_) {
             Ok(value) => value,
             Err(err_str) => {
                 trace!("TransactionHandler::parse_reply_for_proof_checking: <<< {}", err_str);
@@ -643,6 +662,7 @@ impl Default for TransactionHandler {
             pending_commands: HashMap::new(),
             f: 0,
             nodes: Vec::new(),
+            parser_sps: HashMap::new(),
         }
     }
 }
