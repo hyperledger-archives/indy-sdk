@@ -1,6 +1,6 @@
 [package]
 name = "rust-indy-sdk"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Mike Lodder <redmike7@gmail.com>"]
 description = "FFI bindings for IndySDK. This is for those callers who don't link indy-sdk crate"
 readme = "README.md"
