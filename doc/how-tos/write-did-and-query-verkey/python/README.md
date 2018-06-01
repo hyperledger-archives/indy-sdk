@@ -9,6 +9,7 @@ Indy-SDK Developer Walkthrough #1, Python Edition
 
 Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../../prerequisites.md).
 
+Ensure you have the 64-bit version of Python installed, as the 32-bit version may have problems loading the Indy .dll files.
 
 ## Steps
 
@@ -22,6 +23,8 @@ Save the doc as `write_did.py`
 
 This is a very simple app framework into which you'll plug the code
 you'll be writing.
+
+Install the required python packages by executing `pip install python3-indy asyncio`
 
 ### Step 2
 

@@ -33,12 +33,12 @@ public class CryptoDemoTest extends IndyIntegrationTest {
 		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
 		//2. Create and Open My Wallet
-		Wallet.createWallet(poolName, "myWallet", "default", null, null).get();
-		Wallet myWallet = Wallet.openWallet("myWallet", null, null).get();
+		Wallet.createWallet(poolName, "myWallet", "default", null, CREDENTIALS).get();
+		Wallet myWallet = Wallet.openWallet("myWallet", null, CREDENTIALS).get();
 
 		//3. Create and Open Their Wallet
-		Wallet.createWallet(poolName, "theirWallet", "default", null, null).get();
-		Wallet theirWallet = Wallet.openWallet("theirWallet", null, null).get();
+		Wallet.createWallet(poolName, "theirWallet", "default", null, CREDENTIALS).get();
+		Wallet theirWallet = Wallet.openWallet("theirWallet", null, CREDENTIALS).get();
 
 		//4. Create My Did
 		CreateAndStoreMyDidResult createMyDidResult = Did.createAndStoreMyDid(myWallet, "{}").get();
@@ -72,11 +72,11 @@ public class CryptoDemoTest extends IndyIntegrationTest {
 
 		// 9. Close and delete My Wallet
 		myWallet.closeWallet().get();
-		Wallet.deleteWallet("myWallet", null).get();
+		Wallet.deleteWallet("myWallet", CREDENTIALS).get();
 
 		// 10. Close and delete Their Wallet
 		theirWallet.closeWallet().get();
-		Wallet.deleteWallet("theirWallet", null).get();
+		Wallet.deleteWallet("theirWallet", CREDENTIALS).get();
 
 		//11. Close Pool
 		pool.closePoolLedger().get();

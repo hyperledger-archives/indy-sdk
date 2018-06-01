@@ -6,12 +6,12 @@ use self::indy_crypto::cl::{CredentialPublicKey};
 use self::indy_crypto::cl::verifier::Verifier as CryptoVerifier;
 use services::anoncreds::helpers::*;
 
-use domain::schema::SchemaV1;
-use domain::credential_definition::CredentialDefinitionV1 as CredentialDefinition;
-use domain::revocation_registry_definition::RevocationRegistryDefinitionV1;
-use domain::proof::{Proof, RequestedProof};
-use domain::proof_request::{ProofRequest, AttributeInfo, PredicateInfo};
-use domain::revocation_registry::RevocationRegistryV1;
+use domain::anoncreds::schema::SchemaV1;
+use domain::anoncreds::credential_definition::CredentialDefinitionV1 as CredentialDefinition;
+use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use domain::anoncreds::proof::{Proof, RequestedProof};
+use domain::anoncreds::proof_request::{ProofRequest, AttributeInfo, PredicateInfo};
+use domain::anoncreds::revocation_registry::RevocationRegistryV1;
 
 pub struct Verifier {}
 

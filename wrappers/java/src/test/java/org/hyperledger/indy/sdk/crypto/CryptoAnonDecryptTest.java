@@ -2,7 +2,7 @@ package org.hyperledger.indy.sdk.crypto;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
-import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -41,7 +41,7 @@ public class CryptoAnonDecryptTest extends IndyIntegrationTestWithSingleWallet {
 		byte[] encryptedMsg = Crypto.anonCrypt(VERKEY, MESSAGE).get();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		Crypto.anonDecrypt(wallet, VERKEY, encryptedMsg).get();
 	}

@@ -69,7 +69,7 @@
                                                           withMyDid:[TestUtils unknownDid]
                                                            metadata:[TestUtils someMetadata]
                                                        walletHandle:walletHandle];
-    XCTAssertEqual(ret.code, WalletNotFoundError, @"PairwiseUtils::createPairwiseForTheirDid() returned wrong eror code!");
+    XCTAssertEqual(ret.code, WalletItemNotFound, @"PairwiseUtils::createPairwiseForTheirDid() returned wrong eror code!");
 }
 
 - (void)testCreatePairwiseWorksForNotFoundTheirDid {
@@ -86,7 +86,7 @@
                                                           withMyDid:myDid
                                                            metadata:[TestUtils someMetadata]
                                                        walletHandle:walletHandle];
-    XCTAssertEqual(ret.code, WalletNotFoundError, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
+    XCTAssertEqual(ret.code, WalletItemNotFound, @"PairwiseUtils::createPairwiseForTheirDid() failed!");
 }
 
 // MARK: - List pairwise
@@ -226,7 +226,7 @@
     ret = [[PairwiseUtils sharedInstance] getPairwiseForDid:[TestUtils trusteeDid]
                                                         walletHandle:walletHandle
                                                      outPairwiseJson:&pairwiseInfoJson];
-    XCTAssertEqual(ret.code, WalletNotFoundError, @"PairwiseUtils::getPairwiseForDid() returned wrong error code!");
+    XCTAssertEqual(ret.code, WalletItemNotFound, @"PairwiseUtils::getPairwiseForDid() returned wrong error code!");
 }
 
 // MARK: - Set pairwise metadata
@@ -291,7 +291,7 @@
     ret = [[PairwiseUtils sharedInstance] setPairwiseMetadata:[TestUtils someMetadata]
                                                            forTheirDid:[TestUtils trusteeDid]
                                                           walletHandle:walletHandle];
-    XCTAssertEqual(ret.code, WalletNotFoundError, @"PairwiseUtils::setPairwiseMetadata() returned wrong error code!");
+    XCTAssertEqual(ret.code, WalletItemNotFound, @"PairwiseUtils::setPairwiseMetadata() returned wrong error code!");
 }
 
 @end

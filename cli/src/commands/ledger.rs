@@ -326,6 +326,47 @@ pub mod schema_command {
     }
 }
 
+pub mod get_validator_info_command {
+    use super::*;
+
+    command!(CommandMetadata::build("get-validator-info", "Get validator info from all nodes.")
+                .add_example(r#"ledger get-validator-info"#)
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let submitter_did = ensure_active_did(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+
+        let response = Ledger::build_get_validator_info_request(&submitter_did)
+            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
+            .map_err(|err| handle_transaction_error(err, None, None, None))?;
+
+        let responses = match serde_json::from_str::<HashMap<String, String>>(&response) {
+            Ok(responses) => responses,
+            Err(_) => {
+                let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+                    .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+                return handle_transaction_response(response).map(|result| println_succ!("{}", result));
+            }
+        };
+
+        for (node, response) in responses {
+            let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+                .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+            println_succ!("Get validator info response for node {}:", node);
+            let _res = handle_transaction_response(response).map(|result| println!("{}", result));
+        }
+        let res = Ok(());
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
 pub mod get_schema_command {
     use super::*;
 
@@ -1045,7 +1086,7 @@ pub mod sign_multi_command {
             }
             Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid Transaction JSON")),
             Err(ErrorCode::WalletInvalidHandle) => Err(println_err!("Wallet: \"{}\" not found", wallet_name)),
-            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Signer DID: \"{}\" not found", submitter_did)),
+            Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Signer DID: \"{}\" not found", submitter_did)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
         };
 
@@ -1171,7 +1212,7 @@ pub fn handle_transaction_error(err: ErrorCode, submitter_did: Option<&str>, poo
         ErrorCode::CommonInvalidStructure => println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc..."),
         ErrorCode::PoolLedgerInvalidPoolHandle => println_err!("Pool: \"{}\" not found", pool_name.unwrap_or("")),
         ErrorCode::WalletInvalidHandle => println_err!("Wallet: \"{}\" not found", wallet_name.unwrap_or("")),
-        ErrorCode::WalletNotFoundError => println_err!("Submitter DID: \"{}\" not found", submitter_did.unwrap_or("")),
+        ErrorCode::WalletItemNotFound => println_err!("Submitter DID: \"{}\" not found", submitter_did.unwrap_or("")),
         ErrorCode::WalletIncompatiblePoolError =>
             println_err!("Wallet \"{}\" is incompatible with pool \"{}\".", wallet_name.unwrap_or(""), pool_name.unwrap_or("")),
         ErrorCode::PoolLedgerTimeout => println_err!("Transaction response has not been received"),
@@ -1231,7 +1272,9 @@ pub mod tests {
     use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
     use commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
     use commands::did::tests::{new_did, use_did, SEED_TRUSTEE, DID_TRUSTEE, SEED_MY1, DID_MY1, VERKEY_MY1, SEED_MY3, DID_MY3, VERKEY_MY3};
+    #[cfg(feature = "nullpay_plugin")]
     use commands::common::tests::{load_null_payment_plugin, NULL_PAYMENT_METHOD};
+    #[cfg(feature = "nullpay_plugin")]
     use commands::payment_address::tests::create_payment_address;
     use libindy::ledger::Ledger;
     use libindy::did::Did;
@@ -1950,6 +1993,30 @@ pub mod tests {
         }
     }
 
+    mod get_validator_info {
+        use super::*;
+
+        #[test]
+        pub fn get_validator_info_works() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = get_validator_info_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+    }
+
     mod get_schema {
         use super::*;
 
@@ -2061,8 +2128,8 @@ pub mod tests {
 
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
-            let schema_id = send_schema(&ctx);
             let did = crate_send_and_use_new_nym(&ctx);
+            let schema_id = send_schema(&ctx, &did);
             {
                 let cmd = cred_def_command::new();
                 let mut params = CommandParams::new();
@@ -2078,14 +2145,15 @@ pub mod tests {
         }
 
         #[test]
+        #[cfg(feature = "nullpay_plugin")]
         pub fn cred_def_works_for_set_fees() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
-            let schema_id = send_schema(&ctx);
             let did = crate_send_and_use_new_nym(&ctx);
+            let schema_id = send_schema(&ctx, &did);
 
             load_null_payment_plugin(&ctx);
             set_fees(&ctx);
@@ -2183,9 +2251,8 @@ pub mod tests {
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
 
-            let schema_id = send_schema(&ctx);
-
-            new_did(&ctx, SEED_TRUSTEE);
+            let did = crate_send_and_use_new_nym(&ctx);
+            let schema_id = send_schema(&ctx, &did);
             use_did(&ctx, DID_TRUSTEE);
             {
                 let cmd = cred_def_command::new();
@@ -2576,22 +2643,32 @@ pub mod tests {
         }
     }
 
+    #[cfg(feature = "nullpay_plugin")]
     pub const UNKNOWN_PAYMENT_METHOD: &'static str = "UNKNOWN_PAYMENT_METHOD";
+    #[cfg(feature = "nullpay_plugin")]
     pub const PAYMENT_ADDRESS: &'static str = "pay:null:BBQr7K6CP1tslXd";
+    #[cfg(feature = "nullpay_plugin")]
     pub const INVALID_PAYMENT_ADDRESS: &'static str = "null";
+    #[cfg(feature = "nullpay_plugin")]
     pub const INPUT: &'static str = "txo:null:111_rBuQo2A1sc9jrJg";
+    #[cfg(feature = "nullpay_plugin")]
     pub const OUTPUT: &'static str = "(pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,10)";
+    #[cfg(feature = "nullpay_plugin")]
     pub const OUTPUT_2: &'static str = "(pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa,25,some extra)";
+    #[cfg(feature = "nullpay_plugin")]
     pub const INVALID_INPUT: &'static str = "txo:null";
+    #[cfg(feature = "nullpay_plugin")]
     pub const INVALID_OUTPUT: &'static str = "pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,100";
+    #[cfg(feature = "nullpay_plugin")]
     pub const FEES: &'static str = "NYM:2,ATTRIB:1,SCHEMA:5";
+    #[cfg(feature = "nullpay_plugin")]
     pub const TOKES_COUNT: i32 = 100;
 
+    #[cfg(feature = "nullpay_plugin")]
     mod get_utxo {
         use super::*;
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn get_utxo_works() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2614,7 +2691,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn get_utxo_works_for_no_utxos() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2636,7 +2712,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn get_utxo_works_for_unknown_payment_method() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2658,7 +2733,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn get_utxo_works_for_invalid_payment_address() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2680,7 +2754,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn get_utxo_works_for_no_active_wallet() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2698,7 +2771,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn get_utxo_works_for_no_active_did() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2718,11 +2790,11 @@ pub mod tests {
         }
     }
 
+    #[cfg(feature = "nullpay_plugin")]
     mod payment {
         use super::*;
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn payment_works() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2748,7 +2820,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn payment_works_for_multiple_inputs() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2778,7 +2849,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn payment_works_for_one_input_and_multiple_outputs() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2806,7 +2876,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn payment_works_for_multiple_inputs_and_outputs() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2837,7 +2906,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn payment_works_for_not_enough_amount() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2863,7 +2931,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn payment_works_for_unknown_input() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2886,7 +2953,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn payment_works_for_unknown_payment_method() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2909,7 +2975,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn payment_works_for_incompatible_payment_methods() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2932,7 +2997,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn payment_works_for_empty_inputs() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2955,7 +3019,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn payment_works_for_empty_outputs() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -2978,7 +3041,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn payment_works_for_invalid_inputs() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3001,7 +3063,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn payment_works_for_invalid_outputs() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3031,7 +3092,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn payment_works_for_several_equal_inputs() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3054,11 +3114,11 @@ pub mod tests {
         }
     }
 
+    #[cfg(feature = "nullpay_plugin")]
     mod get_fees {
         use super::*;
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn get_fees_works() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3081,7 +3141,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn get_fees_works_for_no_fees() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3103,7 +3162,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn get_fees_works_for_unknown_payment_method() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3125,7 +3183,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn get_fees_works_for_no_active_wallet() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3143,7 +3200,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn get_fees_works_for_no_active_did() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3164,11 +3220,11 @@ pub mod tests {
         }
     }
 
+    #[cfg(feature = "nullpay_plugin")]
     mod mint_prepare {
         use super::*;
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn mint_prepare_works() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3188,7 +3244,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn mint_prepare_works_for_multiple_outputs() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3208,7 +3263,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn mint_prepare_works_for_empty_outputs() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3228,7 +3282,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn mint_prepare_works_for_unknown_payment_method() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3248,7 +3301,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn mint_prepare_works_for_invalid_outputs_format() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3268,7 +3320,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn mint_prepare_works_for_invalid_payment_address() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3288,7 +3339,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn mint_prepare_works_for_incompatible_payment_methods() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3308,11 +3358,11 @@ pub mod tests {
         }
     }
 
+    #[cfg(feature = "nullpay_plugin")]
     mod set_fees_prepare {
         use super::*;
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn set_fees_prepare_works() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3335,7 +3385,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn set_fees_prepare_works_for_unknown_payment_method() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3358,7 +3407,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn set_fees_prepare_works_for_invalid_fees_format() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3381,7 +3429,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn set_fees_prepare_works_for_no_active_wallet() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3472,10 +3519,9 @@ pub mod tests {
         });
     }
 
-    pub fn send_schema(ctx: &CommandContext) -> String {
+    pub fn send_schema(ctx: &CommandContext, did: &str) -> String {
         let (pool_handle, _) = get_connected_pool(ctx).unwrap();
         let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
-        let did = crate_send_and_use_new_nym(ctx);
         let schema_data = r#"{"id":"id", "name":"cli_gvt","version":"1.0","attrNames":["name"],"ver":"1.0"}"#;
         let schema_request = Ledger::build_schema_request(&did, schema_data).unwrap();
         let schema_response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
@@ -3505,6 +3551,7 @@ pub mod tests {
         cmd.execute(&ctx, &params).unwrap();
     }
 
+    #[cfg(feature = "nullpay_plugin")]
     pub fn create_address_and_mint_tokens(ctx: &CommandContext) -> String {
         let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
         let submitter_did = ensure_active_did(&ctx).unwrap();
@@ -3517,6 +3564,7 @@ pub mod tests {
         payment_address
     }
 
+    #[cfg(feature = "nullpay_plugin")]
     pub fn get_utxo_input(ctx: &CommandContext, payment_address: &str) -> String {
         let (pool_handle, _) = get_connected_pool(ctx).unwrap();
         let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
@@ -3532,6 +3580,7 @@ pub mod tests {
         utxo["input"].as_str().unwrap().to_string()
     }
 
+    #[cfg(feature = "nullpay_plugin")]
     pub fn set_fees(ctx: &CommandContext) {
         let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
         let submitter_did = ensure_active_did(&ctx).unwrap();

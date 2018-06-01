@@ -278,6 +278,16 @@ impl LedgerUtils {
         super::results::result_to_string(err, receiver)
     }
 
+    pub fn build_get_validator_info_request(submitter_did: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+
+        let err = indy_build_get_validator_info_request(command_handle, submitter_did.as_ptr(), cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
     pub fn build_get_txn_request(submitter_did: &str, data: i32) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
@@ -561,6 +571,8 @@ impl LedgerUtils {
                 let res = mem::transmute(&rev_reg_id as &str);
                 mem::forget(rev_reg_id);
                 REV_REG_DEF_ID = res;
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
             });
 
             (SCHEMA_ID, CRED_DEF_ID, REV_REG_DEF_ID)

@@ -24,8 +24,9 @@ async def demo():
     pool_handle = await pool.open_pool_ledger(pool_name, None)
 
     # 3. Create Trustee Wallet and Get Wallet Handle
-    await wallet.create_wallet(pool_name, wallet_name, None, None, None)
-    wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+    credentials = json.dumps({"key": "wallet_key"})
+    await wallet.create_wallet(pool_name, wallet_name, None, None, credentials)
+    wallet_handle = await wallet.open_wallet(wallet_name, None, credentials)
 
     # 4. Create New DID
     (new_did, new_verkey) = await did.create_and_store_my_did(wallet_handle, "{}")
@@ -50,7 +51,7 @@ async def demo():
     await pool.close_pool_ledger(pool_handle)
 
     # 10. Delete wallets
-    await wallet.delete_wallet(wallet_name, None)
+    await wallet.delete_wallet(wallet_name, credentials)
 
     # 11. Delete pool ledger config
     await pool.delete_pool_ledger_config(pool_name)

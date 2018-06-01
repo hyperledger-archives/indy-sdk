@@ -531,6 +531,30 @@
     XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");
 }
 
+- (void)testBuildGetValidatorInfo
+{
+    [TestUtils cleanupStorage];
+    NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
+    
+    NSMutableDictionary *expectedResult = [NSMutableDictionary new];
+    
+    expectedResult[@"operation"] = [NSMutableDictionary new];
+    expectedResult[@"operation"][@"type"] = @"119";
+    
+    
+    NSString *getValidatorInfoJson;
+    NSError *ret = [[LedgerUtils sharedInstance] buildGetValidatorInfo:identifier
+                                                            resultJson:&getValidatorInfoJson];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::builGetValidatorInfo failed");
+    XCTAssertNotNil(getValidatorInfoJson, @"getValidatorInfoJson is nil!");
+    NSLog(@"getValidatorInfoJson: %@", getValidatorInfoJson);
+    
+    NSDictionary *request = [NSDictionary fromString:getValidatorInfoJson];
+    XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");
+    
+    [TestUtils cleanupStorage];
+}
+
 // MARK: Pool config
 
 - (void)testBuildPoolConfigRequestsWorks {

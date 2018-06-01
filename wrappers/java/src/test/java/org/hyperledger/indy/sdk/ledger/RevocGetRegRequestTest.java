@@ -26,11 +26,11 @@ public class RevocGetRegRequestTest extends LedgerIntegrationTest {
 
 	@Test
 	public void testRevocRegRequestsWorks() throws Exception {
-		String myDid = createStoreAndPublishDidFromTrustee();
+		postEntities();
 
 		int timestamp = (int) (new Date().getTime()/1000) + 100;
 
-		String getRevRegRequest = Ledger.buildGetRevocRegRequest(myDid, revRegDefId, timestamp).get();
+		String getRevRegRequest = Ledger.buildGetRevocRegRequest(DID, revRegDefId, timestamp).get();
 		String getRevReResponse = PoolUtils.ensurePreviousRequestApplied(pool, getRevRegRequest, response -> {
 			JSONObject responseObject = new JSONObject(response);
 			return !responseObject.getJSONObject("result").isNull("seqNo");
