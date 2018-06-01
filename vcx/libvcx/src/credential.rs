@@ -236,18 +236,30 @@ impl Credential {
         state
     }
 
-
-    // TODO have this be VCXState, not u32
     fn get_credential(&self) -> Result<String, CredentialError> {
-        match self.state {
-            VcxStateType::VcxStateAccepted => match self.credential.clone() {
-                Some(ref c) => match self.cred_id.clone() {
-                    Some(id) => Ok(format!(r#"{{"{}":{}}}"#, id, c)),
-                    None => Err(CredentialError::InvalidState()),
+        if self.state == VcxStateType::VcxStateAccepted {
+            match self.credential {
+                Some(ref x) => Ok(self.to_cred_string(x)),
+                None => Err(CredentialError::InvalidState()),
+            }
+        }
+        else {
+            Err(CredentialError::InvalidState())
+        }
+    }
+
+    fn get_credential_offer(&self) -> Result<String, CredentialError> {
+        if self.state == VcxStateType::VcxStateRequestReceived {
+            match self.credential_offer {
+                Some(ref x) => match serde_json::to_string(x) {
+                    Ok(x) => Ok(self.to_cred_offer_string(&x)),
+                    Err(_) => Err(CredentialError::InvalidCredentialJson()),
                 }
                 None => Err(CredentialError::InvalidState()),
             }
-            _ => Err(CredentialError::InvalidState()),
+        }
+        else {
+            Err(CredentialError::InvalidState())
         }
     }
 
@@ -256,6 +268,21 @@ impl Credential {
         None => "".to_string(),
     }}
 
+    fn to_cred_string(&self, cred: &str) -> String {
+        let payment_string = match self.payment_info {
+            Some(ref x) => format!(r#","price":"{}","payment_address":"{}""#,x.price,x.payment_addr),
+            None => "".to_string(),
+        };
+        format!(r#"{{"credential_id":"{}","credential":{}{}}}"#,self.get_source_id(), cred, payment_string)
+    }
+
+    fn to_cred_offer_string(&self, cred_offer: &str) -> String {
+        let payment_string = match self.payment_info {
+            Some(ref x) => format!(r#","price":"{}","payment_address":"{}""#,x.price,x.payment_addr),
+            None => "".to_string(),
+        };
+        format!(r#"{{"credential_offer":{}{}}}"#, cred_offer, payment_string)
+    }
 
     fn set_source_id(&mut self, id: &str) { self.source_id = id.to_string(); }
 
@@ -315,6 +342,12 @@ pub fn get_credential(handle: u32) -> Result<String, CredentialError> {
     }).map_err(|ec| CredentialError::CommonError(ec))
 }
 
+pub fn get_credential_offer(handle: u32) -> Result<String, CredentialError> {
+    HANDLE_MAP.get(handle, |obj| {
+        obj.get_credential_offer().map_err(|e| e.to_error_code())
+    }).map_err(|ec| CredentialError::CommonError(ec))
+}
+
 fn get_credential_id(handle: u32) -> Result<String, CredentialError> {
     HANDLE_MAP.get(handle, |obj| {
         Ok(obj.get_credential_id())
@@ -333,7 +366,7 @@ pub fn send_credential_request(handle: u32, connection_handle: u32) -> Result<u3
     }).map_err(handle_err)
 }
 
-pub fn get_credential_offer(connection_handle: u32, msg_id: &str) -> Result<String, CredentialError> {
+pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> Result<String, CredentialError> {
     let my_did = connection::get_pw_did(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
     let my_vk = connection::get_pw_verkey(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
     let agent_did = connection::get_agent_did(connection_handle).map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
@@ -558,5 +591,18 @@ mod tests {
         let offer = get_credential_offer_messages(connection_h, None).unwrap();
         assert!(offer.len() > 50);
         wallet::delete_wallet(test_name).unwrap();
+    }
+
+    #[test]
+    fn test_get_credential() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+
+        let handle = from_string(::utils::constants::DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
+        let offer_string = get_credential_offer(handle).unwrap();
+        println!("{}", offer_string);
+        let handle = from_string(r#"{"source_id":"test_credential_serialize_deserialize","state":4,"credential_name":null,"credential_request":null,"credential_offer":null,"link_secret_alias":"main","msg_uid":null,"agent_did":null,"agent_vk":null,"my_did":null,"my_vk":null,"their_did":null,"their_vk":null,"cred_id":null,"credential":"something","payment_info":null}"#).unwrap();
+        let cred_string = get_credential(handle).unwrap();
+        println!("{}", cred_string);
     }
 }

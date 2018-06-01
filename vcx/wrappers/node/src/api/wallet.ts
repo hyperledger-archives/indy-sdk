@@ -58,7 +58,7 @@ export class Wallet {
    * @param {paymentAddress} address
    * @returns {Promise<string>} Wallet info, balance, addresses, etc
    */
-  static async getTokenInfo ( handle: PaymentHandle): Promise<string> {
+  static async getTokenInfo ( handle?: PaymentHandle): Promise<string> {
     try {
       return await createFFICallbackPromise<string>(
         (resolve, reject, cb) => {
