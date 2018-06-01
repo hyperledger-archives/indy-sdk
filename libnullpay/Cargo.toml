@@ -9,6 +9,7 @@ name = "nullpay"
 crate-type = ["cdylib", "rlib"]
 
 [features]
+# Causes the build to fail on all warnings
 fatal_warnings = []
 
 [dependencies]

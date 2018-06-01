@@ -1,8 +1,5 @@
 #!groovy
 
-def features = "--features fatal_warnings"
-def buildCommand = "cargo build ${features}"
-
 testing()
 
 def testing() {
@@ -48,7 +45,7 @@ def windowsTesting() {
                                 "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "${buildCommand}"
+                            bat "cargo build --features fatal_warnings"
                             bat "cargo test --no-run"
 
                             echo "Windows Libindy Test: Run tests"
@@ -67,7 +64,7 @@ def windowsTesting() {
                         withEnv([
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "${buildCommand}"
+                            bat "cargo build --features fatal_warnings"
                             bat "cargo test --no-run"
 
                             echo "Windows Libnullpay Test: Run tests"
@@ -136,7 +133,7 @@ def macosTesting() {
                     echo "MacOS Test: Build"
                     setupRust()
                     setupBrewPackages()
-                    sh "${buildCommand}"
+                    sh "cargo build --features fatal_warnings"
                     sh "cargo test --no-run"
                     // TODO testing
                 }
@@ -223,7 +220,7 @@ def linuxTesting(file, env_name, network_name) {
         poolInst = openPool(env_name, network_name)
 
         def testEnv
-        def additionalLibindyFeatures = "sodium_static"
+        def additionalFeatures = "sodium_static"
 
         dir('libindy') {
             echo "${env_name} Libindy Test: Build docker image"
@@ -231,7 +228,7 @@ def linuxTesting(file, env_name, network_name) {
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libindy Test: Build"
-                sh "cargo build ${features} $additionalLibindyFeatures"
+                sh "cargo build --features fatal_warnings $additionalFeatures"
             }
         }
 
@@ -245,7 +242,7 @@ def linuxTesting(file, env_name, network_name) {
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libnullpay Test: Build"
-                sh "LIBRARY_PATH=./ ${buildCommand}"
+                sh "LIBRARY_PATH=./ cargo build --features fatal_warnings"
             }
         }
 
