@@ -250,6 +250,18 @@ impl WalletService {
 
         let credentials = WalletCredentials::from_json(credentials, &config.salt)?;
 
+        // Check if the credentials are valid.
+        {
+            let storage = storage_type.open_storage(name,
+                                                    Some(&config_json),
+                                                    &credentials.storage_credentials)?;
+
+            // try to decrypt metadata. This will check if master key is correct.
+            if ChaCha20Poly1305IETF::decrypt(&storage.get_storage_metadata()?, &credentials.master_key).is_err() {
+                return Err(WalletError::AccessFailed("Invalid master key provided".to_string()));
+            }
+        }
+
         storage_type.delete_storage(name, Some(&config_json), &credentials.storage_credentials)?;
 
         fs::remove_dir_all(_wallet_path(name))?;
