@@ -18,17 +18,18 @@ A plugin should provide handler to parse custom reply to fixed data structure.
 The signature of the handler is described below together with custom `free` call to deallocate result data.
 
 ```rust
-extern fn custom_transaction_parser(reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrCode;
-extern fn custom_free(data: *mut c_char) -> ErrCode;
+extern fn CustomTransactionParser(reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode;
+extern fn CustomFree(data: *mut c_char) -> ErrorCode;
 ``` 
 
 Libindy API will contain call to register handler for specific transaction type:
 ```rust
 extern fn indy_register_transaction_parser_for_sp(command_handle: i32,
+                                                  pool_handle: i32,
                                                   txn_type: *const c_char,
-                                                  parser: custom_transaction_parser,
-                                                  free: custom_free,
-                                                  cb: extern fn(command_handle_: i32, err: ErrCode)) -> ErrCode;
+                                                  parser: CustomTransactionParser,
+                                                  free: CustomFree,
+                                                  cb: extern fn(command_handle_: i32, err: ErrorCode)) -> ErrorCode;
 ```
 
 ### Parsed Data structure
