@@ -15,6 +15,7 @@ macro_rules! wallet_cleanup {
     }
 }
 
+#[cfg(test)]
 pub fn time_it_out<F>(msg: &str, test: F) -> bool where F: Fn() -> bool {
     for _ in 1..250 {
         if test() {
