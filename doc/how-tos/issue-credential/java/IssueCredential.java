@@ -102,14 +102,15 @@ public class IssueCredential {
 				claimDef, masterSecretName).get();
 		System.out.println("Claim Request:\n" + claimRequestJSON);
 
-		// 1
+		// 16
 		System.out.println("\n16. Issuer (Trust Anchor) creates Claim for Claim Request\n");
-		String claimAttributesJson = "{\n" +
-		"               \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
-		"               \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
-		"               \"height\":[\"175\",\"175\"],\n" +
-		"               \"age\":[\"28\",\"28\"]\n" +
-		"        }";
+		// Encoded value of non-integer attribute is SHA256 converted to decimal
+                String credAttribsJson = "{\n" +
+                "               \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
+                "               \"name\":[\"Alex\",\"99262857098057710338306967609588410025648622308394250666849665532448612202874\"],\n" +
+                "               \"height\":[\"175\",\"175\"],\n" +
+                "               \"age\":[\"28\",\"28\"]\n" +
+                "        }";
 		AnoncredsResults.IssuerCreateClaimResult createClaimResult = issuerCreateClaim(walletHandle, claimRequestJSON,
 				claimAttributesJson, - 1).get();
 		String claimJSON = createClaimResult.getClaimJson();
