@@ -1,4 +1,4 @@
-use super::{ErrorCode, IndyHandle};
+use {ErrorCode, IndyHandle};
 
 use std::ffi::CString;
 use std::time::Duration;
@@ -82,9 +82,7 @@ impl Key {
     fn _create(command_handle: IndyHandle, wallet_handle: IndyHandle, my_key_json: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
         let my_key_json = opt_c_str_json!(my_key_json);
 
-        unsafe {
-            crypto::indy_create_key(command_handle, wallet_handle, my_key_json.as_ptr(), cb)
-        }
+        ErrorCode::from(unsafe { crypto::indy_create_key(command_handle, wallet_handle, my_key_json.as_ptr(), cb) })
     }
 
     /// Saves/replaces the metadata for the `verkey` in the wallet
@@ -130,9 +128,7 @@ impl Key {
         let verkey = c_str!(verkey);
         let metadata = c_str!(metadata);
 
-        unsafe {
-            crypto::indy_set_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), metadata.as_ptr(), cb)
-        }
+        ErrorCode::from(unsafe { crypto::indy_set_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), metadata.as_ptr(), cb) })
     }
 
     /// Retrieves the metadata for the `verkey` in the wallet
@@ -180,9 +176,7 @@ impl Key {
     fn _get_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, verkey: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let verkey = c_str!(verkey);
 
-        unsafe {
-            crypto::indy_get_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), cb)
-        }
+        ErrorCode::from(unsafe { crypto::indy_get_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), cb) })
     }
 }
 
@@ -236,12 +230,12 @@ impl Crypto {
 
     fn _sign(command_handle: IndyHandle, wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
         let signer_vk = c_str!(signer_vk);
-        unsafe {
+        ErrorCode::from(unsafe {
             crypto::indy_crypto_sign(command_handle, wallet_handle, signer_vk.as_ptr(),
                              message.as_ptr() as *const u8,
                              message.len() as u32,
                              cb)
-        }
+        })
     }
 
     /// Verify a signature with a verkey
@@ -295,11 +289,11 @@ impl Crypto {
     fn _verify(command_handle: IndyHandle, signer_vk: &str, message: &[u8], signature: &[u8], cb: Option<ResponseBoolCB>) -> ErrorCode {
         let signer_vk = c_str!(signer_vk);
 
-        unsafe {
+        ErrorCode::from(unsafe {
             crypto::indy_crypto_verify(command_handle, signer_vk.as_ptr(),
                                message.as_ptr() as *const u8, message.len() as u32,
                                signature.as_ptr() as *const u8, signature.len() as u32, cb)
-        }
+        })
     }
 
     /// Encrypt a message by authenticated-encryption scheme.
@@ -380,13 +374,13 @@ impl Crypto {
     fn _auth_crypt(command_handle: IndyHandle, wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
         let sender_vk = c_str!(sender_vk);
         let recipient_vk = c_str!(recipient_vk);
-        unsafe {
+        ErrorCode::from(unsafe {
             crypto::indy_crypto_auth_crypt(command_handle, wallet_handle,
                                    sender_vk.as_ptr(),
                                     recipient_vk.as_ptr(),
                                     message.as_ptr() as *const u8,
                                     message.len() as u32, cb)
-        }
+        })
     }
 
     /// Decrypt a message by authenticated-encryption scheme.
@@ -466,13 +460,13 @@ impl Crypto {
 
     fn _auth_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], cb: Option<ResponseStringSliceCB>) -> ErrorCode {
         let recipient_vk = c_str!(recipient_vk);
-        unsafe {
+        ErrorCode::from(unsafe {
             crypto::indy_crypto_auth_decrypt(command_handle,
                                      wallet_handle,
                                      recipient_vk.as_ptr(),
                                      encrypted_message.as_ptr() as *const u8,
                                      encrypted_message.len() as u32, cb)
-        }
+        })
     }
 
     /// Encrypts a message by anonymous-encryption scheme.
@@ -547,13 +541,13 @@ impl Crypto {
 
     fn _anon_crypt(command_handle: IndyHandle, recipient_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
         let recipient_vk = c_str!(recipient_vk);
-        unsafe {
+        ErrorCode::from(unsafe {
             crypto::indy_crypto_anon_crypt(command_handle,
                                    recipient_vk.as_ptr(),
                                    message.as_ptr() as *const u8,
                                     message.len() as u32,
                                     cb)
-        }
+        })
     }
 
     /// Decrypts a message by anonymous-encryption scheme.
@@ -628,13 +622,13 @@ impl Crypto {
 
     fn _anon_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
         let recipient_vk = c_str!(recipient_vk);
-        unsafe {
+        ErrorCode::from(unsafe {
             crypto::indy_crypto_anon_decrypt(command_handle,
                                      wallet_handle,
                                      recipient_vk.as_ptr(),
                                      encrypted_message.as_ptr() as *const u8,
                                      encrypted_message.len() as u32, cb)
-        }
+        })
     }
 }
 

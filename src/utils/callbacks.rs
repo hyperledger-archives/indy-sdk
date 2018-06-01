@@ -43,10 +43,10 @@ impl ClosureHandler {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
         }
-        extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode) {
+        extern "C" fn _callback(command_handle: IndyHandle, err: i32) {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
-            cb(err)
+            cb(ErrorCode::from(err))
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();
@@ -73,10 +73,10 @@ impl ClosureHandler {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, IndyHandle) + Send>>> = Default::default();
         }
 
-        extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, c_i32: i32) {
+        extern "C" fn _callback(command_handle: IndyHandle, err: i32, val: i32) {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
-            cb(err, c_i32)
+            cb(ErrorCode::from(err), val)
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();
@@ -103,11 +103,11 @@ impl ClosureHandler {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String) + Send>>> = Default::default();
         }
 
-        extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, c_str: *const c_char) {
+        extern "C" fn _callback(command_handle: IndyHandle, err: i32, c_str: *const c_char) {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let metadata = rust_str!(c_str);
-            cb(err, metadata)
+            cb(ErrorCode::from(err), metadata)
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();
@@ -134,12 +134,12 @@ impl ClosureHandler {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String, String) + Send>>> = Default::default();
         }
 
-        extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, str1: *const c_char, str2: *const c_char) {
+        extern "C" fn _callback(command_handle: IndyHandle, err: i32, str1: *const c_char, str2: *const c_char) {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let str1 = rust_str!(str1);
             let str2 = rust_str!(str2);
-            cb(err, str1, str2)
+            cb(ErrorCode::from(err), str1, str2)
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();
@@ -166,12 +166,12 @@ impl ClosureHandler {
             static ref CALLBACKS: Mutex <HashMap<i32, Box<FnMut(ErrorCode, String, String, u64) + Send>>> = Default::default();
         }
 
-        extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, str1: *const c_char, str2: *const c_char, arg1: u64) {
+        extern "C" fn _callback(command_handle: IndyHandle, err: i32, str1: *const c_char, str2: *const c_char, arg1: u64) {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let str1 = rust_str!(str1);
             let str2 = rust_str!(str2);
-            cb(err, str1, str2, arg1)
+            cb(ErrorCode::from(err), str1, str2, arg1)
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();
@@ -198,11 +198,11 @@ impl ClosureHandler {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, Vec<u8>) + Send>>> = Default::default();
         }
 
-        extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, raw: *const u8, len: u32) {
+        extern "C" fn _callback(command_handle: IndyHandle, err: i32, raw: *const u8, len: u32) {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let sig = rust_slice!(raw, len);
-            cb(err, sig.to_vec())
+            cb(ErrorCode::from(err), sig.to_vec())
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();
@@ -229,12 +229,12 @@ impl ClosureHandler {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String, Vec<u8>) + Send> >> = Default::default();
         }
 
-        extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, vk: *const c_char, d_msg_raw: *const u8, d_msg_len: u32) {
+        extern "C" fn _callback(command_handle: IndyHandle, err: i32, vk: *const c_char, msg_raw: *const u8, msg_len: u32) {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let key = rust_str!(vk);
-            let decrypted = rust_slice!(d_msg_raw, d_msg_len);
-            cb(err, key, decrypted.to_vec())
+            let msg = rust_slice!(msg_raw, msg_len);
+            cb(ErrorCode::from(err), key, msg.to_vec())
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();
@@ -261,11 +261,11 @@ impl ClosureHandler {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, bool) + Send> >> = Default::default();
         }
 
-        extern "C" fn _callback(command_handle: IndyHandle, err: ErrorCode, valid: u8) {
+        extern "C" fn _callback(command_handle: IndyHandle, err: i32, valid: u8) {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let v = valid > 0;
-            cb(err, v)
+            cb(ErrorCode::from(err), v)
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();

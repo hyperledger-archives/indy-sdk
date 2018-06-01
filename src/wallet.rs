@@ -133,7 +133,7 @@ impl Wallet {
                  cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let xtype = c_str!(xtype);
 
-        unsafe {
+        ErrorCode::from(unsafe {
                 wallet::indy_register_wallet_type(command_handle,
                                               xtype.as_ptr(),
                                                   create,
@@ -146,7 +146,7 @@ impl Wallet {
                                                   delete,
                                                   free,
                                                   cb)
-        }
+        })
     }
     /// Creates a new secure wallet with the given unique name.
     ///
@@ -215,7 +215,7 @@ impl Wallet {
         let config_str = opt_c_str!(config);
         let credentials_str = opt_c_str!(credentials);
 
-        unsafe {
+        ErrorCode::from(unsafe {
             wallet::indy_create_wallet(command_handle,
                                        pool_name.as_ptr(),
                                        wallet_name.as_ptr(),
@@ -223,7 +223,7 @@ impl Wallet {
                                        opt_c_ptr!(config, config_str),
                                        opt_c_ptr!(credentials, credentials_str),
                                        cb)
-        }
+        })
     }
 
     /// Opens the wallet with specific name.
@@ -306,13 +306,13 @@ impl Wallet {
         let config_str = opt_c_str!(config);
         let credentials_str = opt_c_str!(credentials);
 
-        unsafe {
+        ErrorCode::from(unsafe {
             wallet::indy_open_wallet(command_handle,
                                      wallet_name.as_ptr(),
                                      opt_c_ptr!(config, config_str),
                                      opt_c_ptr!(credentials, credentials_str),
                                      cb)
-        }
+        })
     }
 
     /// Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool
@@ -346,7 +346,7 @@ impl Wallet {
     }
 
     fn _list(command_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
-        unsafe { wallet::indy_list_wallets(command_handle, cb) }
+        ErrorCode::from(unsafe { wallet::indy_list_wallets(command_handle, cb) })
     }
 
     /// Deletes created wallet.
@@ -398,7 +398,7 @@ impl Wallet {
         let wallet_name = c_str!(wallet_name);
         let credentials_str = opt_c_str!(credentials);
 
-        unsafe { wallet::indy_delete_wallet(command_handle, wallet_name.as_ptr(), opt_c_ptr!(credentials, credentials_str), cb) }
+        ErrorCode::from(unsafe { wallet::indy_delete_wallet(command_handle, wallet_name.as_ptr(), opt_c_ptr!(credentials, credentials_str), cb) })
     }
 
     /// Closes opened wallet and frees allocated resources.
@@ -441,6 +441,6 @@ impl Wallet {
     }
 
     fn _close(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
-        unsafe { wallet::indy_close_wallet(command_handle, wallet_handle, cb) }
+        ErrorCode::from(unsafe { wallet::indy_close_wallet(command_handle, wallet_handle, cb) })
     }
 }

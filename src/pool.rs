@@ -69,7 +69,7 @@ impl Pool {
         let pool_name = c_str!(pool_name);
         let pool_config_str = opt_c_str!(pool_config);
 
-        unsafe { pool::indy_create_pool_ledger_config(command_handle, pool_name.as_ptr(), opt_c_ptr!(pool_config, pool_config_str), cb) }
+        ErrorCode::from(unsafe { pool::indy_create_pool_ledger_config(command_handle, pool_name.as_ptr(), opt_c_ptr!(pool_config, pool_config_str), cb) })
     }
 
     /// Opens pool ledger and performs connecting to pool nodes.
@@ -163,7 +163,7 @@ impl Pool {
         let pool_name = c_str!(pool_name);
         let config_str = opt_c_str!(config);
 
-        unsafe { pool::indy_open_pool_ledger(command_handle, pool_name.as_ptr(), opt_c_ptr!(config, config_str), cb) }
+        ErrorCode::from(unsafe { pool::indy_open_pool_ledger(command_handle, pool_name.as_ptr(), opt_c_ptr!(config, config_str), cb) })
     }
 
     /// Refreshes a local copy of a pool ledger and updates pool nodes connections.
@@ -206,7 +206,7 @@ impl Pool {
     }
 
     fn _refresh(command_handle: IndyHandle, pool_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
-        unsafe { pool::indy_refresh_pool_ledger(command_handle, pool_handle, cb) }
+        ErrorCode::from(unsafe { pool::indy_refresh_pool_ledger(command_handle, pool_handle, cb) })
     }
 
     /// Lists names of created pool ledgers
@@ -240,7 +240,7 @@ impl Pool {
     }
 
     fn _list(command_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
-        unsafe { pool::indy_list_pools(command_handle, cb) }
+        ErrorCode::from(unsafe { pool::indy_list_pools(command_handle, cb) })
     }
 
     /// Closes opened pool ledger, opened nodes connections and frees allocated resources.
@@ -283,7 +283,7 @@ impl Pool {
     }
 
     fn _close(command_handle: IndyHandle, pool_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
-        unsafe { pool::indy_close_pool_ledger(command_handle, pool_handle, cb) }
+        ErrorCode::from(unsafe { pool::indy_close_pool_ledger(command_handle, pool_handle, cb) })
     }
 
     /// Deletes created pool ledger configuration.
@@ -328,7 +328,7 @@ impl Pool {
     fn _delete(command_handle: IndyHandle, pool_name: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let pool_name = c_str!(pool_name);
 
-        unsafe { pool::indy_delete_pool_ledger_config(command_handle, pool_name.as_ptr(), cb) }
+        ErrorCode::from(unsafe { pool::indy_delete_pool_ledger_config(command_handle, pool_name.as_ptr(), cb) })
     }
 }
 
