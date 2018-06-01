@@ -1,6 +1,6 @@
 macro_rules! safe_wallet_create {
     ($x:ident) => {
-        match Wallet::delete($x) {
+        match Wallet::delete($x, None) {
             Ok(..) => {},
             Err(..) => {}
         };
@@ -11,7 +11,7 @@ macro_rules! safe_wallet_create {
 macro_rules! wallet_cleanup {
     ($x:ident, $y:ident) => {
         Wallet::close($x).unwrap();
-        Wallet::delete($y).unwrap();
+        Wallet::delete($y, None).unwrap();
     }
 }
 
