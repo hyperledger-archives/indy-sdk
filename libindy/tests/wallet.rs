@@ -104,7 +104,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             WalletUtils::create_wallet(POOL, WALLET, None, None, None).unwrap();
-            WalletUtils::delete_wallet(WALLET).unwrap();
+            WalletUtils::delete_wallet(WALLET, None).unwrap();
             WalletUtils::create_wallet(POOL, WALLET, None, None, None).unwrap();
 
             TestUtils::cleanup_storage();
@@ -117,7 +117,7 @@ mod high_cases {
             WalletUtils::create_wallet(POOL, WALLET, None, None, None).unwrap();
             let wallet_handle = WalletUtils::open_wallet(WALLET, None, None).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
-            WalletUtils::delete_wallet(WALLET).unwrap();
+            WalletUtils::delete_wallet(WALLET, None).unwrap();
             WalletUtils::create_wallet(POOL, WALLET, None, None, None).unwrap();
 
             TestUtils::cleanup_storage();
@@ -129,7 +129,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-            let res = WalletUtils::delete_wallet(WALLET);
+            let res = WalletUtils::delete_wallet(WALLET, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -144,7 +144,7 @@ mod high_cases {
 
             WalletUtils::register_wallet_storage(INMEM_TYPE, false).unwrap();
             WalletUtils::create_wallet(POOL, WALLET, Some(INMEM_TYPE), None, None).unwrap();
-            WalletUtils::delete_wallet(WALLET).unwrap();
+            WalletUtils::delete_wallet(WALLET, None).unwrap();
             WalletUtils::create_wallet(POOL, WALLET, Some(INMEM_TYPE), None, None).unwrap();
 
             TestUtils::cleanup_storage();
@@ -317,7 +317,7 @@ mod medium_cases {
         fn indy_delete_wallet_works_for_not_created() {
             TestUtils::cleanup_storage();
 
-            let res = WalletUtils::delete_wallet(WALLET);
+            let res = WalletUtils::delete_wallet(WALLET, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
             TestUtils::cleanup_storage();
@@ -328,9 +328,21 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             WalletUtils::create_wallet(POOL, WALLET, None, None, None).unwrap();
-            WalletUtils::delete_wallet(WALLET).unwrap();
-            let res = WalletUtils::delete_wallet(WALLET);
+            WalletUtils::delete_wallet(WALLET, None).unwrap();
+            let res = WalletUtils::delete_wallet(WALLET, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[ignore]
+        fn indy_delete_wallet_works_for_wrong_credentials() {
+            TestUtils::cleanup_storage();
+
+            WalletUtils::create_wallet(POOL, WALLET, None, None, Some(r#"{"key":"key"}"#)).unwrap();
+            let res = WalletUtils::delete_wallet(WALLET, Some(r#"{"key":"other_key"}"#));
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletAccessFailed);
 
             TestUtils::cleanup_storage();
         }

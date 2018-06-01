@@ -110,11 +110,11 @@ impl WalletUtils {
         WalletUtils::open_wallet(&wallet_name, None, None)
     }
 
-    pub fn delete_wallet(wallet_name: &str) -> Result<(), ErrorCode> {
+    pub fn delete_wallet(wallet_name: &str, credentials: Option<&str>) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let wallet_name = CString::new(wallet_name).unwrap();
-        let credentials_str = CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap();
+        let credentials_str = CString::new(credentials.unwrap_or(DEFAULT_WALLET_CREDENTIALS)).unwrap();
 
         let err = indy_delete_wallet(command_handle, wallet_name.as_ptr(), credentials_str.as_ptr(), cb);
 

@@ -79,7 +79,7 @@ pub(super) fn decrypt(joined_data: &[u8], key: &[u8]) -> Result<Vec<u8>, WalletE
     Ok(res)
 }
 
-pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &[u8], tag_value_key: &[u8]) -> Result<Option<String>, WalletError> {
+pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &[u8], tag_value_key: &[u8]) -> Result<Option<HashMap<String, String>>, WalletError> {
     match etags {
         &None => Ok(None),
         &Some(ref etags) => {
@@ -109,9 +109,7 @@ pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &[u8], tag_va
                 tags.insert(name, value);
             }
 
-            let tags_json = serde_json::to_string(&tags)?;
-
-            Ok(Some(tags_json))
+            Ok(Some(tags))
         }
     }
 }
@@ -131,7 +129,7 @@ mod tests {
 
         let c = encrypt_tags(&tags, &tag_name_key, &tag_value_key, &hmac_key).unwrap();
         let u = decrypt_tags(&Some(c), &tag_name_key, &tag_value_key).unwrap().unwrap();
-        assert_eq!(serde_json::from_str::<HashMap<String, String>>(tags).unwrap(), serde_json::from_str::<HashMap<String, String>>(&u).unwrap());
+        assert_eq!(serde_json::from_str::<HashMap<String, String>>(tags).unwrap(), u);
     }
 
     #[test]

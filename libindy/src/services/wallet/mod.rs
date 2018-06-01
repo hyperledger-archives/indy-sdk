@@ -510,7 +510,7 @@ pub struct WalletRecord {
     #[serde(rename = "type")]
     type_: Option<String>,
     value: Option<String>,
-    tags: Option<String>
+    tags: Option<HashMap<String, String>>
 }
 
 impl JsonEncodable for WalletRecord {}
@@ -518,12 +518,12 @@ impl JsonEncodable for WalletRecord {}
 impl<'a> JsonDecodable<'a> for WalletRecord {}
 
 impl WalletRecord {
-    pub fn new(name: String, type_: Option<String>, value: Option<String>, tags: Option<String>) -> WalletRecord {
+    pub fn new(name: String, type_: Option<String>, value: Option<String>, tags: Option<HashMap<String, String>>) -> WalletRecord {
         WalletRecord {
-            name: name,
-            type_: type_,
-            value: value,
-            tags: tags,
+            name,
+            type_,
+            value,
+            tags,
         }
     }
     pub fn get_id(&self) -> &str {
@@ -544,8 +544,8 @@ impl WalletRecord {
         self.value.as_ref().map(String::as_str)
     }
 
-    pub fn get_tags(&self) -> Option<&str> {
-        self.tags.as_ref().map(String::as_str)
+    pub fn get_tags(&self) -> Option<HashMap<String, String>> {
+        self.tags.clone()
     }
 }
 
@@ -557,11 +557,11 @@ fn default_false() -> bool { false }
 #[serde(rename_all = "camelCase")]
 pub struct RecordOptions {
     #[serde(default = "default_false")]
-    pub retrieve_type: bool,
+    retrieve_type: bool,
     #[serde(default = "default_true")]
-    pub retrieve_value: bool,
+    retrieve_value: bool,
     #[serde(default = "default_false")]
-    pub retrieve_tags: bool
+    retrieve_tags: bool
 }
 
 impl JsonEncodable for RecordOptions {}
@@ -629,15 +629,15 @@ impl WalletSearch {
 #[serde(rename_all = "camelCase")]
 pub struct SearchOptions {
     #[serde(default = "default_true")]
-    pub retrieve_records: bool,
+    retrieve_records: bool,
     #[serde(default = "default_false")]
-    pub retrieve_total_count: bool,
+    retrieve_total_count: bool,
     #[serde(default = "default_false")]
-    pub retrieve_type: bool,
+    retrieve_type: bool,
     #[serde(default = "default_true")]
-    pub retrieve_value: bool,
+    retrieve_value: bool,
     #[serde(default = "default_false")]
-    pub retrieve_tags: bool
+    retrieve_tags: bool
 }
 
 impl SearchOptions {
@@ -1093,7 +1093,7 @@ mod tests {
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
         assert_eq!("type", record.get_type().unwrap());
         assert_eq!("value1", record.get_value().unwrap());
-        assert_eq!(r#"{"1":"some"}"#, record.get_tags().unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(r#"{"1":"some"}"#).unwrap(), record.get_tags().unwrap());
     }
 
     #[test]
@@ -1112,7 +1112,7 @@ mod tests {
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
         assert_eq!("type", record.get_type().unwrap());
         assert_eq!("value1", record.get_value().unwrap());
-        assert_eq!(r#"{"1":"some"}"#, record.get_tags().unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(r#"{"1":"some"}"#).unwrap(), record.get_tags().unwrap());
     }
 
     #[test]
@@ -1277,7 +1277,7 @@ mod tests {
 
         let expected_tags = r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#;
         let retrieved_tags = item.tags.unwrap();
-        assert_eq!(serde_json::from_str::<Tags>(&expected_tags).unwrap(), serde_json::from_str::<Tags>(&retrieved_tags).unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(&expected_tags).unwrap(), retrieved_tags);
     }
 
     #[test]
@@ -1306,7 +1306,7 @@ mod tests {
 
         let expected_tags = r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#;
         let retrieved_tags = item.tags.unwrap();
-        assert_eq!(serde_json::from_str::<Tags>(&expected_tags).unwrap(), serde_json::from_str::<Tags>(&retrieved_tags).unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(&expected_tags).unwrap(), retrieved_tags);
     }
 
     /**
@@ -1332,7 +1332,7 @@ mod tests {
 
         let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
         let retrieved_tags = item.tags.unwrap();
-        assert_eq!(serde_json::from_str::<Tags>(&new_tags_json).unwrap(), serde_json::from_str::<Tags>(&retrieved_tags).unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(&new_tags_json).unwrap(), retrieved_tags);
     }
 
     #[test]
@@ -1360,7 +1360,7 @@ mod tests {
 
         let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
         let retrieved_tags = item.tags.unwrap();
-        assert_eq!(serde_json::from_str::<Tags>(&new_tags_json).unwrap(), serde_json::from_str::<Tags>(&retrieved_tags).unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(&new_tags_json).unwrap(), retrieved_tags);
     }
 
     /**
@@ -1388,7 +1388,7 @@ mod tests {
 
         let expected_tags_json = r#"{"tag_name_2":"new_tag_value_2"}"#;
         let retrieved_tags = item.tags.unwrap();
-        assert_eq!(serde_json::from_str::<Tags>(&expected_tags_json).unwrap(), serde_json::from_str::<Tags>(&retrieved_tags).unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(&expected_tags_json).unwrap(), retrieved_tags);
     }
 
 
@@ -1418,7 +1418,7 @@ mod tests {
 
         let expected_tags_json = r#"{"tag_name_2":"new_tag_value_2"}"#;
         let retrieved_tags = item.tags.unwrap();
-        assert_eq!(serde_json::from_str::<Tags>(&expected_tags_json).unwrap(), serde_json::from_str::<Tags>(&retrieved_tags).unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(&expected_tags_json).unwrap(), retrieved_tags);
     }
 
     #[test]
@@ -1478,7 +1478,7 @@ mod tests {
 
         let record = search.fetch_next_record().unwrap().unwrap();
         assert_eq!("value3", record.get_value().unwrap());
-        assert_eq!(r#"{}"#, record.get_tags().unwrap());
+        assert_eq!(HashMap::new(), record.get_tags().unwrap());
 
         assert!(search.fetch_next_record().unwrap().is_none());
     }
@@ -1503,7 +1503,7 @@ mod tests {
 
         let record = search.fetch_next_record().unwrap().unwrap();
         assert_eq!("value3", record.get_value().unwrap());
-        assert_eq!(r#"{}"#, record.get_tags().unwrap());
+        assert_eq!(HashMap::new(), record.get_tags().unwrap());
 
         assert!(search.fetch_next_record().unwrap().is_none());
     }

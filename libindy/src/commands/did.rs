@@ -310,8 +310,7 @@ impl DidCommandExecutor {
             .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", my_did)))?;
 
         let meta: Option<String> = did_record.get_tags()
-            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from));
+            .and_then(|tags| tags.get("metadata").cloned());
 
         let did_with_meta = DidWithMeta {
             did: did.did,
@@ -344,8 +343,7 @@ impl DidCommandExecutor {
                 .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", did_id)))?;
 
             let meta: Option<String> = did_record.get_tags()
-                .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-                .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from));
+                .and_then(|tags| tags.get("metadata").cloned());
 
             let did_with_meta = DidWithMeta {
                 did: did.did,
@@ -502,8 +500,7 @@ impl DidCommandExecutor {
 
         let res = self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::full())?
             .get_tags()
-            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
+            .and_then(|tags| tags.get("metadata").cloned())
             .ok_or(WalletError::ItemNotFound)?;
 
         debug!("get_did_metadata <<< res: {:?}", res);
@@ -559,7 +556,7 @@ impl DidCommandExecutor {
                     .map_err(|_| CommonError::InvalidState(format!("Invalid GetNymResultData json")))?;
 
                 TheirDidInfo::new(gen_nym_result_data.dest, gen_nym_result_data.verkey)
-            },
+            }
             GetNymReplyResult::GetNymReplyResultV1(res) => TheirDidInfo::new(res.txn.data.did, res.txn.data.verkey)
         };
 
@@ -717,8 +714,7 @@ impl DidCommandExecutor {
 
     fn _wallet_get_did_metadata(&self, wallet_handle: i32, did: &str) -> Option<String> {
         self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::full()).ok()
-            .and_then(|rec| rec.get_tags().map(String::from))
-            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
+            .and_then(|rec| rec.get_tags())
+            .and_then(|tags| tags.get("metadata").cloned())
     }
 }
