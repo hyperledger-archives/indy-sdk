@@ -43,6 +43,9 @@ RUN apt-get update && apt-get install openjdk-8-jdk -y
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 RUN apt-get update && apt-get install -y maven
 
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
+RUN apt-get install -y nodejs
+
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 

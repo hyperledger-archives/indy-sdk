@@ -67,6 +67,9 @@ RUN cd /tmp && \
     make install && \
     rm -rf /tmp/zeromq-4.2.2
 
+RUN curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
+RUN yum -y install nodejs
+
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
