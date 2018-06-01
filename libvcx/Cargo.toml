@@ -42,7 +42,7 @@ rmp-serde = "0.13.7"
 base64 = "0.8.0"
 openssl = "0.10"
 num-traits = "0.2.0"
-rust-indy-sdk = {git = "https://github.com/mikelodder7/rust-indy-sdk.git", rev = "a872b13b52cbecaa24a9b1ca1019592b228e79a7"}
+rust-indy-sdk = {git = "https://github.com/mikelodder7/rust-indy-sdk.git"}
 
 [build-dependencies]
 serde = "1.0"
