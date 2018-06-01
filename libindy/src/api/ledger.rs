@@ -1617,3 +1617,44 @@ pub extern fn indy_parse_get_revoc_reg_delta_response(command_handle: i32,
 
     res
 }
+
+pub type CustomTransactionParser = extern fn(reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode;
+pub type CustomFree = extern fn(data: *const c_char) -> ErrorCode;
+
+#[no_mangle]
+pub extern fn indy_register_transaction_parser_for_sp(command_handle: i32,
+                                                      pool_handle: i32,
+                                                      txn_type: *const c_char,
+                                                      parser: Option<CustomTransactionParser>,
+                                                      free: Option<CustomFree>,
+                                                      cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_register_transaction_parser_for_sp: >>> pool_handle {}, txn_type {:?}, parser {:?}, free {:?}",
+           pool_handle, txn_type, parser, free);
+
+    check_useful_c_str!(txn_type, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(parser, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(free, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    trace!("indy_register_transaction_parser_for_sp: entities: txn_type {}, parser {:?}, free {:?}",
+           txn_type, parser, free);
+
+    let res = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::RegisterParserSP(
+            pool_handle,
+            txn_type,
+            parser,
+            free,
+            Box::new(move |res| {
+                let res = result_to_err_code!(res);
+                trace!("indy_register_transaction_parser_for_sp: res: {:?}", res);
+                cb(command_handle, res)
+            }),
+        )));
+
+    let res = result_to_err_code!(res);
+
+    trace!("indy_register_transaction_parser_for_sp: <<< res: {:?}", res);
+
+    res
+}

@@ -11,7 +11,6 @@ extern crate indy_crypto;
 use base64;
 use self::digest::{FixedOutput, Input};
 use self::hex::ToHex;
-use self::libc::c_char;
 use self::rand::Rng;
 use self::rust_base58::FromBase58;
 use self::time::{Duration, Tm};
@@ -23,7 +22,7 @@ use std::ffi::CString;
 use std::ops::Add;
 
 use super::state_proof;
-use api::ErrorCode;
+use api::{ErrorCode, ledger::{CustomTransactionParser, CustomFree}};
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use errors::pool::PoolError;
@@ -52,7 +51,7 @@ pub struct TransactionHandler {
     pub f: usize,
     pub nodes: Vec<RemoteNode>,
     pending_commands: HashMap<u64 /* requestId */, CommandProcess>,
-    parser_sps: HashMap<String, extern fn(*const c_char, *mut *const c_char) -> ErrorCode>,
+    pub parser_sps: HashMap<String, (CustomTransactionParser, CustomFree)>,
 }
 
 impl TransactionHandler {
@@ -285,16 +284,22 @@ impl TransactionHandler {
         if REQUESTS_FOR_STATE_PROOFS.contains(&type_) {
             trace!("TransactionHandler::parse_generic_reply_for_proof_checking: built-in");
             TransactionHandler::parse_reply_for_builtin_sp(json_msg, type_)
-        } else if let Some(handler) = self.parser_sps.get(type_) {
-            trace!("TransactionHandler::parse_generic_reply_for_proof_checking: plugged: handler {:?}", handler);
+        } else if let Some(&(parser, free)) = self.parser_sps.get(type_) {
+            trace!("TransactionHandler::parse_generic_reply_for_proof_checking: plugged: parser {:?}, free {:?}",
+                   parser, free);
+
             let msg = CString::new(raw_msg).ok()?;
-            let mut parsed_str = ::std::ptr::null();
-            let err = handler(msg.as_ptr(), &mut parsed_str);
+            let mut parsed_c_str = ::std::ptr::null();
+            let err = parser(msg.as_ptr(), &mut parsed_c_str);
             if err != ErrorCode::Success {
                 debug!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< plugin return err {:?}", err);
                 return None;
             }
-            check_useful_c_str!(parsed_str, None);
+            let parsed_str = CStringUtils::c_str_to_string(parsed_c_str).ok()??;
+
+            let err = free(parsed_c_str);
+            trace!("TransactionHandler::parse_generic_reply_for_proof_checking: plugin free res {:?}", err);
+
             let parsed_sp = match serde_json::from_str::<Vec<ParsedSP>>(&parsed_str) {
                 Ok(ps) => ps,
                 Err(err) => {
