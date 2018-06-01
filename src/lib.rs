@@ -3,10 +3,15 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 
+extern crate num_traits;
+#[macro_use]
+extern crate num_derive;
+
+extern crate libindy_sys as ffi;
+
 #[macro_use]
 mod macros;
 
-pub mod callbacks;
 pub mod crypto;
 pub mod did;
 pub mod ledger;
@@ -15,13 +20,11 @@ pub mod pool;
 pub mod wallet;
 pub mod utils;
 
-mod ffi;
-
 use std::sync::mpsc;
 
 pub type IndyHandle = i32;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone, FromPrimitive, ToPrimitive)]
 #[repr(i32)]
 #[allow(dead_code)]
 pub enum ErrorCode
@@ -209,6 +212,7 @@ impl ErrorCode {
             DidAlreadyExistsError => "Did already exists",
             UnknownPaymentMethod => "Unknown payment method was given",
             IncompatiblePaymentError => "Multiple different payment methods were specified",
+            PaymentInsufficientFundsError => "Payment cannot be processed because there was insufficient funds"
         }
     }
 
@@ -225,6 +229,23 @@ impl ErrorCode {
             return Err(*self)
         }
         Ok(())
+    }
+}
+
+impl From<i32> for ErrorCode {
+    fn from(i: i32) -> Self {
+        let conversion = num_traits::FromPrimitive::from_i32(i);
+        if conversion.is_some() {
+            conversion.unwrap()
+        } else {
+            panic!("Unable to convert from {}, unknown error code", i)
+        }
+    }
+}
+
+impl Into<i32> for ErrorCode {
+    fn into(self) -> i32 {
+        num_traits::ToPrimitive::to_i32(&self).unwrap()
     }
 }
 
