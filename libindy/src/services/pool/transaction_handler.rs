@@ -1,5 +1,6 @@
 extern crate digest;
 extern crate hex;
+extern crate libc;
 extern crate rand;
 extern crate rust_base58;
 extern crate sha2;
@@ -10,6 +11,7 @@ extern crate indy_crypto;
 use base64;
 use self::digest::{FixedOutput, Input};
 use self::hex::ToHex;
+use self::libc::c_char;
 use self::rand::Rng;
 use self::rust_base58::FromBase58;
 use self::time::{Duration, Tm};
@@ -17,9 +19,11 @@ use serde_json;
 use serde_json::Value as SJsonValue;
 use std::collections::HashMap;
 use std::error::Error;
+use std::ffi::CString;
 use std::ops::Add;
 
 use super::state_proof;
+use api::ErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use errors::pool::PoolError;
@@ -758,5 +762,38 @@ mod tests {
         let diff: Duration = expected_timeout.sub(pending_cmd.full_cmd_timeout.unwrap());
         assert!(diff <= Duration::milliseconds(10));
         assert!(diff >= Duration::zero());
+    }
+
+    #[test]
+    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_plugged() {
+        let mut th = TransactionHandler::default();
+
+        extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
+            unsafe { *parsed = msg; }
+            ErrorCode::Success
+        }
+
+        let parsed_sp = json!([{
+            "root_hash": "rh",
+            "proof_nodes": "pns",
+            "multi_signature": "ms",
+            "kvs_to_verify": {
+                "type": "Simple",
+                "kvs": [],
+            },
+        }]);
+
+        th.parser_sps.insert("test".to_owned(), parse);
+        let mut parsed_sps = th.parse_generic_reply_for_proof_checking(&json!({"type".to_owned(): "test"}),
+                                                                       parsed_sp.to_string().as_str())
+            .unwrap();
+
+        assert_eq!(parsed_sps.len(), 1);
+        let parsed_sp = parsed_sps.remove(0);
+        assert_eq!(parsed_sp.root_hash, "rh");
+        assert_eq!(parsed_sp.multi_signature, "ms");
+        assert_eq!(parsed_sp.proof_nodes, "pns");
+        assert_eq!(parsed_sp.kvs_to_verify,
+                   KeyValuesInSP::Simple(KeyValueSimpleData { kvs: Vec::new() }));
     }
 }

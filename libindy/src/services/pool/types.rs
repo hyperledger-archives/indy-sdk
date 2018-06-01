@@ -414,7 +414,8 @@ pub struct ParsedSP {
  - simple array of key-value pair
  - whole subtrie
 */
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[serde(tag = "type")]
 pub enum KeyValuesInSP {
     Simple(KeyValueSimpleData),
     SubTrie(KeyValuesSubTrieData),
@@ -426,7 +427,7 @@ pub enum KeyValuesInSP {
  All required data already present in parent SP Trie (built from `proof_nodes`).
  `kvs` can be verified directly in parent trie
 */
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct KeyValueSimpleData {
     pub kvs: Vec<(String /* b64-encoded key */, Option<String /* val */>)>
 }
@@ -437,7 +438,7 @@ pub struct KeyValueSimpleData {
  In this case Client (libindy) should construct subtrie and append it into trie based on `proof_nodes`.
  After this preparation each kv pair can be checked.
 */
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct KeyValuesSubTrieData {
     /// base64-encoded common prefix of each pair in `kvs`. Should be used to correct merging initial trie and subtrie
     pub sub_trie_prefix: Option<String>,
