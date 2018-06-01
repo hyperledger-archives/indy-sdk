@@ -1,0 +1,4 @@
+enum RequestEvent {
+    ConsensusRequest,
+    SingleRequest
+}

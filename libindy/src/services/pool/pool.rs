@@ -69,8 +69,8 @@ impl PoolState for ClosedState {
     }
 }
 
-struct PoolSM<PoolState> {
-    state: PoolState,
+struct PoolSM<T: PoolState> {
+    state: T,
 }
 
 impl PoolSM<InitializationState> {
@@ -201,10 +201,6 @@ impl From<PoolSM<TerminatedState>> for PoolSM<ClosedState> {
             state: ClosedState {}
         }
     }
-}
-
-fn main() {
-
 }
 
 enum PoolWrapper {

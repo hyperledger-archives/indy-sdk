@@ -2,13 +2,14 @@ use services::pool::pool::PoolEvent;
 use services::pool::consensus_collector::ConsensusCollectorEvent;
 
 enum NetworkerEvent {
-    SendRequest
+    SendOneRequest,
+    SendAllRequest
 }
 
 impl From<Option<ConsensusCollectorEvent>> for Option<NetworkerEvent> {
     fn from(cce: ConsensusCollectorEvent) -> Self {
         match cce {
-            Some(ConsensusCollectorEvent::SendRequest) => Some(NetworkerEvent::SendRequest),
+            Some(ConsensusCollectorEvent::SendRequest) => Some(NetworkerEvent::SendAllRequest),
             _ => None
         }
     }
