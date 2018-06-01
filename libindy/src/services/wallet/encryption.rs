@@ -1,13 +1,28 @@
+extern crate sodiumoxide;
+
 use std::str;
 use std::collections::HashMap;
 
-use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF, ChaCha20Poly1305IETFKey};
+use self::sodiumoxide::utils::memzero;
+
+use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF, ChaCha20Poly1305IETFKey, KEY_LENGTH};
 use utils::crypto::hmacsha256::HMACSHA256Key;
+use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 
 use errors::wallet::WalletError;
 
+
 use super::storage::Tag;
 use super::storage::TagName;
+
+
+pub(super) fn derive_key(input: &[u8], salt: &[u8; 32]) -> Result<ChaCha20Poly1305IETFKey, WalletError> {
+    let mut key_bytes: [u8; KEY_LENGTH] = [0; KEY_LENGTH];
+    PwhashArgon2i13::derive_key(&mut key_bytes, input, salt)?;
+    let key = ChaCha20Poly1305IETF::clone_key_from_slice(&key_bytes[..]);
+    memzero(&mut key_bytes[..]);
+    Ok(key)
+}
 
 
 pub(super) fn encrypt_tag_names(tag_names: &[String], tag_name_key: &ChaCha20Poly1305IETFKey, tags_hmac_key: &HMACSHA256Key) -> Vec<TagName> {

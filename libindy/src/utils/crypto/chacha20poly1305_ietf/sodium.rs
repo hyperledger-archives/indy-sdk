@@ -6,9 +6,11 @@ use errors::common::CommonError;
 use utils::byte_array::_clone_into_array;
 use utils::crypto::hmacsha256::{HMACSHA256, HMACSHA256Key};
 
+pub const NONCE_LENGTH: usize = chacha20poly1305_ietf::NONCEBYTES;
+pub const KEY_LENGTH: usize = chacha20poly1305_ietf::KEYBYTES;
+pub const TAG_LENGTH: usize = chacha20poly1305_ietf::TAGBYTES;
 
 
-// TODO - figure out the best approach
 pub struct ChaCha20Poly1305IETFKey {
     key: chacha20poly1305_ietf::Key,
 }
@@ -26,14 +28,6 @@ pub(super) type ChaCha20Poly1305IETFNonce = chacha20poly1305_ietf::Nonce;
 pub struct ChaCha20Poly1305IETF {}
 
 impl ChaCha20Poly1305IETF {
-    pub const NONCEBYTES: usize = chacha20poly1305_ietf::NONCEBYTES;
-    pub const KEYBYTES: usize = chacha20poly1305_ietf::KEYBYTES;
-    pub const TAGBYTES: usize = chacha20poly1305_ietf::TAGBYTES;
-
-    pub fn create_key(bytes: [u8; chacha20poly1305_ietf::KEYBYTES]) -> ChaCha20Poly1305IETFKey {
-        ChaCha20Poly1305IETFKey { key: chacha20poly1305_ietf::Key(bytes) }
-    }
-
     pub fn clone_key_from_slice(bytes: &[u8]) -> ChaCha20Poly1305IETFKey {
         ChaCha20Poly1305IETFKey { key: chacha20poly1305_ietf::Key(_clone_into_array(bytes)) }
     }

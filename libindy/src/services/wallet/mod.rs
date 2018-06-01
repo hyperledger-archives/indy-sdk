@@ -1,5 +1,5 @@
-extern crate libc;
 extern crate indy_crypto;
+extern crate sodiumoxide;
 
 mod storage;
 mod encryption;
@@ -15,6 +15,7 @@ use std::fs::{File, DirBuilder};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 use named_type::NamedType;
+use std::rc::Rc;
 
 use serde_json;
 
@@ -30,6 +31,8 @@ use self::storage::default::SQLiteStorageType;
 use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Wallet, Keys, Tags};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use self::sodiumoxide::utils::memzero;
+use self::encryption::derive_key;
 use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 
 
@@ -73,17 +76,13 @@ impl WalletCredentials {
     fn from_json(json: &str, salt: &[u8; PwhashArgon2i13::SALTBYTES]) -> Result<WalletCredentials, WalletError> {
         if let serde_json::Value::Object(m) = serde_json::from_str(json)? {
             let master_key = if let Some(key) = m.get("key").and_then(|s| s.as_str()) {
-                let mut master_key: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
-                PwhashArgon2i13::derive_key(&mut master_key, key.as_bytes(), salt)?;
-                ChaCha20Poly1305IETF::create_key(master_key)
+                derive_key(key.as_bytes(), salt)?
             } else {
                 return Err(WalletError::InputError(String::from("Credentials missing 'key' field")));
             };
 
             let rekey = if let Some(key) =  m.get("rekey").and_then(|s| s.as_str()) {
-                let mut rekey: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
-                PwhashArgon2i13::derive_key(&mut rekey, key.as_bytes(), salt)?;
-                Some(ChaCha20Poly1305IETF::create_key(rekey))
+                Some(derive_key(key.as_bytes(), salt)?)
             } else {
                 None
             };
@@ -300,7 +299,7 @@ impl WalletService {
 
         let keys = Keys::new(keys_vector);
 
-        let wallet = Wallet::new(name, &descriptor.pool_name, storage, keys);
+        let wallet = Wallet::new(name, &descriptor.pool_name, storage, Rc::new(keys));
         if let Some(ref rekey) = credentials.rekey {
             wallet.rotate_key(rekey)?;
         }

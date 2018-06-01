@@ -1,9 +1,11 @@
+extern crate sodiumoxide;
+
 use std::collections::HashMap;
 use std::io::{Write,Read};
 use std::rc::Rc;
 
 use serde_json;
-use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF,ChaCha20Poly1305IETFKey};
+use utils::crypto::chacha20poly1305_ietf::{TAG_LENGTH, KEY_LENGTH, NONCE_LENGTH, ChaCha20Poly1305IETF,ChaCha20Poly1305IETFKey};
 use utils::crypto::hmacsha256::{HMACSHA256, HMACSHA256Key};
 
 use errors::wallet::WalletError;
@@ -15,6 +17,7 @@ use super::encryption::*;
 use super::query_encryption::encrypt_query;
 use super::language;
 use super::WalletRecord;
+use self::sodiumoxide::utils::memzero;
 
 
 pub(super) type Tags = HashMap<String, String>;
@@ -32,16 +35,19 @@ pub(super) struct Keys {
 
 
 impl Keys {
-    pub fn new(keys_vector: Vec<u8>) -> Keys {
-        Keys {
-            type_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_vector[0..32]),
-            name_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_vector[32..64]),
-            value_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_vector[64..96]),
-            item_hmac_key: HMACSHA256::clone_key_from_slice(&keys_vector[96..128]),
-            tag_name_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_vector[128..160]),
-            tag_value_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_vector[160..192]),
-            tags_hmac_key: HMACSHA256::clone_key_from_slice(&keys_vector[192..224]),
-        }
+    pub fn new(mut keys_bytes: Vec<u8>) -> Keys {
+        let keys = Keys {
+            type_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_bytes[0..32]),
+            name_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_bytes[32..64]),
+            value_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_bytes[64..96]),
+            item_hmac_key: HMACSHA256::clone_key_from_slice(&keys_bytes[96..128]),
+            tag_name_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_bytes[128..160]),
+            tag_value_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_bytes[160..192]),
+            tags_hmac_key: HMACSHA256::clone_key_from_slice(&keys_bytes[192..224]),
+        };
+        memzero(&mut keys_bytes[..]);
+
+        keys
     }
 
     pub fn gen_keys(master_key: &ChaCha20Poly1305IETFKey) -> Vec<u8>{
@@ -53,7 +59,6 @@ impl Keys {
         let tag_value_key = ChaCha20Poly1305IETF::generate_key();
         let tags_hmac_key = HMACSHA256::generate_key();
 
-        // TODO - clear this as well
         let mut keys: Vec<u8> = Vec::new();
         keys.extend_from_slice(&type_key.get_bytes());
         keys.extend_from_slice(&name_key.get_bytes());
@@ -63,7 +68,10 @@ impl Keys {
         keys.extend_from_slice(&tag_value_key.get_bytes());
         keys.extend_from_slice(&tags_hmac_key.get_bytes());
 
-        return ChaCha20Poly1305IETF::encrypt_as_not_searchable(&keys, master_key);
+        let encrypted_keys = ChaCha20Poly1305IETF::encrypt_as_not_searchable(&keys, master_key);
+        memzero(&mut keys[..]);
+
+        encrypted_keys
     }
 
     pub fn encrypt(&self, master_key: &ChaCha20Poly1305IETFKey) -> Vec<u8> {
@@ -76,7 +84,10 @@ impl Keys {
         keys.extend_from_slice(self.tag_value_key.get_bytes());
         keys.extend_from_slice(self.tags_hmac_key.get_bytes());
 
-        return ChaCha20Poly1305IETF::encrypt_as_not_searchable(&keys, master_key);
+        let encrypted_keys = ChaCha20Poly1305IETF::encrypt_as_not_searchable(&keys, master_key);
+        memzero(&mut keys[..]);
+
+        encrypted_keys
     }
 }
 
@@ -113,7 +124,7 @@ pub struct EncryptedValue {
 }
 
 
-const ENCRYPTED_KEY_LEN: usize = ChaCha20Poly1305IETF::TAGBYTES + ChaCha20Poly1305IETF::NONCEBYTES + ChaCha20Poly1305IETF::KEYBYTES;
+const ENCRYPTED_KEY_LEN: usize = TAG_LENGTH + NONCE_LENGTH + KEY_LENGTH;
 
 impl EncryptedValue {
     pub fn new(data: Vec<u8>, key: Vec<u8>) -> Self {
@@ -132,11 +143,12 @@ impl EncryptedValue {
     }
 
     pub fn decrypt(&self, key: &ChaCha20Poly1305IETFKey) -> Result<String, WalletError> {
-        let value_key = ChaCha20Poly1305IETF::decrypt(&self.key, key)?;
-        if value_key.len() != ChaCha20Poly1305IETF::KEYBYTES {
+        let mut value_key_bytes = ChaCha20Poly1305IETF::decrypt(&self.key, key)?;
+        if value_key_bytes.len() != KEY_LENGTH {
             return Err(WalletError::EncryptionError("Value key is not right size".to_string()));
         }
-        let value_key = ChaCha20Poly1305IETF::clone_key_from_slice(&value_key[..]);
+        let value_key = ChaCha20Poly1305IETF::clone_key_from_slice(&value_key_bytes[..]);
+        memzero(&mut value_key_bytes[..]);
         String::from_utf8(ChaCha20Poly1305IETF::decrypt(&self.data, &value_key)?)
             .map_err(|_| WalletError::CommonError(CommonError::InvalidStructure("Invalid UTF8 string inside of value".to_string())))
     }
@@ -160,12 +172,12 @@ impl EncryptedValue {
 }
 
 impl Wallet {
-    pub fn new(name: &str, pool_name: &str, storage: Box<storage::WalletStorage>, keys: Keys) -> Wallet {
+    pub fn new(name: &str, pool_name: &str, storage: Box<storage::WalletStorage>, keys: Rc<Keys>) -> Wallet {
         Wallet {
             name: name.to_string(),
             pool_name: pool_name.to_string(),
             storage: storage,
-            keys: Rc::new(keys),
+            keys: keys,
         }
     }
 
@@ -281,6 +293,7 @@ impl Wallet {
 mod tests {
     use std;
     use std::env;
+    use std::rc::Rc;
     use errors::wallet::WalletError;
     use services::wallet::wallet::Wallet;
     use services::wallet::storage::WalletStorageType;
@@ -330,25 +343,25 @@ mod tests {
             ).unwrap()
         );
 
-        Wallet::new(name, pool_name, storage, keys)
+        Wallet::new(name, pool_name, storage, Rc::new(keys))
     }
 
     fn _get_test_master_key() -> ChaCha20Poly1305IETFKey {
-        ChaCha20Poly1305IETF::create_key([
+        ChaCha20Poly1305IETF::clone_key_from_slice(&[
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8
-        ])
+        ][..])
     }
 
     fn _get_test_new_master_key() -> ChaCha20Poly1305IETFKey {
-        ChaCha20Poly1305IETF::create_key([
+        ChaCha20Poly1305IETF::clone_key_from_slice(&[
             2, 2, 3, 4, 5, 6, 7, 8,
             2, 2, 3, 4, 5, 6, 7, 8,
             2, 2, 3, 4, 5, 6, 7, 8,
             2, 2, 3, 4, 5, 6, 7, 8
-        ])
+        ][..])
     }
 
     fn _fetch_options(type_: bool, value: bool, tags: bool) -> String {
@@ -474,7 +487,7 @@ mod tests {
                 &_get_test_master_key()
             ).unwrap()
         );
-        let wallet = Wallet::new("test_wallet", "test_pool", storage, keys);
+        let wallet = Wallet::new("test_wallet", "test_pool", storage, Rc::new(keys));
 
         let entity = wallet.get(type_, name, &_fetch_options(false, true, true)).unwrap();
 
