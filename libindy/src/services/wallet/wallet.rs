@@ -358,34 +358,43 @@ mod tests {
         serde_json::to_string(&map).unwrap()
     }
 
-    //
-    //    fn _create_valid_walle_config_str() -> &'static str {
-    //        r##"{"storage": {"base": "/tmp"}}"##
-    //    }
-    //
-    //    fn _create_storage_type() -> Box<StorageType> {
-    //        Box::new(SQLiteStorageType::new())
-    //    }
-    //
-    //    fn _create_storage() -> Box<Storage> {
-    //        let storage_type = _create_storage_type();
-    //        let storage = storage_type.create()
-    //    }
-    //
-    //
-    //    fn _bad_configs_list() -> Vec<&'static str> {
-    //       return vec![
-    //        "{}", // empty config
-    //        "{\"foo\": \"bar\"}", // not a storage config
-    //        "{\"storage\": {\"foo\": \"bar\"}}", // no base
-    //        "{\"storage\": {\"base\": \"tmp}}", // wrong format for json
-    //        // "{\"storage\": {\"base\": \":$%:^&:*`\"}}", // base is not a path
-    //        // "{\"storage\": {\"base\": \"\"}}", // empty base
-    //        // "{\"storage\": {\"base\": \"/tmp/../tmp\"}}", // base is a path traversal
-    //        ]
-    //    }
-    //
-    //
+    fn _search_options(records: bool, total_count: bool, type_: bool, value: bool, tags: bool) -> String {
+        let mut map = HashMap::new();
+        map.insert("retrieveRecords", records);
+        map.insert("retrieveTotalCount", total_count);
+        map.insert("retrieveType", type_);
+        map.insert("retrieveValue", value);
+        map.insert("retrieveTags", tags);
+        serde_json::to_string(&map).unwrap()
+    }
+//
+//    fn _create_valid_walle_config_str() -> &'static str {
+//        r##"{"storage": {"base": "/tmp"}}"##
+//    }
+//
+//    fn _create_storage_type() -> Box<StorageType> {
+//        Box::new(SQLiteStorageType::new())
+//    }
+//
+//    fn _create_storage() -> Box<Storage> {
+//        let storage_type = _create_storage_type();
+//        let storage = storage_type.create()
+//    }
+//
+//
+//    fn _bad_configs_list() -> Vec<&'static str> {
+//       return vec![
+//        "{}", // empty config
+//        "{\"foo\": \"bar\"}", // not a storage config
+//        "{\"storage\": {\"foo\": \"bar\"}}", // no base
+//        "{\"storage\": {\"base\": \"tmp}}", // wrong format for json
+//        // "{\"storage\": {\"base\": \":$%:^&:*`\"}}", // base is not a path
+//        // "{\"storage\": {\"base\": \"\"}}", // empty base
+//        // "{\"storage\": {\"base\": \"/tmp/../tmp\"}}", // base is a path traversal
+//        ]
+//    }
+//
+//
     fn _search_iterator_to_map<'a>(mut iterator: WalletIterator) -> HashMap<String, String> {
         let mut map = HashMap::new();
         loop {
@@ -718,16 +727,65 @@ mod tests {
         let tags = r#"{"tag1":"tag2"}"#;
 
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
 
         // successful encrypted search
         let query_json = "{}";
         let mut iterator = wallet.search("test_type_", query_json, Some(fetch_options)).unwrap();
+
         let res = iterator.next().unwrap().unwrap();
         assert_eq!(res.name, "foo".to_string());
         assert_eq!(res.value.unwrap(), "bar".to_string());
+
         let res = iterator.next().unwrap();
         assert!(res.is_none());
+
+        let total_count = iterator.get_total_count().unwrap();
+        assert_eq!(total_count, None); // because it is not requested.
+    }
+
+    #[test]
+    fn wallet_search_empty_query_with_count() {
+        _cleanup();
+        let wallet = _create_wallet();
+        wallet.add("test_type_", "foo", "bar", r#"{"tag1":"tags2"}"#).unwrap();
+        let fetch_options = &_search_options(true, true, false, true, false);
+
+        // successful encrypted search
+        let query_json = "{}";
+        let mut iterator = wallet.search("test_type_", query_json, Some(fetch_options)).unwrap();
+
+        let res = iterator.next().unwrap().unwrap();
+        assert_eq!(res.name, "foo".to_string());
+        assert_eq!(res.value.unwrap(), "bar".to_string());
+
+        let res = iterator.next().unwrap();
+        assert!(res.is_none());
+
+        let total_count = iterator.get_total_count().unwrap();
+        assert_eq!(total_count, Some(1));
+    }
+
+    #[test]
+    fn wallet_search_empty_query_only_count() {
+        _cleanup();
+        let wallet = _create_wallet();
+        wallet.add("test_type_", "foo", "bar", r#"{"tag1":"tags2"}"#).unwrap();
+        let fetch_options = &_search_options(false, true, false, true, false);
+
+        // successful encrypted search
+        let query_json = "{}";
+        let mut iterator = wallet.search("test_type_", query_json, Some(fetch_options)).unwrap();
+
+        let res = iterator.next().unwrap();
+        assert!(res.is_none());
+
+        // repeated next call should return None again
+        let res = iterator.next().unwrap();
+        assert!(res.is_none());
+
+        let total_count = iterator.get_total_count().unwrap();
+        assert_eq!(total_count, Some(1));
     }
 
     #[test]
@@ -737,7 +795,7 @@ mod tests {
         let tags = r#"{"tag1":"tag2"}"#;
 
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
 
         // successful encrypted search
         let query_json = jsonise!({
@@ -790,7 +848,7 @@ mod tests {
         let tags = r#"{"tag1":"tag2"}"#;
 
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
 
         // successful encrypted search
         let query_json = jsonise!({
@@ -807,7 +865,7 @@ mod tests {
         let wallet = _create_wallet();
         let tags = r#"{"tag1":"tag2"}"#;
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
 
         // successful encrypted search
         let query_json = jsonise!({
@@ -821,10 +879,9 @@ mod tests {
     #[test]
     fn wallet_search_single_item_eq_plain() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
         let tags = r#"{"~tag1":"tag2"}"#;
-
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
 
         // successful plain search
@@ -877,9 +934,7 @@ mod tests {
         _cleanup();
         let fetch_options = &_fetch_options(false, true, false);
         let wallet = _create_wallet();
-        let tags = r#"{"tag_name":"tag_value"}"#;
-
-        wallet.add("test_type_", "foo", "bar", &tags).unwrap();
+        wallet.add("test_type_", "foo", "bar", r#"{"tag_name":"tag_value"}"#).unwrap();
 
         // successful encrypted search
         let query_json = jsonise!({
@@ -928,10 +983,9 @@ mod tests {
     #[test]
     fn wallet_search_single_item_neq_plain() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false,false, true, false);
         let wallet = _create_wallet();
         let tags = r#"{"~tag_name":"tag_value"}"#;
-
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
 
         // successful plain search
@@ -982,7 +1036,7 @@ mod tests {
     #[test]
     fn wallet_search_single_item_gt_unencrypted() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"~tag_name":"1"}"#;
@@ -1032,7 +1086,7 @@ mod tests {
     #[test]
     fn wallet_search_returns_error_if_gt_used_with_encrypted_tag() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
 
         // successful encrypted search
@@ -1048,7 +1102,7 @@ mod tests {
     #[test]
     fn wallet_search_single_item_gte_unencrypted() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"~tag_name": "1"}"#;
@@ -1098,7 +1152,7 @@ mod tests {
     #[test]
     fn wallet_search_returns_error_if_gte_used_with_encrypted_tag() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
 
         // successful encrypted search
@@ -1115,7 +1169,7 @@ mod tests {
     #[test]
     fn wallet_search_single_item_lt_unencrypted() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"~tag_name": "1"}"#;
@@ -1165,7 +1219,7 @@ mod tests {
     #[test]
     fn wallet_search_returns_error_if_lt_used_with_encrypted_tag() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
 
         // successful encrypted search
@@ -1181,7 +1235,7 @@ mod tests {
     #[test]
     fn wallet_search_single_item_lte_unencrypted() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"~tag_name": "1"}"#;
@@ -1231,7 +1285,7 @@ mod tests {
     #[test]
     fn wallet_search_returns_error_if_lte_used_with_encrypted_tag() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
 
         // successful encrypted search
@@ -1247,7 +1301,7 @@ mod tests {
     #[test]
     fn wallet_search_like() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"~tag_name": "tag_value_1"}"#;
@@ -1297,7 +1351,7 @@ mod tests {
     #[test]
     fn wallet_search_returns_error_if_like_used_with_encrypted_tag() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
 
         // successful encrypted search
@@ -1313,7 +1367,7 @@ mod tests {
     #[test]
     fn wallet_search_single_item_in_unencrypted() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"~tag_name": "tag_value_1"}"#;
@@ -1371,7 +1425,7 @@ mod tests {
     #[test]
     fn wallet_search_single_item_inencrypted() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"tag_name": "tag_value_1"}"#;
@@ -1431,7 +1485,7 @@ mod tests {
     #[test]
     fn wallet_search_and_with_eqs() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"tag_name_1": "tag_value_1", "tag_name_2": "tag_value_2", "~tag_name_2": "tag_value_2", "~tag_name_3": "tag_value_3"}"#;
@@ -1511,7 +1565,7 @@ mod tests {
     #[test]
     fn wallet_search_or_with_eqs() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"tag_name_1": "tag_value_1", "~tag_name_2": "tag_value_21", "~tag_name_3": "tag_value_3"}"#;
@@ -1596,7 +1650,7 @@ mod tests {
     #[test]
     fn wallet_search_not_simple() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"tag_name_1": "tag_value_1", "~tag_name_2": "tag_value_21", "~tag_name_3": "tag_value_3"}"#;
@@ -1647,7 +1701,7 @@ mod tests {
         let wallet = _create_wallet();
         let tags = r#"{"tag_name": "tag_value"}"#;
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
-        let fetch_options = &_fetch_options(false, false, false);
+        let fetch_options = &_search_options(true, false, false, false, false);
 
         // successful encrypted searchF
         let query_json = jsonise!({
@@ -1701,7 +1755,7 @@ mod tests {
         let tags = r#"{"tag_name_1": "tag_value_1", "tag_name_2": "tag_value_2", "~tag_name_1": "tag_value_1", "*tag_name_2": "tag_value_2"}"#;
 
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();
-        let fetch_options = &_fetch_options(false, true, true);
+        let fetch_options = &_search_options(true, false, false, true, true);
 
         // successful encrypted search
         let query_json = jsonise!({
@@ -1752,10 +1806,9 @@ mod tests {
     #[test]
     fn wallet_search_nested_query() {
         _cleanup();
-        let fetch_options = &_fetch_options(false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
-        let tags = r#"{"tag1": "tag2"}"#;
-        wallet.add("test_type_", "foo", "bar", &tags).unwrap();
+        wallet.add("test_type_", "foo", "bar", r#"{"tags1":"tags2"}"#).unwrap();
         let query_json = jsonise!({
             "$or": [
                     {"foo": "bar"},

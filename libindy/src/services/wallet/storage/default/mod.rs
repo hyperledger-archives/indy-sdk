@@ -17,7 +17,7 @@ use errors::common::CommonError;
 use services::wallet::language;
 
 use super::{StorageIterator, WalletStorageType, WalletStorage, StorageEntity, EncryptedValue, Tag, TagName};
-use super::super::RecordOptions;
+use super::super::{RecordOptions, SearchOptions};
 
 const _SQLITE_DB: &str = "sqlite.db";
 const _PLAIN_TAGS_QUERY: &str = "SELECT name, value from tags_plaintext where item_id = ?";
@@ -93,7 +93,8 @@ struct TagRetriever<'a> {
     encrypted_tags_stmt: rusqlite::Statement<'a>,
 }
 
-type TagRetrieverOwned = OwningHandle<Rc<rusqlite::Connection>, Box<TagRetriever<'static>>>;
+type TagRetrieverOwned = OwningHandle<Rc<rusqlite::Connection>, Box<TagRetriever<'static>>>
+;
 
 impl<'a> TagRetriever<'a> {
     fn new_owned(conn: Rc<rusqlite::Connection>) -> Result<TagRetrieverOwned, WalletStorageError> {
@@ -139,28 +140,31 @@ struct SQLiteStorageIterator {
             Box<rusqlite::Rows<'static>>>>,
     tag_retriever: Option<TagRetrieverOwned>,
     options: RecordOptions,
-    fetch_type_: bool,
+    total_count: Option<usize>,
 }
 
 
 impl SQLiteStorageIterator {
-    fn new(stmt: OwningHandle<Rc<rusqlite::Connection>, Box<rusqlite::Statement<'static>>>,
+    fn new(stmt: Option<OwningHandle<Rc<rusqlite::Connection>, Box<rusqlite::Statement<'static>>>>,
            args: &[&rusqlite::types::ToSql],
            options: RecordOptions,
            tag_retriever: Option<TagRetrieverOwned>,
-           fetch_type_: bool) -> Result<SQLiteStorageIterator, WalletStorageError> {
+           total_count: Option<usize>) -> Result<SQLiteStorageIterator, WalletStorageError> {
         let mut iter = SQLiteStorageIterator {
             rows: None,
             tag_retriever,
             options,
-            fetch_type_,
+            total_count
         };
-        iter.rows = Some(OwningHandle::try_new(
-            stmt, |stmt|
-                unsafe {
-                    (*(stmt as *mut rusqlite::Statement)).query(args).map(Box::new)
-                },
-        )?);
+
+        if let Some(stmt) = stmt {
+            iter.rows = Some(OwningHandle::try_new(
+                stmt, |stmt|
+                    unsafe {
+                        (*(stmt as *mut rusqlite::Statement)).query(args).map(Box::new)
+                    },
+            )?);
+        }
         Ok(iter)
     }
 }
@@ -168,6 +172,11 @@ impl SQLiteStorageIterator {
 
 impl StorageIterator for SQLiteStorageIterator {
     fn next(&mut self) -> Result<Option<StorageEntity>, WalletStorageError> {
+        // if records are not requested.
+        if self.rows.is_none() {
+            return Ok(None);
+        }
+
         match self.rows.as_mut().unwrap().next() {
             Some(Ok(row)) => {
                 let name = row.get(1);
@@ -186,7 +195,7 @@ impl StorageIterator for SQLiteStorageIterator {
                 } else {
                     None
                 };
-                let type_ = if self.fetch_type_ {
+                let type_ = if self.options.retrieve_type {
                     Some(row.get(4))
                 } else {
                     None
@@ -196,6 +205,10 @@ impl StorageIterator for SQLiteStorageIterator {
             Some(Err(err)) => Err(WalletStorageError::from(err)),
             None => Ok(None)
         }
+    }
+
+    fn get_total_count(&self) -> Result<Option<usize>, WalletStorageError> {
+        Ok(self.total_count)
     }
 }
 
@@ -268,7 +281,8 @@ impl WalletStorage for SQLiteStorage {
             Err(rusqlite::Error::QueryReturnedNoRows) => return Err(WalletStorageError::ItemNotFound),
             Err(err) => return Err(WalletStorageError::from(err))
         };
-        let value = if options.retrieve_value { Some(EncryptedValue::new(item.1, item.2)) } else { None };
+        let value = if options.retrieve_value
+            { Some(EncryptedValue::new(item.1, item.2)) } else { None };
         let type_ = if options.retrieve_type { Some(type_.clone()) } else { None };
         let tags = if options.retrieve_tags {
             let mut tags = Vec::new();
@@ -521,25 +535,49 @@ impl WalletStorage for SQLiteStorage {
         };
         let tag_retriever = Some(TagRetriever::new_owned(self.conn.clone())?);
 
-        let storage_iterator = SQLiteStorageIterator::new(statement, &[], fetch_options, tag_retriever, true)?;
+        let storage_iterator = SQLiteStorageIterator::new(Some(statement), &[], fetch_options, tag_retriever, None)?;
         Ok(Box::new(storage_iterator))
     }
 
     fn search(&self, type_: &Vec<u8>, query: &language::Operator, options: Option<&str>) -> Result<Box<StorageIterator>, WalletStorageError> {
-        let fetch_options = match options {
-            None => RecordOptions::default(),
+        let search_options = match options {
+            None => SearchOptions::default(),
             Some(option_str) => serde_json::from_str(option_str)?
         };
-        let (query_string, query_arguments) = query::wql_to_sql(type_, query, options)?;
 
-        let statement = self._prepare_statement(&query_string)?;
-        let tag_retriever = if fetch_options.retrieve_tags {
-            Some(TagRetriever::new_owned(self.conn.clone())?)
-        } else {
-            None
-        };
-        let storage_iterator = SQLiteStorageIterator::new(statement, &query_arguments, fetch_options, tag_retriever, false)?;
-        Ok(Box::new(storage_iterator))
+        let total_count: Option<usize> = if search_options.retrieve_total_count {
+            let (query_string, query_arguments) = query::wql_to_sql_count(type_, query)?;
+
+            self.conn.query_row(
+                &query_string,
+                &query_arguments,
+                |row| { let x: i64 = row.get(0); Some(x as usize) }
+            )?
+        } else {None};
+
+
+        if search_options.retrieve_records {
+            let fetch_options = RecordOptions {
+                retrieve_value: search_options.retrieve_value,
+                retrieve_tags: search_options.retrieve_tags,
+                retrieve_type: search_options.retrieve_type,
+            };
+
+            let (query_string, query_arguments) = query::wql_to_sql(type_, query, options)?;
+
+            let statement = self._prepare_statement(&query_string)?;
+            let tag_retriever = if fetch_options.retrieve_tags {
+                Some(TagRetriever::new_owned(self.conn.clone())?)
+            } else {
+                None
+            };
+            let storage_iterator = SQLiteStorageIterator::new(Some(statement), &query_arguments, fetch_options, tag_retriever, total_count)?;
+            Ok(Box::new(storage_iterator))
+        }
+        else {
+            let storage_iterator = SQLiteStorageIterator::new(None, &[], RecordOptions::default(), None, total_count)?;
+            Ok(Box::new(storage_iterator))
+        }
     }
 
     fn close(&mut self) -> Result<(), WalletStorageError> {

@@ -624,7 +624,7 @@ pub struct WalletSearch {
 
 impl WalletSearch {
     pub fn get_total_count(&self) -> Result<Option<usize>, WalletError> {
-        unimplemented!()
+        self.iter.get_total_count()
     }
 
     pub fn fetch_next_record(&mut self) -> Result<Option<WalletRecord>, WalletError> {
@@ -632,7 +632,7 @@ impl WalletSearch {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchOptions {
     #[serde(default = "default_true")]
@@ -670,6 +670,18 @@ impl SearchOptions {
         };
 
         options.to_json().unwrap()
+    }
+}
+
+impl Default for SearchOptions {
+    fn default() -> SearchOptions {
+        SearchOptions {
+            retrieve_records: true,
+            retrieve_total_count: false,
+            retrieve_type: false,
+            retrieve_value: true,
+            retrieve_tags: false,
+        }
     }
 }
 

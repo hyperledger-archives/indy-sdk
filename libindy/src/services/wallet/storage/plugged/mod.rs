@@ -16,7 +16,7 @@ use services::wallet::language;
 
 
 use super::{StorageIterator, WalletStorageType, WalletStorage, StorageEntity, EncryptedValue, Tag, TagName};
-use super::super::RecordOptions;
+use super::super::{RecordOptions,SearchOptions};
 
 use self::libc::c_char;
 use self::indy_crypto::utils::json::JsonDecodable;
@@ -35,20 +35,75 @@ pub struct PluggedWalletJSONValues {
 
 impl<'a> JsonDecodable<'a> for PluggedWalletJSONValues {}
 
+
+// This struct is used as a helper to free the resource even in case of error.
+// It is workaround for Rust's lack of try/catch.
+struct ResourceGuard {
+    storage_handle: i32,
+    item_handle: i32,
+    free_handler: extern fn(storage_handle: i32, item_handle: i32) -> ErrorCode
+}
+
+impl ResourceGuard {
+    fn new(storage_handle: i32,
+           item_handle: i32,
+           free_handler: extern fn(s_handle: i32, i_handle: i32) -> ErrorCode
+    ) -> Self {
+        Self {
+            storage_handle,
+            item_handle,
+            free_handler
+        }
+    }
+}
+
+impl Drop for ResourceGuard {
+    fn drop(&mut self) {
+        (self.free_handler)(self.storage_handle, self.item_handle);
+    }
+}
+
+
 #[derive(PartialEq, Debug)]
 struct PluggedStorageIterator {
-    storage: PluggedStorage,
+    storage_handle: i32,
     search_handle: i32,
-    options: RecordOptions,
+    options: SearchOptions,
+    fetch_search_next_record_handler: WalletFetchSearchNextRecord,
+    get_search_total_count_handler: WalletGetSearchTotalCount,
+    get_record_type_handler: WalletGetRecordType,
+    get_record_id_handler: WalletGetRecordId,
+    get_record_value_handler: WalletGetRecordValue,
+    get_record_tags_handler: WalletGetRecordTags,
+    free_record_handler: WalletFreeRecord,
+    free_search_handler: WalletFreeSearch,
+}
+
+impl PluggedStorageIterator {
+    fn new(storage: &PluggedStorage, search_handle: i32, options: SearchOptions) -> Self {
+        Self {
+            storage_handle: storage.handle,
+            search_handle: search_handle,
+            options: options,
+            fetch_search_next_record_handler: storage.fetch_search_next_record_handler,
+            get_search_total_count_handler: storage.get_search_total_count_handler,
+            get_record_type_handler: storage.get_record_type_handler,
+            get_record_id_handler: storage.get_record_id_handler,
+            get_record_value_handler: storage.get_record_value_handler,
+            get_record_tags_handler: storage.get_record_tags_handler,
+            free_record_handler: storage.free_record_handler,
+            free_search_handler: storage.free_search_handler,
+        }
+    }
 }
 
 impl StorageIterator for PluggedStorageIterator {
     fn next(&mut self) -> Result<Option<StorageEntity>, WalletStorageError> {
         let mut record_handle = -1;
 
-        let err = (self.storage.fetch_search_next_record_handler)(self.storage.handle,
-                                                                  self.search_handle,
-                                                                  &mut record_handle);
+        let err = (self.fetch_search_next_record_handler)(self.storage_handle,
+                                                          self.search_handle,
+                                                          &mut record_handle);
 
         if err == ErrorCode::WalletItemNotFound {
             return Ok(None);
@@ -57,12 +112,18 @@ impl StorageIterator for PluggedStorageIterator {
                 return Err(WalletStorageError::PluggedStorageError(err));
             }
 
+        let record_free_helper = ResourceGuard {
+            storage_handle: self.storage_handle,
+            item_handle: record_handle,
+            free_handler: self.free_record_handler
+        };
+
         let type_ = if self.options.retrieve_type {
             let mut type_ptr: *const c_char = ptr::null_mut();
 
-            let err = (self.storage.get_record_type_handler)(self.storage.handle,
-                                                             record_handle,
-                                                             &mut type_ptr);
+            let err = (self.get_record_type_handler)(self.storage_handle,
+                                                     record_handle,
+                                                     &mut type_ptr);
 
             if err != ErrorCode::Success {
                 return Err(WalletStorageError::PluggedStorageError(err));
@@ -73,9 +134,9 @@ impl StorageIterator for PluggedStorageIterator {
         let id = {
             let mut id_ptr: *const c_char = ptr::null_mut();
 
-            let err = (self.storage.get_record_id_handler)(self.storage.handle,
-                                                           record_handle,
-                                                           &mut id_ptr);
+            let err = (self.get_record_id_handler)(self.storage_handle,
+                                                   record_handle,
+                                                   &mut id_ptr);
 
             if err != ErrorCode::Success {
                 return Err(WalletStorageError::PluggedStorageError(err));
@@ -86,10 +147,10 @@ impl StorageIterator for PluggedStorageIterator {
         let value = if self.options.retrieve_value {
             let mut value_bytes: *const u8 = ptr::null();
             let mut value_bytes_len: usize = 0;
-            let err = (self.storage.get_record_value_handler)(self.storage.handle,
-                                                              record_handle,
-                                                              &mut value_bytes,
-                                                              &mut value_bytes_len);
+            let err = (self.get_record_value_handler)(self.storage_handle,
+                                                      record_handle,
+                                                      &mut value_bytes,
+                                                      &mut value_bytes_len);
 
             if err != ErrorCode::Success {
                 return Err(WalletStorageError::PluggedStorageError(err));
@@ -101,9 +162,9 @@ impl StorageIterator for PluggedStorageIterator {
 
         let tags = if self.options.retrieve_tags {
             let mut tags_ptr: *const c_char = ptr::null_mut();
-            let err = (self.storage.get_record_tags_handler)(self.storage.handle,
-                                                             record_handle,
-                                                             &mut tags_ptr);
+            let err = (self.get_record_tags_handler)(self.storage_handle,
+                                                     record_handle,
+                                                     &mut tags_ptr);
 
             if err != ErrorCode::Success {
                 return Err(WalletStorageError::PluggedStorageError(err));
@@ -113,24 +174,41 @@ impl StorageIterator for PluggedStorageIterator {
             Some(_tags_from_json(tags_json)?)
         } else { None };
 
-        (self.storage.free_record_handler)(self.storage.handle, record_handle);
-
-        Ok(Some(StorageEntity {
+        Ok(Some(StorageEntity{
             type_: type_,
             name: id,
             value: value,
             tags: tags,
         }))
     }
+
+    fn get_total_count(&self) -> Result<Option<usize>, WalletStorageError> {
+        let mut total_count = 0;
+
+        if self.options.retrieve_total_count {
+            let err = (self.get_search_total_count_handler)(self.storage_handle,
+                                                            self.search_handle,
+                                                            &mut total_count);
+
+            if err != ErrorCode::Success {
+                return Err(WalletStorageError::PluggedStorageError(err));
+            }
+
+            Ok(Some(total_count))
+        }
+        else {
+            Ok(None)
+        }
+    }
 }
 
 impl Drop for PluggedStorageIterator {
     fn drop(&mut self) {
-        (self.storage.free_search_handler)(self.storage.handle, self.search_handle);
+        (self.free_search_handler)(self.storage_handle, self.search_handle);
     }
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug)]
 struct PluggedStorage {
     handle: i32,
     add_record_handler: WalletAddRecord,
@@ -285,6 +363,12 @@ impl WalletStorage for PluggedStorage {
                 return Err(WalletStorageError::PluggedStorageError(err));
             }
 
+        let record_free_helper = ResourceGuard {
+            storage_handle: self.handle,
+            item_handle: record_handle,
+            free_handler: self.free_record_handler
+        };
+
         let value = if options.retrieve_value {
             let mut value_bytes: *const u8 = ptr::null();
             let mut value_bytes_len: usize = 0;
@@ -317,12 +401,10 @@ impl WalletStorage for PluggedStorage {
 
         let result = StorageEntity {
             name: name.to_owned(),
-            type_: if options.retrieve_type { Some(type_param.clone()) } else { None },
+            type_: if options.retrieve_type {Some(type_param.clone())} else {None},
             value,
             tags
         };
-
-        let err = (self.free_record_handler)(self.handle, record_handle);
 
         if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
@@ -447,11 +529,15 @@ impl WalletStorage for PluggedStorage {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
+        let metadata_free_helper = ResourceGuard {
+            storage_handle: self.handle,
+            item_handle: metadata_handle,
+            free_handler: self.free_storage_metadata_handler
+        };
+
         let metadata = base64::decode(
             unsafe { CStr::from_ptr(metadata_ptr).to_str()? }
         )?;
-
-        (self.free_storage_metadata_handler)(self.handle, metadata_handle);
 
         Ok(metadata)
     }
@@ -478,22 +564,24 @@ impl WalletStorage for PluggedStorage {
         }
 
         Ok(Box::new(
-            PluggedStorageIterator {
-                storage: self.clone() /* TODO avoid clone. Use Rc or better approach. */,
+            PluggedStorageIterator::new(
+                &self,
                 search_handle,
-                options: RecordOptions {
+                SearchOptions {
+                    retrieve_records: true,
+                    retrieve_total_count: false,
                     retrieve_type: true,
                     retrieve_value: true,
                     retrieve_tags: true,
                 }
-            }
+            )
         ))
     }
 
     fn search(&self, type_: &Vec<u8>, query: &language::Operator, options_json: Option<&str>) -> Result<Box<StorageIterator>, WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let query_json = CString::new(query.to_string())?;
-        let options: RecordOptions = serde_json::from_str(options_json.unwrap_or(""))?;
+        let options: SearchOptions = serde_json::from_str(options_json.unwrap_or(""))?;
         let options_json = CString::new(options_json.unwrap_or(""))?;
         let mut search_handle: i32 = -1;
 
@@ -507,11 +595,13 @@ impl WalletStorage for PluggedStorage {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
-        Ok(Box::new(PluggedStorageIterator {
-            storage: self.clone() /* TODO avoid clone. Use Rc or better approach. */,
-            search_handle,
-            options
-        }))
+        Ok(Box::new(
+            PluggedStorageIterator::new(
+                &self,
+                search_handle,
+                options
+            )
+        ))
     }
 
     fn close(&mut self) -> Result<(), WalletStorageError> {
@@ -521,7 +611,19 @@ impl WalletStorage for PluggedStorage {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
+        // invalidate the handle, just in case.
+        self.handle = -1;
+
         Ok(())
+    }
+}
+
+impl Drop for PluggedStorage {
+    fn drop(&mut self) {
+        // if storage is not closed, close it before drop.
+        if self.handle >= 0 {
+            self.close();
+        }
     }
 }
 
@@ -1365,6 +1467,28 @@ mod tests {
         storage
     }
 
+    fn _fetch_options(retrieve_value: bool, retrieve_tags: bool, retrieve_type: bool) -> String {
+        let mut map = HashMap::new();
+
+        map.insert("retrieveValue", retrieve_value);
+        map.insert("retrieveTags", retrieve_tags);
+        map.insert("retrieveType", retrieve_type);
+
+        serde_json::to_string(&map).unwrap()
+    }
+
+    fn _search_options(retrieve_records: bool, retrieve_total_count: bool, retrieve_value: bool, retrieve_tags: bool, retrieve_type: bool) -> String {
+        let mut map = HashMap::new();
+
+        map.insert("retrieveRecords", retrieve_records);
+        map.insert("retrieveTotalCount", retrieve_total_count);
+        map.insert("retrieveValue", retrieve_value);
+        map.insert("retrieveTags", retrieve_tags);
+        map.insert("retrieveType", retrieve_type);
+
+        serde_json::to_string(&map).unwrap()
+    }
+
     #[test]
     fn plugged_storage_add_works() {
         DEBUG_VEC.write().unwrap().clear();
@@ -1496,7 +1620,7 @@ mod tests {
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let options = r##"{"retrieveValue": true, "retrieveTags": true, "retrieveType": true}"##;
+        let options = _fetch_options(true, true, true);
 
         let storage_entity = storage.get(&type_, &id, &options).unwrap();
 
@@ -1548,7 +1672,7 @@ mod tests {
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let options = r##"{"retrieveValue": true, "retrieveTags": true, "retrieveType": false}"##;
+        let options = _fetch_options(true, true, false);
 
         let storage_entity = storage.get(&type_, &id, &options).unwrap();
 
@@ -1599,7 +1723,7 @@ mod tests {
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let options = r##"{"retrieveValue": true, "retrieveTags": false, "retrieveType": false}"##;
+        let options = _fetch_options(true, false, false);
 
         let storage_entity = storage.get(&type_, &id, &options).unwrap();
 
@@ -1645,7 +1769,7 @@ mod tests {
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let options = r##"{"retrieveValue": false, "retrieveTags": true, "retrieveType": false}"##;
+        let options = _fetch_options(false, true, false);
 
         let storage_entity = storage.get(&type_, &id, &options).unwrap();
 
@@ -1692,7 +1816,7 @@ mod tests {
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let options = r##"{"retrieveValue": false, "retrieveTags": false, "retrieveType": false}"##;
+        let options = _fetch_options(false, false, false);
 
         let storage_entity = storage.get(&type_, &id, &options).unwrap();
 
@@ -1721,56 +1845,6 @@ mod tests {
         assert_eq!(debug.len(), 2);
         assert_eq!(&expected_get_record_call, debug.get(0).unwrap());
         assert_eq!(&expected_free_record_call, debug.get(1).unwrap());
-    }
-
-    #[test]
-    fn plugged_storage_get_record_default_works() {
-        DEBUG_VEC.write().unwrap().clear();
-
-        let storage = _open_storage();
-
-        DEBUG_VEC.write().unwrap().clear();
-
-        let type_ = _random_vector(32);
-        let id = _random_vector(32);
-        let options = r##"{}"##;
-
-        let storage_entity = storage.get(&type_, &id, &options).unwrap();
-
-        let expected_storage_entity = StorageEntity {
-            type_: None,
-            name: id.clone(),
-            value: Some(RETURN_VALUE.read().unwrap().1.clone()),
-            tags: None,
-        };
-
-        assert_eq!(expected_storage_entity, storage_entity);
-
-        let expected_get_record_call = Call::GetRecordHandler(
-            RETURN_STORAGE_HANDLE,
-            Some(base64::encode(&type_)),
-            Some(base64::encode(&id)),
-            Some(options.to_owned())
-        );
-        let expected_get_value_call = Call::GetRecordValueHandler(
-            RETURN_STORAGE_HANDLE,
-            RETURN_RECORD_HANDLE,
-        );
-        let expected_get_tags_call = Call::GetRecordTagsHandler(
-            RETURN_STORAGE_HANDLE,
-            RETURN_RECORD_HANDLE
-        );
-        let expected_free_record_call = Call::FreeRecordHandler(
-            RETURN_STORAGE_HANDLE,
-            RETURN_RECORD_HANDLE
-        );
-
-        let debug = DEBUG_VEC.read().unwrap();
-
-        assert_eq!(debug.len(), 3);
-        assert_eq!(&expected_get_record_call, debug.get(0).unwrap());
-        assert_eq!(&expected_get_value_call, debug.get(1).unwrap());
-        assert_eq!(&expected_free_record_call, debug.get(2).unwrap());
     }
 
     #[test]
@@ -1825,7 +1899,7 @@ mod tests {
     }
 
     #[test]
-    fn plugged_storage_search_works() {
+    fn plugged_storage_search_with_total_count_works() {
         DEBUG_VEC.write().unwrap().clear();
 
         let storage = _open_storage();
@@ -1841,11 +1915,10 @@ mod tests {
             language::TagName::EncryptedTagName(tag_name.clone()),
             language::TargetValue::Encrypted(tag_value.clone()),
         );
-        let options = r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##;
-
+        let options = _search_options(true, true, true, true, false);
 
         {
-            let mut storage_iterator = storage.search(&type_, &query, Some(options)).unwrap();
+            let mut storage_iterator = storage.search(&type_, &query, Some(&options)).unwrap();
 
             // TODO: solve how to get &PluggedStorage from Box<WalletStorage>
 
@@ -1853,13 +1926,17 @@ mod tests {
             //            storage: &storage.downcast::<PluggedStorage>().unwrap(),
             //            search_handle: RETURN_SEARCH_HANDLE,
             //            options: FetchOptions{
-            //                fetch_type: false,
-            //                fetch_value: true,
-            //                fetch_tags: true,
+            //                retrieveType: false,
+            //                retrieveValue: true,
+            //                retrieveTags: true,
             //            }
             //        };
 
             //        assert_eq!(*storage_iterator as PluggedStorageIterator, expected_storage_iterator);
+
+            let total_count = storage_iterator.get_total_count().unwrap();
+
+            assert_eq!(total_count, Some(RETURN_SEARCH_TOTAL_COUNT));
 
             let storage_entity = storage_iterator.next().unwrap();
 
@@ -1879,6 +1956,107 @@ mod tests {
             Some(query.to_string()),
             Some(options.to_string()),
         );
+        let expected_total_count_call = Call::GetSearchTotalCountHandler(
+            RETURN_STORAGE_HANDLE,
+            RETURN_SEARCH_HANDLE
+        );
+        let expected_fetch_next_call = Call::FetchSearchNextRecordHandler(
+            RETURN_STORAGE_HANDLE,
+            RETURN_SEARCH_HANDLE,
+        );
+        let expected_get_id_call = Call::GetRecordIdHandler(
+            RETURN_STORAGE_HANDLE,
+            RETURN_RECORD_HANDLE,
+        );
+        let expected_get_value_call = Call::GetRecordValueHandler(
+            RETURN_STORAGE_HANDLE,
+            RETURN_RECORD_HANDLE,
+        );
+        let expected_get_tags_call = Call::GetRecordTagsHandler(
+            RETURN_STORAGE_HANDLE,
+            RETURN_RECORD_HANDLE
+        );
+        let expected_free_record_call = Call::FreeRecordHandler(
+            RETURN_STORAGE_HANDLE,
+            RETURN_RECORD_HANDLE
+        );
+        let expected_free_search_call = Call::FreeSearchHandler(
+            RETURN_STORAGE_HANDLE,
+            RETURN_SEARCH_HANDLE
+        );
+
+        let debug = DEBUG_VEC.read().unwrap();
+
+        assert_eq!(debug.len(), 8);
+        assert_eq!(&expected_search_call, debug.get(0).unwrap());
+        assert_eq!(&expected_total_count_call, debug.get(1).unwrap());
+        assert_eq!(&expected_fetch_next_call, debug.get(2).unwrap());
+        assert_eq!(&expected_get_id_call, debug.get(3).unwrap());
+        assert_eq!(&expected_get_value_call, debug.get(4).unwrap());
+        assert_eq!(&expected_get_tags_call, debug.get(5).unwrap());
+        assert_eq!(&expected_free_record_call, debug.get(6).unwrap());
+        assert_eq!(&expected_free_search_call, debug.get(7).unwrap());
+    }
+
+    #[test]
+    fn plugged_storage_search_without_total_count_works() {
+        DEBUG_VEC.write().unwrap().clear();
+
+        let storage = _open_storage();
+
+        DEBUG_VEC.write().unwrap().clear();
+
+        let type_ = _random_vector(32);
+
+        let tag_name = _random_vector(32);
+        let tag_value = _random_vector(32);
+
+        let query = language::Operator::Eq(
+            language::TagName::EncryptedTagName(tag_name.clone()),
+            language::TargetValue::Encrypted(tag_value.clone()),
+        );
+        let options = _search_options(true, false, true, true, false);
+
+        {
+            let mut storage_iterator = storage.search(&type_, &query, Some(&options)).unwrap();
+
+            // TODO: solve how to get &PluggedStorage from Box<WalletStorage>
+
+            //        let expected_storage_iterator = PluggedStorageIterator{
+            //            storage: &storage.downcast::<PluggedStorage>().unwrap(),
+            //            search_handle: RETURN_SEARCH_HANDLE,
+            //            options: FetchOptions{
+            //                retrieveType: false,
+            //                retrieveValue: true,
+            //                retrieveTags: true,
+            //            }
+            //        };
+
+            //        assert_eq!(*storage_iterator as PluggedStorageIterator, expected_storage_iterator);
+
+            let total_count = storage_iterator.get_total_count().unwrap();
+
+            assert_eq!(total_count, None);
+
+            let storage_entity = storage_iterator.next().unwrap();
+
+            let expected_storage_entity = StorageEntity {
+                type_: None,
+                name: RETURN_ID.read().unwrap().1.clone(),
+                value: Some(RETURN_VALUE.read().unwrap().1.clone()),
+                tags: Some(RETURN_TAGS.read().unwrap().1.clone()),
+            };
+
+            assert_eq!(expected_storage_entity, storage_entity.unwrap());
+        }
+
+        let expected_search_call = Call::SearchRecordsHandler(
+            RETURN_STORAGE_HANDLE,
+            Some(base64::encode(&type_)),
+            Some(query.to_string()),
+            Some(options.to_string()),
+        );
+        // No total count call.
         let expected_fetch_next_call = Call::FetchSearchNextRecordHandler(
             RETURN_STORAGE_HANDLE,
             RETURN_SEARCH_HANDLE,
@@ -1933,9 +2111,9 @@ mod tests {
             //            storage: &storage.downcast::<PluggedStorage>().unwrap(),
             //            search_handle: RETURN_SEARCH_HANDLE,
             //            options: FetchOptions{
-            //                fetch_type: false,
-            //                fetch_value: true,
-            //                fetch_tags: true,
+            //                retrieveType: false,
+            //                retrieveValue: true,
+            //                retrieveTags: true,
             //            }
             //        };
 
@@ -1951,6 +2129,10 @@ mod tests {
             };
 
             assert_eq!(expected_storage_entity, storage_entity.unwrap());
+
+            let total_count = storage_iterator.get_total_count().unwrap();
+
+            assert_eq!(None, total_count)
         }
 
         let expected_search_call = Call::SearchAllRecordsHandler(

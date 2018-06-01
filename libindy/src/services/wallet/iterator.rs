@@ -38,4 +38,9 @@ impl WalletIterator {
             Ok(Some(WalletRecord::new(name, None, value, tags)))
         } else { Ok(None) }
     }
+
+    pub fn get_total_count(&self) -> Result<Option<usize>, WalletError> {
+        let total_count = self.storage_iterator.get_total_count()?;
+        Ok(total_count)
+    }
 }
