@@ -30,6 +30,7 @@ use self::storage::default::SQLiteStorageType;
 use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Wallet, Keys, Tags};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -63,20 +64,28 @@ impl<'a> JsonDecodable<'a> for WalletConfig {}
 #[derive(Debug)]
 pub struct WalletCredentials {
     master_key: [u8; 32],
+    rekey: Option<[u8; 32]>,
     storage_credentials: String,
 }
 
-use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 
 impl WalletCredentials {
     fn from_json(json: &str, salt: &[u8; PwhashArgon2i13::SALTBYTES]) -> Result<WalletCredentials, WalletError> {
         if let serde_json::Value::Object(m) = serde_json::from_str(json)? {
-            let master_key = if let Some(key) = m["key"].as_str() {
+            let master_key = if let Some(key) = m.get("key").and_then(|s| s.as_str()) {
                 let mut master_key: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
                 PwhashArgon2i13::derive_key(&mut master_key, key.as_bytes(), salt)?;
                 master_key
             } else {
                 return Err(WalletError::InputError(String::from("Credentials missing 'key' field")));
+            };
+
+            let rekey = if let Some(key) =  m.get("rekey").and_then(|s| s.as_str()) {
+                let mut rekey: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
+                PwhashArgon2i13::derive_key(&mut rekey, key.as_bytes(), salt)?;
+                Some(rekey)
+            } else {
+                None
             };
 
             let storage_credentials = serde_json::to_string(
@@ -87,6 +96,7 @@ impl WalletCredentials {
 
             Ok(WalletCredentials {
                 master_key,
+                rekey,
                 storage_credentials
             })
         } else {
@@ -167,17 +177,16 @@ impl WalletService {
         let xtype = storage_type.unwrap_or("default");
 
         let storage_types = self.storage_types.borrow();
-        if !storage_types.contains_key(xtype) {
-            return Err(WalletError::UnknownType(xtype.to_string()));
-        }
+        let storage_type = match storage_types.get(xtype) {
+            None => return Err(WalletError::UnknownType(xtype.to_string())),
+            Some(storage_type) => storage_type,
+        };
 
         let wallet_path = _wallet_path(name);
         let wallet_descriptor_path = _wallet_descriptor_path(name);
         if wallet_path.exists() && wallet_descriptor_path.exists() {
             return Err(WalletError::AlreadyExists(name.to_string()));
         }
-
-        let storage_type = storage_types.get(xtype).unwrap();
 
         let mut config = match storage_config {
             Some(config) => serde_json::from_str::<serde_json::Value>(config)
@@ -229,11 +238,10 @@ impl WalletService {
         })?;
 
         let storage_types = self.storage_types.borrow();
-        if !storage_types.contains_key(descriptor.xtype.as_str()) {
-            return Err(WalletError::UnknownType(descriptor.xtype));
-        }
-
-        let storage_type = storage_types.get(descriptor.xtype.as_str()).unwrap();
+        let storage_type = match storage_types.get(descriptor.xtype.as_str()) {
+            None => return Err(WalletError::UnknownType(descriptor.xtype)),
+            Some(storage_type) => storage_type
+        };
 
         let config_json = WalletService::read_config(name)?;
 
@@ -262,10 +270,10 @@ impl WalletService {
         })?;
 
         let storage_types = self.storage_types.borrow();
-        if !storage_types.contains_key(descriptor.xtype.as_str()) {
-            return Err(WalletError::UnknownType(descriptor.xtype));
-        }
-        let storage_type = storage_types.get(descriptor.xtype.as_str()).unwrap();
+        let storage_type = match storage_types.get(descriptor.xtype.as_str()) {
+            None => return Err(WalletError::UnknownType(descriptor.xtype)),
+            Some(storage_type) => storage_type,
+        };
 
         let mut wallets = self.wallets.borrow_mut();
         if wallets.values().any(|ref wallet| wallet.get_name() == name) {
@@ -276,8 +284,7 @@ impl WalletService {
         let config = serde_json::from_str::<WalletConfig>(&config_json)
             .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize Storage Config")))?;
 
-        let credentials = WalletCredentials::from_json(credentials, &config.salt)?
-        ;
+        let credentials = WalletCredentials::from_json(credentials, &config.salt)?;
         let storage = storage_type.open_storage(name,
                                                 Some(&config_json),
                                                 &credentials.storage_credentials)?;
@@ -290,9 +297,13 @@ impl WalletService {
             Ok(keys_vector) => keys_vector,
             Err(_) => return Err(WalletError::AccessFailed("Invalid master key provided".to_string())),
         };
+
         let keys = Keys::new(keys_vector);
 
         let wallet = Wallet::new(name, &descriptor.pool_name, storage, keys);
+        if let Some(ref rekey) = credentials.rekey {
+            wallet.rotate_key(&rekey[..])?;
+        }
         let wallet_handle = SequenceUtils::get_next_id();
         wallets.insert(wallet_handle, Box::new(wallet));
 
@@ -345,7 +356,7 @@ impl WalletService {
     }
 
     pub fn add_record(&self, wallet_handle: i32, type_: &str, name: &str, value: &str, tags_json: &str) -> Result<(), WalletError> {
-        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
+        match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
                 let tags: Tags = serde_json::from_str(tags_json)?;
                 wallet.add(type_, name, value, &tags)
@@ -386,7 +397,7 @@ impl WalletService {
     }
 
     pub fn add_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tags_json: &str) -> Result<(), WalletError> {
-        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
+        match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
                 let tags: Tags = serde_json::from_str(tags_json)?;
                 wallet.add_tags(type_, name, &tags)
@@ -400,7 +411,7 @@ impl WalletService {
     }
 
     pub fn update_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tags_json: &str) -> Result<(), WalletError> {
-        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
+        match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
                 let tags: Tags = serde_json::from_str(tags_json)?;
                 wallet.update_tags(type_, name, &tags)
@@ -414,7 +425,7 @@ impl WalletService {
     }
 
     pub fn delete_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tag_names_json: &str) -> Result<(), WalletError> {
-        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
+        match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
                 let tag_names: Vec<String> = serde_json::from_str(tag_names_json)?;
                 wallet.delete_tags(type_, name, &tag_names[..])
@@ -729,6 +740,14 @@ mod tests {
         String::from(r#"{"key":"my_key"}"#)
     }
 
+    fn _rekey_credentials() -> String {
+        String::from(r#"{"key":"my_key", "rekey": "my_new_key"}"#)
+    }
+
+    fn _credentials_for_new_key() -> String {
+        String::from(r#"{"key": "my_new_key"}"#)
+    }
+
     fn _cleanup() {
         let mut path = std::env::home_dir().unwrap();
         path.push(".indy_client");
@@ -878,6 +897,16 @@ mod tests {
         let wallet_service = WalletService::new();
         wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
         wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_open_wallet_without_master_key_in_credentials_returns_error() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let res = wallet_service.open_wallet("test_wallet", None, "{}");
+        assert_match!(Err(WalletError::InputError(_)), res);
     }
     //
     //    //    #[test]
@@ -1510,5 +1539,40 @@ mod tests {
 
         let get_pool_name_res = wallet_service.get_pool_name(1);
         assert_match!(Err(WalletError::InvalidHandle(_)), get_pool_name_res);
+    }
+
+    /**
+        Key rotation test
+    */
+    #[test]
+    fn wallet_service_key_rotation() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", "{}").unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
+        assert_eq!("type", record.get_type().unwrap());
+        assert_eq!("value1", record.get_value().unwrap());
+
+        wallet_service.close_wallet(wallet_handle).unwrap();
+
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_rekey_credentials()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
+        assert_eq!("type", record.get_type().unwrap());
+        assert_eq!("value1", record.get_value().unwrap());
+        wallet_service.close_wallet(wallet_handle).unwrap();
+
+        // Access failed for old key
+        let res = wallet_service.open_wallet("test_wallet", None, &_credentials());
+        assert_match!(Err(WalletError::AccessFailed(_)), res);
+
+        // Works ok with new key when reopening
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials_for_new_key()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
+        assert_eq!("type", record.get_type().unwrap());
+        assert_eq!("value1", record.get_value().unwrap());
     }
 }
