@@ -71,8 +71,8 @@ public class RequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
 		String walletName = "incompatibleWallet";
 
-		Wallet.createWallet("otherPoolName", walletName, "default", null, null).get();
-		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
+		Wallet.createWallet("otherPoolName", walletName, "default", null, CREDENTIALS).get();
+		Wallet wallet = Wallet.openWallet(walletName, null, CREDENTIALS).get();
 
 		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();

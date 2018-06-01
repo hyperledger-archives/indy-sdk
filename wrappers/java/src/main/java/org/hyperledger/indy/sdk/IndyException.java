@@ -6,6 +6,7 @@ import org.hyperledger.indy.sdk.ledger.ConsensusException;
 import org.hyperledger.indy.sdk.ledger.LedgerInvalidTransactionException;
 import org.hyperledger.indy.sdk.ledger.LedgerSecurityException;
 import org.hyperledger.indy.sdk.ledger.TimeoutException;
+import org.hyperledger.indy.sdk.payments.*;
 import org.hyperledger.indy.sdk.pool.InvalidPoolException;
 import org.hyperledger.indy.sdk.pool.PoolConfigNotCreatedException;
 import org.hyperledger.indy.sdk.pool.PoolLedgerConfigExistsException;
@@ -62,6 +63,8 @@ public class IndyException extends Exception {
 			case CommonInvalidParam10:
 			case CommonInvalidParam11:
 			case CommonInvalidParam12:
+			case CommonInvalidParam13:
+			case CommonInvalidParam14:
 				return new InvalidParameterException(sdkErrorCode);
 			case CommonInvalidState:
 				return new InvalidStateException();
@@ -78,7 +81,21 @@ public class IndyException extends Exception {
 			case WalletAlreadyExistsError:
 				return new WalletExistsException();
 			case WalletNotFoundError:
-				return new WalletValueNotFoundException();
+				return new WalletNotFoundException();
+			case WalletInputError:
+				return new WalletInputException();
+			case WalletDecodingError:
+				return new WalletDecodingException();
+			case WalletStorageError:
+				return new WalletStorageException();
+			case WalletEncryptonError:
+				return new WalletEncryptionException();
+			case WalletItemNotFound:
+				return new WalletItemNotFoundException();
+			case WalletItemAlreadyExists:
+				return new WalletItemAlreadyExistsException();
+			case WalletQueryError:
+				return new WalletInvalidQueryException();
 			case WalletIncompatiblePoolError:
 				return new WrongWalletForPoolException();
 			case WalletAlreadyOpenedError:
@@ -117,6 +134,12 @@ public class IndyException extends Exception {
 				return new UnknownCryptoException();
 			case DidAlreadyExistsError:
 				return new DidAlreadyExistsException();
+			case UnknownPaymentMethod:
+				return new UnknownPaymentMethodException();
+			case IncompatiblePaymentError:
+				return new IncompatiblePaymentException();
+			case InsufficientFundsError:
+				return new InsufficientFundsException();
 			default:
 				String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
 				return new IndyException(message, sdkErrorCode);

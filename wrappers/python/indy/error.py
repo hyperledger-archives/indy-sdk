@@ -73,8 +73,29 @@ class ErrorCode(IntEnum):
     # Trying to open wallet that was opened already
     WalletAlreadyOpenedError = 206,
 
-    # Attempt to open encrypted wallet with invalid credentials
+    # Input provided to wallet operations is considered not valid
     WalletAccessFailed = 207,
+
+    # Attempt to open encrypted wallet with invalid credentials
+    WalletInputError = 208,
+
+    # Decoding of wallet data during input/output failed
+    WalletDecodingError = 209,
+
+    # Storage error occurred during wallet operation
+    WalletStorageError = 210,
+
+    # Error during encryption-related operations
+    WalletEncryptonError = 211,
+
+    # Requested wallet item not found
+    WalletItemNotFound = 212,
+
+    # Returned if wallet's add_record operation is used with record name that already exists
+    WalletItemAlreadyExists = 213,
+
+    # Returned if provided wallet query is invalid
+    WalletQueryError = 214,
 
     # Ledger errors
     # Trying to open pool ledger that wasn't created before
@@ -121,7 +142,16 @@ class ErrorCode(IntEnum):
     UnknownCryptoTypeError = 500,
 
     # Attempt to create duplicate did
-    DidAlreadyExistsError = 600
+    DidAlreadyExistsError = 600,
+
+    # Unknown payment method was given
+    PaymentUnknownMethodError = 700,
+
+    # No method were scraped from inputs/outputs or more than one were scraped
+    PaymentIncompatibleMethodsError = 701,
+
+    # Insufficient funds on inputs
+    PaymentInsufficientFundsError = 702
 
 
 class IndyError(Exception):

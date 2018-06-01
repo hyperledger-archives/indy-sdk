@@ -44,8 +44,13 @@
 		5DB57B771F712A5200EB4C90 /* NSDictionary+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B4D1F712A5200EB4C90 /* NSDictionary+JSON.m */; };
 		5DB57B781F712A5200EB4C90 /* NSString+Validation.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B4F1F712A5200EB4C90 /* NSString+Validation.m */; };
 		80DCB08582AE3D8C572032E5 /* libPods-Indy-demoTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D78D0155F3E8AF26D9FBE34 /* libPods-Indy-demoTests.a */; };
+		ADF5F31684A1388E1F7CB46A /* PaymentHighCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FA949F9686E3339531DA /* PaymentHighCases.mm */; };
+		ADF5F3E33D950E83636B32E8 /* PaymentUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = ADF5F3114D20F3CFCE1A17BA /* PaymentUtils.m */; };
+		ADF5F033CD402A0FB8564B87 /* PBXBuildFile */ = {isa = PBXBuildFile; fileRef = ADF5FE4E35A02E854FF1C94F /* NonSecretsUtils.m */; };
+		ADF5F3C392290ACE150082E2 /* NonSecretsUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FE4E35A02E854FF1C94F /* NonSecretsUtils.m */; };
 		ADF5F64401BEE20C3FC0E002 /* LedgerBuildRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5F3613A78A60DBE7F1AB9 /* LedgerBuildRequest.mm */; };
 		ADF5F67A3F994466D5D58BD8 /* BlobStorageUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FB263C0C3F9BD6F57037 /* BlobStorageUtils.m */; };
+		ADF5F84EF0911B211FE4FEC3 /* NonSecretsHighCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5F5209566924DEB625F31 /* NonSecretsHighCases.mm */; };
 		ADF5FAA7813FC4B983F82948 /* Interaction.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5F0F5B189065464F202AF /* Interaction.mm */; };
 		C1BA94778E40060E56814C61 /* libPods-Indy-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 49682051B863F7784F1A8CAE /* libPods-Indy-demo.a */; };
 /* End PBXBuildFile section */
@@ -144,9 +149,15 @@
 		7BCBA93D72AE3588DDAD9D49 /* Pods-Indy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demoTests/Pods-Indy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
 		8301CE9D60BE235EB8E50A72 /* libPods-libindy-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ADF5F0F5B189065464F202AF /* Interaction.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Interaction.mm; sourceTree = "<group>"; };
+		ADF5F3114D20F3CFCE1A17BA /* PaymentUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PaymentUtils.m; sourceTree = "<group>"; };
 		ADF5F3613A78A60DBE7F1AB9 /* LedgerBuildRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerBuildRequest.mm; sourceTree = "<group>"; };
+		ADF5FA949F9686E3339531DA /* PaymentHighCases.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = PaymentHighCases.mm; sourceTree = "<group>"; };
+		ADF5F5209566924DEB625F31 /* NonSecretsHighCases.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = NonSecretsHighCases.mm; sourceTree = "<group>"; };
 		ADF5FB263C0C3F9BD6F57037 /* BlobStorageUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BlobStorageUtils.m; sourceTree = "<group>"; };
 		ADF5FC4BA3EAF704D53570D5 /* BlobStorageUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BlobStorageUtils.h; sourceTree = "<group>"; };
+		ADF5FF3AD9B649B92478CEF7 /* PaymentUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PaymentUtils.h; sourceTree = "<group>"; };
+		ADF5FCDBADC2C8FC6B308105 /* NonSecretsUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NonSecretsUtils.h; sourceTree = "<group>"; };
+		ADF5FE4E35A02E854FF1C94F /* NonSecretsUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NonSecretsUtils.m; sourceTree = "<group>"; };
 		B87BB39216A2B13E57165BF9 /* libPods-libindy-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DACC1FF866C0BAFAF74DC73B /* Pods-libindy-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.debug.xcconfig"; sourceTree = "<group>"; };
 		ED81D70B4C1CD531B86E9E9F /* Pods-libindy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
@@ -252,6 +263,8 @@
 				5DB57B281F712A5200EB4C90 /* Did */,
 				5DB57B2B1F712A5200EB4C90 /* Wallet */,
 				109A39C1A28C20B03A24F15E /* Crypto */,
+				ADF5FDDD957557F015DCEBC5 /* Payment */,
+				ADF5F1181FDDD3C1CE3FC13F /* NonSecrets */,
 			);
 			path = "Case Tests";
 			sourceTree = "<group>";
@@ -336,6 +349,10 @@
 				109A3175B4C98968FFC53095 /* CryptoUtils.h */,
 				ADF5FB263C0C3F9BD6F57037 /* BlobStorageUtils.m */,
 				ADF5FC4BA3EAF704D53570D5 /* BlobStorageUtils.h */,
+				ADF5F3114D20F3CFCE1A17BA /* PaymentUtils.m */,
+				ADF5FF3AD9B649B92478CEF7 /* PaymentUtils.h */,
+				ADF5FE4E35A02E854FF1C94F /* NonSecretsUtils.m */,
+				ADF5FCDBADC2C8FC6B308105 /* NonSecretsUtils.h */,
 			);
 			path = "Test Utils";
 			sourceTree = "<group>";
@@ -362,6 +379,22 @@
 				5D78D0155F3E8AF26D9FBE34 /* libPods-Indy-demoTests.a */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		ADF5FDDD957557F015DCEBC5 /* Payment */ = {
+			isa = PBXGroup;
+			children = (
+				ADF5FA949F9686E3339531DA /* PaymentHighCases.mm */,
+			);
+			path = Payment;
+			sourceTree = "<group>";
+		};
+		ADF5F1181FDDD3C1CE3FC13F /* NonSecrets */ = {
+			isa = PBXGroup;
+			children = (
+				ADF5F5209566924DEB625F31 /* NonSecretsHighCases.mm */,
+			);
+			path = NonSecrets;
 			sourceTree = "<group>";
 		};
 		FFB35C33119165C4896C64A8 /* Pods */ = {
@@ -631,6 +664,10 @@
 				ADF5F67A3F994466D5D58BD8 /* BlobStorageUtils.m in Sources */,
 				ADF5FAA7813FC4B983F82948 /* Interaction.mm in Sources */,
 				ADF5F64401BEE20C3FC0E002 /* LedgerBuildRequest.mm in Sources */,
+				ADF5F3E33D950E83636B32E8 /* PaymentUtils.m in Sources */,
+				ADF5F31684A1388E1F7CB46A /* PaymentHighCases.mm in Sources */,
+				ADF5F84EF0911B211FE4FEC3 /* NonSecretsHighCases.mm in Sources */,
+				ADF5F3C392290ACE150082E2 /* NonSecretsUtils.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

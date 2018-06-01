@@ -1,5 +1,5 @@
 		print_log('\n13. Reading new verkey from wallet\n')
-		verkey_in_wallet = await signus.key_for_local_did(wallet_handle, trust_anchor_did)
+		verkey_in_wallet = await did.key_for_local_did(wallet_handle, trust_anchor_did)
 		print_log('Trust Anchor Verkey in wallet: ', verkey_in_wallet)
 
 		print_log('\n14. Building GET_NYM request to get Trust Anchor verkey\n')

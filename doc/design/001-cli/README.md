@@ -110,7 +110,13 @@ indy> prompt <new_prompt>
 #### Show
 Print content of file:
 ```
-indy> show [file=]<file_path>
+indy> show [<file_path>
+```
+
+#### Load Plugin
+Load plugin in Libindy:
+```
+indy> load-plugin library=<name/path> initializer=<init_function>
 ```
 
 ### Wallets management commands (wallet group)
@@ -121,20 +127,26 @@ indy> wallet <command>
 #### Wallet create
 Create new wallet with specified name and pool:
 ```
-indy> wallet create [name=]<wallet name> pool_name=<pool name> [key=<key>]
+indy> wallet create <wallet name> pool_name=<pool name> key=<key>
 ```
 TODO: Think about custom wallet types support. Now we force default wallet security model.. 
 
 #### Wallet open
 Open the wallet with specified name and make it available for commands that require wallet. If there was opened wallet it will be closed:
 ```
-indy> wallet open [name=]<wallet name> [key=<key>] [rekey=<rekey>]
+indy> wallet open <wallet name> key=<key> [rekey=<rekey>]
 ```
 
 #### Wallet close
 Close the opened wallet
 ```
 indy> wallet close
+```
+
+#### Wallet delete
+Delete the opened wallet
+```
+indy> wallet delete <wallet name> key=<key>
 ```
 
 #### Wallet list
@@ -209,7 +221,7 @@ indy> ledger <subcommand>
 #### NYM transaction
 Send NYM transaction
 ```
-ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>]
+ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>] [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
 ```
 
 #### GET_NYM transaction
@@ -221,13 +233,36 @@ ledger get-nym did=<did-value>
 #### ATTRIB transaction
 Send ATTRIB transaction
 ```
-ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>]
+ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>]  [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
 ```
 
 #### GET_ATTRIB transaction
 Send GET_ATTRIB transaction
 ```
 ledger get-attrib did=<did-value> [raw=<raw-value>] [hash=<hash-value>] [enc=<enc-value>]
+```
+
+#### SCHEMA transaction
+Send SCHEMA transaction
+```
+ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value>  [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
+```
+
+#### GET_SCHEMA transaction
+```
+ledger get-schema did=<did-value> name=<name-value> version=<version-value>
+```
+
+#### CRED_DEF transaction
+Send CRED_DEF transaction
+```
+ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> primary=<primary-value> [revocation=<revocation-value>]  [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
+```
+
+#### GET_CRED_DEF transaction
+Send GET_CRED_DEF transaction
+```
+ledger get-cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> origin=<origin-value>
 ```
 
 #### NODE transaction
@@ -242,39 +277,75 @@ Send POOL_UPGRADE transaction
 ledger pool-upgrade name=<name> version=<version> action=<start or cancel> sha256=<sha256> [timeout=<timeout>] [schedule=<schedule>] [justification=<justification>] [reinstall=<true or false (default false)>] [force=<true or false (default false)>]
 ```
 
-#### SCHEMA transaction
-Send SCHEMA transaction
-```
-ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value>
-```
-
-#### GET_SCHEMA transaction
-```
-ledger get-schema did=<did-value> name=<name-value> version=<version-value>
-```
-
-#### CRED_DEF transaction
-Send CRED_DEF transaction
-```
-ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> primary=<primary-value> [revocation=<revocation-value>]
-```
-
-#### GET_CRED_DEF transaction
-Send GET_CRED_DEF transaction
-```
-ledger get-cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> origin=<origin-value>
-```
-
 #### POOL_CONFIG transaction
 Send POOL_CONFIG transaction
 ```
 ledger pool-config writes=<true or false (default false)> [force=<true or false (default false)>]
 ```
 
+#### POOL_RESTART transaction
+Send POOL_RESTART transaction
+```
+ledger pool-restart action=<start or cancel> [datetime=<datetime>]
+```
+
 #### Custom transaction
 Send custom transaction with user defined json body and optional signature
 ```
 ledger custom [txn=]<txn-json-value> [sign=<true|false>]
+```
+
+#### GET_UTXO transaction
+Send GET_UTXO transaction
+```
+ledger get-utxo payment_address=<payment_address>
+```
+
+#### PAYMENT transaction
+Send PAYMENT transaction
+```
+ledger get-utxo inputs=<utxo-1>,..,<utxo-n> outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
+```
+
+#### GET_FEES transaction
+Send GET_FEES transaction
+```
+ledger get-fees payment_address=<payment_address>
+```
+
+#### MINT transaction
+Prepare MINT transaction
+```
+ledger mint-prepare outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
+```
+
+#### SET_FEES transaction
+Prepare SET_FEES transaction
+```
+ledger set-fees-prepare payment_method=<payment_method> fees=<txn-type-1>:<amount-1>,..,<txn-type-n>:<amount-n>
+```
+
+#### Add multi signature to transaction
+Prepare SET_FEES transaction
+```
+ledger sign-multi txn=<txn_json>
+```
+
+### Payment Address commands
+```
+indy> payment-address <subcommand>
+```
+
+#### Create
+Create the payment address for specified payment method. Requires opened wallet.
+```
+payment-address create payment_method=<payment_method> [seed=<seed-value>]
+```
+
+#### List
+Lists all payment addresses. Requires opened wallet.
+```
+payment-address list
 ```
 
 ## Examples

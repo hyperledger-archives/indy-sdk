@@ -11,6 +11,10 @@ pub mod base58;
 #[path = "xsalsa20/sodium.rs"]
 pub mod xsalsa20;
 
+#[cfg(feature = "chacha20poly1305_ietf_sodium")]
+#[path = "chacha20poly1305_ietf/sodium.rs"]
+pub mod chacha20poly1305_ietf;
+
 #[cfg(feature = "hash_openssl")]
 #[path = "hash/openssl.rs"]
 pub mod hash;
@@ -23,3 +27,7 @@ pub mod verkey_builder;
 #[cfg(feature = "sealedbox_sodium")]
 #[path = "sealedbox/sodium.rs"]
 pub mod sealedbox;
+
+#[cfg(feature = "pwhash_argon2i13_sodium")]
+#[path = "pwhash_argon2i13/sodium.rs"]
+pub mod pwhash_argon2i13;
