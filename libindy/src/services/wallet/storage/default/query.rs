@@ -11,7 +11,20 @@ pub fn wql_to_sql<'a>(class: &'a Vec<u8>, op: &'a Operator, options: Option<&str
     let mut arguments: Vec<&ToSql> = Vec::new();
     arguments.push(class);
     let clause_string = operator_to_sql(op, &mut arguments)?;
-    let mut query_string = "SELECT i.id, i.name, i.value, i.key FROM items as i WHERE i.type = ?".to_string();
+    let mut query_string = "SELECT i.id, i.name, i.value, i.key, i.type FROM items as i WHERE i.type = ?".to_string();
+    if !clause_string.is_empty() {
+        query_string.push_str(" AND ");
+        query_string.push_str(&clause_string);
+    }
+    Ok((query_string, arguments))
+}
+
+
+pub fn wql_to_sql_count<'a>(class: &'a Vec<u8>, op: &'a Operator) -> Result<(String, Vec<&'a ToSql>), WalletQueryError> {
+    let mut arguments: Vec<&ToSql> = Vec::new();
+    arguments.push(class);
+    let clause_string = operator_to_sql(op, &mut arguments)?;
+    let mut query_string = "SELECT count(*) FROM items as i WHERE i.type = ?".to_string();
     if !clause_string.is_empty() {
         query_string.push_str(" AND ");
         query_string.push_str(&clause_string);
