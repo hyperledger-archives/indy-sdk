@@ -295,7 +295,7 @@ impl NonSecretsCommandExecutor {
         }
 
         let search_result = SearchRecords {
-            total_count: None, // TODO: return search.get_total_count()?
+            total_count: search.get_total_count()?,
             records: if records.is_empty() { None } else { Some(records) }
         };
 
