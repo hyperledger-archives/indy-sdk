@@ -250,6 +250,18 @@ impl WalletService {
 
         let credentials = WalletCredentials::from_json(credentials, &config.salt)?;
 
+        // Check if the credentials are valid.
+        {
+            let storage = storage_type.open_storage(name,
+                                                    Some(&config_json),
+                                                    &credentials.storage_credentials)?;
+
+            // try to decrypt metadata. This will check if master key is correct.
+            if ChaCha20Poly1305IETF::decrypt(&storage.get_storage_metadata()?, &credentials.master_key).is_err() {
+                return Err(WalletError::AccessFailed("Invalid master key provided".to_string()));
+            }
+        }
+
         storage_type.delete_storage(name, Some(&config_json), &credentials.storage_credentials)?;
 
         fs::remove_dir_all(_wallet_path(name))?;
@@ -871,6 +883,17 @@ mod tests {
         wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
         wallet_service.delete_wallet("test_wallet", &_credentials()).unwrap();
         wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_delete_wallet_invalid_key() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let res = wallet_service.delete_wallet("test_wallet", r#"{"key":"wrong_key"}"#);
+        assert_match!(Err(WalletError::AccessFailed(_)), res);
+        wallet_service.delete_wallet("test_wallet", &_credentials()).unwrap();
     }
     //
     //    //    #[test]
