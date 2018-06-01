@@ -336,7 +336,6 @@ mod medium_cases {
         }
 
         #[test]
-        #[ignore]
         fn indy_delete_wallet_works_for_wrong_credentials() {
             TestUtils::cleanup_storage();
 

@@ -25,7 +25,7 @@ use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
 use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 
-use self::storage::WalletStorageType;
+use self::storage::{WalletStorage, WalletStorageType};
 use self::storage::default::SQLiteStorageType;
 use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Wallet, Keys};
@@ -226,6 +226,15 @@ impl WalletService {
         Ok(())
     }
 
+    fn decrypt_keys(storage: &WalletStorage, credentials: &WalletCredentials) -> Result<Vec<u8>, WalletError> {
+        let storage_metadata = storage.get_storage_metadata()?;
+
+        let keys_vector = self::encryption::decrypt(&storage_metadata, &credentials.master_key)
+            .map_err(|_| WalletError::AccessFailed("Invalid master key provided".to_string()))?;
+
+        Ok(keys_vector)
+    }
+
     pub fn delete_wallet(&self, name: &str, credentials: &str) -> Result<(), WalletError> {
         trace!("delete_wallet >>> name: {:?}, credentials: {:?}", name, credentials);
 
@@ -241,6 +250,10 @@ impl WalletService {
         let (config_json, config) = _read_config(name)?;
 
         let credentials = WalletCredentials::parse(credentials, &config.salt)?;
+
+        let storage = storage_type.open_storage(name, Some(&config_json), &credentials.storage_credentials)?;
+
+        WalletService::decrypt_keys(storage.as_ref(), &credentials)?;
 
         storage_type.delete_storage(name, Some(&config_json), &credentials.storage_credentials)?;
 
@@ -274,11 +287,7 @@ impl WalletService {
 
         let storage = storage_type.open_storage(name, Some(&config_json), &credentials.storage_credentials)?;
 
-        let storage_metadata = storage.get_storage_metadata()?;
-
-        let keys_vector = self::encryption::decrypt(&storage_metadata, &credentials.master_key)
-            .map_err(|_| WalletError::AccessFailed("Invalid master key provided".to_string()))?;
-
+        let keys_vector = WalletService::decrypt_keys(storage.as_ref(), &credentials)?;
         let keys = Keys::new(keys_vector)?;
 
         let wallet = Wallet::new(name, &descriptor.pool_name, storage, keys);
@@ -1086,7 +1095,7 @@ mod tests {
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
         assert_eq!("type", record.get_type().unwrap());
         assert_eq!("value1", record.get_value().unwrap());
-        assert_eq!(serde_json::from_str::<Tags>(r#"{"1":"some"}"#).unwrap(), record.get_tags().unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(r#"{"1":"some"}"#).unwrap(), record.get_tags().unwrap().clone());
     }
 
     #[test]
@@ -1105,7 +1114,7 @@ mod tests {
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
         assert_eq!("type", record.get_type().unwrap());
         assert_eq!("value1", record.get_value().unwrap());
-        assert_eq!(serde_json::from_str::<Tags>(r#"{"1":"some"}"#).unwrap(), record.get_tags().unwrap());
+        assert_eq!(serde_json::from_str::<Tags>(r#"{"1":"some"}"#).unwrap(), record.get_tags().unwrap().clone());
     }
 
     #[test]
@@ -1471,7 +1480,7 @@ mod tests {
 
         let record = search.fetch_next_record().unwrap().unwrap();
         assert_eq!("value3", record.get_value().unwrap());
-        assert_eq!(HashMap::new(), record.get_tags().unwrap());
+        assert_eq!(HashMap::new(), record.get_tags().unwrap().clone());
 
         assert!(search.fetch_next_record().unwrap().is_none());
     }
@@ -1496,7 +1505,7 @@ mod tests {
 
         let record = search.fetch_next_record().unwrap().unwrap();
         assert_eq!("value3", record.get_value().unwrap());
-        assert_eq!(HashMap::new(), record.get_tags().unwrap());
+        assert_eq!(HashMap::new(), record.get_tags().unwrap().clone());
 
         assert!(search.fetch_next_record().unwrap().is_none());
     }
