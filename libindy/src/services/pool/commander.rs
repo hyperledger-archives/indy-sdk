@@ -18,3 +18,12 @@ impl Commander {
 
     //TODO: push event -- formats of what will come to us?
 }
+
+mod commander_tests {
+    use super::*;
+
+    #[test]
+    pub fn commander_new_works() {
+        Commander::new();
+    }
+}

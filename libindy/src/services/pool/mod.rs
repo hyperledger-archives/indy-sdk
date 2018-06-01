@@ -1,8 +1,8 @@
 mod types;
-mod catchup;
-mod transaction_handler;
-mod state_proof;
-mod pool_worker;
+//mod catchup;
+//mod transaction_handler;
+//mod state_proof;
+//mod pool_worker;
 
 mod pool;
 mod consensus_collector;
@@ -41,8 +41,8 @@ use commands::ledger::LedgerCommand;
 use commands::pool::PoolCommand;
 use errors::pool::PoolError;
 use errors::common::CommonError;
-use self::catchup::CatchupHandler;
-use self::transaction_handler::TransactionHandler;
+//use self::catchup::CatchupHandler;
+//use self::transaction_handler::TransactionHandler;
 use self::types::*;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::crypto::box_::CryptoBox;

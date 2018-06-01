@@ -1,4 +1,5 @@
 use super::consensus_collector::ConsensusCollector;
+use super::consensus_collector;
 use std::thread::JoinHandle;
 use std::thread;
 use services::pool::commander::Commander;
@@ -232,6 +233,8 @@ impl PoolWrapper {
             (PoolWrapper::Active(pool), PoolEvent::Close) => PoolWrapper::Closed(pool.into()),
             (PoolWrapper::Active(pool), PoolEvent::PoolOutdated) => PoolWrapper::Terminated(pool.into()),
             (PoolWrapper::Active(pool), PoolEvent::Refresh) => PoolWrapper::GettingCatchupTarget(pool.into()),
+            (PoolWrapper::Active(pool), PoolEvent::ConsensusReached) => PoolWrapper::Active(pool),
+            (PoolWrapper::Active(pool), PoolEvent::ConsensusFailed) => PoolWrapper::Active(pool),
 
             (PoolWrapper::GettingCatchupTarget(pool), PoolEvent::Close) => PoolWrapper::Closed(pool.into()),
             (PoolWrapper::GettingCatchupTarget(pool), PoolEvent::ConsensusFailed) => PoolWrapper::Terminated(pool.into()),
@@ -256,19 +259,19 @@ impl PoolWrapper {
     }
 }
 
-pub struct Pool <'a>{
+pub struct Pool <'a, T: ConsensusCollector>{
     pool_wrapper: PoolWrapper,
     commander: &'a Commander,
-    consensus_collector: ConsensusCollector,
+    consensus_collector: Option<T>,
     worker: Option<JoinHandle<()>>
 }
 
-impl Pool {
+impl<T: ConsensusCollector> Pool<T> {
     pub fn new(commander: &Commander) -> Self {
         Pool {
             pool_wrapper: PoolWrapper::Initialization(PoolSM::new()),
             commander,
-            consensus_collector: ConsensusCollector::new(),
+            consensus_collector: None,
             worker: None,
         }
     }
@@ -297,10 +300,19 @@ impl Pool {
 
     fn _get_event(&self) -> Option<PoolEvent> {
         let pe = self.commander.get_next_event();
-        self.consensus_collector.get_event(pe)
+        self.consensus_collector.and_then(|cc| cc.process_event(pe.into()).or(pe))
     }
 
     fn _poll(&self) {
         unimplemented!();
+    }
+}
+
+mod pool_tests {
+    use super::*;
+
+    #[test]
+    pub fn pool_new_works() {
+        Pool::new(&Commander::new());
     }
 }
