@@ -1,4 +1,4 @@
-use super::{ErrorCode, IndyHandle};
+use {ErrorCode, IndyHandle};
 
 use std::ffi::CString;
 use std::time::Duration;
@@ -85,14 +85,14 @@ impl Ledger {
         let submitter_did = c_str!(submitter_did);
         let request_json = c_str!(request_json);
 
-        unsafe {
+        ErrorCode::from(unsafe {
             ledger::indy_sign_and_submit_request(command_handle,
                                                  pool_handle,
                                                  wallet_handle,
                                                  submitter_did.as_ptr(),
                                                  request_json.as_ptr(),
                                                  cb)
-        }
+        })
     }
 
     /// Publishes request message to validator pool (no signing, unlike Ledger::sign_and_submit_request).
@@ -152,7 +152,7 @@ impl Ledger {
     fn _submit_request(command_handle: IndyHandle, pool_handle: IndyHandle, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let request_json = c_str!(request_json);
 
-        unsafe { ledger::indy_submit_request(command_handle, pool_handle, request_json.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_submit_request(command_handle, pool_handle, request_json.as_ptr(), cb) })
     }
 
     /// Signs request message.
@@ -219,7 +219,7 @@ impl Ledger {
         let submitter_did = c_str!(submitter_did);
         let request_json = c_str!(request_json);
 
-        unsafe { ledger::indy_sign_request(command_handle, wallet_handle, submitter_did.as_ptr(), request_json.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_sign_request(command_handle, wallet_handle, submitter_did.as_ptr(), request_json.as_ptr(), cb) })
     }
 
     /// Multi signs request message.
@@ -286,7 +286,7 @@ impl Ledger {
         let submitter_did = c_str!(submitter_did);
         let request_json = c_str!(request_json);
 
-        unsafe { ledger::indy_multi_sign_request(command_handle, wallet_handle, submitter_did.as_ptr(), request_json.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_multi_sign_request(command_handle, wallet_handle, submitter_did.as_ptr(), request_json.as_ptr(), cb) })
     }
 
     /// Builds a request to get a DDO.
@@ -341,7 +341,7 @@ impl Ledger {
         let submitter_did = c_str!(submitter_did);
         let target_did = c_str!(target_did);
 
-        unsafe { ledger::indy_build_get_ddo_request(command_handle, submitter_did.as_ptr(), target_did.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_build_get_ddo_request(command_handle, submitter_did.as_ptr(), target_did.as_ptr(), cb) })
     }
 
     /// Builds a NYM request. Request to create a new NYM record for a specific user.
@@ -430,7 +430,7 @@ impl Ledger {
         let data_str = opt_c_str!(data);
         let role_str = opt_c_str!(role);
 
-        unsafe {
+        ErrorCode::from(unsafe {
             ledger::indy_build_nym_request(command_handle,
                                            submitter_did.as_ptr(),
                                            target_did.as_ptr(),
@@ -438,7 +438,7 @@ impl Ledger {
                                            opt_c_ptr!(data, data_str),
                                            opt_c_ptr!(role, role_str),
                                            cb)
-        }
+        })
     }
 
     /// Builds a GET_NYM request. Request to get information about a DID (NYM).
@@ -493,7 +493,7 @@ impl Ledger {
         let submitter_did = c_str!(submitter_did);
         let target_did = c_str!(target_did);
 
-        unsafe { ledger::indy_build_get_nym_request(command_handle, submitter_did.as_ptr(), target_did.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_build_get_nym_request(command_handle, submitter_did.as_ptr(), target_did.as_ptr(), cb) })
     }
 
     /// Builds a GET_TXN request. Request to get any transaction by its seq_no.
@@ -547,7 +547,7 @@ impl Ledger {
     fn _build_get_txn_request(command_handle: IndyHandle, submitter_did: &str, seq_no: i32, cb: Option<ResponseStringCB>) ->  ErrorCode {
         let submitter_did = c_str!(submitter_did);
 
-        unsafe { ledger::indy_build_get_txn_request(command_handle, submitter_did.as_ptr(), seq_no, cb) }
+        ErrorCode::from(unsafe { ledger::indy_build_get_txn_request(command_handle, submitter_did.as_ptr(), seq_no, cb) })
     }
 
     /// Builds an ATTRIB request. Request to add attribute to a NYM record.
@@ -615,7 +615,7 @@ impl Ledger {
         let raw_str = opt_c_str!(raw);
         let enc_str = opt_c_str!(enc);
 
-        unsafe {
+        ErrorCode::from(unsafe {
             ledger::indy_build_attrib_request(command_handle,
                                               submitter_did.as_ptr(),
                                               target_did.as_ptr(),
@@ -623,7 +623,7 @@ impl Ledger {
                                               opt_c_ptr!(raw, raw_str),
                                               opt_c_ptr!(enc, enc_str),
                                               cb)
-        }
+        })
     }
 
     /// Builds a GET_ATTRIB request. Request to get information about an Attribute for the specified DID.
@@ -691,7 +691,7 @@ impl Ledger {
         let hash_str = opt_c_str!(hash);
         let enc_str = opt_c_str!(enc);
 
-        unsafe {
+        ErrorCode::from(unsafe {
             ledger::indy_build_get_attrib_request(command_handle,
                                                   submitter_did.as_ptr(),
                                                   target_did.as_ptr(),
@@ -699,7 +699,7 @@ impl Ledger {
                                                   opt_c_ptr!(hash, hash_str),
                                                   opt_c_ptr!(enc, enc_str),
                                                   cb)
-        }
+        })
     }
 
     /// Builds a SCHEMA request. Request to add Credential's schema.
@@ -775,7 +775,7 @@ impl Ledger {
         let submitter_did = c_str!(submitter_did);
         let data = c_str!(data);
 
-        unsafe { ledger::indy_build_schema_request(command_handle, submitter_did.as_ptr(), data.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_build_schema_request(command_handle, submitter_did.as_ptr(), data.as_ptr(), cb) })
     }
 
     /// Builds a GET_SCHEMA request. Request to get Credential's Schema.
@@ -830,7 +830,7 @@ impl Ledger {
         let submitter_did = c_str!(submitter_did);
         let id = c_str!(id);
 
-        unsafe { ledger::indy_build_get_schema_request(command_handle, submitter_did.as_ptr(), id.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_build_get_schema_request(command_handle, submitter_did.as_ptr(), id.as_ptr(), cb) })
     }
 
     /// Parse a GET_SCHEMA response to get Schema in the format compatible with Anoncreds API.
@@ -895,7 +895,7 @@ impl Ledger {
     fn _parse_get_schema_response(command_handle: IndyHandle, get_schema_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let get_schema_response = c_str!(get_schema_response);
 
-        unsafe { ledger::indy_parse_get_schema_response(command_handle, get_schema_response.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_parse_get_schema_response(command_handle, get_schema_response.as_ptr(), cb) })
     }
 
     /// Builds an CRED_DEF request. Request to add a Credential Definition (in particular, public key),
@@ -986,7 +986,7 @@ impl Ledger {
         let submitter_did = c_str!(submitter_did);
         let data = c_str!(data);
 
-        unsafe { ledger::indy_build_cred_def_request(command_handle, submitter_did.as_ptr(), data.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_build_cred_def_request(command_handle, submitter_did.as_ptr(), data.as_ptr(), cb) })
     }
 
     /// Builds a GET_CRED_DEF request. Request to get a Credential Definition (in particular, public key),
@@ -1044,7 +1044,7 @@ impl Ledger {
         let submitter_did = c_str!(submitter_did);
         let id = c_str!(id);
 
-        unsafe { ledger::indy_build_get_cred_def_request(command_handle, submitter_did.as_ptr(), id.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_build_get_cred_def_request(command_handle, submitter_did.as_ptr(), id.as_ptr(), cb) })
     }
 
     /// Parse a GET_CRED_DEF response to get Credential Definition in the format compatible with Anoncreds API.
@@ -1117,7 +1117,7 @@ impl Ledger {
     fn _parse_get_cred_def_response(command_handle: IndyHandle, get_cred_def_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let get_cred_def_response = c_str!(get_cred_def_response);
 
-        unsafe { ledger::indy_parse_get_cred_def_response(command_handle, get_cred_def_response.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_parse_get_cred_def_response(command_handle, get_cred_def_response.as_ptr(), cb) })
     }
 
     /// Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
@@ -1200,7 +1200,7 @@ impl Ledger {
         let target_did = c_str!(target_did);
         let data = c_str!(data);
 
-        unsafe { ledger::indy_build_node_request(command_handle, submitter_did.as_ptr(), target_did.as_ptr(), data.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_build_node_request(command_handle, submitter_did.as_ptr(), target_did.as_ptr(), data.as_ptr(), cb) })
     }
 
     /// Builds a POOL_CONFIG request. Request to change Pool's configuration.
@@ -1263,7 +1263,7 @@ impl Ledger {
     fn _build_pool_config_request(command_handle: IndyHandle, submitter_did: &str, writes: bool, force: bool, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
 
-        unsafe { ledger::indy_build_pool_config_request(command_handle, submitter_did.as_ptr(), writes, force, cb) }
+        ErrorCode::from(unsafe { ledger::indy_build_pool_config_request(command_handle, submitter_did.as_ptr(), writes, force, cb) })
     }
 
     /// Builds a POOL_RESTART request.
@@ -1322,13 +1322,13 @@ impl Ledger {
         let action = c_str!(action);
         let datetime = opt_c_str!(datetime);
 
-        unsafe {
+        ErrorCode::from(unsafe {
             ledger::indy_build_pool_restart_request(command_handle,
                                                     submitter_did.as_ptr(),
                                                     action.as_ptr(),
                                                     datetime.as_ptr(),
                                                     cb)
-        }
+        })
     }
 
     /// Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
@@ -1463,7 +1463,7 @@ impl Ledger {
         let schedule_str = opt_c_str!(schedule);
         let justification_str = opt_c_str!(justification);
 
-        unsafe {
+        ErrorCode::from(unsafe {
             ledger::indy_build_pool_upgrade_request(command_handle,
                                                     submitter_did.as_ptr(),
                                                     name.as_ptr(),
@@ -1476,7 +1476,7 @@ impl Ledger {
                                                     reinstall,
                                                     force,
                                                     cb)
-        }
+        })
     }
 
     /// Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry
@@ -1576,7 +1576,7 @@ impl Ledger {
         let submitter_did = c_str!(submitter_did);
         let data = c_str!(data);
 
-        unsafe { ledger::indy_build_revoc_reg_def_request(command_handle, submitter_did.as_ptr(), data.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_build_revoc_reg_def_request(command_handle, submitter_did.as_ptr(), data.as_ptr(), cb) })
     }
 
     /// Builds a GET_REVOC_REG_DEF request. Request to get a revocation registry definition,
@@ -1634,9 +1634,7 @@ impl Ledger {
         let submitter_did = c_str!(submitter_did);
         let id = c_str!(id);
 
-        unsafe {
-            ledger::indy_build_get_revoc_reg_def_request(command_handle, submitter_did.as_ptr(), id.as_ptr(), cb)
-        }
+        ErrorCode::from(unsafe { ledger::indy_build_get_revoc_reg_def_request(command_handle, submitter_did.as_ptr(), id.as_ptr(), cb) })
     }
 
     /// Parse a GET_REVOC_REG_DEF response to get Revocation Registry Definition in the format
@@ -1718,7 +1716,7 @@ impl Ledger {
     fn _parse_get_revoc_reg_def_response(command_handle: IndyHandle, get_revoc_reg_def_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let get_revoc_reg_def_response = c_str!(get_revoc_reg_def_response);
 
-        unsafe { ledger::indy_parse_get_revoc_reg_def_response(command_handle, get_revoc_reg_def_response.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_def_response(command_handle, get_revoc_reg_def_response.as_ptr(), cb) })
     }
 
     /// Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
@@ -1817,7 +1815,7 @@ impl Ledger {
         let rev_def_type = c_str!(rev_def_type);
         let value = c_str!(value);
 
-        unsafe { ledger::indy_build_revoc_reg_entry_request(command_handle, submitter_did.as_ptr(), revoc_reg_def_id.as_ptr(), rev_def_type.as_ptr(), value.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_build_revoc_reg_entry_request(command_handle, submitter_did.as_ptr(), revoc_reg_def_id.as_ptr(), rev_def_type.as_ptr(), value.as_ptr(), cb) })
     }
 
     /// Builds a GET_REVOC_REG request. Request to get the accumulated state of the Revocation Registry
@@ -1878,7 +1876,7 @@ impl Ledger {
         let submitter_did = c_str!(submitter_did);
         let revoc_reg_def_id = c_str!(revoc_reg_def_id);
 
-        unsafe { ledger::indy_build_get_revoc_reg_request(command_handle, submitter_did.as_ptr(), revoc_reg_def_id.as_ptr(), timestamp, cb) }
+        ErrorCode::from(unsafe { ledger::indy_build_get_revoc_reg_request(command_handle, submitter_did.as_ptr(), revoc_reg_def_id.as_ptr(), timestamp, cb) })
     }
 
     /// Parse a GET_REVOC_REG response to get Revocation Registry in the format compatible with Anoncreds API.
@@ -1941,7 +1939,7 @@ impl Ledger {
     fn _parse_get_revoc_reg_response(command_handle: IndyHandle, get_revoc_reg_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
         let get_revoc_reg_response = c_str!(get_revoc_reg_response);
 
-        unsafe { ledger::indy_parse_get_revoc_reg_response(command_handle,get_revoc_reg_response.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_response(command_handle,get_revoc_reg_response.as_ptr(), cb) })
     }
 
     /// Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
@@ -2008,7 +2006,7 @@ impl Ledger {
         let submitter_did = c_str!(submitter_did);
         let revoc_reg_def_id = c_str!(revoc_reg_def_id);
 
-        unsafe { ledger::indy_build_get_revoc_reg_delta_request(command_handle, submitter_did.as_ptr(), revoc_reg_def_id.as_ptr(), from, to, cb) }
+        ErrorCode::from(unsafe { ledger::indy_build_get_revoc_reg_delta_request(command_handle, submitter_did.as_ptr(), revoc_reg_def_id.as_ptr(), from, to, cb) })
     }
 
     /// Parse a GET_REVOC_REG_DELTA response to get Revocation Registry Delta in the format compatible with Anoncreds API.
@@ -2077,7 +2075,7 @@ impl Ledger {
     fn _parse_get_revoc_reg_delta_response(command_handle: IndyHandle, get_revoc_reg_delta_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
         let get_revoc_reg_delta_response = c_str!(get_revoc_reg_delta_response);
 
-        unsafe { ledger::indy_parse_get_revoc_reg_delta_response(command_handle,get_revoc_reg_delta_response.as_ptr(), cb) }
+        ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_delta_response(command_handle,get_revoc_reg_delta_response.as_ptr(), cb) })
     }
 }
 

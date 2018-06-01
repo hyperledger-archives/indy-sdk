@@ -25,7 +25,7 @@ fn main() {
             if re.is_match(&target) || env::var("LIBINDY_STATIC").is_ok(){
                 println!("cargo:rustc-link-lib=static=indy");
             } else {
-                println!("cargo:rustc-link-lib=indy");
+                println!("cargo:rustc-link-lib=dylib=indy");
             }
         },
         Err(..) => {
@@ -39,6 +39,12 @@ fn main() {
                 println!("cargo:rustc-link-search=native=/usr/local/lib");
             } else if target.contains("-linux-") {
                 println!("cargo:rustc-link-search=native=/usr/lib");
+            } else if target.contains("-windows-") {
+                println!("cargo:rustc-link-lib=dylib=ssleay32");
+                println!("cargo:rustc-link-lib=dylib=zmq");
+                println!("cargo:rustc-link-lib=dylib=sodium");
+                let prebuilt_dir = env::var("INDY_PREBUILT_DEPS_DIR").unwrap();
+                println!("cargo:rustc-link-search=native={}\\lib", prebuilt_dir);
             }
         }
     };

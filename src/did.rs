@@ -1,4 +1,4 @@
-use super::{ErrorCode, IndyHandle};
+use {ErrorCode, IndyHandle};
 
 use std::ffi::CString;
 use std::time::Duration;
@@ -118,7 +118,7 @@ impl Did {
     fn _new(command_handle: IndyHandle, wallet_handle: IndyHandle, did_json: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let did_json = c_str!(did_json);
 
-        unsafe { did::indy_create_and_store_my_did(command_handle, wallet_handle, did_json.as_ptr(), cb) }
+        ErrorCode::from(unsafe { did::indy_create_and_store_my_did(command_handle, wallet_handle, did_json.as_ptr(), cb) })
     }
 
     /// Generated temporary keys (signing and encryption keys) for an existing
@@ -202,7 +202,7 @@ impl Did {
         let tgt_did = c_str!(tgt_did);
         let identity_json = c_str!(identity_json);
 
-        unsafe { did::indy_replace_keys_start(command_handle, wallet_handle, tgt_did.as_ptr(), identity_json.as_ptr(), cb) }
+        ErrorCode::from(unsafe { did::indy_replace_keys_start(command_handle, wallet_handle, tgt_did.as_ptr(), identity_json.as_ptr(), cb) })
     }
 
     /// Apply temporary keys as main for an existing DID (owned by the caller of the library).
@@ -250,7 +250,7 @@ impl Did {
     fn _replace_keys_apply(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let tgt_did = c_str!(tgt_did);
 
-        unsafe { did::indy_replace_keys_apply(command_handle, wallet_handle, tgt_did.as_ptr(), cb) }
+        ErrorCode::from(unsafe { did::indy_replace_keys_apply(command_handle, wallet_handle, tgt_did.as_ptr(), cb) })
     }
 
     /// Saves their DID for a pairwise connection in a secured Wallet,
@@ -319,7 +319,7 @@ impl Did {
     fn _store_their_did(command_handle: IndyHandle, wallet_handle: IndyHandle, identity_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let identity_json = c_str!(identity_json);
 
-        unsafe { did::indy_store_their_did(command_handle, wallet_handle, identity_json.as_ptr(), cb) }
+        ErrorCode::from(unsafe { did::indy_store_their_did(command_handle, wallet_handle, identity_json.as_ptr(), cb) })
     }
 
     /// Returns ver key (key id) for the given DID.
@@ -409,7 +409,7 @@ impl Did {
     fn _get_ver_key(command_handle: IndyHandle, pool_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let did = c_str!(did);
 
-        unsafe { did::indy_key_for_did(command_handle, pool_handle, wallet_handle, did.as_ptr(), cb) }
+        ErrorCode::from(unsafe { did::indy_key_for_did(command_handle, pool_handle, wallet_handle, did.as_ptr(), cb) })
     }
 
     /// Returns ver key (key id) for the given DID.
@@ -490,7 +490,7 @@ impl Did {
     fn _get_ver_key_local(command_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let did = c_str!(did);
 
-        unsafe { did::indy_key_for_local_did(command_handle, wallet_handle, did.as_ptr(), cb) }
+        ErrorCode::from(unsafe { did::indy_key_for_local_did(command_handle, wallet_handle, did.as_ptr(), cb) })
     }
 
     /// Set/replaces endpoint information for the given DID.
@@ -546,7 +546,7 @@ impl Did {
         let address = c_str!(address);
         let transport_key = c_str!(transport_key);
 
-        unsafe { did::indy_set_endpoint_for_did(command_handle, wallet_handle, did.as_ptr(), address.as_ptr(), transport_key.as_ptr(), cb) }
+        ErrorCode::from(unsafe { did::indy_set_endpoint_for_did(command_handle, wallet_handle, did.as_ptr(), address.as_ptr(), transport_key.as_ptr(), cb) })
     }
 
     /// Returns endpoint information for the given DID.
@@ -602,7 +602,7 @@ impl Did {
     fn _get_endpoint(command_handle: IndyHandle, wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let did = c_str!(did);
 
-        unsafe { did::indy_get_endpoint_for_did(command_handle, wallet_handle, pool_handle, did.as_ptr(), cb) }
+        ErrorCode::from(unsafe { did::indy_get_endpoint_for_did(command_handle, wallet_handle, pool_handle, did.as_ptr(), cb) })
     }
 
     /// Saves/replaces the meta information for the giving DID in the wallet.
@@ -654,7 +654,7 @@ impl Did {
         let tgt_did = c_str!(tgt_did);
         let metadata = c_str!(metadata);
 
-        unsafe { did::indy_set_did_metadata(command_handle, wallet_handle, tgt_did.as_ptr(), metadata.as_ptr(), cb) }
+        ErrorCode::from(unsafe { did::indy_set_did_metadata(command_handle, wallet_handle, tgt_did.as_ptr(), metadata.as_ptr(), cb) })
     }
 
     /// Retrieves the meta information for the giving DID in the wallet.
@@ -708,7 +708,7 @@ impl Did {
     fn _get_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let tgt_did = c_str!(tgt_did);
 
-        unsafe { did::indy_get_did_metadata(command_handle, wallet_handle, tgt_did.as_ptr(), cb) }
+        ErrorCode::from(unsafe { did::indy_get_did_metadata(command_handle, wallet_handle, tgt_did.as_ptr(), cb) })
     }
 
     /// Retrieves the information about the giving DID in the wallet.
@@ -770,7 +770,7 @@ impl Did {
     fn _get_my_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, my_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let my_did = c_str!(my_did);
 
-        unsafe { did::indy_get_my_did_with_meta(command_handle, wallet_handle, my_did.as_ptr(), cb) }
+        ErrorCode::from(unsafe { did::indy_get_my_did_with_meta(command_handle, wallet_handle, my_did.as_ptr(), cb) })
     }
 
     /// Retrieves the information about all DIDs stored in the wallet.
@@ -827,7 +827,7 @@ impl Did {
     }
     
     fn _list_with_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
-        unsafe { did::indy_list_my_dids_with_meta(command_handle, wallet_handle, cb) }
+        ErrorCode::from(unsafe { did::indy_list_my_dids_with_meta(command_handle, wallet_handle, cb) })
     }
 
     /// Retrieves abbreviated verkey if it is possible otherwise return full verkey.
@@ -882,6 +882,6 @@ impl Did {
         let tgt_did = c_str!(tgt_did);
         let verkey = c_str!(verkey);
 
-        unsafe { did::indy_abbreviate_verkey(command_handle, tgt_did.as_ptr(), verkey.as_ptr(), cb) }
+        ErrorCode::from(unsafe { did::indy_abbreviate_verkey(command_handle, tgt_did.as_ptr(), verkey.as_ptr(), cb) })
     }
 }
