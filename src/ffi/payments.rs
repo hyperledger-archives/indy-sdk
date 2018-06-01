@@ -5,8 +5,8 @@ use {ErrorCode, IndyHandle};
 use std::os::raw::c_char;
 
 pub type PaymentResponseApiCB = extern fn(xcommand_handle: IndyHandle,
-                                             err: ErrorCode,
-                                             json: *const c_char) -> ErrorCode;
+                                         err: ErrorCode,
+                                         json: *const c_char) -> ErrorCode;
 
 pub type CreatePaymentAddressCB = extern fn(command_handle: IndyHandle,
                                                   wallet_handle: IndyHandle,

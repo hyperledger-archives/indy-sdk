@@ -10,11 +10,11 @@ mod tests {
     fn create_delete_wallet_works() {
         let wallet_name = "create_delete_wallet_works";
         match Wallet::create("pool1", wallet_name, None, None, None) {
-            Ok(..) => assert!(Wallet::delete(wallet_name).is_ok()),
+            Ok(..) => assert!(Wallet::delete(wallet_name, None).is_ok()),
             Err(e) => match e {
                 ErrorCode::WalletAlreadyExistsError => {
                     //This is ok, just delete
-                    assert!(Wallet::delete(wallet_name).is_ok())
+                    assert!(Wallet::delete(wallet_name, None).is_ok())
                 }
                 _ => panic!("{:#?}", e)
             }
@@ -28,10 +28,10 @@ mod tests {
             match Wallet::open(wallet_name, None, None) {
                 Ok(handle) => {
                     Wallet::close(handle).unwrap();
-                    Wallet::delete(wallet_name).unwrap();
+                    Wallet::delete(wallet_name, None).unwrap();
                 },
                 Err(e) => {
-                    Wallet::delete(wallet_name).unwrap();
+                    Wallet::delete(wallet_name, None).unwrap();
                     panic!("{:#?}", e);
                 }
             }
