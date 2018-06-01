@@ -20,7 +20,6 @@ impl EnvironmentUtils {
             fs::create_dir_all(&android_dir).unwrap();
             path = PathBuf::from(android_dir);
         }
-        debug!("indy homedir >> {:?}",path);
         path
     }
 
