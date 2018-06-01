@@ -44,7 +44,7 @@ describe('A Connection object with ', function () {
 
   // getTokenInfo tests
   it('can get token info', async () => {
-    const info = await Wallet.getTokenInfo(0)
+    const info = await Wallet.getTokenInfo()
     assert(info)
   })
 
