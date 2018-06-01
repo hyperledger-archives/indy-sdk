@@ -246,7 +246,7 @@ impl WalletService {
         let config_json = WalletService::read_config(name)?;
 
         let config = serde_json::from_str::<WalletConfig>(&config_json)
-            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize Storage Config")))?;
+            .map_err(|err| CommonError::InvalidState("Cannot deserialize Storage Config".to_string()))?;
 
         let credentials = WalletCredentials::from_json(credentials, &config.salt)?;
 
@@ -282,7 +282,7 @@ impl WalletService {
 
         let config_json = WalletService::read_config(name)?;
         let config = serde_json::from_str::<WalletConfig>(&config_json)
-            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize Storage Config")))?;
+            .map_err(|err| CommonError::InvalidState("Cannot deserialize Storage Config".to_string()))?;
 
         let credentials = WalletCredentials::from_json(credentials, &config.salt)?;
         let storage = storage_type.open_storage(name,

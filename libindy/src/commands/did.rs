@@ -216,7 +216,7 @@ impl DidCommandExecutor {
 
         if let Some(ref did) = my_did_info.did.as_ref() {
             if self.wallet_service.record_exists::<Did>(wallet_handle, did)? {
-                return Err(IndyError::DidError(DidError::AlreadyExistsError(format!("Did already exists"))));
+                return Err(IndyError::DidError(DidError::AlreadyExistsError("Did already exists".to_string())));
             };
         }
 
@@ -558,7 +558,7 @@ impl DidCommandExecutor {
             GetNymReplyResult::GetNymReplyResultV0(res) => {
                 let gen_nym_result_data = GetNymResultDataV0::from_json(&res.data)
                     .map_err(map_err_trace!())
-                    .map_err(|_| CommonError::InvalidState(format!("Invalid GetNymResultData json")))?;
+                    .map_err(|_| CommonError::InvalidState("Invalid GetNymResultData json".to_string()))?;
 
                 TheirDidInfo::new(gen_nym_result_data.dest, gen_nym_result_data.verkey)
             },
