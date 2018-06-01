@@ -1,4 +1,4 @@
-use super::{ErrorCode, IndyHandle};
+use {ErrorCode, IndyHandle};
 
 use std::ffi::CString;
 use std::time::Duration;
@@ -183,7 +183,7 @@ impl Payment {
                  cb: Option<ResponseEmptyCB>) -> ErrorCode {
 
         let payment_method = c_str!(payment_method);
-        unsafe {
+        ErrorCode::from(unsafe {
             payments::indy_register_payment_method(command_handle,
                                                    payment_method.as_ptr(),
                                                    Some(create_payment_address),
@@ -198,7 +198,7 @@ impl Payment {
                                                    Some(build_get_txn_fees_req),
                                                    Some(parse_get_txn_fees_response),
                                                    cb)
-        }
+        })
     }
 
     /// Create the payment address for specified payment method
@@ -295,7 +295,7 @@ impl Payment {
         let payment_method = c_str!(payment_method);
         let config = c_str!(config);
 
-        unsafe { payments::indy_create_payment_address(command_handle, wallet_handle, payment_method.as_ptr(), config.as_ptr(), cb) }
+        ErrorCode::from(unsafe { payments::indy_create_payment_address(command_handle, wallet_handle, payment_method.as_ptr(), config.as_ptr(), cb) })
     }
 
     /// Lists all payment addresses that are stored in the wallet
@@ -344,9 +344,7 @@ impl Payment {
     }
 
     fn _list_payment_addresses(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
-        unsafe {
-            payments::indy_list_payment_addresses(command_handle, wallet_handle, cb)
-        }
+        ErrorCode::from(unsafe { payments::indy_list_payment_addresses(command_handle, wallet_handle, cb) })
     }
 
     /// Modifies Indy request by adding information how to pay fees for this transaction
@@ -483,7 +481,7 @@ impl Payment {
         let inputs_json = c_str!(inputs_json);
         let outputs_json = c_str!(outputs_json);
 
-        unsafe {
+        ErrorCode::from(unsafe {
             payments::indy_add_request_fees(command_handle,
                                             wallet_handle,
                                             submitter_did.as_ptr(),
@@ -491,7 +489,7 @@ impl Payment {
                                             inputs_json.as_ptr(),
                                             outputs_json.as_ptr(),
                                             cb)
-        }
+        })
     }
 
     /// Parses response for Indy request with fees.
@@ -564,7 +562,7 @@ impl Payment {
         let payment_method = c_str!(payment_method);
         let resp_json = c_str!(resp_json);
 
-        unsafe { payments::indy_parse_response_with_fees(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) }
+        ErrorCode::from(unsafe { payments::indy_parse_response_with_fees(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) })
     }
 
     /// Builds Indy request for getting UTXO list for payment address
@@ -628,7 +626,7 @@ impl Payment {
         let submitter_did = c_str!(submitter_did);
         let payment_address = c_str!(payment_address);
 
-        unsafe { payments::indy_build_get_utxo_request(command_handle, wallet_handle, submitter_did.as_ptr(), payment_address.as_ptr(), cb) }
+        ErrorCode::from(unsafe { payments::indy_build_get_utxo_request(command_handle, wallet_handle, submitter_did.as_ptr(), payment_address.as_ptr(), cb) })
     }
 
     /// Parses response for Indy request for getting UTXO list.
@@ -698,7 +696,7 @@ impl Payment {
         let payment_method = c_str!(payment_method);
         let resp_json = c_str!(resp_json);
 
-        unsafe { payments::indy_parse_get_utxo_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) }
+        ErrorCode::from(unsafe { payments::indy_parse_get_utxo_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) })
     }
 
     /// Builds Indy request for doing tokens payment
@@ -801,14 +799,14 @@ impl Payment {
         let inputs = c_str!(inputs);
         let outputs = c_str!(outputs);
 
-        unsafe {
+        ErrorCode::from(unsafe {
             payments::indy_build_payment_req(command_handle,
                                              wallet_handle,
                                              submitter_did.as_ptr(),
                                              inputs.as_ptr(),
                                              outputs.as_ptr(),
                                              cb)
-        }
+        })
     }
 
     /// Parses response for Indy request for payment txn.
@@ -879,7 +877,7 @@ impl Payment {
         let payment_method = c_str!(payment_method);
         let resp_json = c_str!(resp_json);
 
-        unsafe { payments::indy_parse_payment_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) }
+        ErrorCode::from(unsafe { payments::indy_parse_payment_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) })
 
     }
 
@@ -958,7 +956,7 @@ impl Payment {
         let submitter_did = c_str!(submitter_did);
         let outputs_json = c_str!(outputs_json);
 
-        unsafe { payments::indy_build_mint_req(command_handle, wallet_handle, submitter_did.as_ptr(), outputs_json.as_ptr(), cb) }
+        ErrorCode::from(unsafe { payments::indy_build_mint_req(command_handle, wallet_handle, submitter_did.as_ptr(), outputs_json.as_ptr(), cb) })
     }
 
     /// Builds Indy request for setting fees for transactions in the ledger
@@ -1035,7 +1033,7 @@ impl Payment {
         let payment_method = c_str!(payment_method);
         let fees_json = c_str!(fees_json);
 
-        unsafe { payments::indy_build_set_txn_fees_req(command_handle, wallet_handle, submitter_did.as_ptr(), payment_method.as_ptr(), fees_json.as_ptr(), cb) }
+        ErrorCode::from(unsafe { payments::indy_build_set_txn_fees_req(command_handle, wallet_handle, submitter_did.as_ptr(), payment_method.as_ptr(), fees_json.as_ptr(), cb) })
     }
 
     /// Builds Indy get request for getting fees for transactions in the ledger
@@ -1095,7 +1093,7 @@ impl Payment {
         let submitter_did = c_str!(submitter_did);
         let payment_method = c_str!(payment_method);
 
-        unsafe { payments::indy_build_get_txn_fees_req(command_handle, wallet_handle, submitter_did.as_ptr(), payment_method.as_ptr(), cb) }
+        ErrorCode::from(unsafe { payments::indy_build_get_txn_fees_req(command_handle, wallet_handle, submitter_did.as_ptr(), payment_method.as_ptr(), cb) })
     }
 
     /// Parses response for Indy request for getting fees
@@ -1163,6 +1161,6 @@ impl Payment {
         let payment_method = c_str!(payment_method);
         let resp_json = c_str!(resp_json);
 
-        unsafe { payments::indy_parse_get_txn_fees_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) }
+        ErrorCode::from(unsafe { payments::indy_parse_get_txn_fees_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) })
     }
 }
