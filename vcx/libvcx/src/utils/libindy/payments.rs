@@ -3,6 +3,7 @@ extern crate serde_json;
 
 use utils::libindy::wallet::get_wallet_handle;
 use utils::constants::{ SUBMIT_SCHEMA_RESPONSE };
+use utils::libindy::error_codes::map_rust_indy_sdk_error_code;
 use utils::libindy::ledger::libindy_sign_and_submit_request;
 use utils::error;
 use indy::payments::Payment;
@@ -161,25 +162,28 @@ pub fn get_ledger_fees() -> Result<String, u32> {
 pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(String, String), u32> {
     if settings::test_indy_mode_enabled() { return Ok((PARSED_TXN_PAYMENT_RESPONSE.to_string(), SUBMIT_SCHEMA_RESPONSE.to_string())); }
 
-    let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-
     let txn_price = get_txn_price(txn_type)?;
 
     let (refund, inputs) = inputs(txn_price)?;
 
     let output = outputs(refund, None, None)?;
 
+    _submit_fees_request(req, &inputs, &output)
+}
+
+fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(String, String), u32> {
+    let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+
     let (response, payment_method) = match Payment::add_request_fees(get_wallet_handle(),
-                                                   &did,
-                                                   req,
-                                                   &inputs,
-                                                   &output) {
+                                                                     &did,
+                                                                     req,
+                                                                     &inputs,
+                                                                     &outputs) {
         Ok((req, payment_method)) => (libindy_sign_and_submit_request(&did, &req)?, payment_method),
         Err(x) => return Err(x as u32),
     };
 
-    // Todo: Handle libindy error
-    let parsed_response = Payment::parse_response_with_fees(NULL_PAYMENT, &response).map_err(|err| err as u32)?;
+    let parsed_response = Payment::parse_response_with_fees(&payment_method, &response).map_err(map_rust_indy_sdk_error_code)?;
     Ok((parsed_response, response))
 }
 
@@ -225,8 +229,8 @@ pub fn inputs(cost: u64) -> Result<(u64, String), u32> {
 pub fn outputs(remainder: u64, payee_address: Option<String>, payee_amount: Option<u64>) -> Result<String, u32> {
     // In the future we might provide a way for users to specify multiple output address for their remainder tokens
     // As of now, we only handle one output address which we create
-    //Todo: create a struct for outputs?
 
+    if remainder == 0 { return Ok("[]".to_string()); }
     let mut outputs = Vec::new();
 
     outputs.push(json!({ "paymentAddress": create_address()?, "amount": remainder, "extra": null }));
@@ -247,10 +251,11 @@ pub mod tests {
     use super::*;
     use settings;
 
-    pub fn set_ledger_fees() -> Result<(), u32> {
+    pub fn set_ledger_fees(fees: Option<String>) -> Result<(), u32> {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let fees = fees.unwrap_or(FEES.to_string());
 
-        match Payment::build_set_txn_fees_req(get_wallet_handle() as i32, &did, NULL_PAYMENT, FEES) {
+        match Payment::build_set_txn_fees_req(get_wallet_handle() as i32, &did, NULL_PAYMENT, &fees) {
             Ok(txn) => match libindy_sign_and_submit_request(&did, &txn) {
                 Ok(_) => Ok(()),
                 Err(x) => Err(x),
@@ -279,7 +284,7 @@ pub mod tests {
 
     pub fn token_setup() {
         init_payments().unwrap();
-        set_ledger_fees().unwrap();
+        set_ledger_fees(None).unwrap();
         mint_tokens().unwrap();
     }
 
@@ -346,7 +351,7 @@ pub mod tests {
         let name = "test_get_ledger_fees_real";
         ::utils::devsetup::tests::setup_dev_env(name);
         init_payments().unwrap();
-        set_ledger_fees().unwrap();
+        set_ledger_fees(None).unwrap();
         let fees = get_ledger_fees().unwrap();
         assert!(fees.contains(r#""101":2"#));
         assert!(fees.contains(r#""1":1"#));
@@ -386,8 +391,14 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        let cost = 6;
-        let expected_output = r#"[{"amount":0,"extra":null,"paymentAddress":"pay:null:J81AxU9hVHYFtJc"}]"#;
+        let mut cost = 5;
+        let mut expected_output = r#"[{"amount":1,"extra":null,"paymentAddress":"pay:null:J81AxU9hVHYFtJc"}]"#;
+        let (remainder, _) = inputs(cost).unwrap();
+        assert_eq!(&outputs(remainder, None, None).unwrap(), expected_output);
+
+        // No remainder so don't create an address in outputs
+        cost = 6;
+        expected_output = r#"[]"#;
         let (remainder, _) = inputs(cost).unwrap();
         assert_eq!(&outputs(remainder, None, None).unwrap(), expected_output);
     }
@@ -448,7 +459,7 @@ pub mod tests {
 
     #[cfg(feature = "nullpay")]
     #[test]
-    fn test_pay_for_txn_fails_with_insufficient_tokens() {
+    fn test_pay_for_txn_fails_with_insufficient_tokens_in_wallet() {
         let name = "test_pay_for_txn_real";
         ::utils::devsetup::tests::setup_dev_env(name);
         token_setup();
@@ -461,4 +472,53 @@ pub mod tests {
         ::utils::devsetup::tests::cleanup_dev_env(name);
         assert_eq!(rc, Err(error::INSUFFICIENT_TOKEN_AMOUNT.code_num));
     }
+
+    #[cfg(feature = "nullpay")]
+    #[test]
+    fn test_submit_fees_with_insufficient_tokens_on_ledger() {
+        let name = "test_submit_fees_with_insufficient_tokens_on_ledger";
+        ::utils::devsetup::tests::setup_dev_env(name);
+        token_setup();
+
+        let req = ::utils::constants::SCHEMA_REQ.to_string();
+        let (remainder, inputs) = inputs(40).unwrap();
+        let output = outputs(remainder, None, None).unwrap();
+        let start_wallet: WalletInfo = serde_json::from_str(&get_wallet_token_info().unwrap()).unwrap();
+
+        _submit_fees_request(&req, &inputs, &output).unwrap();
+
+        let end_wallet: WalletInfo = serde_json::from_str(&get_wallet_token_info().unwrap()).unwrap();
+        assert_eq!(start_wallet.balance - 40, end_wallet.balance);
+
+        let rc = _submit_fees_request(&req, &inputs, &output);
+
+        ::utils::devsetup::tests::cleanup_dev_env(name);
+        assert_eq!(rc, Err(error::INSUFFICIENT_TOKEN_AMOUNT.code_num));
+    }
+
+    #[cfg(feature = "nullpay")]
+    #[test]
+    fn test_pay_for_txn_with_empty_outputs_success() {
+        let name = "test_pay_for_txn_with_empty_outputs_success";
+        ::utils::devsetup::tests::setup_dev_env(name);
+        token_setup();
+
+        let req = ::utils::constants::SCHEMA_REQ.to_string();
+
+        let (remainder, inputs) = inputs(45).unwrap();
+        assert_eq!(remainder, 0);
+
+        let output = outputs(remainder, None, None).unwrap();
+        assert_eq!(output, "[]");
+
+        let start_wallet: WalletInfo = serde_json::from_str(&get_wallet_token_info().unwrap()).unwrap();
+        let rc = _submit_fees_request(&req, &inputs, &output);
+        let end_wallet: WalletInfo = serde_json::from_str(&get_wallet_token_info().unwrap()).unwrap();
+
+        assert!(rc.is_ok());
+        assert_eq!(end_wallet.balance, 0);
+
+        ::utils::devsetup::tests::cleanup_dev_env(name);
+    }
+
 }
