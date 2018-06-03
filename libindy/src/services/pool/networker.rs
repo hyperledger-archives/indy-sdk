@@ -1,19 +1,5 @@
-use services::pool::pool::PoolEvent;
-use services::pool::consensus_collector::ConsensusCollectorEvent;
-
-enum NetworkerEvent {
-    SendOneRequest,
-    SendAllRequest
-}
-
-impl From<Option<ConsensusCollectorEvent>> for Option<NetworkerEvent> {
-    fn from(cce: ConsensusCollectorEvent) -> Self {
-        match cce {
-            Some(ConsensusCollectorEvent::SendRequest) => Some(NetworkerEvent::SendAllRequest),
-            _ => None
-        }
-    }
-}
+use services::pool::events::NetworkerEvent;
+use services::pool::events::ConsensusCollectorEvent;
 
 pub trait Networker {
     fn new() -> Self;
@@ -28,7 +14,11 @@ impl Networker for ZMQNetworker {
     }
 
     fn process_event(&self, pe: Option<NetworkerEvent>) -> Option<ConsensusCollectorEvent> {
-        unimplemented!();
+        match pe {
+            Some(NetworkerEvent::SendAllRequest) => Some(ConsensusCollectorEvent::StartConsensus),
+            Some(NetworkerEvent::SendOneRequest) => None,
+            None => None
+        }
     }
 }
 

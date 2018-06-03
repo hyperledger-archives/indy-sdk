@@ -1,21 +1,7 @@
-use services::pool::pool::PoolEvent;
-use services::pool::networker::{MockNetworker, Networker};
+use services::pool::events::ConsensusCollectorEvent;
+use services::pool::events::PoolEvent;
+use services::pool::networker::{MockNetworker, Networker, NetworkerEvent};
 use services::pool::networker;
-
-pub enum ConsensusCollectorEvent {
-    SendRequest,
-    NodeReply
-}
-
-impl From<PoolEvent> for Option<ConsensusCollectorEvent> {
-    fn from(pe: PoolEvent) -> Self {
-        match pe {
-            PoolEvent::NodeReply => Some(ConsensusCollectorEvent::NodeReply),
-            PoolEvent::SendRequest => Some(ConsensusCollectorEvent::SendRequest),
-            _ => None
-        }
-    }
-}
 
 trait ConsensusState {
     fn is_terminal() -> bool;
@@ -37,22 +23,30 @@ impl ConsensusState for CollectingConsensusState {
     }
 }
 
-struct FinishState {}
-
-impl ConsensusState for FinishState {
-    fn is_terminal() -> bool {
-        true
-    }
-}
-
 struct ConsensusCollectorSM<T: ConsensusState> {
     state: T
 }
 
-impl From<ConsensusCollectorSM<CollectingConsensusState>> for ConsensusCollectorSM<FinishState> {
+impl ConsensusCollectorSM<StartState> {
+    fn new() -> Self {
+        ConsensusCollectorSM {
+            state: StartState {}
+        }
+    }
+}
+
+impl From<ConsensusCollectorSM<StartState>> for ConsensusCollectorSM<CollectingConsensusState> {
+    fn from(_: ConsensusCollectorSM<StartState>) -> Self {
+        ConsensusCollectorSM {
+            state: CollectingConsensusState {}
+        }
+    }
+}
+
+impl From<ConsensusCollectorSM<CollectingConsensusState>> for ConsensusCollectorSM<StartState> {
     fn from(ccsm: ConsensusCollectorSM<CollectingConsensusState>) -> Self {
         ConsensusCollectorSM {
-            state: FinishState {}
+            state: StartState {}
         }
     }
 }
@@ -64,51 +58,83 @@ enum ConsensusCollectorSMWrapper {
 }
 
 impl ConsensusCollectorSMWrapper {
-    fn
+    pub fn handle_event(self, pe: ConsensusCollectorEvent) -> (Self, Option<PoolEvent>) {
+        match (self, pe) {
+            (ConsensusCollectorSMWrapper::Start(consensus_collector), ConsensusCollectorEvent::StartConsensus) => {
+                //TODO: check whether we need to get consensus
+                //TODO: if we don't need
+                //(ConsensusCollectorSMWrapper::Start(consensus_collector), None)
+                //TODO: if we do
+                (ConsensusCollectorSMWrapper::CollectingConsensus(consensus_collector.into()), None)
+            }
+            (ConsensusCollectorSMWrapper::CollectingConsensus(consensus_collector), ConsensusCollectorEvent::NodeReply) => {
+                //TODO: check if consensus reached
+                //TODO: if not
+                //(ConsensusCollectorSMWrapper::CollectingConsensus(consensus_collector), None)
+                //TODO: if failed
+                //(ConsensusCollectorSMWrapper::Start(consensus_collector.into(), Some(PoolEvent::ConsensusFailed))
+                //TODO: if success
+                (ConsensusCollectorSMWrapper::Start(consensus_collector.into()), Some(PoolEvent::ConsensusReached))
+            },
+            _ => unimplemented!()
+        }
+    }
 }
 
 pub trait ConsensusCollector<T: Networker> {
     fn process_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<PoolEvent>;
 }
 
-pub struct ConsensusCollectorImpl<T: Networker, S: ConsensusState> {
-    state: S,
-    networker: T
+pub struct ConsensusCollectorImpl<'con, T: Networker> {
+    consensus_collector_sm_wrapper: ConsensusCollectorSMWrapper,
+    networker: &'con T
 }
 
-impl<T: Networker, S: ConsensusState> ConsensusCollectorImpl<T, S> {
+impl<'con, T: Networker> ConsensusCollectorImpl<'con, T> {
     fn _handle_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<PoolEvent> {
         match pe {
             Some(pe) => {
-                match pe {
-                    ConsensusCollectorEvent::SendRequest => {
-                        None
-                    }
-                    ConsensusCollectorEvent::NodeReply => {
-                        // TODO: check consensus
-                        Some(PoolEvent::ConsensusReached)
-                    }
-                }
+                let (wrapper, event) = self.consensus_collector_sm_wrapper.handle_event(pe);
+                self.consensus_collector_sm_wrapper = wrapper;
+                event
             }
             _ => None
         }
     }
 }
 
-impl <T: Networker> ConsensusCollectorImpl<T, CollectingConsensusState> {
-    pub fn new(networker: T) -> Self {
+impl <'con, T: Networker> ConsensusCollectorImpl<'con, T> {
+    pub fn new(networker: &'con T) -> Self {
         ConsensusCollectorImpl {
             networker,
-            state: CollectingConsensusState {}
+            consensus_collector_sm_wrapper: ConsensusCollectorSMWrapper::Start(ConsensusCollectorSM::new())
         }
     }
 }
 
-impl<T: Networker, S: ConsensusState> ConsensusCollector<T> for ConsensusCollectorImpl<T, S> {
+impl<'con, T: Networker> ConsensusCollector<T> for ConsensusCollectorImpl<'con, T> {
     fn process_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<PoolEvent> {
         self._handle_event(
             self.networker.process_event(pe.into()).or(pe)
         )
+    }
+}
+
+pub struct MockConsensusCollector<'mcon, T: Networker> {
+    networker: &'mcon T
+}
+
+impl <'mcon, T: Networker> MockConsensusCollector<'mcon, T> {
+    pub fn new(networker: &'mcon T) -> Self {
+        MockConsensusCollector {
+            networker
+        }
+    }
+}
+
+impl<'mcon, T: Networker> ConsensusCollector<T> for MockConsensusCollector<'mcon, T> {
+    fn process_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<PoolEvent> {
+        unimplemented!()
     }
 }
 

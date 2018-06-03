@@ -3,22 +3,11 @@ use super::consensus_collector;
 use std::thread::JoinHandle;
 use std::thread;
 use services::pool::commander::Commander;
+use services::pool::events::PoolEvent;
+use services::pool::networker::Networker;
 
 trait PoolState {
     fn is_terminal(&self) -> bool;
-}
-
-pub enum PoolEvent {
-    CheckCache,
-    NodeReply,
-    Close,
-    Refresh,
-    ConsensusReached,
-    ConsensusFailed,
-    PoolOutdated,
-    Synced,
-    NodesBlacklisted,
-    SendRequest
 }
 
 struct InitializationState {}
@@ -255,19 +244,21 @@ impl PoolWrapper {
     }
 }
 
-pub struct Pool <'a, T: ConsensusCollector>{
+pub struct Pool <'pool, S: Networker, T: ConsensusCollector<S>>{
     pool_wrapper: PoolWrapper,
-    commander: &'a Commander,
-    consensus_collector: Option<T>,
+    commander: &'pool Commander,
+    consensus_collector: T,
+    networker: S,
     worker: Option<JoinHandle<()>>
 }
 
-impl<T: ConsensusCollector> Pool<T> {
-    pub fn new(commander: &Commander) -> Self {
+impl<'pool, S: Networker, T: ConsensusCollector<S>> Pool<'pool, S, T> {
+    pub fn new(commander: &'pool Commander, networker: S, consensus_collector: T) -> Self {
         Pool {
             pool_wrapper: PoolWrapper::Initialization(PoolSM::new()),
             commander,
-            consensus_collector: None,
+            consensus_collector,
+            networker,
             worker: None,
         }
     }
@@ -296,7 +287,7 @@ impl<T: ConsensusCollector> Pool<T> {
 
     fn _get_event(&self) -> Option<PoolEvent> {
         let pe = self.commander.get_next_event();
-        self.consensus_collector.and_then(|cc| cc.process_event(pe.into()).or(pe))
+        self.consensus_collector.process_event(pe.into()).or(pe)
     }
 
     fn _poll(&self) {
@@ -306,9 +297,12 @@ impl<T: ConsensusCollector> Pool<T> {
 
 mod pool_tests {
     use super::*;
+    use services::pool::consensus_collector::MockConsensusCollector;
+    use services::pool::networker::MockNetworker;
 
     #[test]
     pub fn pool_new_works() {
-        Pool::new(&Commander::new());
+        let networker = MockNetworker::new();
+        Pool::new(&Commander::new(), networker, MockConsensusCollector::new(&networker));
     }
 }
