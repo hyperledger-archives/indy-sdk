@@ -57,14 +57,13 @@ export interface IIssuerCredentialData {
 /**
  * @class Class representing an Issuer credential
  */
-export class IssuerCredential extends VCXBaseWithState {
+export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
   protected _releaseFn = rustAPI().vcx_issuer_credential_release
   protected _updateStFn = rustAPI().vcx_issuer_credential_update_state
   protected _getStFn = rustAPI().vcx_issuer_credential_get_state
   protected _serializeFn = rustAPI().vcx_issuer_credential_serialize
   protected _deserializeFn = rustAPI().vcx_issuer_credential_deserialize
   private _credDefId: string
-  private _issuerDID: string
   private _credentialName: string
   private _attr: IIssuerCredentialVCXAttributes
   private _price: number
@@ -125,68 +124,17 @@ export class IssuerCredential extends VCXBaseWithState {
  * @returns {Promise<IssuerCredential>} An Issuer credential Object
  */
   static async deserialize (credentialData: IIssuerCredentialData) {
-    try {
-      const attr = JSON.parse(credentialData.credential_attributes)
-      const params: IIssuerCredentialParams = {
-        attr,
-        credDefId: credentialData.cred_def_id,
-        credentialName: credentialData.credential_name,
-        price: credentialData.price
-      }
-      const credential = await super._deserialize<IssuerCredential, IIssuerCredentialParams>(IssuerCredential,
-         credentialData,
-         params)
-      return credential
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_issuer_credential_deserialize')
+    const attr = JSON.parse(credentialData.credential_attributes)
+    const params: IIssuerCredentialParams = {
+      attr,
+      credDefId: credentialData.cred_def_id,
+      credentialName: credentialData.credential_name,
+      price: credentialData.price
     }
-  }
-
-  /**
-   * @memberof IssuerCredential
-   * @description Gets the state of the issuer credential object.
-   * @async
-   * @function getState
-   * @returns {Promise<number>}
-   */
-  async getState (): Promise<number> {
-    try {
-      return await this._getState()
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_issuer_credential_get_state')
-    }
-  }
-
-  /**
-   * @memberof IssuerCredential
-   * @description Communicates with the agent service for polling and setting the state of the issuer credential.
-   * @async
-   * @function updateState
-   * @returns {Promise<void>}
-   */
-  async updateState (): Promise<void> {
-    try {
-      await this._updateState()
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_issuer_credential_updateState')
-    }
-  }
-
-  /**
-   * @memberof IssuerCredential
-   * @description Serializes an Issuer credential object.
-   * Data returned can be used to recreate an Issuer credential object by passing it to the deserialize function.
-   * @async
-   * @function serialize
-   * @returns {Promise<IProofData>} - Jason object with all of the underlying Rust attributes.
-   * Same json object structure that is passed to the deserialize function.
-   */
-  async serialize (): Promise<IIssuerCredentialData> {
-    try {
-      return JSON.parse(await super._serialize())
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_issuer_credential_serialize')
-    }
+    const credential = await super._deserialize<IssuerCredential, IIssuerCredentialParams>(IssuerCredential,
+        credentialData,
+        params)
+    return credential
   }
 
   /**
@@ -208,13 +156,16 @@ export class IssuerCredential extends VCXBaseWithState {
               reject(rc)
             }
           },
-          (resolve, reject) => Callback('void', ['uint32', 'uint32'], (xcommandHandle, err) => {
-            if (err) {
-              reject(err)
-              return
-            }
-            resolve(xcommandHandle)
-          })
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32'],
+            (xcommandHandle: number, err: number) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve()
+            })
         )
     } catch (err) {
       // TODO handle error
@@ -241,21 +192,20 @@ export class IssuerCredential extends VCXBaseWithState {
             reject(rc)
           }
         },
-        (resolve, reject) => Callback('void', ['uint32', 'uint32'], (xcommandHandle, err) => {
-          if (err) {
-            reject(err)
-            return
-          }
-          resolve(xcommandHandle)
-        })
+        (resolve, reject) => Callback(
+          'void',
+          ['uint32', 'uint32'],
+          (xcommandHandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
       )
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_issuer_send_credential')
     }
-  }
-
-  get issuerDid () {
-    return this._issuerDID
   }
 
   get credDefId () {
@@ -264,5 +214,13 @@ export class IssuerCredential extends VCXBaseWithState {
 
   get attr () {
     return this._attr
+  }
+
+  get credentialName () {
+    return this._credentialName
+  }
+
+  get price () {
+    return this._price
   }
 }

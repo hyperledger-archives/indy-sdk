@@ -24,7 +24,7 @@ export interface ISchemaAttrs {
   attrNames: string[]
 }
 
-export interface ISchemaObj {
+export interface ISchemaSerializedData {
   source_id: string,
   handle: string,
   name: string,
@@ -48,7 +48,7 @@ export interface ISchemaTxn {
 export interface ISchemaParams {
   schemaId: string,
   name: string,
-  schemaAttrs?: ISchemaAttrs,
+  schemaAttrs: ISchemaAttrs,
 }
 
 export interface ISchemaLookupData {
@@ -56,7 +56,7 @@ export interface ISchemaLookupData {
   schemaId: string
 }
 
-export class Schema extends VCXBase {
+export class Schema extends VCXBase<ISchemaSerializedData> {
   protected _releaseFn = rustAPI().vcx_schema_release
   protected _serializeFn = rustAPI().vcx_schema_serialize
   protected _deserializeFn = rustAPI().vcx_schema_deserialize
@@ -110,20 +110,16 @@ export class Schema extends VCXBase {
    * @static
    * @async
    * @function deserialize
-   * @param {ISchemaObj} schema - contains the information that will be used to build a Schema object
+   * @param {ISchemaSerializedData} schema - contains the information that will be used to build a Schema object
    * @returns {Promise<Schema>} A Schema Object
    */
-  static async deserialize (schema: ISchemaObj) {
-    try {
-      const schemaParams = {
-        name: schema.name,
-        schemaAttrs: {name: schema.name, version: schema.version, attrNames: schema.data},
-        schemaId: schema.schema_id
-      }
-      return await super._deserialize<Schema, ISchemaParams>(Schema, schema, schemaParams)
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_schema_deserialize')
+  static async deserialize (schema: ISchemaSerializedData) {
+    const schemaParams = {
+      name: schema.name,
+      schemaAttrs: {name: schema.name, version: schema.version, attrNames: schema.data},
+      schemaId: schema.schema_id
     }
+    return await super._deserialize<Schema, ISchemaParams>(Schema, schema, schemaParams)
   }
 
   /**
@@ -136,26 +132,30 @@ export class Schema extends VCXBase {
    */
   static async lookup ({ sourceId, schemaId }: ISchemaLookupData): Promise<Schema> {
     try {
-      let rc = null
-      const [ schemaDataStr, schemaHandle ] = await createFFICallbackPromise<string>(
+      const schemaLookupData = await
+      createFFICallbackPromise<{ data: string, handle: number }>(
           (resolve, reject, cb) => {
-            rc = rustAPI().vcx_schema_get_attributes(0, sourceId, schemaId, cb)
+            const rc = rustAPI().vcx_schema_get_attributes(0, sourceId, schemaId, cb)
             if (rc) {
               reject(rc)
             }
           },
-          (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'uint32', 'string'],
-          (handle, err, _schemaHandle, _schemaData) => {
-            if (err) {
-              reject(err)
-              return
-            } else if (_schemaData == null) {
-              reject('no schema attrs')
-            }
-            resolve([_schemaData, _schemaHandle])
-          })
-    )
-      const { name, version, data }: ISchemaObj = JSON.parse(schemaDataStr)
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'uint32', 'string'],
+            (handle: number, err: number, _schemaHandle: number, _schemaData: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!_schemaData) {
+                reject('no schema attrs')
+                return
+              }
+              resolve({ data: _schemaData, handle: _schemaHandle })
+            })
+      )
+      const { name, version, data }: ISchemaSerializedData = JSON.parse(schemaLookupData.data)
       const schemaParams = {
         name,
         schemaAttrs: {
@@ -166,28 +166,10 @@ export class Schema extends VCXBase {
         schemaId
       }
       const newSchema = new Schema(sourceId, schemaParams)
-      newSchema._handle = schemaHandle.toString()
+      newSchema._setHandle(schemaLookupData.handle.toString())
       return newSchema
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_schema_get_attributes')
-    }
-  }
-
-  /**
-   * @memberof Schema
-   * @description Serializes a Schema object.
-   * Data returned can be used to recreate a Schema object by passing it to the deserialize function.
-   * @async
-   * @function serialize
-   * @returns {Promise<ISchemaObj>} - Jason object with all of the underlying Rust attributes.
-   * Same json object structure that is passed to the deserialize function.
-   */
-  async serialize (): Promise<ISchemaObj> {
-    try {
-      const data: ISchemaObj = JSON.parse(await super._serialize())
-      return data
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_schema_serialize')
     }
   }
 
@@ -207,15 +189,17 @@ export class Schema extends VCXBase {
               reject(rc)
             }
           },
-          (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'string'],
-          (xcommandHandle, err, schemaIdVal) => {
-            if (err) {
-              reject(err)
-              return
-            }
-            this._schemaId = schemaIdVal
-            resolve(schemaIdVal)
-          })
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xcommandHandle: number, err: number, schemaIdVal: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              this._schemaId = schemaIdVal
+              resolve(schemaIdVal)
+            })
         )
       return schemaId
     } catch (err) {
@@ -225,5 +209,13 @@ export class Schema extends VCXBase {
 
   get schemaAttrs (): ISchemaAttrs {
     return this._schemaAttrs
+  }
+
+  get schemaId () {
+    return this._schemaId
+  }
+
+  get name () {
+    return this._name
   }
 }

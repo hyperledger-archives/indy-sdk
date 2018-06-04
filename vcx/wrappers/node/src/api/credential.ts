@@ -3,7 +3,6 @@ import { Callback } from 'ffi'
 import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
-import { StateType } from './common'
 import { Connection } from './connection'
 import { VCXBase } from './VCXBase'
 import { VCXBaseWithState } from './VCXBaseWithState'
@@ -32,13 +31,13 @@ export interface ICredentialSendData {
   payment: number
 }
 
-export class Credential extends VCXBaseWithState {
+export class Credential extends VCXBaseWithState<ICredentialStructData> {
   protected _releaseFn = rustAPI().vcx_credential_release
   protected _updateStFn = rustAPI().vcx_credential_update_state
   protected _getStFn = rustAPI().vcx_credential_get_state
   protected _serializeFn = rustAPI().vcx_credential_serialize
   protected _deserializeFn = rustAPI().vcx_credential_deserialize
-  private _credOffer: string
+  private _credOffer: string = ''
 
   static async create ({ sourceId, offer }: ICredentialCreateWithOffer): Promise<Credential> {
     const credential = new Credential(sourceId)
@@ -65,18 +64,20 @@ export class Credential extends VCXBaseWithState {
               reject(rc)
             }
           },
-          (resolve, reject) => Callback('void', ['uint32', 'uint32', 'uint32', 'string'],
-          (xHandle, err, handle, credOffer) => {
-
-            if (err) {
-              reject(err)
-              return
-            }
-            const newObj = new Credential(sourceId)
-            newObj._setHandle(handle)
-            newObj.credOffer = credOffer
-            resolve( newObj )
-          })
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, handleNum: number, credOffer: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              const newObj = new Credential(sourceId)
+              const handleStr = handleNum.toString()
+              newObj._setHandle(handleStr)
+              newObj._credOffer = credOffer
+              resolve( newObj )
+            })
       )
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_credential_create_with_msgid`)
@@ -84,12 +85,8 @@ export class Credential extends VCXBaseWithState {
   }
 
   static async deserialize (credentialData: ICredentialStructData) {
-    try {
-      const credential = await super._deserialize<Credential, {}>(Credential, credentialData)
-      return credential
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_issuer_credential_deserialize`)
-    }
+    const credential = await super._deserialize<Credential, {}>(Credential, credentialData)
+    return credential
   }
 
   static async getOffers (connection: Connection): Promise<ICredentialOffer[]> {
@@ -100,40 +97,19 @@ export class Credential extends VCXBaseWithState {
           reject(rc)
         }
       },
-      (resolve, reject) => Callback('void', ['uint32', 'uint32', 'string'], (handle, err, messages) => {
-        if (err) {
-          reject(err)
-        } else {
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32', 'uint32', 'string'],
+        (handle: number, err: number, messages: string) => {
+          if (err) {
+            reject(err)
+            return
+          }
           resolve(messages)
-        }
-      })
+        })
     )
-    const offers = JSON.parse(offersStr)
+    const offers: ICredentialOffer[] = JSON.parse(offersStr)
     return offers
-  }
-
-  async getState (): Promise<StateType> {
-    try {
-      return await this._getState()
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_credential_get_state`)
-    }
-  }
-
-  async updateState (): Promise<void> {
-    try {
-      await this._updateState()
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_credential_update_state`)
-    }
-  }
-
-  async serialize (): Promise<ICredentialStructData> {
-    try {
-      return JSON.parse(await super._serialize())
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_credential_serialize`)
-    }
   }
 
   async sendRequest ({ connection, payment }: ICredentialSendData): Promise<void> {
@@ -145,25 +121,20 @@ export class Credential extends VCXBaseWithState {
               reject(rc)
             }
           },
-          (resolve, reject) => Callback('void', ['uint32', 'uint32'], (xcommandHandle, err) => {
+          (resolve, reject) => Callback('void', ['uint32', 'uint32'], (xcommandHandle: number, err: number) => {
             if (err) {
               reject(err)
-            } else {
-              resolve()
+              return
             }
+            resolve()
           })
         )
     } catch (err) {
-      // TODO handle error
       throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_credential_send_request`)
     }
   }
 
   get credOffer (): string {
     return this._credOffer
-  }
-
-  set credOffer (credOffer: string) {
-    this._credOffer = credOffer
   }
 }

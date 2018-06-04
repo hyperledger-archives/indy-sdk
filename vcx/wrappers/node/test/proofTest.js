@@ -1,7 +1,7 @@
 const assert = require('chai').assert
 const ffi = require('ffi')
 const vcx = require('../dist/index')
-const { stubInitVCX } = require('./helpers')
+const { stubInitVCX, shouldThrow } = require('./helpers')
 const { Connection, Proof, StateType, Error, ProofState, rustAPI, VCXMock, VCXMockMessage } = vcx
 
 const connectionConfigDefault = { id: '234' }
@@ -21,12 +21,12 @@ describe('A Proof', function () {
   })
 
   it('can be created.', async () => {
-    const proof = new Proof('Proof ID')
+    const proof = new Proof('Proof ID', { attrs: ATTR, name: 'TestProof' })
     assert(proof)
   })
 
   it('can have a source Id.', async () => {
-    const proof = new Proof('Proof ID')
+    const proof = new Proof('Proof ID', { attrs: ATTR, name: 'TestProof' })
     assert.equal(proof.sourceId, 'Proof ID')
   })
 
@@ -62,13 +62,10 @@ describe('A Proof', function () {
     assert(data)
     assert.equal(data.handle, jsonProof.handle)
     assert.equal(await proof.release(), Error.SUCCESS)
-    try {
-      await proof.serialize()
-    } catch (error) {
-      assert.equal(error.vcxCode, 1017)
-      assert.equal(error.vcxFunction, 'vcx_proof_serialize')
-      assert.equal(error.message, 'Invalid Proof Handle')
-    }
+    const error = await shouldThrow(() => proof.serialize())
+    assert.equal(error.vcxCode, 1017)
+    assert.equal(error.vcxFunction, 'Proof:serialize')
+    assert.equal(error.message, 'Invalid Proof Handle')
   })
 
   it('has correct state after deserializing', async () => {
@@ -115,13 +112,10 @@ describe('A Proof', function () {
     await connection.release()
     const sourceId = 'SerializeDeserialize'
     const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
-    try {
-      await proof.requestProof(connection)
-    } catch (error) {
-      assert.equal(error.vcxCode, 1003)
-      assert.equal(error.vcxFunction, 'vcx_proof_send_request')
-      assert.equal(error.message, 'Invalid Connection Handle')
-    }
+    const error = await shouldThrow(() => proof.requestProof(connection))
+    assert.equal(error.vcxCode, 1003)
+    assert.equal(error.vcxFunction, 'vcx_proof_send_request')
+    assert.equal(error.message, 'Invalid Connection Handle')
   })
 
   it('requesting a proof throws invalid proof error with released proof', async () => {
@@ -131,13 +125,10 @@ describe('A Proof', function () {
     const sourceId = 'SerializeDeserialize'
     const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
     await proof.release()
-    try {
-      await proof.requestProof(connection)
-    } catch (error) {
-      assert.equal(error.vcxCode, 1017)
-      assert.equal(error.vcxFunction, 'vcx_proof_send_request')
-      assert.equal(error.message, 'Invalid Proof Handle')
-    }
+    const error = await shouldThrow(() => proof.requestProof(connection))
+    assert.equal(error.vcxCode, 1017)
+    assert.equal(error.vcxFunction, 'vcx_proof_send_request')
+    assert.equal(error.message, 'Invalid Proof Handle')
   })
 
   it('get proof has an invalid proof state with incorrect proof', async () => {

@@ -1,6 +1,6 @@
 const assert = require('chai').assert
 const vcx = require('../dist/index')
-const { stubInitVCX, connectionCreateAndConnect } = require('./helpers')
+const { stubInitVCX, connectionCreateAndConnect, shouldThrow } = require('./helpers')
 const { DisclosedProof } = vcx
 
 describe('A disclosedProof', function () {
@@ -65,21 +65,15 @@ describe('A disclosedProof', function () {
   })
 
   it(' a call to create with no request returns an error', async () => {
-    try {
-      const connection = await connectionCreateAndConnect()
-      await DisclosedProof.create({ connection, sourceId: 'Test' })
-    } catch (error) {
-      assert.equal(error.vcxCode, 1007)
-    }
+    const connection = await connectionCreateAndConnect()
+    const error = await shouldThrow(() => DisclosedProof.create({ connection, sourceId: 'Test' }))
+    assert.equal(error.vcxCode, 1007)
   })
 
   it(' a call to create with a bad request returns an error', async () => {
-    try {
-      const connection = await connectionCreateAndConnect()
-      await DisclosedProof.create({ connection, sourceId: 'Test', request: '{}' })
-    } catch (error) {
-      assert.equal(error.vcxCode, 1016)
-    }
+    const connection = await connectionCreateAndConnect()
+    const error = await shouldThrow(() => DisclosedProof.create({ connection, sourceId: 'Test', request: '{}' }))
+    assert.equal(error.vcxCode, 1016)
   })
 
   // serialize/deserialize tests

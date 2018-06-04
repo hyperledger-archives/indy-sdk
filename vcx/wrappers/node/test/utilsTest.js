@@ -1,6 +1,6 @@
 const assert = require('chai').assert
 const vcx = require('../dist')
-const { stubInitVCX } = require('./helpers')
+const { stubInitVCX, shouldThrow } = require('./helpers')
 
 describe('provisioning and updating agents and updating configs', function () {
   this.timeout(10000)
@@ -15,11 +15,8 @@ describe('provisioning and updating agents and updating configs', function () {
   })
 
   it('a call to provisionAgent fails', async () => {
-    try {
-      await vcx.provisionAgent('')
-    } catch (error) {
-      assert.equal(error.vcxCode, 1007)
-    }
+    const error = await shouldThrow(() => vcx.provisionAgent(''))
+    assert.equal(error.vcxCode, 1007)
   })
 
   it('a call to provisionAgent succeeds', async () => {
@@ -28,11 +25,8 @@ describe('provisioning and updating agents and updating configs', function () {
   })
 
   it('a call to updateAgentInfo fails', async() => {
-    try {
-      await vcx.updateAgentInfo('')
-    } catch (error) {
-      assert.equal(error.vcxCode, 1007)
-    }
+    const error = await shouldThrow(() => vcx.updateAgentInfo(''))
+    assert.equal(error.vcxCode, 1007)
   })
 
   it('a call to updateAgentInfo succeeds', async () => {

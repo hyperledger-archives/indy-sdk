@@ -42,13 +42,13 @@ export interface ICredentialDefParams {
 /**
  * @class Class representing a credential Definition
  */
-export class CredentialDef extends VCXBase {
+export class CredentialDef extends VCXBase<ICredentialDefData> {
   protected _releaseFn = rustAPI().vcx_credentialdef_release
   protected _serializeFn = rustAPI().vcx_credentialdef_serialize
   protected _deserializeFn = rustAPI().vcx_credentialdef_deserialize
   private _name: string
   private _schemaId: string
-  private _credDefId: string
+  private _credDefId: string | null
 
   constructor (sourceId: string, { name, schemaId }: ICredentialDefParams) {
     super(sourceId)
@@ -114,33 +114,11 @@ export class CredentialDef extends VCXBase {
    */
   static async deserialize (data: ICredentialDefObj) {
     // Todo: update the ICredentialDefObj
-    try {
-      const credentialDefParams = {
-        name: data.name,
-        schemaId: null
-      }
-      return await super._deserialize(CredentialDef, data, credentialDefParams)
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_credentialdef_deserialize')
+    const credentialDefParams = {
+      name: data.name,
+      schemaId: null
     }
-  }
-
-  /**
-   * @memberof CredentialDef
-   * @description Serializes a credentialDef object.
-   * Data returned can be used to recreate a credentialDef object by passing it to the deserialize function.
-   * @async
-   * @function serialize
-   * @returns {Promise<ICredentialDefObj>} - Jason object with all of the underlying Rust attributes.
-   * Same json object structure that is passed to the deserialize function.
-   */
-  async serialize (): Promise<ICredentialDefObj> {
-    try {
-      const data: ICredentialDefObj = JSON.parse(await super._serialize())
-      return data
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_credentialdef_serialize')
-    }
+    return await super._deserialize(CredentialDef, data, credentialDefParams)
   }
 
   /**
@@ -159,19 +137,33 @@ export class CredentialDef extends VCXBase {
               reject(rc)
             }
           },
-          (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'string'],
-          (xcommandHandle, err, credDefIdVal) => {
-            if (err) {
-              reject(err)
-              return
-            }
-            this._credDefId = credDefIdVal
-            resolve(credDefIdVal)
-          })
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xcommandHandle: number, err: number, credDefIdVal: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              this._credDefId = credDefIdVal
+              resolve(credDefIdVal)
+            })
         )
       return credDefId
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_credentialdef_get_cred_def_id')
     }
+  }
+
+  get name () {
+    return this._name
+  }
+
+  get schemaId () {
+    return this._schemaId
+  }
+
+  get credDefId () {
+    return this._credDefId
   }
 }

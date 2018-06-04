@@ -14,6 +14,11 @@ export interface IProofConfig {
   name: string,
 }
 
+export interface IProofConstructorData {
+  attrs: IProofAttr[],
+  name: string,
+}
+
 /**
  * @description Interface that represents the attributes of a Proof object.
  * This interface is expected as the type for deserialize's parameter and serialize's return value
@@ -83,7 +88,7 @@ export interface IProofPredicate {
 /**
  * @class Class representing a Connection
  */
-export class Proof extends VCXBaseWithState {
+export class Proof extends VCXBaseWithState<IProofData> {
   protected _releaseFn = rustAPI().vcx_proof_release
   protected _updateStFn = rustAPI().vcx_proof_update_state
   protected _getStFn = rustAPI().vcx_proof_get_state
@@ -91,7 +96,13 @@ export class Proof extends VCXBaseWithState {
   protected _deserializeFn = rustAPI().vcx_proof_deserialize
   private _requestedAttributes: IProofAttr[]
   private _name: string
-  private _proofState: number
+  private _proofState: ProofState | null = null
+
+  constructor (sourceId: string, { attrs, name }: IProofConstructorData) {
+    super(sourceId)
+    this._requestedAttributes = attrs
+    this._name = name
+  }
 
   /**
    * @memberof Proof
@@ -104,19 +115,17 @@ export class Proof extends VCXBaseWithState {
    * {sourceId: string,attrs: [{restrictions: [IFilter ...], name: "attrName"}], name: "name of proof"}
    * @returns {Promise<Proof>} A Proof Object
    */
-  static async create ({ sourceId, attrs, name }: IProofConfig): Promise<Proof> {
-    const proof = new Proof(sourceId)
-    proof._requestedAttributes = attrs
-    proof._name = name
+  static async create ({ sourceId, ...createDataRest }: IProofConfig): Promise<Proof> {
+    const proof = new Proof(sourceId, createDataRest)
     const commandHandle = 0
 
     try {
       await proof._create((cb) => rustAPI().vcx_proof_create(
         commandHandle,
         proof.sourceId,
-        JSON.stringify(collectionRenameItemKeys(attrs)),
+        JSON.stringify(collectionRenameItemKeys(createDataRest.attrs)),
         JSON.stringify([]),
-        proof._name,
+        createDataRest.name,
         cb
       ))
       return proof
@@ -136,60 +145,13 @@ export class Proof extends VCXBaseWithState {
    * @returns {Promise<Proof>} A Proof Object
    */
   static async deserialize (proofData: IProofData) {
-    try {
-      const proof = await super._deserialize(Proof, proofData)
-      return proof
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_proof_deserialize')
+    const attrs = JSON.parse(proofData.requested_attrs)
+    const constructorParams: IProofConstructorData = {
+      attrs,
+      name: proofData.name
     }
-  }
-
-  /**
-   * @description Serializes a proof object.
-   * Data returned can be used to recreate a Proof object by passing it to the deserialize function.
-   * @async
-   * @memberof Proof
-   * @function serialize
-   * @returns {Promise<IProofData>} - Jason object with all of the underlying Rust attributes.
-   * Same json object structure that is passed to the deserialize function.
-   */
-  async serialize (): Promise<IProofData> {
-    try {
-      const data: IProofData = JSON.parse(await super._serialize())
-      return data
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_proof_serialize')
-    }
-  }
-
-  /**
-   * @description Gets the state of the proof.
-   * @async
-   * @memberof Proof
-   * @function getState
-   * @returns {Promise<StateType>}
-   */
-  async getState (): Promise<StateType> {
-    try {
-      return await this._getState()
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_proof_get_state')
-    }
-  }
-
-  /**
-   * @description Communicates with the agent service for polling and setting the state of the Proof.
-   * @async
-   * @memberof Proof
-   * @function updateState
-   * @returns {Promise<void>}
-   */
-  async updateState (): Promise<void> {
-    try {
-      await this._updateState()
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_proof_updateState')
-    }
+    const proof = await super._deserialize(Proof, proofData, constructorParams)
+    return proof
   }
 
   /**
@@ -211,13 +173,16 @@ export class Proof extends VCXBaseWithState {
               reject(rc)
             }
           },
-          (resolve, reject) => Callback('void', ['uint32', 'uint32'], (xcommandHandle, err) => {
-            if (err) {
-              reject(err)
-              return
-            }
-            resolve(xcommandHandle)
-          })
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32'],
+            (xcommandHandle: number, err: number) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve()
+            })
         )
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_proof_send_request')
@@ -234,30 +199,40 @@ export class Proof extends VCXBaseWithState {
    */
   async getProof (connection: Connection): Promise<IProofResponses> {
     try {
-      const proof = await createFFICallbackPromise<string>(
+      const proofRes = await createFFICallbackPromise<{ proofState: ProofState, proofData: string}>(
           (resolve, reject, cb) => {
             const rc = rustAPI().vcx_get_proof(0, this.handle, connection.handle, cb)
             if (rc) {
               reject(rc)
             }
           },
-          (resolve, reject) => Callback('void', ['uint32', 'uint32', 'uint32', 'string'],
-          (xcommandHandle, err, proofState, proofData) => {
-            if (err) {
-              reject(err)
-              return
-            }
-            this._proofState = proofState
-            resolve(proofData)
-          })
+          (resolve, reject) => Callback(
+            'void',
+            ['uint32', 'uint32', 'uint32', 'string'],
+            (xcommandHandle: number, err: number, proofState: ProofState, proofData: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve({ proofState, proofData })
+            })
         )
-      return {proof, proofState: this.proofState}
+      this._proofState = proofRes.proofState
+      return { proof: proofRes.proofData, proofState: proofRes.proofState }
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_get_proof')
     }
   }
 
-  get proofState (): number {
+  get proofState (): ProofState | null {
     return this._proofState
+  }
+
+  get requestedAttributes () {
+    return this._requestedAttributes
+  }
+
+  get name () {
+    return this._name
   }
 }

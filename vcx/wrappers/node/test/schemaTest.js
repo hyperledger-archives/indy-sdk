@@ -1,7 +1,7 @@
 const assert = require('chai').assert
 const ffi = require('ffi')
 const vcx = require('../dist/index')
-const { stubInitVCX } = require('./helpers')
+const { stubInitVCX, shouldThrow } = require('./helpers')
 const { Schema, Error, rustAPI } = vcx
 
 const SCHEMA = {
@@ -61,13 +61,10 @@ describe('A Schema', function () {
     assert(data)
     assert.equal(data.handle, jsonDef.handle)
     assert.equal(await schema.release(), Error.SUCCESS)
-    try {
-      await schema.serialize()
-    } catch (error) {
-      assert.equal(error.vcxCode, 1042)
-      assert.equal(error.vcxFunction, 'vcx_schema_serialize')
-      assert.equal(error.message, 'Invalid Schema Handle')
-    }
+    const error = await shouldThrow(() => schema.serialize())
+    assert.equal(error.vcxCode, 1042)
+    assert.equal(error.vcxFunction, 'Schema:serialize')
+    assert.equal(error.message, 'Invalid Schema Handle')
   })
 
   it('will return schema_id', async () => {

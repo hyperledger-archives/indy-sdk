@@ -50,7 +50,7 @@ export interface IFFIEntryPoint {
   vcx_version: () => string,
 
   // wallet
-  vcx_wallet_get_token_info: (commandId: number, payment: number, cb: any) => number,
+  vcx_wallet_get_token_info: (commandId: number, payment: number | undefined | null, cb: any) => number,
   vcx_wallet_create_payment_address: (commandId: number, cb: any) => number,
   vcx_wallet_send_tokens: (commandId: number, payment: number, tokens: number, recipient: string, cb: any) => number,
   vcx_wallet_add_record: (commandId: number, type: string, id: string, value: string, tags: string, cb: any) => number,
@@ -137,7 +137,7 @@ export interface IFFIEntryPoint {
 
   // credentialdef
   vcx_credentialdef_create: (commandId: number, sourceId: string, credentialDefName: string, schemaId: string,
-                             issuerDid: string, tag: string, config: string, payment: number, cb: any) => number
+                             issuerDid: string | null, tag: string, config: string, payment: number, cb: any) => number
   vcx_credentialdef_deserialize: (commandId: number, data: string, cb: any) => number,
   vcx_credentialdef_serialize: (commandId: number, handle: string, cb: any) => number,
   vcx_credentialdef_release: (handle: string) => number,
@@ -282,6 +282,6 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
 
 }
 
-let _rustAPI: IFFIEntryPoint = null
+let _rustAPI: IFFIEntryPoint
 export const initRustAPI = (path?: string) => _rustAPI = new VCXRuntime({ basepath: path }).ffi
 export const rustAPI = () => _rustAPI
