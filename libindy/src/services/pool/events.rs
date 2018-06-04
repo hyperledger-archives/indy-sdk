@@ -1,5 +1,4 @@
 pub enum ConsensusCollectorEvent {
-    SendRequest,
     NodeReply,
     StartConsensus
 }
@@ -23,11 +22,28 @@ pub enum PoolEvent {
     Timeout
 }
 
-impl Into<Option<ConsensusCollectorEvent>> for PoolEvent {
+pub enum RequestEvent {
+    LedgerStatus,
+    NodeReply,
+    ConsensusReached,
+    ConsensusFailed,
+}
+
+impl Into<Option<RequestEvent>> for PoolEvent {
+    fn into(self) -> Option<RequestEvent> {
+        match self {
+            PoolEvent::NodeReply => Some(RequestEvent::NodeReply),
+            PoolEvent::SendRequest => None, //TODO: parse event type and send corresponding one
+            _ => None
+        }
+    }
+}
+
+impl Into<Option<ConsensusCollectorEvent>> for RequestEvent {
     fn into(self) -> Option<ConsensusCollectorEvent> {
         match self {
-            PoolEvent::NodeReply => Some(ConsensusCollectorEvent::NodeReply),
-            PoolEvent::SendRequest => Some(ConsensusCollectorEvent::SendRequest),
+            RequestEvent::LedgerStatus => Some(ConsensusCollectorEvent::StartConsensus),
+            RequestEvent::NodeReply => Some(ConsensusCollectorEvent::NodeReply),
             _ => None
         }
     }
@@ -36,13 +52,7 @@ impl Into<Option<ConsensusCollectorEvent>> for PoolEvent {
 impl Into<Option<NetworkerEvent>> for ConsensusCollectorEvent {
     fn into(self) -> Option<NetworkerEvent> {
         match self {
-            ConsensusCollectorEvent::SendRequest => {
-                //TODO: check if we actually need consensus!! acknowledge it with Slava
-                //TODO: if we don't, we send one request
-                //Some(NetworkerEvent::SendOneRequest)
-                //TODO: if we do, we send all requests
-                Some(NetworkerEvent::SendAllRequest)
-            },
+            ConsensusCollectorEvent::StartConsensus => Some(NetworkerEvent::SendAllRequest),
             _ => None
         }
     }

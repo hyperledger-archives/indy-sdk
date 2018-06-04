@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-use services::pool::pool::PoolEvent;
+use services::pool::events::PoolEvent;
 
 pub struct Commander {
     events: VecDeque<PoolEvent>

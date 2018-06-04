@@ -12,7 +12,7 @@ pub struct ZMQNetworker {}
 
 impl Networker for ZMQNetworker {
     fn new() -> Self {
-        Networker {}
+        ZMQNetworker {}
     }
 
     fn process_event(&self, pe: Option<NetworkerEvent>) -> Option<ConsensusCollectorEvent> {

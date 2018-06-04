@@ -9,6 +9,7 @@ mod consensus_collector;
 mod networker;
 mod commander;
 mod events;
+mod request_handler;
 
 extern crate byteorder;
 extern crate digest;

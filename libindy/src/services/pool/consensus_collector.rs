@@ -1,8 +1,8 @@
-use services::pool::events::ConsensusCollectorEvent;
-use services::pool::events::PoolEvent;
-use services::pool::networker::{MockNetworker, Networker, NetworkerEvent};
+use services::pool::events::*;
+use services::pool::networker::{MockNetworker, Networker};
 use services::pool::networker;
 use services::pool::events::NetworkerEvent;
+use services::pool::events::RequestEvent;
 
 trait ConsensusState {
     fn is_terminal() -> bool;
@@ -54,18 +54,14 @@ impl From<ConsensusCollectorSM<CollectingConsensusState>> for ConsensusCollector
 
 enum ConsensusCollectorSMWrapper {
     Start(ConsensusCollectorSM<StartState>),
-    CollectingConsensus(ConsensusCollectorSM<CollectingConsensusState>),
-    Finish(ConsensusCollectorSM<FinishState>)
+    CollectingConsensus(ConsensusCollectorSM<CollectingConsensusState>)
 }
 
 impl ConsensusCollectorSMWrapper {
-    pub fn handle_event(self, pe: ConsensusCollectorEvent) -> (Self, Option<PoolEvent>) {
+    pub fn handle_event(self, pe: ConsensusCollectorEvent) -> (Self, Option<RequestEvent>) {
         match (self, pe) {
             (ConsensusCollectorSMWrapper::Start(consensus_collector), ConsensusCollectorEvent::StartConsensus) => {
-                //TODO: check whether we need to get consensus
-                //TODO: if we don't need
-                //(ConsensusCollectorSMWrapper::Start(consensus_collector), None)
-                //TODO: if we do
+                //TODO: send request from event to all nodes
                 (ConsensusCollectorSMWrapper::CollectingConsensus(consensus_collector.into()), None)
             }
             (ConsensusCollectorSMWrapper::CollectingConsensus(consensus_collector), ConsensusCollectorEvent::NodeReply) => {
@@ -75,7 +71,7 @@ impl ConsensusCollectorSMWrapper {
                 //TODO: if failed
                 //(ConsensusCollectorSMWrapper::Start(consensus_collector.into(), Some(PoolEvent::ConsensusFailed))
                 //TODO: if success
-                (ConsensusCollectorSMWrapper::Start(consensus_collector.into()), Some(PoolEvent::ConsensusReached))
+                (ConsensusCollectorSMWrapper::Start(consensus_collector.into()), Some(RequestEvent::ConsensusReached))
             },
             _ => unimplemented!()
         }
@@ -84,17 +80,17 @@ impl ConsensusCollectorSMWrapper {
 
 pub trait ConsensusCollector<'con, T: Networker> {
     fn new(networker: &'con T) -> Self;
-    fn process_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<PoolEvent>;
+    fn process_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<RequestEvent>;
 }
 
-pub struct ConsensusCollectorImpl<'con, T: Networker> {
+pub struct ConsensusCollectorImpl<'con, T: Networker + 'con> {
     consensus_collector_sm_wrapper: ConsensusCollectorSMWrapper,
     networker: &'con T
 }
 
 impl<'con, T: Networker> ConsensusCollectorImpl<'con, T> {
 
-    fn _handle_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<PoolEvent> {
+    fn _handle_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<RequestEvent> {
         match pe {
             Some(pe) => {
                 let (wrapper, event) = self.consensus_collector_sm_wrapper.handle_event(pe);
@@ -114,7 +110,7 @@ impl<'con, T: Networker> ConsensusCollector<'con, T> for ConsensusCollectorImpl<
         }
     }
 
-    fn process_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<PoolEvent> {
+    fn process_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<RequestEvent> {
         let ne: Option<Option<NetworkerEvent>> = pe.map(|pe| pe.into());
         let ne = match ne {
             Some(ne) => ne,
@@ -126,7 +122,7 @@ impl<'con, T: Networker> ConsensusCollector<'con, T> for ConsensusCollectorImpl<
     }
 }
 
-pub struct MockConsensusCollector<'mcon, T: Networker> {
+pub struct MockConsensusCollector<'mcon, T: Networker + 'mcon> {
     networker: &'mcon T
 }
 
@@ -137,7 +133,7 @@ impl<'mcon, T: Networker> ConsensusCollector<'mcon, T> for MockConsensusCollecto
         }
     }
 
-    fn process_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<PoolEvent> {
+    fn process_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<RequestEvent> {
         unimplemented!()
     }
 }
