@@ -17,6 +17,10 @@ RUN \
            libsodium-devel \
            spectool
 
+# install nodejs and npm
+RUN curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
+RUN yum -y install nodejs
+
 RUN cd /tmp && \
    curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.14.tar.gz | tar -xz && \
     cd /tmp/libsodium-1.0.14 && \

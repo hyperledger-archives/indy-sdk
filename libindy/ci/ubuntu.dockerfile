@@ -23,6 +23,10 @@ RUN apt-get update && \
       libncursesw5-dev \
       libzmq3-dev
 
+# install nodejs and npm
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
+RUN apt-get install -y nodejs
+
 RUN pip3 install -U \
 	pip \
 	setuptools \
