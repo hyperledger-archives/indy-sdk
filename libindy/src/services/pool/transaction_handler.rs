@@ -1,6 +1,5 @@
 extern crate digest;
 extern crate hex;
-extern crate libc;
 extern crate rand;
 extern crate rust_base58;
 extern crate sha2;
@@ -717,7 +716,10 @@ impl CommandProcess {
 
 #[cfg(test)]
 mod tests {
+    extern crate libc;
+
     use super::*;
+    use self::libc::c_char;
     use std::ops::Sub;
 
     #[test]
@@ -806,6 +808,7 @@ mod tests {
             unsafe { *parsed = msg; }
             ErrorCode::Success
         }
+        extern fn free(data: *const c_char) -> ErrorCode { ErrorCode::Success }
 
         let parsed_sp = json!([{
             "root_hash": "rh",
@@ -817,7 +820,7 @@ mod tests {
             },
         }]);
 
-        th.parser_sps.insert("test".to_owned(), parse);
+        th.parser_sps.insert("test".to_owned(), (parse, free));
         let mut parsed_sps = th.parse_generic_reply_for_proof_checking(&json!({"type".to_owned(): "test"}),
                                                                        parsed_sp.to_string().as_str())
             .unwrap();

@@ -335,11 +335,15 @@ impl PoolWorker {
                 actions.push(ZMQLoopAction::Refresh(id));
             } else if "register".eq(cmd_s.as_str()) {
                 let parser_handle: Option<CustomTransactionParser> = cmd.get(2)
-                    .map(|cmd| LittleEndian::read_u64(cmd.as_slice()) as usize)
-                    .map(|h| unsafe { ::std::mem::transmute(h) });
+                    .map(|cmd| {
+                        let h = LittleEndian::read_u64(cmd.as_slice()) as usize;
+                        unsafe { ::std::mem::transmute(h) }
+                    });
                 let free_handle: Option<CustomFree> = cmd.get(3)
-                    .map(|cmd| LittleEndian::read_u64(cmd.as_slice()) as usize)
-                    .map(|h| unsafe { ::std::mem::transmute(h) });
+                    .map(|cmd| {
+                        let h = LittleEndian::read_u64(cmd.as_slice()) as usize;
+                        unsafe { ::std::mem::transmute(h) }
+                    });
 
                 let txn_type = String::from_utf8(cmd[4].clone())
                     .map_err(|err|
@@ -757,7 +761,10 @@ impl PoolService {
 
 #[cfg(test)]
 mod tests {
+    extern crate libc;
     use super::*;
+    use api::ErrorCode;
+    use self::libc::c_char;
 
     mod pool_service {
         use super::*;
@@ -922,7 +929,10 @@ mod tests {
                 cmd_sock: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
                 open_cmd_id: 0,
                 name: "".to_string(),
-                handler: PoolWorkerHandler::CatchupHandler(Default::default()),
+                handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
+                    timeout: time::now_utc().add(Duration::seconds(2)),
+                    ..Default::default()
+                }),
             }
         }
     }
@@ -1059,6 +1069,40 @@ mod tests {
 
         assert_eq!(actions.len(), 1);
         assert_eq!(actions[0], ZMQLoopAction::Terminate(-1));
+    }
+
+    #[test]
+    fn pool_worker_poll_zmq_works_for_register() {
+        let ctx = zmq::Context::new();
+        let mut pw = PoolWorker {
+            cmd_sock: ctx.socket(zmq::SocketType::PAIR).expect("socket"),
+            ..Default::default()
+        };
+        let pair_socket_addr = "inproc://test_pool_worker_poll_zmq_works_for_terminate";
+        let send_cmd_sock = ctx.socket(zmq::SocketType::PAIR).expect("socket");
+        pw.cmd_sock.bind(pair_socket_addr).expect("bind");
+        send_cmd_sock.connect(pair_socket_addr).expect("connect");
+        let handle: thread::JoinHandle<Vec<ZMQLoopAction>> = thread::spawn(move || {
+            pw.poll_zmq().unwrap()
+        });
+        let mut ps = Pool {
+            name: "".to_owned(),
+            cmd_sock: send_cmd_sock,
+            id: -1,
+            worker: None,
+        };
+
+        let cmd_id = SequenceUtils::get_next_id();
+        let txn_type = "test_type";
+        extern fn parser(reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode { ErrorCode::Success }
+        extern fn free(data: *const c_char) -> ErrorCode { ErrorCode::Success }
+
+        ps.register_parser(cmd_id, txn_type, parser, free).unwrap();
+
+        let actions: Vec<ZMQLoopAction> = handle.join().unwrap();
+        assert_eq!(actions.len(), 1);
+        assert_eq!(actions[0],
+                   ZMQLoopAction::Register(cmd_id, txn_type.to_owned(), Some(parser), Some(free)));
     }
 
     #[test]
