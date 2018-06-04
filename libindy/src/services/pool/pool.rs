@@ -5,6 +5,9 @@ use std::thread;
 use services::pool::commander::Commander;
 use services::pool::events::PoolEvent;
 use services::pool::networker::Networker;
+use services::pool::events::ConsensusCollectorEvent;
+use services::pool::consensus_collector::ConsensusCollectorImpl;
+use services::pool::networker::ZMQNetworker;
 
 trait PoolState {
     fn is_terminal(&self) -> bool;
@@ -18,9 +21,11 @@ impl PoolState for InitializationState {
     }
 }
 
-struct GettingCatchupTargetState {}
+struct GettingCatchupTargetState<'st, T: Networker, CC: ConsensusCollector<'st, T>> {
+    consensus_collector: CC
+}
 
-impl PoolState for GettingCatchupTargetState {
+impl<'st, T: Networker, CC: ConsensusCollector<'st, T>> PoolState for GettingCatchupTargetState<'st, T, CC> {
     fn is_terminal(&self) -> bool {
         false
     }
@@ -72,10 +77,12 @@ impl PoolSM<InitializationState> {
 
 // transitions from Initialization
 
-impl From<PoolSM<InitializationState>> for PoolSM<GettingCatchupTargetState> {
-    fn from(val: (PoolSM<InitializationState>)) -> PoolSM<GettingCatchupTargetState> {
+impl<'sm, T: Networker, CC: ConsensusCollector<'sm, T>> From<(PoolSM<InitializationState>, CC)> for PoolSM<GettingCatchupTargetState<'sm, T, CC>> {
+    fn from((pool, cc): (PoolSM<InitializationState>, CC)) -> PoolSM<GettingCatchupTargetState<'sm, T, CC>> {
         PoolSM {
-            state: GettingCatchupTargetState {}
+            state: GettingCatchupTargetState {
+                consensus_collector: cc
+            }
         }
     }
 }
@@ -98,24 +105,24 @@ impl From<PoolSM<InitializationState>> for PoolSM<ActiveState> {
 
 // transitions from GettingCatchupTarget
 
-impl From<PoolSM<GettingCatchupTargetState>> for PoolSM<SyncCatchupState> {
-    fn from(_: PoolSM<GettingCatchupTargetState>) -> Self {
+impl<'sm, T: Networker, CC: ConsensusCollector<'sm, T>> From<PoolSM<GettingCatchupTargetState<'sm, T, CC>>> for PoolSM<SyncCatchupState> {
+    fn from(_: PoolSM<GettingCatchupTargetState<'sm, T, CC>>) -> Self {
         PoolSM {
             state: SyncCatchupState {}
         }
     }
 }
 
-impl From<PoolSM<GettingCatchupTargetState>> for PoolSM<TerminatedState> {
-    fn from(_: PoolSM<GettingCatchupTargetState>) -> Self {
+impl<'sm, T: Networker, CC: ConsensusCollector<'sm, T>> From<PoolSM<GettingCatchupTargetState<'sm, T, CC>>> for PoolSM<TerminatedState> {
+    fn from(_: PoolSM<GettingCatchupTargetState<'sm, T, CC>>) -> Self {
         PoolSM {
             state: TerminatedState {}
         }
     }
 }
 
-impl From<PoolSM<GettingCatchupTargetState>> for PoolSM<ClosedState> {
-    fn from(_: PoolSM<GettingCatchupTargetState>) -> Self {
+impl<'sm, T: Networker, CC: ConsensusCollector<'sm, T>> From<PoolSM<GettingCatchupTargetState<'sm, T, CC>>> for PoolSM<ClosedState> {
+    fn from(_: PoolSM<GettingCatchupTargetState<'sm, T, CC>>) -> Self {
         PoolSM {
             state: ClosedState {}
         }
@@ -124,10 +131,10 @@ impl From<PoolSM<GettingCatchupTargetState>> for PoolSM<ClosedState> {
 
 // transitions from Active
 
-impl From<PoolSM<ActiveState>> for PoolSM<GettingCatchupTargetState> {
-    fn from(_: PoolSM<ActiveState>) -> Self {
+impl<'sm, T: Networker, CC: ConsensusCollector<'sm, T>> From<(PoolSM<ActiveState>, CC)> for PoolSM<GettingCatchupTargetState<'sm, T, CC>> {
+    fn from((_, cc): (PoolSM<ActiveState>, CC)) -> Self {
         PoolSM {
-            state: GettingCatchupTargetState {}
+            state: GettingCatchupTargetState { consensus_collector: cc }
         }
     }
 }
@@ -176,10 +183,10 @@ impl From<PoolSM<SyncCatchupState>> for PoolSM<ClosedState> {
 
 // transitions from Terminated
 
-impl From<PoolSM<TerminatedState>> for PoolSM<GettingCatchupTargetState> {
-    fn from(_: PoolSM<TerminatedState>) -> Self {
+impl<'sm, T: Networker, CC: ConsensusCollector<'sm, T>> From<(PoolSM<TerminatedState>, CC)> for PoolSM<GettingCatchupTargetState<'sm, T, CC>> {
+    fn from((_, cc): (PoolSM<TerminatedState>, CC)) -> Self {
         PoolSM {
-            state: GettingCatchupTargetState {}
+            state: GettingCatchupTargetState { consensus_collector: cc }
         }
     }
 }
@@ -192,48 +199,64 @@ impl From<PoolSM<TerminatedState>> for PoolSM<ClosedState> {
     }
 }
 
-enum PoolWrapper {
+enum PoolWrapper <'wr, T: Networker, CC: ConsensusCollector<'wr, T>> {
     Initialization(PoolSM<InitializationState>),
-    GettingCatchupTarget(PoolSM<GettingCatchupTargetState>),
+    GettingCatchupTarget(PoolSM<GettingCatchupTargetState<'wr, T, CC>>),
     Active(PoolSM<ActiveState>),
     Closed(PoolSM<ClosedState>),
     SyncCatchup(PoolSM<SyncCatchupState>),
     Terminated(PoolSM<TerminatedState>),
 }
 
-impl PoolWrapper {
+impl<'wr, T: Networker, CC: ConsensusCollector<'wr, T>> PoolWrapper<'wr, T, CC> {
     pub fn handle_event(self, pe: PoolEvent) -> Self {
-        match (self, pe) {
-            (PoolWrapper::Initialization(pool), PoolEvent::CheckCache) => {
-                //TODO: check cache freshness
-                let fresh = true;
-                if fresh {
-                    PoolWrapper::Active(pool.into())
-                } else {
-                    PoolWrapper::GettingCatchupTarget(pool.into())
+        match self {
+            PoolWrapper::Initialization(pool) => match pe {
+                PoolEvent::CheckCache => {
+                    //TODO: check cache freshness
+                    let fresh = true;
+                    if fresh {
+                        PoolWrapper::Active(pool.into())
+                    } else {
+                        PoolWrapper::GettingCatchupTarget((CC::new(T::new()), pool).into())
+                    }
                 }
-            },
-            (PoolWrapper::Initialization(pool), PoolEvent::Close) => PoolWrapper::Closed(pool.into()),
-
-            (PoolWrapper::Active(pool), PoolEvent::Close) => PoolWrapper::Closed(pool.into()),
-            (PoolWrapper::Active(pool), PoolEvent::PoolOutdated) => PoolWrapper::Terminated(pool.into()),
-            (PoolWrapper::Active(pool), PoolEvent::Refresh) => PoolWrapper::GettingCatchupTarget(pool.into()),
-            (PoolWrapper::Active(pool), PoolEvent::ConsensusReached) => PoolWrapper::Active(pool),
-            (PoolWrapper::Active(pool), PoolEvent::ConsensusFailed) => PoolWrapper::Active(pool),
-
-            (PoolWrapper::GettingCatchupTarget(pool), PoolEvent::Close) => PoolWrapper::Closed(pool.into()),
-            (PoolWrapper::GettingCatchupTarget(pool), PoolEvent::ConsensusFailed) => PoolWrapper::Terminated(pool.into()),
-            (PoolWrapper::GettingCatchupTarget(pool), PoolEvent::ConsensusReached) => PoolWrapper::SyncCatchup(pool.into()),
-
-            (PoolWrapper::SyncCatchup(pool), PoolEvent::Close) => PoolWrapper::Closed(pool.into()),
-            (PoolWrapper::SyncCatchup(pool), PoolEvent::NodesBlacklisted) => PoolWrapper::Terminated(pool.into()),
-            (PoolWrapper::SyncCatchup(pool), PoolEvent::Synced) => PoolWrapper::Active(pool.into()),
-
-            (PoolWrapper::Terminated(pool), PoolEvent::Close) => PoolWrapper::Closed(pool.into()),
-            (PoolWrapper::Terminated(pool), PoolEvent::Refresh) => PoolWrapper::GettingCatchupTarget(pool.into()),
-
-            _ => unimplemented!()
+                PoolEvent::Close => PoolWrapper::Closed(pool.into()),
+                _ => PoolWrapper::Initialization(pool)
+            }
+            PoolWrapper::GettingCatchupTarget(pool) => {
+                let pe = pool.state.consensus_collector.process_event(pe.into()).unwrap_or(pe);
+                match pe {
+                    PoolEvent::Close => PoolWrapper::Closed(pool.into()),
+                    PoolEvent::ConsensusFailed => PoolWrapper::Terminated(pool.into()),
+                    PoolEvent::ConsensusReached => PoolWrapper::SyncCatchup(pool.into()),
+                    _ => PoolWrapper::GettingCatchupTarget(pool)
+                }
+            }
+            PoolWrapper::Terminated(pool) => {
+                match pe {
+                    PoolEvent::Close => PoolWrapper::Closed(pool.into()),
+                    PoolEvent::Refresh => PoolWrapper::GettingCatchupTarget((CC::new(T::new()), pool).into())
+                }
+            }
         }
+//        match (self, pe) {
+//
+//            (PoolWrapper::Active(pool), PoolEvent::Close) => PoolWrapper::Closed(pool.into()),
+//            (PoolWrapper::Active(pool), PoolEvent::PoolOutdated) => PoolWrapper::Terminated(pool.into()),
+//            (PoolWrapper::Active(pool), PoolEvent::Refresh) => PoolWrapper::GettingCatchupTarget(pool.into()),
+//            (PoolWrapper::Active(pool), PoolEvent::ConsensusReached) => PoolWrapper::Active(pool),
+//            (PoolWrapper::Active(pool), PoolEvent::ConsensusFailed) => PoolWrapper::Active(pool),
+//
+//            (PoolWrapper::SyncCatchup(pool), PoolEvent::Close) => PoolWrapper::Closed(pool.into()),
+//            (PoolWrapper::SyncCatchup(pool), PoolEvent::NodesBlacklisted) => PoolWrapper::Terminated(pool.into()),
+//            (PoolWrapper::SyncCatchup(pool), PoolEvent::Synced) => PoolWrapper::Active(pool.into()),
+//
+//            (PoolWrapper::Terminated(pool), ) => ,
+//            (PoolWrapper::Terminated(pool), ) => ,
+//
+//            _ => unimplemented!()
+//        }
     }
 
     pub fn is_terminal(&self) -> bool {
@@ -244,15 +267,15 @@ impl PoolWrapper {
     }
 }
 
-pub struct Pool <'pool, S: Networker, T: ConsensusCollector<S>>{
-    pool_wrapper: PoolWrapper,
+pub struct Pool <'pool, S: Networker, T: ConsensusCollector<'pool, S>>{
+    pool_wrapper: PoolWrapper<'pool, S, T>,
     commander: &'pool Commander,
     consensus_collector: T,
     networker: S,
     worker: Option<JoinHandle<()>>
 }
 
-impl<'pool, S: Networker, T: ConsensusCollector<S>> Pool<'pool, S, T> {
+impl<'pool, S: Networker, T: ConsensusCollector<'pool, S>> Pool<'pool, S, T> {
     pub fn new(commander: &'pool Commander, networker: S, consensus_collector: T) -> Self {
         Pool {
             pool_wrapper: PoolWrapper::Initialization(PoolSM::new()),
@@ -287,7 +310,12 @@ impl<'pool, S: Networker, T: ConsensusCollector<S>> Pool<'pool, S, T> {
 
     fn _get_event(&self) -> Option<PoolEvent> {
         let pe = self.commander.get_next_event();
-        self.consensus_collector.process_event(pe.into()).or(pe)
+        let cce: Option<Option<ConsensusCollectorEvent>> = pe.map(|pe| pe.into());
+        let cce = match cce {
+            Some(cce) => cce,
+            _ => None
+        };
+        self.consensus_collector.process_event(cce).or(pe)
     }
 
     fn _poll(&self) {

@@ -19,15 +19,13 @@ pub enum PoolEvent {
     PoolOutdated,
     Synced,
     NodesBlacklisted,
-    SendRequest
+    SendRequest,
+    Timeout
 }
 
-type ConsensusCollectorEventOption = Option<ConsensusCollectorEvent>;
-type NetworkerEventOption = Option<NetworkerEvent>;
-
-impl From<PoolEvent> for ConsensusCollectorEventOption {
-    fn from(pe: PoolEvent) -> Self {
-        match pe {
+impl Into<Option<ConsensusCollectorEvent>> for PoolEvent {
+    fn into(self) -> Option<ConsensusCollectorEvent> {
+        match self {
             PoolEvent::NodeReply => Some(ConsensusCollectorEvent::NodeReply),
             PoolEvent::SendRequest => Some(ConsensusCollectorEvent::SendRequest),
             _ => None
@@ -35,10 +33,10 @@ impl From<PoolEvent> for ConsensusCollectorEventOption {
     }
 }
 
-impl From<ConsensusCollectorEventOption> for NetworkerEventOption {
-    fn from(cce: ConsensusCollectorEvent) -> Self {
-        match cce {
-            Some(ConsensusCollectorEvent::SendRequest) => {
+impl Into<Option<NetworkerEvent>> for ConsensusCollectorEvent {
+    fn into(self) -> Option<NetworkerEvent> {
+        match self {
+            ConsensusCollectorEvent::SendRequest => {
                 //TODO: check if we actually need consensus!! acknowledge it with Slava
                 //TODO: if we don't, we send one request
                 //Some(NetworkerEvent::SendOneRequest)

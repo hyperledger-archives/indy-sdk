@@ -2,6 +2,7 @@ use services::pool::events::ConsensusCollectorEvent;
 use services::pool::events::PoolEvent;
 use services::pool::networker::{MockNetworker, Networker, NetworkerEvent};
 use services::pool::networker;
+use services::pool::events::NetworkerEvent;
 
 trait ConsensusState {
     fn is_terminal() -> bool;
@@ -81,7 +82,8 @@ impl ConsensusCollectorSMWrapper {
     }
 }
 
-pub trait ConsensusCollector<T: Networker> {
+pub trait ConsensusCollector<'con, T: Networker> {
+    fn new(networker: &'con T) -> Self;
     fn process_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<PoolEvent>;
 }
 
@@ -91,6 +93,7 @@ pub struct ConsensusCollectorImpl<'con, T: Networker> {
 }
 
 impl<'con, T: Networker> ConsensusCollectorImpl<'con, T> {
+
     fn _handle_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<PoolEvent> {
         match pe {
             Some(pe) => {
@@ -103,19 +106,22 @@ impl<'con, T: Networker> ConsensusCollectorImpl<'con, T> {
     }
 }
 
-impl <'con, T: Networker> ConsensusCollectorImpl<'con, T> {
-    pub fn new(networker: &'con T) -> Self {
+impl<'con, T: Networker> ConsensusCollector<'con, T> for ConsensusCollectorImpl<'con, T> {
+    fn new(networker: &'con T) -> Self {
         ConsensusCollectorImpl {
             networker,
             consensus_collector_sm_wrapper: ConsensusCollectorSMWrapper::Start(ConsensusCollectorSM::new())
         }
     }
-}
 
-impl<'con, T: Networker> ConsensusCollector<T> for ConsensusCollectorImpl<'con, T> {
     fn process_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<PoolEvent> {
+        let ne: Option<Option<NetworkerEvent>> = pe.map(|pe| pe.into());
+        let ne = match ne {
+            Some(ne) => ne,
+            _ => None
+        };
         self._handle_event(
-            self.networker.process_event(pe.into()).or(pe)
+            self.networker.process_event(ne).or(pe)
         )
     }
 }
@@ -124,15 +130,13 @@ pub struct MockConsensusCollector<'mcon, T: Networker> {
     networker: &'mcon T
 }
 
-impl <'mcon, T: Networker> MockConsensusCollector<'mcon, T> {
-    pub fn new(networker: &'mcon T) -> Self {
+impl<'mcon, T: Networker> ConsensusCollector<'mcon, T> for MockConsensusCollector<'mcon, T> {
+    fn new(networker: &'mcon T) -> Self {
         MockConsensusCollector {
             networker
         }
     }
-}
 
-impl<'mcon, T: Networker> ConsensusCollector<T> for MockConsensusCollector<'mcon, T> {
     fn process_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<PoolEvent> {
         unimplemented!()
     }

@@ -4,6 +4,8 @@ use services::pool::events::ConsensusCollectorEvent;
 pub trait Networker {
     fn new() -> Self;
     fn process_event(&self, pe: Option<NetworkerEvent>) -> Option<ConsensusCollectorEvent>;
+    fn get_timeout() -> u32;
+    fn poll();
 }
 
 pub struct ZMQNetworker {}
@@ -20,6 +22,14 @@ impl Networker for ZMQNetworker {
             None => None
         }
     }
+
+    fn get_timeout() -> u32 {
+        unimplemented!()
+    }
+
+    fn poll() {
+        unimplemented!()
+    }
 }
 
 pub struct MockNetworker {}
@@ -30,6 +40,14 @@ impl Networker for MockNetworker {
     }
 
     fn process_event(&self, pe: Option<NetworkerEvent>) -> Option<ConsensusCollectorEvent> {
+        unimplemented!()
+    }
+
+    fn get_timeout() -> u32 {
+        unimplemented!()
+    }
+
+    fn poll() {
         unimplemented!()
     }
 }
