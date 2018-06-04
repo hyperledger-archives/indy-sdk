@@ -21,7 +21,7 @@ use std::ffi::CString;
 use std::ops::Add;
 
 use super::state_proof;
-use api::{ErrorCode, ledger::{CustomTransactionParser, CustomFree}};
+use api::ErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use errors::pool::PoolError;
@@ -29,6 +29,7 @@ use errors::common::CommonError;
 use super::types::*;
 use domain::ledger::constants;
 use services::ledger::merkletree::merkletree::MerkleTree;
+use services::pool::PoolService;
 use self::indy_crypto::bls::Generator;
 use utils::cstring::CStringUtils;
 
@@ -50,7 +51,6 @@ pub struct TransactionHandler {
     pub f: usize,
     pub nodes: Vec<RemoteNode>,
     pending_commands: HashMap<u64 /* requestId */, CommandProcess>,
-    pub parser_sps: HashMap<String, (CustomTransactionParser, CustomFree)>,
 }
 
 impl TransactionHandler {
@@ -235,7 +235,7 @@ impl TransactionHandler {
         };
 
         let type_ = req_json["operation"]["type"].as_str().unwrap_or("");
-        if REQUESTS_FOR_STATE_PROOFS.contains(&type_) || self.parser_sps.contains_key(type_) {
+        if REQUESTS_FOR_STATE_PROOFS.contains(&type_) || PoolService::get_sp_parser(type_).is_some() {
             let start_node = rand::StdRng::new().unwrap().gen_range(0, self.nodes.len());
             let resendable_request = ResendableRequest {
                 request: req_str.to_string(),
@@ -283,7 +283,7 @@ impl TransactionHandler {
         if REQUESTS_FOR_STATE_PROOFS.contains(&type_) {
             trace!("TransactionHandler::parse_generic_reply_for_proof_checking: built-in");
             TransactionHandler::parse_reply_for_builtin_sp(json_msg, type_)
-        } else if let Some(&(parser, free)) = self.parser_sps.get(type_) {
+        } else if let Some((parser, free)) = PoolService::get_sp_parser(type_) {
             trace!("TransactionHandler::parse_generic_reply_for_proof_checking: plugged: parser {:?}, free {:?}",
                    parser, free);
 
@@ -675,7 +675,6 @@ impl Default for TransactionHandler {
             pending_commands: HashMap::new(),
             f: 0,
             nodes: Vec::new(),
-            parser_sps: HashMap::new(),
         }
     }
 }
@@ -802,13 +801,13 @@ mod tests {
 
     #[test]
     fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_plugged() {
-        let mut th = TransactionHandler::default();
+        let th = TransactionHandler::default();
 
         extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
             unsafe { *parsed = msg; }
             ErrorCode::Success
         }
-        extern fn free(data: *const c_char) -> ErrorCode { ErrorCode::Success }
+        extern fn free(_data: *const c_char) -> ErrorCode { ErrorCode::Success }
 
         let parsed_sp = json!([{
             "root_hash": "rh",
@@ -820,7 +819,7 @@ mod tests {
             },
         }]);
 
-        th.parser_sps.insert("test".to_owned(), (parse, free));
+        PoolService::register_sp_parser("test", parse, free).unwrap();
         let mut parsed_sps = th.parse_generic_reply_for_proof_checking(&json!({"type".to_owned(): "test"}),
                                                                        parsed_sp.to_string().as_str())
             .unwrap();

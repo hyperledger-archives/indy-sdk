@@ -1623,25 +1623,23 @@ pub type CustomFree = extern fn(data: *const c_char) -> ErrorCode;
 
 #[no_mangle]
 pub extern fn indy_register_transaction_parser_for_sp(command_handle: i32,
-                                                      pool_handle: i32,
                                                       txn_type: *const c_char,
                                                       parser: Option<CustomTransactionParser>,
                                                       free: Option<CustomFree>,
                                                       cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_register_transaction_parser_for_sp: >>> pool_handle {}, txn_type {:?}, parser {:?}, free {:?}",
-           pool_handle, txn_type, parser, free);
+    trace!("indy_register_transaction_parser_for_sp: >>> txn_type {:?}, parser {:?}, free {:?}",
+           txn_type, parser, free);
 
-    check_useful_c_str!(txn_type, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(parser, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(free, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(txn_type, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(parser, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(free, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_register_transaction_parser_for_sp: entities: txn_type {}, parser {:?}, free {:?}",
            txn_type, parser, free);
 
     let res = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::RegisterSPParser(
-            pool_handle,
             txn_type,
             parser,
             free,

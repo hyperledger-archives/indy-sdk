@@ -9,7 +9,6 @@ use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use super::zmq;
 
-use api::ledger::{CustomFree, CustomTransactionParser};
 use errors::common::CommonError;
 use utils::crypto::verkey_builder::build_full_verkey;
 
@@ -542,7 +541,6 @@ pub enum ZMQLoopAction {
     MessageToProcess(MessageToProcess),
     Terminate(i32),
     Refresh(i32),
-    RegisterSPParser(i32, String, Option<CustomTransactionParser>, Option<CustomFree>),
     Timeout,
 }
 

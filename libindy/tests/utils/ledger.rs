@@ -1,8 +1,5 @@
-extern crate libc;
 extern crate time;
 extern crate serde_json;
-
-use self::libc::c_char;
 
 use indy::api::ErrorCode;
 use indy::api::ledger::*;
@@ -509,21 +506,13 @@ impl LedgerUtils {
         super::results::result_to_string_string_u64(err, receiver)
     }
 
-    pub fn register_transaction_parser_for_sp(pool_handle: i32, txn_type: &str) -> Result<(), ErrorCode> {
+    pub fn register_transaction_parser_for_sp(txn_type: &str, parse: CustomTransactionParser, free: CustomFree) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let txn_type = CString::new(txn_type).unwrap();
 
-        extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
-            unsafe { *parsed = msg; }
-            ErrorCode::Success
-        }
-
-        extern fn free(_buf: *const c_char) -> ErrorCode { ErrorCode::Success }
-
         let err =
             indy_register_transaction_parser_for_sp(command_handle,
-                                                    pool_handle,
                                                     txn_type.as_ptr(),
                                                     Some(parse),
                                                     Some(free),

@@ -174,14 +174,10 @@ pub enum LedgerCommand {
         String, // get revocation registry delta response
         Box<Fn(Result<(String, String, u64), IndyError>) + Send>),
     RegisterSPParser(
-        i32, // pool handle
         String, // txn type
         CustomTransactionParser,
         CustomFree,
         Box<Fn(Result<(), IndyError>) + Send>),
-    RegisterSPParserAck(
-        i32, // handle
-        Result<(), PoolError>),
 }
 
 pub struct LedgerCommandExecutor {
@@ -191,7 +187,6 @@ pub struct LedgerCommandExecutor {
     ledger_service: Rc<LedgerService>,
 
     send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<String, IndyError>)>>>,
-    register_sp_parser_cbs: RefCell<HashMap<i32, Box<Fn(Result<(), IndyError>)>>>,
 }
 
 impl LedgerCommandExecutor {
@@ -205,7 +200,6 @@ impl LedgerCommandExecutor {
             wallet_service,
             ledger_service,
             send_callbacks: RefCell::new(HashMap::new()),
-            register_sp_parser_cbs: RefCell::new(HashMap::new()),
         }
     }
 
@@ -225,15 +219,9 @@ impl LedgerCommandExecutor {
                     .expect("Expect callback to process ack command")
                     (result.map_err(IndyError::from));
             }
-            LedgerCommand::RegisterSPParser(pool_handle, txn_type, parser, free, cb) => {
+            LedgerCommand::RegisterSPParser(txn_type, parser, free, cb) => {
                 info!(target: "ledger_command_executor", "RegisterSPParser command received");
-                self.register_sp_parser(pool_handle, &txn_type, parser, free, cb);
-            }
-            LedgerCommand::RegisterSPParserAck(handle, result) => {
-                info!(target: "ledger_command_executor", "RegisterSPParserAck command received");
-                self.register_sp_parser_cbs.borrow_mut().remove(&handle)
-                    .expect("Expect callback to process ack command")
-                    (result.map_err(IndyError::from));
+                cb(self.register_sp_parser(&txn_type, parser, free));
             }
             LedgerCommand::SignRequest(wallet_handle, submitter_did, request_json, cb) => {
                 info!(target: "ledger_command_executor", "SignRequest command received");
@@ -358,17 +346,13 @@ impl LedgerCommandExecutor {
         };
     }
 
-    fn register_sp_parser(&self, pool_handle: i32, txn_type: &str,
-                          parser: CustomTransactionParser, free: CustomFree,
-                          cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        debug!("register_sp_parser >>> pool_handle: {:?}, txn_type: {:?}, parser: {:?}, free: {:?}",
-               pool_handle, txn_type, parser, free);
+    fn register_sp_parser(&self, txn_type: &str,
+                          parser: CustomTransactionParser, free: CustomFree) -> Result<(), IndyError> {
+        debug!("register_sp_parser >>> txn_type: {:?}, parser: {:?}, free: {:?}",
+               txn_type, parser, free);
 
-        let res: Result<i32, PoolError> = self.pool_service.register_sp_parser(pool_handle, txn_type, parser, free);
-        match res {
-            Ok(cmd_id) => { self.register_sp_parser_cbs.borrow_mut().insert(cmd_id, cb); }
-            Err(err) => { cb(Err(IndyError::PoolError(err))); }
-        };
+        PoolService::register_sp_parser(txn_type, parser, free)
+            .map_err(IndyError::from)
     }
 
     fn sign_and_submit_request(&self,
