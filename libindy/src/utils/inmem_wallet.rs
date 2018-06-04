@@ -20,15 +20,15 @@ struct InmemWalletContext {
 
 #[derive(Debug, Clone)]
 struct InmemWalletRecord {
-    type_: String,
-    id: String,
+    type_: CString,
+    id: CString,
     value: Vec<u8>,
-    tags: String
+    tags: CString
 }
 
 #[derive(Debug, Clone)]
 struct InmemWalletEntity {
-    metadata: String,
+    metadata: CString,
     records: HashMap<String, InmemWalletRecord>
 }
 
@@ -67,7 +67,7 @@ impl InmemWallet {
             // Invalid state as "already exists" case must be checked on service layer
             return ErrorCode::CommonInvalidState;
         }
-        wallets.insert(name.clone(), InmemWalletEntity { metadata, records: HashMap::new() });
+        wallets.insert(name.clone(), InmemWalletEntity { metadata: CString::new(metadata).unwrap(), records: HashMap::new() });
 
         ErrorCode::Success
     }
@@ -127,10 +127,10 @@ impl InmemWallet {
         let wallet = wallets.get_mut(&wallet_context.name).unwrap();
 
         wallet.records.insert(InmemWallet::build_record_id(&type_, &id), InmemWalletRecord {
-            type_,
-            id,
+            type_: CString::new(type_).unwrap(),
+            id: CString::new(id).unwrap(),
             value,
-            tags: tags_json,
+            tags: CString::new(tags_json).unwrap(),
         });
         ErrorCode::Success
     }
@@ -228,9 +228,7 @@ impl InmemWallet {
 
         let record = handles.get(&record_handle).unwrap();
 
-        let value = record.id.clone();
-
-        unsafe { *id_ptr = CString::new(value.as_str()).unwrap().into_raw(); }
+        unsafe { *id_ptr = record.id.as_ptr(); }
 
         ErrorCode::Success
     }
@@ -252,9 +250,7 @@ impl InmemWallet {
 
         let record = handles.get(&record_handle).unwrap();
 
-        let type_ = record.type_.clone();
-
-        unsafe { *type_ptr = CString::new(type_.as_str()).unwrap().into_raw(); }
+        unsafe { *type_ptr = record.type_.as_ptr(); }
 
         ErrorCode::Success
     }
@@ -277,10 +273,8 @@ impl InmemWallet {
 
         let record = handles.get(&record_handle).unwrap();
 
-        let value = record.value.clone();
-
-        unsafe { *value_ptr = value.as_ptr() as *const u8; }
-        unsafe { *value_len = value.len() as usize; }
+        unsafe { *value_ptr = record.value.as_ptr() as *const u8; }
+        unsafe { *value_len = record.value.len() as usize; }
 
         ErrorCode::Success
     }
@@ -302,9 +296,7 @@ impl InmemWallet {
 
         let record = handles.get(&record_handle).unwrap();
 
-        let tags = record.tags.clone();
-
-        unsafe { *tags_json_ptr = CString::new(tags.as_str()).unwrap().into_raw(); }
+        unsafe { *tags_json_ptr = record.tags.as_ptr(); }
 
         ErrorCode::Success
     }
@@ -353,7 +345,7 @@ impl InmemWallet {
 
         match wallet.records.get_mut(&InmemWallet::build_record_id(&type_, &id)) {
             Some(ref mut record) => {
-                let curr_tags_json = record.tags.clone();
+                let curr_tags_json =record.tags.to_str().unwrap().to_string() ;
 
                 let new_tags_result = serde_json::from_str::<HashMap<String, String>>(&tags_json);
                 let curr_tags_result = serde_json::from_str::<HashMap<String, String>>(&curr_tags_json);
@@ -367,7 +359,7 @@ impl InmemWallet {
 
                 let new_tags_json = serde_json::to_string(&curr_tags).unwrap();
 
-                record.tags = new_tags_json
+                record.tags = CString::new(new_tags_json).unwrap();
             }
             None => return ErrorCode::WalletItemNotFound
         }
@@ -400,7 +392,7 @@ impl InmemWallet {
         let wallet = wallets.get_mut(&wallet_context.name).unwrap();
 
         match wallet.records.get_mut(&InmemWallet::build_record_id(&type_, &id)) {
-            Some(ref mut record) => record.tags = tags_json,
+            Some(ref mut record) => record.tags = CString::new(tags_json).unwrap(),
             None => return ErrorCode::WalletItemNotFound
         }
 
@@ -433,7 +425,7 @@ impl InmemWallet {
 
         match wallet.records.get_mut(&InmemWallet::build_record_id(&type_, &id)) {
             Some(ref mut record) => {
-                let curr_tags_json = record.tags.clone();
+                let curr_tags_json = record.tags.to_str().unwrap().to_string() ;
 
                 let mut curr_tags_res = serde_json::from_str::<HashMap<String, String>>(&curr_tags_json);
                 let tags_names_to_delete = serde_json::from_str::<Vec<String>>(&tag_names);
@@ -449,7 +441,7 @@ impl InmemWallet {
 
                 let new_tags_json = serde_json::to_string(&curr_tags).unwrap();
 
-                record.tags = new_tags_json
+                record.tags = CString::new(new_tags_json).unwrap()
             }
             None => return ErrorCode::WalletItemNotFound
         }
@@ -508,7 +500,6 @@ impl InmemWallet {
         let wallet = wallets.get(&wallet_context.name).unwrap();
 
         let metadata = wallet.metadata.clone();
-        let metadata = CString::new(metadata.as_str()).unwrap();
         let metadata_pointer = metadata.as_ptr();
 
         let handle = SequenceUtils::get_next_id();
@@ -541,7 +532,7 @@ impl InmemWallet {
 
         let wallet = wallets.get_mut(&wallet_context.name).unwrap();
 
-        wallet.metadata = metadata;
+        wallet.metadata = CString::new(metadata).unwrap();
 
         ErrorCode::Success
     }

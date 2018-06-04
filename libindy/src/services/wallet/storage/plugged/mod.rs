@@ -622,7 +622,7 @@ impl Drop for PluggedStorage {
     fn drop(&mut self) {
         // if storage is not closed, close it before drop.
         if self.handle >= 0 {
-            self.close();
+            self.close().unwrap();
         }
     }
 }

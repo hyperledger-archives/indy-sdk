@@ -873,7 +873,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn wallet_service_delete_wallet_works() {
         _cleanup();
 
