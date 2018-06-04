@@ -2219,7 +2219,7 @@ mod demos {
     }
 
     #[test]
-    fn anoncreds_works_for_custom_wallet() {
+    fn anoncreds_works_for_plugged_wallet() {
         TestUtils::cleanup_storage();
         InmemWallet::cleanup();
 

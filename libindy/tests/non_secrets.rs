@@ -1266,7 +1266,7 @@ mod high_cases {
                 let search_records = NonSecretsUtils::fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
                 let search_records: SearchRecords = serde_json::from_str(&search_records).unwrap();
 
-                //                assert_eq!(0, search_records.total_count.unwrap());
+                assert_eq!(0, search_records.total_count.unwrap());
                 assert!(search_records.records.is_none());
 
                 NonSecretsUtils::close_wallet_search(search_handle).unwrap();
@@ -1381,7 +1381,6 @@ mod high_cases {
             }
 
             #[test]
-            #[ignore] // TODO: get_total_count isn't implemented
             fn indy_wallet_search_for_retrieve_total_count_only() {
                 NonSecretsUtils::populate_wallet_for_search();
                 let wallet_handle = WalletUtils::open_wallet(SEARCH_COMMON_WALLET, None, None).unwrap();
@@ -1399,7 +1398,7 @@ mod high_cases {
                 let search_records = NonSecretsUtils::fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
                 let search_records: SearchRecords = serde_json::from_str(&search_records).unwrap();
-                //                assert_eq!(5, search_records.total_count.unwrap());
+                assert_eq!(5, search_records.total_count.unwrap());
                 assert_eq!(None, search_records.records);
 
                 NonSecretsUtils::close_wallet_search(search_handle).unwrap();
@@ -1437,18 +1436,18 @@ mod high_cases {
             NonSecretsUtils::populate_wallet_for_search();
             let wallet_handle = WalletUtils::open_wallet(SEARCH_COMMON_WALLET, None, None).unwrap();
 
-            let search_handle = NonSecretsUtils::open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
+            let search_handle = NonSecretsUtils::open_wallet_search(wallet_handle, TYPE, QUERY_EMPTY, OPTIONS_FULL).unwrap();
 
             let search_records = NonSecretsUtils::fetch_wallet_search_next_records(wallet_handle, search_handle, 3).unwrap();
 
             let search_records: SearchRecords = serde_json::from_str(&search_records).unwrap();
-            //            assert_eq!(5, search_records.total_count.unwrap());
+            assert_eq!(5, search_records.total_count.unwrap());
             assert_eq!(3, search_records.records.unwrap().len());
 
             let search_records = NonSecretsUtils::fetch_wallet_search_next_records(wallet_handle, search_handle, 2).unwrap();
 
             let search_records: SearchRecords = serde_json::from_str(&search_records).unwrap();
-            //            assert_eq!(5, search_records.total_count.unwrap());
+            assert_eq!(5, search_records.total_count.unwrap());
             assert_eq!(2, search_records.records.unwrap().len());
 
             NonSecretsUtils::close_wallet_search(search_handle).unwrap();
@@ -1460,12 +1459,12 @@ mod high_cases {
             NonSecretsUtils::populate_wallet_for_search();
             let wallet_handle = WalletUtils::open_wallet(SEARCH_COMMON_WALLET, None, None).unwrap();
 
-            let search_handle = NonSecretsUtils::open_wallet_search(wallet_handle, TYPE_2, QUERY_EMPTY, OPTIONS_EMPTY).unwrap();
+            let search_handle = NonSecretsUtils::open_wallet_search(wallet_handle, TYPE_2, QUERY_EMPTY, OPTIONS_FULL).unwrap();
 
             let search_records = NonSecretsUtils::fetch_wallet_search_next_records(wallet_handle, search_handle, 5).unwrap();
 
             let search_records: SearchRecords = serde_json::from_str(&search_records).unwrap();
-            //            assert_eq!(0, search_records.total_count.unwrap());
+            assert_eq!(0, search_records.total_count.unwrap());
             assert!(search_records.records.is_none());
 
             NonSecretsUtils::close_wallet_search(search_handle).unwrap();
