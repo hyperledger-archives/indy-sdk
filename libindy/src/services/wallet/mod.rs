@@ -251,9 +251,12 @@ impl WalletService {
 
         let credentials = WalletCredentials::parse(credentials, &config.salt)?;
 
-        let storage = storage_type.open_storage(name, Some(&config_json), &credentials.storage_credentials)?;
+        {
+            // check credentials and close conntection before deleting directory
+            let storage = storage_type.open_storage(name, Some(&config_json), &credentials.storage_credentials)?;
 
-        WalletService::decrypt_keys(storage.as_ref(), &credentials)?;
+            WalletService::decrypt_keys(storage.as_ref(), &credentials)?;
+        }
 
         storage_type.delete_storage(name, Some(&config_json), &credentials.storage_credentials)?;
 
@@ -1171,9 +1174,6 @@ mod tests {
 
         let res = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false));
         assert_match!(Err(WalletError::ItemNotFound), res);
-
-        TestUtils::cleanup_indy_home();
-        InmemWallet::cleanup();
     }
 
     /**

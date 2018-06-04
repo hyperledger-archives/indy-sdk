@@ -24,7 +24,6 @@ use utils::anoncreds::AnoncredsUtils;
 use utils::blob_storage::BlobStorageUtils;
 use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, CREDENTIAL2_ID, CREDENTIAL3_ID, ANONCREDS_COMMON_WALLET};
 use utils::test::TestUtils;
-use utils::types::*;
 
 use indy::api::ErrorCode;
 use utils::inmem_wallet::InmemWallet;
