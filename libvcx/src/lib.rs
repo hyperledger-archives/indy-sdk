@@ -70,7 +70,6 @@ mod tests {
         ::utils::devsetup::tests::cleanup_dev_env(test_name);
     }
 
-    // Ignoring until Dev Agency is updated to libindy 1.4
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_real_proof() {

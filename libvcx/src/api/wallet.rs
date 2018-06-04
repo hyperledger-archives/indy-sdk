@@ -35,9 +35,9 @@ pub extern fn vcx_wallet_get_token_info(command_handle: u32,
         match get_wallet_token_info() {
             Ok(x) => {
                 info!("vcx_wallet_get_token_info_cb(command_handle: {}, rc: {}, info: {})",
-                    command_handle, error_string(0), x);
+                    command_handle, error_string(0), x.to_string());
 
-                let msg = CStringUtils::string_to_cstring(x);
+                let msg = CStringUtils::string_to_cstring(x.to_string());
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {

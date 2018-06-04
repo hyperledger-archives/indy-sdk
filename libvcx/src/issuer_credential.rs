@@ -10,13 +10,12 @@ use settings;
 use messages::{ GeneralMessage, MessageResponseCode::MessageAccepted, send_message::parse_msg_uid };
 use connection;
 use credential_request::{ CredentialRequest };
-use utils::{error,
-            error::INVALID_JSON,
-            libindy::{ anoncreds::{ libindy_issuer_create_credential, libindy_issuer_create_credential_offer }},
-            httpclient,
-            constants::{SEND_MESSAGE_RESPONSE, CRED_MSG},
-            openssl::encode
-};
+use utils::{error, error::INVALID_JSON};
+use utils::httpclient;
+use utils::libindy::anoncreds::{ libindy_issuer_create_credential, libindy_issuer_create_credential_offer };
+use utils::libindy::payments;
+use utils::constants::{SEND_MESSAGE_RESPONSE, CRED_MSG};
+use utils::openssl::encode;
 use error::{ issuer_cred::IssuerCredError, ToErrorCode };
 
 lazy_static! {
@@ -162,6 +161,8 @@ impl IssuerCredential {
             warn!("invalid connection handle ({}) in send_credential_offer", connection_handle);
             return Err(IssuerCredError::InvalidHandle());
         }
+
+        self.verify_payment().map_err(|e| IssuerCredError::CommonError(e))?;
 
         let to = connection::get_pw_did(connection_handle).map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
         let attrs_with_encodings = self.create_attributes_encodings()?;
@@ -339,6 +340,18 @@ impl IssuerCredential {
         } else {
             Ok(None)
         }
+    }
+
+    fn verify_payment(&mut self) -> Result<(), u32> {
+        if self.price > 0 {
+            let invoice_address = self.payment_address.as_ref()
+                .ok_or(error::INVALID_PAYMENT_ADDRESS.code_num)?;
+
+            let address = payments::get_address_info(&invoice_address)?;
+
+            if address.balance < self.price { return Err(error::INSUFFICIENT_TOKEN_AMOUNT.code_num); }
+        }
+        Ok(())
     }
 }
 
@@ -626,7 +639,7 @@ pub mod tests {
             credential_offer: Some(credential_offer.to_owned()),
             credential_id: String::from(DEFAULT_CREDENTIAL_ID),
 	    price: 0,
-            payment_address: None,
+            payment_address: Some("pay:null:9UFgyjuJxi1i1HD".to_string()),
             ref_msg_id: None,
             remote_did: DID.to_string(),
             remote_vk: VERKEY.to_string(),
@@ -765,22 +778,6 @@ pub mod tests {
         assert_eq!(send_credential_offer(handle, connection_handle).unwrap(), error::SUCCESS.code_num);
         assert_eq!(get_state(handle), VcxStateType::VcxStateOfferSent as u32);
         assert_eq!(get_offer_uid(handle).unwrap(), "ntc2ytb");
-    }
-
-    #[test]
-    fn test_send_a_credential() {
-        let test_name = "test_send_a_credential";
-        set_default_and_enable_test_mode();
-        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, "QTrbV4raAcND4DWWzBmdsh");
-
-        let mut credential = create_standard_issuer_credential();
-        credential.state = VcxStateType::VcxStateRequestReceived;
-
-        let connection_handle = build_connection("test_send_credential_offer").unwrap();
-
-        credential.send_credential(connection_handle).unwrap();
-        assert_eq!(credential.msg_uid, "ntc2ytb");
-        assert_eq!(credential.state, VcxStateType::VcxStateAccepted);
     }
 
     #[test]
@@ -995,5 +992,50 @@ pub mod tests {
 								     1).unwrap();
 
         let encoded_attributes = self::get_encoded_attributes(issuer_credential_handle).unwrap();
+    }
+
+    #[test]
+    fn test_verify_payment() {
+        let test_name = "test_verify_payment";
+        set_default_and_enable_test_mode();
+
+        let mut credential = create_standard_issuer_credential();
+
+        // Success
+        credential.price = 3;
+        credential.payment_address = Some("pay:null:9UFgyjuJxi1i1HD".to_string());
+        assert!(credential.verify_payment().is_ok());
+
+        // Err - Wrong payment amount
+        credential.price = 200;
+        assert_eq!(credential.verify_payment(), Err(error::INSUFFICIENT_TOKEN_AMOUNT.code_num));
+
+        // Err - address not set
+        credential.payment_address = None;
+        assert_eq!(credential.verify_payment(), Err(error::INVALID_PAYMENT_ADDRESS.code_num));
+    }
+
+    #[test]
+    fn test_send_credential_with_payments() {
+        let test_name = "test_send_a_credential";
+        set_default_and_enable_test_mode();
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, "QTrbV4raAcND4DWWzBmdsh");
+
+        let mut credential = create_standard_issuer_credential();
+        credential.state = VcxStateType::VcxStateRequestReceived;
+        credential.price = 3;
+        credential.payment_address = Some("pay:null:9UFgyjuJxi1i1HD".to_string());
+
+        let connection_handle = build_connection("test_send_credential_offer").unwrap();
+
+        // Success
+        credential.send_credential(connection_handle).unwrap();
+        assert_eq!(credential.msg_uid, "ntc2ytb");
+        assert_eq!(credential.state, VcxStateType::VcxStateAccepted);
+
+        // Amount wrong
+        credential.state = VcxStateType::VcxStateRequestReceived;
+        credential.price = 200;
+        assert!(credential.send_credential(connection_handle).is_err());
     }
 }
