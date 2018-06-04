@@ -32,7 +32,7 @@ by beginning the line with a `#`.
 
 ### Getting help
 The most simple way is just start cli by `indy-cli` command and put `help` command. Also you can look to
-[Indy CLI Design](../doc/cli-design.md) doc that contains the list of commands and architecture overview.
+[Indy CLI Design](../doc/design/001-cli) doc that contains the list of commands and architecture overview.
 
 ### Old python-based CLI migration
 It is possible to import did's stored in the wallet of deprecated python-based CLI tool.
