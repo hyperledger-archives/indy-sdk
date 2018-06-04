@@ -35,7 +35,7 @@ test('ledger', async function (t) {
   var [schemaId, schema] = await indy.issuerCreateSchema(myDid, schemaName, '1.0', ['name', 'age'])
 
   // Nym
-  var req = await indy.buildNymRequest(trusteeDid, myDid, myVerkey, null, null)
+  var req = await indy.buildNymRequest(trusteeDid, myDid, myVerkey, null, 'TRUSTEE')
   var res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
   t.is(res.result.verkey, myVerkey)
 

@@ -9,8 +9,8 @@ test('wallet', async function (t) {
   var listWallets = async function () {
     var list = await indy.listWallets()
     return list
-      .filter(a => a.associated_pool_name === pool.name)
-      .map(a => ({name: a.name, type: a.type}))
+      .filter(a => a.pool_name === pool.name)
+      .map(a => ({name: a.name, type: a.xtype}))
   }
 
   t.deepEqual(await listWallets(), [])
