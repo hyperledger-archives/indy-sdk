@@ -542,7 +542,7 @@ pub enum ZMQLoopAction {
     MessageToProcess(MessageToProcess),
     Terminate(i32),
     Refresh(i32),
-    Register(i32, String, Option<CustomTransactionParser>, Option<CustomFree>),
+    RegisterSPParser(i32, String, Option<CustomTransactionParser>, Option<CustomFree>),
     Timeout,
 }
 

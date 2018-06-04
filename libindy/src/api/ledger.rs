@@ -1640,7 +1640,7 @@ pub extern fn indy_register_transaction_parser_for_sp(command_handle: i32,
            txn_type, parser, free);
 
     let res = CommandExecutor::instance()
-        .send(Command::Ledger(LedgerCommand::RegisterParserSP(
+        .send(Command::Ledger(LedgerCommand::RegisterSPParser(
             pool_handle,
             txn_type,
             parser,

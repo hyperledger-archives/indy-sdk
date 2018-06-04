@@ -278,13 +278,13 @@ impl PoolWorker {
                             })
                     })?;
                 }
-                ZMQLoopAction::Register(cmd_id, txn_type, parser, free) => {
+                ZMQLoopAction::RegisterSPParser(cmd_id, txn_type, parser, free) => {
                     match self.handler {
                         PoolWorkerHandler::TransactionHandler(ref mut th) => {
                             th.parser_sps.insert(txn_type,
                                                  (parser.unwrap(), free.unwrap()));
                             CommandExecutor::instance()
-                                .send(Command::Ledger(LedgerCommand::RegisterParserSPAck(cmd_id, Ok(()))))
+                                .send(Command::Ledger(LedgerCommand::RegisterSPParserAck(cmd_id, Ok(()))))
                                 .map_err(|err| {
                                     CommonError::InvalidState(format!("Can't send ACK cmd: {:?}", err))
                                 })?;
@@ -333,7 +333,7 @@ impl PoolWorker {
                 actions.push(ZMQLoopAction::Terminate(id));
             } else if "refresh".eq(cmd_s.as_str()) {
                 actions.push(ZMQLoopAction::Refresh(id));
-            } else if "register".eq(cmd_s.as_str()) {
+            } else if "register_sp_parser".eq(cmd_s.as_str()) {
                 let parser_handle: Option<CustomTransactionParser> = cmd.get(2)
                     .map(|cmd| {
                         let h = LittleEndian::read_u64(cmd.as_slice()) as usize;
@@ -349,7 +349,7 @@ impl PoolWorker {
                     .map_err(|err|
                         CommonError::InvalidState(format!("Invalid txn_type received: {:?}", err)))?;
 
-                actions.push(ZMQLoopAction::Register(id, txn_type, parser_handle, free_handle));
+                actions.push(ZMQLoopAction::RegisterSPParser(id, txn_type, parser_handle, free_handle));
             } else {
                 actions.push(ZMQLoopAction::RequestToSend(RequestToSend {
                     id: id,
@@ -472,8 +472,8 @@ impl Pool {
         Ok(self.cmd_sock.send_multipart(&[json.as_bytes(), &buf], zmq::DONTWAIT)?)
     }
 
-    pub fn register_parser(&self, cmd_id: i32, txn_type: &str,
-                           parser: CustomTransactionParser, free: CustomFree) -> Result<(), PoolError> {
+    pub fn register_sp_parser(&self, cmd_id: i32, txn_type: &str,
+                              parser: CustomTransactionParser, free: CustomFree) -> Result<(), PoolError> {
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
 
@@ -485,7 +485,7 @@ impl Pool {
         let free_handle: u64 = (free as usize) as u64;
         LittleEndian::write_u64(&mut buf_fh, free_handle);
 
-        Ok(self.cmd_sock.send_multipart(&["register".as_bytes(), &buf, &buf_ph, &buf_fh, txn_type.as_bytes()],
+        Ok(self.cmd_sock.send_multipart(&["register_sp_parser".as_bytes(), &buf, &buf_ph, &buf_fh, txn_type.as_bytes()],
                                         zmq::DONTWAIT)?)
     }
 
@@ -712,12 +712,12 @@ impl PoolService {
         Ok(cmd_id)
     }
 
-    pub fn register(&self, handle: i32, txn_type: &str,
-                    parser: CustomTransactionParser, free: CustomFree) -> Result<i32, PoolError> {
+    pub fn register_sp_parser(&self, handle: i32, txn_type: &str,
+                              parser: CustomTransactionParser, free: CustomFree) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
         self.open_pools.try_borrow().map_err(CommonError::from)?
             .get(&handle).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?
-            .register_parser(cmd_id, txn_type, parser, free)?;
+            .register_sp_parser(cmd_id, txn_type, parser, free)?;
         Ok(cmd_id)
     }
 
@@ -1097,12 +1097,12 @@ mod tests {
         extern fn parser(reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode { ErrorCode::Success }
         extern fn free(data: *const c_char) -> ErrorCode { ErrorCode::Success }
 
-        ps.register_parser(cmd_id, txn_type, parser, free).unwrap();
+        ps.register_sp_parser(cmd_id, txn_type, parser, free).unwrap();
 
         let actions: Vec<ZMQLoopAction> = handle.join().unwrap();
         assert_eq!(actions.len(), 1);
         assert_eq!(actions[0],
-                   ZMQLoopAction::Register(cmd_id, txn_type.to_owned(), Some(parser), Some(free)));
+                   ZMQLoopAction::RegisterSPParser(cmd_id, txn_type.to_owned(), Some(parser), Some(free)));
     }
 
     #[test]

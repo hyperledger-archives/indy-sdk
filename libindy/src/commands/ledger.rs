@@ -173,13 +173,13 @@ pub enum LedgerCommand {
     ParseGetRevocRegDeltaResponse(
         String, // get revocation registry delta response
         Box<Fn(Result<(String, String, u64), IndyError>) + Send>),
-    RegisterParserSP(
+    RegisterSPParser(
         i32, // pool handle
         String, // txn type
         CustomTransactionParser,
         CustomFree,
         Box<Fn(Result<(), IndyError>) + Send>),
-    RegisterParserSPAck(
+    RegisterSPParserAck(
         i32, // handle
         Result<(), PoolError>),
 }
@@ -191,7 +191,7 @@ pub struct LedgerCommandExecutor {
     ledger_service: Rc<LedgerService>,
 
     send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<String, IndyError>)>>>,
-    register_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), IndyError>)>>>,
+    register_sp_parser_cbs: RefCell<HashMap<i32, Box<Fn(Result<(), IndyError>)>>>,
 }
 
 impl LedgerCommandExecutor {
@@ -205,7 +205,7 @@ impl LedgerCommandExecutor {
             wallet_service,
             ledger_service,
             send_callbacks: RefCell::new(HashMap::new()),
-            register_callbacks: RefCell::new(HashMap::new()),
+            register_sp_parser_cbs: RefCell::new(HashMap::new()),
         }
     }
 
@@ -225,13 +225,13 @@ impl LedgerCommandExecutor {
                     .expect("Expect callback to process ack command")
                     (result.map_err(IndyError::from));
             }
-            LedgerCommand::RegisterParserSP(pool_handle, txn_type, parser, free, cb) => {
-                info!(target: "ledger_command_executor", "RegisterParserSP command received");
-                self.register_parser(pool_handle, &txn_type, parser, free, cb);
+            LedgerCommand::RegisterSPParser(pool_handle, txn_type, parser, free, cb) => {
+                info!(target: "ledger_command_executor", "RegisterSPParser command received");
+                self.register_sp_parser(pool_handle, &txn_type, parser, free, cb);
             }
-            LedgerCommand::RegisterParserSPAck(handle, result) => {
-                info!(target: "ledger_command_executor", "RegisterParserSPAck command received");
-                self.register_callbacks.borrow_mut().remove(&handle)
+            LedgerCommand::RegisterSPParserAck(handle, result) => {
+                info!(target: "ledger_command_executor", "RegisterSPParserAck command received");
+                self.register_sp_parser_cbs.borrow_mut().remove(&handle)
                     .expect("Expect callback to process ack command")
                     (result.map_err(IndyError::from));
             }
@@ -358,15 +358,15 @@ impl LedgerCommandExecutor {
         };
     }
 
-    fn register_parser(&self, pool_handle: i32, txn_type: &str,
-                       parser: CustomTransactionParser, free: CustomFree,
-                       cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        debug!("register_parser >>> pool_handle: {:?}, txn_type: {:?}, parser: {:?}, free: {:?}",
+    fn register_sp_parser(&self, pool_handle: i32, txn_type: &str,
+                          parser: CustomTransactionParser, free: CustomFree,
+                          cb: Box<Fn(Result<(), IndyError>) + Send>) {
+        debug!("register_sp_parser >>> pool_handle: {:?}, txn_type: {:?}, parser: {:?}, free: {:?}",
                pool_handle, txn_type, parser, free);
 
-        let x: Result<i32, PoolError> = self.pool_service.register(pool_handle, txn_type, parser, free);
-        match x {
-            Ok(cmd_id) => { self.register_callbacks.borrow_mut().insert(cmd_id, cb); }
+        let res: Result<i32, PoolError> = self.pool_service.register_sp_parser(pool_handle, txn_type, parser, free);
+        match res {
+            Ok(cmd_id) => { self.register_sp_parser_cbs.borrow_mut().insert(cmd_id, cb); }
             Err(err) => { cb(Err(IndyError::PoolError(err))); }
         };
     }
