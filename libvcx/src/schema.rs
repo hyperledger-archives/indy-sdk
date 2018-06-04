@@ -392,7 +392,7 @@ mod tests {
     fn test_create_schema_with_pool(){
         let wallet_name = "test_create_schema";
         ::utils::devsetup::tests::setup_dev_env(wallet_name);
-        token_setup();
+        token_setup(None, None);
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
@@ -413,7 +413,7 @@ mod tests {
     fn test_create_duplicate_fails(){
         let wallet_name = "test_create_duplicate_schema_fails";
         ::utils::devsetup::tests::setup_dev_env(wallet_name);
-        token_setup();
+        token_setup(None, None);
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let version = r#"0.0.2"#.to_string();

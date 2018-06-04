@@ -240,6 +240,29 @@ pub fn outputs(remainder: u64, payee_address: Option<String>, payee_amount: Opti
     Ok(serde_json::to_string(&outputs).unwrap())
 }
 
+// This is used for testing purposes
+pub fn mint_tokens(number_of_addresses: Option<u32>, tokens_per_address: Option<u32>) -> Result<(), u32> {
+    let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+
+    let number_of_addresses = number_of_addresses.unwrap_or(3);
+    let tokens_per_address = tokens_per_address.unwrap_or(15);
+    let mut addresses = Vec::new();
+
+    for n in 0..number_of_addresses {addresses.push(create_address().unwrap())}
+
+    let mint: Vec<Value> = addresses.clone().into_iter().enumerate().map(|(i, payment_address)|
+        json!( { "paymentAddress": payment_address, "amount": tokens_per_address, "extra": null } )
+    ).collect();
+    let outputs = serde_json::to_string(&mint).unwrap();
+
+    let (req, _) = Payment::build_mint_req(get_wallet_handle() as i32, &did, &outputs).unwrap();
+
+    ::utils::libindy::ledger::libindy_submit_request(&req).unwrap();
+
+    Ok(())
+}
+
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -258,28 +281,10 @@ pub mod tests {
         }
     }
 
-    pub fn mint_tokens() -> Result<(), u32> {
-        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-
-        let addresses = vec![create_address().unwrap(), create_address().unwrap(), create_address().unwrap()];
-
-        let mint: Vec<Value> = addresses.clone().into_iter().enumerate().map(|(i, payment_address)|
-            json!( { "paymentAddress": payment_address, "amount": 15, "extra": null } )
-        ).collect();
-        let outputs = serde_json::to_string(&mint).unwrap();
-
-        let (req, _) = Payment::build_mint_req(get_wallet_handle() as i32, &did, &outputs).unwrap();
-
-        ::utils::libindy::ledger::libindy_submit_request(&req).unwrap();
-
-        Ok(())
-    }
-
-
-    pub fn token_setup() {
+    pub fn token_setup(number_of_addresses: Option<u32>, tokens_per_address: Option<u32>) {
         init_payments().unwrap();
         set_ledger_fees(None).unwrap();
-        mint_tokens().unwrap();
+        mint_tokens(number_of_addresses, tokens_per_address).unwrap();
     }
 
     #[test]
@@ -435,7 +440,7 @@ pub mod tests {
     fn test_pay_for_txn_real() {
         let name = "test_pay_for_txn_real";
         ::utils::devsetup::tests::setup_dev_env(name);
-        token_setup();
+        token_setup(None, None);
 
         let create_schema_req = ::utils::constants::SCHEMA_REQ.to_string();
         let start_wallet = get_wallet_token_info().unwrap();
@@ -456,7 +461,7 @@ pub mod tests {
     fn test_pay_for_txn_fails_with_insufficient_tokens_in_wallet() {
         let name = "test_pay_for_txn_real";
         ::utils::devsetup::tests::setup_dev_env(name);
-        token_setup();
+        token_setup(None, None);
 
         let create_schema_req = ::utils::constants::SCHEMA_REQ.to_string();
         let start_wallet = get_wallet_token_info().unwrap();
@@ -472,7 +477,7 @@ pub mod tests {
     fn test_submit_fees_with_insufficient_tokens_on_ledger() {
         let name = "test_submit_fees_with_insufficient_tokens_on_ledger";
         ::utils::devsetup::tests::setup_dev_env(name);
-        token_setup();
+        token_setup(None, None);
 
         let req = ::utils::constants::SCHEMA_REQ.to_string();
         let (remainder, inputs) = inputs(40).unwrap();
@@ -495,7 +500,7 @@ pub mod tests {
     fn test_pay_for_txn_with_empty_outputs_success() {
         let name = "test_pay_for_txn_with_empty_outputs_success";
         ::utils::devsetup::tests::setup_dev_env(name);
-        token_setup();
+        token_setup(None, None);
 
         let req = ::utils::constants::SCHEMA_REQ.to_string();
 
@@ -522,6 +527,18 @@ pub mod tests {
             addresses: Vec::new(),
         };
         assert_eq!(wallet_info.to_string(), r#"{"balance":12345,"addresses":[]}"#.to_string());
+    }
+
+    #[cfg(feature = "nullpay")]
+    #[test]
+    fn test_custom_mint_tokens() {
+        let name = "test_custom_mint_tokens";
+        ::utils::devsetup::tests::setup_dev_env(name);
+        token_setup(Some(4), Some(1430000));
+
+        let start_wallet = get_wallet_token_info().unwrap();
+        ::utils::devsetup::tests::cleanup_dev_env(name);
+        assert_eq!(start_wallet.balance, 5720000);
     }
 
 }

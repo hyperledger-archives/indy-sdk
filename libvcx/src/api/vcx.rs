@@ -204,6 +204,12 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
     error::SUCCESS.code_num
 }
 
+#[no_mangle]
+pub extern fn vcx_mint_tokens(number_of_addresses: u32, tokens_per_address: u32) {
+    info!("vcx_mint_tokens(number_of_addresses: {}, tokens_per_address: {})", number_of_addresses, tokens_per_address);
+    ::utils::libindy::payments::mint_tokens(Some(number_of_addresses), Some(tokens_per_address)).unwrap_or_default();
+}
+
 #[cfg(test)]
 mod tests {
 

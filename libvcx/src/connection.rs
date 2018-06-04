@@ -457,10 +457,9 @@ pub fn build_connection(source_id: &str) -> Result<u32,ConnectionError> {
 
 pub fn build_connection_with_invite(source_id: &str, details: &str) -> Result<u32,ConnectionError> {
 
-    let mut details:Value = serde_json::from_str(&details)
+    let details:Value = serde_json::from_str(&details)
         .or(Err(ConnectionError::CommonError(error::INVALID_JSON.code_num)))?;
 
-    details = unabbrv_event_detail(details).map_err(|e| {ConnectionError::CommonError(e)})?;
     let invite_details:InviteDetail = serde_json::from_value(details)
         .or(Err(ConnectionError::CommonError(error::INVALID_INVITE_DETAILS.code_num)))?;
 
@@ -1081,7 +1080,11 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         wallet::init_wallet("create_with_details").unwrap();
+
         let details = r#"{"id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
+        let unabbrv_details = unabbrv_event_detail(serde_json::from_str(details).unwrap()).unwrap();
+        let details = serde_json::to_string(&unabbrv_details).unwrap();
+
         let handle = build_connection_with_invite("alice",&details).unwrap();
         connect(handle,Some("{}".to_string())).unwrap();
         wallet::delete_wallet("create_with_details").unwrap();

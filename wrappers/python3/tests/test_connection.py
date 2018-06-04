@@ -7,7 +7,7 @@ from vcx.api.connection import Connection
 
 source_id = '123'
 phone_number = '8019119191'
-details = "{\"id\":\"njjmmdg\",\"s\":{\"d\":\"JZho9BzVAEk8jJ1hwrrDiZ\",\"dp\":{\"d\":\"JDF8UHPBTXigvtJWeeMJzx\",\"k\":\"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4\",\"s\":\"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg==\"},\"l\":\"https://robohash.org/123\",\"n\":\"Evernym\",\"v\":\"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1\"},\"sa\":{\"d\":\"YRuVCckY6vfZfX9kcQZe3u\",\"e\":\"52.38.32.107:80/agency/msg\",\"v\":\"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v\"},\"sc\":\"MS-101\",\"sm\":\"message created\",\"t\":\"there\"}"
+details = '{"connReqId":"njjmmdg","senderAgencyDetail":{"DID":"YRuVCckY6vfZfX9kcQZe3u","endpoint":"52.38.32.107:80/agency/msg","verKey":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"senderDetail":{"DID":"JZho9BzVAEk8jJ1hwrrDiZ","agentKeyDlgProof":{"agentDID":"JDF8UHPBTXigvtJWeeMJzx","agentDelegatedKey":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","signature":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"logoUrl":"https://robohash.org/123","name":"Evernym","verKey":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"statusCode":"MS-101","statusMsg":"message created","targetName":"there"}'
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
