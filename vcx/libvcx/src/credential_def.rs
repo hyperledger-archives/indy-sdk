@@ -249,7 +249,7 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_create_credential_def_real";
         ::utils::devsetup::tests::setup_dev_env(wallet_name);
-        ::utils::libindy::payments::tests::token_setup();
+        ::utils::libindy::payments::tests::token_setup(None, None);
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();

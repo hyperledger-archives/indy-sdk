@@ -91,6 +91,13 @@ def shutdown(delete_wallet: bool):
         raise VcxError(ErrorCode(err))
 
 
+def mint_tokens(number_of_addresses: int, tokens_per_address: int):
+    name = 'vcx_mint_tokens'
+    number_of_addresses = c_uint32(number_of_addresses)
+    tokens_per_address = c_uint32(tokens_per_address)
+    getattr(_cdll(), name)(number_of_addresses, tokens_per_address)
+
+
 def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
 
     def _cb(command_handle: int, err: int, *args):

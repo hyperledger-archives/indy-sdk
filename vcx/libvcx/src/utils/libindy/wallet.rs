@@ -155,6 +155,7 @@ pub fn init_wallet(wallet_name: &str) -> Result<i32, u32> {
 }
 
 pub fn close_wallet() -> Result<(), u32> {
+    if settings::test_indy_mode_enabled() { return Ok(()) }
     let rtn_obj = Return_I32::new()?;
 
     unsafe {
