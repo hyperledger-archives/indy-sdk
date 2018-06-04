@@ -29,7 +29,7 @@ const stubInitVCX = () => {
 const shouldThrow = (fn) => new Promise(async (resolve, reject) => {
   try {
     await fn()
-    reject(new Error(`${fn.toSting()} should have thrown!`))
+    reject(new Error(`${fn.toString()} should have thrown!`))
   } catch (e) {
     resolve(e)
   }

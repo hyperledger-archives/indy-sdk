@@ -42,7 +42,7 @@ export interface IConnectOptions {
 /**
  * @class Class representing a Connection
  */
-export class Connection extends VCXBaseWithState {
+export class Connection extends VCXBaseWithState<IConnectionData> {
   protected _releaseFn = rustAPI().vcx_connection_release
   protected _updateStFn = rustAPI().vcx_connection_update_state
   protected _getStFn = rustAPI().vcx_connection_get_state
@@ -110,12 +110,8 @@ export class Connection extends VCXBaseWithState {
    * @returns {Promise<Connection>} A Connection Object
    */
   static async deserialize (connectionData: IConnectionData) {
-    try {
-      const connection = await super._deserialize(Connection, connectionData)
-      return connection
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_deserialize')
-    }
+    const connection = await super._deserialize(Connection, connectionData)
+    return connection
   }
   /**
    * @memberof Connection
@@ -125,20 +121,23 @@ export class Connection extends VCXBaseWithState {
    */
   async delete (): Promise<void> {
     try {
-      return await createFFICallbackPromise<void>(
+      await createFFICallbackPromise<void>(
         (resolve, reject, cb) => {
-          const rc = rustAPI().vcx_connection_delete_connection(0, this._handle, cb)
+          const rc = rustAPI().vcx_connection_delete_connection(0, this.handle, cb)
           if (rc) {
             reject(rc)
           }
         },
-        (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32'], (xcommandHandle, err) => {
-          if (err) {
-            reject(err)
-            return
-          }
-          resolve(xcommandHandle)
-        })
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32', 'uint32'],
+          (xcommandHandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
       )
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_delete_connection')
@@ -161,71 +160,28 @@ export class Connection extends VCXBaseWithState {
     try {
       return await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_connection_connect(0, this._handle, connectionData, cb)
+            const rc = rustAPI().vcx_connection_connect(0, this.handle, connectionData, cb)
             if (rc) {
-              resolve(rc)
+              reject(rc)
             }
           },
-          (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'string'], (xHandle, err, details) => {
-            if (err) {
-              reject(err)
-              return
-            } else if (details == null) {
-              reject('no details returned')
-            }
-            resolve(details)
-          })
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xHandle: number, err: number, details: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              if (!details) {
+                reject('no details returned')
+                return
+              }
+              resolve(details)
+            })
         )
     } catch (err) {
       throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_connect')
-    }
-  }
-
-  /**
-   * @memberof Connection
-   * @description Serializes a connection object.
-   * Data returned can be used to recreate a Connection object by passing it to the deserialize function.
-   * @async
-   * @function serialize
-   * @returns {Promise<IConnectionData>} - Json object with all of the underlying Rust attributes.
-   * Same json object structure that is passed to the deserialize function.
-   */
-  async serialize (): Promise<IConnectionData> {
-    try {
-      const data: IConnectionData = JSON.parse(await super._serialize())
-      return data
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_serialize')
-    }
-  }
-
-  /**
-   * @memberof Connection
-   * @description Communicates with the agent service for polling and setting the state of the Connection.
-   * @async
-   * @function updateState
-   * @returns {Promise<void>}
-   */
-  async updateState (): Promise<void> {
-    try {
-      await this._updateState()
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_updateState')
-    }
-  }
-
-  /**
-   * @memberof Connection
-   * @description Gets the state of the connection.
-   * @async
-   * @function getState
-   * @returns {Promise<StateType>}
-   */
-  async getState (): Promise<StateType> {
-    try {
-      return await this._getState()
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_get_state')
     }
   }
 
@@ -239,33 +195,31 @@ export class Connection extends VCXBaseWithState {
    */
   async inviteDetails (abbr: boolean = false): Promise<IConnectionInvite> {
     try {
-      const data = await this._inviteDetails(abbr)
-      return data
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_invite_details')
-    }
-  }
-
-  protected async _inviteDetails (abbr: boolean = false): Promise<string> {
-    const connHandle = this._handle
-    let rc = null
-    const data = await createFFICallbackPromise<string>(
+      const data = await createFFICallbackPromise<string>(
         (resolve, reject, cb) => {
-          rc = this._inviteDetailFn(0, connHandle, abbr, cb)
+          const rc = this._inviteDetailFn(0, this.handle, abbr, cb)
           if (rc) {
             reject(rc)
           }
         },
-        (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'string'], (handle, err, details) => {
-          if (err) {
-            reject(err)
-            return
-          } else if (details == null) {
-            reject('no details returned')
-          }
-          resolve(details)
-        })
-    )
-    return data
+        (resolve, reject) => ffi.Callback(
+          'void',
+          ['uint32', 'uint32', 'string'],
+          (handle: number, err: number, details: string) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            if (!details) {
+              reject('no details returned')
+              return
+            }
+            resolve(details)
+          })
+      )
+      return data
+    } catch (err) {
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_invite_details')
+    }
   }
 }

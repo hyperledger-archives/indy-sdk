@@ -20,13 +20,16 @@ export async function initVcx (configPath: string, options: IInitVCXOptions = {}
           reject(rc)
         }
       },
-      (resolve, reject) => Callback('void', ['uint32', 'uint32', 'string'], (xhandle, err) => {
-        if (err) {
-          reject(err)
-          return
-        }
-        resolve(err)
-      })
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32', 'uint32', 'string'],
+        (xhandle: number, err: number) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve()
+        })
     )
   } catch (err) {
     throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_init')
@@ -44,13 +47,16 @@ export async function initVcxWithConfig (config: string, options: IInitVCXOption
           reject(rc)
         }
       },
-      (resolve, reject) => Callback('void', ['uint32', 'uint32', 'string'], (xhandle, err) => {
-        if (err) {
-          reject(err)
-          return
-        }
-        resolve(err)
-      })
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32', 'uint32', 'string'],
+        (xhandle: number, err: number) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve()
+        })
     )
   } catch (err) {
     throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_init_with_config')

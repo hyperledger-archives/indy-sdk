@@ -1,7 +1,7 @@
 const assert = require('chai').assert
 const ffi = require('ffi')
 const vcx = require('../dist/index')
-const { stubInitVCX } = require('./helpers')
+const { shouldThrow, stubInitVCX } = require('./helpers')
 const { CredentialDef, Error, rustAPI } = vcx
 
 const CREDENTIAL_DEF = {
@@ -46,13 +46,10 @@ describe('A CredentialDef', function () {
     assert(data)
     assert.equal(data.handle, jsonDef.handle)
     assert.equal(await credentialDef.release(), Error.SUCCESS)
-    try {
-      await credentialDef.serialize()
-    } catch (error) {
-      assert.equal(error.vcxCode, 1037)
-      assert.equal(error.vcxFunction, 'vcx_credentialdef_serialize')
-      assert.equal(error.message, 'Invalid Credential Definition handle')
-    }
+    const error = await shouldThrow(() => credentialDef.serialize())
+    assert.equal(error.vcxCode, 1037)
+    assert.equal(error.vcxFunction, 'CredentialDef:serialize')
+    assert.equal(error.message, 'Invalid Credential Definition handle')
   })
 
   it('will return cred_def_id', async () => {

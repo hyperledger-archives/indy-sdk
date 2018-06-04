@@ -5,7 +5,10 @@
     "sourceMap": true,
     "outDir": "./dist",
     "declaration": true,
-    "baseUrl": "./"
+    "baseUrl": "./",
+    "strict": true,
+    "strictFunctionTypes": false,
+    "noUnusedLocals": true
   },
   "include": [
     "src/**/*"

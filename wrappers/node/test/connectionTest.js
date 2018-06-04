@@ -1,7 +1,7 @@
 const chai = require('chai')
 const ffi = require('ffi')
 const vcx = require('../dist')
-const { stubInitVCX } = require('./helpers')
+const { shouldThrow, stubInitVCX } = require('./helpers')
 const assert = chai.assert
 
 const { Connection, StateType, Error, rustAPI, VCXMock, VCXMockMessage } = vcx
@@ -21,20 +21,20 @@ describe('A Connection object with ', function () {
       DIDself: '456',
       DIDremote: '0'
     })
-    assert.notEqual(connection._handle, undefined)
+    assert.notEqual(connection.handle, undefined)
     await connection.delete()
     try {
       await connection.serialize()
     } catch (error) {
       assert.equal(error.vcxCode, 1003)
-      assert.equal(error.vcxFunction, 'vcx_connection_serialize')
+      assert.equal(error.vcxFunction, 'Connection:serialize')
       assert.equal(error.message, 'Invalid Connection Handle')
     }
   })
 
   it('object with id as param in create should return success', async () => {
     const connection = await Connection.create({ id: '999' })
-    assert.notEqual(connection._handle, undefined)
+    assert.notEqual(connection.handle, undefined)
   })
 
   // connection_connect tests
@@ -51,14 +51,15 @@ describe('A Connection object with ', function () {
 
   it(' a call to create with no connection created should return unknown error', async () => {
     const connection = new Connection()
-    assert.equal(await connection.connect({ sms: true }), Error.INVALID_CONNECTION_HANDLE)
+    const err = await shouldThrow(async () => connection.connect({ sms: true }))
+    assert.equal(err.vcxCode, Error.INVALID_CONNECTION_HANDLE)
   })
 
   // connection_get_data tests
 
   it('a call to serialize where connection exists should return back the connections data', async () => {
     const connection = await Connection.create({ id: '999' })
-    assert.notEqual(connection._handle, undefined)
+    assert.notEqual(connection.handle, undefined)
     const data = await connection.serialize()
     assert.notEqual(data, null)
     assert.equal(data.source_id, connection.sourceId)
@@ -66,18 +67,15 @@ describe('A Connection object with ', function () {
 
   it('a call to serialize where connection doesnt exist should throw error', async () => {
     const connection = new Connection()
-    try {
-      await connection.serialize()
-    } catch (error) {
-      assert.equal(error.vcxCode, 1003)
-      assert.equal(error.vcxFunction, 'vcx_connection_serialize')
-      assert.equal(error.message, 'Invalid Connection Handle')
-    }
+    const error = await shouldThrow(() => connection.serialize())
+    assert.equal(error.vcxCode, 1003)
+    assert.equal(error.vcxFunction, 'Connection:serialize')
+    assert.equal(error.message, 'Invalid Connection Handle')
   })
 
   it('a call to serialize where connection was released should throw error', async () => {
     const connection = await Connection.create({ id: '234' })
-    assert.notEqual(connection._handle, undefined)
+    assert.notEqual(connection.handle, undefined)
 
     const inviteDetails = await connection.connect({ sms: true })
     assert(inviteDetails)
@@ -87,19 +85,16 @@ describe('A Connection object with ', function () {
     assert.notEqual(data, null)
     assert.equal(data.source_id, connection.sourceId)
     assert.equal(await connection.release(), Error.SUCCESS)
-    try {
-      await connection.serialize()
-    } catch (error) {
-      assert.equal(error.vcxCode, 1003)
-      assert.equal(error.vcxFunction, 'vcx_connection_serialize')
-      assert.equal(error.message, 'Invalid Connection Handle')
-    }
+    const error = await shouldThrow(() => connection.serialize())
+    assert.equal(error.vcxCode, 1003)
+    assert.equal(error.vcxFunction, 'Connection:serialize')
+    assert.equal(error.message, 'Invalid Connection Handle')
   })
 
   // deserialize
   it('a call to deserialize with correct data should return object with same sourceId', async () => {
     const connection1 = await Connection.create({ id: '234' })
-    assert.notEqual(connection1._handle, undefined)
+    assert.notEqual(connection1.handle, undefined)
     const data = await connection1.serialize()
     const connection2 = await Connection.deserialize(data)
     assert.equal(connection2.sourceId, connection1.sourceId)
@@ -108,18 +103,15 @@ describe('A Connection object with ', function () {
   })
 
   it('a call to deserialize with incorrect data should throw error', async () => {
-    try {
-      await Connection.deserialize({source_id: 'Invalid'})
-    } catch (error) {
-      assert.equal(error.vcxCode, 1016)
-      assert.equal(error.vcxFunction, 'vcx_connection_deserialize')
-      assert.equal(error.message, 'Invalid JSON string')
-    }
+    const error = await shouldThrow(async () => Connection.deserialize({source_id: 'Invalid'}))
+    assert.equal(error.vcxCode, 1016)
+    assert.equal(error.vcxFunction, 'Connection:_deserialize')
+    assert.equal(error.message, 'Invalid JSON string')
   })
 
   it('a call to serialize then deserialize then serialize should have same data', async () => {
     const connection = await Connection.create({ id: '234' })
-    assert.notEqual(connection._handle, undefined)
+    assert.notEqual(connection.handle, undefined)
 
     const inviteDetails = await connection.connect({ sms: true })
     assert(inviteDetails)
@@ -135,7 +127,7 @@ describe('A Connection object with ', function () {
   // connection_getState tests
   it('call to updateState where connection exists should return success', async () => {
     const connection = await Connection.create({ id: '234' })
-    assert.notEqual(connection._handle, undefined)
+    assert.notEqual(connection.handle, undefined)
     const inviteDetails = await connection.connect({ sms: true })
     assert(inviteDetails)
     await connection.updateState()
@@ -150,14 +142,14 @@ describe('A Connection object with ', function () {
 
   it('call to updateState where connection exists but not connected should have a state value of 1', async () => {
     const connection = await Connection.create({ id: 'Unique ID 999' })
-    assert.notEqual(connection._handle, undefined)
+    assert.notEqual(connection.handle, undefined)
     await connection.updateState()
     assert.equal(await connection.getState(), StateType.Initialized)
   })
 
   it(`call to updateState with mocked updateState reply should have a state value of ${StateType.Accepted}`, async () => {
     const connection = await Connection.create({ id: '234' })
-    assert.notEqual(connection._handle, undefined)
+    assert.notEqual(connection.handle, undefined)
     const inviteDetails = await connection.connect({ sms: true })
     assert(inviteDetails)
     VCXMock.setVcxMock(VCXMockMessage.GetMessages)
@@ -167,7 +159,7 @@ describe('A Connection object with ', function () {
 
   it('call to inviteDetails with abbr returns non-empty string', async () => {
     const connection = await Connection.create({ id: 'Unique ID 999' })
-    assert.notEqual(connection._handle, undefined)
+    assert.notEqual(connection.handle, undefined)
     await connection.connect({ sms: true })
     const details = await connection.inviteDetails(true)
     assert.include(details, '"dp":', 'expect to see this in output')
@@ -175,7 +167,7 @@ describe('A Connection object with ', function () {
 
   it('call to inviteDetails without abbr returns non-empty string', async () => {
     const connection = await Connection.create({ id: 'Unique ID 999' })
-    assert.notEqual(connection._handle, undefined)
+    assert.notEqual(connection.handle, undefined)
     await connection.connect({ sms: true })
     const details = await connection.inviteDetails(false)
     assert.include(details, '"senderAgencyDetail":', 'expect to see this in output')
@@ -185,18 +177,16 @@ describe('A Connection object with ', function () {
 
   it('call to connection_release where connection exists should return success', async () => {
     const connection = await Connection.create({ id: '234' })
-    assert.notEqual(connection._handle, undefined)
+    assert.notEqual(connection.handle, undefined)
     const inviteDetails = await connection.connect({ sms: true })
     assert(inviteDetails)
     assert.equal(await connection.release(), Error.SUCCESS)
-    assert.equal(await connection.connect({ sms: true }), Error.INVALID_CONNECTION_HANDLE)
-    try {
-      await connection.serialize()
-    } catch (error) {
-      assert.equal(error.vcxCode, 1003)
-      assert.equal(error.vcxFunction, 'vcx_connection_serialize')
-      assert.equal(error.message, 'Invalid Connection Handle')
-    }
+    const errorConnect = await shouldThrow(() => connection.connect({ sms: true }))
+    assert.equal(errorConnect.vcxCode, Error.INVALID_CONNECTION_HANDLE)
+    const errorSerialize = await shouldThrow(() => connection.serialize())
+    assert.equal(errorSerialize.vcxCode, 1003)
+    assert.equal(errorSerialize.vcxFunction, 'Connection:serialize')
+    assert.equal(errorSerialize.message, 'Invalid Connection Handle')
   })
 
   it('call to connection_release with no connection should return unknown error', async () => {
@@ -214,11 +204,11 @@ describe('A Connection object with ', function () {
 
   const connectionCreateCheckAndDelete = async () => {
     let connection = await Connection.create({ id: '234' })
-    assert.notEqual(connection._handle, undefined)
+    assert.notEqual(connection.handle, undefined)
     const inviteDetails = await connection.connect({ sms: true })
     assert(inviteDetails)
     const serialize = rustAPI().vcx_connection_serialize
-    const handle = connection._handle
+    const handle = connection.handle
     const data = await connection.serialize()
     assert.notEqual(data, null)
     connection = null

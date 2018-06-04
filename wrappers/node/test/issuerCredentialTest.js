@@ -121,12 +121,9 @@ describe('An IssuerCredential', async function () {
 
   it('serialize without correct handle throws error', async function () {
     const credential = new IssuerCredential(null, {})
-    try {
-      await credential.serialize()
-    } catch (error) {
-      assert.equal(error.vcxCode, Error.INVALID_ISSUER_CREDENTIAL_HANDLE)
-      assert.equal(error.message, 'Invalid Credential Issuer Handle')
-    }
+    const error = await shouldThrow(() => credential.serialize())
+    assert.equal(error.vcxCode, Error.INVALID_ISSUER_CREDENTIAL_HANDLE)
+    assert.equal(error.message, 'Invalid Credential Issuer Handle')
   })
 
   it('is created from a static method', async function () {
@@ -162,12 +159,9 @@ describe('An IssuerCredential', async function () {
   it('throws exception for sending credential with invalid credential handle', async function () {
     let connection = await Connection.create(connectionConfigDefault)
     const credential = new IssuerCredential(null, {})
-    try {
-      await credential.sendCredential(connection)
-    } catch (error) {
-      assert.equal(error.vcxCode, Error.INVALID_ISSUER_CREDENTIAL_HANDLE)
-      assert.equal(error.message, 'Invalid Credential Issuer Handle')
-    }
+    const error = await shouldThrow(() => credential.sendCredential(connection))
+    assert.equal(error.vcxCode, Error.INVALID_ISSUER_CREDENTIAL_HANDLE)
+    assert.equal(error.message, 'Invalid Credential Issuer Handle')
   })
 
   it('throws exception for sending credential with invalid connection handle', async function () {
@@ -175,12 +169,9 @@ describe('An IssuerCredential', async function () {
     await releasedConnection.release()
     const sourceId = 'Credential'
     const credential = await IssuerCredential.create({ ...credentialConfigDefault, sourceId })
-    try {
-      await credential.sendCredential(releasedConnection)
-    } catch (error) {
-      assert.equal(error.vcxCode, Error.INVALID_CONNECTION_HANDLE)
-      assert.equal(error.message, 'Invalid Connection Handle')
-    }
+    const error = await shouldThrow(() => credential.sendCredential(releasedConnection))
+    assert.equal(error.vcxCode, Error.INVALID_CONNECTION_HANDLE)
+    assert.equal(error.message, 'Invalid Connection Handle')
   })
 
   it('sending credential with no credential offer should throw exception', async function () {
@@ -198,13 +189,11 @@ describe('An IssuerCredential', async function () {
     const connection = await Connection.create({id: '123'})
     const credential = await IssuerCredential.create({ ...credentialConfigDefault, sourceId })
     await credential.sendOffer(connection)
-    try {
-      await credential.serialize()
-    } catch (error) {
-      assert.equal(error.vcxCode, 1015)
-      assert.equal(error.vcxFunction, 'vcx_issuer_credential_serialize')
-      assert.equal(error.message, 'Invalid Issuer Claim Handle')
-    }
+    await credential.release()
+    const error = await shouldThrow(() => credential.serialize())
+    assert.equal(error.vcxCode, 1015)
+    assert.equal(error.vcxFunction, 'IssuerCredential:serialize')
+    assert.equal(error.message, 'Invalid Credential Issuer Handle')
   })
 
   const acceptCredentialOffer = async ({ credential }) => {

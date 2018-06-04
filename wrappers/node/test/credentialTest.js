@@ -1,7 +1,7 @@
 const assert = require('chai').assert
 const ffi = require('ffi')
 const vcx = require('../dist/index')
-const { stubInitVCX, connectionCreateAndConnect } = require('./helpers')
+const { stubInitVCX, connectionCreateAndConnect, shouldThrow } = require('./helpers')
 const { Credential, rustAPI } = vcx
 
 describe('A Credential', function () {
@@ -82,30 +82,21 @@ describe('A Credential', function () {
   // create tests
 
   it(' a call to create with no sourceId returns an error', async () => {
-    try {
-      const connection = await connectionCreateAndConnect()
-      await Credential.create({ offer: JSON.stringify(OFFER), connection })
-    } catch (error) {
-      assert.equal(error.vcxCode, 1007)
-    }
+    const connection = await connectionCreateAndConnect()
+    const error = await shouldThrow(() => Credential.create({ offer: JSON.stringify(OFFER), connection }))
+    assert.equal(error.vcxCode, 1007)
   })
 
   it(' a call to create with no offer returns an error', async () => {
-    try {
-      const connection = await connectionCreateAndConnect()
-      await Credential.create({ connection, sourceId: 'Test' })
-    } catch (error) {
-      assert.equal(error.vcxCode, 1007)
-    }
+    const connection = await connectionCreateAndConnect()
+    const error = await shouldThrow(() => Credential.create({ connection, sourceId: 'Test' }))
+    assert.equal(error.vcxCode, 1007)
   })
 
   it(' a call to create with a bad offer returns an error', async () => {
-    try {
-      const connection = await connectionCreateAndConnect()
-      await Credential.create({ connection, sourceId: 'Test', offer: '{}' })
-    } catch (error) {
-      assert.equal(error.vcxCode, 1016)
-    }
+    const connection = await connectionCreateAndConnect()
+    const error = await shouldThrow(() => Credential.create({ connection, sourceId: 'Test', offer: '{}' }))
+    assert.equal(error.vcxCode, 1016)
   })
 
   // serialize/deserialize tests
