@@ -24,7 +24,7 @@ pub fn map_rust_indy_sdk_error_code(error_code: ErrorCode) -> u32 {
     warn!("indy-sdk error code: {}", error_code);
 
     match error_code {
-        100 ... 113 => error::INVALID_LIBINDY_PARAM.code_num,
+        100 ... 112 => error::INVALID_LIBINDY_PARAM.code_num,
         203 =>  error::WALLET_ALREADY_EXISTS.code_num,
         206 =>  error::WALLET_ALREADY_OPEN.code_num,
         306 =>  error::CREATE_POOL_CONFIG.code_num,
@@ -49,7 +49,7 @@ pub fn map_indy_error_code<C: PrimInt>(error_code: C) -> u32 {
     }
 
     match error_code {
-        100 ... 113 => error::INVALID_LIBINDY_PARAM.code_num,
+        100 ... 112 => error::INVALID_LIBINDY_PARAM.code_num,
         203 =>  error::WALLET_ALREADY_EXISTS.code_num,
         206 =>  error::WALLET_ALREADY_OPEN.code_num,
         306 =>  error::CREATE_POOL_CONFIG.code_num,

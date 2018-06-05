@@ -368,15 +368,16 @@ pub fn create_agent_pairwise(handle: u32) -> Result<u32, ConnectionError> {
 pub fn update_agent_profile(handle: u32) -> Result<u32, ConnectionError> {
     debug!("updating agent config for connection handle {}", handle);
     let pw_did = get_pw_did(handle)?;
-
-    match messages::update_data()
-        .to(&pw_did)
-        .name(&settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap())
-        .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL).unwrap())
-        .send_secure() {
-        Ok(_) => Ok(error::SUCCESS.code_num),
-        Err(ec) => Err(ConnectionError::CommonError(ec)),
-    }
+    if let Ok(name) = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME) {
+        match messages::update_data()
+            .to(&pw_did)
+            .name(&name)
+            .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL).unwrap())
+            .send_secure() {
+            Ok(_) => Ok(error::SUCCESS.code_num),
+            Err(ec) => Err(ConnectionError::CommonError(ec)),
+        }
+    } else { Ok(error::SUCCESS.code_num) }
 }
 
 //
