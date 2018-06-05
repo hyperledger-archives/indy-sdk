@@ -46,7 +46,7 @@ class CredentialDef(VcxBase):
         c_payment = c_uint32(payment_handle)
         # Todo: add params for tag and config
         c_tag = c_char_p('tag1'.encode('utf-8'))
-        c_config = c_char_p('{}'.encode('utf-8'))
+        c_config = c_char_p('{"support_revocation":false}'.encode('utf-8'))
         c_params = (c_source_id, c_name, c_schema_id, c_issuer_did, c_tag, c_config, c_payment)
 
         return await CredentialDef._create("vcx_credentialdef_create",

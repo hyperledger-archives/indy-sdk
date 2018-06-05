@@ -92,7 +92,7 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
       schemaId,
       issuerDid,
       'tag1',
-      '{}',
+      '{"support_revocation":false}',
       paymentHandle,
       cb
       ))
