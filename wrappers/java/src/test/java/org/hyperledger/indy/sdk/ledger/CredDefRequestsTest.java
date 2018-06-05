@@ -54,15 +54,14 @@ public class CredDefRequestsTest extends LedgerIntegrationTest {
 	@Test
 	public void testBuildGetCredDefRequestWorks() throws Exception {
 		int seqNo = 1;
-		String signatureType = "CL";
-		String id = DID + ":3:" + signatureType + ":" + seqNo;
+		String id = DID + ":3:" + SIGNATURE_TYPE + ":" + seqNo;
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{" +
 				"\"type\":\"108\"," +
 				"\"ref\":%d," +
 				"\"signature_type\":\"%s\"," +
 				"\"origin\":\"%s\"" +
-				"}", DID, seqNo, signatureType, DID);
+				"}", DID, seqNo, SIGNATURE_TYPE, DID);
 
 		String getCredDefRequest = Ledger.buildGetCredDefRequest(DID, id).get();
 
@@ -81,9 +80,9 @@ public class CredDefRequestsTest extends LedgerIntegrationTest {
 
 	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testCredDefRequestsWorks() throws Exception {
-		String myDid = createStoreAndPublishDidFromTrustee();
+		postEntities();
 
-		String getCredDefRequest = Ledger.buildGetCredDefRequest(myDid, credDefId).get();
+		String getCredDefRequest = Ledger.buildGetCredDefRequest(DID, credDefId).get();
 		String getCredDefResponse = PoolUtils.ensurePreviousRequestApplied(pool, getCredDefRequest, response -> {
 			JSONObject responseObject = new JSONObject(response);
 			return !responseObject.getJSONObject("result").isNull("seqNo");

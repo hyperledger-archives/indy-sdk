@@ -44,6 +44,22 @@
          completion:(void (^)(NSError *error, NSString *requestResultJSON))completion;
 
 /**
+ Multi signs request message.
+
+ Adds submitter information to passed request json, signs it with submitter
+ sign key.
+
+ @param requestJson Request data json.
+ @param submitterDid Id of Identity stored in secured Wallet.
+ @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter. Returns signed request json.
+ */
++ (void)multiSignRequest:(NSString *)requestJson
+            submitterDid:(NSString *)submitterDid
+            walletHandle:(IndyHandle)walletHandle
+              completion:(void (^)(NSError *error, NSString *requestResultJSON))completion;
+
+/**
  Publishes request message to validator pool (no signing, unlike sign_and_submit_request).
  
  The request is sent to the validator pool as is. It's assumed that it's already prepared.
@@ -126,6 +142,17 @@
                                          hash:(NSString *)hash
                                           enc:(NSString *)enc
                                    completion:(void (^)(NSError *error, NSString *requestJSON))completion;
+
+// MARK: - Get Validator Info request
+
+/**
+ Builds GET_VALIDATOR_INFO request.
+ 
+ @param submitterDid Id of Identity stored in secured Wallet.
+ @param completion Callback that takes command result as parameter. Request result as json.
+ */
++ (void)buildGetValidatorInfo:(NSString *)submitterDid
+                    completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 // MARK: - Schema request
 

@@ -6,6 +6,7 @@ import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -13,55 +14,52 @@ import java.util.concurrent.ExecutionException;
 
 public class OpenWalletTest extends IndyIntegrationTest {
 
-	String credentials = "{\"key\":\"testkey\"}";
-
 	@Test
 	public void testOpenWalletWorks() throws Exception {
-		Wallet.createWallet(POOL, "walletOpen", TYPE, null, null).get();
+		Wallet.createWallet(POOL, "walletOpen", TYPE, null, CREDENTIALS).get();
 
-		Wallet wallet = Wallet.openWallet("walletOpen", null, null).get();
+		Wallet wallet = Wallet.openWallet("walletOpen", null, CREDENTIALS).get();
 		assertNotNull(wallet);
 	}
 
 	@Test
 	public void testOpenWalletWorksForConfig() throws Exception {
-		Wallet.createWallet(POOL, "openWalletWorksForConfig", TYPE, null, null).get();
+		Wallet.createWallet(POOL, "openWalletWorksForConfig", TYPE, null, CREDENTIALS).get();
 
-		Wallet wallet = Wallet.openWallet("openWalletWorksForConfig", "{\"freshness_time\":1000}", null).get();
+		Wallet wallet = Wallet.openWallet("openWalletWorksForConfig", "{\"freshness_time\":1000}", CREDENTIALS).get();
 		assertNotNull(wallet);
 	}
 
 	@Test
-	public void testOpenWalletWorksForEbcryptedWalletCorrectCredentials() throws Exception {
-		Wallet.createWallet(POOL, "ForEbcryptedWalletCorrectCredentials", TYPE, null, credentials).get();
-
-		Wallet wallet = Wallet.openWallet("ForEbcryptedWalletCorrectCredentials", null, credentials).get();
-		assertNotNull(wallet);
-	}
-
-	@Test
-	public void testOpenWalletWorksForEbcryptedWalletInvalidCredentials() throws Exception {
-		Wallet.createWallet(POOL, "ForEbcryptedWalletInvalidCredentials", TYPE, null, credentials).get();
+	public void testOpenWalletWorksForInvalidCredentials() throws Exception {
+		Wallet.createWallet(POOL, "ForEbcryptedWalletInvalidCredentials", TYPE, null, CREDENTIALS).get();
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletAccessFailedException.class));
 
-		Wallet.openWallet("ForEbcryptedWalletInvalidCredentials", null, "{\"key\":\"otherkey\"}").get();
+		Wallet.openWallet("ForEbcryptedWalletInvalidCredentials", null, "{\"key\": \"other_key\"}").get();
 	}
 
 
 	@Test
+	@Ignore
 	public void testOpenWalletWorksForEbcryptedWalletChangingCredentials() throws Exception {
-		Wallet.createWallet(POOL, "ForEbcryptedWalletChangingCredentials", TYPE, null, credentials).get();
+		Wallet.createWallet(POOL, "ForEbcryptedWalletChangingCredentials", TYPE, null, CREDENTIALS).get();
 
-		Wallet wallet = Wallet.openWallet("ForEbcryptedWalletChangingCredentials", null, "{\"key\":\"testkey\", \"rekey\":\"otherkey\"}").get();
+		Wallet wallet = Wallet.openWallet("ForEbcryptedWalletChangingCredentials", null, "{\"key\": \"key\", \"rekey\": \"other_key\"}").get();
 		assertNotNull(wallet);
+
+		wallet.closeWallet().get();
+
+		wallet = Wallet.openWallet("ForEbcryptedWalletChangingCredentials", null, "{\"key\": \"other_key\"}").get();
+		wallet.closeWallet().get();
 	}
 
 	@Test
+	@Ignore
 	public void testOpenWalletWorksForPlugged() throws Exception {
-		Wallet.createWallet(POOL, "testOpenWalletWorksForPlugged", "inmem", null, null).get();
-		Wallet wallet = Wallet.openWallet("testOpenWalletWorksForPlugged", null, null).get();
+		Wallet.createWallet(POOL, "testOpenWalletWorksForPlugged", "inmem", null, CREDENTIALS).get();
+		Wallet wallet = Wallet.openWallet("testOpenWalletWorksForPlugged", null, CREDENTIALS).get();
 		assertNotNull(wallet);
 	}
 
@@ -70,7 +68,7 @@ public class OpenWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(IOException.class));
 
-		Wallet.openWallet("openWalletWorksForNotCreatedWallet", null, null).get();
+		Wallet.openWallet("openWalletWorksForNotCreatedWallet", null, CREDENTIALS).get();
 	}
 
 	@Test
@@ -78,9 +76,9 @@ public class OpenWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletAlreadyOpenedException.class));
 
-		Wallet.createWallet(POOL, "openWalletWorksForTwice", TYPE, null, null).get();
+		Wallet.createWallet(POOL, "openWalletWorksForTwice", TYPE, null, CREDENTIALS).get();
 
-		Wallet.openWallet("openWalletWorksForTwice", null, null).get();
-		Wallet.openWallet("openWalletWorksForTwice", null, null).get();
+		Wallet.openWallet("openWalletWorksForTwice", null, CREDENTIALS).get();
+		Wallet.openWallet("openWalletWorksForTwice", null, CREDENTIALS).get();
 	}
 }

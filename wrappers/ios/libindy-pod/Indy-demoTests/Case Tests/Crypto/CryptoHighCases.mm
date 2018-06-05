@@ -57,20 +57,32 @@
 // MARK: - Set key metadata
 
 - (void)testSetKeyMetadataWorks {
+    NSString *verkey = nil;
+    ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandle
+                                                          keyJson:@"{}"
+                                                        outVerkey:&verkey];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:createKeyWithWalletHandle failed");
+
     ret = [[CryptoUtils sharedInstance] setMetadata:[TestUtils someMetadata]
-                                             forKey:[TestUtils myVerkey1]
+                                             forKey:verkey
                                        walletHandle:walletHandle];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:setMetadata failed");
 }
 
 - (void)testSetKeyMetadataWorksForReplace {
+    NSString *verkey = nil;
+    ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandle
+                                                          keyJson:@"{}"
+                                                        outVerkey:&verkey];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:createKeyWithWalletHandle failed");
+
     ret = [[CryptoUtils sharedInstance] setMetadata:[TestUtils someMetadata]
-                                             forKey:[TestUtils myVerkey1]
+                                             forKey:verkey
                                        walletHandle:walletHandle];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:setMetadata failed");
 
     NSString *outMetadata = nil;
-    ret = [[CryptoUtils sharedInstance] getMetadataForKey:[TestUtils myVerkey1]
+    ret = [[CryptoUtils sharedInstance] getMetadataForKey:verkey
                                              walletHandle:walletHandle
                                               outMetadata:&outMetadata];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:getMetadata failed");
@@ -78,11 +90,11 @@
 
     NSString *newMetadata = @"updated metadata";
     ret = [[CryptoUtils sharedInstance] setMetadata:newMetadata
-                                             forKey:[TestUtils myVerkey1]
+                                             forKey:verkey
                                        walletHandle:walletHandle];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:setMetadata failed");
 
-    ret = [[CryptoUtils sharedInstance] getMetadataForKey:[TestUtils myVerkey1]
+    ret = [[CryptoUtils sharedInstance] getMetadataForKey:verkey
                                              walletHandle:walletHandle
                                               outMetadata:&outMetadata];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:getMetadata failed");
@@ -99,13 +111,19 @@
 // MARK: - Get key metadata
 
 - (void)testGetKeyMetadataWorks {
+    NSString *verkey = nil;
+    ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandle
+                                                          keyJson:@"{}"
+                                                        outVerkey:&verkey];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:createKeyWithWalletHandle failed");
+
     ret = [[CryptoUtils sharedInstance] setMetadata:[TestUtils someMetadata]
-                                             forKey:[TestUtils myVerkey1]
+                                             forKey:verkey
                                        walletHandle:walletHandle];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:setMetadata failed");
 
     NSString *outMetadata = nil;
-    ret = [[CryptoUtils sharedInstance] getMetadataForKey:[TestUtils myVerkey1]
+    ret = [[CryptoUtils sharedInstance] getMetadataForKey:verkey
                                              walletHandle:walletHandle
                                               outMetadata:&outMetadata];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:getMetadata failed");
@@ -113,13 +131,19 @@
 }
 
 - (void)testGetKeyMetadataWorksForEmptyString {
+    NSString *verkey = nil;
+    ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandle
+                                                          keyJson:@"{}"
+                                                        outVerkey:&verkey];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:createKeyWithWalletHandle failed");
+
     ret = [[CryptoUtils sharedInstance] setMetadata:@""
-                                             forKey:[TestUtils myVerkey1]
+                                             forKey:verkey
                                        walletHandle:walletHandle];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:setMetadata failed");
 
     NSString *outMetadata = nil;
-    ret = [[CryptoUtils sharedInstance] getMetadataForKey:[TestUtils myVerkey1]
+    ret = [[CryptoUtils sharedInstance] getMetadataForKey:verkey
                                              walletHandle:walletHandle
                                               outMetadata:&outMetadata];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:getMetadata failed");
@@ -131,7 +155,7 @@
     ret = [[CryptoUtils sharedInstance] getMetadataForKey:[TestUtils myVerkey1]
                                              walletHandle:walletHandle
                                               outMetadata:&outMetadata];
-    XCTAssertEqual(ret.code, WalletNotFoundError, @"CryptoUtils:getMetadata failed with unexpected error code");
+    XCTAssertEqual(ret.code, WalletItemNotFound, @"CryptoUtils:getMetadata failed with unexpected error code");
 }
 
 // MARK: - Crypto sign

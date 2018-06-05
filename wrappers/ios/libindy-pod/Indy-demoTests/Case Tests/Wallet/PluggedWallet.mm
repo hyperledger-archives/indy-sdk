@@ -50,109 +50,109 @@
 
 // MARK: - Create wallet
 
-- (void)testCreateWalletWorksForPlugged {
-    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
-
-    // register type
-    NSError *ret = [[WalletUtils sharedInstance] registerWalletType:[TestUtils keychainType]];
-
-    // create wallet
-    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
-                                                      walletName:[TestUtils wallet]
-                                                           xtype:[TestUtils keychainType]
-                                                          config:nil];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName() failed");
-
-    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
-}
+//- (void)testCreateWalletWorksForPlugged {
+//    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
+//
+//    // register type
+//    NSError *ret = [[WalletUtils sharedInstance] registerWalletType:[TestUtils keychainType]];
+//
+//    // create wallet
+//    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
+//                                                      walletName:[TestUtils wallet]
+//                                                           xtype:[TestUtils keychainType]
+//                                                          config:nil];
+//    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName() failed");
+//
+//    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
+//}
 
 // MARK: - Delete wallet
 
-- (void)testDeleteWalletWorksForPlugged {
-    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
-
-    // 1. Register wallet type
-    NSError *ret = [[WalletUtils sharedInstance] registerWalletType:[TestUtils keychainType]];
-
-    // 2. Create wallet
-    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
-                                                      walletName:[TestUtils wallet]
-                                                           xtype:[TestUtils keychainType]
-                                                          config:nil];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
-
-    // 3. Delete wallet
-    ret = [[WalletUtils sharedInstance] deleteWalletWithName:[TestUtils wallet]];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:deleteWalletWithName failed");
-
-    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
-}
+//- (void)testDeleteWalletWorksForPlugged {
+//    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
+//
+//    // 1. Register wallet type
+//    NSError *ret = [[WalletUtils sharedInstance] registerWalletType:[TestUtils keychainType]];
+//
+//    // 2. Create wallet
+//    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
+//                                                      walletName:[TestUtils wallet]
+//                                                           xtype:[TestUtils keychainType]
+//                                                          config:nil];
+//    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
+//
+//    // 3. Delete wallet
+//    ret = [[WalletUtils sharedInstance] deleteWalletWithName:[TestUtils wallet]];
+//    XCTAssertEqual(ret.code, Success, @"WalletUtils:deleteWalletWithName failed");
+//
+//    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
+//}
 
 // MARK: - Open wallet
 
-- (void)testOpenWalletWorksForPlugged {
-    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
-
-    NSString *walletName = @"indy_open_wallet_works_for_plugged";
-
-    // 1. register wallet type
-    NSError *ret = [[WalletUtils sharedInstance] registerWalletType:[TestUtils keychainType]];
-
-    // 2. Create wallet
-    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
-                                                      walletName:walletName
-                                                           xtype:[TestUtils keychainType]
-                                                          config:nil];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
-
-    // 3. Open wallet
-    IndyHandle walletHandle = 0;
-    ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
-                                                    config:nil
-                                                 outHandle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName failed");
-
-    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
-}
+//- (void)testOpenWalletWorksForPlugged {
+//    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
+//
+//    NSString *walletName = @"indy_open_wallet_works_for_plugged";
+//
+//    // 1. register wallet type
+//    NSError *ret = [[WalletUtils sharedInstance] registerWalletType:[TestUtils keychainType]];
+//
+//    // 2. Create wallet
+//    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
+//                                                     walletName:walletName
+//                                                           xtype:[TestUtils keychainType]
+//                                                          config:nil];
+//    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
+//
+//    // 3. Open wallet
+//    IndyHandle walletHandle = 0;
+//    ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
+//                                                    config:nil
+//                                                 outHandle:&walletHandle];
+//    XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName failed");
+//
+//    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
+//}
 
 // MARK: - Close wallet
 
-- (void)testCloseWalletWorksForPlugged {
-    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
-
-    // 1. register wallet type
-    NSError *ret = [[WalletUtils sharedInstance] registerWalletType:[TestUtils keychainType]];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:registerWalletType failed");
-
-    // 2. create wallet
-    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
-                                                      walletName:[TestUtils wallet]
-                                                           xtype:[TestUtils keychainType]
-                                                          config:nil];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
-
-    // 3. open wallet
-    IndyHandle walletHandle;
-    ret = [[WalletUtils sharedInstance] openWalletWithName:[TestUtils wallet]
-                                                    config:nil
-                                                 outHandle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName failed");
-
-    // 4. close wallet
-    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:closeWalletWithHandle failed");
-
-    // 5. open wallet
-    ret = [[WalletUtils sharedInstance] openWalletWithName:[TestUtils wallet]
-                                                    config:nil
-                                                 outHandle:&walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName failed");
-
-    // 6. close wallet
-    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:closeWalletWithHandle failed");
-
-    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
-}
+//- (void)testCloseWalletWorksForPlugged {
+//    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
+//
+//    // 1. register wallet type
+//    NSError *ret = [[WalletUtils sharedInstance] registerWalletType:[TestUtils keychainType]];
+//    XCTAssertEqual(ret.code, Success, @"WalletUtils:registerWalletType failed");
+//
+//    // 2. create wallet
+//    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
+//                                                      walletName:[TestUtils wallet]
+//                                                           xtype:[TestUtils keychainType]
+//                                                          config:nil];
+//    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
+//
+//    // 3. open wallet
+//    IndyHandle walletHandle;
+//    ret = [[WalletUtils sharedInstance] openWalletWithName:[TestUtils wallet]
+//                                                    config:nil
+//                                                 outHandle:&walletHandle];
+//    XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName failed");
+//
+//    // 4. close wallet
+//    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+//    XCTAssertEqual(ret.code, Success, @"WalletUtils:closeWalletWithHandle failed");
+//
+//    // 5. open wallet
+//    ret = [[WalletUtils sharedInstance] openWalletWithName:[TestUtils wallet]
+//                                                   config:nil
+//                                                 outHandle:&walletHandle];
+//    XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName failed");
+//
+//    // 6. close wallet
+//   ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+//    XCTAssertEqual(ret.code, Success, @"WalletUtils:closeWalletWithHandle failed");
+//
+//    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
+//}
 
 @end

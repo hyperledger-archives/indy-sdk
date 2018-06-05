@@ -9,6 +9,8 @@ pub mod pool;
 pub mod did;
 pub mod wallet;
 pub mod pairwise;
+pub mod non_secrets;
+pub mod payments;
 
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
 use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
@@ -18,11 +20,14 @@ use commands::pool::{PoolCommand, PoolCommandExecutor};
 use commands::did::{DidCommand, DidCommandExecutor};
 use commands::wallet::{WalletCommand, WalletCommandExecutor};
 use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
+use commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
+use commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
 
 use errors::common::CommonError;
 
 use services::anoncreds::AnoncredsService;
 use services::blob_storage::BlobStorageService;
+use services::payments::PaymentsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::crypto::CryptoService;
@@ -43,7 +48,9 @@ pub enum Command {
     Pool(PoolCommand),
     Did(DidCommand),
     Wallet(WalletCommand),
-    Pairwise(PairwiseCommand)
+    Pairwise(PairwiseCommand),
+    NonSecrets(NonSecretsCommand),
+    Payments(PaymentsCommand)
 }
 
 pub struct CommandExecutor {
@@ -74,6 +81,7 @@ impl CommandExecutor {
                 let blob_storage_service = Rc::new(BlobStorageService::new());
                 let crypto_service = Rc::new(CryptoService::new());
                 let ledger_service = Rc::new(LedgerService::new());
+                let payments_service = Rc::new(PaymentsService::new());
                 let pool_service = Rc::new(PoolService::new());
                 let wallet_service = Rc::new(WalletService::new());
 
@@ -85,6 +93,8 @@ impl CommandExecutor {
                 let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
                 let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
                 let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());
+                let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());
+                let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone());
 
                 loop {
                     match receiver.recv() {
@@ -119,6 +129,14 @@ impl CommandExecutor {
                         Ok(Command::Pairwise(cmd)) => {
                             info!("PairwiseCommand command received");
                             pairwise_command_executor.execute(cmd);
+                        }
+                        Ok(Command::NonSecrets(cmd)) => {
+                            info!("NonSecretCommand command received");
+                            non_secret_command_executor.execute(cmd);
+                        }
+                        Ok(Command::Payments(cmd)) => {
+                            info!("PaymentsCommand command received");
+                            payments_command_executor.execute(cmd);
                         }
                         Ok(Command::Exit) => {
                             info!("Exit command received");

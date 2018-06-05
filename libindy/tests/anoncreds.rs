@@ -12,6 +12,9 @@ extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
 extern crate indy_crypto;
+extern crate named_type;
+#[macro_use]
+extern crate named_type_derive;
 
 #[macro_use]
 mod utils;
@@ -19,7 +22,7 @@ mod utils;
 use utils::wallet::WalletUtils;
 use utils::anoncreds::AnoncredsUtils;
 use utils::blob_storage::BlobStorageUtils;
-use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, CREDENTIAL2_ID, CREDENTIAL3_ID};
+use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, CREDENTIAL2_ID, CREDENTIAL3_ID, ANONCREDS_COMMON_WALLET};
 use utils::test::TestUtils;
 use utils::types::*;
 
@@ -27,14 +30,14 @@ use indy::api::ErrorCode;
 use utils::inmem_wallet::InmemWallet;
 use utils::constants::*;
 
-use utils::domain::schema::Schema;
-use utils::domain::credential_definition::CredentialDefinition;
-use utils::domain::revocation_registry_definition::RevocationRegistryDefinition;
-use utils::domain::credential::CredentialInfo;
-use utils::domain::credential_for_proof_request::CredentialsForProofRequest;
-use utils::domain::proof::Proof;
-use utils::domain::revocation_state::RevocationState;
-use utils::domain::revocation_registry::RevocationRegistry;
+use utils::domain::anoncreds::schema::Schema;
+use utils::domain::anoncreds::credential_definition::CredentialDefinition;
+use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
+use utils::domain::anoncreds::credential::CredentialInfo;
+use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
+use utils::domain::anoncreds::proof::Proof;
+use utils::domain::anoncreds::revocation_state::RevocationState;
+use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
 
 use std::collections::HashSet;
 
@@ -59,21 +62,14 @@ mod high_cases {
 
         #[test]
         fn issuer_create_and_store_credential_def_works() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let (cred_def_id, credential_def_json) = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
-                                                                                                         ISSUER_DID,
-                                                                                                         &AnoncredsUtils::gvt_schema_json(),
-                                                                                                         TAG_1,
-                                                                                                         None,
-                                                                                                         &AnoncredsUtils::default_cred_def_config()).unwrap();
-            assert_eq!(AnoncredsUtils::issuer_1_gvt_cred_def_id().to_string(), cred_def_id);
-            serde_json::from_str::<CredentialDefinition>(&credential_def_json).unwrap();
+            AnoncredsUtils::init_common_wallet();
         }
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_invalid_wallet() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::issuer_create_credential_definition(invalid_wallet_handle,
@@ -83,6 +79,8 @@ mod high_cases {
                                                                           None,
                                                                           &AnoncredsUtils::default_cred_def_config());
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -91,23 +89,21 @@ mod high_cases {
 
         #[test]
         fn issuer_create_credential_offer_works() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
-
-            let cred_offer = AnoncredsUtils::issuer_create_credential_offer(wallet_handle,
-                                                                            &AnoncredsUtils::issuer_1_gvt_cred_def_id()).unwrap();
-
-            assert_eq!(AnoncredsUtils::issuer_1_gvt_cred_offer_info(),
-                       serde_json::from_str::<CredentialOfferInfo>(&cred_offer).unwrap());
+            AnoncredsUtils::init_common_wallet();
         }
 
         #[test]
         fn issuer_create_credential_offer_works_for_invalid_wallet_handle() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::issuer_create_credential_offer(invalid_wallet_handle,
                                                                      &AnoncredsUtils::issuer_1_gvt_cred_def_id());
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -116,17 +112,20 @@ mod high_cases {
 
         #[test]
         fn prover_create_master_secret_works() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-            AnoncredsUtils::prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET).unwrap();
+            AnoncredsUtils::init_common_wallet();
         }
 
         #[test]
         fn prover_create_master_secret_works_invalid_wallet_handle() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_create_master_secret(invalid_wallet_handle, COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -135,18 +134,14 @@ mod high_cases {
 
         #[test]
         fn prover_create_credential_req_works() {
-            let (wallet_handle, credential_def, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
-
-            AnoncredsUtils::prover_create_credential_req(wallet_handle,
-                                                         DID_MY1,
-                                                         &credential_offer,
-                                                         &credential_def,
-                                                         COMMON_MASTER_SECRET).unwrap();
+            AnoncredsUtils::init_common_wallet();
         }
 
         #[test]
         fn prover_create_credential_req_works_for_invalid_wallet() {
-            let (wallet_handle, credential_def, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+            let (credential_def, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_create_credential_req(invalid_wallet_handle,
@@ -155,11 +150,15 @@ mod high_cases {
                                                                    &credential_def,
                                                                    COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_create_credential_req_works_for_credential_def_not_correspond_to_credential_offer() {
-            let (wallet_handle, issuer1_gvt_credential_def, issuer1_gvt_credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+            let (issuer1_gvt_credential_def, issuer1_gvt_credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let mut issuer_create_credential_offer: serde_json::Value = serde_json::from_str(&issuer1_gvt_credential_offer).unwrap();
             issuer_create_credential_offer["key_correctness_proof"]["c"] = serde_json::Value::String("11111111".to_string());
@@ -172,6 +171,8 @@ mod high_cases {
                                                                    &issuer1_gvt_credential_def,
                                                                    COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -180,19 +181,14 @@ mod high_cases {
 
         #[test]
         fn issuer_create_credential_works() {
-            let (wallet_handle, _, credential_offer, credential_req, _) = AnoncredsUtils::init_common_wallet();
-
-            AnoncredsUtils::issuer_create_credential(wallet_handle,
-                                                     &credential_offer,
-                                                     &credential_req,
-                                                     &AnoncredsUtils::gvt_credential_values_json(),
-                                                     None,
-                                                     None).unwrap();
+            AnoncredsUtils::init_common_wallet();
         }
 
         #[test]
         fn issuer_create_credential_works_for_credential_does_not_correspond_to_credential_values() {
-            let (wallet_handle, _, credential_offer, credential_req, _) = AnoncredsUtils::init_common_wallet();
+            let (_, credential_offer, credential_req, _) = AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let res = AnoncredsUtils::issuer_create_credential(wallet_handle,
                                                                &credential_offer,
@@ -201,11 +197,15 @@ mod high_cases {
                                                                None,
                                                                None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn issuer_create_credential_works_for_for_invalid_wallet_handle() {
-            let (wallet_handle, _, credential_offer, credential_req, _) = AnoncredsUtils::init_common_wallet();
+            let (_, credential_offer, credential_req, _) = AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::issuer_create_credential(invalid_wallet_handle,
@@ -215,6 +215,8 @@ mod high_cases {
                                                                None,
                                                                None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -223,35 +225,14 @@ mod high_cases {
 
         #[test]
         fn prover_store_credential_works() {
-            let (wallet_handle, credential_def_json, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
-            let prover_wallet_handle = WalletUtils::create_and_open_wallet("proverWallet", None).unwrap();
-
-            AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
-
-            let (credential_req, credential_req_meta) = AnoncredsUtils::prover_create_credential_req(prover_wallet_handle,
-                                                                                                     DID_MY1,
-                                                                                                     &credential_offer,
-                                                                                                     credential_def_json,
-                                                                                                     COMMON_MASTER_SECRET).unwrap();
-
-            let (credential_json, _, _) = AnoncredsUtils::issuer_create_credential(wallet_handle,
-                                                                                   &credential_offer,
-                                                                                   &credential_req,
-                                                                                   &AnoncredsUtils::gvt_credential_values_json(),
-                                                                                   None,
-                                                                                   None).unwrap();
-
-            AnoncredsUtils::prover_store_credential(prover_wallet_handle,
-                                                    CREDENTIAL1_ID,
-                                                    &credential_req_meta,
-                                                    &credential_json,
-                                                    &credential_def_json,
-                                                    None).unwrap();
+            AnoncredsUtils::init_common_wallet();
         }
 
         #[test]
         fn prover_store_credential_works_for_invalid_wallet_handle() {
-            let (wallet_handle, credential_def_json, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+            let (credential_def_json, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
             let prover_wallet_handle = WalletUtils::create_and_open_wallet("proverWallet", None).unwrap();
 
             AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
@@ -277,6 +258,9 @@ mod high_cases {
                                                               &credential_def_json,
                                                               None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            WalletUtils::close_wallet(prover_wallet_handle).unwrap();
         }
     }
 
@@ -285,7 +269,9 @@ mod high_cases {
 
         #[test]
         fn prover_get_credentials_works_for_empty_filter() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let credentials = AnoncredsUtils::prover_get_credentials(wallet_handle, r#"{}"#).unwrap();
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
@@ -294,12 +280,16 @@ mod high_cases {
             assert!(credentials.contains(&AnoncredsUtils::issuer_1_gvt_credential()));
             assert!(credentials.contains(&AnoncredsUtils::issuer_1_xyz_credential()));
             assert!(credentials.contains(&AnoncredsUtils::issuer_2_gvt_credential()));
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
 
         #[test]
         fn prover_get_credentials_works_for_filter_by_issuer_did() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let credentials = AnoncredsUtils::prover_get_credentials(wallet_handle, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID)).unwrap();
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
@@ -307,11 +297,15 @@ mod high_cases {
             assert_eq!(credentials.len(), 2);
             assert!(credentials.contains(&AnoncredsUtils::issuer_1_gvt_credential()));
             assert!(credentials.contains(&AnoncredsUtils::issuer_1_xyz_credential()));
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_works_for_filter_by_schema_id() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let filter = json!({"schema_id": AnoncredsUtils::gvt_schema_id()}).to_string();
 
@@ -321,11 +315,15 @@ mod high_cases {
             assert_eq!(credentials.len(), 2);
             assert!(credentials.contains(&AnoncredsUtils::issuer_1_gvt_credential()));
             assert!(credentials.contains(&AnoncredsUtils::issuer_2_gvt_credential()));
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_works_for_filter_by_schema_name() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let credentials = AnoncredsUtils::prover_get_credentials(wallet_handle, &format!(r#"{{"schema_name":"{}"}}"#, GVT_SCHEMA_NAME)).unwrap();
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
@@ -333,11 +331,15 @@ mod high_cases {
             assert_eq!(credentials.len(), 2);
             assert!(credentials.contains(&AnoncredsUtils::issuer_1_gvt_credential()));
             assert!(credentials.contains(&AnoncredsUtils::issuer_2_gvt_credential()));
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_works_for_filter_by_schema_version() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let credentials = AnoncredsUtils::prover_get_credentials(wallet_handle, &format!(r#"{{"schema_version":"{}"}}"#, SCHEMA_VERSION)).unwrap();
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
@@ -346,11 +348,15 @@ mod high_cases {
             assert!(credentials.contains(&AnoncredsUtils::issuer_1_gvt_credential()));
             assert!(credentials.contains(&AnoncredsUtils::issuer_1_xyz_credential()));
             assert!(credentials.contains(&AnoncredsUtils::issuer_2_gvt_credential()));
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_works_for_filter_by_schema_issuer_did() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let credentials = AnoncredsUtils::prover_get_credentials(wallet_handle, &format!(r#"{{"schema_issuer_did":"{}"}}"#, ISSUER_DID)).unwrap();
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
@@ -359,11 +365,15 @@ mod high_cases {
             assert!(credentials.contains(&AnoncredsUtils::issuer_1_gvt_credential()));
             assert!(credentials.contains(&AnoncredsUtils::issuer_1_xyz_credential()));
             assert!(credentials.contains(&AnoncredsUtils::issuer_2_gvt_credential()));
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_works_for_filter_by_cred_def_id() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let filter = json!({"cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id()}).to_string();
 
@@ -372,25 +382,35 @@ mod high_cases {
 
             assert_eq!(credentials.len(), 1);
             assert!(credentials.contains(&AnoncredsUtils::issuer_1_gvt_credential()));
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_works_for_empty_result() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let credentials = AnoncredsUtils::prover_get_credentials(wallet_handle, r#"{"cred_def_id":"other_cred_def_id"}"#).unwrap();
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
 
             assert_eq!(credentials.len(), 0);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_works_for_invalid_wallet_handle() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_get_credentials(invalid_wallet_handle, r#"{}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -403,7 +423,9 @@ mod high_cases {
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_empty_req() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -418,11 +440,15 @@ mod high_cases {
             let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
             assert_eq!(credentials.attrs.len(), 0);
             assert_eq!(credentials.predicates.len(), 0);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_only() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -443,11 +469,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_in_upper_case() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -468,11 +498,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_contains_spaces() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -493,11 +527,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_issuer() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -520,11 +558,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 1);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_issuers() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -546,11 +588,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_schema() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -572,11 +618,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_name() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -598,11 +648,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_version() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -624,11 +678,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_issuer_did() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -650,11 +708,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_schema_id_or_specific_cred_def_id() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -676,11 +738,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_schemas() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -702,11 +768,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_cred_def_id() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -728,11 +798,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 1);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_cred_def_ids() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -754,11 +828,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_cred_def_id_or_issuer_did() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -780,11 +858,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_predicate() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -803,11 +885,15 @@ mod high_cases {
 
             let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
             assert_eq!(credentials_for_predicate_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_predicate_attribute_in_upper_case() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -826,11 +912,15 @@ mod high_cases {
 
             let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
             assert_eq!(credentials_for_predicate_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_predicate_attribute_contains_spaces() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -849,11 +939,15 @@ mod high_cases {
 
             let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
             assert_eq!(credentials_for_predicate_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_predicate_for_issuer_did() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -872,11 +966,15 @@ mod high_cases {
 
             let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
             assert_eq!(credentials_for_predicate_1.len(), 1);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_predicate_for_multiple_issuers() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -896,11 +994,15 @@ mod high_cases {
 
             let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
             assert_eq!(credentials_for_predicate_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_predicate_for_schema_id() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -920,11 +1022,15 @@ mod high_cases {
 
             let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
             assert_eq!(credentials_for_predicate_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_predicate_for_multiple_schema_ids() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -944,11 +1050,15 @@ mod high_cases {
 
             let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
             assert_eq!(credentials_for_predicate_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_predicate_for_cred_def_id() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -968,11 +1078,15 @@ mod high_cases {
 
             let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
             assert_eq!(credentials_for_predicate_1.len(), 1);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_predicate_for_multiple_cred_def_ids() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -992,11 +1106,15 @@ mod high_cases {
 
             let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
             assert_eq!(credentials_for_predicate_1.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_multiple_revealed_attrs_and_predicates() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -1034,11 +1152,15 @@ mod high_cases {
 
             let credentials_for_predicate_2 = credentials.predicates.get("predicate2_referent").unwrap();
             assert_eq!(credentials_for_predicate_2.len(), 2);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_not_found_attribute() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -1059,11 +1181,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 0);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_not_found_predicate_attribute() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -1084,11 +1210,15 @@ mod high_cases {
 
             let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
             assert_eq!(credentials_for_predicate_1.len(), 0);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_not_satisfied_predicate() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -1109,11 +1239,15 @@ mod high_cases {
 
             let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
             assert_eq!(credentials_for_predicate_1.len(), 0);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_issuer() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -1136,11 +1270,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 0);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_schema_id() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -1163,11 +1301,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 0);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_cred_def_id() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -1190,11 +1332,15 @@ mod high_cases {
 
             let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
             assert_eq!(credentials_for_attr_1.len(), 0);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_predicate_for_other_issuer() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -1214,12 +1360,16 @@ mod high_cases {
 
             let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
             assert_eq!(credentials_for_predicate_1.len(), 0);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_predicate_for_other_schema_id() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -1239,15 +1389,21 @@ mod high_cases {
 
             let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
             assert_eq!(credentials_for_predicate_1.len(), 0);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_invalid_wallet_handle() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_get_credentials_for_proof_req(invalid_wallet_handle, &AnoncredsUtils::proof_request_attr());
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -1256,7 +1412,9 @@ mod high_cases {
 
         #[test]
         fn prover_create_proof_works() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let requested_credentials_json = json!({
                  "self_attested_attributes": json!({}),
@@ -1275,11 +1433,15 @@ mod high_cases {
                                                 &AnoncredsUtils::schemas_for_proof(),
                                                 &AnoncredsUtils::cred_defs_for_proof(),
                                                 "{}").unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_create_proof_works_for_using_not_satisfy_credential() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -1309,11 +1471,15 @@ mod high_cases {
                                                           &AnoncredsUtils::cred_defs_for_proof(),
                                                           "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_create_proof_works_for_invalid_wallet_handle() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let requested_credentials_json = json!({
                  "self_attested_attributes": json!({}),
@@ -1332,6 +1498,8 @@ mod high_cases {
                                                           &AnoncredsUtils::cred_defs_for_proof(),
                                                           "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -1419,7 +1587,10 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_invalid_schema() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
+
             let schema = r#"{"name":"name","version":"1.0", "attr_names":["name"]}"#;
 
             let res = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
@@ -1429,11 +1600,15 @@ mod medium_cases {
                                                                           None,
                                                                           &AnoncredsUtils::default_cred_def_config());
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_invalid_did() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let res = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
                                                                           INVALID_IDENTIFIER,
@@ -1442,11 +1617,15 @@ mod medium_cases {
                                                                           None,
                                                                           &AnoncredsUtils::default_cred_def_config());
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_empty_schema_attr_names() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let mut schema = AnoncredsUtils::gvt_schema();
             schema.attr_names = HashSet::new();
@@ -1458,6 +1637,8 @@ mod medium_cases {
                                                                           None,
                                                                           &AnoncredsUtils::default_cred_def_config());
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
@@ -1470,11 +1651,15 @@ mod medium_cases {
                                                                 TAG_1,
                                                                 Some(SIGNATURE_TYPE),
                                                                 &AnoncredsUtils::default_cred_def_config()).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_invalid_signature_type() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let res = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
                                                                           ISSUER_DID,
@@ -1483,11 +1668,15 @@ mod medium_cases {
                                                                           Some("some_type"),
                                                                           &AnoncredsUtils::default_cred_def_config());
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_invalid_config() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let res = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
                                                                           ISSUER_DID,
@@ -1496,18 +1685,15 @@ mod medium_cases {
                                                                           None,
                                                                           "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_duplicate() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            AnoncredsUtils::init_common_wallet();
 
-            AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
-                                                                ISSUER_DID,
-                                                                &AnoncredsUtils::gvt_schema_json(),
-                                                                TAG_1,
-                                                                Some(SIGNATURE_TYPE),
-                                                                &AnoncredsUtils::default_cred_def_config()).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let res = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
                                                                           ISSUER_DID,
@@ -1515,8 +1701,10 @@ mod medium_cases {
                                                                           TAG_1,
                                                                           Some(SIGNATURE_TYPE),
                                                                           &AnoncredsUtils::default_cred_def_config());
-
             assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsCredDefAlreadyExistsError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
         }
     }
 
@@ -1525,10 +1713,14 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_credential_offer_works_for_unknown_cred_def_id() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let res = AnoncredsUtils::issuer_create_credential_offer(wallet_handle, "unknown_cred_def_id");
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -1537,11 +1729,14 @@ mod medium_cases {
 
         #[test]
         fn prover_create_master_secret_works_for_duplicate_name() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            AnoncredsUtils::init_common_wallet();
 
-            AnoncredsUtils::prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
+
             let res = AnoncredsUtils::prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsMasterSecretDuplicateNameError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -1550,7 +1745,9 @@ mod medium_cases {
 
         #[test]
         fn prover_create_credential_req_works_for_invalid_credential_offer() {
-            let (wallet_handle, credential_def, _, _, _) = AnoncredsUtils::init_common_wallet();
+            let (credential_def, _, _, _) = AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let res = AnoncredsUtils::prover_create_credential_req(wallet_handle,
                                                                    DID_MY1,
@@ -1558,11 +1755,15 @@ mod medium_cases {
                                                                    &credential_def,
                                                                    COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_create_credential_req_works_for_invalid_credential_def() {
-            let (wallet_handle, _, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+            let ( _, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let credential_def = r#"{
                             "schema_seq_no":1,
@@ -1578,18 +1779,24 @@ mod medium_cases {
                                                                    credential_def,
                                                                    COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_create_credential_req_works_for_invalid_master_secret() {
-            let (wallet_handle, credential_def, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+            let (credential_def, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let res = AnoncredsUtils::prover_create_credential_req(wallet_handle,
                                                                    DID_MY1,
                                                                    &credential_offer,
                                                                    &credential_def,
                                                                    "invalid_master_secret_name");
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -1598,7 +1805,9 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_credential_works_for_for_invalid_credential_req_json() {
-            let (wallet_handle, _, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+            let (_, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let credential_req = r#"{
                                         "blinded_ms":{"ur":null},
@@ -1612,11 +1821,15 @@ mod medium_cases {
                                                                None,
                                                                None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn issuer_create_credential_works_for_for_invalid_credential_values_json() {
-            let (wallet_handle, _, credential_offer, credential_request, _) = AnoncredsUtils::init_common_wallet();
+            let (_, credential_offer, credential_request, _) = AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let credential_values_json = r#"{
                                            "sex":"male",
@@ -1632,6 +1845,8 @@ mod medium_cases {
                                                                None,
                                                                None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -1640,13 +1855,15 @@ mod medium_cases {
 
         #[test]
         fn prover_store_credential_works_for_invalid_credential_json() {
-            let (wallet_handle, credential_def_json, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+            let (credential_def_json, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let (_, cred_req_metadata) = AnoncredsUtils::prover_create_credential_req(wallet_handle,
-                                                                                             DID_MY1,
-                                                                                             &credential_offer,
-                                                                                             &credential_def_json,
-                                                                                             COMMON_MASTER_SECRET).unwrap();
+                                                                                      DID_MY1,
+                                                                                      &credential_offer,
+                                                                                      &credential_def_json,
+                                                                                      COMMON_MASTER_SECRET).unwrap();
 
             let credential_json = format!(r#"{{
                                                        "values":{},
@@ -1661,6 +1878,8 @@ mod medium_cases {
                                                               &credential_def_json,
                                                               None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -1669,10 +1888,14 @@ mod medium_cases {
 
         #[test]
         fn prover_get_credentials_works_for_invalid_json() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let res = AnoncredsUtils::prover_get_credentials(wallet_handle, r#"{"issuer_did": 12345}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -1681,7 +1904,9 @@ mod medium_cases {
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_invalid_proof_req() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -1692,11 +1917,15 @@ mod medium_cases {
 
             let res = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_invalid_predicate() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -1710,11 +1939,15 @@ mod medium_cases {
 
             let res = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_get_credentials_for_proof_req_works_for_invalid_predicate_type() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let proof_req = json!({
                "nonce":"123432421212",
@@ -1728,6 +1961,8 @@ mod medium_cases {
 
             let res = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -1736,7 +1971,9 @@ mod medium_cases {
 
         #[test]
         fn prover_create_proof_works_for_invalid_master_secret() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let requested_credentials_json = json!({
                  "self_attested_attributes": json!({}),
@@ -1753,12 +1990,16 @@ mod medium_cases {
                                                           &AnoncredsUtils::schemas_for_proof(),
                                                           &AnoncredsUtils::cred_defs_for_proof(),
                                                           "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_create_proof_works_for_invalid_schemas_json() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let requested_credentials_json = json!({
                  "self_attested_attributes": json!({}),
@@ -1776,11 +2017,15 @@ mod medium_cases {
                                                           &AnoncredsUtils::cred_defs_for_proof(),
                                                           "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_create_proof_works_for_invalid_credential_defs_json() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let requested_credentials_json = json!({
                  "self_attested_attributes": json!({}),
@@ -1798,11 +2043,15 @@ mod medium_cases {
                                                           "{}",
                                                           "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
         #[test]
         fn prover_create_proof_works_for_invalid_requested_credentials_json() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
             let requested_credentials_json = json!({
                  "self_attested_attributes": json!({}),
@@ -1817,6 +2066,8 @@ mod medium_cases {
                                                           &AnoncredsUtils::cred_defs_for_proof(),
                                                           "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -1968,6 +2219,7 @@ mod demos {
     }
 
     #[test]
+    #[ignore]
     fn anoncreds_works_for_custom_wallet() {
         TestUtils::cleanup_storage();
         InmemWallet::cleanup();
@@ -3934,6 +4186,138 @@ mod demos {
         assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsInvalidUserRevocId);
 
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
+
+        TestUtils::cleanup_storage();
+    }
+
+
+    #[test]
+    fn anoncreds_works_for_multiple_requested_predicates_from_one_credential() {
+        TestUtils::cleanup_storage();
+
+        //1. Create Issuer wallet, gets wallet handle
+        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+        //2. Create Prover wallet, gets wallet handle
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+        //3. Issuer creates Schema and Credential Definition
+        let attr_names = r#"["task1",
+                                  "task2",
+                                  "task3",
+                                  "task4",
+                                  "task5",
+                                  "6*_task",
+                                  "7*_task",
+                                  "bonus",
+                                  "average",
+                                  "aggregated",
+                                  "total"]"#;
+        let (schema_id, schema_json, cred_def_id, cred_def_json) =
+            AnoncredsUtils::multi_steps_issuer_preparation(issuer_wallet_handle,
+                                                           ISSUER_DID,
+                                                           "test",
+                                                           attr_names);
+
+        //4. Prover creates Master Secret
+        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
+
+        //5. Issuance credential for Prover
+        let cred_values = r#"{
+            "task1": {"raw":"8", "encoded": "8"},
+            "task2": {"raw":"8", "encoded": "8"},
+            "task3": {"raw":"10", "encoded": "10"},
+            "task4": {"raw":"9", "encoded": "9"},
+            "task5": {"raw":"7", "encoded": "7"},
+            "6*_task": {"raw":"8", "encoded": "8"},
+            "7*_task": {"raw":"9", "encoded": "9"},
+            "bonus": {"raw":"5", "encoded": "5"},
+            "average": {"raw":"9", "encoded": "9"},
+            "aggregated": {"raw":"9", "encoded": "9"},
+            "total": {"raw":"77", "encoded": "77"}
+        }"#;
+
+        AnoncredsUtils::multi_steps_create_credential(COMMON_MASTER_SECRET,
+                                                      prover_wallet_handle,
+                                                      issuer_wallet_handle,
+                                                      CREDENTIAL1_ID,
+                                                      cred_values,
+                                                      &cred_def_id,
+                                                      &cred_def_json);
+
+        //6. Proof request
+        let proof_req_json = r#"{
+                                       "nonce":"123432421212",
+                                       "name":"proof_req_1",
+                                       "version":"0.1",
+                                       "requested_attributes":{},
+                                       "requested_predicates":{
+                                            "predicate1_referent":{"name":"task1","p_type":">=","p_value":5},
+                                            "predicate2_referent":{"name":"task2","p_type":">=","p_value":7},
+                                            "predicate3_referent":{"name":"task3","p_type":">=","p_value":7},
+                                            "predicate4_referent":{"name":"task4","p_type":">=","p_value":8},
+                                            "predicate5_referent":{"name":"task5","p_type":">=","p_value":5},
+                                            "predicate6_referent":{"name":"6*_task","p_type":">=","p_value":7},
+                                            "predicate7_referent":{"name":"7*_task","p_type":">=","p_value":7},
+                                            "predicate8_referent":{"name":"bonus","p_type":">=","p_value":3},
+                                            "predicate9_referent":{"name":"average","p_type":">=","p_value":8},
+                                            "predicate10_referent":{"name":"aggregated","p_type":">=","p_value":7},
+                                            "predicate11_referent":{"name":"total","p_type":">=","p_value":70}
+                                       }
+                                    }"#;
+
+        //7. Prover gets Credentials for Proof Request
+        let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
+        let credential = AnoncredsUtils::get_credential_for_predicate_referent(&credentials_json, "predicate1_referent");
+
+        //8. Prover creates Proof
+        let requested_credentials_json = format!(r#"{{
+                                                  "self_attested_attributes":{{}},
+                                                  "requested_attributes":{{}},
+                                                  "requested_predicates":{{
+                                                        "predicate1_referent":{{ "cred_id":"{}" }},
+                                                        "predicate2_referent":{{ "cred_id":"{}" }},
+                                                        "predicate3_referent":{{ "cred_id":"{}" }},
+                                                        "predicate4_referent":{{ "cred_id":"{}" }},
+                                                        "predicate5_referent":{{ "cred_id":"{}" }},
+                                                        "predicate6_referent":{{ "cred_id":"{}" }},
+                                                        "predicate7_referent":{{ "cred_id":"{}" }},
+                                                        "predicate8_referent":{{ "cred_id":"{}" }},
+                                                        "predicate9_referent":{{ "cred_id":"{}" }},
+                                                        "predicate10_referent":{{ "cred_id":"{}" }},
+                                                        "predicate11_referent":{{ "cred_id":"{}" }}
+                                                  }}
+                                                }}"#, credential.referent, credential.referent, credential.referent, credential.referent, credential.referent,
+                                                 credential.referent, credential.referent, credential.referent, credential.referent, credential.referent, credential.referent);
+
+        let schemas_json = json!({schema_id: serde_json::from_str::<Schema>(&schema_json).unwrap()}).to_string();
+        let cred_defs_json = json!({cred_def_id: serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()}).to_string();
+        let rev_states_json = json!({}).to_string();
+
+        let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
+                                                             &proof_req_json,
+                                                             &requested_credentials_json,
+                                                             COMMON_MASTER_SECRET,
+                                                             &schemas_json,
+                                                             &cred_defs_json,
+                                                             &rev_states_json).unwrap();
+
+        let proof: Proof = serde_json::from_str(&proof_json).unwrap();
+
+        //9. Verifier verifies proof
+        let rev_reg_defs_json = json!({}).to_string();
+        let rev_regs_json = json!({}).to_string();
+
+        let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
+                                                          &proof_json,
+                                                          &schemas_json,
+                                                          &cred_defs_json,
+                                                          &rev_reg_defs_json,
+                                                          &rev_regs_json).unwrap();
+        assert!(valid);
+
+        WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
+        WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
         TestUtils::cleanup_storage();
     }

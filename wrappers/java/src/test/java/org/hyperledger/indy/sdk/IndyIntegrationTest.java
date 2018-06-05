@@ -65,6 +65,7 @@ public class IndyIntegrationTest {
 			"        \"height\": {\"raw\": \"175\", \"encoded\": \"175\"},\n" +
 			"        \"age\": {\"raw\": \"28\", \"encoded\": \"28\"}\n" +
 			"    }";
+	protected String CREDENTIALS = "{\"key\": \"key\"}";
 
 
 	protected static final String TRUSTEE_IDENTITY_JSON =
@@ -86,12 +87,12 @@ public class IndyIntegrationTest {
 	private static Boolean isWalletRegistered = false;
 
 	@Before
-	public void setUp() throws IOException, InterruptedException, ExecutionException, IndyException, Exception {
+	public void setUp() throws Exception {
 		InitHelper.init();
 		StorageUtils.cleanupStorage();
-		if (! isWalletRegistered) {
-			Wallet.registerWalletType("inmem", new InMemWalletType()).get();
-		}
+//		if (! isWalletRegistered) { TODO:FIXME
+//			Wallet.registerWalletType("inmem", new InMemWalletType()).get();
+//		}
 		isWalletRegistered = true;
 	}
 

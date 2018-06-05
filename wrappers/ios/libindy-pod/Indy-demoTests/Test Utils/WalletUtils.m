@@ -14,6 +14,8 @@
 
 @implementation WalletUtils
 
+NSString *credentials = @"{\"key\":\"key\"}";
+
 + (WalletUtils *)sharedInstance
 {
     static WalletUtils *instance = nil;
@@ -62,12 +64,12 @@
     
     NSString *walletName = [NSString stringWithFormat:@"default-wallet-name-%lu", (unsigned long)[[SequenceUtils sharedInstance] getNextId]];
     NSString *xTypeStr = (xtype) ? xtype : @"default";
-    
+
     [[IndyWallet sharedInstance] createWalletWithName:  walletName
                                              poolName:  poolName
                                                  type:  xTypeStr
                                                config:  nil
-                                          credentials:  nil
+                                          credentials:  credentials
                                            completion: ^(NSError* error)
            {
                err = error;
@@ -86,7 +88,7 @@
     
     [[IndyWallet sharedInstance] openWalletWithName:walletName
                                       runtimeConfig:nil
-                                        credentials:nil
+                                        credentials:credentials
                                          completion:^(NSError *error, IndyHandle h)
            {
                err = error;
@@ -109,12 +111,12 @@
     __block NSError *err = nil;
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
+
     [[IndyWallet sharedInstance] createWalletWithName:  walletName
                                              poolName:  poolName
                                                  type:  xtype
                                                config:  config
-                                          credentials:  nil
+                                          credentials:  credentials
                                            completion: ^(NSError *error)
            {
                err = error;
@@ -132,7 +134,7 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     [[IndyWallet sharedInstance] deleteWalletWithName:walletName
-                                          credentials:nil
+                                          credentials:credentials
                                            completion:^(NSError *error)
            {
                err = error;
@@ -152,10 +154,10 @@
     __block IndyHandle outHandle = 0;
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
+
     [[IndyWallet sharedInstance] openWalletWithName:walletName
                                       runtimeConfig:config
-                                        credentials:nil
+                                        credentials:credentials
                                          completion:^(NSError *error, IndyHandle h)
            {
                err = error;

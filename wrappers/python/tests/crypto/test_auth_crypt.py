@@ -30,7 +30,7 @@ async def test_auth_crypt_works_for_created_did_as_cid(wallet_handle, seed_my1, 
 async def test_auth_crypt_works_for_unknown_sender_verkey(wallet_handle, verkey_my1, verkey_my2, message):
     with pytest.raises(IndyError) as e:
         await crypto.auth_crypt(wallet_handle, verkey_my1, verkey_my2, message)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio

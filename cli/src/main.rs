@@ -22,7 +22,7 @@ mod libindy;
 
 use command_executor::CommandExecutor;
 
-use commands::{common, did, ledger, pool, wallet};
+use commands::{common, did, ledger, pool, wallet, payment_address};
 
 use linefeed::{Reader, ReadResult, Terminal};
 use linefeed::complete::{Completer, Completion};
@@ -41,13 +41,23 @@ fn main() {
 
     let command_executor = build_executor();
 
-    if env::args().len() == 1 {
-        execute_stdin(command_executor);
-    } else {
+    if env::args().len() == 2 {
+        //batch mode
         let mut args = env::args();
         args.next(); //skip 0 param
-        execute_batch(command_executor, Some(&args.next().unwrap()))
+        return execute_batch(command_executor, Some(&args.next().unwrap()));
     }
+
+    if env::args().find(|a| a == "--plugins").is_some() {
+        // load plugins
+        let mut args = env::args();
+        args.next(); //skip 0 param
+        args.next(); //skip 1 param
+
+        _load_plugins(&command_executor, Some(&args.next().unwrap()));
+    }
+
+    execute_stdin(command_executor);
 }
 
 fn build_executor() -> CommandExecutor {
@@ -56,6 +66,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(common::exit_command::new())
         .add_command(common::prompt_command::new())
         .add_command(common::show_command::new())
+        .add_command(common::load_plugin_command::new())
         .add_group(did::group::new())
         .add_command(did::new_command::new())
         .add_command(did::import_command::new())
@@ -84,6 +95,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::get_attrib_command::new())
         .add_command(ledger::schema_command::new())
         .add_command(ledger::get_schema_command::new())
+        .add_command(ledger::get_validator_info_command::new())
         .add_command(ledger::cred_def_command::new())
         .add_command(ledger::get_cred_def_command::new())
         .add_command(ledger::node_command::new())
@@ -91,13 +103,23 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::pool_restart_command::new())
         .add_command(ledger::pool_upgrade_command::new())
         .add_command(ledger::custom_command::new())
+        .add_command(ledger::get_utxo_command::new())
+        .add_command(ledger::payment_command::new())
+        .add_command(ledger::get_fees_command::new())
+        .add_command(ledger::mint_prepare_command::new())
+        .add_command(ledger::set_fees_prepare_command::new())
+        .add_command(ledger::sign_multi_command::new())
+        .finalize_group()
+        .add_group(payment_address::group::new())
+        .add_command(payment_address::create_command::new())
+        .add_command(payment_address::list_command::new())
         .finalize_group()
         .finalize()
 }
 
 fn execute_stdin(command_executor: CommandExecutor) {
     #[cfg(target_os = "windows")]
-        ansi_term::enable_ansi_support().is_ok();
+    ansi_term::enable_ansi_support().is_ok();
 
     match Reader::new("indy-cli") {
         Ok(reader) => execute_interactive(command_executor, reader),
@@ -139,6 +161,30 @@ fn execute_batch(command_executor: CommandExecutor, script_path: Option<&str>) {
     };
 }
 
+fn _load_plugins(command_executor: &CommandExecutor, plugins_str: Option<&str>) {
+    if plugins_str.is_none() {
+        return println_err!("Plugins not found");
+    }
+
+    let plugins = plugins_str.unwrap().split(",").collect::<Vec<&str>>();
+
+    for plugin in plugins {
+        let parts: Vec<&str> = plugin.split(":").collect::<Vec<&str>>();
+
+        let name = match parts.get(0) {
+            Some(name) => name,
+            None => return println_err!("Plugin Name not found in {}", plugin)
+        };
+
+        let init_func = match parts.get(1) {
+            Some(name) => name,
+            None => return println_err!("Plugin Init function not found in {}", plugin)
+        };
+
+        common::load_plugin(command_executor.ctx(), name, init_func).ok();
+    }
+}
+
 fn _print_help() {
     println_acc!("Hyperledger Indy CLI");
     println!();
@@ -148,6 +194,9 @@ fn _print_help() {
     println!();
     println_acc!("\tBatch - all commands will be read from text file or pipe and executed in series.");
     println_acc!("\tUsage: indy-cli <path-to-text-file>");
+    println!();
+    println_acc!("\tLoad plugins in Libindy.");
+    println_acc!("\tUsage: indy-cli --plugins <lib-1-name>:<init-func-1-name>,...,<lib-n-name>:<init-func-n-name>");
     println!();
 }
 

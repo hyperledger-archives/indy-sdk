@@ -9,7 +9,7 @@ test('wallet', async function (t) {
   var listWallets = async function () {
     var list = await indy.listWallets()
     return list
-      .filter(a => a.associated_pool_name === pool.name)
+      .filter(a => a.pool_name === pool.name)
       .map(a => ({name: a.name, type: a.type}))
   }
 
@@ -17,17 +17,18 @@ test('wallet', async function (t) {
 
   var wName = 'wallet-' + cuid()
 
-  await indy.createWallet(pool.name, wName, 'default', null, null)
+  var walletCredentials = {'key': 'key'}
+  await indy.createWallet(pool.name, wName, 'default', null, walletCredentials)
 
   t.deepEqual(await listWallets(), [{name: wName, type: 'default'}])
 
-  var err = await t.throws(indy.createWallet(pool.name, wName, 'default', null, null))
+  var err = await t.throws(indy.createWallet(pool.name, wName, 'default', null, walletCredentials))
   t.is(err.indyName, 'WalletAlreadyExistsError')
 
-  var handle = await indy.openWallet(wName, null, null)
+  var handle = await indy.openWallet(wName, null, walletCredentials)
   t.truthy(handle >= 0)
 
-  err = await t.throws(indy.openWallet(wName, null, null))
+  err = await t.throws(indy.openWallet(wName, null, walletCredentials))
   t.is(err.indyName, 'WalletAlreadyOpenedError')
 
   err = await t.throws(indy.closeWallet(-1))
@@ -37,7 +38,7 @@ test('wallet', async function (t) {
 
   t.deepEqual(await listWallets(), [{name: wName, type: 'default'}])
 
-  await indy.deleteWallet(wName, null)
+  await indy.deleteWallet(wName, walletCredentials)
 
   t.deepEqual(await listWallets(), [])
 
