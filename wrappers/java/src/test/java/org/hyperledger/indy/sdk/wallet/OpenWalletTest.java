@@ -66,7 +66,7 @@ public class OpenWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testOpenWalletWorksForNotCreatedWallet() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(IOException.class));
+		thrown.expectCause(isA(WalletNotFoundException.class));
 
 		Wallet.openWallet("openWalletWorksForNotCreatedWallet", null, CREDENTIALS).get();
 	}
