@@ -44,3 +44,6 @@ handshakes:
 1. "pool connection" determines node to perform new connection with round robin. If connection is already established than sockets will be re-used.
 1. libindy keep opened sockets connected until "pool connection" is active (5s from "pool connection" creation or 5 requests started) or there is request    that waits for response on this socket. As soon as "pool connection" is switched from active state and sockets isn't needed for request it will be
    immediately closed.
+1. libindy waits for response on the socket only limited amount of time. There are 2 pre-defined timeouts. First one for getting of "Ack" message
+   is short (10s). Second one for getting "Reply" message is significantly longer (100s). If node is health in a 99.9% cases it will
+   send "ACK" message in a short period of time (the reason for small timeout).
