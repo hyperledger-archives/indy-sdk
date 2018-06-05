@@ -31,10 +31,9 @@ public class LedgerIntegrationTest extends IndyIntegrationTestWithPoolAndSingleW
 	@Before
 	public void setUp() throws Exception {
 		InitHelper.init();
-		postEntities();
 	}
 
-	private void postEntities() throws Exception {
+	void postEntities() throws Exception {
 
 		if (entitiesPosted) {
 			return;

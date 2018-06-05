@@ -215,7 +215,7 @@
                                                        submitterdid:[TestUtils trusteeDid]
                                                         requestJson:[[AnoncredsUtils sharedInstance] toJson:message]
                                                          resultJson:nil];
-    XCTAssertEqual(ret.code, WalletNotFoundError, @"LedgerUtils::signRequestWithWalletHandle() returned wrong code!");
+    XCTAssertEqual(ret.code, WalletItemNotFound, @"LedgerUtils::signRequestWithWalletHandle() returned wrong code!");
 }
 
 - (void)testSignRequestWorksFowInvalidMessageFormat {
@@ -837,6 +837,56 @@
                                                                requestJson:poolConfigRequestJson
                                                            outResponseJson:&poolConfigResponse];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequest() failed");
+}
+
+- (void) testGetValidatorInfoRequestWorks
+{
+    [TestUtils cleanupStorage];
+    NSString *poolName = @"indy_send_get_validator_info_request_works";
+    NSError *ret = nil;
+    
+    // 1. Create and open pool ledger config, get pool handle
+    IndyHandle poolHandle = 0;
+    
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerWithPoolName:poolName
+                                                               poolHandle:&poolHandle];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils:createAndOpenPoolLedgerConfig:poolName failed");
+    
+    // 2. Create and open wallet, get wallet handle
+    IndyHandle walletHandle = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                                  xtype:nil
+                                                                 handle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
+    
+    // 3. Obtain trustee did
+    NSString* trusteeDid = nil;
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                    seed:@"000000000000000000000000Trustee1"
+                                                                outMyDid:&trusteeDid
+                                                             outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDid() failed for trustee");
+    XCTAssertNotNil(trusteeDid, @"trusteeDid is nil!");
+    
+    // 4. Build get validator info request
+    
+    NSString *getValidatorInfoRequest = nil;
+    ret = [[LedgerUtils sharedInstance] buildGetValidatorInfo:trusteeDid
+                                                   resultJson:&getValidatorInfoRequest];
+    XCTAssertNotNil(getValidatorInfoRequest, @"getValidatorInfoRequest is nil!");
+    
+    // 5. Sign and Submit nym request
+    NSString *getValidatorInfoResponse = nil;
+    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
+                                                              walletHandle:walletHandle
+                                                              submitterDid:trusteeDid
+                                                               requestJson:getValidatorInfoRequest
+                                                           outResponseJson:&getValidatorInfoResponse];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::sendRequestWithPoolHandle() failed");
+    XCTAssertNotNil(getValidatorInfoResponse, @"getValidatorInfoResponse is nil!");
+    
+    [[PoolUtils sharedInstance] closeHandle:poolHandle];
+    [TestUtils cleanupStorage];
 }
 
 @end

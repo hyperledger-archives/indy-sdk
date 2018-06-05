@@ -30,7 +30,7 @@ async def test_sign_works(wallet_handle, seed_trustee1):
 async def test_sign_works_for_unknown_did(wallet_handle):
     with pytest.raises(IndyError) as e:
         await ledger.sign_request(wallet_handle, '8wZcEriaNLNKtteJvx7f8i', json.dumps({"reqId": 1496822211362017764}))
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio

@@ -20,11 +20,11 @@ use self::indy_crypto::cl::{
 };
 use self::indy_crypto::cl::issuer::Issuer as CryptoIssuer;
 
-use domain::schema::SchemaV1;
-use domain::credential_definition::{CredentialDefinitionV1 as CredentialDefinition, CredentialDefinitionData};
-use domain::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
-use domain::credential::AttributeValues;
-use domain::credential_request::CredentialRequest;
+use domain::anoncreds::schema::SchemaV1;
+use domain::anoncreds::credential_definition::{CredentialDefinitionV1 as CredentialDefinition, CredentialDefinitionData};
+use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
+use domain::anoncreds::credential::AttributeValues;
+use domain::anoncreds::credential_request::CredentialRequest;
 
 pub struct Issuer {}
 

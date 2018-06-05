@@ -15,8 +15,9 @@ extern crate rmp_serde;
 extern crate indy_crypto;
 
 
-use self::byteorder::{ByteOrder, LittleEndian};
+use self::byteorder::{ByteOrder, LittleEndian, WriteBytesExt, ReadBytesExt};
 use self::rust_base58::FromBase58;
+use std::str::from_utf8;
 use self::time::{Duration, Tm};
 use serde_json;
 use serde_json::Value as SJsonValue;
@@ -26,7 +27,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::{fmt, fs, io, thread};
 use std::fmt::Debug;
-use std::io::{BufRead, Write};
+use std::io::{Read, BufRead, Write};
 use std::ops::{Add, Sub};
 
 use commands::{Command, CommandExecutor};
@@ -177,25 +178,28 @@ impl PoolWorker {
         Ok(())
     }
 
-    fn _build_node_state(merkle_tree: &MerkleTree) -> Result<HashMap<String, NodeTransaction>, CommonError> {
-        let mut gen_tnxs: HashMap<String, NodeTransaction> = HashMap::new();
+    fn _build_node_state(merkle_tree: &MerkleTree) -> Result<HashMap<String, NodeTransactionV1>, CommonError> {
+        let mut gen_tnxs: HashMap<String, NodeTransactionV1> = HashMap::new();
 
         for gen_txn in merkle_tree {
-            let mut gen_txn: NodeTransaction = rmp_serde::decode::from_slice(gen_txn.as_slice())
-                .map_err(|e|
-                    CommonError::InvalidState(format!("MerkleTree contains invalid data {:?}", e)))?;
+            let gen_txn: NodeTransaction =
+                rmp_serde::decode::from_slice(gen_txn.as_slice())
+                    .map_err(|e|
+                        CommonError::InvalidState(format!("MerkleTree contains invalid data {:?}", e)))?;
 
-            if gen_tnxs.contains_key(&gen_txn.dest) {
-                gen_tnxs.get_mut(&gen_txn.dest).unwrap().update(&mut gen_txn)?;
+            let mut gen_txn: NodeTransactionV1 = NodeTransactionV1::from(gen_txn);
+
+            if gen_tnxs.contains_key(&gen_txn.txn.data.dest) {
+                gen_tnxs.get_mut(&gen_txn.txn.data.dest).unwrap().update(&mut gen_txn)?;
             } else {
-                gen_tnxs.insert(gen_txn.dest.clone(), gen_txn);
+                gen_tnxs.insert(gen_txn.txn.data.dest.clone(), gen_txn);
             }
         }
         Ok(gen_tnxs)
     }
 
     fn init_catchup(&mut self, refresh_cmd_id: Option<i32>) -> Result<(), PoolError> {
-        let mt = PoolWorker::_restore_merkle_tree_from_pool_name(self.name.as_str())?;
+        let mt = PoolWorker::restore_merkle_tree_from_pool_name(self.name.as_str())?;
         if mt.count() == 0 {
             return Err(PoolError::CommonError(
                 CommonError::InvalidState("Invalid Genesis Transaction file".to_string())));
@@ -207,6 +211,7 @@ impl PoolWorker {
             is_refresh: refresh_cmd_id.is_some(),
             pool_id: self.pool_id,
             timeout: time::now_utc().add(Duration::seconds(catchup::CATCHUP_ROUND_TIMEOUT)),
+            pool_name: self.name.clone(),
             ..Default::default()
         };
         self.handler = PoolWorkerHandler::CatchupHandler(catchup_handler);
@@ -354,26 +359,13 @@ impl PoolWorker {
 
 
     fn _restore_merkle_tree_from_file(txn_file: &str) -> Result<MerkleTree, PoolError> {
-        PoolWorker::_restore_merkle_tree(&PathBuf::from(txn_file))
+        PoolWorker::_restore_merkle_tree_from_genesis(&PathBuf::from(txn_file))
     }
 
-    fn _restore_merkle_tree_from_pool_name(pool_name: &str) -> Result<MerkleTree, PoolError> {
-        let mut p = EnvironmentUtils::pool_path(pool_name);
-        //TODO firstly try to deserialize merkle tree
-        p.push(pool_name);
-        p.set_extension("txn");
-
-        if !p.exists(){
-            return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)))
-        }
-
-        PoolWorker::_restore_merkle_tree(&p)
-    }
-
-    fn _restore_merkle_tree(file_mame: &PathBuf) -> Result<MerkleTree, PoolError> {
+    fn _restore_merkle_tree_from_genesis(file_name: &PathBuf) -> Result<MerkleTree, PoolError> {
         let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
 
-        let f = fs::File::open(file_mame).map_err(map_err_trace!())?;
+        let f = fs::File::open(file_name).map_err(map_err_trace!())?;
 
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
@@ -386,6 +378,136 @@ impl PoolWorker {
             mt.append(bytes).map_err(map_err_trace!())?;
         }
         Ok(mt)
+    }
+
+    fn _restore_merkle_tree_from_cache(file_name: &PathBuf) -> Result<MerkleTree, PoolError> {
+        let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
+
+        let mut f = fs::File::open(file_name).map_err(map_err_trace!())?;
+
+        while let Ok(bytes) = f.read_u64::<LittleEndian>().map_err(CommonError::IOError).map_err(PoolError::from) {
+            let mut buf = vec![0; bytes as usize];
+            f.read(buf.as_mut()).map_err(map_err_trace!())?;
+            mt.append(buf.to_vec()).map_err(map_err_trace!())?;
+        }
+        Ok(mt)
+    }
+
+    pub fn restore_merkle_tree_from_pool_name(pool_name: &str) -> Result<MerkleTree, PoolError> {
+        let mut p = EnvironmentUtils::pool_path(pool_name);
+
+        let mut p_stored = p.clone();
+        p_stored.push("stored");
+        p_stored.set_extension("btxn");
+
+        if !p_stored.exists() {
+            p.push(pool_name);
+            p.set_extension("txn");
+
+            if !p.exists() {
+                return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)));
+            }
+
+            PoolWorker::_restore_merkle_tree_from_genesis(&p)
+        } else {
+            PoolWorker::_restore_merkle_tree_from_cache(&p_stored)
+        }
+    }
+
+    fn _parse_txn_from_json(txn: &[u8]) -> Result<Vec<u8>, CommonError> {
+        let txn_str = from_utf8(txn).map_err(|_| CommonError::InvalidStructure(format!("Can't parse valid UTF-8 string from this array: {:?}", txn)))?;
+
+        if txn_str.trim().is_empty() {
+            return Ok(vec![]);
+        }
+
+        let genesis_txn: SJsonValue = serde_json::from_str(txn_str.trim())
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
+        rmp_serde::encode::to_vec_named(&genesis_txn)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))
+    }
+
+    pub fn dump_new_txns(pool_name: &str, txns: &Vec<Vec<u8>>) -> Result<(), PoolError>{
+        let mut p = EnvironmentUtils::pool_path(pool_name);
+
+        p.push("stored");
+        p.set_extension("btxn");
+        if !p.exists() {
+            PoolWorker::_dump_genesis_to_stored(&p, pool_name)?;
+        }
+
+        let mut file = fs::OpenOptions::new().append(true).open(p)
+            .map_err(|e| CommonError::IOError(e))
+            .map_err(map_err_err!())?;
+
+        PoolWorker::_dump_vec_to_file(txns, &mut file)
+    }
+
+    fn _dump_genesis_to_stored(p: &PathBuf, pool_name: &str) -> Result<(), PoolError> {
+        let mut file = fs::File::create(p)
+            .map_err(|e| CommonError::IOError(e))
+            .map_err(map_err_err!())?;
+
+        let mut p_genesis = EnvironmentUtils::pool_path(pool_name);
+        p_genesis.push(pool_name);
+        p_genesis.set_extension("txn");
+
+        if !p_genesis.exists() {
+            return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)));
+        }
+        
+        let genesis_vec = PoolWorker::_genesis_to_binary(&p_genesis)?;
+        PoolWorker::_dump_vec_to_file(&genesis_vec, &mut file)
+    }
+
+    fn _dump_vec_to_file(v: &Vec<Vec<u8>>, file : &mut fs::File) -> Result<(), PoolError> {
+        v.into_iter().map(|vec| {
+            file.write_u64::<LittleEndian>(vec.len() as u64).map_err(map_err_trace!())?;
+            file.write_all(vec).map_err(map_err_trace!())
+        }).fold(Ok(()), |acc, next| {
+            match (acc, next) {
+                (Err(e), _) => Err(e),
+                (_, Err(e)) => Err(PoolError::CommonError(CommonError::IOError(e))),
+                _ => Ok(()),
+            }
+        })
+    }
+
+    fn _genesis_to_binary(p: &PathBuf) -> Result<Vec<Vec<u8>>, PoolError> {
+        let f = fs::File::open(p).map_err(map_err_trace!())?;
+        let reader = io::BufReader::new(&f);
+        reader
+            .lines()
+            .into_iter()
+            .map(|res| {
+                let line = res.map_err(map_err_trace!())?;
+                PoolWorker::_parse_txn_from_json(line.trim().as_bytes()).map_err(PoolError::from).map_err(map_err_err!())
+            })
+            .fold(Ok(Vec::new()), |acc, next| {
+                match (acc, next) {
+                    (Err(e), _) | (_, Err(e)) => Err(e),
+                    (Ok(mut acc), Ok(res)) => {
+                        let mut vec = vec![];
+                        vec.append(&mut acc);
+                        vec.push(res);
+                        Ok(vec)
+                    }
+                }
+            })
+    }
+
+    pub fn drop_saved_txns(pool_name: &str) -> Result<(), PoolError> {
+        warn!("Cache is invalid -- dropping it!");
+        let mut p = EnvironmentUtils::pool_path(pool_name);
+
+        p.push("stored");
+        p.set_extension("btxn");
+        if p.exists() {
+            fs::remove_file(p).map_err(CommonError::IOError).map_err(PoolError::from)?;
+            Ok(())
+        } else {
+            Err(PoolError::CommonError(CommonError::InvalidState("Can't recover to genesis -- no txns stored. Possible problems in genesis txns.".to_string())))
+        }
     }
 
     fn get_f(cnt: usize) -> usize {
@@ -415,6 +537,7 @@ impl Pool {
             handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
                 initiate_cmd_id: cmd_id,
                 pool_id,
+                pool_name: name.to_string(),
                 ..Default::default()
             }),
         };
@@ -476,20 +599,20 @@ impl Debug for RemoteNode {
 }
 
 impl RemoteNode {
-    fn new(txn: &NodeTransaction) -> Result<RemoteNode, PoolError> {
-        let node_verkey = txn.dest.as_str().from_base58()
+    fn new(txn: &NodeTransactionV1) -> Result<RemoteNode, PoolError> {
+        let node_verkey = txn.txn.data.dest.as_str().from_base58()
             .map_err(|err| { CommonError::InvalidStructure(format!("Invalid field dest in genesis transaction: {:?}", err)) })?;
 
-        if txn.data.services.is_none() || !txn.data.services.as_ref().unwrap().contains(&"VALIDATOR".to_string()) {
+        if txn.txn.data.data.services.is_none() || !txn.txn.data.data.services.as_ref().unwrap().contains(&"VALIDATOR".to_string()) {
             return Err(PoolError::CommonError(CommonError::InvalidState("Node is not a Validator".to_string())));
         }
 
-        let address = match (&txn.data.client_ip, &txn.data.client_port) {
+        let address = match (&txn.txn.data.data.client_ip, &txn.txn.data.data.client_port) {
             (&Some(ref client_ip), &Some(ref client_port)) => format!("tcp://{}:{}", client_ip, client_port),
             _ => return Err(PoolError::CommonError(CommonError::InvalidState("Client address not found".to_string())))
         };
 
-        let blskey = match txn.data.blskey {
+        let blskey = match txn.txn.data.data.blskey {
             Some(ref blskey) => {
                 let key = blskey.as_str().from_base58()
                     .map_err(|err| { CommonError::InvalidStructure(format!("Invalid field blskey in genesis transaction: {:?}", err)) })?;
@@ -503,7 +626,7 @@ impl RemoteNode {
             public_key: CryptoBox::vk_to_curve25519(&node_verkey)?,
             zaddr: address,
             zsock: None,
-            name: txn.data.alias.clone(),
+            name: txn.txn.data.data.alias.clone(),
             is_blacklisted: false,
             blskey: blskey
         })
@@ -870,8 +993,11 @@ mod tests {
         }
     }
 
-    pub const NODE1: &'static str = "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"192.168.1.35\",\"client_port\":9702,\"node_ip\":\"192.168.1.35\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}";
-    pub const NODE2: &'static str = "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"192.168.1.35\",\"client_port\":9704,\"node_ip\":\"192.168.1.35\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}";
+    pub const NODE1: &'static str = r#"{"data":{"alias":"Node1","client_ip":"192.168.1.35","client_port":9702,"node_ip":"192.168.1.35","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv","identifier":"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4","txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62","type":"0"}"#;
+    pub const NODE2: &'static str = r#"{"data":{"alias":"Node2","client_ip":"192.168.1.35","client_port":9704,"node_ip":"192.168.1.35","node_port":9703,"services":["VALIDATOR"]},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb","identifier":"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy","txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc","type":"0"}"#;
+
+    pub const NODE1_NEW_FORMAT: &'static str = r#"{"reqSignature":{},"txn":{"type":"0","data":{"data":{"alias":"Node1","client_ip":"192.168.1.35","client_port":9702,"node_ip":"192.168.1.35","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"},"metadata":{"from":"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4"}},"txnMetadata":{"txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62"},"ver":"1"}"#;
+    pub const NODE2_NEW_FORMAT: &'static str = r#"{"reqSignature":{},"txn":{"type":"0","data":{"data":{"alias":"Node2","client_ip":"192.168.1.35","client_port":9704,"node_ip":"192.168.1.35","node_port":9703,"services":["VALIDATOR"]},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"},"metadata":{"from":"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy"}},"txnMetadata":{"txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc"},"ver":"1"}"#;
 
     #[test]
     fn pool_worker_restore_merkle_tree_works_from_genesis_txns() {
@@ -886,7 +1012,7 @@ mod tests {
         f.flush().unwrap();
         f.sync_all().unwrap();
 
-        let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
+        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
 
         assert_eq!(merkle_tree.count(), 2, "test restored MT size");
         assert_eq!(merkle_tree.root_hash_hex(), "ae7fb19d399b0b03ed298285d0da19ee6c6ba9ed7c063c95228c435d7ff97b4d", "test restored MT root hash");
@@ -905,11 +1031,58 @@ mod tests {
         assert_eq!(1, emulator_msgs.len());
         assert_eq!("pi", emulator_msgs[0]);
     }
+    
+    #[test]
+    pub fn pool_worker_works_for_deserialize_cache() {
+        serde_json::from_str::<NodeTransaction>(NODE1).unwrap();
+        serde_json::from_str::<NodeTransaction>(NODE2).unwrap();
+
+        let node1: NodeTransactionV0 = serde_json::from_str(NODE1).unwrap();
+        let node2: NodeTransactionV0 = serde_json::from_str(NODE2).unwrap();
+
+        let txn1_src = format!("{{\"data\":{{\"alias\":\"{}\",\"node_ip\":\"{}\",\"node_port\":{},\"services\":{:?}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node1.data.alias, node1.data.node_ip.clone().unwrap(), node1.data.node_port.clone().unwrap(), node1.data.services.clone().unwrap(), node1.dest, node1.identifier, node1.txn_id.clone().unwrap());
+        let txn2_src = format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{},\"node_ip\":\"{}\",\"node_port\":{}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node1.data.alias, node1.data.client_ip.clone().unwrap(), node1.data.client_port.clone().unwrap(), node1.data.node_ip.clone().unwrap(), node1.data.node_port.unwrap(), node1.dest, node1.identifier, node1.txn_id.clone().unwrap());
+        let txn3_src = format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node2.data.alias, node2.data.client_ip.clone().unwrap(), node2.data.client_port.clone().unwrap(), node2.dest, node2.identifier, node2.txn_id.clone().unwrap());
+        let txn4_src = format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{},\"node_ip\":\"{}\",\"node_port\":{},\"services\":{:?}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node2.data.alias, node2.data.client_ip.clone().unwrap(), node2.data.client_port.clone().unwrap(), node2.data.node_ip.clone().unwrap(), node2.data.node_port.clone().unwrap(), node2.data.services.clone().unwrap(), node2.dest, node2.identifier, node2.txn_id.clone().unwrap());
+
+        let txns = format!("{}\n{}\n{}\n{}", txn1_src, txn2_src, txn3_src, txn4_src);
+
+        let txn1_json: serde_json::Value = serde_json::from_str(&txn1_src).unwrap();
+        let txn2_json: serde_json::Value = serde_json::from_str(&txn2_src).unwrap();
+        let txn3_json: serde_json::Value = serde_json::from_str(&txn3_src).unwrap();
+        let txn4_json: serde_json::Value = serde_json::from_str(&txn4_src).unwrap();
+
+        let pool_cache = vec![rmp_serde::to_vec_named(&txn1_json).unwrap(),
+                             rmp_serde::to_vec_named(&txn2_json).unwrap(),
+                             rmp_serde::to_vec_named(&txn3_json).unwrap(),
+                             rmp_serde::to_vec_named(&txn4_json).unwrap()];
+
+        let pool_name = "test";
+        let mut path = EnvironmentUtils::pool_path(pool_name);
+        fs::create_dir_all(path.as_path()).unwrap();
+        path.push("stored");
+        path.set_extension("btxn");
+        let mut f = fs::File::create(path.as_path()).unwrap();
+        pool_cache.iter().for_each(|vec| {
+            f.write_u64::<LittleEndian>(vec.len() as u64).unwrap();
+            f.write_all(vec).unwrap();
+        });
+
+        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
+        let node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
+    }
 
     #[test]
     fn pool_worker_build_node_state_works() {
-        let node1: NodeTransaction = NodeTransaction::from_json(NODE1).unwrap();
-        let node2: NodeTransaction = NodeTransaction::from_json(NODE2).unwrap();
+        serde_json::from_str::<NodeTransaction>(NODE1).unwrap();
+        serde_json::from_str::<NodeTransaction>(NODE2).unwrap();
+
+        let node1: NodeTransactionV0 = serde_json::from_str(NODE1).unwrap();
+        let node2: NodeTransactionV0 = serde_json::from_str(NODE2).unwrap();
 
         let txns_src = format!("{}\n{}\n{}\n{}\n",
                                format!("{{\"data\":{{\"alias\":\"{}\",\"node_ip\":\"{}\",\"node_port\":{},\"services\":{:?}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
@@ -930,7 +1103,42 @@ mod tests {
         f.flush().unwrap();
         f.sync_all().unwrap();
 
-        let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
+        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
+        let node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
+
+        assert_eq!(2, node_state.len());
+        assert!(node_state.contains_key("Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"));
+        assert!(node_state.contains_key("8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"));
+
+        assert_eq!(node_state["Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"], NodeTransactionV1::from(NodeTransaction::NodeTransactionV0(node1)));
+        assert_eq!(node_state["8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"], NodeTransactionV1::from(NodeTransaction::NodeTransactionV0(node2)));
+    }
+
+    #[test]
+    fn pool_worker_build_node_state_works_for_new_format() {
+        let node1: NodeTransactionV1 = NodeTransactionV1::from(serde_json::from_str::<NodeTransaction>(NODE1_NEW_FORMAT).unwrap());
+        let node2: NodeTransactionV1 = NodeTransactionV1::from(serde_json::from_str::<NodeTransaction>(NODE2_NEW_FORMAT).unwrap());
+
+        let txns_src = format!("{}\n{}\n{}\n{}\n",
+                               format!("{{\"data\":{{\"alias\":\"{}\",\"node_ip\":\"{}\",\"node_port\":{},\"services\":{:?}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node1.txn.data.data.alias, node1.txn.data.data.node_ip.clone().unwrap(), node1.txn.data.data.node_port.clone().unwrap(), node1.txn.data.data.services.clone().unwrap(), node1.txn.data.dest, node1.txn.metadata.from, node1.txn_metadata.txn_id.clone().unwrap()),
+                               format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{},\"node_ip\":\"{}\",\"node_port\":{}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node1.txn.data.data.alias, node1.txn.data.data.client_ip.clone().unwrap(), node1.txn.data.data.client_port.clone().unwrap(), node1.txn.data.data.node_ip.clone().unwrap(), node1.txn.data.data.node_port.unwrap(), node1.txn.data.dest, node1.txn.metadata.from, node1.txn_metadata.txn_id.clone().unwrap()),
+                               format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node2.txn.data.data.alias, node2.txn.data.data.client_ip.clone().unwrap(), node2.txn.data.data.client_port.clone().unwrap(), node2.txn.data.dest, node2.txn.metadata.from, node2.txn_metadata.txn_id.clone().unwrap()),
+                               format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{},\"node_ip\":\"{}\",\"node_port\":{},\"services\":{:?}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node2.txn.data.data.alias, node2.txn.data.data.client_ip.clone().unwrap(), node2.txn.data.data.client_port.clone().unwrap(), node2.txn.data.data.node_ip.clone().unwrap(), node2.txn.data.data.node_port.clone().unwrap(), node2.txn.data.data.services.clone().unwrap(), node2.txn.data.dest, node2.txn.metadata.from, node2.txn_metadata.txn_id.clone().unwrap()));
+        let pool_name = "test";
+        let mut path = EnvironmentUtils::pool_path(pool_name);
+        fs::create_dir_all(path.as_path()).unwrap();
+        path.push(pool_name);
+        path.set_extension("txn");
+        let mut f = fs::File::create(path.as_path()).unwrap();
+        f.write(txns_src.as_bytes()).unwrap();
+        f.flush().unwrap();
+        f.sync_all().unwrap();
+
+        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
         let node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
 
         assert_eq!(2, node_state.len());
@@ -1029,7 +1237,7 @@ mod tests {
 
         pub static POLL_TIMEOUT: i64 = 5_000; /* in ms */
 
-        pub fn start() -> (NodeTransaction, thread::JoinHandle<Vec<String>>) {
+        pub fn start() -> (NodeTransactionV1, thread::JoinHandle<Vec<String>>) {
             let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
             let pkc = CryptoBox::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
             let skc = CryptoBox::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
@@ -1039,7 +1247,7 @@ mod tests {
             let blskey = VerKey::new(&Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),
                                      &SignKey::new(None).unwrap()).unwrap().as_bytes().to_base58();
 
-            let gt = NodeTransaction {
+            let gt = NodeTransactionV1::from(NodeTransaction::NodeTransactionV0(NodeTransactionV0 {
                 identifier: "".to_string(),
                 data: NodeData {
                     alias: "n1".to_string(),
@@ -1054,8 +1262,8 @@ mod tests {
                 verkey: None,
                 txn_type: "0".to_string(),
                 dest: (&vk.0 as &[u8]).to_base58(),
-            };
-            let addr = format!("tcp://{}:{}", gt.data.client_ip.clone().unwrap(), gt.data.client_port.clone().unwrap());
+            }));
+            let addr = format!("tcp://{}:{}", gt.txn.data.data.client_ip.clone().unwrap(), gt.txn.data.data.client_port.clone().unwrap());
             s.set_curve_publickey(&zmq::z85_encode(pkc.as_slice()).unwrap()).expect("set public key");
             s.set_curve_secretkey(&zmq::z85_encode(skc.as_slice()).unwrap()).expect("set secret key");
             s.set_curve_server(true).expect("set curve server");

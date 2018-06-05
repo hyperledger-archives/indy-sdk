@@ -10,7 +10,7 @@ async def create_wallet(pool_name: str,
                         name: str,
                         xtype: Optional[str],
                         config: Optional[str],
-                        credentials: Optional[str]) -> None:
+                        credentials: str) -> None:
     """
     Creates a new secure wallet with the given unique name.
 
@@ -20,8 +20,9 @@ async def create_wallet(pool_name: str,
      Custom types can be registered with indy_register_wallet_type call.
     :param config: (optional) Wallet configuration json. List of supported keys are defined by wallet type.
      if NULL, then default config will be used.
-    :param credentials: (optional) Wallet credentials json. List of supported keys are defined by wallet type.
-     if NULL, then default config will be used.
+    :param credentials: Wallet credentials json: {
+        "key": <wallet_key>
+    }
     :return: Error code
     """
 
@@ -41,7 +42,7 @@ async def create_wallet(pool_name: str,
     c_name = c_char_p(name.encode('utf-8'))
     c_xtype = c_char_p(xtype.encode('utf-8')) if xtype is not None else None
     c_config = c_char_p(config.encode('utf-8')) if config is not None else None
-    c_credentials = c_char_p(credentials.encode('utf-8')) if credentials is not None else None
+    c_credentials = c_char_p(credentials.encode('utf-8'))
 
     await do_call('indy_create_wallet',
                   c_pool_name,
@@ -56,7 +57,7 @@ async def create_wallet(pool_name: str,
 
 async def open_wallet(name: str,
                       runtime_config: Optional[str],
-                      credentials: Optional[str]) -> int:
+                      credentials: str) -> int:
     """
     Opens the wallet with specific name.
     Wallet with corresponded name must be previously created with indy_create_wallet method.
@@ -69,8 +70,9 @@ async def open_wallet(name: str,
             "freshness_time": string (optional), Amount of minutes to consider wallet value as fresh. Defaults to 24*60.
             ... List of additional supported keys are defined by wallet type.
         }
-    :param credentials: (optional) Wallet credentials json. List of supported keys are defined by wallet type.
-     if NULL, then default credentials will be used.
+    :param credentials: Wallet credentials json: {
+        "key": <wallet_key>
+    }
     :return: Handle to opened wallet to use in methods that require wallet access.
     """
 
@@ -86,7 +88,7 @@ async def open_wallet(name: str,
 
     c_name = c_char_p(name.encode('utf-8'))
     c_runtime_config = c_char_p(runtime_config.encode('utf-8')) if runtime_config is not None else None
-    c_credentials = c_char_p(credentials.encode('utf-8')) if credentials is not None else None
+    c_credentials = c_char_p(credentials.encode('utf-8'))
 
     res = await do_call('indy_open_wallet',
                         c_name,
@@ -122,18 +124,15 @@ async def close_wallet(handle: int) -> None:
     logger.debug("close_wallet: <<<")
 
 
-# pub extern fn indy_delete_wallet(command_handle: i32,
-#                                    name: *const c_char,
-#                                    credentials: *const c_char,
-#                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
 async def delete_wallet(name: str,
-                        credentials: Optional[str]) -> None:
+                        credentials: str) -> None:
     """
     Deletes created wallet.
 
     :param name: Name of the wallet to delete.
-    :param credentials: (optional) Wallet credentials json. List of supported keys are defined by wallet type.
-     if NULL, then default credentials will be used.
+    :param credentials: Wallet credentials json: {
+        "key": <wallet_key>
+    }
     :return:
     """
 
@@ -147,7 +146,7 @@ async def delete_wallet(name: str,
         delete_wallet.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
 
     c_name = c_char_p(name.encode('utf-8'))
-    c_credentials = c_char_p(credentials.encode('utf-8')) if credentials is not None else None
+    c_credentials = c_char_p(credentials.encode('utf-8'))
 
     await do_call('indy_delete_wallet',
                   c_name,

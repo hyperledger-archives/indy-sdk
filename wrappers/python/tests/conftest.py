@@ -154,7 +154,7 @@ def credentials():
     logger = logging.getLogger(__name__)
     logger.debug("credentials: >>>")
 
-    res = None
+    res = '{"key":"key"}'
 
     logger.debug("credentials: <<< res: %r", res)
     return res
@@ -200,7 +200,7 @@ def xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, pa
     yield
 
     logger.debug("xwallet: Deleting wallet")
-    event_loop.run_until_complete(wallet.delete_wallet(wallet_name, None)) if xwallet_cleanup else None
+    event_loop.run_until_complete(wallet.delete_wallet(wallet_name, credentials)) if xwallet_cleanup else None
 
     logger.debug("xwallet: <<<")
 

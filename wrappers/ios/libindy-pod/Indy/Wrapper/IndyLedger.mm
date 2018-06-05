@@ -60,6 +60,29 @@
     }
 }
 
++ (void)multiSignRequest:(NSString *)requestJson
+            submitterDid:(NSString *)submitterDid
+            walletHandle:(IndyHandle)walletHandle
+              completion:(void (^)(NSError *error, NSString *requestResultJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_multi_sign_request(handle,
+            walletHandle,
+            [submitterDid UTF8String],
+            [requestJson UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 + (void)submitRequest:(NSString *)requestJSON
            poolHandle:(IndyHandle)poolHandle
            completion:(void (^)(NSError *error, NSString *requestResultJSON))completion {
@@ -180,6 +203,27 @@
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
+// MARK: - Get validator info request
+
++ (void)buildGetValidatorInfo:(NSString *)submitterDid
+                                   completion:(void (^)(NSError *error, NSString *requestJSON))completion {
+    indy_error_t ret;
+    
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+    
+    
+    ret = indy_build_get_validator_info_request(handle,
+                                        [submitterDid UTF8String],
+                                        IndyWrapperCommonStringCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+        
         dispatch_async(dispatch_get_main_queue(), ^{
             completion([NSError errorFromIndyError:ret], nil);
         });

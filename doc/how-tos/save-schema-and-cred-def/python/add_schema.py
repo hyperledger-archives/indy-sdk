@@ -40,7 +40,7 @@ Refer to below for detail steps.
 import asyncio
 import json
 
-from indy import wallet, signus, pool, ledger
+from indy import wallet, did, pool, ledger
 from indy.error import IndyError
 
 
@@ -105,7 +105,7 @@ async def build_schema_request():
         seed_default_steward = "000000000000000000000000Steward1"
 
         (default_steward_did, default_steward_verkey) = \
-            await signus.create_and_store_my_did(
+            await did.create_and_store_my_did(
                     Variables.wallet_handle, json.dumps(
                         {"seed": seed_default_steward}))
         print_log("DONE - Steward [%s][%s]" % (default_steward_did,

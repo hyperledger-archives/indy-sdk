@@ -90,6 +90,18 @@ pub struct GetSchemaResultData {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct GetValidatorInfoResult {
+    pub identifier: String,
+    #[serde(rename = "reqId")]
+    pub req_id: u64,
+    #[serde(rename = "seqNo")]
+    pub seq_no: Option<i32>,
+    #[serde(rename = "type")]
+    pub type_: String,
+    pub data: Option<serde_json::Value>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GetTxnResult {
     pub identifier: String,
     #[serde(rename = "reqId")]
@@ -123,4 +135,26 @@ pub struct SchemaData {
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct CredentialOfferInfo {
     pub cred_def_id: String
+}
+
+#[derive(Debug, Deserialize, Serialize, Eq, PartialEq, Clone)]
+pub struct WalletRecord {
+    pub id: String,
+    #[serde(rename = "type")]
+    pub type_: Option<String>,
+    pub value: Option<String>,
+    pub tags: Option<String>
+}
+
+#[serde(rename_all = "camelCase")]
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SearchRecords {
+    pub total_count: Option<i32>,
+    pub records: Option<Vec<WalletRecord>>
+}
+
+pub struct Utxo {
+    pub input: String,
+    pub amount: i32,
+    pub extra: Option<String>
 }

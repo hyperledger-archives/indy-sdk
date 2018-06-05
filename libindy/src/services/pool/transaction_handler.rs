@@ -25,7 +25,7 @@ use commands::ledger::LedgerCommand;
 use errors::pool::PoolError;
 use errors::common::CommonError;
 use super::types::*;
-use services::ledger::constants;
+use domain::ledger::constants;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use self::indy_crypto::bls::Generator;
 
@@ -50,10 +50,10 @@ pub struct TransactionHandler {
 }
 
 impl TransactionHandler {
-    pub fn process_msg(&mut self, msg: Message, raw_msg: &String, _src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
+    pub fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         match msg {
             Message::Reply(reply) => {
-                self.process_reply(reply.result.req_id, raw_msg);
+                self.process_reply(reply.req_id(), raw_msg, src_ind);
             }
             Message::Reject(response) | Message::ReqNACK(response) => {
                 self.process_reject(&response, raw_msg);
@@ -71,8 +71,8 @@ impl TransactionHandler {
     fn process_ack(&mut self, ack: &Response, raw_msg: &str) {
         trace!("TransactionHandler::process_ack: >>> ack: {:?}, raw_msg: {:?}", ack, raw_msg);
 
-        self.pending_commands.get_mut(&ack.req_id).map(|cmd| {
-            debug!("TransactionHandler::process_ack: update timeout for req_id: {:?}", ack.req_id);
+        self.pending_commands.get_mut(&ack.req_id()).map(|cmd| {
+            debug!("TransactionHandler::process_ack: update timeout for req_id: {:?}", ack.req_id());
             cmd.full_cmd_timeout
                 = Some(time::now_utc().add(Duration::seconds(REQUEST_TIMEOUT_REPLY)))
         });
@@ -80,8 +80,8 @@ impl TransactionHandler {
         trace!("TransactionHandler::process_ack: <<<");
     }
 
-    fn process_reply(&mut self, req_id: u64, raw_msg: &str) {
-        debug!("TransactionHandler::process_reply: >>> req_id: {:?}, raw_msg: {:?}", req_id, raw_msg);
+    fn process_reply(&mut self, req_id: u64, raw_msg: &str, src_ind: usize) {
+        debug!("TransactionHandler::process_reply: >>> req_id: {:?}, raw_msg: {:?}, src_ind: {:?}", req_id, raw_msg, src_ind);
 
         if !self.pending_commands.contains_key(&req_id) {
             return warn!("TransactionHandler::process_reply: <<< No pending command for request");
@@ -98,12 +98,45 @@ impl TransactionHandler {
         }
         let msg_result_without_proof = HashableValue { inner: msg_result_without_proof };
 
-        let reply_cnt = *self.pending_commands
+        if msg_result["type"] == constants::GET_VALIDATOR_INFO || msg_result["type"] == constants::POOL_RESTART {
+            let first_resp = self.pending_commands.get(&req_id).unwrap().accum_replies.is_none();
+            let node_name = self.nodes[src_ind].name.clone();
+            if first_resp {
+                self.pending_commands.get_mut(&req_id).unwrap().accum_replies = Some(HashableValue {
+                    inner: json!({ node_name: raw_msg}),
+                });
+            } else {
+                self.pending_commands
+                    .get_mut(&req_id).as_mut().unwrap()
+                    .accum_replies.as_mut().unwrap()
+                    .inner.as_object_mut().as_mut().unwrap()
+                    .insert(node_name, SJsonValue::from(raw_msg));
+            }
+
+            let reply_cnt = self.pending_commands
+                .get(&req_id).as_ref().unwrap()
+                .accum_replies.as_ref().unwrap()
+                .inner.as_object().as_ref().unwrap()
+                .len();
+            if reply_cnt == self.nodes.len() {
+                let cmd_ids = self.pending_commands.get(&req_id).unwrap().parent_cmd_ids.clone();
+                let str_reply = self.pending_commands.get(&req_id).as_ref().unwrap().accum_replies.as_ref().unwrap().inner.to_string();
+
+                for cmd_id in cmd_ids {
+                    CommandExecutor::instance().send(
+                        Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(str_reply.clone())))).unwrap();
+                }
+                self.pending_commands.remove(&req_id);
+            }
+            return;
+        }
+
+        let same_replies_cnt = *self.pending_commands
             .get(&req_id).unwrap()
             .replies.get(&msg_result_without_proof).unwrap_or(&0usize);
-        debug!("TransactionHandler::process_reply: reply_cnt: {:?}, f: {:?}", reply_cnt, self.f);
+        debug!("TransactionHandler::process_reply: same_replies_cnt: {:?}, f: {:?}", same_replies_cnt, self.f);
 
-        let consensus_reached = reply_cnt >= self.f || {
+        let consensus_reached = same_replies_cnt >= self.f || {
             debug!("TransactionHandler::process_reply: Try to verify proof and signature");
 
             let data_to_check_proof = TransactionHandler::parse_reply_for_proof_checking(&msg_result);
@@ -150,7 +183,7 @@ impl TransactionHandler {
             self.pending_commands.remove(&req_id);
         } else {
             let pend_cmd: &mut CommandProcess = self.pending_commands.get_mut(&req_id).unwrap();
-            pend_cmd.replies.insert(msg_result_without_proof, reply_cnt + 1);
+            pend_cmd.replies.insert(msg_result_without_proof, same_replies_cnt + 1);
             pend_cmd.try_send_to_next_node_if_exists(&self.nodes);
         }
 
@@ -161,7 +194,7 @@ impl TransactionHandler {
     fn process_reject(&mut self, response: &Response, raw_msg: &String) {
         debug!("TransactionHandler::process_reject: >>> response: {:?}, raw_msg: {:?}", response, raw_msg);
 
-        let req_id = response.req_id;
+        let req_id = response.req_id();
         let mut remove = false;
         if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
             pend_cmd.nack_cnt += 1;
@@ -213,6 +246,7 @@ impl TransactionHandler {
         let mut new_request = CommandProcess {
             parent_cmd_ids: vec!(cmd_id),
             nack_cnt: 0,
+            accum_replies: None,
             replies: HashMap::new(),
             resendable_request: None,
             full_cmd_timeout: Some(time::now_utc().add(Duration::seconds(REQUEST_TIMEOUT_ACK))),
@@ -414,8 +448,9 @@ impl TransactionHandler {
                 Vec::new()
             }
             constants::GET_REVOC_REG_DEF => {
-                if let Some(id) = json_msg["id"].as_str() { //FIXME
-                    id.splitn(2, ":").next().unwrap()
+                if let Some(id) = json_msg["id"].as_str() {
+                    //FIXME
+                    id.splitn(2, ':').next().unwrap()
                         .as_bytes().to_vec()
                 } else {
                     trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No dest");
@@ -599,11 +634,14 @@ impl CommandProcess {
     }
 
     fn terminate_parent_cmds(&mut self, is_timeout: bool) -> Result<(), CommonError> {
+        let result = if let Some(ref accum_repl) = self.accum_replies {
+            Ok(accum_repl.inner.to_string())
+        } else {
+            Err(if is_timeout { PoolError::Timeout } else { PoolError::Terminate })
+        };
         for cmd_id in &self.parent_cmd_ids {
             CommandExecutor::instance()
-                .send(Command::Ledger(LedgerCommand::SubmitAck(
-                    *cmd_id,
-                    Err(if is_timeout { PoolError::Timeout } else { PoolError::Terminate }))))
+                .send(Command::Ledger(LedgerCommand::SubmitAck(*cmd_id, result.clone())))
                 .map_err(|err| CommonError::InvalidState(format!("Can't send ACK cmd: {:?}", err)))?;
         }
         self.parent_cmd_ids.clear();
@@ -626,6 +664,7 @@ mod tests {
         let mut pc = CommandProcess {
             parent_cmd_ids: Vec::new(),
             replies: HashMap::new(),
+            accum_replies: None,
             nack_cnt: 0,
             resendable_request: None,
             full_cmd_timeout: None,
@@ -636,7 +675,7 @@ mod tests {
         th.pending_commands.insert(req_id, pc);
         let json_result: SJsonValue = json!({"result":json});
 
-        th.process_reply(req_id, &serde_json::to_string(&json_result).unwrap());
+        th.process_reply(req_id, &serde_json::to_string(&json_result).unwrap(), 0);
 
         assert_eq!(th.pending_commands.len(), 0);
     }
@@ -648,6 +687,7 @@ mod tests {
         let mut pc = CommandProcess {
             parent_cmd_ids: Vec::new(),
             replies: HashMap::new(),
+            accum_replies: None,
             nack_cnt: 0,
             resendable_request: None,
             full_cmd_timeout: None,
@@ -659,7 +699,7 @@ mod tests {
         th.pending_commands.insert(req_id, pc);
         let json2_result: SJsonValue = json!({"result":json2});
 
-        th.process_reply(req_id, &serde_json::to_string(&json2_result).unwrap());
+        th.process_reply(req_id, &serde_json::to_string(&json2_result).unwrap(), 0);
 
         assert_eq!(th.pending_commands.len(), 1);
         assert_eq!(th.pending_commands.get(&req_id).unwrap().replies.len(), 2);
@@ -681,6 +721,7 @@ mod tests {
         let exp_command_process = CommandProcess {
             nack_cnt: 0,
             replies: HashMap::new(),
+            accum_replies: None,
             parent_cmd_ids: vec!(cmd_id),
             resendable_request: None,
             full_cmd_timeout: pending_cmd.full_cmd_timeout /* just copy for eq check other fields*/,

@@ -33,7 +33,7 @@ async def test_replace_keys_start_works_for_correct_crypto_type(wallet_handle, c
 async def test_replace_keys_start_works_for_not_exists_did(wallet_handle, did_my1):
     with pytest.raises(IndyError) as e:
         await did.replace_keys_start(wallet_handle, did_my1, "{}")
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio

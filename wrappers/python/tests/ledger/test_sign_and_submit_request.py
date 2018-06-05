@@ -48,12 +48,12 @@ async def test_sign_and_submit_request_works_for_invalid_wallet_handle(wallet_ha
 
 @pytest.mark.asyncio
 async def test_sign_and_submit_request_works_for_incompatible_wallet_and_pool(pool_name, pool_handle, wallet_name,
-                                                                              seed_my1, seed_trustee1):
+                                                                              seed_my1, seed_trustee1, credentials):
     pool_name = "other_" + pool_name
     wallet_name = "other_" + wallet_name
 
-    await wallet.create_wallet(pool_name, wallet_name, None, None, None)
-    wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+    await wallet.create_wallet(pool_name, wallet_name, None, None, credentials)
+    wallet_handle = await wallet.open_wallet(wallet_name, None, credentials)
 
     (my_did, _) = await did.create_and_store_my_did(wallet_handle, json.dumps({"seed": seed_my1}))
     (trustee_did, _) = await did.create_and_store_my_did(wallet_handle, json.dumps({"seed": seed_trustee1}))
@@ -66,3 +66,4 @@ async def test_sign_and_submit_request_works_for_incompatible_wallet_and_pool(po
 
     assert ErrorCode.WalletIncompatiblePoolError == e.value.error_code
     await wallet.close_wallet(wallet_handle)
+    await wallet.delete_wallet(wallet_name, credentials)
