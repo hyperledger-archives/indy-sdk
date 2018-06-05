@@ -101,10 +101,10 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
 
     settings::log_settings();
 
-    if wallet::get_wallet_handle() > 0 {
-        error!("Library was already initialized");
-        return error::ALREADY_INITIALIZED.code_num;
-    }
+   if wallet::get_wallet_handle() > 0 {
+       error!("Library was already initialized");
+       return error::ALREADY_INITIALIZED.code_num;
+   }
 
     info!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
 

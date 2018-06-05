@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>local.build_android_libvcx</string>
+        <key>Program</key>
+        <string>/Users/androidbuild1/forge/work/code/evernym/sdk/vcx/libvcx/build_scripts/android/mac/launchd.daemon.build.android.libvxc.sh</string>
+        <key>UserName</key>
+        <string>androidbuild1</string>
+        <key>StartCalendarInterval</key> 
+        <dict> 
+            <key>Hour</key> 
+            <integer>21</integer> 
+            <key>Minute</key> 
+            <integer>0</integer> 
+        </dict>
+        <key>EnvironmentVariables</key>
+        <dict>
+            <key>PKG_CONFIG_ALLOW_CROSS</key>
+            <string>1</string>
+            <key>CARGO_INCREMENTAL</key>
+            <string>1</string>
+            <key>RUST_LOG</key>
+            <string>indy=trace</string>
+            <key>RUST_TEST_THREADS</key>
+            <string>1</string>
+            <key>PYTHONPATH</key>
+            <string>/Users/androidbuild1/forge/work/code/evernym/sdk-evernym/vcx/libvcx/vcx-indy-sdk/wrappers/python:/Users/androidbuild1/forge/work/code/evernym/sdk-evernym/vcx/wrappers/python3</string>
+            <key>ANDROID_HOME</key>
+            <string>/Users/androidbuild1/Library/Android/sdk</string>
+            <key>ANDROID_NDK</key>
+            <string>/Users/androidbuild1/Library/Android/sdk/ndk-bundle</string>
+            <key>ANDROID_NDK_HOME</key>
+            <string>/Users/androidbuild1/Library/Android/sdk/ndk-bundle</string>
+            <key>PATH</key>
+            <string>/Users/androidbuild1/.cargo/bin:/Users/androidbuild1/Library/Android/sdk/tools/bin:/Users/androidbuild1/Library/Android/sdk/tools:/Users/androidbuild1/Library/Android/sdk/platform-tools:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        </dict>
+    </dict>
+</plist>
+

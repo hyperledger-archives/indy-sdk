@@ -56,17 +56,41 @@ struct Contents {
 fn main() {
     let target = env::var("TARGET").unwrap();
     println!("target={}", target);
-
-    if target.contains("aarch64-linux-android"){
-
+    
+    if let Ok(mode) = env::var("LIBINDY_STATIC") {
         let libindy_lib_path = env::var("LIBINDY_DIR").unwrap();
         println!("cargo:rustc-link-search=native={}",libindy_lib_path);
         println!("cargo:rustc-link-lib=static=indy");
+    }else if target.contains("aarch64-linux-android") || target.contains("armv7-linux-androideabi") ||
+        target.contains("arm-linux-androideabi") || target.contains("i686-linux-android") ||
+        target.contains("x86_64-linux-android") {
+
+        let libindy_lib_path = match env::var("LIBINDY_DIR"){
+            Ok(val) => val,
+            Err(..) => panic!("Missing required environment variable LIBINDY_DIR")
+        };
+
+        let openssl = match env::var("OPENSSL_LIB_DIR") {
+            Ok(val) => val,
+            Err(..) => match env::var("OPENSSL_DIR") {
+                Ok(dir) => Path::new(&dir[..]).join("/lib").to_string_lossy().into_owned(),
+                Err(..) => panic!("Missing required environment variables OPENSSL_DIR or OPENSSL_LIB_DIR")
+            }
+        };
+
+        println!("cargo:rustc-link-search=native={}",libindy_lib_path);
+        println!("cargo:rustc-link-lib=static=indy");
+        println!("cargo:rustc-link-search=native={}", openssl);
+        println!("cargo:rustc-link-lib=static=crypto");
+        println!("cargo:rustc-link-lib=static=ssl");
     }else if target.contains("darwin"){
         //OSX specific logic
         println!("cargo:rustc-link-lib=indy");
         //OSX does not allow 3rd party libs to be installed in /usr/lib. Instead install it in /usr/local/lib
         println!("cargo:rustc-link-search=native=/usr/local/lib");
+        if cfg!(feature = "nullpay") {
+          println!("cargo:rustc-link-lib=nullpay");
+        }
     }else if target.contains("-linux-"){
         //Linux specific logic
         println!("cargo:rustc-link-lib=indy");

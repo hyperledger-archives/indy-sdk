@@ -1,0 +1,121 @@
+import java.text.SimpleDateFormat
+
+//apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'com.android.library'
+
+apply plugin: 'digital.wup.android-maven-publish'
+
+group = 'com.evernym.sdk'
+
+def versionMajor() {
+    return '1.0.0'
+}
+
+//TODO: consider removing buildtime from version number when the wrapper api is on par with vcx-rust api
+def buildTime() {
+    def df = new SimpleDateFormat("dd-MM-yyyy'T'HH-mm") // you can change it
+    df.setTimeZone(TimeZone.getTimeZone("UTC"))
+    return df.format(new Date())
+}
+version = "${versionMajor()}"
+
+def fullVersionName() {
+    return "${versionMajor()}-${buildTime()}"
+}
+
+description = """vcx"""
+
+
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+    test.enabled = false
+}
+
+android {
+    compileSdkVersion 23
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+
+    defaultConfig {
+        minSdkVersion 23
+        targetSdkVersion 23
+        versionCode 1
+        versionName "${fullVersionName()}"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+}
+
+
+buildscript {
+
+    repositories {
+        mavenLocal()
+        jcenter()
+        google()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.0.1'
+        classpath 'digital.wup:android-maven-publish:3.3.0'
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+repositories {
+        
+     maven { url "http://repo.maven.apache.org/maven2" }
+}
+allprojects {
+    repositories {
+        google()
+        jcenter()
+    }
+}
+dependencies {
+
+    implementation 'net.java.dev.jna:jna:4.5.0@aar'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version:'3.5'
+    implementation 'net.sourceforge.streamsupport:android-retrofuture:1.6.2'
+    implementation group: 'net.sourceforge.streamsupport', name: 'android-retrostreams', version: '1.6.2'
+    testImplementation group: 'junit', name: 'junit', version:'4.12'
+    testImplementation group: 'commons-io', name: 'commons-io', version:'2.5'
+    testImplementation group: 'org.json', name: 'json', version:'20160810'
+
+}
+publishing {
+    publications {
+        mavenAar(MavenPublication) {
+            groupId 'com.evernym.sdk'
+            artifactId 'vcx'
+            version "${fullVersionName()}"
+
+            from components.android
+        }
+    }
+    repositories {
+        maven {
+            credentials {
+                username 'admin'
+                password 'password'
+            }
+            // change to point to your repo, e.g. http://my.org/repo
+
+            url "http://localhost:8085/artifactory/gradle-dev-local/"
+        }
+    }
+}

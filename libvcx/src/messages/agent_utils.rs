@@ -69,7 +69,6 @@ pub fn connect_register_provision(endpoint: &str,
                                   seed: Option<String>,
                                   issuer_seed: Option<String>,
                                   wallet_key: Option<String>) -> Result<String,u32> {
-
     let (wallet_name_string, wallet_name) = match wallet_name {
         Some(x) => (format!("\"wallet_name\":\"{}\",", x), x),
         None => ("".to_string(), settings::DEFAULT_WALLET_NAME.to_string()),
@@ -125,7 +124,6 @@ pub fn connect_register_provision(endpoint: &str,
     /* STEP 1 - CONNECT */
 
     let url = format!("{}/agency/msg", endpoint);
-
     let payload = ConnectMsg {
         msg_type: MsgType { name: "CONNECT".to_string(), ver: "1.0".to_string(), },
         from_did: my_did.to_string(),

@@ -1,0 +1,1 @@
+Copy libvcx.dylib into this folder before you execute the run.sh script.
