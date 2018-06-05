@@ -94,26 +94,26 @@ extern "C" {
                                                                           const char* type_,
                                                                           const char* id,
                                                                           const char* options_json,
-                                                                          int32_t* record_handle),
+                                                                          int32_t* record_handle), // TODO: clarify mutable param
 
                                                   indy_error_t (*getRecordIdFn)(indy_handle_t handle,
                                                                           indy_handle_t record_handle,
-                                                                          char* char id),
+                                                                          char* id),
 
                                                   indy_error_t (*getRecordValueFn)(indy_handle_t handle,
                                                                           indy_handle_t record_handle,
-                                                                          const indy_u8_t *  value,
+                                                                          indy_u8_t *  value,
                                                                           indy_u32_t         value_len),
 
                                                   indy_error_t (*getRecordTagsFn)(indy_handle_t handle,
                                                                           indy_handle_t record_handle,
-                                                                          char* char tags_json),
+                                                                          char* tags_json),
 
                                                   indy_error_t (*freeRecordFn)(indy_handle_t handle,
                                                                           indy_handle_t record_handle),
 
                                                   indy_error_t (*getStorageMetadataFn)(indy_handle_t handle,
-                                                                                     const char* metadata,
+                                                                                     char* metadata,
                                                                                      indy_handle_t metadata_handle),
 
                                                   indy_error_t (*setStorageMetadataFn)(indy_handle_t handle,
@@ -126,14 +126,14 @@ extern "C" {
                                                                                      const char* type_,
                                                                                      const char* query,
                                                                                      const char* options,
-                                                                                     indy_handle_t search_handle),
+                                                                                     int32_t* search_handle),
 
                                                   indy_error_t (*openSearchAllFn)(indy_handle_t handle,
                                                                                      indy_handle_t search_handle),
 
                                                   indy_error_t (*getSearchTotalCountFn)(indy_handle_t handle,
                                                                                         indy_handle_t search_handle,
-                                                                                     indy_u32_t         total_count),
+                                                                                     indy_u32_t*         total_count),
 
                                                   indy_error_t (*fetchSearchNextRecordsFn)(indy_handle_t handle,
                                                                                         indy_handle_t search_handle,
