@@ -233,7 +233,11 @@ impl WalletService {
 
         let mut descriptor_json = String::new();
         let descriptor: WalletDescriptor = WalletDescriptor::from_json({
-            let mut file = File::open(_wallet_descriptor_path(name))?; // FIXME: Better error!
+            let wallet_descriptor_path = _wallet_descriptor_path(name);
+            if !wallet_descriptor_path.exists() {
+                return Err(WalletError::NotFound("Wallet descriptor path does not exist.".to_string()));
+            }
+            let mut file = File::open(wallet_descriptor_path)?;
             file.read_to_string(&mut descriptor_json)?;
             descriptor_json.as_str()
         })?;

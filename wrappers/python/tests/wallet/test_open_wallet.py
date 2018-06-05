@@ -15,7 +15,7 @@ async def test_open_wallet_works(wallet_config, wallet_handle):
 async def test_open_wallet_works_for_not_created_wallet(credentials):
     with pytest.raises(IndyError) as e:
         await wallet.open_wallet('wallet_not_created', None, credentials)
-    assert ErrorCode.CommonIOError == e.value.error_code
+    assert ErrorCode.WalletNotFoundError == e.value.error_code
 
 
 @pytest.mark.asyncio
