@@ -240,7 +240,7 @@ pub fn outputs(remainder: u64, payee_address: Option<String>, payee_amount: Opti
     Ok(serde_json::to_string(&outputs).unwrap())
 }
 
-// This is used for testing purposes
+// This is used for testing purposes only!!!
 pub fn mint_tokens(number_of_addresses: Option<u32>, tokens_per_address: Option<u32>) -> Result<(), u32> {
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
@@ -262,24 +262,26 @@ pub fn mint_tokens(number_of_addresses: Option<u32>, tokens_per_address: Option<
     Ok(())
 }
 
+// This is used for testing purposes only!!!
+pub fn set_ledger_fees(fees: Option<String>) -> Result<(), u32> {
+    let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+    let fees = fees.unwrap_or(FEES.to_string());
+
+    match Payment::build_set_txn_fees_req(get_wallet_handle() as i32, &did, NULL_PAYMENT, &fees) {
+        Ok(txn) => match libindy_sign_and_submit_request(&did, &txn) {
+            Ok(_) => Ok(()),
+            Err(x) => Err(x),
+        },
+        Err(x) => Err(x as u32),
+    }
+}
+
+
 
 #[cfg(test)]
 pub mod tests {
     use super::*;
     use settings;
-
-    pub fn set_ledger_fees(fees: Option<String>) -> Result<(), u32> {
-        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let fees = fees.unwrap_or(FEES.to_string());
-
-        match Payment::build_set_txn_fees_req(get_wallet_handle() as i32, &did, NULL_PAYMENT, &fees) {
-            Ok(txn) => match libindy_sign_and_submit_request(&did, &txn) {
-                Ok(_) => Ok(()),
-                Err(x) => Err(x),
-            },
-            Err(x) => Err(x as u32),
-        }
-    }
 
     pub fn token_setup(number_of_addresses: Option<u32>, tokens_per_address: Option<u32>) {
         init_payments().unwrap();
