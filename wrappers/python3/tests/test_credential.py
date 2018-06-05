@@ -34,7 +34,7 @@ offer = [{
    "cred_def_id": "id1",
    "claim_name": "Credential",
    "claim_id": "defaultCredentialId",
-   "msg_ref_id": None
+   "msg_ref_id": None,
 }]
 
 credential_json = {
@@ -89,7 +89,12 @@ credential_json = {
     'their_did': None,
     'cred_id': None,
     'credential': None,
-    'their_vk': None
+    'their_vk': None,
+    "payment_info":{
+      "payment_required":"one-time",
+      "payment_addr":"pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j",
+      "price":25
+   }
   }
 
 
@@ -229,8 +234,3 @@ async def test_send_request_with_bad_connection():
         await credential.send_request(connection, 0)
     assert ErrorCode.InvalidConnectionHandle == e.value.error_code
 
-@pytest.mark.asyncio
-@pytest.mark.usefixtures('vcx_init_test_mode')
-async def test_get_offers():
-    connection = await Connection.create(source_id)
-    await Credential.get_offers(connection)

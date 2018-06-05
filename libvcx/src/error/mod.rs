@@ -7,6 +7,7 @@ pub mod proof;
 pub mod credential;
 pub mod wallet;
 pub mod messages;
+pub mod payment;
 
 
 pub trait ToErrorCode {

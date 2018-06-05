@@ -131,6 +131,7 @@ export interface IFFIEntryPoint {
   vcx_credential_update_state: (commandId: number, handle: string, cb: any) => number,
   vcx_credential_get_state: (commandId: number, handle: string, cb: any) => number,
   vcx_credential_get_offers: (commandId: number, connectionHandle: string, cb: any) => number,
+  vcx_credential_get_payment_info: (commandId: number, handle: string, cb: any) => number,
 
   // mock
   vcx_set_next_agency_response: (messageIndex: number) => void,
@@ -259,6 +260,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_credential_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CALLBACK_PTR]],
   vcx_credential_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE, FFI_CALLBACK_PTR]],
   vcx_credential_get_offers: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_credential_get_payment_info: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CREDENTIAL_HANDLE,FFI_CALLBACK_PTR]],
 
   // credentialDef
   vcx_credentialdef_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,

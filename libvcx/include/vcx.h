@@ -131,6 +131,7 @@ vcx_error_t vcx_schema_release(vcx_schema_handle_t handle);
 /** Creates a credential definition from the given schema.  Populates a handle to the new credentialdef. */
 vcx_error_t vcx_credentialdef_create(vcx_command_handle_t command_handle, const char *source_id, const char *credentialdef_name, const char *schema_id, const char *issuer_did, const char *tag,  const char *config, vcx_payment_handle_t payment_handle, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credentialdef_handle_t credentialdef_handle));
 
+
 /** Populates status with the current state of this credential. */
 vcx_error_t vcx_credentialdef_serialize(vcx_command_handle_t command_handle, vcx_credentialdef_handle_t credentialdef_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *state));
 
@@ -300,6 +301,9 @@ vcx_error_t vcx_disclosed_proof_release(vcx_proof_handle_t proof_handle);
 
 /** Creates a credential object from the specified credentialdef handle. Populates a handle the new credential. */
 vcx_error_t vcx_credential_create_with_offer(vcx_command_handle_t command_handle, const char *source_id, const char *credential_offer,void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle));
+
+/** Retrieves payment information string from the specified credential handle */
+vcx_error_t vcx_credential_get_payment_info(vcx_command_handle_t command_handle, vcx_credential_handle_t credential_handle, (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, const char *info));
 
 /** Creates a credential object from the connection and msg id. Populates a handle the new credential. */
 vcx_error_t vcx_credential_create_with_msgid(vcx_command_handle_t command_handle, const char *source_id, vcx_connection_handle_t connection, const char *msg_id,void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle));

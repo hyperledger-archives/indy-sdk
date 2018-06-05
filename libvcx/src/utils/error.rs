@@ -77,6 +77,7 @@ pub static INSUFFICIENT_TOKEN_AMOUNT: Error = Error{code_num: 1064, message: "In
 pub static UNKNOWN_TXN_TYPE: Error = Error{code_num: 1065, message: "Unknown ledger transaction type"};
 pub static INVALID_PAYMENT_ADDRESS: Error = Error{code_num: 1066, message: "Invalid payment address"};
 pub static INVALID_LIBINDY_PARAM: Error = Error{code_num: 1067, message: "Parameter passed to libindy was invalid"};
+pub static INVALID_PAYMENT: Error = Error{code_num: 1068, message: "Invalid Payment Details"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -145,6 +146,7 @@ lazy_static! {
         insert_c_message(&mut m, &COMMON_ERROR);
         insert_c_message(&mut m, &INSUFFICIENT_TOKEN_AMOUNT);
         insert_c_message(&mut m, &UNKNOWN_TXN_TYPE);
+        insert_c_message(&mut m, &INVALID_PAYMENT);
         insert_c_message(&mut m, &INVALID_PAYMENT_ADDRESS);
         insert_c_message(&mut m, &INVALID_LIBINDY_PARAM);
        m
@@ -161,7 +163,6 @@ fn insert_c_message(map: &mut HashMap<u32, CString>, error: &Error) {
     map.insert(error.code_num, CString::new(error.message).unwrap());
 
 }
-
 
 // Helper function for static defining of error messages. Does limited checking that it can.
 fn insert_message(map: &mut HashMap<u32, &'static str>, error: &Error) {

@@ -10,13 +10,14 @@ use settings;
 use messages::{ GeneralMessage, MessageResponseCode::MessageAccepted, send_message::parse_msg_uid };
 use connection;
 use credential_request::{ CredentialRequest };
-use utils::{error, error::INVALID_JSON};
-use utils::httpclient;
-use utils::libindy::anoncreds::{ libindy_issuer_create_credential, libindy_issuer_create_credential_offer };
-use utils::libindy::payments;
-use utils::constants::{SEND_MESSAGE_RESPONSE, CRED_MSG};
-use utils::openssl::encode;
-use error::{ issuer_cred::IssuerCredError, ToErrorCode };
+use utils::{error,
+            error::INVALID_JSON,
+            libindy::{ anoncreds::{ libindy_issuer_create_credential, libindy_issuer_create_credential_offer}, payments },
+            httpclient,
+            constants::{SEND_MESSAGE_RESPONSE, CRED_MSG},
+            openssl::encode
+};
+use error::{ issuer_cred::IssuerCredError, ToErrorCode, payment::PaymentError};
 
 lazy_static! {
     static ref ISSUER_CREDENTIAL_MAP: Mutex<HashMap<u32, Box<IssuerCredential>>> = Default::default();
@@ -82,6 +83,18 @@ pub struct PaymentInfo {
     pub payment_required: String,
     pub payment_addr: String,
     pub price: u64,
+}
+
+impl PaymentInfo {
+    pub fn get_address(&self) -> Result<String, PaymentError> {
+        Ok(self.payment_addr.to_string())
+    }
+
+    pub fn get_price(&self) -> Result<u64, PaymentError> {
+        Ok(self.price)
+    }
+
+    pub fn to_string(&self) -> Result<String, PaymentError> { serde_json::to_string(&self).or(Err(PaymentError::InvalidWalletJson()))}
 }
 
 impl IssuerCredential {
@@ -995,6 +1008,15 @@ pub mod tests {
     }
 
     #[test]
+    fn test_payment_information() {
+        let payment_info = PaymentInfo {
+            payment_addr: "OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j".to_string(),
+            payment_required: "one-time".to_string(),
+            price: 1000,
+        };
+        println!("{}", serde_json::to_string(&payment_info).unwrap())
+    }
+
     fn test_verify_payment() {
         let test_name = "test_verify_payment";
         set_default_and_enable_test_mode();
