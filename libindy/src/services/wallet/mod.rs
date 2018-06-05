@@ -269,7 +269,7 @@ impl WalletService {
             if !wallet_descriptor_path.exists() {
                 return Err(WalletError::NotFound("Wallet descriptor path does not exist.".to_string()));
             }
-            let mut file = File::open(_wallet_descriptor_path(name))?;
+            let mut file = File::open(wallet_descriptor_path)?;
             file.read_to_string(&mut descriptor_json)?;
             descriptor_json.as_str()
         })?;
