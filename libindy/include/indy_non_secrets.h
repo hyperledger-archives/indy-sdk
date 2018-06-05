@@ -16,9 +16,9 @@ extern "C" {
     /// tags_json: the record tags used for search and storing meta information as json:
     ///   {
     ///     "tagName1": <str>, // string tag (will be stored encrypted)
-    ///     "tagName2": <int>, // int tag (will be stored encrypted)
+    ///     "tagName2": <str>, // string tag (will be stored encrypted)
     ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
-    ///     "~tagName4": <int>, // int tag (will be stored un-encrypted)
+    ///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
     ///   }
     ///   Note that null means no tags
     ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
@@ -63,9 +63,9 @@ extern "C" {
 /// tags_json: the record tags used for search and storing meta information as json:
 ///   {
 ///     "tagName1": <str>, // string tag (will be stored encrypted)
-///     "tagName2": <int>, // int tag (will be stored encrypted)
+///     "tagName2": <str>, // string tag (will be stored encrypted)
 ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
-///     "~tagName4": <int>, // int tag (will be stored un-encrypted)
+///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
 ///   }
 ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
 ///   usage of this tag in complex search queries (comparison, predicates)
@@ -90,9 +90,9 @@ extern "C" {
     /// tags_json: the record tags used for search and storing meta information as json:
     ///   {
     ///     "tagName1": <str>, // string tag (will be stored encrypted)
-    ///     "tagName2": <int>, // int tag (will be stored encrypted)
+    ///     "tagName2": <str>, // string tag (will be stored encrypted)
     ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
-    ///     "~tagName4": <int>, // int tag (will be stored un-encrypted)
+    ///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
     ///   }
     ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
     ///   usage of this tag in complex search queries (comparison, predicates)
@@ -190,7 +190,7 @@ extern "C" {
     ///    "tagName": "tagValue",
     ///    $or: {
     ///      "tagName2": { $regex: 'pattern' },
-    ///      "tagName3": { $gte: 123 },
+    ///      "tagName3": { $gte: '123' },
     ///    },
     ///  }
     /// options_json: //TODO: FIXME: Think about replacing by bitmaks
