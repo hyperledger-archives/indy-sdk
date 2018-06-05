@@ -30,15 +30,16 @@ async function run() {
 
     console.log("\"Sovrin Steward\" -> Create wallet");
     let stewardWalletName = 'sovrinStewardWallet';
+    let stewardWalletCredentials = {'key': 'steward_key'}
     try {
-        await indy.createWallet(poolName, stewardWalletName);
+        await indy.createWallet(poolName, stewardWalletName, 'default', null, stewardWalletCredentials)
     } catch(e) {
         if(e.message !== "WalletAlreadyExistsError") {
             throw e;
         }
     }
 
-    let stewardWallet = await indy.openWallet(stewardWalletName);
+    let stewardWallet = await indy.openWallet(stewardWalletName, null, stewardWalletCredentials);
 
     console.log("\"Sovrin Steward\" -> Create and store in Wallet DID from seed");
     let stewardDidInfo = {
@@ -51,7 +52,9 @@ async function run() {
     console.log("== Getting Trust Anchor credentials - Government Onboarding  ==");
     console.log("------------------------------");
 
-    let [governmentWallet, governmentWalletName, stewardGovernmentKey, governmentStewardDid, governmentStewardKey] = await onboarding(poolHandle, poolName, "Sovrin Steward", stewardWallet, stewardDid, "Government", null, 'governmentWallet');
+    let governmentWalletName = 'governmentWallet'
+    let governmentWalletCredentials = {'key': 'government_key'}
+    let [governmentWallet, stewardGovernmentKey, governmentStewardDid, governmentStewardKey] = await onboarding(poolHandle, poolName, "Sovrin Steward", stewardWallet, stewardDid, "Government", null, governmentWalletName, governmentWalletCredentials);
 
     console.log("==============================");
     console.log("== Getting Trust Anchor credentials - Government getting Verinym  ==");
@@ -64,7 +67,10 @@ async function run() {
     console.log("==============================");
     console.log("== Getting Trust Anchor credentials - Faber Onboarding  ==");
     console.log("------------------------------");
-    let [faberWallet, faberWalletName, stewardFaberKey, faberStewardDid, faberStewardKey] = await onboarding(poolHandle, poolName, "Sovrin Steward", stewardWallet, stewardDid, "Faber", null, 'faberWallet');
+
+    let faberWalletName = 'faberWallet'
+    let faberWalletCredentials = {'key': 'faber_key'}
+    let [faberWallet, stewardFaberKey, faberStewardDid, faberStewardKey] = await onboarding(poolHandle, poolName, "Sovrin Steward", stewardWallet, stewardDid, "Faber", null, faberWalletName, faberWalletCredentials);
 
     console.log("==============================");
     console.log("== Getting Trust Anchor credentials - Faber getting Verinym  ==");
@@ -77,7 +83,9 @@ async function run() {
     console.log("== Getting Trust Anchor credentials - Acme Onboarding  ==");
     console.log("------------------------------");
 
-    let [acmeWallet, acmeWalletName, stewardAcmeKey, acmeStewardDid, acmeStewardKey] = await onboarding(poolHandle, poolName, "Sovrin Steward", stewardWallet, stewardDid, "Acme", null, 'acmeWallet');
+    let acmeWalletName = 'acmeWallet'
+    let acmeWalletCredentials = {'key': 'acme_key'}
+    let [acmeWallet, stewardAcmeKey, acmeStewardDid, acmeStewardKey] = await onboarding(poolHandle, poolName, "Sovrin Steward", stewardWallet, stewardDid, "Acme", null, acmeWalletName, acmeWalletCredentials);
 
     console.log("==============================");
     console.log("== Getting Trust Anchor credentials - Acme getting Verinym  ==");
@@ -90,7 +98,9 @@ async function run() {
     console.log("== Getting Trust Anchor credentials - Thrift Onboarding  ==");
     console.log("------------------------------");
 
-    let [thriftWallet, thriftWalletName, stewardThriftKey, thriftStewardDid, thriftStewardKey] = await onboarding(poolHandle, poolName, "Sovrin Steward", stewardWallet, stewardDid, "Thrift", null, ' thriftWallet');
+    let thriftWalletName = 'thriftWallet'
+    let thriftWalletCredentials = {'key': 'thrift_key'}
+    let [thriftWallet, stewardThriftKey, thriftStewardDid, thriftStewardKey] = await onboarding(poolHandle, poolName, "Sovrin Steward", stewardWallet, stewardDid, "Thrift", null, thriftWalletName, thriftWalletCredentials);
 
     console.log("==============================");
     console.log("== Getting Trust Anchor credentials - Thrift getting Verinym  ==");
@@ -150,7 +160,9 @@ async function run() {
     console.log("== Getting Transcript with Faber - Onboarding ==");
     console.log("------------------------------");
 
-    let [aliceWallet, aliceWalletName, faberAliceKey, aliceFaberDid, aliceFaberKey, faberAliceConnectionResponse] = await onboarding(poolHandle, poolName, "Faber", faberWallet, faberDid, "Alice", null, ' aliceWallet');
+    let aliceWalletName = 'aliceWallet'
+    let aliceWalletCredentials = {'key': 'alice_key'}
+    let [aliceWallet, faberAliceKey, aliceFaberDid, aliceFaberKey, faberAliceConnectionResponse] = await onboarding(poolHandle, poolName, "Faber", faberWallet, faberDid, "Alice", null, aliceWalletName, aliceWalletCredentials);
 
     console.log("==============================");
     console.log("== Getting Transcript with Faber - Getting Transcript Credential ==");
@@ -220,7 +232,8 @@ async function run() {
     console.log("== Apply for the job with Acme - Onboarding ==");
     console.log("------------------------------");
     let acmeAliceKey, aliceAcmeDid, aliceAcmeKey, acmeAliceConnectionResponse;
-    [aliceWallet, aliceWalletName, acmeAliceKey, aliceAcmeDid, aliceAcmeKey, acmeAliceConnectionResponse] = await onboarding(poolHandle, poolName, "Acme", acmeWallet, acmeDid, "Alice", aliceWallet, ' aliceWallet');
+
+    [aliceWallet, acmeAliceKey, aliceAcmeDid, aliceAcmeKey, acmeAliceConnectionResponse] = await onboarding(poolHandle, poolName, "Acme", acmeWallet, acmeDid, "Alice", aliceWallet, aliceWalletName, aliceWalletCredentials);
 
     console.log("==============================");
     console.log("== Apply for the job with Acme - Transcript proving ==");
@@ -402,8 +415,8 @@ async function run() {
     console.log("------------------------------");
 
     let thriftAliceKey, aliceThriftDid, aliceThriftKey, thriftAliceConnectionResponse;
-    [aliceWallet, aliceWalletName, thriftAliceKey, aliceThriftDid, aliceThriftKey, thriftAliceConnectionResponse] = await onboarding(poolHandle, poolName, "Thrift", thriftWallet, thriftDid,
-        "Alice", aliceWallet, ' aliceWallet');
+    [aliceWallet, thriftAliceKey, aliceThriftDid, aliceThriftKey, thriftAliceConnectionResponse] = await onboarding(poolHandle, poolName, "Thrift", thriftWallet, thriftDid,
+        "Alice", aliceWallet, aliceWalletName, aliceWalletCredentials);
 
     console.log("==============================");
     console.log("== Apply for the loan with Thrift - Job-Certificate proving  ==");
@@ -583,27 +596,27 @@ async function run() {
 
     console.log(" \"Sovrin Steward\" -> Close and Delete wallet");
     await indy.closeWallet(stewardWallet);
-    await indy.deleteWallet(stewardWalletName, null);
+    await indy.deleteWallet(stewardWalletName, stewardWalletCredentials);
 
     console.log("\"Government\" -> Close and Delete wallet");
     await indy.closeWallet(governmentWallet);
-    await indy.deleteWallet(governmentWalletName, null);
+    await indy.deleteWallet(governmentWalletName, governmentWalletCredentials);
 
     console.log("\"Faber\" -> Close and Delete wallet");
     await indy.closeWallet(faberWallet);
-    await indy.deleteWallet(faberWalletName, null);
+    await indy.deleteWallet(faberWalletName, faberWalletCredentials);
 
     console.log("\"Acme\" -> Close and Delete wallet");
     await indy.closeWallet(acmeWallet);
-    await indy.deleteWallet(acmeWalletName, null);
+    await indy.deleteWallet(acmeWalletName, acmeWalletCredentials);
 
     console.log("\"Thrift\" -> Close and Delete wallet");
     await indy.closeWallet(thriftWallet);
-    await indy.deleteWallet(thriftWalletName, null);
+    await indy.deleteWallet(thriftWalletName, thriftWalletCredentials);
 
     console.log("\"Alice\" -> Close and Delete wallet");
     await indy.closeWallet(aliceWallet);
-    await indy.deleteWallet(aliceWalletName, null);
+    await indy.deleteWallet(aliceWalletName, aliceWalletCredentials);
 
     console.log("Close and Delete pool");
     await indy.closePoolLedger(poolHandle);
@@ -612,7 +625,7 @@ async function run() {
     console.log("Getting started -> done")
 }
 
-async function onboarding(poolHandle, poolName, From, fromWallet, fromDid, to, toWallet, toWalletName) {
+async function onboarding(poolHandle, poolName, From, fromWallet, fromDid, to, toWallet, toWalletName, toWalletCredentials) {
     console.log(`\"${From}\" > Create and store in Wallet \"${From} ${to}\" DID`);
     let [fromToDid, fromToKey] = await indy.createAndStoreMyDid(fromWallet, {});
 
@@ -628,13 +641,13 @@ async function onboarding(poolHandle, poolName, From, fromWallet, fromDid, to, t
     if (!toWallet) {
         console.log(`\"${to}\" > Create wallet"`);
         try {
-            await indy.createWallet(poolName, toWalletName);
+            await indy.createWallet(poolName, toWalletName, 'default', null, toWalletCredentials)
         } catch(e) {
             if(e.message !== "WalletAlreadyExistsError") {
                 throw e;
             }
         }
-        toWallet = await indy.openWallet(toWalletName);
+        toWallet = await indy.openWallet(toWalletName, null, toWalletCredentials);
     }
 
     console.log(`\"${to}\" > Create and store in Wallet \"${to} ${From}\" DID`);
@@ -664,7 +677,7 @@ async function onboarding(poolHandle, poolName, From, fromWallet, fromDid, to, t
     console.log(`\"${From}\" > Send Nym to Ledger for \"${to} ${From}\" DID`);
     await sendNym(poolHandle, fromWallet, fromDid, decryptedConnectionResponse['did'], decryptedConnectionResponse['verkey'], null);
 
-    return [toWallet, toWalletName, fromToKey, toFromDid, toFromKey, decryptedConnectionResponse];
+    return [toWallet, fromToKey, toFromDid, toFromKey, decryptedConnectionResponse];
 }
 
 async function getVerinym(poolHandle, From, fromWallet, fromDid, fromToKey, to, toWallet, toFromDid, toFromKey, role) {
