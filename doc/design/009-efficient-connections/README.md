@@ -31,14 +31,16 @@ handshakes:
 1. Change ```indy_pool_open``` endpoint behavior. Instead keep sockets connected it will only perform CatchUp
    and keep only information about nodes of this pool. Sockets creation will be performed when application
    sends request with some limitations and optimizations (see details below).
+1. Persist ```indy_pool_open``` CatchUp results to start from updated pool ledger next time.
 1. Introduce internal "pool connection" entity. Each "pool connection" is intended to be used with a specific pool only.
 1. "Pool connection" owns sockets and can be used to execute one or multiple requests.
-1. After creation "pool connection" becomes "active" for some pre-defined timeout (5 sec). "Active" means that context can be used to start execution of     new requests to pool.
+1. After creation "pool connection" becomes "active" for some pre-defined timeout (5 sec) or until some pre-defined amount
+   of requests (5) were started through this "pool connection".
+1. "Active" means that context can be used to start execution of     new requests to pool.
 1. When application tries to send request to pool libindy checks for already exists "pool connection" for target pool in "active" state.
 1. If there is no active "pool connection" then libindy creates a new one and uses it for sending request.
 1. If there is active "pool connection" then libindy re-uses it for sending request.
 1. "pool connection" opens sockets only "by request". if requests execution requires connection to only one node than only one socket will be created.
 1. "pool connection" determines node to perform new connection with round robin. If connection is already established than sockets will be re-used.
-1. libindy keep opened sockets connected until "pool connection" is active (5s from "pool connection" creation) or there is request that waits for
-   response on this socket. As soon as "pool connection" is switched from active state and sockets isn't needed for request it will be 
+1. libindy keep opened sockets connected until "pool connection" is active (5s from "pool connection" creation or 5 requests started) or there is request    that waits for response on this socket. As soon as "pool connection" is switched from active state and sockets isn't needed for request it will be
    immediately closed.
