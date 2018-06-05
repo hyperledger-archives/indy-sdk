@@ -80,7 +80,7 @@ mod tests {
         ::utils::devsetup::tests::setup_dev_env("test_real_proof");
         let alice = connection::build_connection("alice").unwrap();
         connection::connect(alice, Some("{}".to_string())).unwrap();
-        let details = connection::get_invite_details(alice, true).unwrap();
+        let details = connection::get_invite_details(alice, false).unwrap();
         //BE CONSUMER AND ACCEPT INVITE FROM INSTITUTION
         ::utils::devsetup::tests::be_consumer();
         let faber = connection::build_connection_with_invite("faber", &details).unwrap();
