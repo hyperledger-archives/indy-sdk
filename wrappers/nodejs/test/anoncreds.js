@@ -8,8 +8,9 @@ var indyHomeDir = require('home-dir')('.indy_client')
 test('anoncreds', async function (t) {
   var pool = await initTestPool()
   var wName = 'wallet-' + cuid()
-  await indy.createWallet(pool.name, wName, 'default', null, null)
-  var wh = await indy.openWallet(wName, null, null)
+  var walletCredentials = {'key': 'key'}
+  await indy.createWallet(pool.name, wName, 'default', null, walletCredentials)
+  var wh = await indy.openWallet(wName, null, walletCredentials)
   var issuerDid = 'NcYxiDXkpYi6ov5FcYDi1e'
   var proverDid = 'VsKV7grR1BUE29mG2Fm2kX'
 
@@ -139,6 +140,6 @@ test('anoncreds', async function (t) {
   t.truthy(/^true /.test(mergedDelta.value.accum))
 
   await indy.closeWallet(wh)
-  await indy.deleteWallet(wName, null)
+  await indy.deleteWallet(wName, walletCredentials)
   pool.cleanup()
 })

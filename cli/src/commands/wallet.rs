@@ -161,7 +161,7 @@ pub mod list_command {
                 print_list_table(&wallets,
                                  &vec![("name", "Name"),
                                        ("pool_name", "Associated pool name"),
-                                       ("xtype", "Type")],
+                                       ("type", "Type")],
                                  "There are no wallets");
 
                 if let Some((_, cur_wallet)) = get_opened_wallet(ctx) {
@@ -424,7 +424,7 @@ pub mod tests {
             {
                 let cmd = list_command::new();
                 let params = CommandParams::new();
-                cmd.execute(&ctx, &params).unwrap_err();
+                cmd.execute(&ctx, &params).unwrap();
             }
             TestUtils::cleanup_storage();
         }
