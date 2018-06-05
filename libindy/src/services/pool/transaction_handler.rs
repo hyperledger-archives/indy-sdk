@@ -463,7 +463,7 @@ impl TransactionHandler {
             constants::GET_REVOC_REG_DEF => {
                 if let Some(id) = json_msg["id"].as_str() {
                     //FIXME
-                    id.splitn(2, ":").next().unwrap()
+                    id.splitn(2, ':').next().unwrap()
                         .as_bytes().to_vec()
                 } else {
                     debug!("TransactionHandler::parse_reply_for_builtin_sp: <<< No dest");
