@@ -6,8 +6,9 @@ var initTestPool = require('./helpers/initTestPool')
 test('did', async function (t) {
   var pool = await initTestPool()
   var wName = 'wallet-' + cuid()
-  await indy.createWallet(pool.name, wName, 'default', null, null)
-  var wh = await indy.openWallet(wName, null, null)
+  var walletCredentials = {'key': 'key'}
+  await indy.createWallet(pool.name, wName, 'default', null, walletCredentials)
+  var wh = await indy.openWallet(wName, null, walletCredentials)
 
   // List, create, and get
   t.deepEqual(await indy.listMyDidsWithMeta(wh), [])
@@ -55,6 +56,6 @@ test('did', async function (t) {
   t.deepEqual(await indy.listMyDidsWithMeta(wh), [data])
 
   await indy.closeWallet(wh)
-  await indy.deleteWallet(wName, null)
+  await indy.deleteWallet(wName, walletCredentials)
   pool.cleanup()
 })
