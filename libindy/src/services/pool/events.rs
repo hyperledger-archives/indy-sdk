@@ -1,3 +1,4 @@
+#[derive(Copy, Clone)]
 pub enum ConsensusCollectorEvent {
     NodeReply,
     StartConsensus
@@ -8,6 +9,7 @@ pub enum NetworkerEvent {
     SendAllRequest
 }
 
+#[derive(Copy, Clone)]
 pub enum PoolEvent {
     CheckCache,
     NodeReply,
@@ -22,6 +24,7 @@ pub enum PoolEvent {
     Timeout
 }
 
+#[derive(Copy, Clone)]
 pub enum RequestEvent {
     LedgerStatus,
     NodeReply,

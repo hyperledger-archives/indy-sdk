@@ -145,7 +145,7 @@ impl PoolService {
         }
 
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        let new_pool = Pool::new(Commander::new(), name, cmd_id);
+        let new_pool = Pool::new(name, cmd_id);
         //FIXME process config: check None (use default), transfer to Pool instance
 
         self.pending_pools.try_borrow_mut().map_err(CommonError::from)?.insert(new_pool.get_id(), new_pool);

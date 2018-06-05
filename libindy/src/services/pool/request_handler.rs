@@ -113,54 +113,58 @@ impl<'wr, T: Networker, CC: ConsensusCollector<'wr, T>> RequestSMWrapper<'wr, T,
             RequestSMWrapper::Start(request) => {
                 match re {
                     RequestEvent::LedgerStatus => {
-                        let cc = CC::new(request.state.networker);
+                        let mut cc = CC::new(request.state.networker);
                         cc.process_event(re.into());
                         (RequestSMWrapper::Consensus((request, cc).into()), None)
                     }
-                    _ => (self, None)
+                    _ => (RequestSMWrapper::Start(request), None)
                 }
             }
-            RequestSMWrapper::Consensus(request) => {
+            RequestSMWrapper::Consensus(mut request) => {
                 let re = request.state.consensus_collector.process_event(re.into()).unwrap_or(re);
                 match re {
                     RequestEvent::ConsensusReached => (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::ConsensusReached)),
                     RequestEvent::ConsensusFailed => (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::ConsensusFailed)),
-                    _ => (self, None)
+                    _ => (RequestSMWrapper::Consensus(request), None)
                 }
             }
             RequestSMWrapper::Single(request) => {
                 match re {
                     RequestEvent::NodeReply => (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::NodeReply)),
-                    _ => (self, None)
+                    _ => (RequestSMWrapper::Single(request), None)
                 }
             },
-            RequestSMWrapper::Finish(_) => (self, None)
+            RequestSMWrapper::Finish(request) => (RequestSMWrapper::Finish(request), None)
         }
     }
 }
 
 pub trait RequestHandler<'trequest, T: Networker> {
     fn new(networker: &'trequest T) -> Self;
-    fn process_event(&self, ore: Option<RequestEvent>) -> Option<PoolEvent>;
+    fn process_event(&mut self, ore: Option<RequestEvent>) -> Option<PoolEvent>;
 }
 
 pub struct RequestHandlerImpl<'request, T: Networker + 'request, CC: ConsensusCollector<'request, T>> {
-    request_wrapper: RequestSMWrapper<'request, T, CC>
+    request_wrapper: Option<RequestSMWrapper<'request, T, CC>>
 }
 
 impl<'request, T: Networker, CC: ConsensusCollector<'request, T>> RequestHandler<'request, T> for RequestHandlerImpl<'request, T, CC> {
     fn new(networker: &'request T) -> Self {
         RequestHandlerImpl {
-            request_wrapper: RequestSMWrapper::Start(RequestSM::new(networker)),
+            request_wrapper: Some(RequestSMWrapper::Start(RequestSM::new(networker))),
         }
     }
 
-    fn process_event(&self, ore: Option<RequestEvent>) -> Option<PoolEvent> {
+    fn process_event(&mut self, ore: Option<RequestEvent>) -> Option<PoolEvent> {
         match ore {
             Some(re) => {
-                let (rw, res) = self.request_wrapper.handle_event(re);
-                self.request_wrapper = rw;
-                res
+                if let Some((rw, res)) = self.request_wrapper.take().map(|w| w.handle_event(re)) {
+                    self.request_wrapper = Some(rw);
+                    res
+                } else {
+                    self.request_wrapper = None;
+                    None
+                }
             },
             None => None
         }

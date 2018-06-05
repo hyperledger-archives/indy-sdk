@@ -1,5 +1,6 @@
 use super::consensus_collector::ConsensusCollector;
 use super::consensus_collector;
+use super::zmq;
 use std::thread::JoinHandle;
 use std::thread;
 use services::pool::commander::Commander;
@@ -11,62 +12,45 @@ use services::pool::request_handler::RequestHandler;
 use services::pool::networker::ZMQNetworker;
 use services::pool::events::RequestEvent;
 use std::collections::HashMap;
+use std::marker::PhantomData;
 
 trait PoolState {
-    fn is_terminal(&self) -> bool;
+    fn is_terminal(&self) -> bool {
+        false
+    }
 }
 
 struct InitializationState<'st, T: Networker + 'st> {
     networker: &'st T
 }
 
-impl<'st, T: Networker> PoolState for InitializationState<'st, T> {
-    fn is_terminal(&self) -> bool {
-        false
-    }
-}
+impl<'st, T: Networker> PoolState for InitializationState<'st, T> {}
 
 struct GettingCatchupTargetState<'st, T: Networker + 'st, R: RequestHandler<'st, T>> {
     networker: &'st T,
-    request_handler: R
+    request_handler: R,
 }
 
-impl<'st, T: Networker, R: RequestHandler<'st, T>> PoolState for GettingCatchupTargetState<'st, T, R> {
-    fn is_terminal(&self) -> bool {
-        false
-    }
-}
+impl<'st, T: Networker, R: RequestHandler<'st, T>> PoolState for GettingCatchupTargetState<'st, T, R> {}
 
 struct ActiveState<'st, T: Networker + 'st, R: RequestHandler<'st, T>> {
     networker: &'st T,
-    request_handlers: HashMap<String, R>
+    request_handlers: HashMap<String, R>,
 }
 
-impl<'st, T: Networker, R: RequestHandler<'st, T>> PoolState for ActiveState<'st, T, R> {
-    fn is_terminal(&self) -> bool {
-        false
-    }
-}
+impl<'st, T: Networker, R: RequestHandler<'st, T>> PoolState for ActiveState<'st, T, R> {}
 
 struct SyncCatchupState<'st, T: Networker + 'st> {
     networker: &'st T
 }
 
-impl<'st, T:Networker> PoolState for SyncCatchupState<'st, T> {
-    fn is_terminal(&self) -> bool {
-        false
-    }
-}
+impl<'st, T: Networker> PoolState for SyncCatchupState<'st, T> {}
 
-struct TerminatedState<'st, T:Networker + 'st> {
+struct TerminatedState<'st, T: Networker + 'st> {
     networker: &'st T
 }
 
-impl<'st, T:Networker> PoolState for TerminatedState<'st, T> {
-    fn is_terminal(&self) -> bool {
-        false
-    }
-}
+impl<'st, T: Networker> PoolState for TerminatedState<'st, T> {}
 
 struct ClosedState {}
 
@@ -80,8 +64,8 @@ struct PoolSM<T: PoolState> {
     state: T,
 }
 
-impl<'st, T:Networker> PoolSM<InitializationState<'st, T>> {
-    pub fn new(networker: &'st T) -> PoolSM<InitializationState<'st, T>> {
+impl<'sm, T: Networker> PoolSM<InitializationState<'sm, T>> {
+    pub fn new(networker: &'sm T) -> PoolSM<InitializationState<'sm, T>> {
         PoolSM {
             state: InitializationState {
                 networker
@@ -103,7 +87,7 @@ impl<'sm, T: Networker, R: RequestHandler<'sm, T>> From<(PoolSM<InitializationSt
     }
 }
 
-impl<'sm, T:Networker> From<PoolSM<InitializationState<'sm, T>>> for PoolSM<ClosedState> {
+impl<'sm, T: Networker> From<PoolSM<InitializationState<'sm, T>>> for PoolSM<ClosedState> {
     fn from(val: PoolSM<InitializationState<'sm, T>>) -> PoolSM<ClosedState> {
         PoolSM {
             state: ClosedState {}
@@ -111,12 +95,12 @@ impl<'sm, T:Networker> From<PoolSM<InitializationState<'sm, T>>> for PoolSM<Clos
     }
 }
 
-impl<'sm, T:Networker, R: RequestHandler<'sm, T>> From<PoolSM<InitializationState<'sm, T>>> for PoolSM<ActiveState<'sm, T, R>> {
+impl<'sm, T: Networker, R: RequestHandler<'sm, T>> From<PoolSM<InitializationState<'sm, T>>> for PoolSM<ActiveState<'sm, T, R>> {
     fn from(val: PoolSM<InitializationState<'sm, T>>) -> PoolSM<ActiveState<'sm, T, R>> {
         PoolSM {
             state: ActiveState {
                 networker: val.state.networker,
-                request_handlers: HashMap::new()
+                request_handlers: HashMap::new(),
             }
         }
     }
@@ -157,7 +141,7 @@ impl<'sm, T: Networker, R: RequestHandler<'sm, T>> From<PoolSM<GettingCatchupTar
 impl<'sm, T: Networker, R: RequestHandler<'sm, T>> From<(PoolSM<ActiveState<'sm, T, R>>, R)> for PoolSM<GettingCatchupTargetState<'sm, T, R>> {
     fn from((pool, rh): (PoolSM<ActiveState<'sm, T, R>>, R)) -> Self {
         PoolSM {
-            state: GettingCatchupTargetState { networker: pool.state.networker, request_handler: rh}
+            state: GettingCatchupTargetState { networker: pool.state.networker, request_handler: rh }
         }
     }
 }
@@ -236,7 +220,7 @@ impl<'sm, T: Networker> From<PoolSM<TerminatedState<'sm, T>>> for PoolSM<ClosedS
     }
 }
 
-enum PoolWrapper <'wr, T: Networker + 'wr, R: RequestHandler<'wr, T>> {
+enum PoolWrapper<'wr, T: Networker + 'wr, R: RequestHandler<'wr, T>> {
     Initialization(PoolSM<InitializationState<'wr, T>>),
     GettingCatchupTarget(PoolSM<GettingCatchupTargetState<'wr, T, R>>),
     Active(PoolSM<ActiveState<'wr, T, R>>),
@@ -255,7 +239,7 @@ impl<'wr, T: Networker, R: RequestHandler<'wr, T>> PoolWrapper<'wr, T, R> {
                     if fresh {
                         PoolWrapper::Active(pool.into())
                     } else {
-                        let request_handler = R::new(pool.state.networker);
+                        let mut request_handler = R::new(pool.state.networker);
                         request_handler.process_event(Some(RequestEvent::LedgerStatus));
                         PoolWrapper::GettingCatchupTarget((pool, request_handler).into())
                     }
@@ -263,7 +247,7 @@ impl<'wr, T: Networker, R: RequestHandler<'wr, T>> PoolWrapper<'wr, T, R> {
                 PoolEvent::Close => PoolWrapper::Closed(pool.into()),
                 _ => PoolWrapper::Initialization(pool)
             }
-            PoolWrapper::GettingCatchupTarget(pool) => {
+            PoolWrapper::GettingCatchupTarget(mut pool) => {
                 let pe = pool.state.request_handler.process_event(pe.into()).unwrap_or(pe);
                 match pe {
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
@@ -271,7 +255,7 @@ impl<'wr, T: Networker, R: RequestHandler<'wr, T>> PoolWrapper<'wr, T, R> {
                     PoolEvent::ConsensusReached => {
                         //TODO: send CATCHUP_REQ
                         PoolWrapper::SyncCatchup(pool.into())
-                    },
+                    }
                     _ => PoolWrapper::GettingCatchupTarget(pool)
                 }
             }
@@ -279,10 +263,10 @@ impl<'wr, T: Networker, R: RequestHandler<'wr, T>> PoolWrapper<'wr, T, R> {
                 match pe {
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
                     PoolEvent::Refresh => {
-                        let request_handler = R::new(pool.state.networker);
+                        let mut request_handler = R::new(pool.state.networker);
                         request_handler.process_event(Some(RequestEvent::LedgerStatus));
                         PoolWrapper::GettingCatchupTarget((pool, request_handler).into())
-                    },
+                    }
                     _ => PoolWrapper::Terminated(pool)
                 }
             }
@@ -292,13 +276,13 @@ impl<'wr, T: Networker, R: RequestHandler<'wr, T>> PoolWrapper<'wr, T, R> {
                     PoolEvent::PoolOutdated => PoolWrapper::Terminated(pool.into()),
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
                     PoolEvent::Refresh => {
-                        let request_handler = R::new(pool.state.networker);
+                        let mut request_handler = R::new(pool.state.networker);
                         request_handler.process_event(Some(RequestEvent::LedgerStatus));
                         PoolWrapper::GettingCatchupTarget((pool, request_handler).into())
-                    },
+                    }
                     PoolEvent::SendRequest => {
                         let re: Option<RequestEvent> = pe.into();
-                        let request_handler = R::new(pool.state.networker);
+                        let mut request_handler = R::new(pool.state.networker);
                         request_handler.process_event(re);
                         //TODO: put request_handler to map
 
@@ -338,36 +322,27 @@ impl<'wr, T: Networker, R: RequestHandler<'wr, T>> PoolWrapper<'wr, T, R> {
     }
 }
 
-pub struct Pool <S: Networker + 'static, R: RequestHandler<'static, S>>{
-    pool_wrapper: PoolWrapper<'static, S, R>,
-    commander: Commander,
-    networker: S,
+pub struct Pool <S: Networker, R: RequestHandler<'static, S>>{
+    _pd: PhantomData<(S, R)>,
     worker: Option<JoinHandle<()>>,
     name: String,
     id: i32,
 }
 
-unsafe impl<S: Networker, R: RequestHandler<'static, S>> Sync for Pool<S, R> {}
-
-impl<S: Networker, R: RequestHandler<'static, S>> Pool<S, R> {
-    pub fn new(commander: Commander, name: &str, id: i32) -> Self {
-        let networker = S::new();
+impl<S: Networker + 'static, R: RequestHandler<'static, S> + 'static> Pool<S, R> {
+    pub fn new(name: &str, id: i32) -> Self {
         Pool {
-            pool_wrapper: PoolWrapper::Initialization(PoolSM::new(&networker)),
-            commander,
-            networker,
+            _pd: PhantomData::<(S, R)>,
             worker: None,
             name: name.to_string(),
             id,
         }
     }
 
-    pub fn work(&'static mut self) {
-        self.worker = Some(thread::spawn(move || {
-            self._poll();
-            while self._loop() {
-                self._poll();
-            }
+    pub fn work(&mut self, cmd_socket: zmq::Socket) {
+        self.worker = Some(thread::spawn(|| {
+            let mut pool_thread: PoolThread<'static, S, R> = PoolThread::new(cmd_socket);
+            pool_thread.work();
         }));
     }
 
@@ -378,16 +353,40 @@ impl<S: Networker, R: RequestHandler<'static, S>> Pool<S, R> {
     pub fn get_id(&self) -> i32 {
         self.id
     }
+}
 
-    fn _loop(&self) -> bool {
+struct PoolThread<'pt, S: Networker + 'pt, R: RequestHandler<'pt, S>> {
+    pool_wrapper: Option<PoolWrapper<'pt, S, R>>,
+    commander: Commander,
+    networker: S,
+}
+
+impl<'pt, S: Networker, R: RequestHandler<'pt, S> + 'pt> PoolThread<'pt, S, R> {
+    pub fn new(cmd_socket: zmq::Socket) -> Self {
+        let networker = S::new();
+        PoolThread {
+            pool_wrapper: Some(PoolWrapper::Initialization(PoolSM::new(&networker))),
+            commander: Commander::new(cmd_socket),
+            networker,
+        }
+    }
+
+    pub fn work(&mut self) {
+        self._poll();
+        while self._loop() {
+            self._poll();
+        }
+    }
+
+    fn _loop(&mut self) -> bool {
         let pe = self.commander.get_next_event();
         match pe {
             Some(pe) => {
-                self.pool_wrapper = self.pool_wrapper.handle_event(pe)
-            },
+                self.pool_wrapper = self.pool_wrapper.take().map(|w| w.handle_event(pe));
+            }
             _ => ()
         }
-        self.pool_wrapper.is_terminal()
+        self.pool_wrapper.as_ref().map(|w| w.is_terminal()).unwrap_or(true)
     }
 
     fn _poll(&self) {

@@ -1,3 +1,4 @@
+use super::zmq;
 use std::collections::VecDeque;
 use services::pool::events::PoolEvent;
 
@@ -6,13 +7,13 @@ pub struct Commander {
 }
 
 impl Commander {
-    pub fn new() -> Self {
+    pub fn new(socket: zmq::Socket) -> Self {
         Commander {
             events: VecDeque::new(),
         }
     }
 
-    pub fn get_next_event(&self) -> Option<PoolEvent> {
+    pub fn get_next_event(&mut self) -> Option<PoolEvent> {
         self.events.pop_front()
     }
 

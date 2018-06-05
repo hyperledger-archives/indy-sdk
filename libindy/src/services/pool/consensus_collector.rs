@@ -80,22 +80,26 @@ impl ConsensusCollectorSMWrapper {
 
 pub trait ConsensusCollector<'con, T: Networker> {
     fn new(networker: &'con T) -> Self;
-    fn process_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<RequestEvent>;
+    fn process_event(&mut self, pe: Option<ConsensusCollectorEvent>) -> Option<RequestEvent>;
 }
 
 pub struct ConsensusCollectorImpl<'con, T: Networker + 'con> {
-    consensus_collector_sm_wrapper: ConsensusCollectorSMWrapper,
+    consensus_collector_sm_wrapper: Option<ConsensusCollectorSMWrapper>,
     networker: &'con T
 }
 
 impl<'con, T: Networker> ConsensusCollectorImpl<'con, T> {
 
-    fn _handle_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<RequestEvent> {
+    fn _handle_event(&mut self, pe: Option<ConsensusCollectorEvent>) -> Option<RequestEvent> {
         match pe {
             Some(pe) => {
-                let (wrapper, event) = self.consensus_collector_sm_wrapper.handle_event(pe);
-                self.consensus_collector_sm_wrapper = wrapper;
-                event
+                if let Some((wrapper, event)) = self.consensus_collector_sm_wrapper.take().map(|w| w.handle_event(pe)) {
+                    self.consensus_collector_sm_wrapper = Some(wrapper);
+                    event
+                } else {
+                    self.consensus_collector_sm_wrapper = None;
+                    None
+                }
             }
             _ => None
         }
@@ -106,12 +110,12 @@ impl<'con, T: Networker> ConsensusCollector<'con, T> for ConsensusCollectorImpl<
     fn new(networker: &'con T) -> Self {
         ConsensusCollectorImpl {
             networker,
-            consensus_collector_sm_wrapper: ConsensusCollectorSMWrapper::Start(ConsensusCollectorSM::new())
+            consensus_collector_sm_wrapper: Some(ConsensusCollectorSMWrapper::Start(ConsensusCollectorSM::new()))
         }
     }
 
-    fn process_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<RequestEvent> {
-        let ne: Option<Option<NetworkerEvent>> = pe.map(|pe| pe.into());
+    fn process_event(&mut self, pe: Option<ConsensusCollectorEvent>) -> Option<RequestEvent> {
+        let ne: Option<Option<NetworkerEvent>> = pe.clone().map(|pe| pe.into());
         let ne = match ne {
             Some(ne) => ne,
             _ => None
@@ -133,7 +137,7 @@ impl<'mcon, T: Networker> ConsensusCollector<'mcon, T> for MockConsensusCollecto
         }
     }
 
-    fn process_event(&self, pe: Option<ConsensusCollectorEvent>) -> Option<RequestEvent> {
+    fn process_event(&mut self, pe: Option<ConsensusCollectorEvent>) -> Option<RequestEvent> {
         unimplemented!()
     }
 }
