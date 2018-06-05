@@ -1,0 +1,27 @@
+{
+  "name": "vcx",
+  "platforms": {
+    "ios": "10.0"
+  },
+  "summary": "High-level wrapper function for vcx framework.",
+  "requires_arc": false,
+  "version": "0.0.1",
+  "license": {
+    "type": "Commercial",
+    "file": "LICENSE"
+  },
+  "authors": {
+    "Evernym Inc.": "iosdev@evernym.com"
+  },
+  "homepage": "https://github.com/evernym/sdk/vcx/wrappers/ios",
+  "source": {
+    "http":
+      "2f43b886.ngrok.io/vcxFramework.zip"
+  },
+  "frameworks": "Foundation",
+  "dependencies": {},
+  "ios": {
+    "vendored_frameworks": "vcxFramework/vcx.framework"
+  },
+  "module_name": "vcx"
+}

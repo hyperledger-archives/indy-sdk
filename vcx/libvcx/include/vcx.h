@@ -96,6 +96,9 @@ vcx_error_t vcx_shutdown(vcx_bool_t delete_wallet);
 /** Frees memory, resets configuration, closes wallet and pool, optionally deletes wallet */
 vcx_error_t vcx_shutdown(vcx_bool_t delete_wallet);
 
+/** Frees memory, resets configuration, closes wallet and pool, optionally deletes wallet */
+vcx_error_t vcx_shutdown(vcx_bool_t delete_wallet);
+
 
 /**
  * Schema object
