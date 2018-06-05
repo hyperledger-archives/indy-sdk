@@ -142,8 +142,8 @@ impl CryptoService {
     pub fn sign(&self, my_key: &Key, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
         trace!("sign >>> my_key: {:?}, doc: {:?}", my_key, doc);
 
-        let crypto_type_name = if my_key.verkey.contains(":") {
-            let splits: Vec<&str> = my_key.verkey.split(":").collect();
+        let crypto_type_name = if my_key.verkey.contains(':') {
+            let splits: Vec<&str> = my_key.verkey.split(':').collect();
             splits[1]
         } else {
             DEFAULT_CRYPTO_TYPE
@@ -168,8 +168,8 @@ impl CryptoService {
     pub fn verify(&self, their_vk: &str, msg: &[u8], signature: &[u8]) -> Result<bool, CryptoError> {
         trace!("verify >>> their_vk: {:?}, msg: {:?}, signature: {:?}", their_vk, msg, signature);
 
-        let (their_vk, crypto_type_name) = if their_vk.contains(":") {
-            let splits: Vec<&str> = their_vk.split(":").collect();
+        let (their_vk, crypto_type_name) = if their_vk.contains(':') {
+            let splits: Vec<&str> = their_vk.split(':').collect();
             (splits[0], splits[1])
         } else {
             (their_vk, DEFAULT_CRYPTO_TYPE)
@@ -210,15 +210,15 @@ impl CryptoService {
     pub fn encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
         trace!("encrypt >>> my_key: {:?}, their_vk: {:?}, doc: {:?}", my_key, their_vk, doc);
 
-        let (_my_vk, crypto_type_name) = if my_key.verkey.contains(":") {
-            let splits: Vec<&str> = my_key.verkey.split(":").collect();
+        let (_my_vk, crypto_type_name) = if my_key.verkey.contains(':') {
+            let splits: Vec<&str> = my_key.verkey.split(':').collect();
             (splits[0], splits[1])
         } else {
             (my_key.verkey.as_str(), DEFAULT_CRYPTO_TYPE)
         };
 
-        let (their_vk, their_crypto_type_name) = if their_vk.contains(":") {
-            let splits: Vec<&str> = their_vk.split(":").collect();
+        let (their_vk, their_crypto_type_name) = if their_vk.contains(':') {
+            let splits: Vec<&str> = their_vk.split(':').collect();
             (splits[0], splits[1])
         } else {
             (their_vk, DEFAULT_CRYPTO_TYPE)
@@ -252,15 +252,15 @@ impl CryptoService {
     pub fn decrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CryptoError> {
         trace!("decrypt >>> my_key: {:?}, their_vk: {:?}, doc: {:?}, nonce: {:?}", my_key, their_vk, doc, nonce);
 
-        let (_my_vk, crypto_type_name) = if my_key.verkey.contains(":") {
-            let splits: Vec<&str> = my_key.verkey.split(":").collect();
+        let (_my_vk, crypto_type_name) = if my_key.verkey.contains(':') {
+            let splits: Vec<&str> = my_key.verkey.split(':').collect();
             (splits[0], splits[1])
         } else {
             (my_key.verkey.as_str(), DEFAULT_CRYPTO_TYPE)
         };
 
-        let (their_vk, their_crypto_type_name) = if their_vk.contains(":") {
-            let splits: Vec<&str> = their_vk.split(":").collect();
+        let (their_vk, their_crypto_type_name) = if their_vk.contains(':') {
+            let splits: Vec<&str> = their_vk.split(':').collect();
             (splits[0], splits[1])
         } else {
             (their_vk, DEFAULT_CRYPTO_TYPE)
@@ -294,8 +294,8 @@ impl CryptoService {
     pub fn encrypt_sealed(&self, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
         trace!("encrypt_sealed >>> their_vk: {:?}, doc: {:?}", their_vk, doc);
 
-        let (their_vk, crypto_type_name) = if their_vk.contains(":") {
-            let splits: Vec<&str> = their_vk.split(":").collect();
+        let (their_vk, crypto_type_name) = if their_vk.contains(':') {
+            let splits: Vec<&str> = their_vk.split(':').collect();
             (splits[0], splits[1])
         } else {
             (their_vk, DEFAULT_CRYPTO_TYPE)
@@ -319,8 +319,8 @@ impl CryptoService {
     pub fn decrypt_sealed(&self, my_key: &Key, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
         trace!("decrypt_sealed >>> my_key: {:?}, doc: {:?}", my_key, doc);
 
-        let (my_vk, crypto_type_name) = if my_key.verkey.contains(":") {
-            let splits: Vec<&str> = my_key.verkey.split(":").collect();
+        let (my_vk, crypto_type_name) = if my_key.verkey.contains(':') {
+            let splits: Vec<&str> = my_key.verkey.split(':').collect();
             (splits[0], splits[1])
         } else {
             (my_key.verkey.as_str(), DEFAULT_CRYPTO_TYPE)
@@ -348,7 +348,7 @@ impl CryptoService {
 
         let res = match seed {
             Some(ref seed) =>
-                if seed.ends_with("=") {
+                if seed.ends_with('=') {
                     Some(base64::decode(&seed)
                         .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Seed from Base64 string: {:?}", err)))?)
                 } else {
@@ -365,8 +365,8 @@ impl CryptoService {
     pub fn validate_key(&self, vk: &str) -> Result<(), CryptoError> {
         trace!("validate_key >>> vk: {:?}", vk);
 
-        let (vk, crypto_type_name) = if vk.contains(":") {
-            let splits: Vec<&str> = vk.split(":").collect();
+        let (vk, crypto_type_name) = if vk.contains(':') {
+            let splits: Vec<&str> = vk.split(':').collect();
             (splits[0], splits[1])
         } else {
             (vk, DEFAULT_CRYPTO_TYPE)
@@ -378,7 +378,7 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let vk = if vk.starts_with("~") { &vk[1..] } else { vk };
+        let vk = if vk.starts_with('~') { &vk[1..] } else { vk };
         let vk = Base58::decode(vk)?;
 
         let res =crypto_type.validate_key(&vk)?;

@@ -519,13 +519,13 @@ indy.deletePoolLedgerConfig = function deletePoolLedgerConfig (configName, cb) {
 
 indy.createWallet = function createWallet (poolName, name, xtype, config, credentials, cb) {
   cb = wrapIndyCallback(cb)
-  capi.createWallet(poolName, name, xtype, config, credentials, cb)
+  capi.createWallet(poolName, name, xtype, config, toJson(credentials), cb)
   return cb.promise
 }
 
 indy.openWallet = function openWallet (name, runtimeConfig, credentials, cb) {
   cb = wrapIndyCallback(cb)
-  capi.openWallet(name, runtimeConfig, credentials, cb)
+  capi.openWallet(name, runtimeConfig, toJson(credentials), cb)
   return cb.promise
 }
 
@@ -543,7 +543,7 @@ indy.closeWallet = function closeWallet (handle, cb) {
 
 indy.deleteWallet = function deleteWallet (name, credentials, cb) {
   cb = wrapIndyCallback(cb)
-  capi.deleteWallet(name, credentials, cb)
+  capi.deleteWallet(name, toJson(credentials), cb)
   return cb.promise
 }
 
