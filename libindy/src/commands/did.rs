@@ -216,7 +216,7 @@ impl DidCommandExecutor {
 
         if let Some(ref did) = my_did_info.did.as_ref() {
             if self.wallet_service.record_exists::<Did>(wallet_handle, did)? {
-                return Err(IndyError::DidError(DidError::AlreadyExistsError(format!("Did already exists"))));
+                return Err(IndyError::DidError(DidError::AlreadyExistsError(did.to_string())));
             };
         }
 
