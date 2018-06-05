@@ -265,7 +265,11 @@ impl WalletService {
 
         let mut descriptor_json = String::new();
         let descriptor: WalletDescriptor = WalletDescriptor::from_json({
-            let mut file = File::open(_wallet_descriptor_path(name))?; // FIXME: Better error!
+            let wallet_descriptor_path = _wallet_descriptor_path(name);
+            if !wallet_descriptor_path.exists() {
+                return Err(WalletError::NotFound("Wallet descriptor path does not exist.".to_string()));
+            }
+            let mut file = File::open(_wallet_descriptor_path(name))?;
             file.read_to_string(&mut descriptor_json)?;
             descriptor_json.as_str()
         })?;
@@ -912,6 +916,15 @@ mod tests {
         let wallet_service = WalletService::new();
         wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
         wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_open_unknown_wallet() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        let res = wallet_service.open_wallet("test_wallet_unknown", None, &_credentials());
+        assert_match!(Err(WalletError::NotFound(_)), res);
     }
 
     #[test]
