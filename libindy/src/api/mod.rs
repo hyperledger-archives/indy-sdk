@@ -125,6 +125,9 @@ pub enum ErrorCode
     // Returned if the wallet is not empty, but it is required (currently only when importing)
     WalletNotEmpty = 217,
 
+    // Returned if path provided to wallet export already exists
+    WalletExportPathExists = 218,
+
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
     PoolLedgerNotCreatedError = 300,

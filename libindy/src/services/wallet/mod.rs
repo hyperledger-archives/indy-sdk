@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::{File, DirBuilder};
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::mem;
 use named_type::NamedType;
 
@@ -525,9 +525,22 @@ impl WalletService {
         }
     }
 
-    pub fn export_wallet(&self, wallet_handle: i32, writer: Box<Write>, key: [u8; 32], version: u32) -> Result<(), WalletError> {
+    pub fn export_wallet(&self, wallet_handle: i32, export_path_str: &str, key: &str, version: u32) -> Result<(), WalletError> {
         match self.wallets.borrow().get(&wallet_handle) {
-            Some(wallet) => export(wallet, writer, key, version),
+            Some(wallet) => {
+                let export_path = Path::new(export_path_str);
+                if export_path.exists() {
+                    // TODO - return better error once this API is finalised
+                    return Err(WalletError::ExportPathExists);
+                }
+
+                let mut export_key: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
+                let salt = PwhashArgon2i13::gen_salt();
+                PwhashArgon2i13::derive_key(&mut export_key, key.as_bytes(), &salt)?;
+                let export_file = File::create(export_path)?;
+                let writer = Box::new(export_file);
+                export(wallet, writer, export_key, &salt, version)
+            }
             None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         }
     }
@@ -1521,5 +1534,107 @@ mod tests {
 
         let get_pool_name_res = wallet_service.get_pool_name(1);
         assert_match!(Err(WalletError::InvalidHandle(_)), get_pool_name_res);
+    }
+
+
+    /**
+        Export/Import tests
+    */
+    fn _get_export_dir_path() -> &'static str {
+         "/tmp/indy_wallet_export_tests"
+    }
+
+    fn _get_export_file_path() -> &'static str {
+        "/tmp/indy_wallet_export_tests/export_file"
+    }
+    fn _prepare_export_path() {
+        let export_directory_path = Path::new(_get_export_dir_path());
+        if export_directory_path.exists() {
+            std::fs::remove_dir_all(export_directory_path).unwrap();
+        }
+        std::fs::create_dir(export_directory_path).unwrap();
+    }
+
+    fn _remove_export_path() {
+        let export_directory_path = Path::new(_get_export_dir_path());
+        if export_directory_path.exists() {
+            std::fs::remove_dir_all(export_directory_path).unwrap();
+        }
+    }
+
+    #[test]
+    fn wallet_service_export_wallet_when_empty() {
+        _cleanup();
+        _prepare_export_path();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+
+        let export_path = _get_export_file_path();
+        let export_key = "test_key";
+        wallet_service.export_wallet(wallet_handle, export_path, export_key, 0).unwrap();
+
+        assert!(Path::new(export_path).exists());
+        _remove_export_path();
+    }
+
+    #[test]
+    fn wallet_service_export_wallet_1_item() {
+        _cleanup();
+        _prepare_export_path();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+
+        let export_path = _get_export_file_path();
+        let export_key = "test_key";
+        wallet_service.export_wallet(wallet_handle, export_path, export_key, 0).unwrap();
+        assert!(Path::new(export_path).exists());
+
+        _remove_export_path();
+    }
+
+    #[test]
+    fn wallet_service_export_wallet_returns_error_if_file_exists() {
+        _cleanup();
+        _prepare_export_path();
+        let export_file_path = _get_export_file_path();
+        File::create(Path::new(export_file_path)).unwrap();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+
+        let export_path = _get_export_file_path();
+        let export_key = "test_key";
+        let res = wallet_service.export_wallet(wallet_handle, export_path, export_key, 0);
+        assert_match!(Err(WalletError::ExportPathExists), res);
+        assert!(Path::new(export_path).exists());
+
+        _remove_export_path();
+    }
+
+    #[test]
+    fn wallet_service_export_wallet_returns_error_if_wrong_handle() {
+        _cleanup();
+        _prepare_export_path();
+        let export_file_path = _get_export_file_path();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+
+        let export_path = _get_export_file_path();
+        let export_key = "test_key";
+        let res = wallet_service.export_wallet(wallet_handle + 1, export_path, export_key, 0);
+        assert_match!(Err(WalletError::InvalidHandle(_)), res);
+        assert!(!Path::new(export_path).exists());
+
+        _remove_export_path();
     }
 }
