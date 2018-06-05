@@ -5,7 +5,6 @@ mod types;
 //mod pool_worker;
 
 mod pool;
-mod consensus_collector;
 mod networker;
 mod commander;
 mod events;
@@ -55,13 +54,11 @@ use std::path::PathBuf;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use services::pool::pool::Pool;
-use services::pool::commander::Commander;
 use services::pool::networker::ZMQNetworker;
 use services::pool::request_handler::RequestHandlerImpl;
-use services::pool::consensus_collector::ConsensusCollectorImpl;
 
 
-pub type PoolWorker = Pool<ZMQNetworker, RequestHandlerImpl<'static, ZMQNetworker, ConsensusCollectorImpl<'static, ZMQNetworker>>>;
+pub type PoolWorker = Pool<ZMQNetworker, RequestHandlerImpl<ZMQNetworker>>;
 
 pub struct PoolService {
     open_pools: RefCell<HashMap<i32, PoolWorker>>,
@@ -209,7 +206,7 @@ impl PoolService {
     pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
         self.open_pools.try_borrow().map_err(CommonError::from)?.get(&handle).map_or(
             Err(PoolError::InvalidHandle(format!("Pool doesn't exists for handle {}", handle))),
-            |pool: &Pool<ZMQNetworker, RequestHandlerImpl<ZMQNetworker, ConsensusCollectorImpl<ZMQNetworker>>>| Ok(pool.get_name().to_string()))
+            |pool: &Pool<ZMQNetworker, RequestHandlerImpl<ZMQNetworker>>| Ok(pool.get_name().to_string()))
     }
 }
 

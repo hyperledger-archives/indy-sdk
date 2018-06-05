@@ -1,9 +1,9 @@
 use services::pool::events::NetworkerEvent;
-use services::pool::events::ConsensusCollectorEvent;
+use services::pool::events::RequestEvent;
 
 pub trait Networker {
     fn new() -> Self;
-    fn process_event(&self, pe: Option<NetworkerEvent>) -> Option<ConsensusCollectorEvent>;
+    fn process_event(&self, pe: Option<NetworkerEvent>) -> Option<RequestEvent>;
     fn get_timeout() -> u32;
     fn poll();
 }
@@ -15,9 +15,9 @@ impl Networker for ZMQNetworker {
         ZMQNetworker {}
     }
 
-    fn process_event(&self, pe: Option<NetworkerEvent>) -> Option<ConsensusCollectorEvent> {
+    fn process_event(&self, pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
         match pe {
-            Some(NetworkerEvent::SendAllRequest) => Some(ConsensusCollectorEvent::StartConsensus),
+            Some(NetworkerEvent::SendAllRequest) => None,
             Some(NetworkerEvent::SendOneRequest) => None,
             None => None
         }
@@ -39,7 +39,7 @@ impl Networker for MockNetworker {
         unimplemented!()
     }
 
-    fn process_event(&self, pe: Option<NetworkerEvent>) -> Option<ConsensusCollectorEvent> {
+    fn process_event(&self, pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
         unimplemented!()
     }
 

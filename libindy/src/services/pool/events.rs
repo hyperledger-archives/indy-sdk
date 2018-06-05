@@ -1,9 +1,3 @@
-#[derive(Copy, Clone)]
-pub enum ConsensusCollectorEvent {
-    NodeReply,
-    StartConsensus
-}
-
 pub enum NetworkerEvent {
     SendOneRequest,
     SendAllRequest
@@ -28,8 +22,6 @@ pub enum PoolEvent {
 pub enum RequestEvent {
     LedgerStatus,
     NodeReply,
-    ConsensusReached,
-    ConsensusFailed,
 }
 
 impl Into<Option<RequestEvent>> for PoolEvent {
@@ -42,20 +34,10 @@ impl Into<Option<RequestEvent>> for PoolEvent {
     }
 }
 
-impl Into<Option<ConsensusCollectorEvent>> for RequestEvent {
-    fn into(self) -> Option<ConsensusCollectorEvent> {
-        match self {
-            RequestEvent::LedgerStatus => Some(ConsensusCollectorEvent::StartConsensus),
-            RequestEvent::NodeReply => Some(ConsensusCollectorEvent::NodeReply),
-            _ => None
-        }
-    }
-}
-
-impl Into<Option<NetworkerEvent>> for ConsensusCollectorEvent {
+impl Into<Option<NetworkerEvent>> for RequestEvent {
     fn into(self) -> Option<NetworkerEvent> {
         match self {
-            ConsensusCollectorEvent::StartConsensus => Some(NetworkerEvent::SendAllRequest),
+            RequestEvent::LedgerStatus => Some(NetworkerEvent::SendAllRequest),
             _ => None
         }
     }
