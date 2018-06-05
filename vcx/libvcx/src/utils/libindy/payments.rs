@@ -6,6 +6,9 @@ use utils::constants::{ SUBMIT_SCHEMA_RESPONSE };
 use utils::libindy::error_codes::map_rust_indy_sdk_error_code;
 use utils::libindy::ledger::libindy_sign_and_submit_request;
 use utils::error;
+use error::payment::PaymentError;
+use error::ToErrorCode;
+
 use indy::payments::Payment;
 use std::fmt;
 use std::sync::{Once, ONCE_INIT};
@@ -26,6 +29,11 @@ pub struct WalletInfo {
     addresses: Vec<AddressInfo>,
 }
 
+impl WalletInfo {
+    pub fn get_balance(&self) -> u64 {
+        self.balance
+    }
+}
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AddressInfo {
     pub address: String,
@@ -157,9 +165,9 @@ pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(String, String), u32> {
 
     let txn_price = get_txn_price(txn_type)?;
 
-    let (refund, inputs) = inputs(txn_price)?;
+    let (refund, inputs) = inputs(txn_price).map_err(|e| e.to_error_code())?;
 
-    let output = outputs(refund, None, None)?;
+    let output = outputs(refund, None, None).map_err(|e| e.to_error_code())?;
 
     _submit_fees_request(req, &inputs, &output)
 }
@@ -182,6 +190,20 @@ fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(Strin
     Ok((parsed_response, response))
 }
 
+pub fn pay_a_payee(price: u64, address: &str) -> Result<String, PaymentError> {
+    let (remainder, input) = inputs(price)?;
+    let output = outputs(remainder, Some(address.to_string()), Some(price))?;
+
+    let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+    match Payment::build_payment_req(get_wallet_handle(), &my_did, &input, &output) {
+        Ok((request, payment_method)) => libindy_sign_and_submit_request(&my_did, &request).map_err(|ec| PaymentError::CommonError(ec)),
+        Err(ec) => {
+            error!("error: {:?}", ec);
+            Err(PaymentError::CommonError(ec as u32))
+        },
+    }
+}
+
 fn get_txn_price(txn_type: &str) -> Result<u64, u32> {
     let ledger_fees = get_ledger_fees()?;
 
@@ -194,15 +216,14 @@ fn _address_balance(address: &Vec<UTXO>) -> u64 {
     address.iter().fold(0, |balance, utxo| balance + utxo.amount)
 }
 
-pub fn inputs(cost: u64) -> Result<(u64, String), u32> {
+pub fn inputs(cost: u64) -> Result<(u64, String), PaymentError> {
     let mut inputs: Vec<String> = Vec::new();
     let mut balance = 0;
-
-    let wallet_info: WalletInfo = get_wallet_token_info()?;
+    let wallet_info: WalletInfo = get_wallet_token_info().map_err(|ec| PaymentError::CommonError(ec))?;
 
     if wallet_info.balance < cost {
         warn!("not enough tokens in wallet to pay");
-        return Err(error::INSUFFICIENT_TOKEN_AMOUNT.code_num);
+        return Err(PaymentError::InsufficientFunds());
     }
 
     // Todo: explore 'smarter' ways of selecting utxos ie bitcoin algorithms etc
@@ -217,17 +238,17 @@ pub fn inputs(cost: u64) -> Result<(u64, String), u32> {
 
     let remainder = balance - cost;
 
-    Ok((remainder, serde_json::to_string(&inputs).or(Err(error::INVALID_JSON.code_num))?))
+    Ok((remainder, serde_json::to_string(&inputs).or(Err(PaymentError::InvalidWalletJson()))?))
 }
 
-pub fn outputs(remainder: u64, payee_address: Option<String>, payee_amount: Option<u64>) -> Result<String, u32> {
+pub fn outputs(remainder: u64, payee_address: Option<String>, payee_amount: Option<u64>) -> Result<String, PaymentError> {
     // In the future we might provide a way for users to specify multiple output address for their remainder tokens
     // As of now, we only handle one output address which we create
 
-    if remainder == 0 { return Ok("[]".to_string()); }
     let mut outputs = Vec::new();
-
-    outputs.push(json!({ "paymentAddress": create_address()?, "amount": remainder, "extra": null }));
+    if remainder > 0 {
+        outputs.push(json!({ "paymentAddress": create_address().map_err(|ec| PaymentError::CommonError(ec))?, "amount": remainder, "extra": null }));
+    }
 
     if let Some(address) = payee_address {
         outputs.push(json!({
@@ -282,6 +303,7 @@ pub fn set_ledger_fees(fees: Option<String>) -> Result<(), u32> {
 pub mod tests {
     use super::*;
     use settings;
+    use utils::devsetup::tests;
 
     pub fn token_setup(number_of_addresses: Option<u32>, tokens_per_address: Option<u32>) {
         init_payments().unwrap();
@@ -327,14 +349,14 @@ pub mod tests {
     #[test]
     fn test_get_wallet_token_info_real() {
         let name = "test_get_wallet_info_real";
-        ::utils::devsetup::tests::setup_dev_env(name);
+        tests::setup_dev_env(name);
         init_payments().unwrap();
         create_address().unwrap();
         create_address().unwrap();
         create_address().unwrap();
         let wallet_info = get_wallet_token_info().unwrap();
         assert_eq!(wallet_info.balance, 0);
-        ::utils::devsetup::tests::cleanup_dev_env(name);
+        tests::cleanup_dev_env(name);
     }
 
     #[test]
@@ -350,13 +372,13 @@ pub mod tests {
     #[test]
     fn test_get_ledger_fees_real() {
         let name = "test_get_ledger_fees_real";
-        ::utils::devsetup::tests::setup_dev_env(name);
+        tests::setup_dev_env(name);
         init_payments().unwrap();
         set_ledger_fees(None).unwrap();
         let fees = get_ledger_fees().unwrap();
         assert!(fees.contains(r#""101":2"#));
         assert!(fees.contains(r#""1":1"#));
-        ::utils::devsetup::tests::cleanup_dev_env(name);
+        tests::cleanup_dev_env(name);
     }
 
     #[test]
@@ -384,7 +406,7 @@ pub mod tests {
         assert_eq!(inputs(1).unwrap(), (0, r#"["pov:null:1"]"#.to_string()));
 
         // Err - request more than wallet contains
-        assert_eq!(inputs(7), Err(error::INSUFFICIENT_TOKEN_AMOUNT.code_num));
+        assert_eq!(inputs(7).err(), Some(PaymentError::InsufficientFunds()));
     }
 
     #[test]
@@ -401,6 +423,7 @@ pub mod tests {
         cost = 6;
         expected_output = r#"[]"#;
         let (remainder, _) = inputs(cost).unwrap();
+        assert_eq!(remainder, 0);
         assert_eq!(&outputs(remainder, None, None).unwrap(), expected_output);
     }
 
@@ -441,7 +464,8 @@ pub mod tests {
     #[test]
     fn test_pay_for_txn_real() {
         let name = "test_pay_for_txn_real";
-        ::utils::devsetup::tests::setup_dev_env(name);
+
+        tests::setup_dev_env(name);
         token_setup(None, None);
 
         let create_schema_req = ::utils::constants::SCHEMA_REQ.to_string();
@@ -451,7 +475,7 @@ pub mod tests {
 
         let end_wallet = get_wallet_token_info().unwrap();
 
-        ::utils::devsetup::tests::cleanup_dev_env(name);
+        tests::cleanup_dev_env(name);
         assert!(price_response.contains(r#""amount":13"#));
         let output_address: Vec<Value> = serde_json::from_str(&price_response).unwrap();
         assert_eq!(output_address.len(), 1);
@@ -462,7 +486,7 @@ pub mod tests {
     #[test]
     fn test_pay_for_txn_fails_with_insufficient_tokens_in_wallet() {
         let name = "test_pay_for_txn_real";
-        ::utils::devsetup::tests::setup_dev_env(name);
+        tests::setup_dev_env(name);
         token_setup(None, None);
 
         let create_schema_req = ::utils::constants::SCHEMA_REQ.to_string();
@@ -470,15 +494,52 @@ pub mod tests {
 
         let rc= pay_for_txn(&create_schema_req, "9999");
 
-        ::utils::devsetup::tests::cleanup_dev_env(name);
+        tests::cleanup_dev_env(name);
         assert_eq!(rc, Err(error::INSUFFICIENT_TOKEN_AMOUNT.code_num));
     }
 
     #[cfg(feature = "nullpay")]
     #[test]
+    fn test_build_payment_request() {
+        use utils::devsetup::tests;
+        fn get_my_balance() -> u64 {
+            let info:WalletInfo = get_wallet_token_info().unwrap();
+            info.balance
+        }
+
+        let name = "test_build_payment_request";
+        tests::setup_dev_env(name);
+        init_payments().unwrap();
+        mint_tokens(None, None).unwrap();
+
+        let price = get_my_balance();
+        let address = "pay:null:4jtvRvSl6OTDEMqrUBsqAfCFWeTOF86H";
+        let result_from_paying = pay_a_payee(price, address);
+        assert!(result_from_paying.is_ok());
+        assert_eq!(get_my_balance(), 0);
+        mint_tokens(None, None).unwrap();
+        assert_eq!(get_my_balance(), 45);
+
+        let price = get_my_balance() - 5;
+        let address = "pay:null:4jtvRvSl6OTDEMqrUBsqAfCFWeTOF86H";
+        let result_from_paying = pay_a_payee(price, address);
+        assert!(result_from_paying.is_ok());
+        assert_eq!(get_my_balance(), 5);
+
+        let price = get_my_balance() + 5;
+        let address = "pay:null:4jtvRvSl6OTDEMqrUBsqAfCFWeTOF86H";
+        let result_from_paying = pay_a_payee(price, address);
+        assert_eq!(result_from_paying.err(), Some(PaymentError::InsufficientFunds()));
+        assert_eq!(get_my_balance(), 5);
+
+
+        tests::cleanup_dev_env(name);
+    }
+
     fn test_submit_fees_with_insufficient_tokens_on_ledger() {
         let name = "test_submit_fees_with_insufficient_tokens_on_ledger";
-        ::utils::devsetup::tests::setup_dev_env(name);
+
+        tests::setup_dev_env(name);
         token_setup(None, None);
 
         let req = ::utils::constants::SCHEMA_REQ.to_string();
@@ -493,7 +554,7 @@ pub mod tests {
 
         let rc = _submit_fees_request(&req, &inputs, &output);
 
-        ::utils::devsetup::tests::cleanup_dev_env(name);
+        tests::cleanup_dev_env(name);
         assert_eq!(rc, Err(error::INSUFFICIENT_TOKEN_AMOUNT.code_num));
     }
 
@@ -501,7 +562,7 @@ pub mod tests {
     #[test]
     fn test_pay_for_txn_with_empty_outputs_success() {
         let name = "test_pay_for_txn_with_empty_outputs_success";
-        ::utils::devsetup::tests::setup_dev_env(name);
+        tests::setup_dev_env(name);
         token_setup(None, None);
 
         let req = ::utils::constants::SCHEMA_REQ.to_string();
@@ -519,7 +580,7 @@ pub mod tests {
         assert!(rc.is_ok());
         assert_eq!(end_wallet.balance, 0);
 
-        ::utils::devsetup::tests::cleanup_dev_env(name);
+        tests::cleanup_dev_env(name);
     }
 
     #[test]
@@ -542,5 +603,4 @@ pub mod tests {
         ::utils::devsetup::tests::cleanup_dev_env(name);
         assert_eq!(start_wallet.balance, 5720000);
     }
-
 }

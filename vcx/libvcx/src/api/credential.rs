@@ -11,6 +11,51 @@ use std::ptr;
 use error::credential::CredentialError;
 use error::ToErrorCode;
 
+/// Retrieves Payment Info from a Credential
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// credential_handle: credential handle that was provided during creation. Used to identify credential object
+///
+/// cb: Callback that provides Payment Info of a Credential
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+#[allow(unused_variables, unused_mut)]
+pub extern fn vcx_credential_get_payment_info(command_handle: u32,
+                                               credential_handle: u32,
+                                               cb: Option<extern fn(xcommand_handle: u32, err: u32, *const c_char)>) -> u32 {
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+    thread::spawn(move|| {
+        match credential::get_payment_information(credential_handle) {
+            Ok(p) => {
+                match p {
+                    Some(p) => {
+                        let info = p.to_string().unwrap_or("{}".to_string());
+                        info!("vcx_credential_get_payment_info(command_handle: {}, rc: {}, msg: {})", command_handle, error::SUCCESS.code_num, info.clone());
+                        let msg = CStringUtils::string_to_cstring(info);
+                        cb(command_handle, error::SUCCESS.code_num, msg.as_ptr())
+                    },
+                    None => {
+                        let msg = CStringUtils::string_to_cstring(format!("{{}}"));
+                        info!("vcx_credential_get_payment_info(command_handle: {}, rc: {}, msg: {})", command_handle, error::SUCCESS.code_num, "{}");
+                        cb(command_handle, error::SUCCESS.code_num, msg.as_ptr())
+                    }
+                }
+            },
+            Err(e) => {
+                warn!("vcx_credential_get_payment_info(command_handle: {}, rc: {}, msg: {})",
+                      command_handle,
+                      e.to_error_code(),
+                      "{}".to_string());
+                cb(command_handle, e.to_error_code(), ptr::null_mut())
+            }
+        }
+    });
+    error::SUCCESS.code_num
+}
 /// Create a Credential object that requests and receives a credential for an institution
 ///
 /// #Params

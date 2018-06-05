@@ -1,7 +1,8 @@
 
 use std::fmt;
 use error::ToErrorCode;
-use utils::error::{INVALID_CREDENTIAL_HANDLE, NOT_READY, INVALID_JSON};
+use utils::error::{INVALID_CREDENTIAL_HANDLE, NOT_READY, INVALID_JSON, INVALID_PAYMENT};
+use error::payment;
 
 #[derive(Debug)]
 pub enum CredentialError {
@@ -9,6 +10,8 @@ pub enum CredentialError {
     InvalidHandle(),
     InvalidCredentialJson(),
     InvalidState(),
+    PaymentError(payment::PaymentError),
+    NoPaymentInformation(),
     CommonError(u32),
 }
 
@@ -19,6 +22,8 @@ impl fmt::Display for CredentialError {
             CredentialError::NotReady() => write!(f, "{}", NOT_READY.message),
             CredentialError::InvalidHandle() => write!(f, "{}", INVALID_CREDENTIAL_HANDLE.message),
             CredentialError::InvalidCredentialJson() => write!(f, "{}", INVALID_JSON.message),
+            CredentialError::PaymentError(ref pe) => write!(f, "Payment Error: {}", pe.to_error_code()),
+            CredentialError::NoPaymentInformation() => write!(f, "{}", INVALID_PAYMENT.message),
             CredentialError::CommonError(x) => write!(f, "This Credential Error had a value: {}", x),
         }
     }
@@ -37,7 +42,15 @@ impl ToErrorCode for CredentialError {
             CredentialError::NotReady() => NOT_READY.code_num,
             CredentialError::InvalidHandle() => INVALID_CREDENTIAL_HANDLE.code_num,
             CredentialError::InvalidCredentialJson() => INVALID_JSON.code_num,
+            CredentialError::PaymentError(ref pe) => pe.to_error_code(),
+            CredentialError::NoPaymentInformation() => INVALID_PAYMENT.code_num,
             CredentialError::CommonError(x) => x,
         }
+    }
+}
+
+impl From<payment::PaymentError> for CredentialError {
+    fn from(error:payment::PaymentError) -> Self {
+        CredentialError::PaymentError(error)
     }
 }
