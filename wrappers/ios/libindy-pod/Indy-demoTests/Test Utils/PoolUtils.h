@@ -28,8 +28,6 @@
 - (NSString *)createGenesisTxnFileForTestPoolWithInvalidNodesForPoolName:(NSString *)poolName
                                                              txnFilePath:(NSString *)txnFilePath;
 
-- (NSString *)createGenesisTxnFileForTestPoolWithWrongAliasForPoolName:(NSString *)poolName
-                                                           txnFilePath:(NSString *)txnFilePath;
 // MARK: - Config
 
 - (NSString *)poolConfigJsonForTxnFilePath:(NSString *)txnFilePath;
