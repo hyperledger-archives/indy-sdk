@@ -261,7 +261,7 @@ impl<'wr, T: Networker, R: RequestHandler<'wr, T>> PoolWrapper<'wr, T, R> {
                     }
                 }
                 PoolEvent::Close => PoolWrapper::Closed(pool.into()),
-                _ => self
+                _ => PoolWrapper::Initialization(pool)
             }
             PoolWrapper::GettingCatchupTarget(pool) => {
                 let pe = pool.state.request_handler.process_event(pe.into()).unwrap_or(pe);
@@ -272,7 +272,7 @@ impl<'wr, T: Networker, R: RequestHandler<'wr, T>> PoolWrapper<'wr, T, R> {
                         //TODO: send CATCHUP_REQ
                         PoolWrapper::SyncCatchup(pool.into())
                     },
-                    _ => self
+                    _ => PoolWrapper::GettingCatchupTarget(pool)
                 }
             }
             PoolWrapper::Terminated(pool) => {
@@ -283,10 +283,10 @@ impl<'wr, T: Networker, R: RequestHandler<'wr, T>> PoolWrapper<'wr, T, R> {
                         request_handler.process_event(Some(RequestEvent::LedgerStatus));
                         PoolWrapper::GettingCatchupTarget((pool, request_handler).into())
                     },
-                    _ => self
+                    _ => PoolWrapper::Terminated(pool)
                 }
             }
-            PoolWrapper::Closed(pool) => self,
+            PoolWrapper::Closed(pool) => PoolWrapper::Closed(pool),
             PoolWrapper::Active(pool) => {
                 match pe {
                     PoolEvent::PoolOutdated => PoolWrapper::Terminated(pool.into()),
@@ -302,12 +302,13 @@ impl<'wr, T: Networker, R: RequestHandler<'wr, T>> PoolWrapper<'wr, T, R> {
                         request_handler.process_event(re);
                         //TODO: put request_handler to map
 
-                        self
+                        PoolWrapper::Active(pool)
                     }
                     PoolEvent::NodeReply => {
                         //TODO: redirect reply to needed request handler
-                        self
+                        PoolWrapper::Active(pool)
                     }
+                    _ => PoolWrapper::Active(pool)
                 }
             }
             PoolWrapper::SyncCatchup(pool) => {
@@ -317,9 +318,9 @@ impl<'wr, T: Networker, R: RequestHandler<'wr, T>> PoolWrapper<'wr, T, R> {
                     PoolEvent::Synced => PoolWrapper::Active(pool.into()),
                     PoolEvent::NodeReply => {
                         //TODO: Build merkle tree if it is CATCHUP_REP
-                        self
+                        PoolWrapper::SyncCatchup(pool)
                     }
-                    _ => self
+                    _ => PoolWrapper::SyncCatchup(pool)
                 }
             }
         }
@@ -341,23 +342,27 @@ pub struct Pool <S: Networker + 'static, R: RequestHandler<'static, S>>{
     pool_wrapper: PoolWrapper<'static, S, R>,
     commander: Commander,
     networker: S,
-    worker: Option<JoinHandle<()>>
+    worker: Option<JoinHandle<()>>,
+    name: String,
+    id: i32,
 }
 
 unsafe impl<S: Networker, R: RequestHandler<'static, S>> Sync for Pool<S, R> {}
 
 impl<S: Networker, R: RequestHandler<'static, S>> Pool<S, R> {
-    pub fn new(commander: Commander) -> Self {
+    pub fn new(commander: Commander, name: &str, id: i32) -> Self {
         let networker = S::new();
         Pool {
             pool_wrapper: PoolWrapper::Initialization(PoolSM::new(&networker)),
             commander,
             networker,
             worker: None,
+            name: name.to_string(),
+            id,
         }
     }
 
-    pub fn work(&'static self) {
+    pub fn work(&'static mut self) {
         self.worker = Some(thread::spawn(move || {
             self._poll();
             while self._loop() {
@@ -366,10 +371,20 @@ impl<S: Networker, R: RequestHandler<'static, S>> Pool<S, R> {
         }));
     }
 
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn get_id(&self) -> i32 {
+        self.id
+    }
+
     fn _loop(&self) -> bool {
         let pe = self.commander.get_next_event();
         match pe {
-            Some(pe) => self.pool_wrapper.handle_event(pe),
+            Some(pe) => {
+                self.pool_wrapper = self.pool_wrapper.handle_event(pe)
+            },
             _ => ()
         }
         self.pool_wrapper.is_terminal()
