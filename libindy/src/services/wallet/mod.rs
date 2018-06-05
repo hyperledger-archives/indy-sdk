@@ -36,6 +36,7 @@ use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WalletDescriptor {
     pool_name: String,
+    #[serde(rename = "type")]
     xtype: String,
     name: String
 }
@@ -326,14 +327,16 @@ impl WalletService {
         let mut descriptors = Vec::new();
         let wallet_home_path = EnvironmentUtils::wallet_home_path();
 
-        for entry in fs::read_dir(wallet_home_path)? {
-            let dir_entry = if let Ok(dir_entry) = entry { dir_entry } else { continue };
-            if let Some(wallet_name) = dir_entry.path().file_name().and_then(|os_str| os_str.to_str()) {
-                let mut descriptor_json = String::new();
-                File::open(_wallet_descriptor_path(wallet_name)).ok()
-                    .and_then(|mut f| f.read_to_string(&mut descriptor_json).ok())
-                    .and_then(|_| WalletDescriptor::from_json(descriptor_json.as_str()).ok())
-                    .map(|descriptor| descriptors.push(descriptor));
+        if let Ok(entries) = fs::read_dir(wallet_home_path) {
+            for entry in entries {
+                let dir_entry = if let Ok(dir_entry) = entry { dir_entry } else { continue };
+                if let Some(wallet_name) = dir_entry.path().file_name().and_then(|os_str| os_str.to_str()) {
+                    let mut descriptor_json = String::new();
+                    File::open(_wallet_descriptor_path(wallet_name)).ok()
+                        .and_then(|mut f| f.read_to_string(&mut descriptor_json).ok())
+                        .and_then(|_| WalletDescriptor::from_json(descriptor_json.as_str()).ok())
+                        .map(|descriptor| descriptors.push(descriptor));
+                }
             }
         }
 

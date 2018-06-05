@@ -17,6 +17,7 @@ extern crate log;
 extern crate named_type;
 #[macro_use]
 extern crate named_type_derive;
+extern crate byteorder;
 
 #[macro_use]
 mod utils;
