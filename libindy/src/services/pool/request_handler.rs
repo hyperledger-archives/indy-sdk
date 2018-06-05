@@ -112,11 +112,20 @@ impl<T: Networker> RequestSMWrapper<T> {
             }
             RequestSMWrapper::Single(request) => {
                 match re {
-                    RequestEvent::NodeReply => (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::NodeReply)),
+                    RequestEvent::NodeReply => (RequestSMWrapper::Finish(request.into()), None),
                     _ => (RequestSMWrapper::Single(request), None)
                 }
             },
             RequestSMWrapper::Finish(request) => (RequestSMWrapper::Finish(request), None)
+        }
+    }
+
+    fn is_terminal(&self) -> bool {
+        match self {
+            &RequestSMWrapper::Start(ref request) => request.state.is_terminal(),
+            &RequestSMWrapper::Consensus(ref request) => request.state.is_terminal(),
+            &RequestSMWrapper::Single(ref request) => request.state.is_terminal(),
+            &RequestSMWrapper::Finish(ref request) => request.state.is_terminal(),
         }
     }
 }
@@ -124,6 +133,7 @@ impl<T: Networker> RequestSMWrapper<T> {
 pub trait RequestHandler<T: Networker> {
     fn new(networker: Rc<RefCell<T>>) -> Self;
     fn process_event(&mut self, ore: Option<RequestEvent>) -> Option<PoolEvent>;
+    fn is_terminal(&self) -> bool;
 }
 
 pub struct RequestHandlerImpl<T: Networker> {
@@ -150,6 +160,10 @@ impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
             },
             None => None
         }
+    }
+
+    fn is_terminal(&self) -> bool {
+        self.request_wrapper.as_ref().map(|w| w.is_terminal()).unwrap_or(true)
     }
 }
 

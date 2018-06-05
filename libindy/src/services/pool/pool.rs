@@ -110,6 +110,7 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<InitializationState<T>>> fo
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<GettingCatchupTargetState<T, R>>> for PoolSM<SyncCatchupState<T>> {
     fn from(sm: PoolSM<GettingCatchupTargetState<T, R>>) -> Self {
         PoolSM {
+            //TODO: send CATCHUP_REQ
             state: SyncCatchupState {
                 networker: sm.state.networker
             }
@@ -243,19 +244,14 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                 match pe {
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
                     PoolEvent::ConsensusFailed => PoolWrapper::Terminated(pool.into()),
-                    PoolEvent::ConsensusReached => {
-                        //TODO: send CATCHUP_REQ
-                        PoolWrapper::SyncCatchup(pool.into())
-                    }
+                    PoolEvent::ConsensusReached => PoolWrapper::SyncCatchup(pool.into())
                     _ => PoolWrapper::GettingCatchupTarget(pool)
                 }
             }
             PoolWrapper::Terminated(pool) => {
                 match pe {
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
-                    PoolEvent::Refresh => {
-                        PoolWrapper::GettingCatchupTarget(pool.into())
-                    }
+                    PoolEvent::Refresh => PoolWrapper::GettingCatchupTarget(pool.into())
                     _ => PoolWrapper::Terminated(pool)
                 }
             }
@@ -264,9 +260,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                 match pe {
                     PoolEvent::PoolOutdated => PoolWrapper::Terminated(pool.into()),
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
-                    PoolEvent::Refresh => {
-                        PoolWrapper::GettingCatchupTarget(pool.into())
-                    }
+                    PoolEvent::Refresh => PoolWrapper::GettingCatchupTarget(pool.into())
                     PoolEvent::SendRequest => {
                         let re: Option<RequestEvent> = pe.into();
                         let mut request_handler = R::new(pool.state.networker.clone());
@@ -279,6 +273,17 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                     }
                     PoolEvent::NodeReply => {
                         //TODO: redirect reply to needed request handler
+                        let req_id = "";
+                        let remove = if let Some(rh) = pool.state.request_handlers.get_mut(req_id) {
+                            rh.process_event(pe.into());
+                            rh.is_terminal()
+                        } else {
+                            false
+                        };
+                        if remove {
+                            pool.state.request_handlers.remove(req_id);
+                        }
+                        //TODO: think about return!!!
                         PoolWrapper::Active(pool)
                     }
                     _ => PoolWrapper::Active(pool)
