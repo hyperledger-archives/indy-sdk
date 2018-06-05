@@ -51,7 +51,11 @@ pub enum WalletCommand {
     ListWallets(Box<Fn(Result<String, IndyError>) + Send>),
     Delete(String, // name
            String, // wallet credentials
-           Box<Fn(Result<(), IndyError>) + Send>)
+           Box<Fn(Result<(), IndyError>) + Send>),
+    Export(i32, // wallet_handle
+           String, // export path
+           String, //export key
+           Box<Fn(Result<(), IndyError>) + Send>),
 }
 
 pub struct WalletCommandExecutor {
@@ -101,6 +105,10 @@ impl WalletCommandExecutor {
             WalletCommand::Delete(name, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Delete command received");
                 cb(self.delete(&name, &credentials));
+            }
+            WalletCommand::Export(wallet_handle, export_path, export_key, cb) => {
+                info!(target: "wallet_command_executor", "Export command received");
+                cb(self.export(wallet_handle, &export_path, &export_key));
             }
         };
     }
@@ -209,6 +217,20 @@ impl WalletCommandExecutor {
         let res = self.wallet_service.delete_wallet(name, credentials)?;
 
         debug!("delete <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn export(&self,
+              wallet_handle: i32,
+              export_path: &str,
+              export_key: &str) -> Result<(), IndyError> {
+        debug!("export >>> handle: {:?}, export_path: {:?}, export_key: {:?}", wallet_handle, export_path, export_key);
+
+        // TODO - later add proper versioning
+        let res = self.wallet_service.export_wallet(wallet_handle, export_path, export_key, 0)?;
+
+        debug!("export <<< res: {:?}", res);
 
         Ok(res)
     }

@@ -114,4 +114,14 @@ impl WalletUtils {
 
         super::results::result_to_empty(err, receiver)
     }
+
+    pub fn export_wallet(wallet_handle: i32, export_path: &str, key: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+        let export_path = CString::new(export_path).unwrap();
+        let key = CString::new(key).unwrap();
+
+        let err = indy_export_wallet(command_handle, wallet_handle, export_path.as_ptr(), key.as_ptr(),cb);
+
+        super::results::result_to_empty(err, receiver)
+    }
 }

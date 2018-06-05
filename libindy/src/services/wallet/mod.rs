@@ -525,21 +525,17 @@ impl WalletService {
         }
     }
 
-    pub fn export_wallet(&self, wallet_handle: i32, export_path_str: &str, key: &str, version: u32) -> Result<(), WalletError> {
+    pub fn export_wallet(&self, wallet_handle: i32, export_path_str: &str, passphrase: &str, version: u32) -> Result<(), WalletError> {
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
                 let export_path = Path::new(export_path_str);
                 if export_path.exists() {
-                    // TODO - return better error once this API is finalised
                     return Err(WalletError::ExportPathExists);
                 }
 
-                let mut export_key: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
-                let salt = PwhashArgon2i13::gen_salt();
-                PwhashArgon2i13::derive_key(&mut export_key, key.as_bytes(), &salt)?;
                 let export_file = File::create(export_path)?;
                 let writer = Box::new(export_file);
-                export(wallet, writer, export_key, &salt, version)
+                export(wallet, writer, passphrase, version)
             }
             None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         }
@@ -1572,8 +1568,8 @@ mod tests {
         let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
 
         let export_path = _get_export_file_path();
-        let export_key = "test_key";
-        wallet_service.export_wallet(wallet_handle, export_path, export_key, 0).unwrap();
+        let export_passphrase = "test_key";
+        wallet_service.export_wallet(wallet_handle, export_path, export_passphrase, 0).unwrap();
 
         assert!(Path::new(export_path).exists());
         _remove_export_path();
@@ -1592,8 +1588,8 @@ mod tests {
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
 
         let export_path = _get_export_file_path();
-        let export_key = "test_key";
-        wallet_service.export_wallet(wallet_handle, export_path, export_key, 0).unwrap();
+        let export_passphrase = "test_key";
+        wallet_service.export_wallet(wallet_handle, export_path, export_passphrase, 0).unwrap();
         assert!(Path::new(export_path).exists());
 
         _remove_export_path();
@@ -1611,8 +1607,8 @@ mod tests {
         let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
 
         let export_path = _get_export_file_path();
-        let export_key = "test_key";
-        let res = wallet_service.export_wallet(wallet_handle, export_path, export_key, 0);
+        let export_passphrase = "test_key";
+        let res = wallet_service.export_wallet(wallet_handle, export_path, export_passphrase, 0);
         assert_match!(Err(WalletError::ExportPathExists), res);
         assert!(Path::new(export_path).exists());
 
@@ -1630,8 +1626,8 @@ mod tests {
         let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
 
         let export_path = _get_export_file_path();
-        let export_key = "test_key";
-        let res = wallet_service.export_wallet(wallet_handle + 1, export_path, export_key, 0);
+        let export_passphrase = "test_key";
+        let res = wallet_service.export_wallet(wallet_handle + 1, export_path, export_passphrase, 0);
         assert_match!(Err(WalletError::InvalidHandle(_)), res);
         assert!(!Path::new(export_path).exists());
 

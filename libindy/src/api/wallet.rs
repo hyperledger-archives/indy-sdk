@@ -297,6 +297,53 @@ pub extern fn indy_list_wallets(command_handle: i32,
     res
 }
 
+/// Exports opened wallet
+///
+/// #Params:
+/// handle: wallet handle returned by indy_open_wallet
+/// export_path: file path where wallet should be exported to
+/// export_key: key from which export key will be derived
+///
+/// #Returns
+/// Error code
+///
+/// #Errors
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_export_wallet(command_handle: i32,
+                                 handle: i32,
+                                 export_path: *const c_char,
+                                 export_key: *const c_char,
+                                 cb: Option<extern fn(xcommand_handle: i32,
+                                                      err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_export_wallet: >>>");
+
+    check_useful_c_str!(export_path, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(export_key, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_export_wallet: entities >>> handle: {:?}, export_path: {:?}, export_key: {:?}", handle, export_path, export_key);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Wallet(WalletCommand::Export(
+            handle,
+            export_path,
+            export_key,
+            Box::new(move |result| {
+                let err = result_to_err_code!(result);
+                trace!("indy_export_wallet: ");
+                cb(command_handle, err)
+            })
+        )));
+
+    let res = result_to_err_code!(result);
+
+    trace!("indy_export_wallet: <<< res: {:?}", res);
+
+    res
+}
+
 /// Closes opened wallet and frees allocated resources.
 ///
 /// #Params
