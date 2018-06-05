@@ -24,6 +24,10 @@ pool network infrastructure, but this proposal is focused on libindy (client) si
 
 ## Proposed changes
 
+The main idea of proposal is force libindy to close sockets as soon as possible, but
+still provide very limited keep-alive ability to avoid unnecessary CurveCP and TCP
+handshakes:
+
 1. Change ```indy_pool_open``` endpoint behavior. Instead keep sockets connected it will only perform CatchUp
    and keep only information about nodes of this pool. Sockets creation will be performed when application
    sends request with some limitations and optimizations (see details below).
