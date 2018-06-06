@@ -144,18 +144,6 @@ fn like_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Ve
 }
 
 
-fn regex_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
-    match (name, value) {
-        (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
-            arguments.push(queried_name);
-            arguments.push(queried_value);
-            Ok("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value REGEXP ?))".to_string())
-        },
-        _ => Err(WalletQueryError::StructureErr("Invalid combination of tag name and value for $regex operator".to_string()))
-    }
-}
-
-
 fn in_to_sql<'a>(name: &'a TagName, values: &'a Vec<TargetValue>, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
     let mut in_string = String::new();
     match name {
