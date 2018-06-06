@@ -2088,19 +2088,4 @@ mod tests {
         assert_eq!(json, expected);
 
     }
-
-//    pub enum Operator {
-//        And(Vec<Operator>),
-//        Or(Vec<Operator>),
-//        Not(Box<Operator>),
-//        Eq(TagName, TargetValue),
-//        Neq(TagName, TargetValue),
-//        Gt(TagName, TargetValue),
-//        Gte(TagName, TargetValue),
-//        Lt(TagName, TargetValue),
-//        Lte(TagName, TargetValue),
-//        Regex(TagName, TargetValue),
-//        Like(TagName, TargetValue),
-//        In(TagName, Vec<TargetValue>),
-//    }
 }
