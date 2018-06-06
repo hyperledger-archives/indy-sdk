@@ -32,7 +32,7 @@ use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::PoolService;
 use self::indy_crypto::bls::Generator;
 
-const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
+pub const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
     constants::GET_NYM,
     constants::GET_SCHEMA,
     constants::GET_CRED_DEF,

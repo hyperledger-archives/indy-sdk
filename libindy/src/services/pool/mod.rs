@@ -791,6 +791,10 @@ impl PoolService {
 
     pub fn register_sp_parser(txn_type: &str,
                               parser: CustomTransactionParser, free: CustomFree) -> Result<(), PoolError> {
+        if transaction_handler::REQUESTS_FOR_STATE_PROOFS.contains(&txn_type) {
+            return Err(PoolError::CommonError(CommonError::InvalidStructure(
+                format!("Try to override StateProof parser for default TXN_TYPE {}", txn_type))));
+        }
         REGISTERED_SP_PARSERS.lock()
             .map(|mut map| {
                 map.insert(txn_type.to_owned(), (parser, free));
