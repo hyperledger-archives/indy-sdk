@@ -43,10 +43,10 @@ fn string_or_number<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
         },
         Ok(serde_json::Value::Number(n)) => match n.as_u64() {
             Some(num) => Ok(Some(num)),
-            None => Err(serde::de::Error::custom(format!("Invalid Node transaction")))
+            None => Err(serde::de::Error::custom("Invalid Node transaction".to_string()))
         },
         Ok(serde_json::Value::Null) => Ok(None),
-        _ => Err(serde::de::Error::custom(format!("Invalid Node transaction"))),
+        _ => Err(serde::de::Error::custom("Invalid Node transaction".to_string())),
     }
 }
 
@@ -246,7 +246,7 @@ impl CatchupRep {
                 Some(m) => if val < m { min = Some(val) }
             }
         }
-        min.ok_or(CommonError::InvalidStructure(format!("Empty Map")))
+        min.ok_or(CommonError::InvalidStructure("Empty Map".to_string()))
     }
 }
 
