@@ -279,8 +279,7 @@ impl CryptoCommandExecutor {
 
         let res = self.wallet_service.get_indy_record::<Key>(wallet_handle, &verkey, &RecordOptions::full())?
             .get_tags()
-            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
+            .and_then(|tags| tags.get("metadata").cloned())
             .ok_or(WalletError::ItemNotFound)?;
 
         debug!("get_key_metadata <<< res: {:?}", res);

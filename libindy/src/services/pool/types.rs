@@ -200,8 +200,8 @@ pub struct LedgerStatus {
     pub txnSeqNo: usize,
     pub merkleRoot: String,
     pub ledgerId: u8,
-    pub ppSeqNo: Option<String>,
-    pub viewNo: Option<String>,
+    pub ppSeqNo: Option<u32>,
+    pub viewNo: Option<u32>,
 }
 
 #[allow(non_snake_case)]

@@ -1,6 +1,6 @@
 extern crate serde_json;
 
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub enum ResponseType {
@@ -143,7 +143,7 @@ pub struct WalletRecord {
     #[serde(rename = "type")]
     pub type_: Option<String>,
     pub value: Option<String>,
-    pub tags: Option<String>
+    pub tags: Option<HashMap<String, String>>
 }
 
 #[serde(rename_all = "camelCase")]

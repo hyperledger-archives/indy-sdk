@@ -1,6 +1,7 @@
 cargo-registry
 target
 build
+node_modules
 .idea
 *.iml
 .venv

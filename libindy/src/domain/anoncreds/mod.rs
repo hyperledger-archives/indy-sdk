@@ -14,4 +14,4 @@ pub mod revocation_state;
 pub mod schema;
 pub mod master_secret;
 
-pub const DELIMITER: &'static str = ":";
+pub const DELIMITER: char = ':';
