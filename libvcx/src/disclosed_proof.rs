@@ -42,7 +42,7 @@ impl Default for DisclosedProof {
             state: VcxStateType::VcxStateNone,
             proof_request: None,
             proof: None,
-            link_secret_alias: settings::get_config_value(settings::CONFIG_LINK_SECRET_ALIAS).unwrap(),
+            link_secret_alias: settings::DEFAULT_LINK_SECRET_ALIAS.to_string(),
             their_did: None,
             their_vk: None,
             agent_did: None,

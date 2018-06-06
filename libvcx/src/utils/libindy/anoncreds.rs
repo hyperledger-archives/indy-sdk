@@ -307,7 +307,7 @@ pub fn libindy_prover_create_credential_req(prover_did: &str,
     let prover_did = CString::new(prover_did).map_err(map_string_error)?;
     let credential_offer_json = CString::new(credential_offer_json).map_err(map_string_error)?;
     let credential_def_json = CString::new(credential_def_json).map_err(map_string_error)?;
-    let master_secret_name = CString::new(master_secret_id.unwrap_or(settings::get_config_value(settings::CONFIG_LINK_SECRET_ALIAS).unwrap())).map_err(map_string_error)?;
+    let master_secret_name = CString::new(master_secret_id.unwrap_or(settings::DEFAULT_LINK_SECRET_ALIAS.to_string())).map_err(map_string_error)?;
 
     unsafe {
         indy_function_eval(
