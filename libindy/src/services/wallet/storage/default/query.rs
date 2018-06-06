@@ -42,7 +42,6 @@ fn operator_to_sql<'a>(op: &'a Operator, arguments: &mut Vec<&'a ToSql>) -> Resu
         Operator::Lt(ref tag_name, ref target_value) => lt_to_sql(tag_name, target_value, arguments),
         Operator::Lte(ref tag_name, ref target_value) => lte_to_sql(tag_name, target_value, arguments),
         Operator::Like(ref tag_name, ref target_value) => like_to_sql(tag_name, target_value, arguments),
-        Operator::Regex(ref tag_name, ref target_value) => regex_to_sql(tag_name, target_value, arguments),
         Operator::In(ref tag_name, ref target_values) => in_to_sql(tag_name, target_values, arguments),
         Operator::And(ref suboperators) => and_to_sql(suboperators, arguments),
         Operator::Or(ref suboperators) => or_to_sql(suboperators, arguments),

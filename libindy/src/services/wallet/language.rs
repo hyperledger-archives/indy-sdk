@@ -68,7 +68,6 @@ pub enum Operator {
     Gte(TagName, TargetValue),
     Lt(TagName, TargetValue),
     Lte(TagName, TargetValue),
-    Regex(TagName, TargetValue),
     Like(TagName, TargetValue),
     In(TagName, Vec<TargetValue>),
 }
@@ -130,7 +129,6 @@ impl Operator {
             Operator::Lt(ref tag_name, ref tag_value) => format!(r#"{}:{{"$lt":{}}}"#, tag_name.to_string(), tag_value.to_string()),
             Operator::Lte(ref tag_name, ref tag_value) => format!(r#"{}:{{"$lte":{}}}"#, tag_name.to_string(), tag_value.to_string()),
             Operator::Like(ref tag_name, ref tag_value) => format!(r#"{}:{{"$like":{}}}"#, tag_name.to_string(), tag_value.to_string()),
-            Operator::Regex(ref tag_name, ref tag_value) => format!(r#"{}:{{"$regex":{}}}"#, tag_name.to_string(), tag_value.to_string()),
             Operator::Not(ref stmt) => format!(r#""$not":{}"#, stmt.to_json(true)),
             Operator::And(ref operators) => format!("{{{}}}", join_operator_strings(operators)),
             Operator::Or(ref operators) => if operators.len() > 0 { format!(r#""$or":[{}]"#, join_operator_strings(operators)) } else { "{}".to_string() },
