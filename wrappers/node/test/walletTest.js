@@ -49,13 +49,18 @@ describe('A Connection object with ', function () {
   })
 
   // sendToken tests
-  it('can send tokens', async () => {
-    const receipt = await Wallet.sendTokens({
-      payment: 0,
-      tokens: 30,
-      recipient: 'address'
-    })
-    assert(receipt)
+  it('errors when sending tokens and has insufficient amount', async () => {
+    try {
+      const receipt = await Wallet.sendTokens({
+        payment: 0,
+        tokens: 30,
+        recipient: 'address'
+      })
+      assert(receipt)
+    } catch (error) {
+      assert.equal(error.vcxCode, 1064)
+      assert.equal(error.message, 'Insufficient amount of tokens to process request')
+    }
   })
 
   // createPaymentAddress tests

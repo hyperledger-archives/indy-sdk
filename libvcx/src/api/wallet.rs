@@ -6,8 +6,9 @@ use std::thread;
 use utils::cstring::CStringUtils;
 use utils::error;
 use utils::error::error_string;
+use error::ToErrorCode;
 use serde_json;
-use utils::libindy::payments::{get_wallet_token_info, create_address};
+use utils::libindy::payments::{pay_a_payee, get_wallet_token_info, create_address};
 
 /// Get the total balance from all addresses contained in the configured wallet
 ///
@@ -371,13 +372,20 @@ pub extern fn vcx_wallet_send_tokens(command_handle: u32,
           command_handle, payment_handle, tokens, recipient);
 
     thread::spawn(move|| {
-        let msg = format!("{{\"paid\":\"true\"}}");
-
-        info!("vcx_wallet_send_tokens_cb(command_handle: {}, rc: {}, receipt: {})",
-              command_handle, error_string(0), msg);
-
-        let msg = CStringUtils::string_to_cstring(msg);
-        cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+        match pay_a_payee(tokens, &recipient) {
+            Ok(msg) => {
+                info!("vcx_wallet_send_tokens_cb(command_handle: {}, rc: {}, receipt: {})",
+                      command_handle, error_string(0), msg);
+                let msg = CStringUtils::string_to_cstring(msg);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            },
+            Err(e) => {
+                let msg = "Failed to send tokens".to_string();
+                info!("vcx_wallet_send_tokens_cb(command_handle: {}, rc: {}, reciept: {})", command_handle, e.to_error_code(), msg);
+                let msg = CStringUtils::string_to_cstring(msg);
+                cb(command_handle, e.to_error_code(), msg.as_ptr());
+            },
+        }
     });
 
     error::SUCCESS.code_num
@@ -530,5 +538,28 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         assert_eq!(vcx_wallet_create_payment_address(0, Some(generic_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
+    }
+
+    #[cfg(feature = "nullpay")]
+    #[test]
+    fn test_send_payment() {
+        use utils::devsetup::tests;
+        use utils::libindy::payments::{mint_tokens, get_wallet_token_info, init_payments};
+        let name = "test_send_payment";
+        tests::setup_dev_env(name);
+        init_payments().unwrap();
+        mint_tokens(Some(1), Some(1000)).unwrap();
+        let balance =  get_wallet_token_info().unwrap().get_balance();
+        let recipient = CStringUtils::string_to_cstring("pay:null:iXvVdM4mjCUZFrnnFU2F0VoJrkzQEoLy".to_string());
+        let command_handle = 0;
+        let payment_handle = 0;
+        let tokens = 100;
+        let cb = generic_cb;
+        let err = vcx_wallet_send_tokens(command_handle, payment_handle, tokens, recipient.as_ptr(), Some(cb));
+        assert_eq!(err,0);
+        thread::sleep(Duration::from_secs(2));
+        let new_balance =  get_wallet_token_info().unwrap().get_balance();
+        assert_eq!(balance - tokens, new_balance);
+        tests::cleanup_dev_env(name);
     }
 }
