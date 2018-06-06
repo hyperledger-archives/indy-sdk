@@ -674,12 +674,12 @@ impl IssuerCommandExecutor {
 
     // TODO: DELETE IT
     fn _wallet_set_schema_id(&self, wallet_handle: i32, id: &str, schema_id: &str) -> Result<(), WalletError> {
-        self.wallet_service.add_record(wallet_handle, "Indy::SchemaId", id, schema_id, "{}")
+        self.wallet_service.add_record(wallet_handle, &self.wallet_service.add_prefix("SchemaId"), id, schema_id, "{}")
     }
 
     // TODO: DELETE IT
     fn _wallet_get_schema_id(&self, wallet_handle: i32, key: &str) -> Result<String, IndyError> {
-        let schema_id_record = self.wallet_service.get_record(wallet_handle, "Indy::SchemaId", &key, &RecordOptions::id_value())?;
+        let schema_id_record = self.wallet_service.get_record(wallet_handle, &self.wallet_service.add_prefix("SchemaId"), &key, &RecordOptions::id_value())?;
         Ok(schema_id_record.get_value()
             .ok_or(CommonError::InvalidStructure(format!("SchemaId not found for id: {}", key)))?.to_string())
     }

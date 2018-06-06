@@ -34,7 +34,6 @@ async def test_open_wallet_works_for_missed_key(xwallet, wallet_name):
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="TODO: FIXME: Create a bug!!!")
 async def test_open_wallet_works_for_changing_credentials(pool_name):
     await wallet.create_wallet(pool_name, 'works_for_changing_credentials', None, None, '{"key":"key"}')
     handle = await wallet.open_wallet('works_for_changing_credentials', None, '{"key":"key", "rekey":"other_key"}')
