@@ -43,4 +43,9 @@ describe('provisioning and updating agents and updating configs', function () {
     let rc = vcx.updateInstitutionConfigs('new name', 'http://www.google.com')
     assert.equal(rc, 0)
   })
+
+  it('can retrieve ledger fees', async () => {
+    let fees = await vcx.getLedgerFees()
+    assert.equal(JSON.stringify(fees), '{"0":1,"1":1,"101":2,"102":42,"103":1999998889,"104":0,"105":0,"106":0,"107":0,"108":0,"109":0,"110":0,"111":0,"112":0,"113":0,"114":0,"115":0,"116":0,"117":0,"118":0,"119":0}')
+  })
 })

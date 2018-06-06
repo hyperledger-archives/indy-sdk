@@ -63,7 +63,7 @@ export function getVersion (): string {
 export type ILedgerFees = {
   [P in IndyTransactions]: number
 }
-export async function getLedgerFees (): Promise<ILedgerFees> {
+export async function getLedgerFees (): Promise<Partial<ILedgerFees>> {
   try {
     const ledgerFeesStr = await createFFICallbackPromise<string>(
       (resolve, reject, cb) => {
@@ -83,8 +83,7 @@ export async function getLedgerFees (): Promise<ILedgerFees> {
           resolve(fees)
         })
     )
-    const ledgerFees: ILedgerFees = JSON.parse(ledgerFeesStr)
-    return ledgerFees
+    if (ledgerFeesStr) { return JSON.parse(ledgerFeesStr) } else { return JSON.parse('{}') }
   } catch (err) {
     throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_ledger_get_fees')
   }
