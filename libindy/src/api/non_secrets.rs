@@ -20,9 +20,9 @@ use self::libc::c_char;
 /// tags_json: the record tags used for search and storing meta information as json:
 ///   {
 ///     "tagName1": <str>, // string tag (will be stored encrypted)
-///     "tagName2": <int>, // int tag (will be stored encrypted)
+///     "tagName2": <str>, // string tag (will be stored encrypted)
 ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
-///     "~tagName4": <int>, // int tag (will be stored un-encrypted)
+///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
 ///   }
 ///   Note that null means no tags
 ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
@@ -123,9 +123,9 @@ pub extern fn indy_update_wallet_record_value(command_handle: i32,
 /// tags_json: the record tags used for search and storing meta information as json:
 ///   {
 ///     "tagName1": <str>, // string tag (will be stored encrypted)
-///     "tagName2": <int>, // int tag (will be stored encrypted)
+///     "tagName2": <str>, // string tag (will be stored encrypted)
 ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
-///     "~tagName4": <int>, // int tag (will be stored un-encrypted)
+///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
 ///   }
 ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
 ///   usage of this tag in complex search queries (comparison, predicates)
@@ -177,9 +177,9 @@ pub extern fn indy_update_wallet_record_tags(command_handle: i32,
 /// tags_json: the record tags used for search and storing meta information as json:
 ///   {
 ///     "tagName1": <str>, // string tag (will be stored encrypted)
-///     "tagName2": <int>, // int tag (will be stored encrypted)
+///     "tagName2": <str>, // string tag (will be stored encrypted)
 ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
-///     "~tagName4": <int>, // int tag (will be stored un-encrypted)
+///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
 ///   }
 ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
 ///   usage of this tag in complex search queries (comparison, predicates)
@@ -384,7 +384,7 @@ pub  extern fn indy_get_wallet_record(command_handle: i32,
 ///    "tagName": "tagValue",
 ///    $or: {
 ///      "tagName2": { $regex: 'pattern' },
-///      "tagName3": { $gte: 123 },
+///      "tagName3": { $gte: '123' },
 ///    },
 ///  }
 /// options_json: //TODO: FIXME: Think about replacing by bitmaks
@@ -448,7 +448,7 @@ pub  extern fn indy_open_wallet_search(command_handle: i32,
 /// #Returns
 /// wallet records json:
 /// {
-///   totalCount: <int>, // present only if retrieveTotalCount set to true
+///   totalCount: <str>, // present only if retrieveTotalCount set to true
 ///   records: [{ // present only if retrieveRecords set to true
 ///       id: "Some id",
 ///       type: "Some type", // present only if retrieveType set to true
