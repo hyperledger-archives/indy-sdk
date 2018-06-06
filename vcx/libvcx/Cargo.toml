@@ -75,7 +75,7 @@ assets = [
 ]
 maintainer-scripts = "./scripts"
 
-#[profile.release]
+[profile.release]
 debug = true
 panic = 'unwind'
 incremental = false
