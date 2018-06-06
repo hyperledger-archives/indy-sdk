@@ -5,7 +5,7 @@ def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
-def build(name, file, context='.', customParams = '--no-cache') {
+def build(name, file, context='.', customParams = '') {
     return docker.build("$name", "${customParams} --build-arg uid=${getUserUid()} -f $file $context")
 }
 
@@ -15,7 +15,9 @@ node('ubuntu') {
             checkout scm
         }
         
-        rust = build('rust', 'vcx/ci/ubuntu.dockerfile', 'vcx')
+        stage ('Build Rust Image') {
+            rust = build('rust', 'vcx/ci/ubuntu.dockerfile', 'vcx')
+        }
        
         // update the versions in the toml file and package.json
         updateVersions(rust)     
@@ -31,28 +33,33 @@ node('ubuntu') {
         
         // image used as an intermediary, where the libvcx.so is placed into /usr/lib.  
         // This image must be built after the rust build and tests have been run.
-        libindy = build('libindy', 'vcx/ci/Dockerfile-libindy', 'vcx')
-
-        // test python wrapper, the image must be built after  the libindy image build, and must be --no-cache
-        vcx_python = build('vcx-python', 'vcx/wrappers/python3/ci/Dockerfile-python-wrapper', 'vcx', '--no-cache')
+        stage ('Build Libindy Image') {
+            libindy = build('libindy', 'vcx/ci/Dockerfile-libindy', 'vcx')
+        }
+        // test python wrapper, the image must be built after the libindy image build, and must be --no-cache
+        stage (' Build Python and Node Images') {
+            vcx_python = build('vcx-python', 'vcx/wrappers/python3/ci/Dockerfile-python-wrapper', 'vcx', '--no-cache')
+        }
         testPythonWrapper(vcx_python)
 
         // test nodejs wrapper, the image must be built after  the libindy image build, and must be --no-cache
-        nodejs = build('nodejs', 'vcx/wrappers/node/ci/Dockerfile-nodejs', 'vcx')
-        vcx_nodejs = build('vcx-nodejs', 'vcx/wrappers/node/ci/Dockerfile-nodejs-wrapper', 'vcx', '--no-cache')
+        stage (' Build NodeJs Images') {
+            nodejs = build('nodejs', 'vcx/wrappers/node/ci/Dockerfile-nodejs', 'vcx')
+            vcx_nodejs = build('vcx-nodejs', 'vcx/wrappers/node/ci/Dockerfile-nodejs-wrapper', 'vcx', '--no-cache')
+        }
         testNodeWrapper(vcx_nodejs)
         
         if (env.BRANCH_NAME == "master") {
             // create the debian of the library (just the libvcx.so file)
             createDeb(rust)
-
+            
             // create the npm deb 
             createNpmDeb(rust)
 
             // create pip installable artifact
             createPtyhonArtifact(vcx_python, getVcxVersion(vcx_python))
         }
-        
+
     } catch (Exception ex) {
         currentBuild.result = "FAILED"
         if (env.BRANCH_NAME == "master") {
