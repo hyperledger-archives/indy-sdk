@@ -289,8 +289,8 @@ impl CatchupHandler {
                     return Ok(CatchupStepResult::FailedAtNode(node_idx));
                 }
 
+                self.merkle_tree = temp_mt.clone();
                 PoolWorker::dump_new_txns(&self.pool_name, &vec_to_dump)?;
-                self.merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name(&self.pool_name)?;
 
                 process.merkle_tree = temp_mt;
             }
