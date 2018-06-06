@@ -21,9 +21,9 @@ async def add_wallet_record(wallet_handle: int,
     :param tags_json: the record tags used for search and storing meta information as json:
        {
          "tagName1": <str>, // string tag (will be stored encrypted)
-         "tagName2": <int>, // int tag (will be stored encrypted)
+         "tagName2": <str>, // string tag (will be stored encrypted)
          "~tagName3": <str>, // string tag (will be stored un-encrypted)
-         "~tagName4": <int>, // int tag (will be stored un-encrypted)
+         "~tagName4": <str>, // string tag (will be stored un-encrypted)
        }
     :return: None
     """
@@ -112,9 +112,9 @@ async def update_wallet_record_tags(wallet_handle: int,
     :param tags_json: ags_json: the record tags used for search and storing meta information as json:
        {
          "tagName1": <str>, // string tag (will be stored encrypted)
-         "tagName2": <int>, // int tag (will be stored encrypted)
+         "tagName2": <str>, // string tag (will be stored encrypted)
          "~tagName3": <str>, // string tag (will be stored un-encrypted)
-         "~tagName4": <int>, // int tag (will be stored un-encrypted)
+         "~tagName4": <str>, // string tag (will be stored un-encrypted)
        }
     :return: None
     """
@@ -159,9 +159,9 @@ async def add_wallet_record_tags(wallet_handle: int,
     :param tags_json: ags_json: the record tags used for search and storing meta information as json:
        {
          "tagName1": <str>, // string tag (will be stored encrypted)
-         "tagName2": <int>, // int tag (will be stored encrypted)
+         "tagName2": <str>, // string tag (will be stored encrypted)
          "~tagName3": <str>, // string tag (will be stored un-encrypted)
-         "~tagName4": <int>, // int tag (will be stored un-encrypted)
+         "~tagName4": <str>, // string tag (will be stored un-encrypted)
        }
     :return: None
     """
@@ -337,7 +337,7 @@ async def open_wallet_search(wallet_handle: int,
         "tagName": "tagValue",
         $or: {
           "tagName2": { $regex: 'pattern' },
-          "tagName3": { $gte: 123 },
+          "tagName3": { $gte: '123' },
         },
       }
     :param options_json: //TODO: FIXME: Think about replacing by bitmaks
@@ -391,7 +391,7 @@ async def fetch_wallet_search_next_records(wallet_handle: int,
     :param count: Count of records to fetch
     :return: wallet records json:
      {
-       totalCount: <int>, // present only if retrieveTotalCount set to true
+       totalCount: <str>, // present only if retrieveTotalCount set to true
        records: [{ // present only if retrieveRecords set to true
            id: "Some id",
            type: "Some type", // present only if retrieveType set to true

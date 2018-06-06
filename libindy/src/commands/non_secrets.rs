@@ -224,15 +224,8 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let mut options = RecordOptions::from_json(options_json)
+        RecordOptions::from_json(options_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Options Json: {:?}", err)))?;
-
-        options.retrieve_type = Some(options.retrieve_type.unwrap_or(false));
-        options.retrieve_value = Some(options.retrieve_value.unwrap_or(true));
-        options.retrieve_tags = Some(options.retrieve_tags.unwrap_or(false));
-
-        let options_json = options.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize Options Json: {:?}", err)))?;
 
         let record = self.wallet_service.get_record(wallet_handle, type_, id, &options_json)?;
 
@@ -253,17 +246,8 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let mut options = SearchOptions::from_json(options_json)
+        SearchOptions::from_json(options_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Options Json: {:?}", err)))?;
-
-        options.retrieve_records = Some(options.retrieve_records.unwrap_or(true));
-        options.retrieve_total_count = Some(options.retrieve_total_count.unwrap_or(false));
-        options.retrieve_type = Some(options.retrieve_type.unwrap_or(false));
-        options.retrieve_value = Some(options.retrieve_value.unwrap_or(true));
-        options.retrieve_tags = Some(options.retrieve_tags.unwrap_or(false));
-
-        let options_json = options.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize Options Json: {:?}", err)))?;
 
         let search = self.wallet_service.search_records(wallet_handle, type_, query_json, &options_json)?;
 

@@ -72,7 +72,7 @@ public class WalletRecord extends IndyJava.API {
 	 * @param tagsJson The record tags used for search and storing meta information as json:
 	 *                 {
 	 *                     "tagName1": <str>, // string tag (will be stored encrypted)
-	 *                     "tagName2": <int>, // int tag (will be stored encrypted)
+	 *                     "tagName2": <str>, // string tag (will be stored encrypted)
 	 *                 }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -156,7 +156,7 @@ public class WalletRecord extends IndyJava.API {
 	 * @param tagsJson The record tags used for search and storing meta information as json:
 	 *                 {
 	 *                     "tagName1": <str>, // string tag (will be stored encrypted)
-	 *                     "tagName2": <int>, // int tag (will be stored encrypted)
+	 *                     "tagName2": <str>, // string tag (will be stored encrypted)
 	 *                 }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -199,7 +199,7 @@ public class WalletRecord extends IndyJava.API {
 	 * @param tagsJson The record tags used for search and storing meta information as json:
 	 *                 {
 	 *                     "tagName1": <str>, // string tag (will be stored encrypted)
-	 *                     "tagName2": <int>, // int tag (will be stored encrypted)
+	 *                     "tagName2": <str>, // string tag (will be stored encrypted)
 	 *                 }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
