@@ -18,7 +18,7 @@ use settings;
 
 static NULL_PAYMENT: &str = "null";
 static EMPTY_CONFIG: &str = "{}";
-static FEES: &str = r#"{"1":1, "101":2, "102":42, "9999":1999998889}"#;
+static FEES: &str = r#"{"0":1, "1":1, "101":2, "102":42, "103":1999998889, "104":0, "105":0, "106":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
 static PARSED_TXN_PAYMENT_RESPONSE: &str = r#"[{"amount":4,"extra":null,"input":"["pov:null:1","pov:null:2"]"}]"#;
 
 static PAYMENT_INIT: Once = ONCE_INIT;
@@ -492,7 +492,7 @@ pub mod tests {
         let create_schema_req = ::utils::constants::SCHEMA_REQ.to_string();
         let start_wallet = get_wallet_token_info().unwrap();
 
-        let rc= pay_for_txn(&create_schema_req, "9999");
+        let rc= pay_for_txn(&create_schema_req, "103");
 
         tests::cleanup_dev_env(name);
         assert_eq!(rc, Err(error::INSUFFICIENT_TOKEN_AMOUNT.code_num));
