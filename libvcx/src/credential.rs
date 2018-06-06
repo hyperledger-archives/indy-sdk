@@ -146,9 +146,12 @@ impl Credential {
         let req = serde_json::to_string(&req).or(Err(CredentialError::InvalidCredentialJson()))?;
         let data: Vec<u8> = connection::generate_encrypted_payload(local_my_vk, local_their_vk, &req, "CLAIM_REQ").map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
         let offer_msg_id = self.credential_offer.as_ref().unwrap().msg_ref_id.as_ref().ok_or(CredentialError::CommonError(error::CREATE_CREDENTIAL_REQUEST_ERROR.code_num))?;
-
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_MESSAGE_RESPONSE.to_vec()); }
-        let _receipt = self.submit_payment()?;
+
+        if self.payment_info.is_some() {
+            let _receipt = self.submit_payment()?;
+        }
+        
         match messages::send_message().to(local_my_did)
             .to_vk(local_my_vk)
             .msg_type("claimReq")
