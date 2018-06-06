@@ -382,8 +382,7 @@ pub extern fn vcx_wallet_send_tokens(command_handle: u32,
             Err(e) => {
                 let msg = "Failed to send tokens".to_string();
                 info!("vcx_wallet_send_tokens_cb(command_handle: {}, rc: {}, reciept: {})", command_handle, e.to_error_code(), msg);
-                let msg = CStringUtils::string_to_cstring(msg);
-                cb(command_handle, e.to_error_code(), msg.as_ptr());
+                cb(command_handle, e.to_error_code(), ptr::null());
             },
         }
     });
