@@ -47,6 +47,7 @@ export interface IFFIEntryPoint {
   vcx_init_with_config: (commandId: number, config: string, cb: any) => number,
   vcx_shutdown: (deleteIndyInfo: boolean) => number,
   vcx_error_c_message: (errorCode: number) => string,
+  vcx_mint_tokens: (numberOfAddresses: number, tokensPerAddress: number) => void,
   vcx_version: () => string,
 
   // wallet
@@ -165,6 +166,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_agent_provision_async: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_agent_update_info: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_update_institution_info: [FFI_ERROR_CODE, [FFI_STRING_DATA, FFI_STRING_DATA]],
+  vcx_mint_tokens: [FFI_VOID, [FFI_UNSIGNED_INT, FFI_UNSIGNED_INT]],
 
   // wallet
   vcx_wallet_get_token_info: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PAYMENT_HANDLE, FFI_CALLBACK_PTR]],
