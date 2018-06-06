@@ -28,7 +28,7 @@ impl SDKTailsAccessor {
                tails_reader_handle: i32,
                rev_reg_def: &RevocationRegistryDefinitionV1) -> Result<SDKTailsAccessor, CommonError> {
         let tails_hash = rev_reg_def.value.tails_hash.from_base58()
-            .map_err(|_| CommonError::InvalidState(format!("Invalid base58 for Tails hash")))?;
+            .map_err(|_| CommonError::InvalidState("Invalid base58 for Tails hash".to_string()))?;
 
         let tails_reader_handle = tails_service.open_blob(tails_reader_handle,
                                                           &rev_reg_def.value.tails_location,

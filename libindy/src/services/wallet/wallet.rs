@@ -137,7 +137,7 @@ impl EncryptedValue {
         // value_key is stored as NONCE || CYPHERTEXT. Lenth of CYPHERTHEXT is length of DATA + length of TAG.
         const ENCRYPTED_KEY_LEN: usize = ChaCha20Poly1305IETF::TAGBYTES + ChaCha20Poly1305IETF::NONCEBYTES + ChaCha20Poly1305IETF::KEYBYTES;
         if joined_data.len() < ENCRYPTED_KEY_LEN {
-            return Err(CommonError::InvalidStructure(format!("Unable to split value_key from value: value too short")));
+            return Err(CommonError::InvalidStructure("Unable to split value_key from value: value too short".to_string()));
         }
 
         let value_key = joined_data[..ENCRYPTED_KEY_LEN].to_owned();

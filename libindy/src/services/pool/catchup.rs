@@ -268,7 +268,7 @@ impl CatchupHandler {
             let index = process.pending_reps.get_min_index()?;
             {
                 let &mut (ref mut first_resp, node_idx) = process.pending_reps.get_mut(index)
-                    .ok_or(CommonError::InvalidStructure(format!("Element not Found")))?;
+                    .ok_or(CommonError::InvalidStructure("Element not Found".to_string()))?;
                 if first_resp.min_tx()? - 1 != process.merkle_tree.count() { break; }
 
                 let mut temp_mt = process.merkle_tree.clone();
