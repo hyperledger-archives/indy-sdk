@@ -40,6 +40,7 @@ pub enum WalletError {
     IOError(io::Error),
     StructureError(String),
     ExportPathExists,
+    ImportPathDoesNotExist,
     NotEmpty,
 }
 
@@ -68,6 +69,7 @@ impl fmt::Display for WalletError {
             WalletError::StructureError(ref description) => write!(f, "Invalid structure of wallet input: {}", description),
             WalletError::NotEmpty => write!(f, "Wallet is not empty"),
             WalletError::ExportPathExists => write!(f, "Export file already exists"),
+            WalletError::ImportPathDoesNotExist => write!(f, "Import file does not exist"),
         }
     }
 }
@@ -96,6 +98,7 @@ impl error::Error for WalletError {
             WalletError::StructureError(ref description) => description,
             WalletError::NotEmpty => "Wallet is not empty",
             WalletError::ExportPathExists => "Export file already exists",
+            WalletError::ImportPathDoesNotExist => "Imort file does not exist",
         }
     }
 
@@ -122,6 +125,7 @@ impl error::Error for WalletError {
             WalletError::StructureError(_) => None,
             WalletError::NotEmpty => None,
             WalletError::ExportPathExists => None,
+            WalletError::ImportPathDoesNotExist => None,
         }
     }
 }
@@ -150,6 +154,7 @@ impl ToErrorCode for WalletError {
             WalletError::StructureError(_) => ErrorCode::WalletStructureError,
             WalletError::NotEmpty => ErrorCode::WalletNotEmpty,
             WalletError::ExportPathExists => ErrorCode::WalletExportPathExists,
+            WalletError::ImportPathDoesNotExist => ErrorCode::WalletImportPathDoesNotExist,
         }
     }
 }

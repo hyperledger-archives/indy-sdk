@@ -128,6 +128,9 @@ pub enum ErrorCode
     // Returned if path provided to wallet export already exists
     WalletExportPathExists = 218,
 
+    // Returned if path provided to wallet import does not exist
+    WalletImportPathDoesNotExist = 219,
+
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
     PoolLedgerNotCreatedError = 300,

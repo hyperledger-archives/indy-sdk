@@ -53,8 +53,14 @@ pub enum WalletCommand {
            String, // wallet credentials
            Box<Fn(Result<(), IndyError>) + Send>),
     Export(i32, // wallet_handle
-           String, // export path
-           String, //export key
+           String, // export config_json
+           Box<Fn(Result<(), IndyError>) + Send>),
+    Import(String, // pool name
+           String, // wallet name
+           Option<String>, // storage type
+           Option<String>, // config
+           String, // credentials
+           String, // import_config_json
            Box<Fn(Result<(), IndyError>) + Send>),
 }
 
@@ -106,9 +112,14 @@ impl WalletCommandExecutor {
                 info!(target: "wallet_command_executor", "Delete command received");
                 cb(self.delete(&name, &credentials));
             }
-            WalletCommand::Export(wallet_handle, export_path, export_key, cb) => {
+            WalletCommand::Export(wallet_handle, export_config_json, cb) => {
                 info!(target: "wallet_command_executor", "Export command received");
-                cb(self.export(wallet_handle, &export_path, &export_key));
+                cb(self.export(wallet_handle, &export_config_json));
+            }
+            WalletCommand::Import(pool_name, name, storage_type, config, credentials, import_config, cb) => {
+                info!(target: "wallet_command_executor", "Import command received");
+                cb(self.import(&pool_name, &name, storage_type.as_ref().map(String::as_str),
+                               config.as_ref().map(String::as_str), &credentials, &import_config));
             }
         };
     }
@@ -223,14 +234,30 @@ impl WalletCommandExecutor {
 
     fn export(&self,
               wallet_handle: i32,
-              export_path: &str,
-              export_key: &str) -> Result<(), IndyError> {
-        debug!("export >>> handle: {:?}, export_path: {:?}, export_key: {:?}", wallet_handle, export_path, export_key);
+              export_config_json: &str) -> Result<(), IndyError> {
+        debug!("export >>> handle: {:?}, export_config_json: {:?}", wallet_handle, export_config_json);
 
         // TODO - later add proper versioning
-        let res = self.wallet_service.export_wallet(wallet_handle, export_path, export_key, 0)?;
+        let res = self.wallet_service.export_wallet(wallet_handle, export_config_json, 0)?;
 
         debug!("export <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn import(&self,
+              pool_name: &str,
+              name: &str,
+              storage_type: Option<&str>,
+              config: Option<&str>,
+              credentials: &str,
+              import_config: &str) -> Result<(), IndyError> {
+        debug!("import >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}, import_config: {:?}",
+               pool_name, name, storage_type, config, credentials, import_config);
+
+        let res = self.wallet_service.import(pool_name, name, storage_type, config, credentials, import_config)?;
+
+        debug!("import <<< res: {:?}", res);
 
         Ok(res)
     }

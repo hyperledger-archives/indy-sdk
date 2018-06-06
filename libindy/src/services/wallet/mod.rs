@@ -99,6 +99,13 @@ impl WalletCredentials {
 }
 
 
+#[derive(Debug, Deserialize)]
+pub struct WalletExportConfig {
+    key: String,
+    path: String,
+}
+
+
 pub struct WalletService {
     storage_types: RefCell<HashMap<String, Box<WalletStorageType>>>,
     wallets: RefCell<HashMap<i32, Box<Wallet>>>
@@ -277,11 +284,10 @@ impl WalletService {
         let config = serde_json::from_str::<WalletConfig>(&config_json)
             .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize Storage Config")))?;
 
-        let credentials = WalletCredentials::from_json(credentials, &config.salt)?
-        ;
+        let credentials = WalletCredentials::from_json(credentials, &config.salt)?;
         let storage = storage_type.open_storage(name,
-                                                Some(&config_json),
-                                                &credentials.storage_credentials)?;
+                                                           Some(&config_json),
+                                                        &credentials.storage_credentials)?;
 
         let key_decryption_result = ChaCha20Poly1305IETF::decrypt_merged(
             &storage.get_storage_metadata()?,
@@ -525,26 +531,65 @@ impl WalletService {
         }
     }
 
-    pub fn export_wallet(&self, wallet_handle: i32, export_path_str: &str, passphrase: &str, version: u32) -> Result<(), WalletError> {
+    pub fn export_wallet(&self, wallet_handle: i32, export_config_json: &str, version: u32) -> Result<(), WalletError> {
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
-                let export_path = Path::new(export_path_str);
+                let export_config: WalletExportConfig = serde_json::from_str(export_config_json)?;
+                let export_path = Path::new(&export_config.path);
                 if export_path.exists() {
                     return Err(WalletError::ExportPathExists);
                 }
 
                 let export_file = File::create(export_path)?;
                 let writer = Box::new(export_file);
-                export(wallet, writer, passphrase, version)
+                export(wallet, writer, &export_config.key, version)
             }
             None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         }
     }
 
-    pub fn import_wallet(&self, wallet_handle: i32, reader: Box<Read>, key: [u8; 32]) -> Result<(), WalletError> {
-        match self.wallets.borrow_mut().get_mut(&wallet_handle) {
-            Some(wallet) => import(wallet, reader, key),
-            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
+    pub fn import(&self,
+                  pool_name: &str,
+                  name: &str,
+                  storage_type: Option<&str>,
+                  storage_config: Option<&str>,
+                  credentials: &str,
+                  import_config_json: &str) -> Result<(), WalletError> {
+        // TODO - this can be refactor to skip the entire wallet_handle ceremony,
+        // but in order to do that a lot of WalletService needs to be refactored
+        self.create_wallet(pool_name, name, storage_type, storage_config, credentials)?;
+        match self.open_wallet(name, None, credentials) {
+            Err(err) => {
+                self.delete_wallet(name, credentials);
+                Err(err)
+            }
+            Ok(wallet_handle) => {
+                let res = match self.wallets.borrow().get(&wallet_handle) {
+                    Some(wallet) => {
+                        let import_config: WalletExportConfig = serde_json::from_str(import_config_json)?;
+                        let import_path = Path::new(&import_config.path);
+                        if !import_path.exists() {
+                            return Err(WalletError::ImportPathDoesNotExist);
+                        }
+
+                        let import_file = File::open(import_path)?;
+                        let reader = Box::new(import_file);
+                        match import(wallet, reader, &import_config.key) {
+                            Ok(_) => Ok(()),
+                            err @ Err(_) => {
+                                self.delete_wallet(name, credentials);
+                                err
+                            }
+                        }
+                    }
+                    None => {
+                        // This should never happen
+                        Err(WalletError::InvalidHandle(wallet_handle.to_string()))
+                    }
+                };
+                self.close_wallet(wallet_handle)?;
+                res
+            }
         }
     }
 
@@ -1543,6 +1588,11 @@ mod tests {
     fn _get_export_file_path() -> &'static str {
         "/tmp/indy_wallet_export_tests/export_file"
     }
+
+    fn _get_export_config() -> String {
+        format!(r##"{{"path": "{}", "key": "{}"}}"##, _get_export_file_path(), "export_key")
+    }
+
     fn _prepare_export_path() {
         let export_directory_path = Path::new(_get_export_dir_path());
         if export_directory_path.exists() {
@@ -1566,12 +1616,10 @@ mod tests {
         let wallet_service = WalletService::new();
         wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
         let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+        let export_config = _get_export_config();
+        wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
 
-        let export_path = _get_export_file_path();
-        let export_passphrase = "test_key";
-        wallet_service.export_wallet(wallet_handle, export_path, export_passphrase, 0).unwrap();
-
-        assert!(Path::new(export_path).exists());
+        assert!(Path::new(_get_export_file_path()).exists());
         _remove_export_path();
     }
 
@@ -1587,10 +1635,9 @@ mod tests {
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
 
-        let export_path = _get_export_file_path();
-        let export_passphrase = "test_key";
-        wallet_service.export_wallet(wallet_handle, export_path, export_passphrase, 0).unwrap();
-        assert!(Path::new(export_path).exists());
+        let export_config = _get_export_config();
+        wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
+        assert!(Path::new(_get_export_file_path()).exists());
 
         _remove_export_path();
     }
@@ -1606,11 +1653,10 @@ mod tests {
         wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
         let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
 
-        let export_path = _get_export_file_path();
-        let export_passphrase = "test_key";
-        let res = wallet_service.export_wallet(wallet_handle, export_path, export_passphrase, 0);
+        let export_config = _get_export_config();
+        let res = wallet_service.export_wallet(wallet_handle, &export_config, 0);
         assert_match!(Err(WalletError::ExportPathExists), res);
-        assert!(Path::new(export_path).exists());
+        assert!(Path::new(_get_export_file_path()).exists());
 
         _remove_export_path();
     }
@@ -1625,12 +1671,76 @@ mod tests {
         wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
         let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
 
-        let export_path = _get_export_file_path();
-        let export_passphrase = "test_key";
-        let res = wallet_service.export_wallet(wallet_handle + 1, export_path, export_passphrase, 0);
+        let export_config = _get_export_config();
+        let res = wallet_service.export_wallet(wallet_handle + 1, &export_config, 0);
         assert_match!(Err(WalletError::InvalidHandle(_)), res);
-        assert!(!Path::new(export_path).exists());
+        assert!(!Path::new(&_get_export_file_path()).exists());
 
+        _remove_export_path();
+    }
+
+    #[test]
+    fn wallet_service_export_import_wallet_1_item() {
+        _cleanup();
+        _prepare_export_path();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+
+        let export_config = _get_export_config();
+        wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
+        assert!(Path::new(_get_export_file_path()).exists());
+
+        wallet_service.close_wallet(wallet_handle).unwrap();
+        wallet_service.delete_wallet("test_wallet", &_credentials()).unwrap();
+
+        wallet_service.import("pool1", "test_wallet", None, None, &_credentials(), &export_config).unwrap();
+        let wallet_handle_2 = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+        wallet_service.get_record(wallet_handle_2, "type", "key1", "{}").unwrap();
+
+        _remove_export_path();
+    }
+
+    #[test]
+    fn wallet_service_export_import_wallet_if_empty() {
+        _cleanup();
+        _prepare_export_path();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+
+        let export_config = _get_export_config();
+        wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
+        assert!(Path::new(_get_export_file_path()).exists());
+
+        wallet_service.close_wallet(wallet_handle).unwrap();
+        wallet_service.delete_wallet("test_wallet", &_credentials()).unwrap();
+
+        wallet_service.import("pool1", "test_wallet", None, None, &_credentials(), &export_config).unwrap();
+        wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+
+        _remove_export_path();
+    }
+
+    #[test]
+    fn wallet_service_export_import_returns_error_if_path_missing() {
+        _cleanup();
+        _prepare_export_path();
+
+        let wallet_service = WalletService::new();
+
+        let export_config = _get_export_config();
+
+        let res = wallet_service.import("pool1", "test_wallet", None, None, &_credentials(), &export_config);
+        assert_match!(Err(WalletError::ImportPathDoesNotExist), res);
+
+        let res = wallet_service.open_wallet("test_wallet", None, &_credentials());
+        assert_match!(Err(_), res);
         _remove_export_path();
     }
 }
