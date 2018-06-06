@@ -282,7 +282,7 @@ impl PaymentsCommandExecutor {
                 while let Ok(Some(payment_address)) = search.fetch_next_record() {
                     match payment_address.get_value() {
                         Some(value) => list_addresses.push(value.to_string()),
-                        None => cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Record value not found")))))
+                        None => cb(Err(IndyError::CommonError(CommonError::InvalidState("Record value not found".to_string()))))
                     }
                 }
 

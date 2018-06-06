@@ -725,7 +725,7 @@ fn _read_config(name: &str) -> Result<(String, WalletConfig), WalletError> {
     let config_path = _wallet_config_path(name);
     let config_json = _read_file(config_path)?;
     let config = serde_json::from_str::<WalletConfig>(&config_json)
-        .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize Storage Config")))?;
+        .map_err(|_| CommonError::InvalidState("Cannot deserialize Storage Config".to_string()))?;
     Ok((config_json, config))
 }
 

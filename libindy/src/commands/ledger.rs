@@ -379,7 +379,7 @@ impl LedgerCommandExecutor {
                 request.remove("signature");
                 request.remove("signatures");
                 request
-            }).ok_or(CommonError::InvalidState(format!("Cannot deserialize request")))?;
+            }).ok_or(CommonError::InvalidState("Cannot deserialize request".to_string()))?;
 
         let serialized_request = serialize_signature(message_without_signatures)?;
         let signature = self.crypto_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
