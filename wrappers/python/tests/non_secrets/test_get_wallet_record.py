@@ -3,7 +3,7 @@ import pytest
 
 from indy import IndyError
 from indy.error import ErrorCode
-from tests.non_secrets.constants import *
+from tests.non_secrets.common import *
 
 
 @pytest.mark.asyncio
@@ -31,9 +31,9 @@ async def test_get_wallet_record_works_for_full_data(wallet_handle):
     record = json.loads(
         await non_secrets.get_wallet_record(wallet_handle, type_, id1, options_json))
 
-    expected = {'id': id1, 'value': value1, 'tags': tags1, 'type': type_}
+    expected = {'id': id1, 'value': value1, 'tags': json.loads(tags1), 'type': type_}
 
-    assert len(set(expected) ^ set(record)) == 0
+    assert record == expected
 
 
 @pytest.mark.asyncio
