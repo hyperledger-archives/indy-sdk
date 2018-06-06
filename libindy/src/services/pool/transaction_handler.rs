@@ -17,7 +17,7 @@ use serde_json;
 use serde_json::Value as SJsonValue;
 use std::collections::HashMap;
 use std::error::Error;
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
 use std::ops::Add;
 
 use super::state_proof;
@@ -31,7 +31,6 @@ use domain::ledger::constants;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::PoolService;
 use self::indy_crypto::bls::Generator;
-use utils::cstring::CStringUtils;
 
 const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
     constants::GET_NYM,
@@ -294,20 +293,19 @@ impl TransactionHandler {
                 debug!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< plugin return err {:?}", err);
                 return None;
             }
-            let parsed_str = CStringUtils::c_str_to_string(parsed_c_str).ok()??;
+            let c_str = if parsed_c_str.is_null() { None } else { Some(unsafe { CStr::from_ptr(parsed_c_str) }) };
+            let parsed_sps = c_str
+                .and_then(|c_str| c_str.to_str().map_err(map_err_trace!()).ok())
+                .and_then(|c_str|
+                    serde_json::from_str::<Vec<ParsedSP>>(c_str)
+                        .map_err(|err|
+                            debug!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< can't parse plugin response {}", err))
+                        .ok());
 
             let err = free(parsed_c_str);
             trace!("TransactionHandler::parse_generic_reply_for_proof_checking: plugin free res {:?}", err);
 
-            let parsed_sp = match serde_json::from_str::<Vec<ParsedSP>>(&parsed_str) {
-                Ok(ps) => ps,
-                Err(err) => {
-                    debug!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< can't parse plugin response {}", err);
-                    return None;
-                },
-            };
-
-            Some(parsed_sp)
+            parsed_sps
         } else {
             trace!("TransactionHandler::parse_generic_reply_for_proof_checking: <<< type not supported");
             None
