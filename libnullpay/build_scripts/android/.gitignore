@@ -1,0 +1,5 @@
+# Ignore everything
+*
+
+# Except
+!build.nondocker.sh

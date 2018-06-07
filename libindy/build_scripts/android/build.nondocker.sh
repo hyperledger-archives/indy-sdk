@@ -97,12 +97,7 @@ elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
     popd
 fi
 
-LIBINDY_SRC=${WORKDIR}/indy-sdk/libindy
-mkdir -p $LIBINDY_SRC
-cp -rf ./../../build.rs ${LIBINDY_SRC}
-cp -rf ./../../src ${LIBINDY_SRC}
-cp -rf ./../../include ${LIBINDY_SRC}
-cp -rf ./../../Cargo.toml ${LIBINDY_SRC}
+
 
 export PKG_CONFIG_ALLOW_CROSS=1
 export CARGO_INCREMENTAL=1
@@ -124,8 +119,6 @@ export CXXLD=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE}-ld
 export RANLIB=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE}-ranlib
 export TARGET=android
 
-printenv
-
 python3 ${ANDROID_NDK_ROOT}/build/tools/make_standalone_toolchain.py --arch ${TARGET_ARCH} --api ${TARGET_API} --install-dir ${TOOLCHAIN_DIR}
 cat << EOF > ~/.cargo/config
 [target.${CROSS_COMPILE}]
@@ -134,6 +127,13 @@ linker = "${CC}"
 EOF
 
 rustup target add ${CROSS_COMPILE}
+
+LIBINDY_SRC=${WORKDIR}/indy-sdk/libindy
+mkdir -p $LIBINDY_SRC
+cp -rf ./../../build.rs ${LIBINDY_SRC}
+cp -rf ./../../src ${LIBINDY_SRC}
+cp -rf ./../../include ${LIBINDY_SRC}
+cp -rf ./../../Cargo.toml ${LIBINDY_SRC}
 
 pushd $LIBINDY_SRC
 export OPENSSL_STATIC=1

@@ -6,7 +6,7 @@ build = "build.rs"
 
 [lib]
 name = "nullpay"
-crate-type = ["cdylib", "rlib"]
+crate-type = ["staticlib","cdylib", "rlib"]
 
 [dependencies]
 lazy_static = "1.0"
