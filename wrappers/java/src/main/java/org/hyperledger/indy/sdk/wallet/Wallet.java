@@ -189,7 +189,9 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * @param name Name of the wallet.
 	 * @param xtype Type of the wallet. Defaults to 'default'.
 	 * @param config Wallet configuration json. List of supported keys are defined by wallet type.
-	 * @param credentials Wallet credentials json. List of supported keys are defined by wallet type.
+	 * @param credentials Wallet credentials json: {
+	 *    "key": <string>
+	 * }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
 	 */
@@ -225,7 +227,9 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *
 	 * @param name Name of the wallet.
 	 * @param runtimeConfig Runtime wallet configuration json. if NULL, then default runtime_config will be used.
-	 * @param credentials Wallet credentials json. List of supported keys are defined by wallet type.
+	 * @param credentials Wallet credentials json: {
+	 *    "key": <string>
+	 * }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
 	 */
@@ -282,7 +286,9 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * Deletes an existing wallet.
 	 *
 	 * @param name Name of the wallet to delete.
-	 * @param credentials Wallet credentials json. List of supported keys are defined by wallet type.
+	 * @param credentials Wallet credentials json: {
+	 *    "key": <string>
+	 * }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
 	 */

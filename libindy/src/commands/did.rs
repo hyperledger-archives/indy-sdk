@@ -214,18 +214,16 @@ impl DidCommandExecutor {
                 CommonError::InvalidStructure(
                     format!("Invalid MyDidInfo json: {:?}", err)))?;
 
-        if let Some(ref did) = my_did_info.did.as_ref() {
-            if self.wallet_service.record_exists::<Did>(wallet_handle, did)? {
-                return Err(IndyError::DidError(DidError::AlreadyExistsError(format!("Did already exists"))));
-            };
-        }
+        let (did, key) = self.crypto_service.create_my_did(&my_did_info)?;
 
-        let (my_did, key) = self.crypto_service.create_my_did(&my_did_info)?;
+        if self.wallet_service.record_exists::<Did>(wallet_handle, &did.did)? {
+            return Err(IndyError::DidError(DidError::AlreadyExistsError("Did already exists".to_string())));
+        };
 
-        self.wallet_service.add_indy_object(wallet_handle, &my_did.did, &my_did, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &did.did, &did, "{}")?;
         self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, "{}")?;
 
-        let res = (my_did.did, my_did.verkey);
+        let res = (did.did, did.verkey);
 
         debug!("create_and_store_my_did <<< res: {:?}", res);
 
@@ -312,8 +310,7 @@ impl DidCommandExecutor {
             .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", my_did)))?;
 
         let meta: Option<String> = did_record.get_tags()
-            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from));
+            .and_then(|tags| tags.get("metadata").cloned());
 
         let did_with_meta = DidWithMeta {
             did: did.did,
@@ -346,8 +343,7 @@ impl DidCommandExecutor {
                 .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", did_id)))?;
 
             let meta: Option<String> = did_record.get_tags()
-                .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-                .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from));
+                .and_then(|tags| tags.get("metadata").cloned());
 
             let did_with_meta = DidWithMeta {
                 did: did.did,
@@ -504,8 +500,7 @@ impl DidCommandExecutor {
 
         let res = self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::full())?
             .get_tags()
-            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
+            .and_then(|tags| tags.get("metadata").cloned())
             .ok_or(WalletError::ItemNotFound)?;
 
         debug!("get_did_metadata <<< res: {:?}", res);
@@ -558,10 +553,10 @@ impl DidCommandExecutor {
             GetNymReplyResult::GetNymReplyResultV0(res) => {
                 let gen_nym_result_data = GetNymResultDataV0::from_json(&res.data)
                     .map_err(map_err_trace!())
-                    .map_err(|_| CommonError::InvalidState(format!("Invalid GetNymResultData json")))?;
+                    .map_err(|_| CommonError::InvalidState("Invalid GetNymResultData json".to_string()))?;
 
                 TheirDidInfo::new(gen_nym_result_data.dest, gen_nym_result_data.verkey)
-            },
+            }
             GetNymReplyResult::GetNymReplyResultV1(res) => TheirDidInfo::new(res.txn.data.did, res.txn.data.verkey)
         };
 
@@ -719,8 +714,9 @@ impl DidCommandExecutor {
 
     fn _wallet_get_did_metadata(&self, wallet_handle: i32, did: &str) -> Option<String> {
         self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::full()).ok()
-            .and_then(|rec| rec.get_tags().map(String::from))
-            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
+            .and_then(|rec|
+                rec.get_tags()
+                    .and_then(|tags| tags.get("metadata").cloned())
+            )
     }
 }

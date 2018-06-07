@@ -265,6 +265,10 @@
     return @"{}";
 }
 
++ (NSString *)optionsFull {
+    return @"{\"retrieveType\":true, \"retrieveValue\":true, \"retrieveTags\":true}";
+}
+
 + (NSString *)queryEmpty {
     return @"{}";
 }
@@ -288,7 +292,7 @@
     NSError *ret = [[NonSecretsUtils sharedInstance] getRecordFromWallet:walletHandle
                                                                     type:[NonSecretsUtils type]
                                                                       id:[NonSecretsUtils id1]
-                                                             optionsJson:@"{}"
+                                                             optionsJson:[NonSecretsUtils optionsFull]
                                                               recordJson:&recordJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreCredentialDef() failed!");
 
@@ -298,8 +302,7 @@
         XCTAssertTrue([expectedValue isEqualToString:record[@"value"]]);
     } else if ([field isEqualToString:@"tags"]) {
         NSDictionary *expectedTags = [NSDictionary fromString:expectedValue];
-        NSDictionary *actualTags = [NSDictionary fromString:record[@"tags"]];
-        XCTAssertTrue([expectedTags isEqualToDictionary:actualTags]);
+        XCTAssertTrue([expectedTags isEqualToDictionary:record[@"tags"]]);
     } else {
         XCTAssertTrue(NO);
     }

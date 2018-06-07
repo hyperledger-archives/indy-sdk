@@ -150,7 +150,7 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
 ///   {
 ///       "storage": <object>  List of supported keys are defined by wallet type.
 ///   }
-/// credentials_json: Wallet credentials json (if NULL, then default config will be used).
+/// credentials: Wallet credentials json
 ///   {
 ///       "key": string,
 ///       "rekey": Optional<string>,
@@ -218,7 +218,7 @@ pub extern fn indy_create_wallet(command_handle: i32,
 ///   {
 ///       "storage": Optional<object>  List of supported keys are defined by wallet type.
 ///   }
-/// credentials_json: Wallet credentials json.
+/// credentials: Wallet credentials json
 ///   {
 ///       "key": string,
 ///       "rekey": Optional<string>,
@@ -269,6 +269,17 @@ pub extern fn indy_open_wallet(command_handle: i32,
 }
 
 /// Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool
+///
+/// #Returns
+/// wallets list json: [{
+///    "name": <string>
+///    "type": <string>
+///    "pool_name": <string>
+/// }].
+///
+/// #Errors
+/// Common*
+/// Wallet*
 #[no_mangle]
 pub extern fn indy_list_wallets(command_handle: i32,
                                 cb: Option<extern fn(xcommand_handle: i32,
@@ -340,8 +351,13 @@ pub extern fn indy_close_wallet(command_handle: i32,
 ///
 /// #Params
 /// name: Name of the wallet to delete.
-/// credentials_json: Wallet credentials json. List of supported keys are defined by wallet type.
-///                    if NULL, then default credentials will be used.
+/// credentials: Wallet credentials json
+///   {
+///       "key": string,
+///       "rekey": Optional<string>,
+///       "storage": Optional<object>  List of supported keys are defined by wallet type.
+///
+///   }
 ///
 /// #Returns
 /// Error code

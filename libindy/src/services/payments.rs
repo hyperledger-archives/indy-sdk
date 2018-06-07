@@ -324,7 +324,7 @@ impl PaymentsService {
     }
 
     fn _parse_method_from_payment_address(&self, address: &str) -> Option<String> {
-        let res: Vec<&str> = address.split(":").collect();
+        let res: Vec<&str> = address.split(':').collect();
         match res.len() {
             3 => res.get(1).map(|s| s.to_string()),
             _ => None
