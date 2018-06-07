@@ -1,4 +1,4 @@
-pub enum NetworkerEvent {
+pub enum NetworkerRequestType {
     SendOneRequest,
     SendAllRequest
 }
@@ -34,10 +34,10 @@ impl Into<Option<RequestEvent>> for PoolEvent {
     }
 }
 
-impl Into<Option<NetworkerEvent>> for RequestEvent {
-    fn into(self) -> Option<NetworkerEvent> {
+impl Into<Option<NetworkerRequestType>> for RequestEvent {
+    fn into(self) -> Option<NetworkerRequestType> {
         match self {
-            RequestEvent::LedgerStatus => Some(NetworkerEvent::SendAllRequest),
+            RequestEvent::LedgerStatus => Some(NetworkerRequestType::SendAllRequest),
             _ => None
         }
     }

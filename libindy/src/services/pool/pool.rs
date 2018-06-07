@@ -1,15 +1,17 @@
 use super::zmq;
 use std::thread::JoinHandle;
 use std::thread;
-use services::pool::commander::Commander;
-use services::pool::events::PoolEvent;
-use services::pool::networker::Networker;
-use services::pool::events::RequestEvent;
+use std::collections::VecDeque;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::cell::RefCell;
-use services::pool::request_handler::RequestHandler;
 use std::rc::Rc;
+
+use services::pool::commander::Commander;
+use services::pool::events::PoolEvent;
+use services::pool::events::RequestEvent;
+use services::pool::networker::Networker;
+use services::pool::request_handler::RequestHandler;
 
 trait PoolState {
     fn is_terminal(&self) -> bool {
@@ -244,14 +246,14 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                 match pe {
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
                     PoolEvent::ConsensusFailed => PoolWrapper::Terminated(pool.into()),
-                    PoolEvent::ConsensusReached => PoolWrapper::SyncCatchup(pool.into())
+                    PoolEvent::ConsensusReached => PoolWrapper::SyncCatchup(pool.into()),
                     _ => PoolWrapper::GettingCatchupTarget(pool)
                 }
             }
             PoolWrapper::Terminated(pool) => {
                 match pe {
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
-                    PoolEvent::Refresh => PoolWrapper::GettingCatchupTarget(pool.into())
+                    PoolEvent::Refresh => PoolWrapper::GettingCatchupTarget(pool.into()),
                     _ => PoolWrapper::Terminated(pool)
                 }
             }
@@ -260,7 +262,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                 match pe {
                     PoolEvent::PoolOutdated => PoolWrapper::Terminated(pool.into()),
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
-                    PoolEvent::Refresh => PoolWrapper::GettingCatchupTarget(pool.into())
+                    PoolEvent::Refresh => PoolWrapper::GettingCatchupTarget(pool.into()),
                     PoolEvent::SendRequest => {
                         let re: Option<RequestEvent> = pe.into();
                         let mut request_handler = R::new(pool.state.networker.clone());
@@ -351,6 +353,7 @@ impl<S: Networker, R: RequestHandler<S>> Pool<S, R> {
 
 struct PoolThread<S: Networker, R: RequestHandler<S>> {
     pool_wrapper: Option<PoolWrapper<S, R>>,
+    events: VecDeque<PoolEvent>,
     commander: Commander,
     networker: Rc<RefCell<S>>,
 }
@@ -360,20 +363,24 @@ impl<S: Networker, R: RequestHandler<S>> PoolThread<S, R> {
         let networker = Rc::new(RefCell::new(S::new()));
         PoolThread {
             pool_wrapper: Some(PoolWrapper::Initialization(PoolSM::new(networker.clone()))),
+            events: VecDeque::new(),
             commander: Commander::new(cmd_socket),
             networker,
         }
     }
 
     pub fn work(&mut self) {
-        self._poll();
-        while self._loop() {
+        loop {
             self._poll();
+
+            self._read_events();
+
+            if !self._loop() { break; }
         }
     }
 
     fn _loop(&mut self) -> bool {
-        let pe = self.commander.get_next_event();
+        let pe = self.events.pop_front();
         match pe {
             Some(pe) => {
                 self.pool_wrapper = self.pool_wrapper.take().map(|w| w.handle_event(pe));
@@ -383,12 +390,32 @@ impl<S: Networker, R: RequestHandler<S>> PoolThread<S, R> {
         self.pool_wrapper.as_ref().map(|w| w.is_terminal()).unwrap_or(true)
     }
 
-    fn _poll(&self) {
-        unimplemented!();
+    fn _read_events(&mut self) {
+        let cmd_events = self.commander.fetch_events();
+        let network_events = self.networker.borrow().fetch_events();
+        self.events.extend(cmd_events);
+        self.events.extend(network_events);
+    }
+
+    fn _poll(&mut self) {
+        let networker = self.networker.borrow();
+        let mut poll_items = networker.get_poll_items();
+        poll_items.push(self.commander.get_poll_item());
+
+        let timeout = networker.get_timeout();
+
+        let poll_res = zmq::poll(&mut poll_items, timeout)
+            .map_err(map_err_err!())
+            .map_err(|_| unimplemented!() /* FIXME */).unwrap();
+
+        if poll_res == 0 {
+            self.events.push_back(PoolEvent::Timeout); // TODO check duplicate ?
+        }
     }
 }
 
-mod pool_tests {
+#[cfg(test)]
+mod tests {
     use super::*;
     use services::pool::networker::MockNetworker;
 
