@@ -1445,6 +1445,29 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
+
+    mod indy_register_transaction_parser_for_sp {
+        extern crate libc;
+
+        use super::*;
+
+        use self::libc::c_char;
+
+        #[test]
+        fn indy_register_transaction_parser_for_sp_works() {
+            TestUtils::cleanup_storage();
+
+            extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
+                unsafe { *parsed = msg; }
+                ErrorCode::Success
+            }
+            extern fn free(_buf: *const c_char) -> ErrorCode { ErrorCode::Success }
+
+            LedgerUtils::register_transaction_parser_for_sp("my_txn_type", parse, free).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
 }
 
 mod medium_cases {
