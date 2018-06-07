@@ -54,8 +54,8 @@ class Ledger {
 
 		JSONObject nymResponse = new JSONObject(nymResponseJson);
 
-		assertEquals(myDid, nymResponse.getJSONObject("result").getString("dest"));
-		assertEquals(myVerkey, nymResponse.getJSONObject("result").getString("verkey"));
+		assertEquals(myDid, nymResponse.getJSONObject("result").getJSONObject("txn").getJSONObject("data").getString("dest"));
+		assertEquals(myVerkey, nymResponse.getJSONObject("result").getJSONObject("txn").getJSONObject("data").getString("verkey"));
 
 		// 8. Close and delete My Wallet
 		myWallet.closeWallet().get();

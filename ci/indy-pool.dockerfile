@@ -38,7 +38,7 @@ RUN apt-get update -y && apt-get install -y \
         libindy-crypto=${indy_crypto_ver} \
         vim
 
-ARG pool_ip=10.0.0.2
+ARG pool_ip=127.0.0.1
 ARG client_ip=$pool_ip
 
 ENV CLIENT_IP=$client_ip
