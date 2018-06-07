@@ -20,16 +20,24 @@ node('ubuntu') {
         }
        
         // update the versions in the toml file and package.json
-        updateVersions(rust)     
+        stage('Updating Versions') {
+            updateVersions(rust)     
+        }
 
         // build and test the so file
-        buildRust(rust)
+        stage ('Building Libvcx.so'){
+            buildRust(rust)
+        }
 
         // test rust
-	    testRust(rust)
+        stage ('Testing Rust'){
+	        testRust(rust)
+        }
         
         // update the so file to have version
-        updateSo(rust)
+        stage('Updating .so file version') {
+            updateSo(rust)
+        }
         
         // image used as an intermediary, where the libvcx.so is placed into /usr/lib.  
         // This image must be built after the rust build and tests have been run.
@@ -37,27 +45,37 @@ node('ubuntu') {
             libindy = build('libindy', 'vcx/ci/Dockerfile-libindy', 'vcx')
         }
         // test python wrapper, the image must be built after the libindy image build, and must be --no-cache
-        stage (' Build Python and Node Images') {
+        stage ('Build Python Image') {
             vcx_python = build('vcx-python', 'vcx/wrappers/python3/ci/Dockerfile-python-wrapper', 'vcx', '--no-cache')
         }
-        testPythonWrapper(vcx_python)
+
+        stage ("Testing Python Wrapper"){
+            testPythonWrapper(vcx_python)
+        }
 
         // test nodejs wrapper, the image must be built after  the libindy image build, and must be --no-cache
-        stage (' Build NodeJs Images') {
+        stage ('Build NodeJs Images') {
             nodejs = build('nodejs', 'vcx/wrappers/node/ci/Dockerfile-nodejs', 'vcx')
             vcx_nodejs = build('vcx-nodejs', 'vcx/wrappers/node/ci/Dockerfile-nodejs-wrapper', 'vcx', '--no-cache')
         }
-        testNodeWrapper(vcx_nodejs)
+
+        stage ('Test Node Wrapper'){
+            testNodeWrapper(vcx_nodejs)
+        }
         
         if (env.BRANCH_NAME == "master") {
             // create the debian of the library (just the libvcx.so file)
-            createDeb(rust)
+            stage('Build libvcx Debian and compress .so file') {
+                createDeb(rust)
+            }
             
             // create the npm deb 
             createNpmDeb(rust)
 
             // create pip installable artifact
-            createPtyhonArtifact(vcx_python, getVcxVersion(vcx_python))
+            stage ('Building Python Artifact') {
+                createPtyhonArtifact(vcx_python, getVcxVersion(vcx_python))
+            }
         }
 
     } catch (Exception ex) {
@@ -87,45 +105,37 @@ def getVcxVersion(envn){
 }
 
 def testPythonWrapper(envn){
-    stage ("Testing Python Wrapper"){
-        envn.inside {
-            sh "python3 -m pytest"
-        }
+    envn.inside {
+        sh "python3 -m pytest"
     }
+    
 }
 
-def buildRust(envn){
-    stage ('Building Rust Library'){
-        envn.inside {
-            sh "rustc --version"
-            sh "gcc --version"
-            sh "cd vcx/libvcx; cargo build --features ci --color=never"
-        }
+def buildRust(envn){ 
+    envn.inside {
+        sh "rustc --version"
+        sh "gcc --version"
+        sh "cd vcx/libvcx; cargo build --features ci --color=never"
     }
 }
 
 def testRust(envn) {
-    stage ('Testing Rust'){
-        sh "echo Testing"
-        envn.inside {
-            sh "cd vcx/libvcx; cargo test --color=never -- --test-threads=1"
-        }
+    envn.inside {
+        sh "cd vcx/libvcx; cargo test --color=never -- --test-threads=1"
     }
 }
 
 // Creates a tar.gz file that is installable from pip.
 def createPtyhonArtifact(envn, version) {
-    stage ('Building Python Artifact') {
-        dir('vcx/wrappers/python3'){
-            sh 'echo Building Python Artifact'
-            withEnv(["VCX_VERSION=${version}"]) {
-                envn.inside {
-                    sh(
-                        script: "python3 setup.py sdist",
-                        returnStdout: true
-                    )
-                    archiveArtifacts allowEmptyArchive: true, artifacts: 'dist/**/*.tar.gz'
-                }
+    dir('vcx/wrappers/python3'){
+        sh 'echo Building Python Artifact'
+        withEnv(["VCX_VERSION=${version}"]) {
+            envn.inside {
+                sh(
+                    script: "python3 setup.py sdist",
+                    returnStdout: true
+                )
+                archiveArtifacts allowEmptyArchive: true, artifacts: 'dist/**/*.tar.gz'
             }
         }
     }
@@ -133,56 +143,50 @@ def createPtyhonArtifact(envn, version) {
 
 // Update the version and revision in the Cargo.toml file, also the so file .
 def updateVersions(app) {
-        stage('Updating Versions') {
-            app.inside {
-                sh 'ls -l'
-                // TODO fix this ... these *SHOULD* be cargo commands.
-                sh 'cd vcx/libvcx; ls -l; ls ../ci/scripts'
-                sh 'cd vcx/libvcx; python ../ci/scripts/cargo-update-version'
+    app.inside {
+        sh 'ls -l'
+        // TODO fix this ... these *SHOULD* be cargo commands.
+        sh 'cd vcx/libvcx; ls -l; ls ../ci/scripts'
+        sh 'cd vcx/libvcx; python ../ci/scripts/cargo-update-version'
 
-            }
-        }
+    }
 }
 
 // Updates the libvcx.so file to libvcx<VER>.so
 def updateSo(app) {
-    stage('Updating .so file version') {
-        app.inside {
-            sh 'cd vcx/libvcx; python ../ci/scripts/cargo-update-so'
-        }
+    app.inside {
+        sh 'cd vcx/libvcx; python ../ci/scripts/cargo-update-so'
     }
 }
 
 // Creates the debian package for the library, as well as gzips the libvcx.so.<version> file
 // Publishes both artifacts.
 def createDeb(envn) {
-    stage('Build libvcx Debian and compress .so file') {
-        envn.inside {
-            CERT_SCRIPT = 'vcx/ci/scripts/getCert.sh'
-            SCRIPT = 'vcx/ci/scripts/gzip_so_file.py'
-            FILES = 'vcx/libvcx/target/debug/libvcx.so.* vcx/libvcx/scripts/provision_agent_keys.py'
-            DEST = 'libvcx.tar.gz'
+    envn.inside {
+        CERT_SCRIPT = 'vcx/ci/scripts/getCert.sh'
+        SCRIPT = 'vcx/ci/scripts/gzip_so_file.py'
+        FILES = 'vcx/libvcx/target/debug/libvcx.so.* vcx/libvcx/scripts/provision_agent_keys.py'
+        DEST = 'libvcx.tar.gz'
 
-            // get Evernym Certificate onto machine
-            sh "${CERT_SCRIPT}"
-                
-            // build debian
-            sh 'cd vcx/libvcx/; cargo deb --no-build'
-    
+        // get Evernym Certificate onto machine
+        sh "${CERT_SCRIPT}"
+            
+        // build debian
+        sh 'cd vcx/libvcx/; cargo deb --no-build'
 
-            if (env.BRANCH_NAME == "master") {
-                // archive debian to Jenkins
-                archiveArtifacts allowEmptyARchive: true, artifacts: "vcx/libvcx/target/debian/libvcx_*_amd64.deb"
 
-                // archive .so file to Jenkins
-                sh "python ${SCRIPT} ${FILES} ${DEST}"
-                archiveArtifacts allowEmptyARchive: true, artifacts: DEST
+        if (env.BRANCH_NAME == "master") {
+            // archive debian to Jenkins
+            archiveArtifacts allowEmptyARchive: true, artifacts: "vcx/libvcx/target/debian/libvcx_*_amd64.deb"
 
-                // upload debian to Repo
-                withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
-                    sh "find vcx/libvcx/target/debian/ -type f -name 'libvcx_*_amd64.deb' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/agency_dev/upload -F file=@{} \\;"
-                    sh "find vcx/libvcx/target/debian/ -type f -name 'libvcx_*_amd64.deb' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/portal_dev/upload -F file=@{} \\;"
-                }
+            // archive .so file to Jenkins
+            sh "python ${SCRIPT} ${FILES} ${DEST}"
+            archiveArtifacts allowEmptyARchive: true, artifacts: DEST
+
+            // upload debian to Repo
+            withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
+                sh "find vcx/libvcx/target/debian/ -type f -name 'libvcx_*_amd64.deb' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/agency_dev/upload -F file=@{} \\;"
+                sh "find vcx/libvcx/target/debian/ -type f -name 'libvcx_*_amd64.deb' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/portal_dev/upload -F file=@{} \\;"
             }
         }
     }
@@ -190,17 +194,15 @@ def createDeb(envn) {
 
 // Creates the tgz file that can be 'npm install'-ed.
 def testNodeWrapper(envn) {
-    stage ('Test Node Wrapper'){
-        dir('vcx/wrappers/node'){
-            envn.inside() {
-                sh 'npm install'
-                sh 'npm -v'
-                sh 'npm run lint'
-                sh 'npm run compile'
-                sh 'npm test'
-                sh 'npm pack'
-                archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.tgz'
-            }
+    dir('vcx/wrappers/node'){
+        envn.inside() {
+            sh 'npm install'
+            sh 'npm -v'
+            sh 'npm run lint'
+            sh 'npm run compile'
+            sh 'npm test'
+            sh 'npm pack'
+            archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.tgz'
         }
     }
 }
@@ -219,6 +221,7 @@ def createNpmDeb(app){
                         // upload npm module
                         sh "find wrappers/node/ -type f -name 'vcx-*.tgz' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/agency_dev/upload -F file=@{} \\;"
                         sh "find wrappers/node/ -type f -name 'vcx-*.tgz' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/portal_dev/upload -F file=@{} \\;"
+                        sh "find wrappers/node/ -type f -name 'vcx-*.tgz' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/npm/upload -F file = @{} \\;"
 
                         // upload debian
                         sh "find . -type f -name 'vcx_*_amd64.deb' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/agency_dev/upload -F file=@{} \\;"
