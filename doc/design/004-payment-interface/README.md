@@ -515,7 +515,7 @@ pub extern fn indy_parse_get_utxo_response(command_handle: i32,
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
 /// inputs_json: The list of UTXO inputs as json array:
-///   [ "input1", ...]
+///   [ "input1", ...] 
 ///   Note that each input should reference paymentAddress
 /// outputs_json: The list of UTXO outputs as json array:
 ///   [{
