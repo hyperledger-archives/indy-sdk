@@ -441,11 +441,16 @@ pub extern fn indy_add_request_fees(command_handle: i32,
 ///
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
-///   [{
-///      input: <str>, // UTXO input
-///      amount: <int>, // amount of tokens in this input
-///      extra: <str>, // optional data from payment transaction
-///   }]
+/// {
+///     "ver": <int>,                    // this field is included to allow for future backward compatability
+///     "utxo_json":
+///         [{
+///           "paymentAddress": <str>,// payment address: "pay:<currency>:<address><checksum>"
+///           "txo": <str>,          
+///           "amount": <int>,        // amount of tokens in this input
+///           "extra": <str>          // optional data from payment transaction
+///         }]
+/// }
 pub extern fn indy_parse_response_with_fees(command_handle: i32,
                                             payment_method: *const c_char,
                                             resp_json: *const c_char,
@@ -481,11 +486,16 @@ pub extern fn indy_build_get_utxo_request(command_handle: i32,
 ///
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
-///   [{
-///      input: <str>, // UTXO input
-///      amount: <int>, // amount of tokens in this input
-///      extra: <str>, // optional data from payment transaction
-///   }]
+/// {
+///     "ver": <int>,                    // this field is included to allow for future backward compatability
+///     "utxo_json":
+///         [{
+///           "paymentAddress": <str>,// payment address: "pay:<currency>:<address><checksum>"
+///           "txo": <str>,          
+///           "amount": <int>,        // amount of tokens in this input
+///           "extra": <str>          // optional data from payment transaction
+///         }]
+/// }
 pub extern fn indy_parse_get_utxo_response(command_handle: i32,
                                            payment_method: *const c_char,
                                            resp_json: *const c_char,
@@ -505,7 +515,7 @@ pub extern fn indy_parse_get_utxo_response(command_handle: i32,
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
 /// inputs_json: The list of UTXO inputs as json array:
-///   ["input1", ...]
+///   [ "input1", ...] 
 ///   Note that each input should reference paymentAddress
 /// outputs_json: The list of UTXO outputs as json array:
 ///   [{
@@ -537,11 +547,16 @@ pub extern fn indy_build_payment_req(command_handle: i32,
 ///
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
-///   [{
-///      input: <str>, // UTXO input
-///      amount: <int>, // amount of tokens in this input
-///      extra: <str>, // optional data from payment transaction
-///   }]
+/// {
+///     "ver": <int>,                    // this field is included to allow for future backward compatability
+///     "utxo_json":
+///         [{
+///           "paymentAddress": <str>,// payment address: "pay:<currency>:<address><checksum>"
+///           "txo": <str>,          
+///           "amount": <int>,        // amount of tokens in this input
+///           "extra": <str>          // optional data from payment transaction
+///         }]
+/// }
 pub extern fn indy_parse_payment_response(command_handle: i32,
                                           payment_method: *const c_char,
                                           resp_json: *const c_char,
