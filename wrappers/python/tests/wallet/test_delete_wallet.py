@@ -37,7 +37,7 @@ async def test_delete_wallet_works_for_twice(wallet_name, xwallet, credentials):
     with pytest.raises(IndyError) as e:
         await wallet.delete_wallet(wallet_name, credentials)
 
-    assert ErrorCode.CommonIOError == e.value.error_code
+    assert ErrorCode.WalletNotFoundError == e.value.error_code
 
 
 # noinspection PyUnusedLocal
@@ -46,4 +46,4 @@ async def test_delete_wallet_works_for_not_created(wallet_name, path_home, crede
     with pytest.raises(IndyError) as e:
         await wallet.delete_wallet(wallet_name, credentials)
 
-    assert ErrorCode.CommonIOError == e.value.error_code
+    assert ErrorCode.WalletNotFoundError == e.value.error_code
