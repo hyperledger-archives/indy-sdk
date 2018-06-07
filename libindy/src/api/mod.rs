@@ -171,4 +171,8 @@ pub enum ErrorCode
 
     // Insufficient funds on inputs
     PaymentInsufficientFundsError = 702,
+
+    // ZMQ Error
+    CommonZMQError = 703,
+
 }
