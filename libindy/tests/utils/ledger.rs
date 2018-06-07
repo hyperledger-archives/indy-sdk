@@ -94,7 +94,7 @@ impl LedgerUtils {
 
     fn _extract_seq_no_from_reply(reply: &str) -> Result<u64, &'static str> {
         ::serde_json::from_str::<::serde_json::Value>(reply).map_err(|_| "Reply isn't valid JSON")?
-            ["result"]["seqNo"]
+            ["result"]["txnMetadata"]["seqNo"]
             .as_u64().ok_or("Missed seqNo in reply")
     }
 
