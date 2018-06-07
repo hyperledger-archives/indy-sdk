@@ -155,7 +155,7 @@ def iosTesting() {
 
                 echo "iOS Test: Running pool"
                 sh "docker rm -f indy_pool || true"
-                sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
+                sh "docker build --build-arg client_ip=0.0.0.0 -f ci/indy-pool.dockerfile -t indy_pool ci"
                 sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 
                 setupRust()
