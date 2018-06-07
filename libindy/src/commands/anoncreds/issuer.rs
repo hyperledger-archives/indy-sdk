@@ -187,7 +187,7 @@ impl IssuerCommandExecutor {
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize AttributeNames: {:?}", err)))?;
 
         if attrs.is_empty() {
-            return Err(IndyError::CommonError(CommonError::InvalidStructure(format!("List of Schema attributes is empty"))));
+            return Err(IndyError::CommonError(CommonError::InvalidStructure("List of Schema attributes is empty".to_string())));
         }
 
         let schema_id = Schema::schema_id(issuer_did, name, version);
@@ -440,7 +440,7 @@ impl IssuerCommandExecutor {
                 rev_reg_info.curr_id = 1 + rev_reg_info.curr_id;
 
                 if rev_reg_info.curr_id > rev_reg_def.value.max_cred_num {
-                    return Err(IndyError::AnoncredsError(AnoncredsError::RevocationRegistryFull(format!("RevocationRegistryAccumulator is full"))));
+                    return Err(IndyError::AnoncredsError(AnoncredsError::RevocationRegistryFull("RevocationRegistryAccumulator is full".to_string())));
                 }
 
                 if rev_reg_def.value.issuance_type == IssuanceType::ISSUANCE_ON_DEMAND {
@@ -448,7 +448,7 @@ impl IssuerCommandExecutor {
                 }
 
                 let blob_storage_reader_handle = blob_storage_reader_handle
-                    .ok_or(IndyError::CommonError(CommonError::InvalidStructure(format!("TailsReaderHandle not found"))))?;
+                    .ok_or(IndyError::CommonError(CommonError::InvalidStructure("TailsReaderHandle not found".to_string())))?;
 
                 let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
                                                                blob_storage_reader_handle,
@@ -674,12 +674,12 @@ impl IssuerCommandExecutor {
 
     // TODO: DELETE IT
     fn _wallet_set_schema_id(&self, wallet_handle: i32, id: &str, schema_id: &str) -> Result<(), WalletError> {
-        self.wallet_service.add_record(wallet_handle, "Indy::SchemaId", id, schema_id, "{}")
+        self.wallet_service.add_record(wallet_handle, &self.wallet_service.add_prefix("SchemaId"), id, schema_id, "{}")
     }
 
     // TODO: DELETE IT
     fn _wallet_get_schema_id(&self, wallet_handle: i32, key: &str) -> Result<String, IndyError> {
-        let schema_id_record = self.wallet_service.get_record(wallet_handle, "Indy::SchemaId", &key, &RecordOptions::id_value())?;
+        let schema_id_record = self.wallet_service.get_record(wallet_handle, &self.wallet_service.add_prefix("SchemaId"), &key, &RecordOptions::id_value())?;
         Ok(schema_id_record.get_value()
             .ok_or(CommonError::InvalidStructure(format!("SchemaId not found for id: {}", key)))?.to_string())
     }

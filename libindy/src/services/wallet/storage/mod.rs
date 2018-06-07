@@ -4,8 +4,6 @@ pub mod plugged;
 use errors::wallet::WalletStorageError;
 use services::wallet::language;
 use services::wallet::wallet::EncryptedValue;
-use super::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
-use serde_json;
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Tag {
@@ -19,46 +17,6 @@ pub enum TagName {
     OfEncrypted(Vec<u8>),
     OfPlain(Vec<u8>),
 }
-
-
-#[derive(Debug,Deserialize,Serialize,PartialEq)]
-struct FetchOptions {
-    #[serde(rename="retrieveType")]
-    retrieve_type: bool,
-    #[serde(rename="retrieveValue")]
-    retrieve_value: bool,
-    #[serde(rename="retrieveTags")]
-    retrieve_tags: bool,
-}
-
-
-impl FetchOptions {
-    fn new(fetch_type: bool, fetch_value: bool, fetch_tags: bool) -> FetchOptions {
-        FetchOptions {
-            retrieve_type: fetch_type,
-            retrieve_value: fetch_value,
-            retrieve_tags: fetch_tags,
-        }
-    }
-}
-
-
-impl Default for FetchOptions {
-    fn default() -> FetchOptions {
-        FetchOptions {
-            retrieve_type: false,
-            retrieve_value: true,
-            retrieve_tags: false,
-        }
-    }
-}
-
-
-impl JsonEncodable for FetchOptions {}
-
-
-impl<'a> JsonDecodable<'a> for FetchOptions {}
-
 
 #[derive(Clone, Debug)]
 pub struct StorageEntity {
@@ -103,7 +61,7 @@ pub trait WalletStorage {
 
 
 pub trait WalletStorageType {
-    fn create_storage(&self, name: &str, config: Option<&str>, credentials: &str, keys: &Vec<u8>) -> Result<(), WalletStorageError>;
+    fn create_storage(&self, name: &str, config: Option<&str>, credentials: &str, metadata: &Vec<u8>) -> Result<(), WalletStorageError>;
     fn open_storage(&self, name: &str, config: Option<&str>, credentials: &str) -> Result<Box<WalletStorage>, WalletStorageError>;
     fn delete_storage(&self, name: &str, config: Option<&str>, credentials: &str) -> Result<(), WalletStorageError>;
 }

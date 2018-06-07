@@ -108,13 +108,13 @@ impl Issuer {
             if rev_idx.is_some() {
                 let rev_idx = rev_idx.unwrap();
                 let rev_reg = rev_reg
-                    .ok_or(CommonError::InvalidState(format!("RevocationRegistry not found")))?;
+                    .ok_or(CommonError::InvalidState("RevocationRegistry not found".to_string()))?;
                 let rev_key_priv = rev_key_priv
-                    .ok_or(CommonError::InvalidState(format!("RevocationKeyPrivate not found")))?;
+                    .ok_or(CommonError::InvalidState("RevocationKeyPrivate not found".to_string()))?;
                 let rev_reg_def = rev_reg_def
-                    .ok_or(CommonError::InvalidState(format!("RevocationRegistryDefinitionValue not found")))?;
+                    .ok_or(CommonError::InvalidState("RevocationRegistryDefinitionValue not found".to_string()))?;
                 let rev_tails_accessor = rev_tails_accessor
-                    .ok_or(CommonError::InvalidState(format!("RevocationTailsAccessor not found")))?;
+                    .ok_or(CommonError::InvalidState("RevocationTailsAccessor not found".to_string()))?;
 
                 CryptoIssuer::sign_credential_with_revoc(&cred_request.prover_did,
                                                          &cred_request.blinded_ms,
