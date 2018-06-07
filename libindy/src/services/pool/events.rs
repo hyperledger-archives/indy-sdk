@@ -3,7 +3,7 @@ use services::pool::types::CatchupReq;
 use services::pool::types::CatchupRep;
 use services::pool::types::Message;
 
-pub enum NetworkerRequestType {
+pub enum NetworkerEvent {
     SendOneRequest,
     SendAllRequest
 }
@@ -38,7 +38,7 @@ pub enum RequestEvent {
 
 impl RequestEvent {
     pub fn get_req_id(&self) -> String {
-
+        unimplemented!()
     }
 }
 
@@ -60,7 +60,7 @@ impl Into<Option<RequestEvent>> for PoolEvent {
                 _parse_msg(&msg).map(Message::into)
             },
             PoolEvent::SendRequest(msg) => {
-                //TODO: parse
+                unimplemented!() //TODO: parse
             }
             _ => None
         }
@@ -68,10 +68,10 @@ impl Into<Option<RequestEvent>> for PoolEvent {
 }
 
 
-impl Into<Option<NetworkerRequestType>> for RequestEvent {
-    fn into(self) -> Option<NetworkerRequestType> {
+impl Into<Option<NetworkerEvent>> for RequestEvent {
+    fn into(self) -> Option<NetworkerEvent> {
         match self {
-            RequestEvent::LedgerStatus(_) => Some(NetworkerRequestType::SendAllRequest),
+            RequestEvent::LedgerStatus(_) => Some(NetworkerEvent::SendAllRequest),
             _ => None
         }
     }
