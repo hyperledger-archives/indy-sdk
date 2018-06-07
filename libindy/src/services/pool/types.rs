@@ -195,7 +195,7 @@ impl NodeTransactionV1 {
 }
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LedgerStatus {
     pub txnSeqNo: usize,
     pub merkleRoot: String,
@@ -228,7 +228,7 @@ pub struct CatchupReq {
 impl<'a> JsonDecodable<'a> for CatchupReq {}
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct CatchupRep {
     pub ledgerId: usize,
     pub consProof: Vec<String>,

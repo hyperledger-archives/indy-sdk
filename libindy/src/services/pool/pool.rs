@@ -6,6 +6,8 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::cell::RefCell;
 use std::rc::Rc;
+use services::pool::types::LedgerStatus;
+use services::pool::types::CatchupReq;
 
 use services::pool::commander::Commander;
 use services::pool::events::PoolEvent;
@@ -37,13 +39,14 @@ struct ActiveState<T: Networker, R: RequestHandler<T>> {
     request_handlers: HashMap<String, R>,
 }
 
-impl<'st, T: Networker, R: RequestHandler<T>> PoolState for ActiveState<T, R> {}
+impl<T: Networker, R: RequestHandler<T>> PoolState for ActiveState<T, R> {}
 
-struct SyncCatchupState<T: Networker> {
-    networker: Rc<RefCell<T>>
+struct SyncCatchupState<T: Networker, R: RequestHandler<T>> {
+    networker: Rc<RefCell<T>>,
+    request_handler: R
 }
 
-impl<T: Networker> PoolState for SyncCatchupState<T> {}
+impl<T: Networker, R: RequestHandler<T>> PoolState for SyncCatchupState<T, R> {}
 
 struct TerminatedState<T: Networker> {
     networker: Rc<RefCell<T>>
@@ -78,7 +81,14 @@ impl<T: Networker> PoolSM<InitializationState<T>> {
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<InitializationState<T>>> for PoolSM<GettingCatchupTargetState<T, R>> {
     fn from(pool: PoolSM<InitializationState<T>>) -> PoolSM<GettingCatchupTargetState<T, R>> {
         let mut request_handler = R::new(pool.state.networker.clone());
-        request_handler.process_event(Some(RequestEvent::LedgerStatus));
+        let ls = LedgerStatus {
+            txnSeqNo: 0,
+            merkleRoot: String::new(),
+            ledgerId: 0,
+            ppSeqNo: None,
+            viewNo: None,
+        };
+        request_handler.process_event(Some(RequestEvent::LedgerStatus(ls)));
         PoolSM {
             state: GettingCatchupTargetState {
                 networker: pool.state.networker,
@@ -109,12 +119,33 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<InitializationState<T>>> fo
 
 // transitions from GettingCatchupTarget
 
-impl<T: Networker, R: RequestHandler<T>> From<PoolSM<GettingCatchupTargetState<T, R>>> for PoolSM<SyncCatchupState<T>> {
+impl<T: Networker, R: RequestHandler<T>> From<PoolSM<GettingCatchupTargetState<T, R>>> for PoolSM<SyncCatchupState<T, R>> {
+    fn from(sm: PoolSM<GettingCatchupTargetState<T, R>>) -> Self {
+
+        let mut request_handler = R::new(sm.state.networker.clone());
+        //TODO: fill catchup req with data
+        let cr = CatchupReq {
+            ledgerId: 0,
+            seqNoStart: 0,
+            seqNoEnd: 0,
+            catchupTill: 0,
+        };
+        request_handler.process_event(Some(RequestEvent::CatchupReq(cr)));
+        PoolSM {
+            state: SyncCatchupState {
+                networker: sm.state.networker,
+                request_handler
+            }
+        }
+    }
+}
+
+impl<T: Networker, R: RequestHandler<T>> From<PoolSM<GettingCatchupTargetState<T, R>>> for PoolSM<ActiveState<T, R>> {
     fn from(sm: PoolSM<GettingCatchupTargetState<T, R>>) -> Self {
         PoolSM {
-            //TODO: send CATCHUP_REQ
-            state: SyncCatchupState {
-                networker: sm.state.networker
+            state: ActiveState {
+                networker: sm.state.networker,
+                request_handlers: HashMap::new(),
             }
         }
     }
@@ -143,7 +174,14 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<GettingCatchupTargetState<T
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<ActiveState<T, R>>> for PoolSM<GettingCatchupTargetState<T, R>> {
     fn from(pool: PoolSM<ActiveState<T, R>>) -> Self {
         let mut request_handler = R::new(pool.state.networker.clone());
-        request_handler.process_event(Some(RequestEvent::LedgerStatus));
+        let ls = LedgerStatus {
+            txnSeqNo: 0,
+            merkleRoot: String::new(),
+            ledgerId: 0,
+            ppSeqNo: None,
+            viewNo: None,
+        };
+        request_handler.process_event(Some(RequestEvent::LedgerStatus(ls)));
         //TODO: close connections!
         PoolSM {
             state: GettingCatchupTargetState { networker: pool.state.networker, request_handler }
@@ -169,8 +207,8 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<ActiveState<T, R>>> for Poo
 
 // transitions from SyncCatchup
 
-impl<T: Networker, R: RequestHandler<T>> From<PoolSM<SyncCatchupState<T>>> for PoolSM<ActiveState<T, R>> {
-    fn from(pool: PoolSM<SyncCatchupState<T>>) -> Self {
+impl<T: Networker, R: RequestHandler<T>> From<PoolSM<SyncCatchupState<T, R>>> for PoolSM<ActiveState<T, R>> {
+    fn from(pool: PoolSM<SyncCatchupState<T, R>>) -> Self {
         PoolSM {
             state: ActiveState {
                 networker: pool.state.networker,
@@ -180,16 +218,16 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<SyncCatchupState<T>>> for P
     }
 }
 
-impl<T: Networker> From<PoolSM<SyncCatchupState<T>>> for PoolSM<TerminatedState<T>> {
-    fn from(pool: PoolSM<SyncCatchupState<T>>) -> Self {
+impl<T: Networker, R: RequestHandler<T>> From<PoolSM<SyncCatchupState<T, R>>> for PoolSM<TerminatedState<T>> {
+    fn from(pool: PoolSM<SyncCatchupState<T, R>>) -> Self {
         PoolSM {
             state: TerminatedState { networker: pool.state.networker }
         }
     }
 }
 
-impl<T: Networker> From<PoolSM<SyncCatchupState<T>>> for PoolSM<ClosedState> {
-    fn from(_: PoolSM<SyncCatchupState<T>>) -> Self {
+impl<T: Networker, R: RequestHandler<T>> From<PoolSM<SyncCatchupState<T, R>>> for PoolSM<ClosedState> {
+    fn from(_: PoolSM<SyncCatchupState<T, R>>) -> Self {
         PoolSM {
             state: ClosedState {}
         }
@@ -201,7 +239,14 @@ impl<T: Networker> From<PoolSM<SyncCatchupState<T>>> for PoolSM<ClosedState> {
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<TerminatedState<T>>> for PoolSM<GettingCatchupTargetState<T, R>> {
     fn from(pool: PoolSM<TerminatedState<T>>) -> Self {
         let mut request_handler = R::new(pool.state.networker.clone());
-        request_handler.process_event(Some(RequestEvent::LedgerStatus));
+        let ls = LedgerStatus {
+            txnSeqNo: 0,
+            merkleRoot: String::new(),
+            ledgerId: 0,
+            ppSeqNo: None,
+            viewNo: None,
+        };
+        request_handler.process_event(Some(RequestEvent::LedgerStatus(ls)));
         PoolSM {
             state: GettingCatchupTargetState { networker: pool.state.networker, request_handler }
         }
@@ -221,7 +266,7 @@ enum PoolWrapper<T: Networker, R: RequestHandler<T>> {
     GettingCatchupTarget(PoolSM<GettingCatchupTargetState<T, R>>),
     Active(PoolSM<ActiveState<T, R>>),
     Closed(PoolSM<ClosedState>),
-    SyncCatchup(PoolSM<SyncCatchupState<T>>),
+    SyncCatchup(PoolSM<SyncCatchupState<T, R>>),
     Terminated(PoolSM<TerminatedState<T>>),
 }
 
@@ -242,11 +287,12 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                 _ => PoolWrapper::Initialization(pool)
             }
             PoolWrapper::GettingCatchupTarget(mut pool) => {
-                let pe = pool.state.request_handler.process_event(pe.into()).unwrap_or(pe);
+                let pe = pool.state.request_handler.process_event(pe.clone().into()).unwrap_or(pe);
                 match pe {
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
                     PoolEvent::ConsensusFailed => PoolWrapper::Terminated(pool.into()),
                     PoolEvent::ConsensusReached => PoolWrapper::SyncCatchup(pool.into()),
+                    PoolEvent::Synced => PoolWrapper::Active(pool.into()),
                     _ => PoolWrapper::GettingCatchupTarget(pool)
                 }
             }
@@ -263,7 +309,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                     PoolEvent::PoolOutdated => PoolWrapper::Terminated(pool.into()),
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
                     PoolEvent::Refresh => PoolWrapper::GettingCatchupTarget(pool.into()),
-                    PoolEvent::SendRequest => {
+                    PoolEvent::SendRequest(_) => {
                         let re: Option<RequestEvent> = pe.into();
                         let mut request_handler = R::new(pool.state.networker.clone());
                         request_handler.process_event(re);
@@ -273,7 +319,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
 
                         PoolWrapper::Active(pool)
                     }
-                    PoolEvent::NodeReply => {
+                    PoolEvent::NodeReply(_) => {
                         //TODO: redirect reply to needed request handler
                         let req_id = "";
                         let remove = if let Some(rh) = pool.state.request_handlers.get_mut(req_id) {
@@ -296,7 +342,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
                     PoolEvent::NodesBlacklisted => PoolWrapper::Terminated(pool.into()),
                     PoolEvent::Synced => PoolWrapper::Active(pool.into()),
-                    PoolEvent::NodeReply => {
+                    PoolEvent::NodeReply(_) => {
                         //TODO: Build merkle tree if it is CATCHUP_REP
                         PoolWrapper::SyncCatchup(pool)
                     }
@@ -336,8 +382,9 @@ impl<S: Networker, R: RequestHandler<S>> Pool<S, R> {
     }
 
     pub fn work(&mut self, cmd_socket: zmq::Socket) {
+        let name = self.name.as_str().to_string();
         self.worker = Some(thread::spawn(|| {
-            let mut pool_thread: PoolThread<S, R> = PoolThread::new(cmd_socket);
+            let mut pool_thread: PoolThread<S, R> = PoolThread::new(cmd_socket, name);
             pool_thread.work();
         }));
     }
@@ -356,16 +403,18 @@ struct PoolThread<S: Networker, R: RequestHandler<S>> {
     events: VecDeque<PoolEvent>,
     commander: Commander,
     networker: Rc<RefCell<S>>,
+    name: String,
 }
 
 impl<S: Networker, R: RequestHandler<S>> PoolThread<S, R> {
-    pub fn new(cmd_socket: zmq::Socket) -> Self {
+    pub fn new(cmd_socket: zmq::Socket, name: String) -> Self {
         let networker = Rc::new(RefCell::new(S::new()));
         PoolThread {
             pool_wrapper: Some(PoolWrapper::Initialization(PoolSM::new(networker.clone()))),
             events: VecDeque::new(),
             commander: Commander::new(cmd_socket),
             networker,
+            name
         }
     }
 

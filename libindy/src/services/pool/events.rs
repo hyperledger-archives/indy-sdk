@@ -1,12 +1,18 @@
+use services::pool::types::LedgerStatus;
+use services::pool::types::CatchupReq;
+use services::pool::types::CatchupRep;
+use services::pool::types::Message;
+
 pub enum NetworkerRequestType {
     SendOneRequest,
     SendAllRequest
 }
-
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum PoolEvent {
     CheckCache,
-    NodeReply,
+    NodeReply(
+        String, // reply
+    ),
     Close,
     Refresh,
     ConsensusReached,
@@ -14,31 +20,66 @@ pub enum PoolEvent {
     PoolOutdated,
     Synced,
     NodesBlacklisted,
-    SendRequest,
+    SendRequest(
+        String, // request
+    ),
     Timeout
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum RequestEvent {
-    LedgerStatus,
-    NodeReply,
+    LedgerStatus(
+        LedgerStatus
+    ),
+    CatchupReq(CatchupReq),
+    CatchupRep(CatchupRep),
+    None
+}
+
+impl RequestEvent {
+    pub fn get_req_id(&self) -> String {
+
+    }
+}
+
+impl From<Message> for RequestEvent {
+    fn from(msg: Message) -> Self {
+        match msg {
+            Message::CatchupReq(req) => RequestEvent::CatchupReq(req),
+            Message::CatchupRep(rep) => RequestEvent::CatchupRep(rep),
+            Message::LedgerStatus(ls) => RequestEvent::LedgerStatus(ls),
+            _ => RequestEvent::None
+        }
+    }
 }
 
 impl Into<Option<RequestEvent>> for PoolEvent {
     fn into(self) -> Option<RequestEvent> {
         match self {
-            PoolEvent::NodeReply => Some(RequestEvent::NodeReply),
-            PoolEvent::SendRequest => None, //TODO: parse event type and send corresponding one
+            PoolEvent::NodeReply(msg) => {
+                _parse_msg(&msg).map(Message::into)
+            },
+            PoolEvent::SendRequest(msg) => {
+                //TODO: parse
+            }
             _ => None
         }
     }
 }
 
+
 impl Into<Option<NetworkerRequestType>> for RequestEvent {
     fn into(self) -> Option<NetworkerRequestType> {
         match self {
-            RequestEvent::LedgerStatus => Some(NetworkerRequestType::SendAllRequest),
+            RequestEvent::LedgerStatus(_) => Some(NetworkerRequestType::SendAllRequest),
             _ => None
         }
+    }
+}
+
+fn _parse_msg(msg: &str) -> Option<Message> {
+    match Message::from_raw_str(msg).map_err(map_err_trace!()) {
+        Ok(msg) => Some(msg),
+        Err(err) => None
     }
 }

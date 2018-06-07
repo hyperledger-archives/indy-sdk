@@ -16,9 +16,11 @@ struct StartState<T: Networker> {
 
 impl<T: Networker> RequestState for StartState<T> {}
 
-struct ConsensusState {}
+struct ConsensusState<T: Networker> {
+    networker: Rc<RefCell<T>>
+}
 
-impl RequestState for ConsensusState {}
+impl<T: Networker> RequestState for ConsensusState<T> {}
 
 struct SingleState<T: Networker> {
     networker: Rc<RefCell<T>>
@@ -34,6 +36,12 @@ impl RequestState for FinishState {
     }
 }
 
+struct FullState<T: Networker> {
+    networker: Rc<RefCell<T>>
+}
+
+impl<T: Networker> RequestState for FullState<T> {}
+
 struct RequestSM<T: RequestState> {
     state: T
 }
@@ -48,7 +56,7 @@ impl<T: Networker> RequestSM<StartState<T>> {
     }
 }
 
-impl<'sm, T: Networker> From<RequestSM<StartState<T>>> for RequestSM<SingleState<T>> {
+impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<SingleState<T>> {
     fn from(sm: RequestSM<StartState<T>>) -> Self {
         RequestSM {
             state: SingleState {
@@ -58,24 +66,47 @@ impl<'sm, T: Networker> From<RequestSM<StartState<T>>> for RequestSM<SingleState
     }
 }
 
-impl<'sm, T: Networker> From<RequestSM<StartState<T>>> for RequestSM<ConsensusState> {
-    fn from(_: RequestSM<StartState<T>>) -> Self {
+impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<ConsensusState<T>> {
+    fn from(val: RequestSM<StartState<T>>) -> Self {
         RequestSM {
-            state: ConsensusState {}
+            state: ConsensusState {
+                networker: val.state.networker.clone()
+            }
         }
     }
 }
 
-impl<'sm, T: Networker> From<RequestSM<SingleState<T>>> for RequestSM<FinishState> {
+impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<FullState<T>> {
+    fn from(val: RequestSM<StartState<T>>) -> Self {
+        RequestSM {
+            state: FullState {
+                networker: val.state.networker.clone()
+            }
+        }
+    }
+}
+
+impl<T: Networker> From<RequestSM<SingleState<T>>> for RequestSM<FinishState> {
     fn from(_: RequestSM<SingleState<T>>) -> Self {
+        //TODO: close connections in networker
         RequestSM {
             state: FinishState {}
         }
     }
 }
 
-impl From<RequestSM<ConsensusState>> for RequestSM<FinishState> {
-    fn from(_: RequestSM<ConsensusState>) -> Self {
+impl<T: Networker> From<RequestSM<ConsensusState<T>>> for RequestSM<FinishState> {
+    fn from(_: RequestSM<ConsensusState<T>>) -> Self {
+        //TODO: close connections in networker
+        RequestSM {
+            state: FinishState {}
+        }
+    }
+}
+
+impl<T: Networker> From<RequestSM<FullState<T>>> for RequestSM<FinishState> {
+    fn from(_: RequestSM<FullState<T>>) -> Self {
+        //TODO: close connections in networker
         RequestSM {
             state: FinishState {}
         }
@@ -85,7 +116,10 @@ impl From<RequestSM<ConsensusState>> for RequestSM<FinishState> {
 enum RequestSMWrapper<T: Networker> {
     Start(RequestSM<StartState<T>>),
     Single(RequestSM<SingleState<T>>),
-    Consensus(RequestSM<ConsensusState>),
+    Consensus(RequestSM<ConsensusState<T>>),
+    CatchupSingle(RequestSM<SingleState<T>>),
+    CatchupConsensus(RequestSM<ConsensusState<T>>),
+    FullRequest(RequestSM<FullState<T>>),
     Finish(RequestSM<FinishState>)
 }
 
@@ -94,28 +128,81 @@ impl<T: Networker> RequestSMWrapper<T> {
         match self {
             RequestSMWrapper::Start(request) => {
                 match re {
-                    RequestEvent::LedgerStatus => {
+                    RequestEvent::LedgerStatus(ls) => {
                         //TODO: send request to networker
-                        (RequestSMWrapper::Consensus(request.into()), None)
+                        (RequestSMWrapper::CatchupConsensus(request.into()), None)
+                    },
+                    RequestEvent::CatchupReq(cr) => {
+                        //TODO: send request to networker
+                        (RequestSMWrapper::CatchupSingle(request.into()), None)
                     }
                     _ => (RequestSMWrapper::Start(request), None)
                 }
             }
             RequestSMWrapper::Consensus(request) => {
                 match re {
-                    RequestEvent::NodeReply => {
+//                    RequestEvent::NodeReply => {
                         //TODO: check if consensus reached or failed
-                        (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::ConsensusReached))
-                    },
+//                        (RequestSMWrapper::Finish(request.into()), None)
+                        //if failed
+//                        (RequestSMWrapper::Finish(request.into()), None)
+                        //if still waiting
+//                        (RequestSMWrapper::Consensus(request), None)
+//                    },
                     _ => (RequestSMWrapper::Consensus(request), None)
                 }
             }
             RequestSMWrapper::Single(request) => {
                 match re {
-                    RequestEvent::NodeReply => (RequestSMWrapper::Finish(request.into()), None),
+//                    RequestEvent::NodeReply => {
+//                        (RequestSMWrapper::Finish(request.into()), None)
+                        //if failed
+//                        (RequestSMWrapper::Finish(request.into()), None) //Some(PoolEvent::NodesBlacklisted)?
+                        //if still waiting
+//                        (RequestSMWrapper::Single(request), None)
+//                    },
                     _ => (RequestSMWrapper::Single(request), None)
                 }
             },
+            RequestSMWrapper::CatchupConsensus(request) => {
+                match re {
+                    RequestEvent::LedgerStatus(ls) => {
+                        //if consensus reached and catchup is needed
+                        (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::ConsensusReached))
+                        //if consensus reached and we are up to date
+//                        (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::Synced))
+                        //if failed
+//                        (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::ConsensusFailed))
+                        //if still waiting
+//                        (RequestSMWrapper::CatchupConsensus(request), None)
+                    }
+                    _ => (RequestSMWrapper::CatchupConsensus(request), None)
+                }
+            },
+            RequestSMWrapper::CatchupSingle(request) => {
+                match re {
+                    RequestEvent::CatchupRep(cr) => {
+                        //if round-robin successful
+                        (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::Synced))
+                        //if failed
+//                        (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::NodesBlacklisted))
+                        //if still waiting
+//                        (RequestSMWrapper::CatchupSingle(request), None)
+                    }
+                    _ => (RequestSMWrapper::CatchupSingle(request), None)
+                }
+            },
+            RequestSMWrapper::FullRequest(request) => {
+                match re {
+//                    RequestEvent::NodeReply => {
+                        //if all nodes answered
+//                        (RequestSMWrapper::Finish(request.into()), None)
+                        //if we are still waiting
+//                        (RequestSMWrapper::FullRequest(request), None)
+//                    }
+                    _ => (RequestSMWrapper::FullRequest(request), None)
+                }
+            }
             RequestSMWrapper::Finish(request) => (RequestSMWrapper::Finish(request), None)
         }
     }
@@ -126,6 +213,9 @@ impl<T: Networker> RequestSMWrapper<T> {
             &RequestSMWrapper::Consensus(ref request) => request.state.is_terminal(),
             &RequestSMWrapper::Single(ref request) => request.state.is_terminal(),
             &RequestSMWrapper::Finish(ref request) => request.state.is_terminal(),
+            &RequestSMWrapper::CatchupSingle(ref request) => request.state.is_terminal(),
+            &RequestSMWrapper::CatchupConsensus(ref request) => request.state.is_terminal(),
+            &RequestSMWrapper::FullRequest(ref request) => request.state.is_terminal(),
         }
     }
 }
