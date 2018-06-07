@@ -148,7 +148,7 @@
 
 - (void)testDeleteWalletWorksForUnknown {
     NSError *ret = [[WalletUtils sharedInstance] deleteWalletWithName:@"testDeleteWalletWorksForUnknown"];
-    XCTAssertEqual(ret.code, CommonIOError, @"WalletUtils:deleteWalletWithName() returned wrong error");
+    XCTAssertEqual(ret.code, WalletNotFoundError, @"WalletUtils:deleteWalletWithName() returned wrong error");
 }
 
 // MARK: - Open wallet
@@ -200,7 +200,7 @@
     NSError *ret = [[WalletUtils sharedInstance] openWalletWithName:[TestUtils wallet]
                                                              config:nil
                                                           outHandle:nil];
-    XCTAssertEqual(ret.code, CommonIOError, @"WalletUtils:openWalletWithName() failed");
+    XCTAssertEqual(ret.code, WalletNotFoundError, @"WalletUtils:openWalletWithName() failed");
 }
 
 // MARK: - Close wallet
