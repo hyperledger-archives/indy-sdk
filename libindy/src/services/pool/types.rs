@@ -205,7 +205,7 @@ pub struct LedgerStatus {
 }
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConsistencyProof {
     //TODO almost all fields Option<> or find better approach
     pub seqNoEnd: usize,
@@ -250,7 +250,7 @@ impl CatchupRep {
     }
 }
 
-#[derive(Serialize, Debug, Deserialize)]
+#[derive(Serialize, Debug, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum Reply {
     ReplyV0(ReplyV0),
@@ -258,35 +258,35 @@ pub enum Reply {
 }
 
 impl Reply {
-    pub fn req_id(self) -> u64 {
+    pub fn req_id(&self) -> u64 {
         match self {
-            Reply::ReplyV0(reply) => reply.result.req_id,
-            Reply::ReplyV1(reply) => reply.result.txn.metadata.req_id
+            &Reply::ReplyV0(ref reply) => reply.result.req_id,
+            &Reply::ReplyV1(ref reply) => reply.result.txn.metadata.req_id
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ReplyV0 {
     pub result: ResponseMetadata
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ReplyV1 {
     pub result: ReplyResultV1
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ReplyResultV1 {
     pub txn: ReplyTxnV1
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ReplyTxnV1 {
     pub metadata: ResponseMetadata
 }
 
-#[derive(Serialize, Debug, Deserialize)]
+#[derive(Serialize, Debug, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum Response {
     ResponseV0(ResponseV0),
@@ -302,18 +302,18 @@ impl Response {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ResponseV0 {
     pub req_id: u64
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ResponseV1 {
     pub metadata: ResponseMetadata
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ResponseMetadata {
     pub req_id: u64

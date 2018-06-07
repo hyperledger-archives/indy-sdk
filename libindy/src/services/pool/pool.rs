@@ -80,7 +80,8 @@ impl<T: Networker> PoolSM<InitializationState<T>> {
 
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<InitializationState<T>>> for PoolSM<GettingCatchupTargetState<T, R>> {
     fn from(pool: PoolSM<InitializationState<T>>) -> PoolSM<GettingCatchupTargetState<T, R>> {
-        let mut request_handler = R::new(pool.state.networker.clone());
+        //TODO: fill it up!
+        let mut request_handler = R::new(pool.state.networker.clone(), 0, &vec![], 0);
         let ls = LedgerStatus {
             txnSeqNo: 0,
             merkleRoot: String::new(),
@@ -122,7 +123,7 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<InitializationState<T>>> fo
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<GettingCatchupTargetState<T, R>>> for PoolSM<SyncCatchupState<T, R>> {
     fn from(sm: PoolSM<GettingCatchupTargetState<T, R>>) -> Self {
 
-        let mut request_handler = R::new(sm.state.networker.clone());
+        let mut request_handler = R::new(sm.state.networker.clone(), 0, &vec![], 0);
         //TODO: fill catchup req with data
         let cr = CatchupReq {
             ledgerId: 0,
@@ -173,7 +174,8 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<GettingCatchupTargetState<T
 
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<ActiveState<T, R>>> for PoolSM<GettingCatchupTargetState<T, R>> {
     fn from(pool: PoolSM<ActiveState<T, R>>) -> Self {
-        let mut request_handler = R::new(pool.state.networker.clone());
+        //TODO: fill it up!
+        let mut request_handler = R::new(pool.state.networker.clone(), 0, &vec![], 0);
         let ls = LedgerStatus {
             txnSeqNo: 0,
             merkleRoot: String::new(),
@@ -238,7 +240,8 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<SyncCatchupState<T, R>>> fo
 
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<TerminatedState<T>>> for PoolSM<GettingCatchupTargetState<T, R>> {
     fn from(pool: PoolSM<TerminatedState<T>>) -> Self {
-        let mut request_handler = R::new(pool.state.networker.clone());
+        //TODO: fill it up
+        let mut request_handler = R::new(pool.state.networker.clone(), 0, &vec![], 0);
         let ls = LedgerStatus {
             txnSeqNo: 0,
             merkleRoot: String::new(),
@@ -311,7 +314,8 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                     PoolEvent::Refresh => PoolWrapper::GettingCatchupTarget(pool.into()),
                     PoolEvent::SendRequest(_) => {
                         let re: Option<RequestEvent> = pe.into();
-                        let mut request_handler = R::new(pool.state.networker.clone());
+                        //TODO: fill it up!
+                        let mut request_handler = R::new(pool.state.networker.clone(), 0, &vec![], 0);
                         request_handler.process_event(re);
                         //TODO: parse req_id
                         let req_id = "";
@@ -319,7 +323,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
 
                         PoolWrapper::Active(pool)
                     }
-                    PoolEvent::NodeReply(_) => {
+                    PoolEvent::NodeReply(_, _) => {
                         //TODO: redirect reply to needed request handler
                         let req_id = "";
                         let remove = if let Some(rh) = pool.state.request_handlers.get_mut(req_id) {
@@ -342,7 +346,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
                     PoolEvent::NodesBlacklisted => PoolWrapper::Terminated(pool.into()),
                     PoolEvent::Synced => PoolWrapper::Active(pool.into()),
-                    PoolEvent::NodeReply(_) => {
+                    PoolEvent::NodeReply(_, _) => {
                         //TODO: Build merkle tree if it is CATCHUP_REP
                         PoolWrapper::SyncCatchup(pool)
                     }
