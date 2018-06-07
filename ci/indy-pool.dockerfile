@@ -24,9 +24,9 @@ RUN echo "deb https://repo.sovrin.org/deb xenial $indy_stream" >> /etc/apt/sourc
 
 RUN useradd -ms /bin/bash -u $uid indy
 
-ARG indy_plenum_ver=1.2.382
+ARG indy_plenum_ver=1.2.389
 ARG indy_anoncreds_ver=1.0.32
-ARG indy_node_ver=1.3.440
+ARG indy_node_ver=1.3.446
 ARG python3_indy_crypto_ver=0.4.1
 ARG indy_crypto_ver=0.4.0
 
@@ -38,7 +38,10 @@ RUN apt-get update -y && apt-get install -y \
         libindy-crypto=${indy_crypto_ver} \
         vim
 
-ENV POOL_IP=127.0.0.1
+ARG pool_ip=10.0.0.2
+ARG client_ip=$pool_ip
+
+ENV CLIENT_IP=$client_ip
 
 RUN echo "[supervisord]\n\
 logfile = /tmp/supervisord.log\n\
@@ -58,25 +61,25 @@ childlogdir = /tmp\n\
 strip_ansi = false\n\
 \n\
 [program:node1]\n\
-command=start_indy_node Node1 %(ENV_POOL_IP)s 9701 %(ENV_POOL_IP)s 9702\n\
+command=start_indy_node Node1 %(ENV_CLIENT_IP)s 9701 %(ENV_CLIENT_IP)s 9702\n\
 directory=/home/indy\n\
 stdout_logfile=/tmp/node1.log\n\
 stderr_logfile=/tmp/node1.log\n\
 \n\
 [program:node2]\n\
-command=start_indy_node Node2 %(ENV_POOL_IP)s 9703 %(ENV_POOL_IP)s 9704\n\
+command=start_indy_node Node2 %(ENV_CLIENT_IP)s 9703 %(ENV_CLIENT_IP)s 9704\n\
 directory=/home/indy\n\
 stdout_logfile=/tmp/node2.log\n\
 stderr_logfile=/tmp/node2.log\n\
 \n\
 [program:node3]\n\
-command=start_indy_node Node3 %(ENV_POOL_IP)s 9705 %(ENV_POOL_IP)s 9706\n\
+command=start_indy_node Node3 %(ENV_CLIENT_IP)s 9705 %(ENV_CLIENT_IP)s 9706\n\
 directory=/home/indy\n\
 stdout_logfile=/tmp/node3.log\n\
 stderr_logfile=/tmp/node3.log\n\
 \n\
 [program:node4]\n\
-command=start_indy_node Node4 %(ENV_POOL_IP)s 9707 %(ENV_POOL_IP)s 9708\n\
+command=start_indy_node Node4 %(ENV_CLIENT_IP)s 9707 %(ENV_CLIENT_IP)s 9708\n\
 directory=/home/indy\n\
 stdout_logfile=/tmp/node4.log\n\
 stderr_logfile=/tmp/node4.log\n"\
@@ -87,7 +90,7 @@ USER indy
 RUN awk '{if (index($1, "NETWORK_NAME") != 0) {print("NETWORK_NAME = \"sandbox\"")} else print($0)}' /etc/indy/indy_config.py> /tmp/indy_config.py
 RUN mv /tmp/indy_config.py /etc/indy/indy_config.py
 
-RUN generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 1 2 3 4 --ips="$POOL_IP,$POOL_IP,$POOL_IP,$POOL_IP"
+RUN generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 1 2 3 4 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"
 
 EXPOSE 9701 9702 9703 9704 9705 9706 9707 9708
 
