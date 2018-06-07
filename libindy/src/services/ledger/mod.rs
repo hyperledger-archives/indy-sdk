@@ -113,7 +113,7 @@ impl LedgerService {
         info!("build_attrib_request >>> identifier: {:?}, dest: {:?}, hash: {:?}, raw: {:?}, enc: {:?}", identifier, dest, hash, raw, enc);
 
         if raw.is_none() && hash.is_none() && enc.is_none() {
-            return Err(CommonError::InvalidStructure(format!("Either raw or hash or enc must be specified")));
+            return Err(CommonError::InvalidStructure("Either raw or hash or enc must be specified".to_string()));
         }
         if let Some(ref raw) = raw {
             serde_json::from_str::<serde_json::Value>(raw)
@@ -138,7 +138,7 @@ impl LedgerService {
         info!("build_get_attrib_request >>> identifier: {:?}, dest: {:?}, hash: {:?}, raw: {:?}, enc: {:?}", identifier, dest, hash, raw, enc);
 
         if raw.is_none() && hash.is_none() && enc.is_none() {
-            return Err(CommonError::InvalidStructure(format!("Either raw or hash or enc must be specified")));
+            return Err(CommonError::InvalidStructure("Either raw or hash or enc must be specified".to_string()));
         }
         let operation = GetAttribOperation::new(dest.to_string(), raw, hash, enc);
 
