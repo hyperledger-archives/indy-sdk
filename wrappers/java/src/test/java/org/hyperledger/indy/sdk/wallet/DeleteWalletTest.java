@@ -51,7 +51,7 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testDeleteWalletWorksForTwice() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(IOException.class));
+		thrown.expectCause(isA(WalletNotFoundException.class));
 
 		Wallet.createWallet(POOL, WALLET, null, null, CREDENTIALS).get();
 
@@ -74,7 +74,7 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testDeleteWalletWorksForNotCreated() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(IOException.class));
+		thrown.expectCause(isA(WalletNotFoundException.class));
 
 		Wallet.deleteWallet(WALLET, CREDENTIALS).get();
 	}
