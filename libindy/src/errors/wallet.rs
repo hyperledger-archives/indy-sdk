@@ -37,7 +37,6 @@ pub enum WalletError {
     ItemNotFound,
     ItemAlreadyExists,
     QueryError(String),
-    IOError(io::Error),
     StructureError(String),
     ExportPathExists,
     ImportPathDoesNotExist,
@@ -65,7 +64,6 @@ impl fmt::Display for WalletError {
             WalletError::ItemNotFound => write!(f, "Item not found"),
             WalletError::ItemAlreadyExists => write!(f, "Item already exists"),
             WalletError::QueryError(ref description) => write!(f, "{}", description),
-            WalletError::IOError(ref err) => write!(f, "IO error occurred during wallet operation: {}", err.description()),
             WalletError::StructureError(ref description) => write!(f, "Invalid structure of wallet input: {}", description),
             WalletError::NotEmpty => write!(f, "Wallet is not empty"),
             WalletError::ExportPathExists => write!(f, "Export file already exists"),
@@ -94,7 +92,6 @@ impl error::Error for WalletError {
             WalletError::ItemNotFound => "Item not found",
             WalletError::ItemAlreadyExists => "Item already exists",
             WalletError::QueryError(ref description) => description,
-            WalletError::IOError(ref err) => err.description(),
             WalletError::StructureError(ref description) => description,
             WalletError::NotEmpty => "Wallet is not empty",
             WalletError::ExportPathExists => "Export file already exists",
@@ -121,7 +118,6 @@ impl error::Error for WalletError {
             WalletError::ItemNotFound => None,
             WalletError::ItemAlreadyExists => None,
             WalletError::QueryError(_) => None,
-            WalletError::IOError(ref err) => Some(err),
             WalletError::StructureError(_) => None,
             WalletError::NotEmpty => None,
             WalletError::ExportPathExists => None,
@@ -150,7 +146,6 @@ impl ToErrorCode for WalletError {
             WalletError::ItemNotFound => ErrorCode::WalletItemNotFound,
             WalletError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
             WalletError::QueryError(_) => ErrorCode::WalletQueryError,
-            WalletError::IOError(_) => ErrorCode::WalletIOError,
             WalletError::StructureError(_) => ErrorCode::WalletStructureError,
             WalletError::NotEmpty => ErrorCode::WalletNotEmpty,
             WalletError::ExportPathExists => ErrorCode::WalletExportPathExists,
@@ -168,7 +163,7 @@ impl From<CommonError> for WalletError {
 
 impl From<io::Error> for WalletError {
     fn from(err: io::Error) -> WalletError {
-        WalletError::IOError(err)
+        WalletError::from(CommonError::from(err))
     }
 }
 
