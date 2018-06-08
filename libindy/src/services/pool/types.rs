@@ -296,9 +296,9 @@ pub enum Response {
 
 impl Response {
     pub fn req_id(&self) -> u64 {
-        match self {
-            &Response::ResponseV0(ref res) => res.req_id,
-            &Response::ResponseV1(ref res) => res.metadata.req_id
+        match *self {
+            Response::ResponseV0(ref res) => res.req_id,
+            Response::ResponseV1(ref res) => res.metadata.req_id
         }
     }
 }

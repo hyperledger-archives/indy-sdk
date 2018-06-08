@@ -62,24 +62,24 @@ struct Extension {
 
 impl rlp::Encodable for Node {
     fn rlp_append(&self, s: &mut RlpStream) {
-        match self {
-            &Node::Hash(ref hash) => {
+        match *self {
+            Node::Hash(ref hash) => {
                 s.append_internal(&hash.as_slice());
             }
-            &Node::Leaf(ref pair) => {
+            Node::Leaf(ref pair) => {
                 s.begin_list(Node::PAIR_SIZE);
                 s.append(&pair.path);
                 s.append(&pair.value);
             }
-            &Node::Extension(ref ext) => {
+            Node::Extension(ref ext) => {
                 s.begin_list(Node::PAIR_SIZE);
                 s.append(&ext.path);
                 s.append(ext.next.as_ref());
             }
-            &Node::Full(ref node) => {
+            Node::Full(ref node) => {
                 s.begin_list(Node::FULL_SIZE);
                 for node in &node.nodes {
-                    if let &Some(ref node) = node {
+                    if let Some(ref node) = *node {
                         s.append(node.as_ref());
                     } else {
                         s.append_empty_data();
@@ -182,8 +182,8 @@ impl Node {
     }
     fn _get_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> Result<Option<&'a Vec<u8>>, CommonError> {
         trace!("Check proof, cur node: {:?}", self);
-        match self {
-            &Node::Full(ref node) => {
+        match *self {
+            Node::Full(ref node) => {
                 if path.is_empty() {
                     return Ok(node.value.as_ref());
                 }
@@ -192,7 +192,7 @@ impl Node {
                 }
                 return Ok(None);
             }
-            &Node::Hash(ref hash) => {
+            Node::Hash(ref hash) => {
                 let hash = NodeHash::from_slice(hash.as_slice());
                 if let Some(ref next) = db.get(hash) {
                     return next._get_value(db, path);
@@ -201,7 +201,7 @@ impl Node {
                         "Incomplete key-value DB for Patricia Merkle Trie to get value by the key".to_string()));
                 }
             }
-            &Node::Leaf(ref pair) => {
+            Node::Leaf(ref pair) => {
                 let (is_leaf, pair_path) = Node::parse_path(pair.path.as_slice());
                 if !is_leaf {
                     return Err(CommonError::InvalidState(
@@ -214,7 +214,7 @@ impl Node {
                     return Ok(None);
                 }
             }
-            &Node::Extension(ref pair) => {
+            Node::Extension(ref pair) => {
                 let (is_leaf, pair_path) = Node::parse_path(pair.path.as_slice());
                 if is_leaf {
                     return Err(CommonError::InvalidState(
@@ -278,8 +278,8 @@ pub fn verify_proof_signature(signature: &str,
     let mut ver_keys: Vec<&VerKey> = Vec::new();
     for node in nodes {
         if participants.contains(&node.name.as_str()) {
-            match &node.blskey {
-                &Some(ref blskey) => ver_keys.push(blskey),
+            match node.blskey {
+                Some(ref blskey) => ver_keys.push(blskey),
                 _ => return Err(CommonError::InvalidState(format!("Blskey not found for node: {:?}", node.name)))
             };
         }

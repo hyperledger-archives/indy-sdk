@@ -160,9 +160,9 @@ impl CatchupHandler {
             self.target_mt_root = target_mt_root.from_base58().map_err(|_|
                 CommonError::InvalidStructure(
                     "Can't parse target MerkleTree hash from nodes responses".to_string()))?;
-            match hashes {
-                &None => {return Err(PoolError::from(CommonError::InvalidState("Empty consistency proof but catch up needed".to_string())));},
-                &Some(ref hashes) => {
+            match *hashes {
+                None => {return Err(PoolError::from(CommonError::InvalidState("Empty consistency proof but catch up needed".to_string())));},
+                Some(ref hashes) => {
                     match CatchupHandler::check_cons_proofs(&self.merkle_tree, hashes, &self.target_mt_root, self.target_mt_size) {
                         Ok(_) => (),
                         Err(err) => {
