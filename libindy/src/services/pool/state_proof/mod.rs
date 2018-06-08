@@ -44,7 +44,7 @@ pub fn parse_generic_reply_for_proof_checking(json_msg: &SJsonValue, raw_msg: &s
 
     if REQUESTS_FOR_STATE_PROOFS.contains(&type_) {
         trace!("TransactionHandler::parse_generic_reply_for_proof_checking: built-in");
-        parse_reply_for_builtin_sp(json_msg, type_)
+        _parse_reply_for_builtin_sp(json_msg, type_)
     } else if let Some((parser, free)) = PoolService::get_sp_parser(type_) {
         trace!("TransactionHandler::parse_generic_reply_for_proof_checking: plugged: parser {:?}, free {:?}",
                parser, free);
@@ -75,7 +75,53 @@ pub fn parse_generic_reply_for_proof_checking(json_msg: &SJsonValue, raw_msg: &s
     }
 }
 
-fn parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str) -> Option<Vec<ParsedSP>> {
+pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
+                        nodes: &HashMap<String, Option<VerKey>>,
+                        f: usize,
+                        gen: &Generator) -> bool {
+    for parsed_sp in parsed_sps {
+        if parsed_sp.multi_signature["value"]["state_root_hash"].as_str().ne(
+            &Some(&parsed_sp.root_hash)) {
+            return false
+        }
+
+        let data_to_check_proof_signature =
+            _parse_reply_for_proof_signature_checking(&parsed_sp.multi_signature);
+        let (signature, participants, value) = unwrap_opt_or_return!(data_to_check_proof_signature, false);
+        if !_verify_proof_signature(signature,
+                                    participants.as_slice(),
+                                    &value,
+                                    nodes, f, gen)
+            .map_err(|err| warn!("{:?}", err)).unwrap_or(false) {
+            return false;
+        }
+
+        let proof_nodes = unwrap_or_return!(base64::decode(&parsed_sp.proof_nodes), false);
+        let root_hash = unwrap_or_return!(parsed_sp.root_hash.from_base58(), false);
+        match parsed_sp.kvs_to_verify {
+            KeyValuesInSP::Simple(kvs) => {
+                for (k, v) in kvs.kvs {
+                    let key = unwrap_or_return!(base64::decode(&k), false);
+                    if !_verify_proof(proof_nodes.as_slice(),
+                                      root_hash.as_slice(),
+                                      &key,
+                                      v.as_ref().map(String::as_str)) {
+                        return false;
+                    }
+                }
+            }
+            //TODO IS-713 support KeyValuesInSP::SubTrie
+            kvs @ _ => {
+                warn!("Unsupported parsed state proof format for key-values {:?} ", kvs);
+                return false;
+            },
+        }
+    }
+
+    true
+}
+
+fn _parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str) -> Option<Vec<ParsedSP>> {
     trace!("TransactionHandler::parse_reply_for_builtin_sp: >>> json_msg: {:?}", json_msg);
 
     assert!(REQUESTS_FOR_STATE_PROOFS.contains(&type_));
@@ -263,53 +309,7 @@ fn parse_reply_for_builtin_sp(json_msg: &SJsonValue, type_: &str) -> Option<Vec<
     }])
 }
 
-pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
-                        nodes: &HashMap<String, Option<VerKey>>,
-                        f: usize,
-                        gen: &Generator) -> bool {
-    for parsed_sp in parsed_sps {
-        if parsed_sp.multi_signature["value"]["state_root_hash"].as_str().ne(
-            &Some(&parsed_sp.root_hash)) {
-            return false
-        }
-
-        let data_to_check_proof_signature =
-            parse_reply_for_proof_signature_checking(&parsed_sp.multi_signature);
-        let (signature, participants, value) = unwrap_opt_or_return!(data_to_check_proof_signature, false);
-        if !verify_proof_signature(signature,
-                                   participants.as_slice(),
-                                   &value,
-                                   nodes, f, gen)
-            .map_err(|err| warn!("{:?}", err)).unwrap_or(false) {
-            return false;
-        }
-
-        let proof_nodes = unwrap_or_return!(base64::decode(&parsed_sp.proof_nodes), false);
-        let root_hash = unwrap_or_return!(parsed_sp.root_hash.from_base58(), false);
-        match parsed_sp.kvs_to_verify {
-            KeyValuesInSP::Simple(kvs) => {
-                for (k, v) in kvs.kvs {
-                    let key = unwrap_or_return!(base64::decode(&k), false);
-                    if !verify_proof(proof_nodes.as_slice(),
-                                     root_hash.as_slice(),
-                                     &key,
-                                     v.as_ref().map(String::as_str)) {
-                        return false;
-                    }
-                }
-            }
-            //TODO IS-713 support KeyValuesInSP::SubTrie
-            kvs @ _ => {
-                warn!("Unsupported parsed state proof format for key-values {:?} ", kvs);
-                return false;
-            },
-        }
-    }
-
-    true
-}
-
-pub fn parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option<(&str, Vec<&str>, Vec<u8>)> {
+fn _parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option<(&str, Vec<&str>, Vec<u8>)> {
     match (json_msg["signature"].as_str(),
            json_msg["participants"].as_array(),
            rmp_serde::to_vec_named(&json_msg["value"])
@@ -330,7 +330,7 @@ pub fn parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option
     }
 }
 
-pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_value: Option<&str>) -> bool {
+fn _verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_value: Option<&str>) -> bool {
     debug!("verify_proof >> key {:?}, expected_value {:?}", key, expected_value);
     let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
     let mut map: TrieDB = HashMap::new();
@@ -350,12 +350,12 @@ pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_va
     }).unwrap_or(false)
 }
 
-pub fn verify_proof_signature(signature: &str,
-                              participants: &[&str],
-                              value: &[u8],
-                              nodes: &HashMap<String, Option<VerKey>>,
-                              f: usize,
-                              gen: &Generator) -> Result<bool, CommonError> {
+fn _verify_proof_signature(signature: &str,
+                           participants: &[&str],
+                           value: &[u8],
+                           nodes: &HashMap<String, Option<VerKey>>,
+                           f: usize,
+                           gen: &Generator) -> Result<bool, CommonError> {
     trace!("verify_proof_signature: >>> signature: {:?}, participants: {:?}, pool_state_root: {:?}", signature, participants, value);
 
     let mut ver_keys: Vec<&VerKey> = Vec::new();
