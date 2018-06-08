@@ -6,11 +6,15 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use services::pool::types::HashableValue;
 use std::collections::HashMap;
+use std::iter::FromIterator;
 use commands::CommandExecutor;
 use commands::Command;
 use commands::ledger::LedgerCommand;
 use std::collections::HashSet;
+use serde_json;
 use serde_json::Value as SJsonValue;
+use errors::common::CommonError;
+use errors::pool::PoolError;
 
 trait RequestState {
     fn is_terminal(&self) -> bool {
@@ -34,6 +38,7 @@ impl<T: Networker> RequestState for ConsensusState<T> {}
 
 struct SingleState<T: Networker> {
     nack_cnt: HashSet<String>,
+    replies: HashMap<HashableValue, HashSet<String>>,
     networker: Rc<RefCell<T>>
 }
 
@@ -83,6 +88,7 @@ impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<SingleState<T>> 
             node_cnt: sm.node_cnt,
             state: SingleState {
                 nack_cnt: HashSet::new(),
+                replies: HashMap::new(),
                 networker: sm.state.networker,
             }
         }
@@ -193,8 +199,8 @@ impl<T: Networker> RequestSMWrapper<T> {
                                 request.state.networker.borrow_mut().send_request(Some(NetworkerEvent::SendOneRequest));
                                 (RequestSMWrapper::Consensus(request.into()), None)
                             }
-                            Err(_) => {
-                                //TODO: send ack
+                            Err(e) => {
+                                _send_replies(&request.cmd_ids, Err(PoolError::CommonError(e)));
                                 (RequestSMWrapper::Finish(request.into()), None)
                             }
                         }
@@ -205,8 +211,8 @@ impl<T: Networker> RequestSMWrapper<T> {
                                 request.state.networker.borrow_mut().send_request(Some(NetworkerEvent::SendAllRequest));
                                 (RequestSMWrapper::Full(request.into()), None)
                             }
-                            Err(_) => {
-                                //TODO: send ack
+                            Err(e) => {
+                                _send_replies(&request.cmd_ids, Err(PoolError::CommonError(e)));
                                 (RequestSMWrapper::Finish(request.into()), None)
                             }
                         }
@@ -217,8 +223,8 @@ impl<T: Networker> RequestSMWrapper<T> {
                                 request.state.networker.borrow_mut().send_request(Some(NetworkerEvent::SendAllRequest));
                                 (RequestSMWrapper::Consensus(request.into()), None)
                             }
-                            Err(_) => {
-                                //TODO: send ack
+                            Err(e) => {
+                                _send_replies(&request.cmd_ids, Err(PoolError::CommonError(e)));
                                 (RequestSMWrapper::Finish(request.into()), None)
                             }
                         }
@@ -229,12 +235,38 @@ impl<T: Networker> RequestSMWrapper<T> {
             RequestSMWrapper::Consensus(mut request) => {
                 match re {
                     RequestEvent::Reply(rep, raw_msg, node_alias, req_id) => {
-                        //TODO: check if consensus reached or failed
-//                        (RequestSMWrapper::Finish(request.into()), None)
-                        //if failed
-//                        (RequestSMWrapper::Finish(request.into()), None)
-                        //if still waiting
-                        (RequestSMWrapper::Consensus(request), None)
+                        if let Ok((_, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
+                            let hashable = HashableValue {inner: result_without_proof};
+
+                            let cnt = if let Some(set) = request.state.replies.get_mut(&hashable) {
+                                set.insert(node_alias.clone());
+                                set.len()
+                            } else {
+                                1usize
+                            };
+
+                            if cnt == 1usize {
+                                request.state.replies.insert(hashable, HashSet::from_iter(vec![node_alias]));
+                            }
+
+                            if cnt >= request.f {
+                                _send_ok_replies(&request.cmd_ids, &raw_msg);
+                                (RequestSMWrapper::Finish(request.into()), None)
+                            } else {
+                                let rep_no: usize = request.state.replies.iter().map(|(_, set)| set.len()).sum();
+                                let max_no = request.state.replies.iter().map(|(_, set)| set.len()).max().unwrap_or(0);
+
+                                if max_no + request.node_cnt - rep_no - request.state.nack_cnt.len() >= request.f {
+                                    (RequestSMWrapper::Consensus(request), None)
+                                } else {
+                                    //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
+                                    _send_replies(&request.cmd_ids, Err(PoolError::Timeout));
+                                    (RequestSMWrapper::Finish(request.into()), None)
+                                }
+                            }
+                        } else {
+                            (RequestSMWrapper::Consensus(request), None)
+                        }
                     },
                     RequestEvent::ReqACK(rep, raw_msg, node_alias, req_id) => {
                         (RequestSMWrapper::Consensus(request), None)
@@ -325,7 +357,7 @@ impl<T: Networker> RequestSMWrapper<T> {
 
                         if reply_cnt == request.node_cnt {
                             let reply = request.state.accum_reply.as_ref().unwrap().inner.to_string();
-                            _send_replies(&request.cmd_ids, &reply);
+                            _send_ok_replies(&request.cmd_ids, &reply);
                             (RequestSMWrapper::Finish(request.into()), None)
                         } else {
                             (RequestSMWrapper::Full(request), None)
@@ -402,7 +434,7 @@ impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
 
 fn _parse_nack(cnt: &mut HashSet<String>, f: usize, raw_msg: &str, cmd_ids: &Vec<i32>, node_alias: &str) -> bool {
     if cnt.len() == f {
-        _send_replies(cmd_ids, raw_msg);
+        _send_ok_replies(cmd_ids, raw_msg);
         true
     } else {
         cnt.insert(node_alias.to_string());
@@ -410,13 +442,31 @@ fn _parse_nack(cnt: &mut HashSet<String>, f: usize, raw_msg: &str, cmd_ids: &Vec
     }
 }
 
-fn _send_replies(cmd_ids: &Vec<i32>, msg: &str) {
+fn _send_ok_replies(cmd_ids: &Vec<i32>, msg: &str) {
+    _send_replies(cmd_ids, Ok(msg.to_string()))
+}
+
+fn _send_replies(cmd_ids: &Vec<i32>, msg: Result<String, PoolError>) {
     cmd_ids.into_iter().for_each(|id| {
         CommandExecutor::instance().send(
             Command::Ledger(
-                LedgerCommand::SubmitAck(id.clone(), Ok(msg.to_string())))
+                LedgerCommand::SubmitAck(id.clone(), msg.clone()))
         ).unwrap();
     });
+}
+
+fn _get_msg_result_without_state_proof(msg: &str) -> Result<(SJsonValue, SJsonValue), CommonError> {
+    let msg_result: SJsonValue = match serde_json::from_str::<SJsonValue>(msg) {
+        Ok(raw_msg) => raw_msg["result"].clone(),
+        Err(err) => return Err(CommonError::InvalidStructure(format!("Invalid response structure: {:?}", err))).map_err(map_err_err!())
+    };
+
+    let mut msg_result_without_proof: SJsonValue = msg_result.clone();
+    msg_result_without_proof.as_object_mut().map(|obj| obj.remove("state_proof"));
+    if msg_result_without_proof["data"].is_object() {
+        msg_result_without_proof["data"].as_object_mut().map(|obj| obj.remove("stateProofFrom"));
+    }
+    Ok((msg_result, msg_result_without_proof))
 }
 
 //TODO: mocked one
