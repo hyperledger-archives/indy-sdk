@@ -321,7 +321,7 @@
                                                            outResponseJson:&revocRegEntryResponse];
     XCTAssertEqual(ret.code, Success, @"signAndSubmitRequestWithPoolHandle() failed!");
     NSDictionary *revocRegEntry = [NSDictionary fromString:revocRegEntryResponse];
-    NSNumber *entryTxnTime = revocRegEntry[@"result"][@"txnTime"];
+    NSNumber *entryTxnTime = revocRegEntry[@"result"][@"txnMetadata"][@"txnTime"];
 
     // Prover gets revocation registry definition from ledger
     NSDictionary *credential = [NSDictionary fromString:credentialJson];
