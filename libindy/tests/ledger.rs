@@ -977,7 +977,7 @@ mod high_cases {
             let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
             let schema: serde_json::Value = serde_json::from_str(&schema_response).unwrap();
 
-            let seq_no = schema["result"]["seqNo"].as_i64().unwrap() as i32;
+            let seq_no = schema["result"]["txnMetadata"]["seqNo"].as_i64().unwrap() as i32;
 
             thread::sleep(std::time::Duration::from_secs(3));
 
@@ -985,11 +985,12 @@ mod high_cases {
             let get_txn_response = LedgerUtils::submit_request(pool_handle, &get_txn_request).unwrap();
 
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
-
-            let get_txn_schema_result: SchemaResult = serde_json::from_value(get_txn_response.result.data.unwrap()).unwrap();
+            let get_txn_schema_data: SchemaData = serde_json::from_value(
+                serde_json::Value::Object(get_txn_response.result.data.unwrap()["txn"]["data"]["data"].as_object().unwrap().clone())
+            ).unwrap();
 
             let expected_schema_data: SchemaData = serde_json::from_str(r#"{"name":"gvt","version":"1.0","attr_names":["name", "age", "sex", "height"]}"#).unwrap();
-            assert_eq!(expected_schema_data, get_txn_schema_result.data.unwrap());
+            assert_eq!(expected_schema_data, get_txn_schema_data);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1011,7 +1012,7 @@ mod high_cases {
             let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
             let schema: serde_json::Value = serde_json::from_str(&schema_response).unwrap();
 
-            let seq_no = schema["result"]["seqNo"].as_i64().unwrap() as i32;
+            let seq_no = schema["result"]["txnMetadata"]["seqNo"].as_i64().unwrap() as i32;
 
             let seq_no = seq_no + 1;
 
