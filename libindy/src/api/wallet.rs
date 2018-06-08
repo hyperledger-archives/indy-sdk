@@ -300,7 +300,7 @@ pub extern fn indy_list_wallets(command_handle: i32,
 /// Exports opened wallet
 ///
 /// #Params:
-/// handle: wallet handle returned by indy_open_wallet
+/// wallet_handle: wallet handle returned by indy_open_wallet
 /// export_config_json: JSON containing settings for input operation.
 ///   {
 ///     "path": path of the file that contains exported wallet content
@@ -315,20 +315,20 @@ pub extern fn indy_list_wallets(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_export_wallet(command_handle: i32,
-                                 handle: i32,
+                                 wallet_handle: i32,
                                  export_config_json: *const c_char,
                                  cb: Option<extern fn(xcommand_handle: i32,
                                                       err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_export_wallet: >>> handle: {:?}, export_config_json: {:?}", handle, export_config_json);
+    trace!("indy_export_wallet: >>> wallet_handle: {:?}, export_config_json: {:?}", wallet_handle, export_config_json);
 
     check_useful_c_str!(export_config_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_export_wallet: entities >>> handle: {:?}, export_config_json: {:?}", handle, export_config_json);
+    trace!("indy_export_wallet: entities >>> wallet_handle: {:?}, export_config_json: {:?}", wallet_handle, export_config_json);
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::Export(
-            handle,
+            wallet_handle,
             export_config_json,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
@@ -426,7 +426,7 @@ pub extern fn indy_import_wallet(command_handle: i32,
 /// Closes opened wallet and frees allocated resources.
 ///
 /// #Params
-/// handle: wallet handle returned by indy_open_wallet.
+/// wallet_handle: wallet handle returned by indy_open_wallet.
 ///
 /// #Returns
 /// Error code
@@ -436,18 +436,18 @@ pub extern fn indy_import_wallet(command_handle: i32,
 /// Wallet*
 #[no_mangle]
 pub extern fn indy_close_wallet(command_handle: i32,
-                                handle: i32,
+                                wallet_handle: i32,
                                 cb: Option<extern fn(xcommand_handle: i32,
                                                      err: ErrorCode)>) -> ErrorCode {
-    trace!("indy_close_wallet: >>> handle: {:?}", handle);
+    trace!("indy_close_wallet: >>> wallet_handle: {:?}", wallet_handle);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
-    trace!("indy_close_wallet: entities >>> handle: {:?}", handle);
+    trace!("indy_close_wallet: entities >>> wallet_handle: {:?}", wallet_handle);
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::Close(
-            handle,
+            wallet_handle,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
                 trace!("indy_close_wallet:");
