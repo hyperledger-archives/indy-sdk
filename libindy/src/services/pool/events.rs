@@ -12,7 +12,7 @@ use serde_json;
 use serde_json::Value as SJsonValue;
 use std::error::Error;
 
-const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
+pub const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
     constants::GET_NYM,
     constants::GET_SCHEMA,
     constants::GET_CRED_DEF,
@@ -31,6 +31,7 @@ pub enum NetworkerEvent {
     SendOneRequest,
     SendAllRequest
 }
+
 #[derive(Clone)]
 pub enum PoolEvent {
     CheckCache,
@@ -40,8 +41,8 @@ pub enum PoolEvent {
     ),
     Close,
     Refresh,
-    ConsensusReached,
-    ConsensusFailed,
+    CatchupTargetFound,
+    CatchupTargetNotFound,
     PoolOutdated,
     Synced,
     NodesBlacklisted,

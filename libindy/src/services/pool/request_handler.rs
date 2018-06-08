@@ -1,20 +1,28 @@
-use services::pool::networker::Networker;
-use services::pool::events::RequestEvent;
-use services::pool::events::PoolEvent;
-use services::pool::events::NetworkerEvent;
-use std::cell::RefCell;
-use std::rc::Rc;
-use services::pool::types::HashableValue;
-use std::collections::HashMap;
-use std::iter::FromIterator;
+extern crate rust_base58;
+
 use commands::CommandExecutor;
 use commands::Command;
 use commands::ledger::LedgerCommand;
-use std::collections::HashSet;
-use serde_json;
-use serde_json::Value as SJsonValue;
 use errors::common::CommonError;
 use errors::pool::PoolError;
+use services::pool::events::RequestEvent;
+use services::pool::events::PoolEvent;
+use services::pool::events::NetworkerEvent;
+use services::pool::networker::Networker;
+use services::pool::state_proof;
+use services::pool::types::HashableValue;
+
+use self::rust_base58::FromBase58;
+use base64;
+use serde_json;
+use serde_json::Value as SJsonValue;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::iter::FromIterator;
+use std::rc::Rc;
+use super::indy_crypto::bls::Generator;
+use super::indy_crypto::bls::VerKey;
 
 trait RequestState {
     fn is_terminal(&self) -> bool {
@@ -63,16 +71,18 @@ impl<T: Networker> RequestState for FullState<T> {}
 struct RequestSM<T: RequestState> {
     f: usize,
     cmd_ids: Vec<i32>,
-    node_cnt: usize,
+    nodes: HashMap<String, Option<VerKey>>,
+    generator: Generator,
     state: T
 }
 
 impl<T: Networker> RequestSM<StartState<T>> {
-    pub fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, node_cnt: usize) -> Self {
+    pub fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: HashMap<String, Option<VerKey>>, generator: Option<Generator>) -> Self {
         RequestSM {
             f,
             cmd_ids: cmd_ids.clone(),
-            node_cnt,
+            nodes,
+            generator: generator.unwrap_or(Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap()),
             state: StartState {
                 networker
             },
@@ -85,7 +95,8 @@ impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<SingleState<T>> 
         RequestSM {
             f: sm.f,
             cmd_ids: sm.cmd_ids,
-            node_cnt: sm.node_cnt,
+            nodes: sm.nodes,
+            generator: sm.generator,
             state: SingleState {
                 nack_cnt: HashSet::new(),
                 replies: HashMap::new(),
@@ -100,7 +111,8 @@ impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<ConsensusState<T
         RequestSM {
             f: val.f,
             cmd_ids: val.cmd_ids,
-            node_cnt: val.node_cnt,
+            nodes: val.nodes,
+            generator: val.generator,
             state: ConsensusState {
                 nack_cnt: HashSet::new(),
                 replies: HashMap::new(),
@@ -115,7 +127,8 @@ impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<FullState<T>> {
         RequestSM {
             f: val.f,
             cmd_ids: val.cmd_ids,
-            node_cnt: val.node_cnt,
+            nodes: val.nodes,
+            generator: val.generator,
             state: FullState {
                 nack_cnt: HashSet::new(),
                 accum_reply: None,
@@ -131,7 +144,8 @@ impl<T: Networker> From<RequestSM<SingleState<T>>> for RequestSM<FinishState> {
         RequestSM {
             f: val.f,
             cmd_ids: val.cmd_ids,
-            node_cnt: val.node_cnt,
+            nodes: val.nodes,
+            generator: val.generator,
             state: FinishState {}
         }
     }
@@ -143,7 +157,8 @@ impl<T: Networker> From<RequestSM<ConsensusState<T>>> for RequestSM<FinishState>
         RequestSM {
             f: val.f,
             cmd_ids: val.cmd_ids,
-            node_cnt: val.node_cnt,
+            nodes: val.nodes,
+            generator: val.generator,
             state: FinishState {}
         }
     }
@@ -155,7 +170,8 @@ impl<T: Networker> From<RequestSM<FullState<T>>> for RequestSM<FinishState> {
         RequestSM {
             f: sm.f,
             cmd_ids: sm.cmd_ids,
-            node_cnt: sm.node_cnt,
+            nodes: sm.nodes,
+            generator: sm.generator,
             state: FinishState {}
         }
     }
@@ -166,7 +182,8 @@ impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<FinishState> {
         RequestSM {
             f: sm.f,
             cmd_ids: sm.cmd_ids,
-            node_cnt: sm.node_cnt,
+            nodes: sm.nodes,
+            generator: sm.generator,
             state: FinishState {}
         }
     }
@@ -249,14 +266,14 @@ impl<T: Networker> RequestSMWrapper<T> {
                                 request.state.replies.insert(hashable, HashSet::from_iter(vec![node_alias]));
                             }
 
-                            if cnt >= request.f {
+                            if cnt > request.f {
                                 _send_ok_replies(&request.cmd_ids, &raw_msg);
                                 (RequestSMWrapper::Finish(request.into()), None)
                             } else {
-                                let rep_no: usize = request.state.replies.iter().map(|(_, set)| set.len()).sum();
-                                let max_no = request.state.replies.iter().map(|(_, set)| set.len()).max().unwrap_or(0);
+                                let rep_no: usize = request.state.replies.values().map(|set| set.len()).sum();
+                                let max_no = request.state.replies.values().map(|set| set.len()).max().unwrap_or(0);
 
-                                if max_no + request.node_cnt - rep_no - request.state.nack_cnt.len() >= request.f {
+                                if max_no + request.nodes.len() - rep_no - request.state.nack_cnt.len() > request.f {
                                     (RequestSMWrapper::Consensus(request), None)
                                 } else {
                                     //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
@@ -269,6 +286,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                         }
                     },
                     RequestEvent::ReqACK(rep, raw_msg, node_alias, req_id) => {
+                        //TODO: extend timeout
                         (RequestSMWrapper::Consensus(request), None)
                     }
                     RequestEvent::ReqNACK(rep, raw_msg, node_alias, req_id) | RequestEvent::Reject(rep, raw_msg, node_alias, req_id) => {
@@ -285,13 +303,34 @@ impl<T: Networker> RequestSMWrapper<T> {
             RequestSMWrapper::Single(mut request) => {
                 match re {
                     RequestEvent::Reply(rep, raw_msg, node_alias, req_id) => {
-//                        (RequestSMWrapper::Finish(request.into()), None)
-                        //if failed
-//                        (RequestSMWrapper::Finish(request.into()), None) //Some(PoolEvent::NodesBlacklisted)?
-                        //if still waiting
-                        (RequestSMWrapper::Single(request), None)
+                        if let Ok((result, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
+                            let hashable = HashableValue {inner: result_without_proof};
+
+                            let cnt = if let Some(set) = request.state.replies.get_mut(&hashable) {
+                                set.insert(node_alias.clone());
+                                set.len()
+                            } else {
+                                1usize
+                            };
+
+                            if cnt == 1usize {
+                                request.state.replies.insert(hashable, HashSet::from_iter(vec![node_alias]));
+                            }
+
+                            if cnt > request.f || _check_state_proof(&result, request.f, &request.generator, &request.nodes) {
+                                _send_ok_replies(&request.cmd_ids, &raw_msg);
+                                (RequestSMWrapper::Finish(request.into()), None)
+                            } else {
+                                //TODO: resend to next node
+                                (RequestSMWrapper::Single(request), None)
+                            }
+                        } else {
+                            //TODO: resend to next node
+                            (RequestSMWrapper::Single(request), None)
+                        }
                     },
                     RequestEvent::ReqACK(rep, raw_msg, node_alias, req_id) => {
+                        //TODO: extend timeout
                         (RequestSMWrapper::Single(request), None)
                     }
                     RequestEvent::ReqNACK(rep, raw_msg, node_alias, req_id) | RequestEvent::Reject(rep, raw_msg, node_alias, req_id) => {
@@ -310,7 +349,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                 match re {
                     RequestEvent::LedgerStatus(ls) => {
                         //if consensus reached and catchup is needed
-                        (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::ConsensusReached))
+                        (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::CatchupTargetFound))
                         //if consensus reached and we are up to date
 //                        (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::Synced))
                         //if failed
@@ -355,7 +394,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                         let reply_cnt = request.state.accum_reply.as_ref().unwrap()
                             .inner.as_object().unwrap().len();
 
-                        if reply_cnt == request.node_cnt {
+                        if reply_cnt == request.nodes.len() {
                             let reply = request.state.accum_reply.as_ref().unwrap().inner.to_string();
                             _send_ok_replies(&request.cmd_ids, &reply);
                             (RequestSMWrapper::Finish(request.into()), None)
@@ -365,7 +404,7 @@ impl<T: Networker> RequestSMWrapper<T> {
 
                     }
                     RequestEvent::ReqACK(rep, raw_msg, node_alias, req_id) => {
-
+                        //TODO: extend timeout
                         (RequestSMWrapper::Full(request), None)
                     }
                     RequestEvent::ReqNACK(rep, raw_msg, node_alias, req_id) | RequestEvent::Reject(rep, raw_msg, node_alias, req_id) => {
@@ -396,7 +435,7 @@ impl<T: Networker> RequestSMWrapper<T> {
 }
 
 pub trait RequestHandler<T: Networker> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, node_cnt: usize) -> Self;
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: HashMap<String, Option<VerKey>>, generator: Option<Generator>) -> Self;
     fn process_event(&mut self, ore: Option<RequestEvent>) -> Option<PoolEvent>;
     fn is_terminal(&self) -> bool;
 }
@@ -406,9 +445,9 @@ pub struct RequestHandlerImpl<T: Networker> {
 }
 
 impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, node_cnt: usize) -> Self {
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: HashMap<String, Option<VerKey>>, generator: Option<Generator>) -> Self {
         RequestHandlerImpl {
-            request_wrapper: Some(RequestSMWrapper::Start(RequestSM::new(networker, f, cmd_ids, node_cnt))),
+            request_wrapper: Some(RequestSMWrapper::Start(RequestSM::new(networker, f, cmd_ids, nodes, generator))),
         }
     }
 
@@ -467,6 +506,40 @@ fn _get_msg_result_without_state_proof(msg: &str) -> Result<(SJsonValue, SJsonVa
         msg_result_without_proof["data"].as_object_mut().map(|obj| obj.remove("stateProofFrom"));
     }
     Ok((msg_result, msg_result_without_proof))
+}
+
+pub fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_keys: &HashMap<String, Option<VerKey>>) -> bool {
+    debug!("TransactionHandler::process_reply: Try to verify proof and signature");
+
+    let data_to_check_proof = state_proof::parse_reply_for_proof_checking(msg_result);
+    let data_to_check_proof_signature = state_proof::parse_reply_for_proof_signature_checking(msg_result);
+
+    data_to_check_proof.is_some() && data_to_check_proof_signature.is_some() && {
+        debug!("TransactionHandler::process_reply: Proof and signature are present");
+
+        let (proofs, root_hash, key, value) = data_to_check_proof.unwrap();
+
+        let proof_valid = state_proof::verify_proof(
+            base64::decode(proofs).unwrap().as_slice(),
+            root_hash.from_base58().unwrap().as_slice(),
+            key.as_slice(),
+            value.as_ref().map(String::as_str));
+
+
+        debug!("TransactionHandler::process_reply: proof_valid: {:?}", proof_valid);
+
+        proof_valid && {
+            let (signature, participants, value) = data_to_check_proof_signature.unwrap();
+            let signature_valid = state_proof::verify_proof_signature(
+                signature,
+                participants.as_slice(),
+                &value,
+                bls_keys, f, gen).map_err(|err| warn!("{:?}", err)).unwrap_or(false);
+
+            debug!("TransactionHandler::process_reply: signature_valid: {:?}", signature_valid);
+            signature_valid
+        }
+    }
 }
 
 //TODO: mocked one

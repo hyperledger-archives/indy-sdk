@@ -1,9 +1,10 @@
 mod types;
 //mod catchup;
 //mod transaction_handler;
-//mod state_proof;
+mod state_proof;
 //mod pool_worker;
 
+mod node;
 mod pool;
 mod networker;
 mod commander;
