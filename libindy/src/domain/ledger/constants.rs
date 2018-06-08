@@ -24,3 +24,5 @@ pub const TRUSTEE: &str = "0";
 pub const TRUST_ANCHOR: &str = "101";
 pub const TGB: &str = "100";
 pub const ROLE_REMOVE: &str = "";
+
+pub const PROTOCOL_VERSION: u32 = 2;

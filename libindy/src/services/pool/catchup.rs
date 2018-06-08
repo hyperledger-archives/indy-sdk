@@ -48,6 +48,7 @@ pub struct CatchupHandler {
     pub pool_id: i32,
     pub nodes_votes: Vec<Option<(String, usize, Option<Vec<String>>)>>,
     pub pool_name: String,
+    pub protocol_version: Option<u32>
 }
 
 impl Default for CatchupHandler {
@@ -67,6 +68,7 @@ impl Default for CatchupHandler {
             nodes_votes: Vec::new(),
             timeout: time::now_utc(),
             pool_name: "".to_string(),
+            protocol_version: None
         }
     }
 }
@@ -83,6 +85,7 @@ impl CatchupHandler {
                     ledgerId: 0,
                     ppSeqNo: None,
                     viewNo: None,
+                    protocolVersion: self.protocol_version
                 };
                 let resp_msg: Message = Message::LedgerStatus(ls);
                 self.nodes[src_ind].send_msg(&resp_msg)?;
