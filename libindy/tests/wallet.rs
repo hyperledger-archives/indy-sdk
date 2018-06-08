@@ -631,6 +631,25 @@ mod medium_cases {
         }
 
         #[test]
+        fn indy_export_wallet_returns_error_if_invalid_config() {
+            TestUtils::cleanup_storage();
+            let export_key = "test_key";
+            let path = _prepare_export_wallet_path();
+            let path_str = path.to_str().unwrap();
+            fs::File::create(&path).unwrap();
+
+            let wallet_name = "indy_export_wallet_returns_error_if_invalid_config";
+            WalletUtils::create_wallet(POOL, wallet_name, None, None, None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(wallet_name, None, None).unwrap();
+            let res = WalletUtils::export_wallet(wallet_handle, "{}");
+
+            // TODO - maybe introduce WalletConfigurationError
+            assert_match!(Err(ErrorCode::WalletDecodingError), res);
+            assert!(path.exists());
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
         fn indy_export_wallet_returns_error_if_invalid_handle() {
             TestUtils::cleanup_storage();
             let export_key = "test_key";
@@ -681,6 +700,21 @@ mod medium_cases {
             assert_match!(Err(ErrorCode::WalletImportPathDoesNotExist), res);
             let res = WalletUtils::open_wallet(wallet_name, None, None);
             assert_match!(Err(_), res);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_import_wallet_returns_error_if_invalid_config() {
+            TestUtils::cleanup_storage();
+            let export_key = "test_key";
+            let path = _prepare_export_wallet_path();
+            let path_str = path.to_str().unwrap();
+            let config_json = _prepare_export_wallet_config(path_str);
+
+            let wallet_name = "indy_import_wallet_returns_error_if_invalid_config";
+            let res = WalletUtils::import_wallet(POOL, wallet_name, None, None, None, "{}");
+            assert_match!(Err(ErrorCode::WalletDecodingError), res);
 
             TestUtils::cleanup_storage();
         }
