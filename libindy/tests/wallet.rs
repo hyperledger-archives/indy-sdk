@@ -625,7 +625,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::open_wallet(wallet_name, None, None).unwrap();
             let res = WalletUtils::export_wallet(wallet_handle, &config_json);
 
-            assert_match!(Err(ErrorCode::WalletExportPathExists), res);
+            assert_match!(Err(ErrorCode::CommonIOError), res);
             assert!(path.exists());
             TestUtils::cleanup_storage();
         }
@@ -697,7 +697,7 @@ mod medium_cases {
 
             let wallet_name = "indy_import_wallet_returns_error_if_path_doesnt_exist";
             let res = WalletUtils::import_wallet(POOL, wallet_name, None, None, None, &config_json);
-            assert_match!(Err(ErrorCode::WalletImportPathDoesNotExist), res);
+            assert_match!(Err(ErrorCode::CommonIOError), res);
             let res = WalletUtils::open_wallet(wallet_name, None, None);
             assert_match!(Err(_), res);
 

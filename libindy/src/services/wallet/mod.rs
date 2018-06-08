@@ -555,6 +555,12 @@ impl WalletService {
                   storage_config: Option<&str>,
                   credentials: &str,
                   import_config_json: &str) -> Result<(), WalletError> {
+        let import_config: WalletExportConfig = serde_json::from_str(import_config_json)?;
+        let import_path = Path::new(&import_config.path);
+        if !import_path.exists() {
+            return Err(WalletError::ImportPathDoesNotExist);
+        }
+
         // TODO - this can be refactor to skip the entire wallet_handle ceremony,
         // but in order to do that a lot of WalletService needs to be refactored
         self.create_wallet(pool_name, name, storage_type, storage_config, credentials)?;
@@ -566,12 +572,6 @@ impl WalletService {
             Ok(wallet_handle) => {
                 let res = match self.wallets.borrow().get(&wallet_handle) {
                     Some(wallet) => {
-                        let import_config: WalletExportConfig = serde_json::from_str(import_config_json)?;
-                        let import_path = Path::new(&import_config.path);
-                        if !import_path.exists() {
-                            return Err(WalletError::ImportPathDoesNotExist);
-                        }
-
                         let import_file = File::open(import_path)?;
                         let reader = Box::new(import_file);
                         match import(wallet, reader, &import_config.key) {

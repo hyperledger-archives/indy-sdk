@@ -361,7 +361,6 @@ pub extern fn indy_export_wallet(command_handle: i32,
 /// credentials: Wallet credentials json (if NULL, then default config will be used).
 ///   {
 ///       "key": string,
-///       "rekey": Optional<string>,
 ///       "storage": Optional<object>  List of supported keys are defined by wallet type.
 ///
 ///   }

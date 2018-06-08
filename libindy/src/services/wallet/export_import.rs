@@ -162,10 +162,6 @@ pub (super) fn export(wallet: &Wallet, writer: Box<Write>, passphrase: &str, ver
 
 pub (super) fn import(wallet: &Wallet, reader: Box<Read>, passphrase: &str) -> Result<(), WalletError> {
     let mut reader = BufReader::new(reader);
-    let mut existing_items = wallet.get_all()?;
-    if existing_items.next()?.is_some() {
-        return Err(WalletError::NotEmpty);
-    }
 
     let mut header_length_bytes: [u8; 2] = [0; 2];
     let read_count = reader.read(&mut header_length_bytes)?;
@@ -380,7 +376,6 @@ mod tests {
     use services::wallet::storage::WalletStorageType;
     use services::wallet::storage::default::SQLiteStorageType;
     use services::wallet::wallet::{Keys, Wallet};
-
     use super::*;
 
 
@@ -845,55 +840,6 @@ mod tests {
         assert_eq!(second_record.name, name2);
         assert_eq!(second_record.value.unwrap(), value2);
         assert_eq!(second_record.tags.unwrap(), tags2);
-    }
-
-    #[test]
-    fn export_import_returns_error_if_wallet_not_empty() {
-        _cleanup();
-        let type1 = "type1";
-        let name1 = "name1";
-        let value1 = "value1";
-        let mut tags1 = HashMap::new();
-        tags1.insert("tag_name_1".to_string(), "tag_value_1".to_string());
-        tags1.insert("tag_name_2".to_string(), "tag_value_2".to_string());
-        tags1.insert("~tag_name_3".to_string(), "tag_value_3".to_string());
-        let record_1_length = _record_length_serialized(type1, name1, value1, &tags1);
-        let type2 = "type2";
-        let name2 = "name2";
-        let value2 = "value2";
-        let mut tags2 = HashMap::new();
-        tags2.insert("tag_name_21".to_string(), "tag_value_21".to_string());
-        tags2.insert("tag_name_22".to_string(), "tag_value_22".to_string());
-        tags2.insert("~tag_name_23".to_string(), "tag_value_23".to_string());
-        let record_2_length = _record_length_serialized(type2, name2, value2, &tags2);
-        let mut wallet = _create_wallet();
-        wallet.add(type1, name1, value1, &tags1).unwrap();
-        wallet.add(type2, name2, value2, &tags2).unwrap();
-        let export_writer = _create_export_file();
-        let key = "key";
-
-        export(&wallet, export_writer, key, 1).unwrap();
-        wallet.close().unwrap();
-        _cleanup();
-
-        let reader = _get_export_file_reader();
-        let mut wallet = _create_wallet();
-        let name3 = "name3";
-        let value3 = "value3";
-        let value4 = "value4";
-        wallet.add(type1, name3, value3, &HashMap::new()).unwrap();
-        wallet.add(type1, name1, value4, &HashMap::new()).unwrap();
-        let first_res = wallet.get(type2, name2, _options());
-        assert_match!(Err(WalletError::ItemNotFound), first_res);
-
-        let res = import(&mut wallet, reader, key);
-        assert_match!(Err(WalletError::NotEmpty), res);
-        let res = wallet.get(type2, name2, _options());
-        assert_match!(Err(WalletError::ItemNotFound), res);
-        let retrieved_record = wallet.get(type1, name1, _options()).unwrap();
-        assert_eq!(retrieved_record.value.unwrap(), value4);
-        let retrieved_record = wallet.get(type1, name3, _options()).unwrap();
-        assert_eq!(retrieved_record.value.unwrap(), value3);
     }
 
     #[test]
