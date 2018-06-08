@@ -24,6 +24,6 @@ async def check_record_field(wallet_handle: int, field: str, expected_value: str
     if field == 'value':
         assert expected_value == record['value']
     elif field == 'tags':
-        assert json.loads(expected_value) == json.loads(record['tags'])
+        assert json.loads(expected_value) == record['tags']
     else:
         assert False

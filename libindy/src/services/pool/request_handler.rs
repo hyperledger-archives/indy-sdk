@@ -317,7 +317,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                                 request.state.replies.insert(hashable, HashSet::from_iter(vec![node_alias]));
                             }
 
-                            if cnt > request.f || _check_state_proof(&result, request.f, &request.generator, &request.nodes) {
+                            if cnt > request.f || _check_state_proof(&result, request.f, &request.generator, &request.nodes, &raw_msg) {
                                 _send_ok_replies(&request.cmd_ids, &raw_msg);
                                 (RequestSMWrapper::Finish(request.into()), None)
                             } else {
@@ -508,37 +508,15 @@ fn _get_msg_result_without_state_proof(msg: &str) -> Result<(SJsonValue, SJsonVa
     Ok((msg_result, msg_result_without_proof))
 }
 
-pub fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_keys: &HashMap<String, Option<VerKey>>) -> bool {
+pub fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_keys: &HashMap<String, Option<VerKey>>, raw_msg: &str) -> bool {
     debug!("TransactionHandler::process_reply: Try to verify proof and signature");
 
-    let data_to_check_proof = state_proof::parse_reply_for_proof_checking(msg_result);
-    let data_to_check_proof_signature = state_proof::parse_reply_for_proof_signature_checking(msg_result);
-
-    data_to_check_proof.is_some() && data_to_check_proof_signature.is_some() && {
-        debug!("TransactionHandler::process_reply: Proof and signature are present");
-
-        let (proofs, root_hash, key, value) = data_to_check_proof.unwrap();
-
-        let proof_valid = state_proof::verify_proof(
-            base64::decode(proofs).unwrap().as_slice(),
-            root_hash.from_base58().unwrap().as_slice(),
-            key.as_slice(),
-            value.as_ref().map(String::as_str));
-
-
-        debug!("TransactionHandler::process_reply: proof_valid: {:?}", proof_valid);
-
-        proof_valid && {
-            let (signature, participants, value) = data_to_check_proof_signature.unwrap();
-            let signature_valid = state_proof::verify_proof_signature(
-                signature,
-                participants.as_slice(),
-                &value,
-                bls_keys, f, gen).map_err(|err| warn!("{:?}", err)).unwrap_or(false);
-
-            debug!("TransactionHandler::process_reply: signature_valid: {:?}", signature_valid);
-            signature_valid
-        }
+    match state_proof::parse_generic_reply_for_proof_checking(&msg_result, raw_msg) {
+        Some(parsed_sps) => {
+            debug!("TransactionHandler::process_reply: Proof and signature are present");
+            state_proof::verify_parsed_sp(parsed_sps, bls_keys, f, gen)
+        },
+        None => false
     }
 }
 

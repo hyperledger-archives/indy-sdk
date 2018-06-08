@@ -1,6 +1,6 @@
 import pytest
 
-from tests.non_secrets.constants import *
+from tests.non_secrets.common import *
 
 
 @pytest.mark.asyncio

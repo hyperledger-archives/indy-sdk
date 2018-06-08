@@ -76,7 +76,7 @@ NSString *credentials = @"{\"key\":\"key\"}";
                [completionExpectation fulfill];
            }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if( err.code != Success)
     {

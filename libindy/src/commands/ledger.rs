@@ -3,6 +3,8 @@ extern crate indy_crypto;
 
 use self::serde_json::Value;
 
+use api::ledger::{CustomFree, CustomTransactionParser};
+
 use errors::common::CommonError;
 use errors::pool::PoolError;
 use errors::crypto::CryptoError;
@@ -170,7 +172,12 @@ pub enum LedgerCommand {
         Box<Fn(Result<String, IndyError>) + Send>),
     ParseGetRevocRegDeltaResponse(
         String, // get revocation registry delta response
-        Box<Fn(Result<(String, String, u64), IndyError>) + Send>)
+        Box<Fn(Result<(String, String, u64), IndyError>) + Send>),
+    RegisterSPParser(
+        String, // txn type
+        CustomTransactionParser,
+        CustomFree,
+        Box<Fn(Result<(), IndyError>) + Send>),
 }
 
 pub struct LedgerCommandExecutor {
@@ -211,6 +218,10 @@ impl LedgerCommandExecutor {
                 self.send_callbacks.borrow_mut().remove(&handle)
                     .expect("Expect callback to process ack command")
                     (result.map_err(IndyError::from));
+            }
+            LedgerCommand::RegisterSPParser(txn_type, parser, free, cb) => {
+                info!(target: "ledger_command_executor", "RegisterSPParser command received");
+                cb(self.register_sp_parser(&txn_type, parser, free));
             }
             LedgerCommand::SignRequest(wallet_handle, submitter_did, request_json, cb) => {
                 info!(target: "ledger_command_executor", "SignRequest command received");
@@ -333,6 +344,15 @@ impl LedgerCommandExecutor {
                 cb(self.parse_revoc_reg_delta_response(&get_revoc_reg_delta_response));
             }
         };
+    }
+
+    fn register_sp_parser(&self, txn_type: &str,
+                          parser: CustomTransactionParser, free: CustomFree) -> Result<(), IndyError> {
+        debug!("register_sp_parser >>> txn_type: {:?}, parser: {:?}, free: {:?}",
+               txn_type, parser, free);
+
+        PoolService::register_sp_parser(txn_type, parser, free)
+            .map_err(IndyError::from)
     }
 
     fn sign_and_submit_request(&self,

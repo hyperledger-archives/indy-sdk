@@ -14,17 +14,14 @@ pub enum TagName {
 
 impl TagName {
     fn from(s: String) -> Result<TagName, WalletQueryError> {
-        let mut v = s.into_bytes();
-        match v.first() {
-            Some(&126) => match v.get(1) {
-                Some(_) => {
-                    v.remove(0);
-                    Ok(TagName::PlainTagName(v))
-                },
-                None => Err(WalletQueryError::StructureErr("Tag name must not be empty".to_string())),
-            },
-            Some(_) => Ok(TagName::EncryptedTagName(v)),
-            None => Err(WalletQueryError::StructureErr("Tag name must not be empty".to_string()))
+        if s.is_empty() || s.starts_with("~") && s.len() == 1 {
+            return Err(WalletQueryError::StructureErr("Tag name must not be empty".to_string()));
+        }
+
+        if s.starts_with("~") {
+            Ok(TagName::PlainTagName(s.into_bytes()[1..].to_vec()))
+        } else {
+            Ok(TagName::EncryptedTagName(s.into_bytes()))
         }
     }
 }
@@ -37,7 +34,6 @@ impl string::ToString for TagName {
         }
     }
 }
-
 
 #[derive(Debug)]
 pub enum TargetValue {
@@ -61,7 +57,6 @@ impl string::ToString for TargetValue {
 }
 
 
-
 #[derive(Debug)]
 pub enum Operator {
     And(Vec<Operator>),
@@ -82,31 +77,22 @@ pub enum Operator {
 impl Operator {
     pub fn transform(self, f: &Fn(Operator) -> Result<Operator, WalletQueryError>) -> Result<Operator, WalletQueryError> {
         match self {
-            Operator::And(operators) => {
-                let mut transformed = Vec::new();
-
-                for operator in operators {
-                    let transformed_operator = Operator::transform(operator, f)?;
-                    transformed.push(transformed_operator);
-                }
-
-                Ok(Operator::And(transformed))
-            }
-            Operator::Or(operators) => {
-                let mut transformed = Vec::new();
-
-                for operator in operators {
-                    let transformed_operator = Operator::transform(operator, f)?;
-                    transformed.push(transformed_operator);
-                }
-
-                Ok(Operator::Or(transformed))
-            }
-            Operator::Not(boxed_operator) => {
-                Ok(Operator::Not(Box::new(Operator::transform(*boxed_operator, f)?)))
-            }
+            Operator::And(operators) => Ok(Operator::And(Operator::transform_list_operators(operators, f)?)),
+            Operator::Or(operators) => Ok(Operator::Or(Operator::transform_list_operators(operators, f)?)),
+            Operator::Not(boxed_operator) => Ok(Operator::Not(Box::new(Operator::transform(*boxed_operator, f)?))),
             _ => Ok(f(self)?)
         }
+    }
+
+    fn transform_list_operators(operators: Vec<Operator>, f: &Fn(Operator) -> Result<Operator, WalletQueryError>) -> Result<Vec<Operator>, WalletQueryError> {
+        let mut transformed = Vec::new();
+
+        for operator in operators {
+            let transformed_operator = Operator::transform(operator, f)?;
+            transformed.push(transformed_operator);
+        }
+
+        Ok(transformed)
     }
 
     fn optimise(self) -> Operator {
@@ -139,30 +125,30 @@ impl Operator {
 
 fn join_operator_strings(operators: &Vec<Operator>) -> String {
     operators.iter()
-             .map(|o: &Operator| -> String { o.to_string() })
-             .collect::<Vec<String>>()
-             .join(",")
+        .map(|o: &Operator| -> String { o.to_string() })
+        .collect::<Vec<String>>()
+        .join(",")
 }
 
 
 impl string::ToString for Operator {
     fn to_string(&self) -> String {
         match *self {
-            Operator::Eq(ref tag_name, ref tag_value) => format!("\"{}\": \"{}\"", tag_name.to_string(), tag_value.to_string()),
-            Operator::Neq(ref tag_name, ref tag_value) => format!("\"{}\": {{\"$neq\": \"{}\"}}", tag_name.to_string(), tag_value.to_string()),
-            Operator::Gt(ref tag_name, ref tag_value) => format!("\"{}\": {{\"$gt\": \"{}\"}}", tag_name.to_string(), tag_value.to_string()),
-            Operator::Gte(ref tag_name, ref tag_value) => format!("\"{}\": {{\"$gte\": \"{}\"}}", tag_name.to_string(), tag_value.to_string()),
-            Operator::Lt(ref tag_name, ref tag_value) => format!("\"{}\": {{\"$lt\": \"{}\"}}", tag_name.to_string(), tag_value.to_string()),
-            Operator::Lte(ref tag_name, ref tag_value) => format!("\"{}\": {{\"$lte\": \"{}\"}}", tag_name.to_string(), tag_value.to_string()),
-            Operator::Like(ref tag_name, ref tag_value) => format!("\"{}\": {{\"$like\": \"{}\"}}", tag_name.to_string(), tag_value.to_string()),
-            Operator::Regex(ref tag_name, ref tag_value) => format!("\"{}\": {{\"$regex\": \"{}\"}}", tag_name.to_string(), tag_value.to_string()),
-            Operator::Not(ref stmt) => format!("\"$not\": {{{}}}", stmt.to_string()),
+            Operator::Eq(ref tag_name, ref tag_value) => format!(r#""{}":{}"#, tag_name.to_string(), tag_value.to_string()),
+            Operator::Neq(ref tag_name, ref tag_value) => format!(r#""{}": {{ "$neq":{} }}"#, tag_name.to_string(), tag_value.to_string()),
+            Operator::Gt(ref tag_name, ref tag_value) => format!(r#""{}": {{ "$gt":{} }}"#, tag_name.to_string(), tag_value.to_string()),
+            Operator::Gte(ref tag_name, ref tag_value) => format!(r#""{}": {{ "$gte":{} }}"#, tag_name.to_string(), tag_value.to_string()),
+            Operator::Lt(ref tag_name, ref tag_value) => format!(r#""{}": {{ "$lt":{} }}"#, tag_name.to_string(), tag_value.to_string()),
+            Operator::Lte(ref tag_name, ref tag_value) => format!(r#""{}": {{ "$lte":{} }}"#, tag_name.to_string(), tag_value.to_string()),
+            Operator::Like(ref tag_name, ref tag_value) => format!(r#""{}": {{ "$like":{} }}"#, tag_name.to_string(), tag_value.to_string()),
+            Operator::Regex(ref tag_name, ref tag_value) => format!(r#""{}": {{ "$regex":{} }}"#, tag_name.to_string(), tag_value.to_string()),
+            Operator::Not(ref stmt) => format!(r#""$not":{}"#, stmt.to_string()),
             Operator::And(ref operators) => format!("{{{}}}", join_operator_strings(operators)),
-            Operator::Or(ref operators) => format!("\"$or\": [{}])", join_operator_strings(operators)),
+            Operator::Or(ref operators) => format!(r#""$or": [{}])"#, join_operator_strings(operators)),
             Operator::In(ref tag_name, ref tag_values) => {
                 let strings = tag_values.iter().map(|v| v.to_string()).collect::<Vec<String>>().join(", ");
-                format!("\"{}\": {{\"$in\": [{}]}}", tag_name.to_string(), strings)
-            },
+                format!(r#""{}": {{ "$in": [{}] }}"#, tag_name.to_string(), strings)
+            }
         }
     }
 }
@@ -205,12 +191,12 @@ fn parse_operator(key: String, value: serde_json::Value) -> Result<Operator, Wal
             }
 
             Ok(Operator::Or(operators))
-        },
+        }
         ("$or", _) => Err(WalletQueryError::StructureErr("$or must be array of JSON objects".to_string())),
         ("$not", serde_json::Value::Object(map)) => {
             let operator = parse(map)?;
             Ok(Operator::Not(Box::new(operator)))
-        },
+        }
         ("$not", _) => Err(WalletQueryError::StructureErr("$not must be JSON object".to_string())),
         (_, serde_json::Value::String(value)) => Ok(Operator::Eq(TagName::from(key)?, TargetValue::from(value))),
         (_, serde_json::Value::Object(map)) => {
@@ -220,11 +206,10 @@ fn parse_operator(key: String, value: serde_json::Value) -> Result<Operator, Wal
             } else {
                 Err(WalletQueryError::StructureErr(format!("{} value must be JSON object of length 1", key)))
             }
-        },
+        }
         (_, _) => Err(WalletQueryError::StructureErr(format!("Unsupported value for key: {}", key)))
     }
 }
-
 
 fn parse_single_operator(operator_name: String, key: String, value: serde_json::Value) -> Result<Operator, WalletQueryError> {
     match (&*operator_name, value) {
@@ -236,7 +221,7 @@ fn parse_single_operator(operator_name: String, key: String, value: serde_json::
                 TagName::PlainTagName(_) => Ok(Operator::Gt(target_name, TargetValue::from(s))),
                 TagName::EncryptedTagName(_) => Err(WalletQueryError::StructureErr("$gt must be used only for nonencrypted tag".to_string()))
             }
-        },
+        }
         ("$gt", _) => Err(WalletQueryError::ValueErr("$gt must be used with string".to_string())),
         ("$gte", serde_json::Value::String(s)) => {
             let target_name = TagName::from(key)?;
@@ -244,7 +229,7 @@ fn parse_single_operator(operator_name: String, key: String, value: serde_json::
                 TagName::PlainTagName(_) => Ok(Operator::Gte(target_name, TargetValue::from(s))),
                 TagName::EncryptedTagName(_) => Err(WalletQueryError::StructureErr("$gte must be used only for nonencrypted tag".to_string()))
             }
-        },
+        }
         ("$gte", _) => Err(WalletQueryError::ValueErr("$gte must be used with string".to_string())),
         ("$lt", serde_json::Value::String(s)) => {
             let target_name = TagName::from(key)?;
@@ -252,7 +237,7 @@ fn parse_single_operator(operator_name: String, key: String, value: serde_json::
                 TagName::PlainTagName(_) => Ok(Operator::Lt(target_name, TargetValue::from(s))),
                 TagName::EncryptedTagName(_) => Err(WalletQueryError::StructureErr("$lt must be used only for nonencrypted tag".to_string()))
             }
-        },
+        }
         ("$lt", _) => Err(WalletQueryError::ValueErr("$lt must be used with string".to_string())),
         ("$lte", serde_json::Value::String(s)) => {
             let target_name = TagName::from(key)?;
@@ -260,7 +245,7 @@ fn parse_single_operator(operator_name: String, key: String, value: serde_json::
                 TagName::PlainTagName(_) => Ok(Operator::Lte(target_name, TargetValue::from(s))),
                 TagName::EncryptedTagName(_) => Err(WalletQueryError::StructureErr("$lte must be used only for nonencrypted tag".to_string()))
             }
-        },
+        }
         ("$lte", _) => Err(WalletQueryError::ValueErr("$lte must be used with string".to_string())),
         ("$like", serde_json::Value::String(s)) => {
             let target_name = TagName::from(key)?;
@@ -268,7 +253,7 @@ fn parse_single_operator(operator_name: String, key: String, value: serde_json::
                 TagName::PlainTagName(_) => Ok(Operator::Like(target_name, TargetValue::from(s))),
                 TagName::EncryptedTagName(_) => Err(WalletQueryError::StructureErr("$like must be used only for nonencrypted tag".to_string()))
             }
-        },
+        }
         ("$like", _) => Err(WalletQueryError::ValueErr("$like must be used with string".to_string())),
         ("$in", serde_json::Value::Array(values)) => {
             let mut target_values: Vec<TargetValue> = Vec::new();
@@ -282,7 +267,7 @@ fn parse_single_operator(operator_name: String, key: String, value: serde_json::
             }
 
             Ok(Operator::In(TagName::from(key)?, target_values))
-        },
+        }
         ("$in", _) => Err(WalletQueryError::ValueErr("$in must be used with array of strings".to_string())),
         (_, _) => Err(WalletQueryError::ValueErr(format!("Bad operator: {}", operator_name)))
     }

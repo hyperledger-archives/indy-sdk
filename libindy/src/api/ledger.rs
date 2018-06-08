@@ -1617,3 +1617,69 @@ pub extern fn indy_parse_get_revoc_reg_delta_response(command_handle: i32,
 
     res
 }
+
+/// Callback type for parsing Reply from Node to specific StateProof format
+///
+/// # params
+/// reply_from_node: string representation of node's reply ("as is")
+/// parsed_sp: out param to return serialized as string JSON with array of ParsedSP
+///
+/// # return
+/// result ErrorCode
+///
+/// Note: this method allocate memory for result string `CustomFree` should be called to deallocate it
+pub type CustomTransactionParser = extern fn(reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode;
+
+/// Callback type to deallocate result buffer `parsed_sp` from `CustomTransactionParser`
+pub type CustomFree = extern fn(data: *const c_char) -> ErrorCode;
+
+
+/// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
+///
+/// # params
+/// command_handle: command handle to map callback to caller context.
+/// txn_type: type of transaction to apply `parse` callback.
+/// parse: required callback to parse reply for state proof.
+/// free: required callback to deallocate memory.
+/// cb: Callback that takes command result as parameter.
+///
+/// # returns
+/// Status of callbacks registration.
+///
+/// # errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_register_transaction_parser_for_sp(command_handle: i32,
+                                                      txn_type: *const c_char,
+                                                      parser: Option<CustomTransactionParser>,
+                                                      free: Option<CustomFree>,
+                                                      cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_register_transaction_parser_for_sp: >>> txn_type {:?}, parser {:?}, free {:?}",
+           txn_type, parser, free);
+
+    check_useful_c_str!(txn_type, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(parser, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(free, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_register_transaction_parser_for_sp: entities: txn_type {}, parser {:?}, free {:?}",
+           txn_type, parser, free);
+
+    let res = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::RegisterSPParser(
+            txn_type,
+            parser,
+            free,
+            Box::new(move |res| {
+                let res = result_to_err_code!(res);
+                trace!("indy_register_transaction_parser_for_sp: res: {:?}", res);
+                cb(command_handle, res)
+            }),
+        )));
+
+    let res = result_to_err_code!(res);
+
+    trace!("indy_register_transaction_parser_for_sp: <<< res: {:?}", res);
+
+    res
+}

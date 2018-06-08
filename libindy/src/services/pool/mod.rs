@@ -37,6 +37,7 @@ use std::fmt::Debug;
 use std::io::{Read, BufRead, Write};
 use std::ops::{Add, Sub};
 
+use api::ledger::{CustomFree, CustomTransactionParser};
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use commands::pool::PoolCommand;
@@ -51,12 +52,16 @@ use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
 use self::indy_crypto::bls::VerKey;
 use std::path::PathBuf;
+use std::sync::Mutex;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use services::pool::pool::Pool;
 use services::pool::networker::ZMQNetworker;
 use services::pool::request_handler::RequestHandlerImpl;
 
+lazy_static! {
+    static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new());
+}
 
 pub type PoolWorker = Pool<ZMQNetworker, RequestHandlerImpl<ZMQNetworker>>;
 
@@ -166,6 +171,26 @@ impl PoolService {
 //            .get(&handle).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?
 //            .send_tx(cmd_id, json)?;
         Ok(cmd_id)
+    }
+
+    pub fn register_sp_parser(txn_type: &str,
+                              parser: CustomTransactionParser, free: CustomFree) -> Result<(), PoolError> {
+        if events::REQUESTS_FOR_STATE_PROOFS.contains(&txn_type) {
+            return Err(PoolError::CommonError(CommonError::InvalidStructure(
+                format!("Try to override StateProof parser for default TXN_TYPE {}", txn_type))));
+        }
+        REGISTERED_SP_PARSERS.lock()
+            .map(|mut map| {
+                map.insert(txn_type.to_owned(), (parser, free));
+            })
+            .map_err(|_| PoolError::CommonError(CommonError::InvalidState(
+                "Can't register new SP parser: mutex lock error".to_owned())))
+    }
+
+    pub fn get_sp_parser(txn_type: &str) -> Option<(CustomTransactionParser, CustomFree)> {
+        REGISTERED_SP_PARSERS.lock().ok().and_then(|map| {
+            map.get(txn_type).map(Clone::clone)
+        })
     }
 
     pub fn close(&self, handle: i32) -> Result<i32, PoolError> {
@@ -377,7 +402,10 @@ mod tests {
                 cmd_sock: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
                 open_cmd_id: 0,
                 name: "".to_string(),
-                handler: PoolWorkerHandler::CatchupHandler(Default::default()),
+                handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
+                    timeout: time::now_utc().add(Duration::seconds(2)),
+                    ..Default::default()
+                }),
             }
         }
     }
