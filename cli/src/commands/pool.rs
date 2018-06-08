@@ -88,6 +88,7 @@ pub mod connect_command {
                         Ok(println_succ!("Pool \"{}\" has been connected", name))
                     }
                     Err(ErrorCode::CommonIOError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
+                    Err(ErrorCode::PoolLedgerNotCreatedError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                     Err(ErrorCode::PoolLedgerTerminated) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                     Err(ErrorCode::PoolLedgerTimeout) => Err(println_err!("Pool \"{}\" has not been connected.", name)),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
