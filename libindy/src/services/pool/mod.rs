@@ -4,7 +4,6 @@ mod types;
 mod state_proof;
 //mod pool_worker;
 
-mod node;
 mod pool;
 mod networker;
 mod commander;

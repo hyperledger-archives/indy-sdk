@@ -7,9 +7,11 @@ extern crate rust_base58;
 extern crate sha2;
 extern crate sha3;
 
+mod node;
+
 use domain::ledger::constants;
 use services::pool::events::REQUESTS_FOR_STATE_PROOFS;
-use services::pool::node::{TrieDB, Node};
+use self::node::{TrieDB, Node};
 
 use self::sha3::Digest;
 use self::digest::Input;
