@@ -127,11 +127,11 @@ extern "C" {
     /// Exports opened wallet's content using key and path provided in export_config_json
     ///
     /// #Params
-    /// handle: wallet handle returned by indy_open_wallet.
+    /// wallet_handle: wallet handle returned by indy_open_wallet.
     /// export_config_json: JSON containing settings for input operation.
     ///   {
     ///     "path": path of the file that contains exported wallet content
-    ///     "key": passphrase used to export key
+    ///     "key": passphrase used to derive export key
     ///   }
     ///
     /// #Returns
@@ -142,7 +142,7 @@ extern "C" {
     /// Wallet*
 
     extern indy_error_t indy_export_wallet(indy_handle_t  command_handle,
-                                           indy_handle_t  handle,
+                                           indy_handle_t  wallet_handle,
                                            const char*    export_config_json,
                                            void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
                                            );
@@ -161,14 +161,13 @@ extern "C" {
     /// credentials: Wallet credentials json
     ///   {
     ///       "key": string,
-    ///       "rekey": Optional<string>,
     ///       "storage": Optional<object>  List of supported keys are defined by wallet type.
     ///
     ///   }
     /// import_config_json: JSON containing settings for input operation.
     ///   {
     ///     "path": path of the file that contains exported wallet content
-    ///     "key": passphrase used to export key
+    ///     "key": passphrase used to derive export key
     ///   }
     ///
     /// #Returns
@@ -191,7 +190,7 @@ extern "C" {
     /// Closes opened wallet and frees allocated resources.
     ///
     /// #Params
-    /// handle: wallet handle returned by indy_open_wallet.
+    /// wallet_handle: wallet handle returned by indy_open_wallet.
     ///
     /// #Returns
     /// Error code
@@ -201,7 +200,7 @@ extern "C" {
     /// Wallet*
 
     extern indy_error_t indy_close_wallet(indy_handle_t  command_handle,
-                                          indy_handle_t  handle,
+                                          indy_handle_t  wallet_handle,
                                           void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
                                          );
 
