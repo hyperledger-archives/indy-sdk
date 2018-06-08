@@ -506,6 +506,21 @@ impl LedgerUtils {
         super::results::result_to_string_string_u64(err, receiver)
     }
 
+    pub fn register_transaction_parser_for_sp(txn_type: &str, parse: CustomTransactionParser, free: CustomFree) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+
+        let txn_type = CString::new(txn_type).unwrap();
+
+        let err =
+            indy_register_transaction_parser_for_sp(command_handle,
+                                                    txn_type.as_ptr(),
+                                                    Some(parse),
+                                                    Some(free),
+                                                    cb);
+
+        super::results::result_to_empty(err, receiver)
+    }
+
     pub fn post_entities() -> (&'static str, &'static str, &'static str) {
         lazy_static! {
                     static ref COMMON_ENTITIES_INIT: Once = ONCE_INIT;
