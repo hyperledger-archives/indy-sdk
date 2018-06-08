@@ -116,20 +116,17 @@ pub enum ErrorCode
     // Returned if provided wallet query is invalid
     WalletQueryError = 214,
 
-    // Returned if I/O error occurred during wallet operation
-    WalletIOError = 215,
-
     // Returned if wallet input has invalid structure (currently used in wallet import)
-    WalletStructureError = 216,
+    WalletStructureError = 215,
 
     // Returned if the wallet is not empty, but it is required (currently only when importing)
-    WalletNotEmpty = 217,
+    WalletNotEmpty = 216,
 
     // Returned if path provided to wallet export already exists
-    WalletExportPathExists = 218,
+    WalletExportPathExists = 217,
 
     // Returned if path provided to wallet import does not exist
-    WalletImportPathDoesNotExist = 219,
+    WalletImportPathDoesNotExist = 218,
 
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
