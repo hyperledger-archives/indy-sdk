@@ -288,12 +288,16 @@ impl LedgerUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_txn_request(submitter_did: &str, data: i32) -> Result<String, ErrorCode> {
+    pub fn build_get_txn_request(submitter_did: &str, data: i32, ledger_type: Option<&str>) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
+        let ledger_type_str = ledger_type.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
-        let err = indy_build_get_txn_request(command_handle, submitter_did.as_ptr(), data, cb);
+        let err = indy_build_get_txn_request(command_handle,
+                                             submitter_did.as_ptr(),
+                                             if ledger_type.is_some() { ledger_type_str.as_ptr() } else { null() },
+                                             data, cb);
 
         super::results::result_to_string(err, receiver)
     }

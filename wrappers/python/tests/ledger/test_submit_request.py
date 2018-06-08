@@ -370,7 +370,7 @@ async def test_get_txn_request_works(pool_handle, wallet_handle, identity_my):
     schema_response = await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
     seq_no = json.loads(schema_response)["result"]["seqNo"]
 
-    get_txn_request = await ledger.build_get_txn_request(my_did, seq_no)
+    get_txn_request = await ledger.build_get_txn_request(my_did, None, seq_no)
     get_txn_response = json.loads(
         await ensure_previous_request_applied(pool_handle, get_txn_request,
                                               lambda response: response['result']['data']['seqNo'] is not None))
@@ -392,7 +392,7 @@ async def test_get_txn_request_works_for_invalid_seq_no(pool_handle, wallet_hand
 
     seq_no = schema_id + 1
 
-    get_txn_request = await ledger.build_get_txn_request(my_did, seq_no)
+    get_txn_request = await ledger.build_get_txn_request(my_did, None, seq_no)
     get_txn_response = json.loads(await ledger.submit_request(pool_handle, get_txn_request))
     assert not get_txn_response['result']['data']
 
