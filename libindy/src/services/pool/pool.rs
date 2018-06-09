@@ -323,7 +323,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                     PoolEvent::PoolOutdated => PoolWrapper::Terminated(pool.into()),
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
                     PoolEvent::Refresh => PoolWrapper::GettingCatchupTarget(pool.into()),
-                    PoolEvent::SendRequest(_) => {
+                    PoolEvent::SendRequest(_, _) => {
                         let re: Option<RequestEvent> = pe.into();
                         //TODO: fill it up!
                         let mut request_handler = R::new(pool.state.networker.clone(), 0, &vec![], HashMap::new(), None, &pool.pool_name);
@@ -469,8 +469,11 @@ impl<S: Networker, R: RequestHandler<S>> PoolThread<S, R> {
                 self.events.push_back(PoolEvent::Timeout); // TODO check duplicate ?
             }
 
-            let mut events = networker.fetch_events(&poll_items);
-            events.extend(self.commander.fetch_events());
+            let mut events = networker.fetch_events(&poll_items[0..poll_items.len() - 1]);
+
+            if poll_items[poll_items.len() - 1].is_readable() { //TODO move into fetch events?
+                events.extend(self.commander.fetch_events());
+            }
 
             events
         };

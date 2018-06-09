@@ -55,6 +55,7 @@ pub enum PoolEvent {
     ),
     NodesBlacklisted,
     SendRequest(
+        i32, // cmd_id
         String, // request
     ),
     Timeout
@@ -160,10 +161,10 @@ impl Into<Option<RequestEvent>> for PoolEvent {
             PoolEvent::NodeReply(msg, node_alias) => {
                 _parse_msg(&msg).map(|parsed| (msg, node_alias, parsed).into())
             },
-            PoolEvent::SendRequest(msg) => {
+            PoolEvent::SendRequest(cmd_id, msg) => {
                 let req_id = _parse_req_id_and_op(&msg);
                 match req_id {
-                    Ok((ref req_id, ref op)) if REQUESTS_FOR_STATE_PROOFS.contains(&op.as_str()) => Some(RequestEvent::CustomSingleRequest(msg, Ok(req_id.clone()))),
+                    Ok((ref req_id, ref op)) if REQUESTS_FOR_STATE_PROOFS.contains(&op.as_str()) => Some(RequestEvent::CustomSingleRequest(msg, Ok(req_id.clone()))), //FIXME check plugged also
                     Ok((ref req_id, ref op)) if REQUEST_FOR_FULL.contains(&op.as_str()) => Some(RequestEvent::CustomFullRequest(msg, Ok(req_id.clone()))),
                     Ok((ref req_id, _)) => Some(RequestEvent::CustomConsensusRequest(msg, Ok(req_id.clone()))),
                     Err(err) => Some(RequestEvent::CustomSingleRequest(msg, Err(err))),

@@ -1,5 +1,10 @@
+extern crate byteorder;
+
+use self::byteorder::{ByteOrder, LittleEndian, WriteBytesExt, ReadBytesExt};
+
 use super::zmq;
 use std::collections::VecDeque;
+use errors::common::CommonError;
 use services::pool::events::PoolEvent;
 
 pub struct Commander {
@@ -14,7 +19,21 @@ impl Commander {
     }
 
     pub fn fetch_events(&self) -> Option<PoolEvent> {
-        unimplemented!()
+        let cmd = self.cmd_socket.recv_multipart(zmq::DONTWAIT).expect("FIXME");
+        trace!("cmd {:?}", cmd);
+        let cmd_s = String::from_utf8(cmd[0].clone())
+            .map_err(|err|
+                CommonError::InvalidState(format!("Invalid command received: {:?}", err)))
+            .expect("FIXME");
+        let id = cmd.get(1).map(|cmd: &Vec<u8>| LittleEndian::read_i32(cmd.as_slice()))
+            .unwrap_or(-1);
+        if "exit".eq(cmd_s.as_str()) {
+            Some(PoolEvent::Close)  // FIXME pass id
+        } else if "refresh".eq(cmd_s.as_str()) {
+            Some(PoolEvent::Refresh) // FIXME pass id
+        } else {
+            Some(PoolEvent::SendRequest(id, cmd_s))
+        }
     }
 
     pub fn get_poll_item(&self) -> zmq::PollItem {
