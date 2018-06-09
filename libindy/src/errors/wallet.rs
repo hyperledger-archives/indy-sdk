@@ -36,7 +36,7 @@ pub enum WalletError {
     EncryptionError(String),
     ItemNotFound,
     ItemAlreadyExists,
-    QueryError(String),
+    QueryError(String)
 }
 
 

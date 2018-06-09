@@ -129,7 +129,10 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.add_record(wallet_handle, type_, id, value, tags_json.unwrap_or("{}"))?; //TODO: question
+        let tags = serde_json::from_str::<HashMap<String, String>>(tags_json.unwrap_or("{}"))
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize tags: {:?}", err)))?;
+
+        let res = self.wallet_service.add_record(wallet_handle, type_, id, value, &tags)?;
 
         trace!("add_record <<< res: {:?}", res);
 
@@ -161,7 +164,10 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.update_record_tags(wallet_handle, type_, id, tags_json)?;
+        let tags = serde_json::from_str::<HashMap<String, String>>(tags_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize tags: {:?}", err)))?;
+
+        let res = self.wallet_service.update_record_tags(wallet_handle, type_, id, &tags)?;
 
         trace!("update_record_tags <<< res: {:?}", res);
 
@@ -177,7 +183,10 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.add_record_tags(wallet_handle, type_, id, tags_json)?;
+        let tags = serde_json::from_str::<HashMap<String, String>>(tags_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize tags: {:?}", err)))?;
+
+        let res = self.wallet_service.add_record_tags(wallet_handle, type_, id, &tags)?;
 
         trace!("add_record_tags <<< res: {:?}", res);
 
@@ -191,9 +200,12 @@ impl NonSecretsCommandExecutor {
                           tag_names_json: &str) -> Result<(), IndyError> {
         trace!("delete_record_tags >>> wallet_handle: {:?}, type_: {:?}, id: {:?}, tag_names_json: {:?}", wallet_handle, type_, id, tag_names_json);
 
+        let tag_names = serde_json::from_str::<Vec<&str>>(tag_names_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize tag names: {:?}", err)))?;
+
         self._check_type(type_)?;
 
-        let res = self.wallet_service.delete_record_tags(wallet_handle, type_, id, tag_names_json)?;
+        let res = self.wallet_service.delete_record_tags(wallet_handle, type_, id, &tag_names)?;
 
         trace!("delete_record_tags <<< res: {:?}", res);
 
