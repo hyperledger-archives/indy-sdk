@@ -650,18 +650,29 @@ pub mod pool_restart_command {
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+        let responses = match serde_json::from_str::<HashMap<String, String>>(&response) {
+            Ok(responses) => responses,
+            Err(_) => {
+                let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+                    .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+                return handle_transaction_response(response).map(|result| println_succ!("{}", result));
+            }
+        };
 
-        let res = handle_transaction_response(response)
-            .map(|result| print_transaction_response(result,
-                                                     "Restart pool request has been sent to Ledger.",
-                                                     None,
-                                                     &[
-                                                         ("isSuccess", "IsSuccess"),
-                                                         ("msg", "Message"),
-                                                         ("action", "Action"),
-                                                         ("datetime", "Datetime")]));
+        for (node, response) in responses {
+            let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+                .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+            println_succ!("Restart pool response for node {}:", node);
+            let _res = handle_transaction_response(response).map(|result|
+                print_table(&result, &[
+                    ("identifier", "From"),
+                    ("reqId", "Request Id"),
+                    ("action", "Action"),
+                    ("datetime", "Datetime")]));
+        }
+        let res = Ok(());
+
         trace!("execute << {:?}", res);
         res
     }
@@ -1068,9 +1079,6 @@ fn set_request_fees(request: &mut String, wallet_handle: i32, submitter_did: &st
 }
 
 fn parse_payment_inputs(inputs: &Vec<&str>) -> Result<String, ()> {
-    if inputs.is_empty() {
-        return Err(println_err!("Inputs list is empty"));
-    }
     serde_json::to_string(&inputs)
         .map_err(|_| println_err!("Wrong data has been received"))
 }
@@ -2389,7 +2397,6 @@ pub mod tests {
         use super::*;
 
         #[test]
-        #[ignore]
         pub fn pool_restart_works() {
             TestUtils::cleanup_storage();
             let datetime = r#"2020-01-25T12:49:05.258870+00:00"#;
@@ -3416,6 +3423,28 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
                 params.insert("fees", "NYM,ATTRIB".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn set_fees_prepare_works_for_empty_fees() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = set_fees_prepare_command::new();
+                let mut params = CommandParams::new();
+                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
+                params.insert("fees", "".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
