@@ -43,10 +43,6 @@ fn encrypt_operator(op: Operator, keys: &Keys) -> Result<Operator, WalletQueryEr
             let (encrypted_name, encrypted_value) = encrypt_name_value(&name, value, keys)?;
             Ok(Operator::Like(encrypted_name, encrypted_value))
         },
-        Operator::Regex(name, value) => {
-            let (encrypted_name, encrypted_value) = encrypt_name_value(&name, value, keys)?;
-            Ok(Operator::Regex(encrypted_name, encrypted_value))
-        },
         Operator::In(name, values) => {
             let name = match name {
                 TagName::EncryptedTagName(ref name) => {
