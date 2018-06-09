@@ -43,7 +43,7 @@ impl Networker for ZMQNetworker {
                 if self.pool_connections.last().map(PoolConnection::is_full).unwrap_or(true) {
                     self.pool_connections.push(PoolConnection::new(self.nodes.clone()));
                 }
-                self.pool_connections.last().unwrap().send_request(pe);
+                self.pool_connections.last().expect("FIXME").send_request(pe);
                 None
             },
             Some(NetworkerEvent::NodesStateUpdated(nodes)) => {
@@ -132,7 +132,12 @@ impl PoolConnection {
                 let socket: &ZSocket = self.sockets[0].as_ref().expect("FIXME");
                 socket.send_str(&msg, zmq::DONTWAIT).expect("FIXME");
             }
-            _ => unimplemented!()
+            Some(NetworkerEvent::SendAllRequest(msg)) => {
+                self.sockets.iter().for_each(|socket| {
+                    socket.as_ref().expect("FIXME").send_str(&msg, zmq::DONTWAIT).expect("FIXME")
+                });
+            }
+            _ => ()
         }
     }
 }

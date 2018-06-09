@@ -31,6 +31,7 @@ use services::pool::merkle_tree_factory;
 use services::pool::types::CatchupReq;
 use services::pool::types::CatchupRep;
 use services::pool::types::Message;
+use commands::pool::PoolCommand;
 
 trait RequestState {
     fn is_terminal(&self) -> bool {
@@ -307,15 +308,10 @@ impl<T: Networker> RequestSMWrapper<T> {
             RequestSMWrapper::Start(request) => {
                 let ne: Option<NetworkerEvent> = re.clone().into();
                 match re {
-                    RequestEvent::LedgerStatus(ls, _) => {
-                        match merkle_tree_factory::create(&request.pool_name) {
-                            Ok(merkle_tree) => {
-                                request.state.networker.borrow_mut().process_event(ne);
-                                (RequestSMWrapper::CatchupConsensus((merkle_tree, request).into()), None)
-                            }
-                            //TODO: reconsider this to return more suitable error
-                            Err(e) => (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::CatchupTargetNotFound(e)))
-                        }
+                    RequestEvent::LedgerStatus(ls, _, Some(merkle)) => {
+                        trace!("start catchup, ne: {:?}", ne);
+                        request.state.networker.borrow_mut().process_event(ne);
+                        (RequestSMWrapper::CatchupConsensus((merkle, request).into()), None)
                     }
                     RequestEvent::CatchupReq(merkle, target_mt_size, target_mt_root) => {
                         let txns_cnt = target_mt_size - merkle.count();
@@ -342,7 +338,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                             Ok(req_id) => {
                                 request.state.networker.borrow_mut()
                                     .process_event(Some(NetworkerEvent::SendOneRequest(msg)));
-                                (RequestSMWrapper::Consensus(request.into()), None)
+                                (RequestSMWrapper::Single(request.into()), None)
                             }
                             Err(e) => {
                                 _send_replies(&request.cmd_ids, Err(PoolError::CommonError(e)));
@@ -477,7 +473,7 @@ impl<T: Networker> RequestSMWrapper<T> {
             }
             RequestSMWrapper::CatchupConsensus(mut request) => {
                 match re {
-                    RequestEvent::LedgerStatus(ls, Some(node_alias)) => {
+                    RequestEvent::LedgerStatus(ls, Some(node_alias), _) => {
                         let (finished, result) = _process_catchup_target(ls.merkleRoot, ls.txnSeqNo, None, &node_alias, &mut request);
                         if finished {
                             (RequestSMWrapper::Finish(request.into()), result)
@@ -499,7 +495,7 @@ impl<T: Networker> RequestSMWrapper<T> {
             RequestSMWrapper::CatchupSingle(mut request) => {
                 match re {
                     RequestEvent::CatchupRep(mut cr) => {
-                        match _process_catchup_reply(&mut cr, &mut request.state.merkle_tree, &request.state.target_mt_root, request.state.target_mt_size) {
+                        match _process_catchup_reply(&mut cr, &mut request.state.merkle_tree, &request.state.target_mt_root, request.state.target_mt_size, &request.pool_name) {
                             Ok(merkle) => (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::Synced(merkle))),
                             Err(err) => {
                                 //TODO: resend
@@ -642,7 +638,7 @@ fn _process_catchup_target<T: Networker>(merkle_root: String,
     }
 }
 
-fn _process_catchup_reply(rep: &mut CatchupRep, merkle: &MerkleTree, target_mt_root: &Vec<u8>, target_mt_size: usize) -> Result<MerkleTree, PoolError> {
+fn _process_catchup_reply(rep: &mut CatchupRep, merkle: &MerkleTree, target_mt_root: &Vec<u8>, target_mt_size: usize, pool_name: &str) -> Result<MerkleTree, PoolError> {
     let mut txns_to_drop = vec![];
     let mut merkle = merkle.clone();
     while !rep.txns.is_empty() {
@@ -660,6 +656,7 @@ fn _process_catchup_reply(rep: &mut CatchupRep, merkle: &MerkleTree, target_mt_r
         return Err(PoolError::CommonError(err));
     }
 
+    merkle_tree_factory::dump_new_txns(pool_name, &txns_to_drop)?;
     Ok(merkle)
 }
 

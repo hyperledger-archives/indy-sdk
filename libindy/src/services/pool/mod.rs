@@ -67,8 +67,8 @@ lazy_static! {
 pub type PoolWorker = Pool<ZMQNetworker, RequestHandlerImpl<ZMQNetworker>>;
 
 pub struct PoolService {
-    open_pools: RefCell<HashMap<i32, PoolWorker>>,
-    pending_pools: RefCell<HashMap<i32, PoolWorker>>,
+    open_pools: RefCell<HashMap<i32, (PoolWorker, zmq::Socket)>>,
+    pending_pools: RefCell<HashMap<i32, (PoolWorker, zmq::Socket)>>,
 }
 
 impl PoolService {
@@ -98,8 +98,7 @@ impl PoolService {
 
         // check that we can build MerkeleTree from genesis transaction file
         //TODO: move parse to correct place
-//        let mt = PoolWorker::_restore_merkle_tree_from_file(&pool_config.genesis_txn)?;
-        let mt = MerkleTree::from_vec(vec![])?;
+        let mt = merkle_tree_factory::from_file(&pool_config.genesis_txn)?;
         if mt.count() == 0 {
             return Err(PoolError::CommonError(
                 CommonError::InvalidStructure("Invalid Genesis Transaction file".to_string())));
@@ -130,7 +129,7 @@ impl PoolService {
     }
 
     pub fn delete(&self, name: &str) -> Result<(), PoolError> {
-        for pool in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
+        for &(ref pool, _) in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
             if pool.get_name().eq(name) {
                 return Err(PoolError::CommonError(CommonError::InvalidState("Can't delete pool config - pool is open now".to_string())));
             }
@@ -140,27 +139,42 @@ impl PoolService {
     }
 
     pub fn open(&self, name: &str, _config: Option<&str>) -> Result<i32, PoolError> {
-        for pool in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
+        for &(ref pool, _) in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
             if name.eq(pool.get_name()) {
                 //TODO change error
                 return Err(PoolError::InvalidHandle("Pool with same name already opened".to_string()));
             }
         }
 
-        let cmd_id: i32 = SequenceUtils::get_next_id();
-        let new_pool = Pool::new(name, cmd_id);
+        let pool_handle: i32 = SequenceUtils::get_next_id();
+        let mut new_pool = Pool::new(name, pool_handle);
         //FIXME process config: check None (use default), transfer to Pool instance
 
-        self.pending_pools.try_borrow_mut().map_err(CommonError::from)?.insert(new_pool.get_id(), new_pool);
-        return Ok(cmd_id);
+
+        let zmq_ctx = zmq::Context::new();
+        let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR)?;
+        let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR)?;
+        let inproc_sock_name: String = format!("inproc://pool_{}", name);
+
+        recv_cmd_sock.bind(inproc_sock_name.as_str())?;
+
+        send_cmd_sock.connect(inproc_sock_name.as_str())?;
+
+        new_pool.work(recv_cmd_sock);
+        let mut buf = [0u8; 4];
+        LittleEndian::write_i32(&mut buf, pool_handle);
+        send_cmd_sock.send_multipart(&["connect".as_bytes(), &buf], zmq::DONTWAIT)?;
+
+        self.pending_pools.try_borrow_mut().map_err(CommonError::from)?.insert(new_pool.get_id(), (new_pool, send_cmd_sock));
+        return Ok(pool_handle);
     }
 
     pub fn add_open_pool(&self, pool_id: i32) -> Result<i32, PoolError> {
-        let pool = self.pending_pools.try_borrow_mut().map_err(CommonError::from)?
+        let (pool, socket) = self.pending_pools.try_borrow_mut().map_err(CommonError::from)?
             .remove(&pool_id)
             .ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", pool_id)))?;
 
-        self.open_pools.try_borrow_mut().map_err(CommonError::from)?.insert(pool_id, pool);
+        self.open_pools.try_borrow_mut().map_err(CommonError::from)?.insert(pool_id, (pool, socket));
 
         Ok(pool_id)
     }
@@ -232,7 +246,7 @@ impl PoolService {
     pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
         self.open_pools.try_borrow().map_err(CommonError::from)?.get(&handle).map_or(
             Err(PoolError::InvalidHandle(format!("Pool doesn't exists for handle {}", handle))),
-            |pool: &Pool<ZMQNetworker, RequestHandlerImpl<ZMQNetworker>>| Ok(pool.get_name().to_string()))
+            |&(ref pool, _)| Ok(pool.get_name().to_string()))
     }
 }
 

@@ -31,6 +31,8 @@ impl Commander {
             Some(PoolEvent::Close)  // FIXME pass id
         } else if "refresh".eq(cmd_s.as_str()) {
             Some(PoolEvent::Refresh) // FIXME pass id
+        } else if "connect".eq(cmd_s.as_str()){
+            Some(PoolEvent::CheckCache(id))
         } else {
             Some(PoolEvent::SendRequest(id, cmd_s))
         }

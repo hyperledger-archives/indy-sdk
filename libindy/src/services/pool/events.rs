@@ -28,15 +28,16 @@ const REQUEST_FOR_FULL: [&'static str; 2] = [
     constants::GET_VALIDATOR_INFO,
 ];
 
+#[derive(Debug)]
 pub enum NetworkerEvent {
     SendOneRequest(String),
     SendAllRequest(String),
     NodesStateUpdated(Vec<RemoteNode>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum PoolEvent {
-    CheckCache,
+    CheckCache(i32),
     NodeReply(
         String, // reply
         String, // node alias
@@ -66,6 +67,7 @@ pub enum RequestEvent {
     LedgerStatus(
         LedgerStatus,
         Option<String>, //node alias
+        Option<MerkleTree>
     ),
     CatchupReq(
         MerkleTree,
@@ -130,7 +132,7 @@ impl From<(String, String, Message)> for RequestEvent {
             //TODO: REMOVE UNWRAP!!!!!
             Message::CatchupReq(req) => RequestEvent::CatchupReq(MerkleTree::from_vec(Vec::new()).unwrap(), 0, vec![]),
             Message::CatchupRep(rep) => RequestEvent::CatchupRep(rep),
-            Message::LedgerStatus(ls) => RequestEvent::LedgerStatus(ls, Some(node_alias)),
+            Message::LedgerStatus(ls) => RequestEvent::LedgerStatus(ls, Some(node_alias), None),
             Message::ConsistencyProof(cp) => RequestEvent::ConsistencyProof(cp, node_alias),
             Message::Reply(rep) => {
                 let req_id = rep.req_id();
@@ -179,7 +181,7 @@ impl Into<Option<RequestEvent>> for PoolEvent {
 impl Into<Option<NetworkerEvent>> for RequestEvent {
     fn into(self) -> Option<NetworkerEvent> {
         match self {
-            RequestEvent::LedgerStatus(ls, _) => Some(NetworkerEvent::SendAllRequest(Message::LedgerStatus(ls).to_json().expect("FIXME"))),
+            RequestEvent::LedgerStatus(ls, _, _) => Some(NetworkerEvent::SendAllRequest(Message::LedgerStatus(ls).to_json().expect("FIXME"))),
             _ => None
         }
     }
