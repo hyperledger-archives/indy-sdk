@@ -5,6 +5,8 @@ use domain::ledger::constants;
 use serde_json;
 use serde_json::Value as SJsonValue;
 use std::error::Error;
+use services::ledger::merkletree::merkletree::MerkleTree;
+use errors::pool::PoolError;
 
 extern crate indy_crypto;
 
@@ -41,10 +43,16 @@ pub enum PoolEvent {
     ),
     Close,
     Refresh,
-    CatchupTargetFound,
-    CatchupTargetNotFound,
+    CatchupTargetFound(
+        Vec<u8>, //target_mt_root
+        usize, //target_mt_size
+        MerkleTree,
+    ),
+    CatchupTargetNotFound(PoolError),
     PoolOutdated,
-    Synced,
+    Synced(
+        MerkleTree
+    ),
     NodesBlacklisted,
     SendRequest(
         String, // request
@@ -55,9 +63,14 @@ pub enum PoolEvent {
 #[derive(Clone)]
 pub enum RequestEvent {
     LedgerStatus(
-        LedgerStatus
+        LedgerStatus,
+        Option<String>, //node alias
     ),
-    CatchupReq(CatchupReq),
+    CatchupReq(
+        MerkleTree,
+        usize, // target mt size
+        Vec<u8> // target mt root
+    ),
     CatchupRep(CatchupRep),
     CustomSingleRequest(
         String, // message
@@ -71,7 +84,10 @@ pub enum RequestEvent {
         String, // message
         Result<String, CommonError>, // req_id
     ),
-    ConsistencyProof(ConsistencyProof),
+    ConsistencyProof(
+        ConsistencyProof,
+        String, //node alias
+    ),
     Reply(
         Reply,
         String, //raw_msg
@@ -110,10 +126,11 @@ impl RequestEvent {
 impl From<(String, String, Message)> for RequestEvent {
     fn from((raw_msg, node_alias, msg): (String, String, Message)) -> Self {
         match msg {
-            Message::CatchupReq(req) => RequestEvent::CatchupReq(req),
+            //TODO: REMOVE UNWRAP!!!!!
+            Message::CatchupReq(req) => RequestEvent::CatchupReq(MerkleTree::from_vec(Vec::new()).unwrap(), 0, vec![]),
             Message::CatchupRep(rep) => RequestEvent::CatchupRep(rep),
-            Message::LedgerStatus(ls) => RequestEvent::LedgerStatus(ls),
-            Message::ConsistencyProof(cp) => RequestEvent::ConsistencyProof(cp),
+            Message::LedgerStatus(ls) => RequestEvent::LedgerStatus(ls, Some(node_alias)),
+            Message::ConsistencyProof(cp) => RequestEvent::ConsistencyProof(cp, node_alias),
             Message::Reply(rep) => {
                 let req_id = rep.req_id();
                 RequestEvent::Reply(rep, raw_msg, node_alias,req_id.to_string())
@@ -161,7 +178,7 @@ impl Into<Option<RequestEvent>> for PoolEvent {
 impl Into<Option<NetworkerEvent>> for RequestEvent {
     fn into(self) -> Option<NetworkerEvent> {
         match self {
-            RequestEvent::LedgerStatus(ls) => Some(NetworkerEvent::SendAllRequest(Message::LedgerStatus(ls).to_json().expect("FIXME"))),
+            RequestEvent::LedgerStatus(ls, _) => Some(NetworkerEvent::SendAllRequest(Message::LedgerStatus(ls).to_json().expect("FIXME"))),
             _ => None
         }
     }
