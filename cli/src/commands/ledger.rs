@@ -1079,9 +1079,6 @@ fn set_request_fees(request: &mut String, wallet_handle: i32, submitter_did: &st
 }
 
 fn parse_payment_inputs(inputs: &Vec<&str>) -> Result<String, ()> {
-    if inputs.is_empty() {
-        return Err(println_err!("Inputs list is empty"));
-    }
     serde_json::to_string(&inputs)
         .map_err(|_| println_err!("Wrong data has been received"))
 }
@@ -3473,6 +3470,28 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
                 params.insert("fees", "NYM,ATTRIB".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn set_fees_prepare_works_for_empty_fees() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = set_fees_prepare_command::new();
+                let mut params = CommandParams::new();
+                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
+                params.insert("fees", "".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
