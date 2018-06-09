@@ -69,7 +69,7 @@ fn _try_to_catch_up(ledger_status: &(String, usize, Option<Vec<String>>), merkle
     }
 }
 
-fn check_cons_proofs(mt: &MerkleTree, cons_proofs: &Vec<String>, target_mt_root: &Vec<u8>, target_mt_size: usize) -> Result<(), CommonError> {
+pub fn check_cons_proofs(mt: &MerkleTree, cons_proofs: &Vec<String>, target_mt_root: &Vec<u8>, target_mt_size: usize) -> Result<(), CommonError> {
     let mut bytes_proofs: Vec<Vec<u8>> = Vec::new();
     for cons_proof in cons_proofs {
         let cons_proof: &String = cons_proof;

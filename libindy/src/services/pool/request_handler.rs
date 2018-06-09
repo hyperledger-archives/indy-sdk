@@ -1,4 +1,5 @@
 extern crate rust_base58;
+extern crate rmp_serde;
 
 use commands::CommandExecutor;
 use commands::Command;
@@ -11,7 +12,7 @@ use services::pool::events::NetworkerEvent;
 use services::pool::networker::Networker;
 use services::pool::state_proof;
 use services::pool::types::HashableValue;
-use services::pool::catchup::{CatchupProgress, check_nodes_responses_on_status};
+use services::pool::catchup::{CatchupProgress, check_nodes_responses_on_status, check_cons_proofs};
 
 use self::rust_base58::FromBase58;
 use base64;
@@ -26,6 +27,8 @@ use super::indy_crypto::bls::Generator;
 use super::indy_crypto::bls::VerKey;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::merkle_tree_factory;
+use services::pool::types::CatchupReq;
+use services::pool::types::CatchupRep;
 
 trait RequestState {
     fn is_terminal(&self) -> bool {
@@ -42,7 +45,7 @@ impl<T: Networker> RequestState for StartState<T> {}
 struct ConsensusState<T: Networker> {
     nack_cnt: HashSet<String>,
     replies: HashMap<HashableValue, HashSet<String>>,
-    networker: Rc<RefCell<T>>
+    networker: Rc<RefCell<T>>,
 }
 
 impl<T: Networker> RequestState for ConsensusState<T> {}
@@ -55,10 +58,19 @@ struct CatchupConsensusState<T: Networker> {
 
 impl<T: Networker> RequestState for CatchupConsensusState<T> {}
 
+struct CatchupSingleState<T: Networker> {
+    target_mt_root: Vec<u8>,
+    target_mt_size: usize,
+    merkle_tree: MerkleTree,
+    networker: Rc<RefCell<T>>,
+}
+
+impl<T: Networker> RequestState for CatchupSingleState<T> {}
+
 struct SingleState<T: Networker> {
     nack_cnt: HashSet<String>,
     replies: HashMap<HashableValue, HashSet<String>>,
-    networker: Rc<RefCell<T>>
+    networker: Rc<RefCell<T>>,
 }
 
 impl<T: Networker> RequestState for SingleState<T> {}
@@ -74,7 +86,7 @@ impl RequestState for FinishState {
 struct FullState<T: Networker> {
     nack_cnt: HashSet<String>,
     accum_reply: Option<HashableValue>,
-    networker: Rc<RefCell<T>>
+    networker: Rc<RefCell<T>>,
 }
 
 impl<T: Networker> RequestState for FullState<T> {}
@@ -85,7 +97,7 @@ struct RequestSM<T: RequestState> {
     nodes: HashMap<String, Option<VerKey>>,
     generator: Generator,
     pool_name: String,
-    state: T
+    state: T,
 }
 
 impl<T: Networker> RequestSM<StartState<T>> {
@@ -120,7 +132,7 @@ impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<SingleState<T>> 
                 nack_cnt: HashSet::new(),
                 replies: HashMap::new(),
                 networker: sm.state.networker,
-            }
+            },
         }
     }
 }
@@ -137,7 +149,7 @@ impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<ConsensusState<T
                 nack_cnt: HashSet::new(),
                 replies: HashMap::new(),
                 networker: val.state.networker.clone(),
-            }
+            },
         }
     }
 }
@@ -153,8 +165,26 @@ impl<T: Networker> From<(MerkleTree, RequestSM<StartState<T>>)> for RequestSM<Ca
             state: CatchupConsensusState {
                 replies: HashMap::new(),
                 networker: val.state.networker.clone(),
-                merkle_tree
-            }
+                merkle_tree,
+            },
+        }
+    }
+}
+
+impl<T: Networker> From<(MerkleTree, RequestSM<StartState<T>>, Vec<u8>, usize)> for RequestSM<CatchupSingleState<T>> {
+    fn from((merkle_tree, val, target_mt_root, target_mt_size): (MerkleTree, RequestSM<StartState<T>>, Vec<u8>, usize)) -> Self {
+        RequestSM {
+            f: val.f,
+            cmd_ids: val.cmd_ids,
+            nodes: val.nodes,
+            generator: val.generator,
+            pool_name: val.pool_name,
+            state: CatchupSingleState {
+                target_mt_root,
+                target_mt_size,
+                networker: val.state.networker.clone(),
+                merkle_tree,
+            },
         }
     }
 }
@@ -171,7 +201,7 @@ impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<FullState<T>> {
                 nack_cnt: HashSet::new(),
                 accum_reply: None,
                 networker: val.state.networker.clone(),
-            }
+            },
         }
     }
 }
@@ -185,7 +215,7 @@ impl<T: Networker> From<RequestSM<SingleState<T>>> for RequestSM<FinishState> {
             nodes: val.nodes,
             generator: val.generator,
             pool_name: val.pool_name,
-            state: FinishState {}
+            state: FinishState {},
         }
     }
 }
@@ -199,7 +229,7 @@ impl<T: Networker> From<RequestSM<ConsensusState<T>>> for RequestSM<FinishState>
             nodes: val.nodes,
             generator: val.generator,
             pool_name: val.pool_name,
-            state: FinishState {}
+            state: FinishState {},
         }
     }
 }
@@ -213,7 +243,21 @@ impl<T: Networker> From<RequestSM<CatchupConsensusState<T>>> for RequestSM<Finis
             nodes: val.nodes,
             generator: val.generator,
             pool_name: val.pool_name,
-            state: FinishState {}
+            state: FinishState {},
+        }
+    }
+}
+
+impl<T: Networker> From<RequestSM<CatchupSingleState<T>>> for RequestSM<FinishState> {
+    fn from(val: RequestSM<CatchupSingleState<T>>) -> Self {
+        //TODO: close connections in networker
+        RequestSM {
+            f: val.f,
+            cmd_ids: val.cmd_ids,
+            nodes: val.nodes,
+            generator: val.generator,
+            pool_name: val.pool_name,
+            state: FinishState {},
         }
     }
 }
@@ -227,7 +271,7 @@ impl<T: Networker> From<RequestSM<FullState<T>>> for RequestSM<FinishState> {
             nodes: sm.nodes,
             generator: sm.generator,
             pool_name: sm.pool_name,
-            state: FinishState {}
+            state: FinishState {},
         }
     }
 }
@@ -240,7 +284,7 @@ impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<FinishState> {
             nodes: sm.nodes,
             generator: sm.generator,
             pool_name: sm.pool_name,
-            state: FinishState {}
+            state: FinishState {},
         }
     }
 }
@@ -249,27 +293,47 @@ enum RequestSMWrapper<T: Networker> {
     Start(RequestSM<StartState<T>>),
     Single(RequestSM<SingleState<T>>),
     Consensus(RequestSM<ConsensusState<T>>),
-    CatchupSingle(RequestSM<SingleState<T>>),
+    CatchupSingle(RequestSM<CatchupSingleState<T>>),
     CatchupConsensus(RequestSM<CatchupConsensusState<T>>),
     Full(RequestSM<FullState<T>>),
-    Finish(RequestSM<FinishState>)
+    Finish(RequestSM<FinishState>),
 }
 
 impl<T: Networker> RequestSMWrapper<T> {
     fn handle_event(self, re: RequestEvent) -> (Self, Option<PoolEvent>) {
         match self {
-            RequestSMWrapper::Start(request) => {
+            RequestSMWrapper::Start(mut request) => {
                 match re {
                     RequestEvent::LedgerStatus(ls, _) => {
                         match merkle_tree_factory::create(&request.pool_name) {
-                            Ok(merkle_tree) => (RequestSMWrapper::CatchupConsensus((merkle_tree, request).into()), None),
+                            Ok(merkle_tree) => {
+                                request.state.networker.borrow_mut().send_request(Some(NetworkerEvent::SendAllRequest));
+                                (RequestSMWrapper::CatchupConsensus((merkle_tree, request).into()), None)
+                            }
                             //TODO: reconsider this to return more suitable error
                             Err(e) => (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::CatchupTargetNotFound(e)))
                         }
-                    },
-                    RequestEvent::CatchupReq(cr) => {
-                        (RequestSMWrapper::CatchupSingle(request.into()), None)
-                    },
+                    }
+                    RequestEvent::CatchupReq(merkle, target_mt_size, target_mt_root) => {
+                        let txns_cnt = target_mt_size - merkle.count();
+
+                        if txns_cnt <= 0 {
+                            warn!("No transactions to catch up!");
+                            return (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::Synced(merkle)));
+                        }
+                        let seq_no_start = merkle.count() + 1;
+                        let seq_no_end = target_mt_size;
+
+                        let cr = CatchupReq {
+                            ledgerId: 0,
+                            seqNoStart: seq_no_start.clone(),
+                            seqNoEnd: seq_no_end.clone(),
+                            catchupTill: target_mt_size,
+                        };
+
+                        request.state.networker.borrow_mut().send_request(Some(NetworkerEvent::SendOneRequest));
+                        (RequestSMWrapper::CatchupSingle((merkle, request, target_mt_root, target_mt_size).into()), None)
+                    }
                     RequestEvent::CustomSingleRequest(msg, req_id) => {
                         match req_id {
                             Ok(req_id) => {
@@ -313,7 +377,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                 match re {
                     RequestEvent::Reply(rep, raw_msg, node_alias, req_id) => {
                         if let Ok((_, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
-                            let hashable = HashableValue {inner: result_without_proof};
+                            let hashable = HashableValue { inner: result_without_proof };
 
                             let cnt = if let Some(set) = request.state.replies.get_mut(&hashable) {
                                 set.insert(node_alias.clone());
@@ -344,7 +408,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                         } else {
                             (RequestSMWrapper::Consensus(request), None)
                         }
-                    },
+                    }
                     RequestEvent::ReqACK(rep, raw_msg, node_alias, req_id) => {
                         //TODO: extend timeout
                         (RequestSMWrapper::Consensus(request), None)
@@ -355,7 +419,6 @@ impl<T: Networker> RequestSMWrapper<T> {
                         } else {
                             (RequestSMWrapper::Consensus(request), None)
                         }
-
                     }
                     _ => (RequestSMWrapper::Consensus(request), None)
                 }
@@ -364,7 +427,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                 match re {
                     RequestEvent::Reply(rep, raw_msg, node_alias, req_id) => {
                         if let Ok((result, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
-                            let hashable = HashableValue {inner: result_without_proof};
+                            let hashable = HashableValue { inner: result_without_proof };
 
                             let cnt = if let Some(set) = request.state.replies.get_mut(&hashable) {
                                 set.insert(node_alias.clone());
@@ -388,7 +451,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                             //TODO: resend to next node
                             (RequestSMWrapper::Single(request), None)
                         }
-                    },
+                    }
                     RequestEvent::ReqACK(rep, raw_msg, node_alias, req_id) => {
                         //TODO: extend timeout
                         (RequestSMWrapper::Single(request), None)
@@ -404,7 +467,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                     }
                     _ => (RequestSMWrapper::Single(request), None)
                 }
-            },
+            }
             RequestSMWrapper::CatchupConsensus(mut request) => {
                 match re {
                     RequestEvent::LedgerStatus(ls, Some(node_alias)) => {
@@ -425,27 +488,29 @@ impl<T: Networker> RequestSMWrapper<T> {
                     }
                     _ => (RequestSMWrapper::CatchupConsensus(request), None)
                 }
-            },
-            RequestSMWrapper::CatchupSingle(request) => {
+            }
+            RequestSMWrapper::CatchupSingle(mut request) => {
                 match re {
-                    RequestEvent::CatchupRep(cr) => {
-                        //if round-robin successful
-//                        (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::Synced))
-                        //if failed
-//                        (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::NodesBlacklisted))
-                        //if still waiting
-                        (RequestSMWrapper::CatchupSingle(request), None)
+                    RequestEvent::CatchupRep(mut cr) => {
+                        match _process_catchup_reply(&mut cr, &mut request.state.merkle_tree, &request.state.target_mt_root, request.state.target_mt_size) {
+                            Ok(merkle) => (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::Synced(merkle))),
+                            Err(err) => {
+                                //TODO: resend
+                                (RequestSMWrapper::CatchupSingle(request), None)
+                            }
+                        }
+
                     }
                     _ => (RequestSMWrapper::CatchupSingle(request), None)
                 }
-            },
+            }
             RequestSMWrapper::Full(mut request) => {
                 match re {
                     RequestEvent::Reply(rep, raw_msg, node_alias, req_id) => {
                         let req_id = rep.req_id();
                         let first_resp = request.state.accum_reply.is_none();
                         if first_resp {
-                            request.state.accum_reply = Some(HashableValue{
+                            request.state.accum_reply = Some(HashableValue {
                                 inner: json!({node_alias: raw_msg})
                             })
                         } else {
@@ -464,7 +529,6 @@ impl<T: Networker> RequestSMWrapper<T> {
                         } else {
                             (RequestSMWrapper::Full(request), None)
                         }
-
                     }
                     RequestEvent::ReqACK(rep, raw_msg, node_alias, req_id) => {
                         //TODO: extend timeout
@@ -524,7 +588,7 @@ impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
                     self.request_wrapper = None;
                     None
                 }
-            },
+            }
             None => None
         }
     }
@@ -551,7 +615,7 @@ fn _process_catchup_target<T: Networker>(merkle_root: String,
                                          request: &mut RequestSM<CatchupConsensusState<T>>) -> (bool, Option<PoolEvent>) {
     let key = (merkle_root, txn_seq_no, hashes);
     let contains = request.state.replies.get_mut(&key)
-        .map(|set| {set.insert(node_alias.to_string());})
+        .map(|set| { set.insert(node_alias.to_string()); })
         .is_some();
 
     if !contains {
@@ -569,6 +633,27 @@ fn _process_catchup_target<T: Networker>(merkle_root: String,
             (true, Some(PoolEvent::CatchupTargetFound(target_mt_root, target_mt_size, merkle_tree))),
         Err(err) => (true, Some(PoolEvent::CatchupTargetNotFound(err))),
     }
+}
+
+fn _process_catchup_reply(rep: &mut CatchupRep, merkle: &MerkleTree, target_mt_root: &Vec<u8>, target_mt_size: usize) -> Result<MerkleTree, PoolError> {
+    let mut txns_to_drop = vec![];
+    let mut merkle = merkle.clone();
+    while !rep.txns.is_empty() {
+        let key = rep.min_tx()?;
+        let txn = rep.txns.remove(&key.to_string()).unwrap();
+        if let Ok(txn_bytes) = rmp_serde::to_vec_named(&txn) {
+            merkle.append(txn_bytes.clone())?;
+            txns_to_drop.push(txn_bytes);
+        } else {
+            return Err(PoolError::CommonError(CommonError::InvalidStructure("Invalid transaction -- can not transform to bytes".to_string()))).map_err(map_err_trace!());
+        }
+    }
+
+    if let Err(err) = check_cons_proofs(&merkle, &rep.consProof, target_mt_root, target_mt_size).map_err(map_err_trace!()) {
+        return Err(PoolError::CommonError(err));
+    }
+
+    Ok(merkle)
 }
 
 fn _send_ok_replies(cmd_ids: &Vec<i32>, msg: &str) {
@@ -598,7 +683,7 @@ fn _get_msg_result_without_state_proof(msg: &str) -> Result<(SJsonValue, SJsonVa
     Ok((msg_result, msg_result_without_proof))
 }
 
-pub fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_keys: &HashMap<String, Option<VerKey>>) -> bool {
+fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_keys: &HashMap<String, Option<VerKey>>) -> bool {
     debug!("TransactionHandler::process_reply: Try to verify proof and signature");
 
     let data_to_check_proof = state_proof::parse_reply_for_proof_checking(msg_result);

@@ -66,7 +66,11 @@ pub enum RequestEvent {
         LedgerStatus,
         Option<String>, //node alias
     ),
-    CatchupReq(CatchupReq),
+    CatchupReq(
+        MerkleTree,
+        usize, // target mt size
+        Vec<u8> // target mt root
+    ),
     CatchupRep(CatchupRep),
     CustomSingleRequest(
         String, // message
@@ -122,7 +126,8 @@ impl RequestEvent {
 impl From<(String, String, Message)> for RequestEvent {
     fn from((raw_msg, node_alias, msg): (String, String, Message)) -> Self {
         match msg {
-            Message::CatchupReq(req) => RequestEvent::CatchupReq(req),
+            //TODO: REMOVE UNWRAP!!!!!
+            Message::CatchupReq(req) => RequestEvent::CatchupReq(MerkleTree::from_vec(Vec::new()).unwrap(), 0, vec![]),
             Message::CatchupRep(rep) => RequestEvent::CatchupRep(rep),
             Message::LedgerStatus(ls) => RequestEvent::LedgerStatus(ls, Some(node_alias)),
             Message::ConsistencyProof(cp) => RequestEvent::ConsistencyProof(cp, node_alias),

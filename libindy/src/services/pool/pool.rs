@@ -125,18 +125,8 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<InitializationState<T>>> fo
 
 // transitions from GettingCatchupTarget
 
-impl<T: Networker, R: RequestHandler<T>> From<PoolSM<GettingCatchupTargetState<T, R>>> for PoolSM<SyncCatchupState<T, R>> {
-    fn from(sm: PoolSM<GettingCatchupTargetState<T, R>>) -> Self {
-
-        let mut request_handler = R::new(sm.state.networker.clone(), 0, &vec![], HashMap::new(), None, &sm.pool_name);
-        //TODO: fill catchup req with data
-        let cr = CatchupReq {
-            ledgerId: 0,
-            seqNoStart: 0,
-            seqNoEnd: 0,
-            catchupTill: 0,
-        };
-        request_handler.process_event(Some(RequestEvent::CatchupReq(cr)));
+impl<T: Networker, R: RequestHandler<T>> From<(R, PoolSM<GettingCatchupTargetState<T, R>>)> for PoolSM<SyncCatchupState<T, R>> {
+    fn from((request_handler, sm): (R, PoolSM<GettingCatchupTargetState<T, R>>)) -> Self {
         PoolSM {
             pool_name: sm.pool_name,
             state: SyncCatchupState {
@@ -311,7 +301,11 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                 match pe {
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
                     PoolEvent::CatchupTargetNotFound(err) => PoolWrapper::Terminated(pool.into()),
-                    PoolEvent::CatchupTargetFound(_, _, _) => PoolWrapper::SyncCatchup(pool.into()),
+                    PoolEvent::CatchupTargetFound(target_mt_root, target_mt_size, merkle_tree) => {
+                        let mut request_handler = R::new(pool.state.networker.clone(), 0, &vec![], HashMap::new(), None, &pool.pool_name);
+                        request_handler.process_event(Some(RequestEvent::CatchupReq(merkle_tree, target_mt_size, target_mt_root)));
+                        PoolWrapper::SyncCatchup((request_handler, pool).into())
+                    },
                     PoolEvent::Synced(_) => PoolWrapper::Active(pool.into()),
                     _ => PoolWrapper::GettingCatchupTarget(pool)
                 }
