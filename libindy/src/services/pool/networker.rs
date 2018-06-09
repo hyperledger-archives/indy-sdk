@@ -39,7 +39,7 @@ impl Networker for ZMQNetworker {
 
     fn process_event(&mut self, pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
         match pe {
-            Some(NetworkerEvent::SendAllRequest) | Some(NetworkerEvent::SendOneRequest) => {
+            Some(NetworkerEvent::SendAllRequest(_)) | Some(NetworkerEvent::SendOneRequest(_)) => {
                 if self.pool_connections.last().map(PoolConnection::is_full).unwrap_or(true) {
                     self.pool_connections.push(PoolConnection::new(self.nodes.clone()));
                 }
@@ -128,9 +128,9 @@ impl PoolConnection {
 
     fn send_request(&self, pe: Option<NetworkerEvent>) {
         match pe {
-            Some(NetworkerEvent::SendOneRequest) => {
+            Some(NetworkerEvent::SendOneRequest(msg)) => {
                 let socket: &ZSocket = self.sockets[0].as_ref().expect("FIXME");
-                socket.send_str("FIXME", zmq::DONTWAIT).expect("FIXME");
+                socket.send_str(&msg, zmq::DONTWAIT).expect("FIXME");
             }
             _ => unimplemented!()
         }

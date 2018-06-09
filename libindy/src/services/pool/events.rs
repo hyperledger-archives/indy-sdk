@@ -6,6 +6,11 @@ use serde_json;
 use serde_json::Value as SJsonValue;
 use std::error::Error;
 
+extern crate indy_crypto;
+
+use self::indy_crypto::utils::json::JsonEncodable;
+
+
 pub const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
     constants::GET_NYM,
     constants::GET_SCHEMA,
@@ -22,8 +27,8 @@ const REQUEST_FOR_FULL: [&'static str; 2] = [
 ];
 
 pub enum NetworkerEvent {
-    SendOneRequest,
-    SendAllRequest,
+    SendOneRequest(String),
+    SendAllRequest(String),
     NodesStateUpdated(Vec<RemoteNode>),
 }
 
@@ -156,7 +161,7 @@ impl Into<Option<RequestEvent>> for PoolEvent {
 impl Into<Option<NetworkerEvent>> for RequestEvent {
     fn into(self) -> Option<NetworkerEvent> {
         match self {
-            RequestEvent::LedgerStatus(_) => Some(NetworkerEvent::SendAllRequest),
+            RequestEvent::LedgerStatus(ls) => Some(NetworkerEvent::SendAllRequest(Message::LedgerStatus(ls).to_json().expect("FIXME"))),
             _ => None
         }
     }
