@@ -17,6 +17,7 @@ pub enum PoolError {
     Timeout,
     AlreadyExists(String),
     CommonError(CommonError),
+    SecureTransportError(zmq::Error),
 }
 
 impl fmt::Display for PoolError {
@@ -28,6 +29,7 @@ impl fmt::Display for PoolError {
             PoolError::Timeout => write!(f, "Timeout"),
             PoolError::AlreadyExists(ref description) => write!(f, "Pool ledger config already exists {}", description),
             PoolError::CommonError(ref err) => err.fmt(f),
+            PoolError::SecureTransportError(ref err) => err.fmt(f),
         }
     }
 }
@@ -41,6 +43,7 @@ impl error::Error for PoolError {
             PoolError::Timeout => "Timeout",
             PoolError::AlreadyExists(ref description) => description,
             PoolError::CommonError(ref err) => err.description(),
+            PoolError::SecureTransportError(ref err) => err.description(),
         }
     }
 
@@ -50,6 +53,7 @@ impl error::Error for PoolError {
             PoolError::Terminate | PoolError::Timeout => None,
             PoolError::AlreadyExists(_) => None,
             PoolError::CommonError(ref err) => Some(err),
+            PoolError::SecureTransportError(ref err) => Some(err),
         }
     }
 }
@@ -68,8 +72,8 @@ impl From<io::Error> for PoolError {
 }
 
 impl From<zmq::Error> for PoolError {
-    fn from(err: zmq::Error) -> PoolError {
-        PoolError::CommonError(From::from(err))
+    fn from(err: zmq::Error) -> Self {
+        PoolError::SecureTransportError(From::from(err))
     }
 }
 
@@ -81,7 +85,8 @@ impl ToErrorCode for PoolError {
             PoolError::Terminate => ErrorCode::PoolLedgerTerminated,
             PoolError::Timeout => ErrorCode::PoolLedgerTimeout,
             PoolError::AlreadyExists(_) => ErrorCode::PoolLedgerConfigAlreadyExistsError,
-            PoolError::CommonError(ref err) => err.to_error_code()
+            PoolError::CommonError(ref err) => err.to_error_code(),
+            PoolError::SecureTransportError(ref _err) => ErrorCode::PoolLedgerSecureTransportError,
         }
     }
 }

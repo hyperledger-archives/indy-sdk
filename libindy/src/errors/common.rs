@@ -1,4 +1,3 @@
-extern crate zmq;
 extern crate indy_crypto;
 
 use std::cell::{BorrowError, BorrowMutError};
@@ -42,7 +41,7 @@ impl Clone for CommonError {
             &CommonError::InvalidParam9(ref err) => CommonError::InvalidParam9(err.to_string()),
             &CommonError::InvalidState(ref err) => CommonError::InvalidState(err.to_string()),
             &CommonError::InvalidStructure(ref err) => CommonError::InvalidStructure(err.to_string()),
-            &CommonError::IOError(ref err) => CommonError::IOError(io::Error::new(err.kind(), err.description()))
+            &CommonError::IOError(ref err) => CommonError::IOError(io::Error::new(err.kind(), err.description())),
         }
     }
 }
@@ -61,7 +60,7 @@ impl fmt::Display for CommonError {
             CommonError::InvalidParam9(ref description) => write!(f, "Invalid param 4: {}", description),
             CommonError::InvalidState(ref description) => write!(f, "Invalid library state: {}", description),
             CommonError::InvalidStructure(ref description) => write!(f, "Invalid structure: {}", description),
-            CommonError::IOError(ref err) => err.fmt(f)
+            CommonError::IOError(ref err) => err.fmt(f),
         }
     }
 }
@@ -80,7 +79,7 @@ impl Error for CommonError {
             CommonError::InvalidParam9(ref description) |
             CommonError::InvalidState(ref description) |
             CommonError::InvalidStructure(ref description) => description,
-            CommonError::IOError(ref err) => err.description()
+            CommonError::IOError(ref err) => err.description(),
         }
     }
 
@@ -97,7 +96,7 @@ impl Error for CommonError {
             CommonError::InvalidParam9(_) |
             CommonError::InvalidState(_) |
             CommonError::InvalidStructure(_) => None,
-            CommonError::IOError(ref err) => Some(err)
+            CommonError::IOError(ref err) => Some(err),
         }
     }
 }
@@ -116,7 +115,7 @@ impl ToErrorCode for CommonError {
             CommonError::InvalidParam9(_) => ErrorCode::CommonInvalidParam9,
             CommonError::InvalidState(_) => ErrorCode::CommonInvalidState,
             CommonError::InvalidStructure(_) => ErrorCode::CommonInvalidStructure,
-            CommonError::IOError(_) => ErrorCode::CommonIOError
+            CommonError::IOError(_) => ErrorCode::CommonIOError,
         }
     }
 }
@@ -124,12 +123,6 @@ impl ToErrorCode for CommonError {
 impl From<io::Error> for CommonError {
     fn from(err: io::Error) -> Self {
         CommonError::IOError(err)
-    }
-}
-
-impl From<zmq::Error> for CommonError {
-    fn from(err: zmq::Error) -> Self {
-        CommonError::IOError(From::from(err))
     }
 }
 
