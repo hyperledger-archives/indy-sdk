@@ -230,23 +230,23 @@ impl NonSecretsUtils {
     }
 
     pub fn record_1() -> WalletRecord {
-        WalletRecord { id: ID.to_string(), type_: None, value: Some(VALUE.to_string()), tags: Some(NonSecretsUtils::tags_1()) }
+        WalletRecord { id: ID.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE.to_string()), tags: Some(NonSecretsUtils::tags_1()) }
     }
 
     pub fn record_2() -> WalletRecord {
-        WalletRecord { id: ID_2.to_string(), type_: None, value: Some(VALUE_2.to_string()), tags: Some(NonSecretsUtils::tags_2()) }
+        WalletRecord { id: ID_2.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE_2.to_string()), tags: Some(NonSecretsUtils::tags_2()) }
     }
 
     pub fn record_3() -> WalletRecord {
-        WalletRecord { id: ID_3.to_string(), type_: None, value: Some(VALUE_3.to_string()), tags: Some(NonSecretsUtils::tags_3()) }
+        WalletRecord { id: ID_3.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE_3.to_string()), tags: Some(NonSecretsUtils::tags_3()) }
     }
 
     pub fn record_4() -> WalletRecord {
-        WalletRecord { id: ID_4.to_string(), type_: None, value: Some(VALUE_4.to_string()), tags: Some(NonSecretsUtils::tags_4()) }
+        WalletRecord { id: ID_4.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE_4.to_string()), tags: Some(NonSecretsUtils::tags_4()) }
     }
 
     pub fn record_5() -> WalletRecord {
-        WalletRecord { id: ID_5.to_string(), type_: None, value: Some(VALUE_5.to_string()), tags: Some(NonSecretsUtils::tags_5()) }
+        WalletRecord { id: ID_5.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE_5.to_string()), tags: Some(NonSecretsUtils::tags_5()) }
     }
 
     pub fn populate_wallet_for_search() {
