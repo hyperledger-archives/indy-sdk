@@ -98,7 +98,7 @@ impl PoolService {
 
         // check that we can build MerkeleTree from genesis transaction file
         //TODO: move parse to correct place
-//        let mt = PoolWorker::_restore_merkle_tree_from_file(&pool_config.genesis_txn)?;
+        let mt = merkle_tree_factory::from_file(&pool_config.genesis_txn)?;
         let mt = MerkleTree::from_vec(vec![])?;
         if mt.count() == 0 {
             return Err(PoolError::CommonError(

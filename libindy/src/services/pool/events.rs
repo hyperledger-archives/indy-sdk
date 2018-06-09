@@ -36,7 +36,7 @@ pub enum NetworkerEvent {
 
 #[derive(Clone)]
 pub enum PoolEvent {
-    CheckCache,
+    CheckCache(i32),
     NodeReply(
         String, // reply
         String, // node alias

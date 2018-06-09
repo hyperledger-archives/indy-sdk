@@ -31,6 +31,7 @@ use services::pool::merkle_tree_factory;
 use services::pool::types::CatchupReq;
 use services::pool::types::CatchupRep;
 use services::pool::types::Message;
+use commands::pool::PoolCommand;
 
 trait RequestState {
     fn is_terminal(&self) -> bool {
@@ -499,7 +500,7 @@ impl<T: Networker> RequestSMWrapper<T> {
             RequestSMWrapper::CatchupSingle(mut request) => {
                 match re {
                     RequestEvent::CatchupRep(mut cr) => {
-                        match _process_catchup_reply(&mut cr, &mut request.state.merkle_tree, &request.state.target_mt_root, request.state.target_mt_size) {
+                        match _process_catchup_reply(&mut cr, &mut request.state.merkle_tree, &request.state.target_mt_root, request.state.target_mt_size, &request.pool_name) {
                             Ok(merkle) => (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::Synced(merkle))),
                             Err(err) => {
                                 //TODO: resend
@@ -642,7 +643,7 @@ fn _process_catchup_target<T: Networker>(merkle_root: String,
     }
 }
 
-fn _process_catchup_reply(rep: &mut CatchupRep, merkle: &MerkleTree, target_mt_root: &Vec<u8>, target_mt_size: usize) -> Result<MerkleTree, PoolError> {
+fn _process_catchup_reply(rep: &mut CatchupRep, merkle: &MerkleTree, target_mt_root: &Vec<u8>, target_mt_size: usize, pool_name: &str) -> Result<MerkleTree, PoolError> {
     let mut txns_to_drop = vec![];
     let mut merkle = merkle.clone();
     while !rep.txns.is_empty() {
@@ -660,6 +661,7 @@ fn _process_catchup_reply(rep: &mut CatchupRep, merkle: &MerkleTree, target_mt_r
         return Err(PoolError::CommonError(err));
     }
 
+    merkle_tree_factory::dump_new_txns(pool_name, &txns_to_drop)?;
     Ok(merkle)
 }
 
