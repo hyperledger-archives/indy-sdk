@@ -11,6 +11,8 @@ use domain::ledger::constants;
 use serde_json;
 use serde_json::Value as SJsonValue;
 use std::error::Error;
+use services::ledger::merkletree::merkletree::MerkleTree;
+use errors::pool::PoolError;
 
 pub const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
     constants::GET_NYM,
@@ -41,10 +43,16 @@ pub enum PoolEvent {
     ),
     Close,
     Refresh,
-    CatchupTargetFound,
-    CatchupTargetNotFound,
+    CatchupTargetFound(
+        Vec<u8>, //target_mt_root
+        usize, //target_mt_size
+        MerkleTree,
+    ),
+    CatchupTargetNotFound(PoolError),
     PoolOutdated,
-    Synced,
+    Synced(
+        MerkleTree
+    ),
     NodesBlacklisted,
     SendRequest(
         String, // request
@@ -55,7 +63,8 @@ pub enum PoolEvent {
 #[derive(Clone)]
 pub enum RequestEvent {
     LedgerStatus(
-        LedgerStatus
+        LedgerStatus,
+        Option<String>, //node alias
     ),
     CatchupReq(CatchupReq),
     CatchupRep(CatchupRep),
@@ -71,7 +80,10 @@ pub enum RequestEvent {
         String, // message
         Result<String, CommonError>, // req_id
     ),
-    ConsistencyProof(ConsistencyProof),
+    ConsistencyProof(
+        ConsistencyProof,
+        String, //node alias
+    ),
     Reply(
         Reply,
         String, //raw_msg
@@ -112,8 +124,8 @@ impl From<(String, String, Message)> for RequestEvent {
         match msg {
             Message::CatchupReq(req) => RequestEvent::CatchupReq(req),
             Message::CatchupRep(rep) => RequestEvent::CatchupRep(rep),
-            Message::LedgerStatus(ls) => RequestEvent::LedgerStatus(ls),
-            Message::ConsistencyProof(cp) => RequestEvent::ConsistencyProof(cp),
+            Message::LedgerStatus(ls) => RequestEvent::LedgerStatus(ls, Some(node_alias)),
+            Message::ConsistencyProof(cp) => RequestEvent::ConsistencyProof(cp, node_alias),
             Message::Reply(rep) => {
                 let req_id = rep.req_id();
                 RequestEvent::Reply(rep, raw_msg, node_alias,req_id.to_string())
@@ -161,7 +173,7 @@ impl Into<Option<RequestEvent>> for PoolEvent {
 impl Into<Option<NetworkerEvent>> for RequestEvent {
     fn into(self) -> Option<NetworkerEvent> {
         match self {
-            RequestEvent::LedgerStatus(_) => Some(NetworkerEvent::SendAllRequest),
+            RequestEvent::LedgerStatus(_, _) => Some(NetworkerEvent::SendAllRequest),
             _ => None
         }
     }
