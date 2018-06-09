@@ -1,10 +1,11 @@
-use std::io::{Write, Read};
 use std::rc::Rc;
 
 use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 
 use errors::wallet::WalletError;
 use errors::common::CommonError;
+
+use std::collections::HashMap;
 
 use super::storage;
 use super::iterator::WalletIterator;
@@ -118,12 +119,12 @@ impl EncryptedValue {
     }
 
     pub fn decrypt(&self, key: &[u8]) -> Result<String, WalletError> {
-        let value_key = decrypt(&self.key, key)?;
+        let value_key = decrypt_merged(&self.key, key)?;
         if value_key.len() != ChaCha20Poly1305IETF::KEYBYTES {
             return Err(WalletError::EncryptionError("Value key is not right size".to_string()));
         }
 
-        String::from_utf8(decrypt(&self.data, &value_key)?)
+        String::from_utf8(decrypt_merged(&self.data, &value_key)?)
             .map_err(|_| WalletError::CommonError(CommonError::InvalidStructure("Invalid UTF8 string inside of value".to_string())))
     }
 
@@ -156,7 +157,7 @@ impl Wallet {
         }
     }
 
-    pub fn add(&self, type_: &str, name: &str, value: &str, tags: &str) -> Result<(), WalletError> {
+    pub fn add(&self, type_: &str, name: &str, value: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
         let etype = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let ename = encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
         let evalue = EncryptedValue::encrypt(value, &self.keys.value_key);
@@ -165,7 +166,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn add_tags(&self, type_: &str, name: &str, tags: &str) -> Result<(), WalletError> {
+    pub fn add_tags(&self, type_: &str, name: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
         let encrypted_type = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let encrypted_name = encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
         let encrypted_tags = encrypt_tags(tags, &self.keys.tag_name_key, &self.keys.tag_value_key, &self.keys.tags_hmac_key)?;
@@ -173,7 +174,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn update_tags(&self, type_: &str, name: &str, tags: &str) -> Result<(), WalletError> {
+    pub fn update_tags(&self, type_: &str, name: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
         let encrypted_type = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let encrypted_name = encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
         let encrypted_tags = encrypt_tags(tags, &self.keys.tag_name_key, &self.keys.tag_value_key, &self.keys.tags_hmac_key)?;
@@ -181,7 +182,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn delete_tags(&self, type_: &str, name: &str, tag_names: &str) -> Result<(), WalletError> {
+    pub fn delete_tags(&self, type_: &str, name: &str, tag_names: &[&str]) -> Result<(), WalletError> {
         let encrypted_type = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let encrypted_name = encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
         let encrypted_tag_names = encrypt_tag_names(tag_names, &self.keys.tag_name_key, &self.keys.tags_hmac_key)?;
@@ -249,12 +250,9 @@ impl Wallet {
         self.name.clone()
     }
 
-    fn export(&self, writer: Box<Write>, key: [u8; 32]) -> Result<(), WalletError> {
-        unimplemented!()
-    }
-
-    fn import(&self, reader: Box<Read>, key: [u8; 32], clear_before: bool) -> Result<(), WalletError> {
-        unimplemented!()
+    pub(super) fn get_all(&self) -> Result<WalletIterator, WalletError> {
+        let all_items = self.storage.get_all()?;
+        Ok(WalletIterator::new(all_items, Rc::clone(&self.keys)))
     }
 }
 
@@ -310,7 +308,7 @@ mod tests {
         let storage = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
 
         let keys = Keys::new(
-            decrypt(
+            decrypt_merged(
                 &storage.get_storage_metadata().unwrap(),
                 &master_key
             ).unwrap()
@@ -367,34 +365,34 @@ mod tests {
         map.insert("retrieveTags", tags);
         serde_json::to_string(&map).unwrap()
     }
-//
-//    fn _create_valid_walle_config_str() -> &'static str {
-//        r##"{"storage": {"base": "/tmp"}}"##
-//    }
-//
-//    fn _create_storage_type() -> Box<StorageType> {
-//        Box::new(SQLiteStorageType::new())
-//    }
-//
-//    fn _create_storage() -> Box<Storage> {
-//        let storage_type = _create_storage_type();
-//        let storage = storage_type.create()
-//    }
-//
-//
-//    fn _bad_configs_list() -> Vec<&'static str> {
-//       return vec![
-//        "{}", // empty config
-//        "{\"foo\": \"bar\"}", // not a storage config
-//        "{\"storage\": {\"foo\": \"bar\"}}", // no base
-//        "{\"storage\": {\"base\": \"tmp}}", // wrong format for json
-//        // "{\"storage\": {\"base\": \":$%:^&:*`\"}}", // base is not a path
-//        // "{\"storage\": {\"base\": \"\"}}", // empty base
-//        // "{\"storage\": {\"base\": \"/tmp/../tmp\"}}", // base is a path traversal
-//        ]
-//    }
-//
-//
+    //
+    //    fn _create_valid_walle_config_str() -> &'static str {
+    //        r##"{"storage": {"base": "/tmp"}}"##
+    //    }
+    //
+    //    fn _create_storage_type() -> Box<StorageType> {
+    //        Box::new(SQLiteStorageType::new())
+    //    }
+    //
+    //    fn _create_storage() -> Box<Storage> {
+    //        let storage_type = _create_storage_type();
+    //        let storage = storage_type.create()
+    //    }
+    //
+    //
+    //    fn _bad_configs_list() -> Vec<&'static str> {
+    //       return vec![
+    //        "{}", // empty config
+    //        "{\"foo\": \"bar\"}", // not a storage config
+    //        "{\"storage\": {\"foo\": \"bar\"}}", // no base
+    //        "{\"storage\": {\"base\": \"tmp}}", // wrong format for json
+    //        // "{\"storage\": {\"base\": \":$%:^&:*`\"}}", // base is not a path
+    //        // "{\"storage\": {\"base\": \"\"}}", // empty base
+    //        // "{\"storage\": {\"base\": \"/tmp/../tmp\"}}", // base is a path traversal
+    //        ]
+    //    }
+    //
+    //
     fn _search_iterator_to_map<'a>(mut iterator: WalletIterator) -> HashMap<String, String> {
         let mut map = HashMap::new();
         loop {
@@ -434,7 +432,7 @@ mod tests {
         let name = "name1";
         let value = "value1";
         let tags = r#"{"tag1": "tag_value_1"}"#;
-        wallet.add(type_, name, value, &tags).unwrap();
+        wallet.add(type_, name, value, &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
         let entity = wallet.get(type_, name, &_fetch_options(false, true, true)).unwrap();
 
         assert_eq!(entity.name, name);
@@ -451,7 +449,7 @@ mod tests {
         let value = "value1";
         let tags = r#"{"tag1": "tag_value_1"}"#;
 
-        wallet.add(type_, name, value, &tags).unwrap();
+        wallet.add(type_, name, value, &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
         let entity = wallet.get(type_, name, &_fetch_options(false, true, true)).unwrap();
 
         assert_eq!(entity.name, name);
@@ -464,9 +462,9 @@ mod tests {
         let credentials = _credentials();
         let storage = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
         let keys = Keys::new(
-            decrypt(// DARKO
-                         &storage.get_storage_metadata().unwrap(),
-                    &_get_test_master_key()
+            decrypt_merged(// DARKO
+                           &storage.get_storage_metadata().unwrap(),
+                           &_get_test_master_key()
             ).unwrap()
         ).unwrap();
         let wallet = Wallet::new("test_wallet", "test_pool", storage, keys);
@@ -476,7 +474,6 @@ mod tests {
         assert_eq!(entity.name, name);
         assert_eq!(entity.value.unwrap(), value);
         assert_eq!(serde_json::from_str::<Tags>(tags).unwrap(), entity.tags.unwrap());
-
     }
 
     #[test]
@@ -499,8 +496,8 @@ mod tests {
         let value = "value1";
         let tags = r#"{"tag1": "tag_value_1"}"#;
 
-        wallet.add(type_, name, value, &tags).unwrap();
-        let res = wallet.add(type_, name, "different_value", &tags);
+        wallet.add(type_, name, value, &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
+        let res = wallet.add(type_, name, "different_value", &serde_json::from_str::<Tags>(tags).unwrap());
 
         assert_match!(Err(WalletError::ItemAlreadyExists), res);
     }
@@ -519,7 +516,7 @@ mod tests {
         let new_value = "new_value";
         let tags = r#"{}"#;
 
-        wallet.add(type_, name, value, &tags).unwrap();
+        wallet.add(type_, name, value, &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
         wallet.get(type_, name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": false}"##).unwrap();
         wallet.update(type_, name, new_value).unwrap();
         let item = wallet.get(type_, name, &_fetch_options(false, true, true)).unwrap();
@@ -538,7 +535,7 @@ mod tests {
         let new_value = "new_value";
         let tags = r#"{"tag1":"value1", "tag2":"value2", "~tag3":"value3"}"#;
 
-        wallet.add(type_, name, value, &tags).unwrap();
+        wallet.add(type_, name, value, &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
         wallet.get(type_, name, &_fetch_options(false, true, false)).unwrap();
         let res = wallet.update(type_, wrong_name, new_value);
         assert_match!(Err(WalletError::ItemNotFound), res);
@@ -555,7 +552,7 @@ mod tests {
         let new_value = "new_value";
         let tags = r#"{"tag1":"value1", "tag2":"value2", "~tag3":"value3"}"#;
 
-        wallet.add(type_, name, value, &tags).unwrap();
+        wallet.add(type_, name, value,&serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
         wallet.get(type_, name, &_fetch_options(false, true, false)).unwrap();
         let res = wallet.update(wrong_type, name, new_value);
         assert_match!(Err(WalletError::ItemNotFound), res);
@@ -573,10 +570,10 @@ mod tests {
         let value = "value";
         let tags = r#"{"tag_name_1": "tag_value_1"}"#;
 
-        wallet.add(type_, name, value, &tags).unwrap();
+        wallet.add(type_, name, value, &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
 
         let new_tags = r#"{"tag_name_2": "tag_value_2", "~tag_name_3": "~tag_value_3"}"#;
-        wallet.add_tags(type_, name, &new_tags).unwrap();
+        wallet.add_tags(type_, name, &serde_json::from_str::<Tags>(new_tags).unwrap()).unwrap();
 
         let item = wallet.get(type_, name, &_fetch_options(false, true, true)).unwrap();
         let tags = item.tags.unwrap();
@@ -596,10 +593,10 @@ mod tests {
         let name = "name";
         let value = "value";
         let tags = r#"{"tag_name_1": "tag_value_1", "tag_name_2": "tag_value_2", "~tag_name_3": "~tag_value_3"}"#;
-        wallet.add(type_, name, value, &tags).unwrap();
+        wallet.add(type_, name, value, &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
 
         let updated_tags = r#"{"tag_name_1": "new_tag_value_1", "tag_name_2": "new_tag_value_2"}"#;
-        wallet.update_tags(type_, name, &updated_tags).unwrap();
+        wallet.update_tags(type_, name, &serde_json::from_str::<Tags>(&updated_tags).unwrap()).unwrap();
 
         let item = wallet.get(type_, name, &_fetch_options(false, true, true)).unwrap();
         let retrieved_tags = item.tags.unwrap();
@@ -618,10 +615,10 @@ mod tests {
         let value = "value";
         let tags = r#"{"tag_name_1": "tag_value_1", "tag_name_2": "tag_value_2", "~tag_name_3": "~tag_value_3"}"#;
 
-        wallet.add(type_, name, value, &tags).unwrap();
+        wallet.add(type_, name, value, &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
 
         let tag_names = r#"["tag_name_1", "~tag_name_3"]"#;
-        wallet.delete_tags(type_, name, tag_names).unwrap();
+        wallet.delete_tags(type_, name, &serde_json::from_str::<Vec<&str>>(tag_names).unwrap()).unwrap();
 
         let item = wallet.get(type_, name, &_fetch_options(false, true, true)).unwrap();
         let retrieved_tags = item.tags.unwrap();
@@ -638,7 +635,7 @@ mod tests {
         let value = "value1";
         let tags = r#"{"tag_name_1": "tag_value_1"}"#;
 
-        wallet.add(type_, name, value, &tags).unwrap();
+        wallet.add(type_, name, value, &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
         let entity = wallet.get(type_, name, &_fetch_options(false, true, true)).unwrap();
 
         assert_eq!(entity.name, name);
@@ -726,7 +723,7 @@ mod tests {
         let wallet = _create_wallet();
         let tags = r#"{"tag1":"tag2"}"#;
 
-        wallet.add("test_type_", "foo", "bar", &tags).unwrap();
+        wallet.add("test_type_", "foo", "bar", &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
         let fetch_options = &_search_options(true, false, false, true, false);
 
         // successful encrypted search
@@ -755,7 +752,7 @@ mod tests {
 
         let wallet = _create_wallet();
 
-        wallet.add(type_, name, value, tags).unwrap();
+        wallet.add(type_, name, value, &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
         let fetch_options = &_search_options(true, true, true, true, true);
 
         // successful encrypted search
@@ -765,7 +762,7 @@ mod tests {
         let res = iterator.next().unwrap().unwrap();
 
         let exp_tags: HashMap<String, String> = serde_json::from_str(tags).unwrap();
-        let expected = WalletRecord{
+        let expected = WalletRecord {
             name: name.to_string(),
             value: Some(value.to_string()),
             tags: Some(exp_tags),
@@ -784,7 +781,8 @@ mod tests {
     fn wallet_search_empty_query_only_count() {
         _cleanup();
         let wallet = _create_wallet();
-        wallet.add("test_type_", "foo", "bar", r#"{"tag1":"tags2"}"#).unwrap();
+        let tags = r#"{"tag1":"tags2"}"#;
+        wallet.add("test_type_", "foo", "bar", &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
         let fetch_options = &_search_options(false, true, false, true, false);
 
         // successful encrypted search
@@ -808,7 +806,7 @@ mod tests {
         let wallet = _create_wallet();
         let tags = r#"{"tag1":"tag2"}"#;
 
-        wallet.add("test_type_", "foo", "bar", &tags).unwrap();
+        wallet.add("test_type_", "foo", "bar", &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
         let fetch_options = &_search_options(true, false, false, true, false);
 
         // successful encrypted search
@@ -861,7 +859,7 @@ mod tests {
         let wallet = _create_wallet();
         let tags = r#"{"tag1":"tag2"}"#;
 
-        wallet.add("test_type_", "foo", "bar", &tags).unwrap();
+        wallet.add("test_type_", "foo", "bar", &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
         let fetch_options = &_search_options(true, false, false, true, false);
 
         // successful encrypted search
@@ -878,7 +876,7 @@ mod tests {
         _cleanup();
         let wallet = _create_wallet();
         let tags = r#"{"tag1":"tag2"}"#;
-        wallet.add("test_type_", "foo", "bar", &tags).unwrap();
+        wallet.add("test_type_", "foo", "bar", &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
         let fetch_options = &_search_options(true, false, false, true, false);
 
         // successful encrypted search
@@ -896,7 +894,7 @@ mod tests {
         let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
         let tags = r#"{"~tag1":"tag2"}"#;
-        wallet.add("test_type_", "foo", "bar", &tags).unwrap();
+        wallet.add("test_type_", "foo", "bar", &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
 
         // successful plain search
         let query_json = jsonise!({
@@ -948,7 +946,7 @@ mod tests {
         _cleanup();
         let fetch_options = &_fetch_options(false, true, false);
         let wallet = _create_wallet();
-        wallet.add("test_type_", "foo", "bar", r#"{"tag_name":"tag_value"}"#).unwrap();
+        wallet.add("test_type_", "foo", "bar", &serde_json::from_str::<Tags>(r#"{"tag_name":"tag_value"}"#).unwrap()).unwrap();
 
         // successful encrypted search
         let query_json = jsonise!({
@@ -997,10 +995,10 @@ mod tests {
     #[test]
     fn wallet_search_single_item_neq_plain() {
         _cleanup();
-        let fetch_options = &_search_options(true, false,false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
         let tags = r#"{"~tag_name":"tag_value"}"#;
-        wallet.add("test_type_", "foo", "bar", &tags).unwrap();
+        wallet.add("test_type_", "foo", "bar", &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
 
         // successful plain search
         let query_json = jsonise!({
@@ -1054,13 +1052,13 @@ mod tests {
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"~tag_name":"1"}"#;
-        wallet.add("test_type_", "foo1", "bar1", &tags_1).unwrap();
+        wallet.add("test_type_", "foo1", "bar1", &serde_json::from_str::<Tags>(tags_1).unwrap()).unwrap();
 
         let tags_2 = r#"{"~tag_name":"2"}"#;
-        wallet.add("test_type_", "foo2", "bar2", &tags_2).unwrap();
+        wallet.add("test_type_", "foo2", "bar2", &serde_json::from_str::<Tags>(tags_2).unwrap()).unwrap();
 
         let tags_3 = r#"{"~tag_name":"3"}"#;
-        wallet.add("test_type_", "foo3", "bar3", &tags_3).unwrap();
+        wallet.add("test_type_", "foo3", "bar3", &serde_json::from_str::<Tags>(tags_3).unwrap()).unwrap();
 
         // successful encrypted search
         let query_json = jsonise!({
@@ -1120,13 +1118,13 @@ mod tests {
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"~tag_name": "1"}"#;
-        wallet.add("test_type_", "foo1", "bar1", &tags_1).unwrap();
+        wallet.add("test_type_", "foo1", "bar1", &serde_json::from_str::<Tags>(tags_1).unwrap()).unwrap();
 
         let tags_2 = r#"{"~tag_name": "2"}"#;
-        wallet.add("test_type_", "foo2", "bar2", &tags_2).unwrap();
+        wallet.add("test_type_", "foo2", "bar2", &serde_json::from_str::<Tags>(tags_2).unwrap()).unwrap();
 
         let tags_3 = r#"{"~tag_name": "3"}"#;
-        wallet.add("test_type_", "foo3", "bar3", &tags_3).unwrap();
+        wallet.add("test_type_", "foo3", "bar3", &serde_json::from_str::<Tags>(tags_3).unwrap()).unwrap();
 
         // successful encrypted search
         let query_json = jsonise!({
@@ -1187,13 +1185,13 @@ mod tests {
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"~tag_name": "1"}"#;
-        wallet.add("test_type_", "foo1", "bar1", &tags_1).unwrap();
+        wallet.add("test_type_", "foo1", "bar1", &serde_json::from_str::<Tags>(tags_1).unwrap()).unwrap();
 
         let tags_2 = r#"{"~tag_name": "2"}"#;
-        wallet.add("test_type_", "foo2", "bar2", &tags_2).unwrap();
+        wallet.add("test_type_", "foo2", "bar2", &serde_json::from_str::<Tags>(tags_2).unwrap()).unwrap();
 
         let tags_3 = r#"{"~tag_name": "3"}"#;
-        wallet.add("test_type_", "foo3", "bar3", &tags_3).unwrap();
+        wallet.add("test_type_", "foo3", "bar3", &serde_json::from_str::<Tags>(tags_3).unwrap()).unwrap();
 
         // successful encrypted search
         let query_json = jsonise!({
@@ -1253,13 +1251,13 @@ mod tests {
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"~tag_name": "1"}"#;
-        wallet.add("test_type_", "foo1", "bar1", &tags_1).unwrap();
+        wallet.add("test_type_", "foo1", "bar1", &serde_json::from_str::<Tags>(tags_1).unwrap()).unwrap();
 
         let tags_2 = r#"{"~tag_name": "2"}"#;
-        wallet.add("test_type_", "foo2", "bar2", &tags_2).unwrap();
+        wallet.add("test_type_", "foo2", "bar2", &serde_json::from_str::<Tags>(tags_2).unwrap()).unwrap();
 
         let tags_3 = r#"{"~tag_name": "3"}"#;
-        wallet.add("test_type_", "foo3", "bar3", &tags_3).unwrap();
+        wallet.add("test_type_", "foo3", "bar3", &serde_json::from_str::<Tags>(tags_3).unwrap()).unwrap();
 
         // successful encrypted search
         let query_json = jsonise!({
@@ -1319,13 +1317,13 @@ mod tests {
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"~tag_name": "tag_value_1"}"#;
-        wallet.add("test_type_", "foo1", "bar1", &tags_1).unwrap();
+        wallet.add("test_type_", "foo1", "bar1", &serde_json::from_str::<Tags>(tags_1).unwrap()).unwrap();
 
         let tags_2 = r#"{"~tag_name": "tag_value_2"}"#;
-        wallet.add("test_type_", "foo2", "bar2", &tags_2).unwrap();
+        wallet.add("test_type_", "foo2", "bar2", &serde_json::from_str::<Tags>(tags_2).unwrap()).unwrap();
 
         let tags_3 = r#"{"~tag_name": "not_matching"}"#;
-        wallet.add("test_type_", "foo3", "bar3", &tags_3).unwrap();
+        wallet.add("test_type_", "foo3", "bar3", &serde_json::from_str::<Tags>(tags_3).unwrap()).unwrap();
 
         // successful unencrypted search
         let query_json = jsonise!({
@@ -1385,13 +1383,13 @@ mod tests {
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"~tag_name": "tag_value_1"}"#;
-        wallet.add("test_type_", "foo1", "bar1", &tags_1).unwrap();
+        wallet.add("test_type_", "foo1", "bar1", &serde_json::from_str::<Tags>(tags_1).unwrap()).unwrap();
 
         let tags_2 = r#"{"~tag_name": "tag_value_2"}"#;
-        wallet.add("test_type_", "foo2", "bar2", &tags_2).unwrap();
+        wallet.add("test_type_", "foo2", "bar2", &serde_json::from_str::<Tags>(tags_2).unwrap()).unwrap();
 
         let tags_3 = r#"{"~tag_name": "tag_value_3"}"#;
-        wallet.add("test_type_", "foo3", "bar3", &tags_3).unwrap();
+        wallet.add("test_type_", "foo3", "bar3", &serde_json::from_str::<Tags>(tags_3).unwrap()).unwrap();
 
         // successful unencrypted search
         let query_json = jsonise!({
@@ -1443,13 +1441,13 @@ mod tests {
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"tag_name": "tag_value_1"}"#;
-        wallet.add("test_type_", "foo1", "bar1", &tags_1).unwrap();
+        wallet.add("test_type_", "foo1", "bar1", &serde_json::from_str::<Tags>(tags_1).unwrap()).unwrap();
 
         let tags_2 = r#"{"tag_name": "tag_value_2"}"#;
-        wallet.add("test_type_", "foo2", "bar2", &tags_2).unwrap();
+        wallet.add("test_type_", "foo2", "bar2", &serde_json::from_str::<Tags>(tags_2).unwrap()).unwrap();
 
         let tags_3 = r#"{"tag_name": "tag_value_3"}"#;
-        wallet.add("test_type_", "foo3", "bar3", &tags_3).unwrap();
+        wallet.add("test_type_", "foo3", "bar3", &serde_json::from_str::<Tags>(tags_3).unwrap()).unwrap();
 
         // successful encrypted search
         let query_json = jsonise!({
@@ -1503,10 +1501,10 @@ mod tests {
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"tag_name_1": "tag_value_1", "tag_name_2": "tag_value_2", "~tag_name_2": "tag_value_2", "~tag_name_3": "tag_value_3"}"#;
-        wallet.add("test_type_", "foo", "bar", &tags_1).unwrap();
+        wallet.add("test_type_", "foo", "bar", &serde_json::from_str::<Tags>(tags_1).unwrap()).unwrap();
 
         let tags_2 = r#"{"tag_name_1": "tag_value_1", "tag_name_2": "tag_value_2", "~tag_name_2": "tag_value_3", "~tag_name_3": "tag_value_3"}"#;
-        wallet.add("test_type_", "spam", "eggs", &tags_2).unwrap();
+        wallet.add("test_type_", "spam", "eggs", &serde_json::from_str::<Tags>(tags_2).unwrap()).unwrap();
 
         let query_json = jsonise!({
             "tag_name_1": "tag_value_1",
@@ -1583,13 +1581,13 @@ mod tests {
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"tag_name_1": "tag_value_1", "~tag_name_2": "tag_value_21", "~tag_name_3": "tag_value_3"}"#;
-        wallet.add("test_type_", "foo", "bar", &tags_1).unwrap();
+        wallet.add("test_type_", "foo", "bar", &serde_json::from_str::<Tags>(tags_1).unwrap()).unwrap();
 
         let tags_2 = r#"{"tag_name_1": "tag_value_1", "~tag_name_2": "tag_value_22", "~tag_name_3": "tag_value_3"}"#;
-        wallet.add("test_type_", "spam", "eggs", &tags_2).unwrap();
+        wallet.add("test_type_", "spam", "eggs", &serde_json::from_str::<Tags>(tags_2).unwrap()).unwrap();
 
         let tags_3 = r#"{"tag_name_1": "tag_value_1", "~tag_name_3": "tag_value_3", "~tag_name_4": "tag_value_4"}"#;
-        wallet.add("test_type_", "ping", "pong", &tags_3).unwrap();
+        wallet.add("test_type_", "ping", "pong", &serde_json::from_str::<Tags>(tags_3).unwrap()).unwrap();
 
         // All 3
         let query_json = jsonise!({
@@ -1668,13 +1666,13 @@ mod tests {
         let wallet = _create_wallet();
 
         let tags_1 = r#"{"tag_name_1": "tag_value_1", "~tag_name_2": "tag_value_21", "~tag_name_3": "tag_value_3"}"#;
-        wallet.add("test_type_", "foo", "bar", &tags_1).unwrap();
+        wallet.add("test_type_", "foo", "bar", &serde_json::from_str::<Tags>(tags_1).unwrap()).unwrap();
 
         let tags_2 = r#"{"tag_name_12": "tag_value_12", "~tag_name_2": "tag_value_22"}"#;
-        wallet.add("test_type_", "spam", "eggs", &tags_2).unwrap();
+        wallet.add("test_type_", "spam", "eggs", &serde_json::from_str::<Tags>(tags_2).unwrap()).unwrap();
 
         let tags_3 = r#"{"tag_name_13": "tag_value_13", "~tag_name_4": "tag_value_4"}"#;
-        wallet.add("test_type_", "ping", "pong", &tags_3).unwrap();
+        wallet.add("test_type_", "ping", "pong", &serde_json::from_str::<Tags>(tags_3).unwrap()).unwrap();
 
         let query_json = jsonise!({
             "$not": {"tag_name_1": "tag_value_1_different"}
@@ -1714,7 +1712,7 @@ mod tests {
         _cleanup();
         let wallet = _create_wallet();
         let tags = r#"{"tag_name": "tag_value"}"#;
-        wallet.add("test_type_", "foo", "bar", &tags).unwrap();
+        wallet.add("test_type_", "foo", "bar", &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
         let fetch_options = &_search_options(true, false, false, false, false);
 
         // successful encrypted searchF
@@ -1768,7 +1766,7 @@ mod tests {
 
         let tags = r#"{"tag_name_1": "tag_value_1", "tag_name_2": "tag_value_2", "~tag_name_1": "tag_value_1", "*tag_name_2": "tag_value_2"}"#;
 
-        wallet.add("test_type_", "foo", "bar", &tags).unwrap();
+        wallet.add("test_type_", "foo", "bar", &serde_json::from_str::<Tags>(tags).unwrap()).unwrap();
         let fetch_options = &_search_options(true, false, false, true, true);
 
         // successful encrypted search
@@ -1822,7 +1820,7 @@ mod tests {
         _cleanup();
         let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
-        wallet.add("test_type_", "foo", "bar", r#"{"tags1":"tags2"}"#).unwrap();
+        wallet.add("test_type_", "foo", "bar",  &serde_json::from_str::<Tags>(r#"{"tags1":"tags2"}"#).unwrap()).unwrap();
         let query_json = jsonise!({
             "$or": [
                     {"foo": "bar"},

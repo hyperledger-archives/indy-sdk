@@ -14,6 +14,8 @@ use std::error::Error;
 use std::rc::Rc;
 use std::str;
 
+use std::collections::HashMap;
+
 use base64;
 
 pub enum CryptoCommand {
@@ -128,7 +130,7 @@ impl CryptoCommandExecutor {
                     format!("Invalid KeyInfo json: {}", err.description())))?;
 
         let key = self.crypto_service.create_key(&key_info)?;
-        self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new())?;
 
         let res = key.verkey;
 
@@ -261,9 +263,10 @@ impl CryptoCommandExecutor {
 
         self.wallet_service.get_indy_record::<Key>(wallet_handle, &verkey, &RecordOptions::id())?;
 
-        let tags_json = json!({"metadata": metadata}).to_string();
+        let mut tags: HashMap<String, String> = HashMap::new();
+        tags.insert("metadata".to_string(), metadata);
 
-        let res = self.wallet_service.add_indy_record_tags::<Key>(wallet_handle, &verkey, &tags_json)?;
+        let res = self.wallet_service.add_indy_record_tags::<Key>(wallet_handle, &verkey, &tags)?;
 
         debug!("set_key_metadata <<< res: {:?}", res);
 
