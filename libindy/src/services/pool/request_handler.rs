@@ -25,10 +25,12 @@ use std::iter::FromIterator;
 use std::rc::Rc;
 use super::indy_crypto::bls::Generator;
 use super::indy_crypto::bls::VerKey;
+use super::indy_crypto::utils::json::JsonEncodable;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::merkle_tree_factory;
 use services::pool::types::CatchupReq;
 use services::pool::types::CatchupRep;
+use services::pool::types::Message;
 
 trait RequestState {
     fn is_terminal(&self) -> bool {
@@ -302,12 +304,13 @@ enum RequestSMWrapper<T: Networker> {
 impl<T: Networker> RequestSMWrapper<T> {
     fn handle_event(self, re: RequestEvent) -> (Self, Option<PoolEvent>) {
         match self {
-            RequestSMWrapper::Start(mut request) => {
+            RequestSMWrapper::Start(request) => {
+                let ne: Option<NetworkerEvent> = re.clone().into();
                 match re {
                     RequestEvent::LedgerStatus(ls, _) => {
                         match merkle_tree_factory::create(&request.pool_name) {
                             Ok(merkle_tree) => {
-                                request.state.networker.borrow_mut().send_request(Some(NetworkerEvent::SendAllRequest));
+                                request.state.networker.borrow_mut().process_event(ne);
                                 (RequestSMWrapper::CatchupConsensus((merkle_tree, request).into()), None)
                             }
                             //TODO: reconsider this to return more suitable error
@@ -331,7 +334,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                             catchupTill: target_mt_size,
                         };
 
-                        request.state.networker.borrow_mut().send_request(Some(NetworkerEvent::SendOneRequest));
+                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest(Message::CatchupReq(cr).to_json().expect("FIXME"))));
                         (RequestSMWrapper::CatchupSingle((merkle, request, target_mt_root, target_mt_size).into()), None)
                     }
                     RequestEvent::CustomSingleRequest(msg, req_id) => {

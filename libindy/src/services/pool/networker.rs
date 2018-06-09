@@ -97,7 +97,7 @@ impl PoolConnection {
         let len = self.nodes.len();
         assert_eq!(len, self.sockets.len());
         for i in 0..len {
-            if let (Some(s), rn) = (&self.sockets[i], &self.nodes[i]) {
+            if let (&Some(ref s), rn) = (&self.sockets[i], &self.nodes[i]) {
                 if poll_items[pi_idx].is_readable() {
                     if let Ok(Ok(str)) = s.recv_string(zmq::DONTWAIT) {
                         vec.push(PoolEvent::NodeReply(
