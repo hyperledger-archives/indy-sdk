@@ -650,18 +650,29 @@ pub mod pool_restart_command {
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+        let responses = match serde_json::from_str::<HashMap<String, String>>(&response) {
+            Ok(responses) => responses,
+            Err(_) => {
+                let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+                    .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+                return handle_transaction_response(response).map(|result| println_succ!("{}", result));
+            }
+        };
 
-        let res = handle_transaction_response(response)
-            .map(|result| print_transaction_response(result,
-                                                     "Restart pool request has been sent to Ledger.",
-                                                     None,
-                                                     &[
-                                                         ("isSuccess", "IsSuccess"),
-                                                         ("msg", "Message"),
-                                                         ("action", "Action"),
-                                                         ("datetime", "Datetime")]));
+        for (node, response) in responses {
+            let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+                .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+            println_succ!("Restart pool response for node {}:", node);
+            let _res = handle_transaction_response(response).map(|result|
+                print_table(&result, &[
+                    ("identifier", "From"),
+                    ("reqId", "Request Id"),
+                    ("action", "Action"),
+                    ("datetime", "Datetime")]));
+        }
+        let res = Ok(());
+
         trace!("execute << {:?}", res);
         res
     }
@@ -2386,7 +2397,6 @@ pub mod tests {
         use super::*;
 
         #[test]
-        #[ignore]
         pub fn pool_restart_works() {
             TestUtils::cleanup_storage();
             let datetime = r#"2020-01-25T12:49:05.258870+00:00"#;
