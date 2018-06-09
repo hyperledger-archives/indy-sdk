@@ -110,9 +110,8 @@ pub mod open_command {
                         match err {
                             ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid wallet config")),
                             ErrorCode::WalletAlreadyOpenedError => Err(println_err!("Wallet \"{}\" already opened", name)),
-                            ErrorCode::WalletAccessFailed => Err(println_err!("Cannot open encrypted wallet \"{}\"", name)),
+                            ErrorCode::WalletAccessFailed => Err(println_err!("Cannot open wallet \"{}\". Invalid key \"{}\" has been provided", name, key)),
                             ErrorCode::WalletNotFoundError => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
-                            ErrorCode::CommonIOError => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
                             err => Err(println_err!("Indy SDK error occurred {:?}", err)),
                         }
                     }
@@ -238,8 +237,8 @@ pub mod delete_command {
         let res = match Wallet::delete_wallet(name, credentials.as_str()) {
             Ok(()) => Ok(println_succ!("Wallet \"{}\" has been deleted", name)),
             Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
-            Err(ErrorCode::WalletInputError) => Err(println_err!("Invalid wallet key  \"{}\"", key)),
-            Err(ErrorCode::WalletDecodingError) => Err(println_err!("Invalid wallet key  \"{}\"", key)),
+            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
+            Err(ErrorCode::WalletAccessFailed) => Err(println_err!("Cannot delete wallet \"{}\". Invalid key \"{}\" has been provided ", name, key)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -394,6 +393,21 @@ pub mod tests {
             }
             delete_wallet(&ctx);
         }
+
+        #[test]
+        pub fn open_works_for_wrong_key() {
+            let ctx = CommandContext::new();
+
+            create_wallet(&ctx);
+            {
+                let cmd = open_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", "other_key".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            delete_wallet(&ctx);
+        }
     }
 
     mod list {
@@ -530,6 +544,22 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn delete_works_for_wrong_key() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_wallet(&ctx);
+            {
+                let cmd = delete_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", "other_key".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
             TestUtils::cleanup_storage();
         }
     }
