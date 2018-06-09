@@ -13,7 +13,7 @@ impl Commander {
         }
     }
 
-    pub fn fetch_events(&mut self) -> Option<PoolEvent> {
+    pub fn fetch_events(&self) -> Option<PoolEvent> {
         unimplemented!()
     }
 

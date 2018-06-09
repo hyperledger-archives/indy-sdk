@@ -213,7 +213,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                     RequestEvent::CustomSingleRequest(msg, req_id) => {
                         match req_id {
                             Ok(req_id) => {
-                                request.state.networker.borrow_mut().send_request(Some(NetworkerEvent::SendOneRequest));
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest));
                                 (RequestSMWrapper::Consensus(request.into()), None)
                             }
                             Err(e) => {
@@ -225,7 +225,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                     RequestEvent::CustomFullRequest(msg, req_id) => {
                         match req_id {
                             Ok(req_id) => {
-                                request.state.networker.borrow_mut().send_request(Some(NetworkerEvent::SendAllRequest));
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendAllRequest));
                                 (RequestSMWrapper::Full(request.into()), None)
                             }
                             Err(e) => {
@@ -237,7 +237,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                     RequestEvent::CustomConsensusRequest(msg, req_id) => {
                         match req_id {
                             Ok(req_id) => {
-                                request.state.networker.borrow_mut().send_request(Some(NetworkerEvent::SendAllRequest));
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendAllRequest));
                                 (RequestSMWrapper::Consensus(request.into()), None)
                             }
                             Err(e) => {
@@ -338,7 +338,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                             (RequestSMWrapper::Finish(request.into()), None)
                         } else {
                             //TODO: remap on RESEND
-                            request.state.networker.borrow_mut().send_request(Some(NetworkerEvent::SendOneRequest));
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest));
                             (RequestSMWrapper::Single(request), None)
                         }
                     }

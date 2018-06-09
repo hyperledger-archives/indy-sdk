@@ -1,10 +1,4 @@
-use services::pool::types::LedgerStatus;
-use services::pool::types::CatchupReq;
-use services::pool::types::CatchupRep;
-use services::pool::types::Message;
-use services::pool::types::ConsistencyProof;
-use services::pool::types::Reply;
-use services::pool::types::Response;
+use services::pool::types::*;
 use errors::common::CommonError;
 use domain::ledger::constants;
 
@@ -29,7 +23,8 @@ const REQUEST_FOR_FULL: [&'static str; 2] = [
 
 pub enum NetworkerEvent {
     SendOneRequest,
-    SendAllRequest
+    SendAllRequest,
+    NodesStateUpdated(Vec<RemoteNode>),
 }
 
 #[derive(Clone)]

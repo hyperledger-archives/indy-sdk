@@ -463,13 +463,12 @@ impl PoolConfig {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct RemoteNode {
     pub name: String,
     pub public_key: Vec<u8>,
     pub zaddr: String,
-    pub zsock: Option<zmq::Socket>,
     pub is_blacklisted: bool,
-    pub blskey: Option<bls::VerKey>
 }
 
 pub struct CatchUpProcess {

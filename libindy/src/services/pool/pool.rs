@@ -426,8 +426,6 @@ impl<S: Networker, R: RequestHandler<S>> PoolThread<S, R> {
         loop {
             self._poll();
 
-            self._read_events();
-
             if !self._loop() { break; }
         }
     }
@@ -443,27 +441,30 @@ impl<S: Networker, R: RequestHandler<S>> PoolThread<S, R> {
         self.pool_wrapper.as_ref().map(|w| w.is_terminal()).unwrap_or(true)
     }
 
-    fn _read_events(&mut self) {
-        let cmd_events = self.commander.fetch_events();
-        let network_events = self.networker.borrow().fetch_events();
-        self.events.extend(cmd_events);
-        self.events.extend(network_events);
-    }
-
     fn _poll(&mut self) {
-        let networker = self.networker.borrow();
-        let mut poll_items = networker.get_poll_items();
-        poll_items.push(self.commander.get_poll_item());
+        let events = {
+            let networker = self.networker.borrow();
 
-        let timeout = networker.get_timeout();
+            let mut poll_items = networker.get_poll_items();
+            poll_items.push(self.commander.get_poll_item());
 
-        let poll_res = zmq::poll(&mut poll_items, timeout)
-            .map_err(map_err_err!())
-            .map_err(|_| unimplemented!() /* FIXME */).unwrap();
+            let timeout = networker.get_timeout();
 
-        if poll_res == 0 {
-            self.events.push_back(PoolEvent::Timeout); // TODO check duplicate ?
-        }
+            let poll_res = zmq::poll(&mut poll_items, timeout)
+                .map_err(map_err_err!())
+                .map_err(|_| unimplemented!() /* FIXME */).unwrap();
+
+            if poll_res == 0 {
+                self.events.push_back(PoolEvent::Timeout); // TODO check duplicate ?
+            }
+
+            let mut events = networker.fetch_events(&poll_items);
+            events.extend(self.commander.fetch_events());
+
+            events
+        };
+
+        self.events.extend(events);
     }
 }
 
