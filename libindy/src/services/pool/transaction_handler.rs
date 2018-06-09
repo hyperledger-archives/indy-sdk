@@ -50,6 +50,7 @@ pub struct TransactionHandler {
     pub f: usize,
     pub nodes: Vec<RemoteNode>,
     pending_commands: HashMap<u64 /* requestId */, CommandProcess>,
+    pub protocol_version: Option<u32>,
 }
 
 impl TransactionHandler {
@@ -673,6 +674,7 @@ impl Default for TransactionHandler {
             pending_commands: HashMap::new(),
             f: 0,
             nodes: Vec::new(),
+            protocol_version: None
         }
     }
 }
