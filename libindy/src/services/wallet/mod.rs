@@ -8,6 +8,9 @@ mod iterator;
 mod language;
 mod wallet;
 
+#[cfg(test)]
+mod inmem_wallet;
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
@@ -742,7 +745,7 @@ mod tests {
     use std;
     use super::*;
     use errors::wallet::WalletError;
-    use utils::inmem_wallet::InmemWallet;
+    use self::inmem_wallet::InmemWallet;
     use utils::test::TestUtils;
 
     //    const POOL: &'static str = "pool";
