@@ -694,6 +694,693 @@ impl Wallet {
         })
     }
 
+    /// Update a non-secret wallet record value
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `value` - the new value of record
+    pub fn update_record_value(wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_update_record_value(command_handle, wallet_handle, xtype, id, value, cb);
+
+        ResultHandler::empty(err, receiver)
+    }
+
+    /// Update a non-secret wallet record value
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `value` - the new value of record
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn update_record_value_timeout(wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, timeout: Duration) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_update_record_value(command_handle, wallet_handle, xtype, id, value, cb);
+
+        ResultHandler::empty_timeout(err, receiver, timeout)
+    }
+
+    /// Update a non-secret wallet record value
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `value` - the new value of record
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn update_record_value_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
+
+        Wallet::_update_record_value(command_handle, wallet_handle, xtype, id, value, cb)
+    }
+
+    fn _update_record_value(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+        let xtype = c_str!(xtype);
+        let id = c_str!(id);
+        let value = c_str!(value);
+
+        ErrorCode::from(unsafe{
+            non_secrets::indy_update_wallet_record_value(command_handle,
+                                                         wallet_handle,
+                                                         xtype.as_ptr(),
+                                                         id.as_ptr(),
+                                                         value.as_ptr(),
+                                                         cb)
+        })
+    }
+
+    /// Update a non-secret wallet record tags
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `tags_json` - the record tags used for search and storing meta information as json:
+    ///   {
+    ///     "tagName1": <str>, // string tag (will be stored encrypted)
+    ///     "tagName2": <str>, // string tag (will be stored encrypted)
+    ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
+    ///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
+    ///   }
+    ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
+    ///   usage of this tag in complex search queries (comparison, predicates)
+    ///   Encrypted tags can be searched only for exact matching
+    pub fn update_record_tags(wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_update_record_tags(command_handle, wallet_handle, xtype, id, tags_json, cb);
+
+        ResultHandler::empty(err, receiver)
+    }
+
+    /// Update a non-secret wallet record tags
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `tags_json` - the record tags used for search and storing meta information as json:
+    ///   {
+    ///     "tagName1": <str>, // string tag (will be stored encrypted)
+    ///     "tagName2": <str>, // string tag (will be stored encrypted)
+    ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
+    ///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
+    ///   }
+    ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
+    ///   usage of this tag in complex search queries (comparison, predicates)
+    ///   Encrypted tags can be searched only for exact matching
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn update_record_tags_timeout(wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, timeout: Duration) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_update_record_tags(command_handle, wallet_handle, xtype, id, tags_json, cb);
+
+        ResultHandler::empty_timeout(err, receiver, timeout)
+    }
+
+    /// Update a non-secret wallet record tags
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `tags_json` - the record tags used for search and storing meta information as json:
+    ///   {
+    ///     "tagName1": <str>, // string tag (will be stored encrypted)
+    ///     "tagName2": <str>, // string tag (will be stored encrypted)
+    ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
+    ///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
+    ///   }
+    ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
+    ///   usage of this tag in complex search queries (comparison, predicates)
+    ///   Encrypted tags can be searched only for exact matching
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn update_record_tags_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
+
+        Wallet::_update_record_tags(command_handle, wallet_handle, xtype, id, tags_json, cb)
+    }
+
+    fn _update_record_tags(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+        let xtype = c_str!(xtype);
+        let id = c_str!(id);
+        let tags_json = c_str!(tags_json);
+
+        ErrorCode::from(unsafe {
+          non_secrets::indy_update_wallet_record_tags(command_handle, wallet_handle, xtype.as_ptr(), id.as_ptr(), tags_json.as_ptr(), cb)
+        })
+    }
+
+    /// Add new tags to the wallet record
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `tags_json` - the record tags used for search and storing meta information as json:
+    ///   {
+    ///     "tagName1": <str>, // string tag (will be stored encrypted)
+    ///     "tagName2": <str>, // string tag (will be stored encrypted)
+    ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
+    ///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
+    ///   }
+    ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
+    ///   usage of this tag in complex search queries (comparison, predicates)
+    ///   Encrypted tags can be searched only for exact matching
+    ///   Note if some from provided tags already assigned to the record than
+    ///     corresponding tags values will be replaced
+    pub fn add_record_tags(wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_add_record_tags(command_handle, wallet_handle, xtype, id, tags_json, cb);
+
+        ResultHandler::empty(err, receiver)
+    }
+
+    /// Add new tags to the wallet record
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `tags_json` - the record tags used for search and storing meta information as json:
+    ///   {
+    ///     "tagName1": <str>, // string tag (will be stored encrypted)
+    ///     "tagName2": <str>, // string tag (will be stored encrypted)
+    ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
+    ///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
+    ///   }
+    ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
+    ///   usage of this tag in complex search queries (comparison, predicates)
+    ///   Encrypted tags can be searched only for exact matching
+    ///   Note if some from provided tags already assigned to the record than
+    ///     corresponding tags values will be replaced
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn add_record_tags_timeout(wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, timeout: Duration) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_add_record_tags(command_handle, wallet_handle, xtype, id, tags_json, cb);
+
+        ResultHandler::empty_timeout(err, receiver, timeout)
+    }
+
+    /// Add new tags to the wallet record
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `tags_json` - the record tags used for search and storing meta information as json:
+    ///   {
+    ///     "tagName1": <str>, // string tag (will be stored encrypted)
+    ///     "tagName2": <str>, // string tag (will be stored encrypted)
+    ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
+    ///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
+    ///   }
+    ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
+    ///   usage of this tag in complex search queries (comparison, predicates)
+    ///   Encrypted tags can be searched only for exact matching
+    ///   Note if some from provided tags already assigned to the record than
+    ///     corresponding tags values will be replaced
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn add_record_tags_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
+
+        Wallet::_add_record_tags(command_handle, wallet_handle, xtype, id, tags_json, cb)
+    }
+
+    fn _add_record_tags(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+        let xtype = c_str!(xtype);
+        let id = c_str!(id);
+        let tags_json = c_str!(tags_json);
+
+        ErrorCode::from(unsafe {
+          non_secrets::indy_add_wallet_record_tags(command_handle, wallet_handle, xtype.as_ptr(), id.as_ptr(), tags_json.as_ptr(), cb)
+        })
+    }
+
+    /// Delete tags from the wallet record
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `tag_names_json` - the list of tag names to remove from the record as json array:
+    ///   ["tagName1", "tagName2", ...]
+    pub fn delete_record_tags(wallet_handle: IndyHandle, xtype: &str, id: &str, tag_names_json: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_delete_record_tags(command_handle, wallet_handle, xtype, id, tag_names_json, cb);
+
+        ResultHandler::empty(err, receiver)
+    }
+
+    /// Delete tags from the wallet record
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `tag_names_json` - the list of tag names to remove from the record as json array:
+    ///   ["tagName1", "tagName2", ...]
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn delete_record_tags_timeout(wallet_handle: IndyHandle, xtype: &str, id: &str, tag_names_json: &str, timeout: Duration) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_delete_record_tags(command_handle, wallet_handle, xtype, id, tag_names_json, cb);
+
+        ResultHandler::empty_timeout(err, receiver, timeout)
+    }
+
+    /// Delete tags from the wallet record
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `tag_names_json` - the list of tag names to remove from the record as json array:
+    ///   ["tagName1", "tagName2", ...]
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn delete_record_tags_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, tag_names_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
+
+        Wallet::_delete_record_tags(command_handle, wallet_handle, xtype, id, tag_names_json, cb)
+    }
+
+    fn _delete_record_tags(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, tag_names_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+        let xtype = c_str!(xtype);
+        let id = c_str!(id);
+        let tag_names_json = c_str!(tag_names_json);
+
+        ErrorCode::from(unsafe {
+          non_secrets::indy_delete_wallet_record_tags(command_handle, wallet_handle, xtype.as_ptr(), id.as_ptr(), tag_names_json.as_ptr(), cb)
+        })
+    }
+
+    /// Delete an existing wallet record in the wallet
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - record type
+    /// * `id` - the id of record
+    pub fn delete_record(wallet_handle: IndyHandle, xtype: &str, id: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_delete_record(command_handle, wallet_handle, xtype, id, cb);
+
+        ResultHandler::empty(err, receiver)
+    }
+
+    /// Delete an existing wallet record in the wallet
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - record type
+    /// * `id` - the id of record
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn delete_record_timeout(wallet_handle: IndyHandle, xtype: &str, id: &str, timeout: Duration) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_delete_record(command_handle, wallet_handle, xtype, id, cb);
+
+        ResultHandler::empty_timeout(err, receiver, timeout)
+    }
+
+    /// Delete an existing wallet record in the wallet
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - record type
+    /// * `id` - the id of record
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn delete_record_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
+
+        Wallet::_delete_record(command_handle, wallet_handle, xtype, id, cb)
+    }
+
+    fn _delete_record(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+        let xtype = c_str!(xtype);
+        let id = c_str!(id);
+
+        ErrorCode::from(unsafe {
+          non_secrets::indy_delete_wallet_record(command_handle, wallet_handle, xtype.as_ptr(), id.as_ptr(), cb)
+        })
+    }
+
+    /// Get an wallet record by id
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `options_json` - //TODO: FIXME: Think about replacing by bitmaks
+    ///  {
+    ///    retrieveType: (optional, false by default) Retrieve record type,
+    ///    retrieveValue: (optional, true by default) Retrieve record value,
+    ///    retrieveTags: (optional, false by default) Retrieve record tags
+    ///  }
+    /// # Returns
+    /// * `wallet record json` -
+    /// {
+    ///   id: "Some id",
+    ///   type: "Some type", // present only if retrieveType set to true
+    ///   value: "Some value", // present only if retrieveValue set to true
+    ///   tags: <tags json>, // present only if retrieveTags set to true
+    /// }
+    pub fn get_record(wallet_handle: IndyHandle, xtype: &str, id: &str, options_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let err = Wallet::_get_record(command_handle, wallet_handle, xtype, id, options_json, cb);
+
+        ResultHandler::one(err, receiver)
+    }
+
+    /// Get an wallet record by id
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `options_json` - //TODO: FIXME: Think about replacing by bitmaks
+    ///  {
+    ///    retrieveType: (optional, false by default) Retrieve record type,
+    ///    retrieveValue: (optional, true by default) Retrieve record value,
+    ///    retrieveTags: (optional, false by default) Retrieve record tags
+    ///  }
+    /// * `timeout` - the maximum time this function waits for a response
+    /// # Returns
+    /// * `wallet record json` -
+    /// {
+    ///   id: "Some id",
+    ///   type: "Some type", // present only if retrieveType set to true
+    ///   value: "Some value", // present only if retrieveValue set to true
+    ///   tags: <tags json>, // present only if retrieveTags set to true
+    /// }
+    pub fn get_record_timeout(wallet_handle: IndyHandle, xtype: &str, id: &str, options_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let err = Wallet::_get_record(command_handle, wallet_handle, xtype, id, options_json, cb);
+
+        ResultHandler::one_timeout(err, receiver, timeout)
+    }
+
+    /// Get an wallet record by id
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `options_json` - //TODO: FIXME: Think about replacing by bitmaks
+    ///  {
+    ///    retrieveType: (optional, false by default) Retrieve record type,
+    ///    retrieveValue: (optional, true by default) Retrieve record value,
+    ///    retrieveTags: (optional, false by default) Retrieve record tags
+    ///  }
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn get_record_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, options_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
+
+        Wallet::_get_record(command_handle, wallet_handle, xtype, id, options_json, cb)
+    }
+
+    fn _get_record(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, options_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+        let xtype = c_str!(xtype);
+        let id = c_str!(id);
+        let options_json = c_str!(options_json);
+
+        ErrorCode::from(unsafe {
+          non_secrets::indy_get_wallet_record(command_handle, wallet_handle, xtype.as_ptr(), id.as_ptr(), options_json.as_ptr(), cb)
+        })
+    }
+
+    /// Search for wallet records.
+    ///
+    /// Note instead of immediately returning of fetched records
+    /// this call returns wallet_search_handle that can be used later
+    /// to fetch records by small batches (with indy_fetch_wallet_search_next_records).
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `query_json` - MongoDB style query to wallet record tags:
+    ///  {
+    ///    "tagName": "tagValue",
+    ///    $or: {
+    ///      "tagName2": { $regex: 'pattern' },
+    ///      "tagName3": { $gte: '123' },
+    ///    },
+    ///  }
+    /// * `options_json` - //TODO: FIXME: Think about replacing by bitmaks
+    ///  {
+    ///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
+    ///    retrieveTotalCount: (optional, false by default) Calculate total count,
+    ///    retrieveType: (optional, false by default) Retrieve record type,
+    ///    retrieveValue: (optional, true by default) Retrieve record value,
+    ///    retrieveTags: (optional, false by default) Retrieve record tags,
+    ///  }
+    /// # Returns
+    /// * `search_handle` - Wallet search handle that can be used later
+    ///   to fetch records by small batches (with indy_fetch_wallet_search_next_records)
+    pub fn open_search(wallet_handle: IndyHandle, xtype: &str, query_json: &str, options_json: &str) -> Result<IndyHandle, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
+
+        let err = Wallet::_open_search(command_handle, wallet_handle, xtype, query_json, options_json, cb);
+
+        ResultHandler::one(err, receiver)
+    }
+
+    /// Search for wallet records.
+    ///
+    /// Note instead of immediately returning of fetched records
+    /// this call returns wallet_search_handle that can be used later
+    /// to fetch records by small batches (with indy_fetch_wallet_search_next_records).
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `query_json` - MongoDB style query to wallet record tags:
+    ///  {
+    ///    "tagName": "tagValue",
+    ///    $or: {
+    ///      "tagName2": { $regex: 'pattern' },
+    ///      "tagName3": { $gte: '123' },
+    ///    },
+    ///  }
+    /// * `options_json` - //TODO: FIXME: Think about replacing by bitmaks
+    ///  {
+    ///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
+    ///    retrieveTotalCount: (optional, false by default) Calculate total count,
+    ///    retrieveType: (optional, false by default) Retrieve record type,
+    ///    retrieveValue: (optional, true by default) Retrieve record value,
+    ///    retrieveTags: (optional, false by default) Retrieve record tags,
+    ///  }
+    /// * `timeout` - the maximum time this function waits for a response
+    /// # Returns
+    /// * `search_handle` - Wallet search handle that can be used later
+    ///   to fetch records by small batches (with indy_fetch_wallet_search_next_records)
+    pub fn open_search_timeout(wallet_handle: IndyHandle, xtype: &str, query_json: &str, options_json: &str, timeout: Duration) -> Result<IndyHandle, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
+
+        let err = Wallet::_open_search(command_handle, wallet_handle, xtype, query_json, options_json, cb);
+
+        ResultHandler::one_timeout(err, receiver, timeout)
+    }
+
+    /// Search for wallet records.
+    ///
+    /// Note instead of immediately returning of fetched records
+    /// this call returns wallet_search_handle that can be used later
+    /// to fetch records by small batches (with indy_fetch_wallet_search_next_records).
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `query_json` - MongoDB style query to wallet record tags:
+    ///  {
+    ///    "tagName": "tagValue",
+    ///    $or: {
+    ///      "tagName2": { $regex: 'pattern' },
+    ///      "tagName3": { $gte: '123' },
+    ///    },
+    ///  }
+    /// * `options_json` - //TODO: FIXME: Think about replacing by bitmaks
+    ///  {
+    ///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
+    ///    retrieveTotalCount: (optional, false by default) Calculate total count,
+    ///    retrieveType: (optional, false by default) Retrieve record type,
+    ///    retrieveValue: (optional, true by default) Retrieve record value,
+    ///    retrieveTags: (optional, false by default) Retrieve record tags,
+    ///  }
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn open_search_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, query_json: &str, options_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, IndyHandle) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32(Box::new(closure));
+
+        Wallet::_open_search(command_handle, wallet_handle, xtype, query_json, options_json, cb)
+    }
+
+    fn _open_search(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, query_json: &str, options_json: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
+        let xtype = c_str!(xtype);
+        let query_json = c_str!(query_json);
+        let options_json = c_str!(options_json);
+
+        ErrorCode::from(unsafe {
+          non_secrets::indy_open_wallet_search(command_handle, wallet_handle, xtype.as_ptr(), query_json.as_ptr(), options_json.as_ptr(), cb)
+        })
+    }
+
+    /// Fetch next records for wallet search.
+    ///
+    /// Not if there are no records this call returns WalletNoRecords error.
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `wallet_search_handle` - wallet search handle (created by indy_open_wallet_search)
+    /// * `count` - Count of records to fetch
+    ///
+    /// # Returns
+    /// * `wallet records json` -
+    /// {
+    ///   totalCount: <str>, // present only if retrieveTotalCount set to true
+    ///   records: [{ // present only if retrieveRecords set to true
+    ///       id: "Some id",
+    ///       type: "Some type", // present only if retrieveType set to true
+    ///       value: "Some value", // present only if retrieveValue set to true
+    ///       tags: <tags json>, // present only if retrieveTags set to true
+    ///   }],
+    /// }
+    pub fn fetch_search_next_records(wallet_handle: IndyHandle, wallet_search_handle: IndyHandle, count: usize) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let err = Wallet::_fetch_search_next_records(command_handle, wallet_handle, wallet_search_handle, count, cb);
+
+        ResultHandler::one(err, receiver)
+    }
+
+    /// Fetch next records for wallet search.
+    ///
+    /// Not if there are no records this call returns WalletNoRecords error.
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `wallet_search_handle` - wallet search handle (created by indy_open_wallet_search)
+    /// * `count` - Count of records to fetch
+    /// * `timeout` - the maximum time this function waits for a response
+    ///
+    /// # Returns
+    /// * `wallet records json` -
+    /// {
+    ///   totalCount: <str>, // present only if retrieveTotalCount set to true
+    ///   records: [{ // present only if retrieveRecords set to true
+    ///       id: "Some id",
+    ///       type: "Some type", // present only if retrieveType set to true
+    ///       value: "Some value", // present only if retrieveValue set to true
+    ///       tags: <tags json>, // present only if retrieveTags set to true
+    ///   }],
+    /// }
+    pub fn fetch_search_next_records_timeout(wallet_handle: IndyHandle, wallet_search_handle: IndyHandle, count: usize, timeout: Duration) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let err = Wallet::_fetch_search_next_records(command_handle, wallet_handle, wallet_search_handle, count, cb);
+
+        ResultHandler::one_timeout(err, receiver, timeout)
+    }
+
+    /// Fetch next records for wallet search.
+    ///
+    /// Not if there are no records this call returns WalletNoRecords error.
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `wallet_search_handle` - wallet search handle (created by indy_open_wallet_search)
+    /// * `count` - Count of records to fetch
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn fetch_search_next_records_async<F: 'static>(wallet_handle: IndyHandle, wallet_search_handle: IndyHandle, count: usize, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
+
+        Wallet::_fetch_search_next_records(command_handle, wallet_handle, wallet_search_handle, count, cb)
+    }
+
+    fn _fetch_search_next_records(command_handle: IndyHandle, wallet_handle: IndyHandle, wallet_search_handle: IndyHandle, count: usize, cb: Option<ResponseStringCB>) -> ErrorCode {
+        ErrorCode::from(unsafe {
+          non_secrets::indy_fetch_wallet_search_next_records(command_handle, wallet_handle, wallet_search_handle, count, cb)
+        })
+    }
+
+    /// Close wallet search (make search handle invalid)
+    ///
+    /// # Arguments
+    /// * `wallet_search_handle` - wallet search handle
+    pub fn close_search(wallet_search_handle: IndyHandle) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_close_search(command_handle, wallet_search_handle, cb);
+
+        ResultHandler::empty(err, receiver)
+    }
+
+    /// Close wallet search (make search handle invalid)
+    ///
+    /// # Arguments
+    /// * `wallet_search_handle` - wallet search handle
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn close_search_timeout(wallet_search_handle: IndyHandle, timeout: Duration) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_close_search(command_handle, wallet_search_handle, cb);
+
+        ResultHandler::empty_timeout(err, receiver, timeout)
+    }
+
+    /// Close wallet search (make search handle invalid)
+    ///
+    /// # Arguments
+    /// * `wallet_search_handle` - wallet search handle
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn close_search_async<F: 'static>(wallet_search_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
+
+        Wallet::_close_search(command_handle, wallet_search_handle, cb)
+    }
+
+    fn _close_search(command_handle: IndyHandle, wallet_search_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+        ErrorCode::from(unsafe {
+          non_secrets::indy_close_wallet_search(command_handle, wallet_search_handle, cb)
+        })
+    }
+
     fn _default_credentials(credentials: Option<&str>) -> CString {
         match credentials {
             Some(s) => c_str!(s),
