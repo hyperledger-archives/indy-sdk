@@ -4,7 +4,7 @@ from vcx.common import error_message, get_version, update_institution_info
 from vcx.api.utils import vcx_agent_provision, vcx_agent_update_info
 from ctypes import *
 
-provisionString = "{\"agency_url\":\"https://enym-eagency.pdev.evernym.com\",\"agency_did\":\"Ab8TvZa3Q19VNkQVzAWVL7\",\"agency_verkey\":\"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf\",\"wallet_name\":\"test_provision_agent\",\"agent_seed\":null,\"enterprise_seed\":null,\"wallet_key\":null}"
+provisionString = "{\"agency_url\":\"https://enym-eagency.pdev.evernym.com\",\"agency_did\":\"Ab8TvZa3Q19VNkQVzAWVL7\",\"agency_verkey\":\"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf\",\"wallet_name\":\"test_provision_agent\",\"agent_seed\":null,\"enterprise_seed\":null,\"wallet_key\":\"123\"}"
 agentUpdateString = "{\"id\":\"123\",\"value\":\"value\"}"
 
 

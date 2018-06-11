@@ -52,7 +52,6 @@ impl Default for Credential {
             their_did: None,
             their_vk: None,
             credential_offer: None,
-            link_secret_alias: Some(String::from("main")), //TODO this should not be hardcoded
             msg_uid: None,
             cred_id: None,
             credential: None,
@@ -69,7 +68,6 @@ pub struct Credential {
     credential_name: Option<String>,
     credential_request: Option<CredentialRequest>,
     credential_offer: Option<CredentialOffer>,
-    link_secret_alias: Option<String>,
     msg_uid: Option<String>,
     // the following 6 are pulled from the connection object
     agent_did: Option<String>,
@@ -85,7 +83,7 @@ pub struct Credential {
 
 impl Credential {
 
-    fn _build_request(&self, my_did: &str, their_did: &str) -> Result<CredentialRequest, CredentialError> {
+    pub fn build_request(&self, my_did: &str, their_did: &str) -> Result<CredentialRequest, CredentialError> {
         if self.state != VcxStateType::VcxStateRequestReceived { return Err(CredentialError::NotReady())}
 
         let prover_did = self.my_did.as_ref().ok_or(CredentialError::CommonError(error::INVALID_DID.code_num))?;
@@ -101,8 +99,7 @@ impl Credential {
 
         let (req, req_meta) = libindy_prover_create_credential_req(&prover_did,
                                                                    &credential_offer.libindy_offer,
-                                                                   &cred_def_json,
-                                                                   self.link_secret_alias.clone())
+                                                                   &cred_def_json)
             .map_err(|ec| CredentialError::CommonError(ec))?;
 
         Ok(CredentialRequest {
@@ -141,7 +138,7 @@ impl Credential {
         let local_my_vk = self.my_vk.as_ref().ok_or(CredentialError::InvalidHandle())?;
 
         // if test mode, just get this.
-        let req: CredentialRequest = self._build_request(local_my_did, local_their_did)?;
+        let req: CredentialRequest = self.build_request(local_my_did, local_their_did)?;
         self.credential_request = Some(req.clone());
         let req = serde_json::to_string(&req).or(Err(CredentialError::InvalidCredentialJson()))?;
         let data: Vec<u8> = connection::generate_encrypted_payload(local_my_vk, local_their_vk, &req, "CLAIM_REQ").map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
@@ -373,7 +370,7 @@ pub fn get_credential_offer(handle: u32) -> Result<String, CredentialError> {
     }).map_err(|ec| CredentialError::CommonError(ec))
 }
 
-fn get_credential_id(handle: u32) -> Result<String, CredentialError> {
+pub fn get_credential_id(handle: u32) -> Result<String, CredentialError> {
     HANDLE_MAP.get(handle, |obj| {
         Ok(obj.get_credential_id())
     }).map_err(|ec| CredentialError::CommonError(ec))
@@ -557,19 +554,27 @@ pub fn get_payment_information(handle: u32) -> Result<Option<PaymentInfo>, Crede
 
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     extern crate serde_json;
     use super::*;
     use utils::httpclient;
     use api::VcxStateType;
     use serde_json::Value;
     use utils::devsetup::tests;
-    use utils::libindy::payments::init_payments;
-    use utils::libindy::payments::mint_tokens;
     use error::payment::PaymentError;
     pub const BAD_CREDENTIAL_OFFER: &str = r#"{"version": "0.1","to_did": "LtMgSjtFcyPwenK9SHCyb8","from_did": "LtMgSjtFcyPwenK9SHCyb8","claim": {"account_num": ["8BEaoLf8TBmK4BUyX8WWnA"],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "Pd4fnFtRBcMKRVC2go5w3j","claim_name": "Account Certificate","claim_id": "3675417066","msg_ref_id": "ymy5nth"}"#;
     use utils::constants::{DEFAULT_SERIALIZED_CREDENTIAL,
                            DEFAULT_SERIALIZED_CREDENTIAL_PAYMENT_REQUIRED};
+
+    pub fn create_credential(offer: &str) -> Credential {
+        let mut credential = _credential_create("source_id");
+        let (offer, payment_info) = ::credential::parse_json_offer(offer).unwrap();
+        credential.credential_offer = Some(offer);
+        credential.payment_info = payment_info;
+        credential.state = VcxStateType::VcxStateRequestReceived;
+        credential.my_did = Some(settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap());
+        credential
+    }
 
     fn create_credential_with_price(price:u64) -> Credential{
         let mut cred: Credential = serde_json::from_str(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
@@ -584,7 +589,7 @@ mod tests {
     #[test]
     fn test_credential_defaults() {
         let credential = Credential::default();
-        assert_eq!(credential._build_request("test1","test2").err(), Some(CredentialError::NotReady()));
+        assert_eq!(credential.build_request("test1","test2").err(), Some(CredentialError::NotReady()));
     }
 
     #[test]
@@ -662,51 +667,47 @@ mod tests {
         wallet::delete_wallet(test_name).unwrap();
     }
 
+    #[cfg(feature = "pool_tests")]
     #[cfg(feature = "nullpay")]
     #[test]
     fn test_pay_for_credential_with_sufficient_funds() {
         let test_name = "test_pay_for_credential_with_sufficient_funds";
-        tests::setup_dev_env(test_name);
-        init_payments().unwrap();
-        mint_tokens(None, None).unwrap();
+        tests::setup_ledger_env(test_name);
         let cred = create_credential_with_price(25);
         assert!(cred.is_payment_required());
         cred.submit_payment().unwrap();
         tests::cleanup_dev_env(test_name);
     }
 
+    #[cfg(feature = "pool_tests")]
     #[cfg(feature = "nullpay")]
     #[test]
     fn test_pay_for_non_premium_credential() {
         let test_name = "test_pay_for_non_premium_credential";
-        tests::setup_dev_env(test_name);
-        init_payments().unwrap();
-        mint_tokens(None, None).unwrap();
+        tests::setup_ledger_env(test_name);
         let cred: Credential = serde_json::from_str(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         assert!(cred.payment_info.is_none());
         assert_eq!(cred.submit_payment().err(), Some(CredentialError::NoPaymentInformation()));
         tests::cleanup_dev_env(test_name);
     }
 
+    #[cfg(feature = "pool_tests")]
     #[cfg(feature = "nullpay")]
     #[test]
     fn test_pay_for_credential_with_insufficient_funds() {
         let test_name = "test_pay_for_credential_with_insufficient_funds";
-        tests::setup_dev_env(test_name);
-        init_payments().unwrap();
-        mint_tokens(None, None).unwrap();
-        let cred = create_credential_with_price(1000);
+        tests::setup_ledger_env(test_name);
+        let cred = create_credential_with_price(10000000000);
         assert_eq!(cred.submit_payment().err(), Some(CredentialError::PaymentError(PaymentError::InsufficientFunds())));
         tests::cleanup_dev_env(test_name);
     }
 
+    #[cfg(feature = "pool_tests")]
     #[cfg(feature = "nullpay")]
     #[test]
     fn test_pay_for_credential_with_handle() {
         let test_name = "test_pay_for_credential_with_handle";
-        tests::setup_dev_env(test_name);
-        init_payments().unwrap();
-        mint_tokens(None, None).unwrap();
+        tests::setup_ledger_env(test_name);
         let handle = from_string(DEFAULT_SERIALIZED_CREDENTIAL_PAYMENT_REQUIRED).unwrap();
         submit_payment(handle).unwrap();
         get_payment_information(handle).unwrap();
@@ -725,19 +726,18 @@ mod tests {
         let handle = from_string(::utils::constants::DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         let offer_string = get_credential_offer(handle).unwrap();
         println!("{}", offer_string);
-        let handle = from_string(r#"{"source_id":"test_credential_serialize_deserialize","state":4,"credential_name":null,"credential_request":null,"credential_offer":null,"link_secret_alias":"main","msg_uid":null,"agent_did":null,"agent_vk":null,"my_did":null,"my_vk":null,"their_did":null,"their_vk":null,"cred_id":null,"credential":"something","payment_info":null}"#).unwrap();
+        let handle = from_string(r#"{"source_id":"test_credential_serialize_deserialize","state":4,"credential_name":null,"credential_request":null,"credential_offer":null,"msg_uid":null,"agent_did":null,"agent_vk":null,"my_did":null,"my_vk":null,"their_did":null,"their_vk":null,"cred_id":null,"credential":"something","payment_info":null}"#).unwrap();
         let cred_string = get_credential(handle).unwrap();
         println!("{}", cred_string);
     }
 
+    #[cfg(feature = "pool_tests")]
     #[cfg(feature = "nullpay")]
     #[test]
     fn test_submit_payment_through_credential_request() {
         let test_name = "test_submit_payment_through_credential_request";
-        tests::setup_dev_env(test_name);
+        tests::setup_ledger_env(test_name);
         use utils::libindy::payments::get_wallet_token_info;
-        init_payments().unwrap();
-        mint_tokens(None, None).unwrap();
         let balance = get_wallet_token_info().unwrap().get_balance();
         assert!(balance > 0);
         let mut cred = create_credential_with_price(5);
@@ -746,6 +746,5 @@ mod tests {
         assert_eq!(new_balance, balance);
 
         tests::cleanup_dev_env(test_name);
-
     }
 }

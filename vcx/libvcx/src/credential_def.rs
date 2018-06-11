@@ -221,6 +221,7 @@ pub mod tests {
 
     #[test]
     fn test_get_credential_def_by_send_request_fails() {
+        settings::clear_config();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         assert_eq!(retrieve_credential_def(CRED_DEF_ID), Err(CredDefError::CommonError(error::NO_POOL_OPEN.code_num)));
@@ -231,14 +232,15 @@ pub mod tests {
     fn test_get_credential_def() {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "get_cred_def_test";
-        ::utils::devsetup::tests::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        let (_, _, cred_def_id, cred_def_json) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def();
 
-        let (id, cred_def_json) = retrieve_credential_def(CRED_DEF_ID).unwrap();
+        let (id, r_cred_def_json) = retrieve_credential_def(&cred_def_id).unwrap();
 
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
-        assert_eq!(&id, CRED_DEF_ID);
+        assert_eq!(id, cred_def_id);
         let def1: serde_json::Value = serde_json::from_str(&cred_def_json).unwrap();
-        let def2: serde_json::Value = serde_json::from_str(CRED_DEF_JSON).unwrap();
+        let def2: serde_json::Value = serde_json::from_str(&r_cred_def_json).unwrap();
         assert_eq!(def1, def2);
     }
 
@@ -248,19 +250,15 @@ pub mod tests {
     fn test_create_credential_def_real() {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_create_credential_def_real";
-        ::utils::devsetup::tests::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         ::utils::libindy::payments::tests::token_setup(None, None);
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
-        let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
-        let schema_version: String = format!("{}.{}",rand::thread_rng().gen::<u32>().to_string(),
-                                             rand::thread_rng().gen::<u32>().to_string());
-        let did = r#"2hoqvcwupRTUNkXn6ArYzs"#.to_string();
-        let handle = ::schema::create_new_schema("id", did.clone(), schema_name.clone(), schema_version, data).unwrap();
-        let schema_id = ::schema::get_schema_id(handle).unwrap();
+        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
         let rc = create_new_credentialdef("1".to_string(),
-                                          schema_name,
+                                          wallet_name.to_string(),
                                           did,
                                           schema_id,
                                           "tag_1".to_string(),
@@ -284,15 +282,17 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_credential_def_fails_when_already_created() {
+        ::utils::logger::LoggerUtils::init_test_logging();
         let wallet_name = "a_test_wallet";
-        ::utils::devsetup::tests::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         let wallet_handle = get_wallet_handle();
+        let (schema_id, _, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def();
 
         let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let rc = create_new_credentialdef("1".to_string(),
                                           "name".to_string(),
                                           my_did,
-                                          SCHEMA_ID.to_string(),
+                                          schema_id,
                                           "tag_1".to_string(),
                                           r#"{"support_revocation":false}"#.to_string());
 

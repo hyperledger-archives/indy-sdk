@@ -4,7 +4,6 @@ pub mod signus;
 pub mod wallet;
 pub mod callback;
 pub mod callback_u32;
-//pub mod call;
 pub mod return_types;
 pub mod return_types_u32;
 pub mod pool;
@@ -15,9 +14,6 @@ mod error_codes;
 
 extern crate libc;
 
-use std::ffi::CString;
-use std::ptr::null;
-use self::libc::c_char;
 use settings;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::fmt;
@@ -68,13 +64,6 @@ fn indy_function_eval(err: i32) -> Result<(), i32> {
     }
 }
 
-fn option_cstring_as_ptn(opt: &Option<CString>) -> *const c_char {
-    match opt {
-        &Some(ref s) => s.as_ptr(),
-        &None => null()
-    }
-}
-
 fn check_str(str_opt: Option<String>) -> Result<String, u32>{
     match str_opt {
         Some(str) => Ok(str),
@@ -118,7 +107,7 @@ pub fn init_pool_and_wallet() -> Result<(), u32>  {
         }
     }
 
-    match wallet::open_wallet(&wallet_name, settings::get_wallet_credentials().as_ref().map_or(None, |x| Some(&**x))) {
+    match wallet::open_wallet(&wallet_name) {
         Err(e) => {
             warn!("Init Wallet Error {}.", e);
             return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
@@ -143,12 +132,12 @@ mod tests {
         assert!(indy_function_eval(1).is_err());
     }
 
+    #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_pool_and_wallet() {
-        ::utils::logger::LoggerUtils::init_test_logging();
         let wallet_name = "test_init_pool_and_wallet";
         // make sure there's a valid wallet and pool before trying to use them.
-        ::utils::devsetup::tests::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
         init_pool_and_wallet().unwrap();

@@ -345,17 +345,17 @@ pub mod tests {
         assert_eq!(balance, r#"{"balance":6,"addresses":[{"address":"pay:null:9UFgyjuJxi1i1HD","balance":3,"utxo":[{"input":"pov:null:1","amount":1,"extra":"yqeiv5SisTeUGkw"},{"input":"pov:null:2","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]},{"address":"pay:null:zR3GN9lfbCVtHjp","balance":3,"utxo":[{"input":"pov:null:1","amount":1,"extra":"yqeiv5SisTeUGkw"},{"input":"pov:null:2","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]}]}"#);
     }
 
+    #[cfg(feature = "pool_tests")]
     #[cfg(feature = "nullpay")]
     #[test]
     fn test_get_wallet_token_info_real() {
         let name = "test_get_wallet_info_real";
-        tests::setup_dev_env(name);
-        init_payments().unwrap();
+        tests::setup_ledger_env(name);
         create_address().unwrap();
         create_address().unwrap();
         create_address().unwrap();
         let wallet_info = get_wallet_token_info().unwrap();
-        assert_eq!(wallet_info.balance, 0);
+        assert_eq!(wallet_info.balance, 45);
         tests::cleanup_dev_env(name);
     }
 
@@ -368,12 +368,12 @@ pub mod tests {
         assert!(fees.contains(r#""1":1"#));
     }
 
+    #[cfg(feature = "pool_tests")]
     #[cfg(feature = "nullpay")]
     #[test]
     fn test_get_ledger_fees_real() {
         let name = "test_get_ledger_fees_real";
-        tests::setup_dev_env(name);
-        init_payments().unwrap();
+        tests::setup_ledger_env(name);
         set_ledger_fees(None).unwrap();
         let fees = get_ledger_fees().unwrap();
         assert!(fees.contains(r#""101":2"#));
@@ -460,15 +460,16 @@ pub mod tests {
         assert_eq!(response, SUBMIT_SCHEMA_RESPONSE.to_string());
     }
 
+    #[cfg(feature = "pool_tests")]
     #[cfg(feature = "nullpay")]
     #[test]
     fn test_pay_for_txn_real() {
         let name = "test_pay_for_txn_real";
 
-        tests::setup_dev_env(name);
-        token_setup(None, None);
+        tests::setup_ledger_env(name);
 
-        let create_schema_req = ::utils::constants::SCHEMA_REQ.to_string();
+        let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema();
+        let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
         let start_wallet = get_wallet_token_info().unwrap();
 
         let (price_response, response) = pay_for_txn(&create_schema_req, "101").unwrap();
@@ -482,14 +483,15 @@ pub mod tests {
         assert_eq!(start_wallet.balance - 2, end_wallet.balance);
     }
 
+    #[cfg(feature = "pool_tests")]
     #[cfg(feature = "nullpay")]
     #[test]
     fn test_pay_for_txn_fails_with_insufficient_tokens_in_wallet() {
         let name = "test_pay_for_txn_real";
-        tests::setup_dev_env(name);
-        token_setup(None, None);
+        tests::setup_ledger_env(name);
 
-        let create_schema_req = ::utils::constants::SCHEMA_REQ.to_string();
+        let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema();
+        let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
         let start_wallet = get_wallet_token_info().unwrap();
 
         let rc= pay_for_txn(&create_schema_req, "103");
@@ -498,6 +500,7 @@ pub mod tests {
         assert_eq!(rc, Err(error::INSUFFICIENT_TOKEN_AMOUNT.code_num));
     }
 
+    #[cfg(feature = "pool_tests")]
     #[cfg(feature = "nullpay")]
     #[test]
     fn test_build_payment_request() {
@@ -508,9 +511,7 @@ pub mod tests {
         }
 
         let name = "test_build_payment_request";
-        tests::setup_dev_env(name);
-        init_payments().unwrap();
-        mint_tokens(None, None).unwrap();
+        tests::setup_ledger_env(name);
 
         let price = get_my_balance();
         let address = "pay:null:4jtvRvSl6OTDEMqrUBsqAfCFWeTOF86H";
@@ -536,13 +537,16 @@ pub mod tests {
         tests::cleanup_dev_env(name);
     }
 
+    #[cfg(feature = "pool_tests")]
+    #[cfg(feature = "nullpay")]
+    #[test]
     fn test_submit_fees_with_insufficient_tokens_on_ledger() {
         let name = "test_submit_fees_with_insufficient_tokens_on_ledger";
 
-        tests::setup_dev_env(name);
-        token_setup(None, None);
+        tests::setup_ledger_env(name);
 
-        let req = ::utils::constants::SCHEMA_REQ.to_string();
+        let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema();
+        let req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
         let (remainder, inputs) = inputs(40).unwrap();
         let output = outputs(remainder, None, None).unwrap();
         let start_wallet = get_wallet_token_info().unwrap();
@@ -558,14 +562,15 @@ pub mod tests {
         assert_eq!(rc, Err(error::INSUFFICIENT_TOKEN_AMOUNT.code_num));
     }
 
+    #[cfg(feature = "pool_tests")]
     #[cfg(feature = "nullpay")]
     #[test]
     fn test_pay_for_txn_with_empty_outputs_success() {
         let name = "test_pay_for_txn_with_empty_outputs_success";
-        tests::setup_dev_env(name);
-        token_setup(None, None);
+        tests::setup_ledger_env(name);
 
-        let req = ::utils::constants::SCHEMA_REQ.to_string();
+        let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema();
+        let req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
 
         let (remainder, inputs) = inputs(45).unwrap();
         assert_eq!(remainder, 0);
@@ -592,15 +597,16 @@ pub mod tests {
         assert_eq!(wallet_info.to_string(), r#"{"balance":12345,"addresses":[]}"#.to_string());
     }
 
+    #[cfg(feature = "pool_tests")]
     #[cfg(feature = "nullpay")]
     #[test]
     fn test_custom_mint_tokens() {
         let name = "test_custom_mint_tokens";
-        ::utils::devsetup::tests::setup_dev_env(name);
+        ::utils::devsetup::tests::setup_ledger_env(name);
         token_setup(Some(4), Some(1430000));
 
         let start_wallet = get_wallet_token_info().unwrap();
         ::utils::devsetup::tests::cleanup_dev_env(name);
-        assert_eq!(start_wallet.balance, 5720000);
+        assert_eq!(start_wallet.balance, 5720045);
     }
 }

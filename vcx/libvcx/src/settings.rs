@@ -42,6 +42,7 @@ pub static DEFAULT_URL: &str = "http://127.0.0.1:8080";
 pub static DEFAULT_DID: &str = "2hoqvcwupRTUNkXn6ArYzs";
 pub static DEFAULT_VERKEY: &str = "FuN98eH2eZybECWkofW6A9BKJxxnTatBCopfUiNxo6ZB";
 pub static DEFAULT_ENABLE_TEST_MODE: &str = "false";
+pub static TEST_WALLET_KEY: &str = "key";
 
 lazy_static! {
     static ref SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::new());
@@ -67,7 +68,7 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_SDK_TO_REMOTE_DID.to_string(),DEFAULT_DID.to_string());
     settings.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(),DEFAULT_VERKEY.to_string());
     settings.insert(CONFIG_GENESIS_PATH.to_string(), DEFAULT_GENESIS_PATH.to_string());
-    settings.insert(CONFIG_WALLET_KEY.to_string(),UNINITIALIZED_WALLET_KEY.to_string());
+    settings.insert(CONFIG_WALLET_KEY.to_string(),TEST_WALLET_KEY.to_string());
     settings.insert(CONFIG_LINK_SECRET_ALIAS.to_string(), DEFAULT_LINK_SECRET_ALIAS.to_string());
 
     error::SUCCESS.code_num
@@ -92,6 +93,8 @@ pub fn validate_config(config: &HashMap<String, String>) -> Result<u32, u32> {
     validate_optional_config_val(config.get(CONFIG_INSTITUTION_LOGO_URL), error::INVALID_URL.code_num, Url::parse)?;
     validate_optional_config_val(config.get(CONFIG_POOL_NAME), error::INVALID_POOL_NAME.code_num, validate_pool_name)?;
 
+    validate_optional_config_val(config.get(CONFIG_WALLET_KEY), error::MISSING_WALLET_KEY.code_num, validate_wallet_key)?;
+
     Ok(error::SUCCESS.code_num)
 }
 
@@ -99,6 +102,11 @@ fn validate_pool_name(value: &str) -> Result<u32, u32> {
     for c in value.chars() {
         if !c.is_alphanumeric() && c != '_' { return Err(error::INVALID_POOL_NAME.code_num);}
     }
+    Ok(error::SUCCESS.code_num)
+}
+
+fn validate_wallet_key(key: &str) -> Result<u32, u32> {
+    if key == UNINITIALIZED_WALLET_KEY { return Err(error::MISSING_WALLET_KEY.code_num); }
     Ok(error::SUCCESS.code_num)
 }
 
@@ -173,10 +181,10 @@ pub fn set_config_value(key: &str, value: &str) {
     SETTINGS.write().unwrap().insert(key.to_string(), value.to_string());
 }
 
-pub fn get_wallet_credentials() -> Option<String> {
+pub fn get_wallet_credentials() -> String {
     let key = get_config_value(CONFIG_WALLET_KEY).unwrap_or(UNINITIALIZED_WALLET_KEY.to_string());
 
-    if key == UNINITIALIZED_WALLET_KEY { None } else { Some(format!("{{\"key\":\"{}\"}}", key)) }
+    format!("{{\"key\":\"{}\"}}", key)
 }
 
 pub fn write_config_to_file(config: &str, path_string: &str) -> Result<(), u32> {
@@ -244,7 +252,7 @@ pub mod tests {
             "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
             "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
             "genesis_path":"/tmp/pool1.txn",
-            "wallet_key":"<KEY_IS_NOT_SET>"
+            "wallet_key":"key"
         }).to_string();
         write_config_to_file(&content, config_path).unwrap();
 
@@ -267,7 +275,7 @@ pub mod tests {
             "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
             "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
             "genesis_path":"/tmp/pool1.txn",
-            "wallet_key":"<KEY_IS_NOT_SET>"
+            "wallet_key":"key"
         }).to_string();
         write_config_to_file(&content, config_path).unwrap();
 
@@ -289,7 +297,7 @@ pub mod tests {
             "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
             "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
             "genesis_path":"/tmp/pool1.txn",
-            "wallet_key":"<KEY_IS_NOT_SET>"
+            "wallet_key":"key"
         }).to_string();
 
         assert_eq!(process_config_string(&content), Ok(error::SUCCESS.code_num));
@@ -310,7 +318,7 @@ pub mod tests {
             "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
             "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
             "genesis_path":"/tmp/pool1.txn",
-            "wallet_key":"<KEY_IS_NOT_SET>",
+            "wallet_key":"key",
             "institution_did": "44x8p4HubxzUK1dwxcc5FU",
             "institution_verkey": "444MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
         }).to_string();
@@ -412,7 +420,7 @@ pub mod tests {
             "wallet_name":"test_clear_config",
             "institution_name" : "evernym enterprise",
             "genesis_path":"/tmp/pool1.txn",
-            "wallet_key":"<KEY_IS_NOT_SET>"
+            "wallet_key":"key"
         }).to_string();
 
         assert_eq!(process_config_string(&content), Ok(error::SUCCESS.code_num));
@@ -422,7 +430,7 @@ pub mod tests {
         assert_eq!(get_config_value("wallet_name").unwrap(), "test_clear_config".to_string());
         assert_eq!(get_config_value("institution_name").unwrap(), "evernym enterprise".to_string());
         assert_eq!(get_config_value("genesis_path").unwrap(), "/tmp/pool1.txn".to_string());
-        assert_eq!(get_config_value("wallet_key").unwrap(), "<KEY_IS_NOT_SET>".to_string());
+        assert_eq!(get_config_value("wallet_key").unwrap(), "key".to_string());
 
         clear_config();
 
