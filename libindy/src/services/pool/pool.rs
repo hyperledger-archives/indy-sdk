@@ -23,6 +23,7 @@ use commands::Command;
 use commands::CommandExecutor;
 use commands::pool::PoolCommand;
 use utils::crypto::box_::CryptoBox;
+use services::ledger::merkletree::merkletree::MerkleTree;
 
 
 trait PoolState {
@@ -48,6 +49,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolState for GettingCatchupTargetState
 struct ActiveState<T: Networker, R: RequestHandler<T>> {
     networker: Rc<RefCell<T>>,
     request_handlers: HashMap<String, R>,
+    nodes: HashMap<String, Option<VerKey>>,
 }
 
 impl<T: Networker, R: RequestHandler<T>> PoolState for ActiveState<T, R> {}
@@ -96,6 +98,7 @@ impl<T: Networker> PoolSM<InitializationState<T>> {
 
 impl<T: Networker, R: RequestHandler<T>> From<(R, i32, PoolSM<InitializationState<T>>)> for PoolSM<GettingCatchupTargetState<T, R>> {
     fn from((request_handler, cmd_id, pool): (R, i32, PoolSM<InitializationState<T>>)) -> PoolSM<GettingCatchupTargetState<T, R>> {
+        trace!("PoolSM: from init to getting catchup target");
         //TODO: fill it up!
         PoolSM {
             pool_name: pool.pool_name,
@@ -111,6 +114,7 @@ impl<T: Networker, R: RequestHandler<T>> From<(R, i32, PoolSM<InitializationStat
 
 impl<T: Networker> From<PoolSM<InitializationState<T>>> for PoolSM<ClosedState> {
     fn from(pool: PoolSM<InitializationState<T>>) -> PoolSM<ClosedState> {
+        trace!("PoolSM: from init to closed");
         PoolSM {
             pool_name: pool.pool_name,
             id: pool.id,
@@ -119,14 +123,16 @@ impl<T: Networker> From<PoolSM<InitializationState<T>>> for PoolSM<ClosedState> 
     }
 }
 
-impl<T: Networker, R: RequestHandler<T>> From<PoolSM<InitializationState<T>>> for PoolSM<ActiveState< T, R>> {
-    fn from(val: PoolSM<InitializationState<T>>) -> PoolSM<ActiveState<T, R>> {
+impl<T: Networker, R: RequestHandler<T>> From<(PoolSM<InitializationState<T>>, HashMap<String, Option<VerKey>>)> for PoolSM<ActiveState<T, R>> {
+    fn from((val, nodes): (PoolSM<InitializationState<T>>, HashMap<String, Option<VerKey>>)) -> PoolSM<ActiveState<T, R>> {
+        trace!("PoolSM: from init to active");
         PoolSM {
             pool_name: val.pool_name,
             id: val.id,
             state: ActiveState {
                 networker: val.state.networker,
                 request_handlers: HashMap::new(),
+                nodes,
             }
         }
     }
@@ -136,6 +142,7 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<InitializationState<T>>> fo
 
 impl<T: Networker, R: RequestHandler<T>> From<(R, PoolSM<GettingCatchupTargetState<T, R>>)> for PoolSM<SyncCatchupState<T, R>> {
     fn from((request_handler, sm): (R, PoolSM<GettingCatchupTargetState<T, R>>)) -> Self {
+        trace!("PoolSM: from getting catchup target to sync catchup");
         PoolSM {
             pool_name: sm.pool_name,
             id: sm.id,
@@ -148,9 +155,9 @@ impl<T: Networker, R: RequestHandler<T>> From<(R, PoolSM<GettingCatchupTargetSta
     }
 }
 
-impl<T: Networker, R: RequestHandler<T>> From<PoolSM<GettingCatchupTargetState<T, R>>> for PoolSM<ActiveState<T, R>> {
-    fn from(sm: PoolSM<GettingCatchupTargetState<T, R>>) -> Self {
-        trace!("sending ack for catchup from target");
+impl<T: Networker, R: RequestHandler<T>> From<(PoolSM<GettingCatchupTargetState<T, R>>, HashMap<String, Option<VerKey>>)> for PoolSM<ActiveState<T, R>> {
+    fn from((sm, nodes): (PoolSM<GettingCatchupTargetState<T, R>>, HashMap<String, Option<VerKey>>)) -> Self {
+        trace!("PoolSM: from getting catchup target to active");
         CommandExecutor::instance().send(
             Command::Pool(
                 PoolCommand::OpenAck(sm.state.cmd_id.clone(), sm.id.clone(), Ok(())))
@@ -161,6 +168,7 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<GettingCatchupTargetState<T
             state: ActiveState {
                 networker: sm.state.networker,
                 request_handlers: HashMap::new(),
+                nodes,
             }
         }
     }
@@ -168,6 +176,7 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<GettingCatchupTargetState<T
 
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<GettingCatchupTargetState<T, R>>> for PoolSM<TerminatedState<T>> {
     fn from(sm: PoolSM<GettingCatchupTargetState<T, R>>) -> Self {
+        trace!("PoolSM: from getting catchup target to terminated");
         PoolSM {
             pool_name: sm.pool_name,
             id: sm.id,
@@ -180,6 +189,7 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<GettingCatchupTargetState<T
 
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<GettingCatchupTargetState<T, R>>> for PoolSM<ClosedState> {
     fn from(pool: PoolSM<GettingCatchupTargetState<T, R>>) -> Self {
+        trace!("PoolSM: from getting catchup target to closed");
         PoolSM {
             pool_name: pool.pool_name,
             id: pool.id,
@@ -192,8 +202,9 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<GettingCatchupTargetState<T
 
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<ActiveState<T, R>>> for PoolSM<GettingCatchupTargetState<T, R>> {
     fn from(pool: PoolSM<ActiveState<T, R>>) -> Self {
+        trace!("PoolSM: from active to getting catchup target");
         //TODO: fill it up!
-        let mut request_handler = R::new(pool.state.networker.clone(), 0, &vec![], HashMap::new(), None, &pool.pool_name);
+        let mut request_handler = R::new(pool.state.networker.clone(), 0, &vec![], &pool.state.nodes, None, &pool.pool_name);
         let ls = LedgerStatus {
             txnSeqNo: 0,
             merkleRoot: String::new(),
@@ -213,6 +224,7 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<ActiveState<T, R>>> for Poo
 
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<ActiveState<T, R>>> for PoolSM<TerminatedState<T>> {
     fn from(pool: PoolSM<ActiveState<T, R>>) -> Self {
+        trace!("PoolSM: from active to terminated");
         PoolSM {
             pool_name: pool.pool_name,
             id: pool.id,
@@ -223,6 +235,7 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<ActiveState<T, R>>> for Poo
 
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<ActiveState<T, R>>> for PoolSM<ClosedState> {
     fn from(pool: PoolSM<ActiveState<T, R>>) -> Self {
+        trace!("PoolSM: from active to closed");
         PoolSM {
             pool_name: pool.pool_name,
             id: pool.id,
@@ -233,9 +246,9 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<ActiveState<T, R>>> for Poo
 
 // transitions from SyncCatchup
 
-impl<T: Networker, R: RequestHandler<T>> From<PoolSM<SyncCatchupState<T, R>>> for PoolSM<ActiveState<T, R>> {
-    fn from(pool: PoolSM<SyncCatchupState<T, R>>) -> Self {
-        trace!("sending ack for catchup from sync");
+impl<T: Networker, R: RequestHandler<T>> From<(PoolSM<SyncCatchupState<T, R>>, HashMap<String, Option<VerKey>>)> for PoolSM<ActiveState<T, R>> {
+    fn from((pool, nodes): (PoolSM<SyncCatchupState<T, R>>, HashMap<String, Option<VerKey>>)) -> Self {
+        trace!("PoolSM: from sync catchup to active");
         CommandExecutor::instance().send(
             Command::Pool(
                 PoolCommand::OpenAck(pool.state.cmd_id.clone(), pool.id.clone(), Ok(())))
@@ -246,6 +259,7 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<SyncCatchupState<T, R>>> fo
             state: ActiveState {
                 networker: pool.state.networker,
                 request_handlers: HashMap::new(),
+                nodes,
             }
         }
     }
@@ -253,6 +267,7 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<SyncCatchupState<T, R>>> fo
 
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<SyncCatchupState<T, R>>> for PoolSM<TerminatedState<T>> {
     fn from(pool: PoolSM<SyncCatchupState<T, R>>) -> Self {
+        trace!("PoolSM: from sync catchup to terminated");
         PoolSM {
             pool_name: pool.pool_name,
             id: pool.id,
@@ -263,6 +278,7 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<SyncCatchupState<T, R>>> fo
 
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<SyncCatchupState<T, R>>> for PoolSM<ClosedState> {
     fn from(pool: PoolSM<SyncCatchupState<T, R>>) -> Self {
+        trace!("PoolSM: from sync catchup to closed");
         PoolSM {
             pool_name: pool.pool_name,
             id: pool.id,
@@ -275,8 +291,9 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<SyncCatchupState<T, R>>> fo
 
 impl<T: Networker, R: RequestHandler<T>> From<PoolSM<TerminatedState<T>>> for PoolSM<GettingCatchupTargetState<T, R>> {
     fn from(pool: PoolSM<TerminatedState<T>>) -> Self {
+        trace!("PoolSM: from terminated to getting catchup target");
         //TODO: fill it up
-        let mut request_handler = R::new(pool.state.networker.clone(), 0, &vec![], HashMap::new(), None, &pool.pool_name);
+        let mut request_handler = R::new(pool.state.networker.clone(), 0, &vec![], &HashMap::new(), None, &pool.pool_name);
         let ls = LedgerStatus {
             txnSeqNo: 0,
             merkleRoot: String::new(),
@@ -295,6 +312,7 @@ impl<T: Networker, R: RequestHandler<T>> From<PoolSM<TerminatedState<T>>> for Po
 
 impl<T: Networker> From<PoolSM<TerminatedState<T>>> for PoolSM<ClosedState> {
     fn from(pool: PoolSM<TerminatedState<T>>) -> Self {
+        trace!("PoolSM: from terminated to closed");
         PoolSM {
             pool_name: pool.pool_name,
             id: pool.id,
@@ -320,51 +338,13 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                     //TODO: check cache freshness
                     let fresh = false;
                     if fresh {
-                        PoolWrapper::Active(pool.into())
+//                        PoolWrapper::Active(pool.into())
+                        unimplemented!()
                     } else {
                         let merkle = merkle_tree_factory::create(&pool.pool_name).expect("FIXME");
-                        let nodes = merkle_tree_factory::build_node_state(&merkle).expect("FIXME");
-
-                        let (nodes, remotes) = nodes.iter().map( |(node_alias, txn)| {
-                            let node_verkey = txn.txn.data.dest.as_str().from_base58()
-                                .map_err(|err| { CommonError::InvalidStructure(format!("Invalid field dest in genesis transaction: {:?}", err)) })?;
-
-                            if txn.txn.data.data.services.is_none() || !txn.txn.data.data.services.as_ref().unwrap().contains(&"VALIDATOR".to_string()) {
-                                return Err(PoolError::CommonError(CommonError::InvalidState("Node is not a Validator".to_string())));
-                            }
-
-                            let address = match (&txn.txn.data.data.client_ip, &txn.txn.data.data.client_port) {
-                                (&Some(ref client_ip), &Some(ref client_port)) => format!("tcp://{}:{}", client_ip, client_port),
-                                _ => return Err(PoolError::CommonError(CommonError::InvalidState("Client address not found".to_string())))
-                            };
-
-                            let remote = RemoteNode {
-                                name: node_alias.clone(),
-                                public_key: CryptoBox::vk_to_curve25519(&node_verkey)?,
-                                zaddr: address,
-                                is_blacklisted: false,
-                            };
-                            let verkey: Option<VerKey> = match txn.txn.data.data.blskey {
-                                Some(ref blskey) => {
-                                    let key = blskey.as_str().from_base58()
-                                        .map_err(|err| { CommonError::InvalidStructure(format!("Invalid field blskey in genesis transaction: {:?}", err)) })?;
-                                    Some(VerKey::from_bytes(key.as_slice())
-                                        .map_err(|err| { CommonError::InvalidStructure(format!("Invalid field blskey in genesis transaction: {:?}", err)) })?)
-                                }
-                                None => None
-                            };
-                            Ok(((node_alias, verkey), remote))
-                        }
-                        ).fold(
-                            (HashMap::new(), vec![]), |(mut map, mut vec), res| {
-                                let ((alias, verkey), remote) = res.expect("FIXME");
-                                map.insert(alias.clone(), verkey);
-                                vec.push(remote);
-                                (map, vec)
-                            }
-                        );
+                        let (nodes, remotes) = get_nodes_and_remotes(&merkle);
                         pool.state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
-                        let mut request_handler = R::new(pool.state.networker.clone(), get_f(nodes.len()), &vec![], nodes, None, &pool.pool_name);
+                        let mut request_handler = R::new(pool.state.networker.clone(), get_f(nodes.len()), &vec![], &nodes, None, &pool.pool_name);
                         let ls = LedgerStatus {
                             txnSeqNo: merkle.count(),
                             merkleRoot: merkle.root_hash().as_slice().to_base58(),
@@ -385,11 +365,17 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
                     PoolEvent::CatchupTargetNotFound(err) => PoolWrapper::Terminated(pool.into()),
                     PoolEvent::CatchupTargetFound(target_mt_root, target_mt_size, merkle_tree) => {
-                        let mut request_handler = R::new(pool.state.networker.clone(), 0, &vec![], HashMap::new(), None, &pool.pool_name);
+                        let (nodes, remotes) = get_nodes_and_remotes(&merkle_tree);
+                        pool.state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
+                        let mut request_handler = R::new(pool.state.networker.clone(), get_f(nodes.len()), &vec![], &nodes, None, &pool.pool_name);
                         request_handler.process_event(Some(RequestEvent::CatchupReq(merkle_tree, target_mt_size, target_mt_root)));
                         PoolWrapper::SyncCatchup((request_handler, pool).into())
                     },
-                    PoolEvent::Synced(_) => PoolWrapper::Active(pool.into()),
+                    PoolEvent::Synced(merkle) => {
+                        let (nodes, remotes) = get_nodes_and_remotes(&merkle);
+                        pool.state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
+                        PoolWrapper::Active((pool, nodes).into())
+                    },
                     _ => PoolWrapper::GettingCatchupTarget(pool)
                 }
             }
@@ -402,34 +388,35 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
             }
             PoolWrapper::Closed(pool) => PoolWrapper::Closed(pool),
             PoolWrapper::Active(mut pool) => {
-                match pe {
+                match pe.clone() {
                     PoolEvent::PoolOutdated => PoolWrapper::Terminated(pool.into()),
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
                     PoolEvent::Refresh => PoolWrapper::GettingCatchupTarget(pool.into()),
-                    PoolEvent::SendRequest(_, _) => {
+                    PoolEvent::SendRequest(cmd_id, req) => {
+                        trace!("received request to send");
                         let re: Option<RequestEvent> = pe.into();
-                        //TODO: fill it up!
-                        let mut request_handler = R::new(pool.state.networker.clone(), 0, &vec![], HashMap::new(), None, &pool.pool_name);
+                        let req_id = re.clone().map(|r| r.get_req_id()).expect("FIXME");
+                        trace!("send_req_id: {:?}", req_id);
+                        let mut request_handler = R::new(pool.state.networker.clone(), get_f(pool.state.nodes.len()), &vec![cmd_id], &pool.state.nodes, None, &pool.pool_name);
                         request_handler.process_event(re);
-                        //TODO: parse req_id
-                        let req_id = "";
                         pool.state.request_handlers.insert(req_id.to_string(), request_handler);
-
                         PoolWrapper::Active(pool)
                     }
-                    PoolEvent::NodeReply(_, _) => {
-                        //TODO: redirect reply to needed request handler
-                        let req_id = "";
-                        let remove = if let Some(rh) = pool.state.request_handlers.get_mut(req_id) {
-                            rh.process_event(pe.into());
+                    PoolEvent::NodeReply(reply, node) => {
+                        trace!("received reply from node {:?}: {:?}", node, reply);
+                        let re: Option<RequestEvent> = pe.into();
+                        trace!("re: {:?}", re);
+                        let req_id = re.clone().map(|r| r.get_req_id()).expect("FIXME");
+                        trace!("rep_req_id: {:?}", req_id);
+                        let remove = if let Some(rh) = pool.state.request_handlers.get_mut(&req_id) {
+                            rh.process_event(re);
                             rh.is_terminal()
                         } else {
                             false
                         };
                         if remove {
-                            pool.state.request_handlers.remove(req_id);
+                            pool.state.request_handlers.remove(&req_id);
                         }
-                        //TODO: think about return!!!
                         PoolWrapper::Active(pool)
                     }
                     _ => PoolWrapper::Active(pool)
@@ -440,7 +427,11 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                 match pe {
                     PoolEvent::Close => PoolWrapper::Closed(pool.into()),
                     PoolEvent::NodesBlacklisted => PoolWrapper::Terminated(pool.into()),
-                    PoolEvent::Synced(_) => PoolWrapper::Active(pool.into()),
+                    PoolEvent::Synced(merkle) => {
+                        let (nodes, remotes) = get_nodes_and_remotes(&merkle);
+                        pool.state.networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
+                        PoolWrapper::Active((pool, nodes).into())
+                    },
                     _ => PoolWrapper::SyncCatchup(pool)
                 }
             }
@@ -525,13 +516,15 @@ impl<S: Networker, R: RequestHandler<S>> PoolThread<S, R> {
     }
 
     fn _loop(&mut self) -> bool {
-        let pe = self.events.pop_front();
-        trace!("received pool event: {:?}", pe);
-        match pe {
-            Some(pe) => {
-                self.pool_wrapper = self.pool_wrapper.take().map(|w| w.handle_event(pe));
+        while !self.events.is_empty() {
+            let pe = self.events.pop_front();
+            trace!("received pool event: {:?}", pe);
+            match pe {
+                Some(pe) => {
+                    self.pool_wrapper = self.pool_wrapper.take().map(|w| w.handle_event(pe));
+                }
+                _ => ()
             }
-            _ => ()
         }
         self.pool_wrapper.as_ref().map(|w| w.is_terminal()).unwrap_or(true)
     }
@@ -583,4 +576,48 @@ fn get_f(cnt: usize) -> usize {
         return 0;
     }
     (cnt - 1) / 3
+}
+
+fn get_nodes_and_remotes(merkle: &MerkleTree) -> (HashMap<String, Option<VerKey>>, Vec<RemoteNode>) {
+    let nodes = merkle_tree_factory::build_node_state(merkle).expect("FIXME");
+
+    nodes.iter().map( |(_, txn)| {
+        let node_alias = txn.txn.data.data.alias.clone();
+        let node_verkey = txn.txn.data.dest.as_str().from_base58()
+            .map_err(|err| { CommonError::InvalidStructure(format!("Invalid field dest in genesis transaction: {:?}", err)) })?;
+
+        if txn.txn.data.data.services.is_none() || !txn.txn.data.data.services.as_ref().unwrap().contains(&"VALIDATOR".to_string()) {
+            return Err(PoolError::CommonError(CommonError::InvalidState("Node is not a Validator".to_string())));
+        }
+
+        let address = match (&txn.txn.data.data.client_ip, &txn.txn.data.data.client_port) {
+            (&Some(ref client_ip), &Some(ref client_port)) => format!("tcp://{}:{}", client_ip, client_port),
+            _ => return Err(PoolError::CommonError(CommonError::InvalidState("Client address not found".to_string())))
+        };
+
+        let remote = RemoteNode {
+            name: node_alias.clone(),
+            public_key: CryptoBox::vk_to_curve25519(&node_verkey)?,
+            zaddr: address,
+            is_blacklisted: false,
+        };
+        let verkey: Option<VerKey> = match txn.txn.data.data.blskey {
+            Some(ref blskey) => {
+                let key = blskey.as_str().from_base58()
+                    .map_err(|err| { CommonError::InvalidStructure(format!("Invalid field blskey in genesis transaction: {:?}", err)) })?;
+                Some(VerKey::from_bytes(key.as_slice())
+                    .map_err(|err| { CommonError::InvalidStructure(format!("Invalid field blskey in genesis transaction: {:?}", err)) })?)
+            }
+            None => None
+        };
+        Ok(((node_alias, verkey), remote))
+    }
+    ).fold(
+        (HashMap::new(), vec![]), |(mut map, mut vec), res| {
+            let ((alias, verkey), remote) = res.expect("FIXME");
+            map.insert(alias.clone(), verkey);
+            vec.push(remote);
+            (map, vec)
+        }
+    )
 }

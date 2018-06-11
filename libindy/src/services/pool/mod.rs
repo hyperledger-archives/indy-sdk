@@ -182,9 +182,13 @@ impl PoolService {
     pub fn send_tx(&self, handle: i32, json: &str) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
         //TODO: send command to ZMQ socket
-//        self.open_pools.try_borrow().map_err(CommonError::from)?
-//            .get(&handle).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?
-//            .send_tx(cmd_id, json)?;
+        self.open_pools.try_borrow().map_err(CommonError::from)?
+            .get(&handle)
+            .map(|&(_, ref socket)| {
+                let mut buf = [0u8; 4];
+                LittleEndian::write_i32(&mut buf, cmd_id);
+                socket.send_multipart(&[json.as_bytes(), &buf], zmq::DONTWAIT).expect("FIXME");
+            }).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?;
         Ok(cmd_id)
     }
 

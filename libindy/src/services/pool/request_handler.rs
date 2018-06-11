@@ -107,9 +107,22 @@ impl<T: Networker> RequestSM<StartState<T>> {
     pub fn new(networker: Rc<RefCell<T>>,
                f: usize,
                cmd_ids: &Vec<i32>,
-               nodes: HashMap<String, Option<VerKey>>,
+               nodes_: &HashMap<String, Option<VerKey>>,
                generator: Option<Generator>,
                pool_name: &str) -> Self {
+        let mut nodes = HashMap::new();
+        nodes_.clone().into_iter().for_each(|(key, value)| {
+            let value = match value {
+                &Some(ref val) => {
+                    match VerKey::from_bytes(val.as_bytes()) {
+                        Ok(vk) => Some(vk),
+                        Err(_) => None
+                    }
+                },
+                &None => None
+            };
+            nodes.insert(key.clone(), value);
+        });
         RequestSM {
             f,
             cmd_ids: cmd_ids.clone(),
@@ -428,6 +441,7 @@ impl<T: Networker> RequestSMWrapper<T> {
             RequestSMWrapper::Single(mut request) => {
                 match re {
                     RequestEvent::Reply(rep, raw_msg, node_alias, req_id) => {
+                        trace!("reply on single request");
                         if let Ok((result, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
                             let hashable = HashableValue { inner: result_without_proof };
 
@@ -443,9 +457,11 @@ impl<T: Networker> RequestSMWrapper<T> {
                             }
 
                             if cnt > request.f || _check_state_proof(&result, request.f, &request.generator, &request.nodes, &raw_msg) {
+                                trace!("ids to send: {:?}", request.cmd_ids);
                                 _send_ok_replies(&request.cmd_ids, &raw_msg);
                                 (RequestSMWrapper::Finish(request.into()), None)
                             } else {
+                                trace!("NEED TO RESEND");
                                 //TODO: resend to next node
                                 (RequestSMWrapper::Single(request), None)
                             }
@@ -565,7 +581,7 @@ impl<T: Networker> RequestSMWrapper<T> {
 }
 
 pub trait RequestHandler<T: Networker> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: HashMap<String, Option<VerKey>>, generator: Option<Generator>, pool_name: &str) -> Self;
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: &HashMap<String, Option<VerKey>>, generator: Option<Generator>, pool_name: &str) -> Self;
     fn process_event(&mut self, ore: Option<RequestEvent>) -> Option<PoolEvent>;
     fn is_terminal(&self) -> bool;
 }
@@ -575,7 +591,7 @@ pub struct RequestHandlerImpl<T: Networker> {
 }
 
 impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: HashMap<String, Option<VerKey>>, generator: Option<Generator>, pool_name: &str) -> Self {
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: &HashMap<String, Option<VerKey>>, generator: Option<Generator>, pool_name: &str) -> Self {
         RequestHandlerImpl {
             request_wrapper: Some(RequestSMWrapper::Start(RequestSM::new(networker, f, cmd_ids, nodes, generator, pool_name))),
         }

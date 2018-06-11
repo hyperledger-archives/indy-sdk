@@ -62,7 +62,7 @@ pub enum PoolEvent {
     Timeout
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum RequestEvent {
     LedgerStatus(
         LedgerStatus,
@@ -122,7 +122,16 @@ pub enum RequestEvent {
 
 impl RequestEvent {
     pub fn get_req_id(&self) -> String {
-        unimplemented!()
+        match self {
+            &RequestEvent::CustomSingleRequest(_, Ok(ref id)) => id.to_string(),
+            &RequestEvent::CustomConsensusRequest(_, Ok(ref id)) => id.to_string(),
+            &RequestEvent::CustomFullRequest(_, Ok(ref id)) => id.to_string(),
+            &RequestEvent::Reply(_, _, _, ref id) => id.to_string(),
+            &RequestEvent::ReqACK(_, _, _, ref id) => id.to_string(),
+            &RequestEvent::ReqNACK(_, _, _, ref id) => id.to_string(),
+            &RequestEvent::Reject(_, _, _, ref id) => id.to_string(),
+            _ => "".to_string()
+        }
     }
 }
 

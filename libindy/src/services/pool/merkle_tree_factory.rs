@@ -57,7 +57,12 @@ fn _from_cache(file_name: &PathBuf) -> Result<MerkleTree, PoolError> {
 
     let mut f = fs::File::open(file_name).map_err(map_err_trace!())?;
 
+    trace!("start recover from cache");
     while let Ok(bytes) = f.read_u64::<LittleEndian>().map_err(CommonError::IOError).map_err(PoolError::from) {
+        if bytes == 0 {
+            continue;
+        }
+        trace!("bytes: {:?}", bytes);
         let mut buf = vec![0; bytes as usize];
         f.read(buf.as_mut()).map_err(map_err_trace!())?;
         mt.append(buf.to_vec()).map_err(map_err_trace!())?;
