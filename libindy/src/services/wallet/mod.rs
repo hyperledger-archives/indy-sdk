@@ -239,7 +239,11 @@ impl WalletService {
     pub fn delete_wallet(&self, name: &str, credentials: &str) -> Result<(), WalletError> {
         trace!("delete_wallet >>> name: {:?}, credentials: {:?}", name, credentials);
 
-        let descriptor_json = _read_file(_wallet_descriptor_path(name))?; // FIXME: Better error!)?;
+        let wallet_descriptor_path = _wallet_descriptor_path(name);
+        if !wallet_descriptor_path.exists() {
+            return Err(WalletError::NotFound("Wallet descriptor path does not exist.".to_string()));
+        }
+        let descriptor_json = _read_file(wallet_descriptor_path)?; // FIXME: Better error!)?;
         let descriptor: WalletDescriptor = WalletDescriptor::from_json(&descriptor_json)?;
 
         let storage_types = self.storage_types.borrow();
@@ -271,7 +275,11 @@ impl WalletService {
     pub fn open_wallet(&self, name: &str, runtime_config: Option<&str>, credentials: &str) -> Result<i32, WalletError> {
         trace!("open_wallet >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
 
-        let descriptor_json = _read_file(_wallet_descriptor_path(name))?; // FIXME: Better error!)?;
+        let wallet_descriptor_path = _wallet_descriptor_path(name);
+        if !wallet_descriptor_path.exists() {
+            return Err(WalletError::NotFound("Wallet descriptor path does not exist.".to_string()));
+        }
+        let descriptor_json = _read_file(wallet_descriptor_path)?;
         let descriptor: WalletDescriptor = WalletDescriptor::from_json(&descriptor_json)?;
 
         let storage_types = self.storage_types.borrow();
@@ -518,7 +526,7 @@ impl WalletService {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct WalletRecord {
     #[serde(rename = "id")]
     name: String,
@@ -725,7 +733,7 @@ fn _read_config(name: &str) -> Result<(String, WalletConfig), WalletError> {
     let config_path = _wallet_config_path(name);
     let config_json = _read_file(config_path)?;
     let config = serde_json::from_str::<WalletConfig>(&config_json)
-        .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize Storage Config")))?;
+        .map_err(|_| CommonError::InvalidState("Cannot deserialize Storage Config".to_string()))?;
     Ok((config_json, config))
 }
 
@@ -909,6 +917,15 @@ mod tests {
         let wallet_service = WalletService::new();
         wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
         wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_open_unknown_wallet() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        let res = wallet_service.open_wallet("test_wallet_unknown", None, &_credentials());
+        assert_match!(Err(WalletError::NotFound(_)), res);
     }
 
     #[test]

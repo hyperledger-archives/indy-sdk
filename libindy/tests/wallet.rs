@@ -318,7 +318,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let res = WalletUtils::delete_wallet(WALLET, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             TestUtils::cleanup_storage();
         }
@@ -330,7 +330,7 @@ mod medium_cases {
             WalletUtils::create_wallet(POOL, WALLET, None, None, None).unwrap();
             WalletUtils::delete_wallet(WALLET, None).unwrap();
             let res = WalletUtils::delete_wallet(WALLET, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             TestUtils::cleanup_storage();
         }
@@ -355,7 +355,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let res = WalletUtils::open_wallet(WALLET, None, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             TestUtils::cleanup_storage();
         }
