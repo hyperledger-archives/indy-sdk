@@ -9,6 +9,7 @@ Indy-SDK Developer Walkthrough #1, Python Edition
 
 Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../../prerequisites.md).
 
+Ensure you have the 64-bit version of Python installed, as the 32-bit version may have problems loading the Indy .dll files.
 
 ## Steps
 

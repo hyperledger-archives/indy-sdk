@@ -16,7 +16,7 @@ pub enum PoolError {
     Terminate,
     Timeout,
     AlreadyExists(String),
-    CommonError(CommonError)
+    CommonError(CommonError),
 }
 
 impl fmt::Display for PoolError {
@@ -27,7 +27,7 @@ impl fmt::Display for PoolError {
             PoolError::Terminate => write!(f, "Pool work terminated"),
             PoolError::Timeout => write!(f, "Timeout"),
             PoolError::AlreadyExists(ref description) => write!(f, "Pool ledger config already exists {}", description),
-            PoolError::CommonError(ref err) => err.fmt(f)
+            PoolError::CommonError(ref err) => err.fmt(f),
         }
     }
 }
@@ -40,7 +40,7 @@ impl error::Error for PoolError {
             PoolError::Terminate => "Pool work terminated",
             PoolError::Timeout => "Timeout",
             PoolError::AlreadyExists(ref description) => description,
-            PoolError::CommonError(ref err) => err.description()
+            PoolError::CommonError(ref err) => err.description(),
         }
     }
 
@@ -49,7 +49,7 @@ impl error::Error for PoolError {
             PoolError::NotCreated(_) | PoolError::InvalidHandle(_) => None,
             PoolError::Terminate | PoolError::Timeout => None,
             PoolError::AlreadyExists(_) => None,
-            PoolError::CommonError(ref err) => Some(err)
+            PoolError::CommonError(ref err) => Some(err),
         }
     }
 }

@@ -9,6 +9,7 @@ use utils::crypto::hash::Hash;
 use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 use utils::byte_array::_clone_into_array;
+use services::wallet::encryption::{decrypt_merged, decrypt, encrypt_as_not_searchable};
 
 use errors::common::CommonError;
 
@@ -134,7 +135,7 @@ pub (super) fn export(wallet: &Wallet, writer: Box<Write>, passphrase: &str, ver
         let mut decrypt_index = 0;
         while decrypt_index + 1024 <= buffer.len() {
             let chunk = &buffer[decrypt_index .. decrypt_index+1024];
-            let encrypted_chunk = ChaCha20Poly1305IETF::encrypt(chunk, &key, &nonce);
+            let (encrypted_chunk, _) = ChaCha20Poly1305IETF::encrypt(chunk, &key, Some(&nonce));
             ChaCha20Poly1305IETF::increment_nonce(&mut nonce);
             writer.write_all(&encrypted_chunk)?;
             decrypt_index += 1024;
@@ -150,7 +151,7 @@ pub (super) fn export(wallet: &Wallet, writer: Box<Write>, passphrase: &str, ver
     }
 
     if buffer.len() > 0 {
-        let last_encrypted_chunk = ChaCha20Poly1305IETF::encrypt(&buffer, &key, &nonce);
+        let (last_encrypted_chunk, _) = ChaCha20Poly1305IETF::encrypt(&buffer, &key, Some(&nonce));
         writer.write_all(&last_encrypted_chunk)?;
     }
 
@@ -211,7 +212,7 @@ pub (super) fn import(wallet: &Wallet, reader: Box<Read>, passphrase: &str) -> R
             continue;
         }
 
-        decrypted_buffer.extend(&ChaCha20Poly1305IETF::decrypt(&encrypted_chunk[0..chunk_read_count], &key, &nonce)?);
+        decrypted_buffer.extend(&decrypt(&encrypted_chunk[0..chunk_read_count], &key, &nonce)?);
         ChaCha20Poly1305IETF::increment_nonce(&mut nonce);
 
         add_records_from_buffer(wallet, &mut decrypted_buffer)?;
@@ -368,7 +369,6 @@ mod tests {
     use std::io::{Read, BufReader};
     use std::env;
     use std::collections::HashMap;
-    use std::time;
     extern crate rand;
     use self::rand::*;
     use serde_json;
@@ -376,6 +376,7 @@ mod tests {
     use services::wallet::storage::WalletStorageType;
     use services::wallet::storage::default::SQLiteStorageType;
     use services::wallet::wallet::{Keys, Wallet};
+    use services::wallet::encryption::{decrypt_merged, decrypt, encrypt_as_not_searchable};
     use super::*;
 
 
@@ -408,11 +409,11 @@ mod tests {
         let storage = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
 
         let keys = Keys::new(
-            ChaCha20Poly1305IETF::decrypt_merged(
+            decrypt_merged(
                 &storage.get_storage_metadata().unwrap(),
                 &master_key
             ).unwrap()
-        );
+        ).unwrap();
 
         Wallet::new(name, pool_name, storage, keys)
     }
@@ -678,7 +679,7 @@ mod tests {
     #[test]
     fn export_empty_wallet() {
         _cleanup();
-        let mut wallet = _create_wallet();
+        let wallet = _create_wallet();
         let export_writer = _create_export_file();
         let key = "key";
 
@@ -707,7 +708,7 @@ mod tests {
         tags2.insert("tag_name_22".to_string(), "tag_value_22".to_string());
         tags2.insert("~tag_name_23".to_string(), "tag_value_23".to_string());
         let record_2_length = _record_length_serialized(type2, name2, value2, &tags2);
-        let mut wallet = _create_wallet();
+        let wallet = _create_wallet();
         wallet.add(type1, name1, value1, &tags1).unwrap();
         wallet.add(type2, name2, value2, &tags2).unwrap();
         let export_writer = _create_export_file();
@@ -722,7 +723,7 @@ mod tests {
     #[test]
     fn export_multiple_items() {
         _cleanup();
-        let mut wallet = _create_wallet();
+        let wallet = _create_wallet();
 
         let mut total_item_length = 0;
         let item_count = 300;
