@@ -7,7 +7,7 @@ use std::time::Duration;
 use utils::callbacks::ClosureHandler;
 use utils::results::ResultHandler;
 
-use ffi::wallet;
+use ffi::{wallet, non_secrets};
 use ffi::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseI32CB};
@@ -32,18 +32,59 @@ impl Wallet {
     /// * `delete` - WalletType delete operation handler
     /// * `free` - Handler that allows to de-allocate strings allocated in caller code
     pub fn register(xtype: &str,
-                    create: Option<wallet::CreateWalletCB>,
-                    open: Option<wallet::OpenWalletCB>,
-                    set: Option<wallet::SetWalletCB>,
-                    get: Option<wallet::GetWalletCB>,
-                    get_not_expired: Option<wallet::GetNotExpiredWalletCB>,
-                    list: Option<wallet::ListWalletCB>,
-                    close: Option<wallet::CloseWalletCB>,
-                    delete: Option<wallet::DeleteWalletCB>,
-                    free: Option<wallet::FreeWalletCB>) -> Result<(), ErrorCode> {
+                    create: Option<wallet::WalletCreateCB>,
+                    open: Option<wallet::WalletOpenCB>,
+                    close: Option<wallet::WalletCloseCB>,
+                    delete: Option<wallet::WalletDeleteCB>,
+                    add_record: Option<wallet::WalletAddRecordCB>,
+                    update_record_value: Option<wallet::WalletUpdateRecordValueCB>,
+                    update_record_tags: Option<wallet::WalletUpdateRecordTagsCB>,
+                    add_record_tags: Option<wallet::WalletAddRecordTagsCB>,
+                    delete_record_tags: Option<wallet::WalletDeleteRecordTagsCB>,
+                    delete_record: Option<wallet::WalletDeleteRecordCB>,
+                    get_record: Option<wallet::WalletGetRecordCB>,
+                    get_record_id: Option<wallet::WalletGetRecordIdCB>,
+                    get_record_type: Option<wallet::WalletGetRecordTypeCB>,
+                    get_record_value: Option<wallet::WalletGetRecordValueCB>,
+                    get_record_tags: Option<wallet::WalletGetRecordTagsCB>,
+                    free_record: Option<wallet::WalletFreeRecordCB>,
+                    get_storage_metadata: Option<wallet::WalletGetStorageMetadataCB>,
+                    set_storage_metadata: Option<wallet::WalletSetStorageMetadataCB>,
+                    free_storage_metadata: Option<wallet::WalletFreeStorageMetadataCB>,
+                    search_records: Option<wallet::WalletSearchRecordsCB>,
+                    search_all_records: Option<wallet::WalletSearchAllRecordsCB>,
+                    get_search_total_count: Option<wallet::WalletGetSearchTotalCountCB>,
+                    fetch_search_next_record: Option<wallet::WalletFetchSearchNextRecordCB>,
+                    free_search: Option<wallet::WalletFreeSearchCB>) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-        let err = Wallet::_register(command_handle, xtype, create, open, set, get, get_not_expired, list, close, delete, free, cb);
+        let err = Wallet::_register(command_handle,
+                                              xtype,
+                                                  create,
+                                                  open,
+                                                  close,
+                                                  delete,
+                                                  add_record,
+                                                  update_record_value,
+                                                  update_record_tags,
+                                                  add_record_tags,
+                                                  delete_record_tags,
+                                                  delete_record,
+                                                  get_record,
+                                                  get_record_id,
+                                                  get_record_type,
+                                                  get_record_value,
+                                                  get_record_tags,
+                                                  free_record,
+                                                  get_storage_metadata,
+                                                  set_storage_metadata,
+                                                  free_storage_metadata,
+                                                  search_records,
+                                                  search_all_records,
+                                                  get_search_total_count,
+                                                  fetch_search_next_record,
+                                                  free_search,
+                                                  cb);
 
         ResultHandler::empty(err, receiver)
     }
@@ -66,19 +107,60 @@ impl Wallet {
     /// * `free` - Handler that allows to de-allocate strings allocated in caller code
     /// * `timeout` - the maximum time this function waits for a response
     pub fn register_timeout(xtype: &str,
-                            create: Option<wallet::CreateWalletCB>,
-                            open: Option<wallet::OpenWalletCB>,
-                            set: Option<wallet::SetWalletCB>,
-                            get: Option<wallet::GetWalletCB>,
-                            get_not_expired: Option<wallet::GetNotExpiredWalletCB>,
-                            list: Option<wallet::ListWalletCB>,
-                            close: Option<wallet::CloseWalletCB>,
-                            delete: Option<wallet::DeleteWalletCB>,
-                            free: Option<wallet::FreeWalletCB>,
+                            create: Option<wallet::WalletCreateCB>,
+                            open: Option<wallet::WalletOpenCB>,
+                            close: Option<wallet::WalletCloseCB>,
+                            delete: Option<wallet::WalletDeleteCB>,
+                            add_record: Option<wallet::WalletAddRecordCB>,
+                            update_record_value: Option<wallet::WalletUpdateRecordValueCB>,
+                            update_record_tags: Option<wallet::WalletUpdateRecordTagsCB>,
+                            add_record_tags: Option<wallet::WalletAddRecordTagsCB>,
+                            delete_record_tags: Option<wallet::WalletDeleteRecordTagsCB>,
+                            delete_record: Option<wallet::WalletDeleteRecordCB>,
+                            get_record: Option<wallet::WalletGetRecordCB>,
+                            get_record_id: Option<wallet::WalletGetRecordIdCB>,
+                            get_record_type: Option<wallet::WalletGetRecordTypeCB>,
+                            get_record_value: Option<wallet::WalletGetRecordValueCB>,
+                            get_record_tags: Option<wallet::WalletGetRecordTagsCB>,
+                            free_record: Option<wallet::WalletFreeRecordCB>,
+                            get_storage_metadata: Option<wallet::WalletGetStorageMetadataCB>,
+                            set_storage_metadata: Option<wallet::WalletSetStorageMetadataCB>,
+                            free_storage_metadata: Option<wallet::WalletFreeStorageMetadataCB>,
+                            search_records: Option<wallet::WalletSearchRecordsCB>,
+                            search_all_records: Option<wallet::WalletSearchAllRecordsCB>,
+                            get_search_total_count: Option<wallet::WalletGetSearchTotalCountCB>,
+                            fetch_search_next_record: Option<wallet::WalletFetchSearchNextRecordCB>,
+                            free_search: Option<wallet::WalletFreeSearchCB>,
                             timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-        let err = Wallet::_register(command_handle, xtype, create, open, set, get, get_not_expired, list, close, delete, free, cb);
+        let err = Wallet::_register(command_handle,
+                                              xtype,
+                                                  create,
+                                                  open,
+                                                  close,
+                                                  delete,
+                                                  add_record,
+                                                  update_record_value,
+                                                  update_record_tags,
+                                                  add_record_tags,
+                                                  delete_record_tags,
+                                                  delete_record,
+                                                  get_record,
+                                                  get_record_id,
+                                                  get_record_type,
+                                                  get_record_value,
+                                                  get_record_tags,
+                                                  free_record,
+                                                  get_storage_metadata,
+                                                  set_storage_metadata,
+                                                  free_storage_metadata,
+                                                  search_records,
+                                                  search_all_records,
+                                                  get_search_total_count,
+                                                  fetch_search_next_record,
+                                                  free_search,
+                                                  cb);
 
         ResultHandler::empty_timeout(err, receiver, timeout)
     }
@@ -104,47 +186,118 @@ impl Wallet {
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
     pub fn register_async<F: 'static>(xtype: &str,
-                                      create: Option<wallet::CreateWalletCB>,
-                                      open: Option<wallet::OpenWalletCB>,
-                                      set: Option<wallet::SetWalletCB>,
-                                      get: Option<wallet::GetWalletCB>,
-                                      get_not_expired: Option<wallet::GetNotExpiredWalletCB>,
-                                      list: Option<wallet::ListWalletCB>,
-                                      close: Option<wallet::CloseWalletCB>,
-                                      delete: Option<wallet::DeleteWalletCB>,
-                                      free: Option<wallet::FreeWalletCB>,
+                                      create: Option<wallet::WalletCreateCB>,
+                                      open: Option<wallet::WalletOpenCB>,
+                                      close: Option<wallet::WalletCloseCB>,
+                                      delete: Option<wallet::WalletDeleteCB>,
+                                      add_record: Option<wallet::WalletAddRecordCB>,
+                                      update_record_value: Option<wallet::WalletUpdateRecordValueCB>,
+                                      update_record_tags: Option<wallet::WalletUpdateRecordTagsCB>,
+                                      add_record_tags: Option<wallet::WalletAddRecordTagsCB>,
+                                      delete_record_tags: Option<wallet::WalletDeleteRecordTagsCB>,
+                                      delete_record: Option<wallet::WalletDeleteRecordCB>,
+                                      get_record: Option<wallet::WalletGetRecordCB>,
+                                      get_record_id: Option<wallet::WalletGetRecordIdCB>,
+                                      get_record_type: Option<wallet::WalletGetRecordTypeCB>,
+                                      get_record_value: Option<wallet::WalletGetRecordValueCB>,
+                                      get_record_tags: Option<wallet::WalletGetRecordTagsCB>,
+                                      free_record: Option<wallet::WalletFreeRecordCB>,
+                                      get_storage_metadata: Option<wallet::WalletGetStorageMetadataCB>,
+                                      set_storage_metadata: Option<wallet::WalletSetStorageMetadataCB>,
+                                      free_storage_metadata: Option<wallet::WalletFreeStorageMetadataCB>,
+                                      search_records: Option<wallet::WalletSearchRecordsCB>,
+                                      search_all_records: Option<wallet::WalletSearchAllRecordsCB>,
+                                      get_search_total_count: Option<wallet::WalletGetSearchTotalCountCB>,
+                                      fetch_search_next_record: Option<wallet::WalletFetchSearchNextRecordCB>,
+                                      free_search: Option<wallet::WalletFreeSearchCB>,
                                       closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
-        Wallet::_register(command_handle, xtype, create, open, set, get, get_not_expired, list, close, delete, free, cb)
+        Wallet::_register(command_handle,
+                                              xtype,
+                                                  create,
+                                                  open,
+                                                  close,
+                                                  delete,
+                                                  add_record,
+                                                  update_record_value,
+                                                  update_record_tags,
+                                                  add_record_tags,
+                                                  delete_record_tags,
+                                                  delete_record,
+                                                  get_record,
+                                                  get_record_id,
+                                                  get_record_type,
+                                                  get_record_value,
+                                                  get_record_tags,
+                                                  free_record,
+                                                  get_storage_metadata,
+                                                  set_storage_metadata,
+                                                  free_storage_metadata,
+                                                  search_records,
+                                                  search_all_records,
+                                                  get_search_total_count,
+                                                  fetch_search_next_record,
+                                                  free_search,
+                                                  cb)
     }
 
     fn _register(command_handle: IndyHandle,
                  xtype: &str,
-                 create: Option<wallet::CreateWalletCB>,
-                 open: Option<wallet::OpenWalletCB>,
-                 set: Option<wallet::SetWalletCB>,
-                 get: Option<wallet::GetWalletCB>,
-                 get_not_expired: Option<wallet::GetNotExpiredWalletCB>,
-                 list: Option<wallet::ListWalletCB>,
-                 close: Option<wallet::CloseWalletCB>,
-                 delete: Option<wallet::DeleteWalletCB>,
-                 free: Option<wallet::FreeWalletCB>,
+                 create: Option<wallet::WalletCreateCB>,
+                 open: Option<wallet::WalletOpenCB>,
+                 close: Option<wallet::WalletCloseCB>,
+                 delete: Option<wallet::WalletDeleteCB>,
+                 add_record: Option<wallet::WalletAddRecordCB>,
+                 update_record_value: Option<wallet::WalletUpdateRecordValueCB>,
+                 update_record_tags: Option<wallet::WalletUpdateRecordTagsCB>,
+                 add_record_tags: Option<wallet::WalletAddRecordTagsCB>,
+                 delete_record_tags: Option<wallet::WalletDeleteRecordTagsCB>,
+                 delete_record: Option<wallet::WalletDeleteRecordCB>,
+                 get_record: Option<wallet::WalletGetRecordCB>,
+                 get_record_id: Option<wallet::WalletGetRecordIdCB>,
+                 get_record_type: Option<wallet::WalletGetRecordTypeCB>,
+                 get_record_value: Option<wallet::WalletGetRecordValueCB>,
+                 get_record_tags: Option<wallet::WalletGetRecordTagsCB>,
+                 free_record: Option<wallet::WalletFreeRecordCB>,
+                 get_storage_metadata: Option<wallet::WalletGetStorageMetadataCB>,
+                 set_storage_metadata: Option<wallet::WalletSetStorageMetadataCB>,
+                 free_storage_metadata: Option<wallet::WalletFreeStorageMetadataCB>,
+                 search_records: Option<wallet::WalletSearchRecordsCB>,
+                 search_all_records: Option<wallet::WalletSearchAllRecordsCB>,
+                 get_search_total_count: Option<wallet::WalletGetSearchTotalCountCB>,
+                 fetch_search_next_record: Option<wallet::WalletFetchSearchNextRecordCB>,
+                 free_search: Option<wallet::WalletFreeSearchCB>,
                  cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let xtype = c_str!(xtype);
 
         ErrorCode::from(unsafe {
-                wallet::indy_register_wallet_type(command_handle,
+                wallet::indy_register_wallet_storage(command_handle,
                                               xtype.as_ptr(),
                                                   create,
                                                   open,
-                                                  set,
-                                                  get,
-                                                  get_not_expired,
-                                                  list,
                                                   close,
                                                   delete,
-                                                  free,
+                                                  add_record,
+                                                  update_record_value,
+                                                  update_record_tags,
+                                                  add_record_tags,
+                                                  delete_record_tags,
+                                                  delete_record,
+                                                  get_record,
+                                                  get_record_id,
+                                                  get_record_type,
+                                                  get_record_value,
+                                                  get_record_tags,
+                                                  free_record,
+                                                  get_storage_metadata,
+                                                  set_storage_metadata,
+                                                  free_storage_metadata,
+                                                  search_records,
+                                                  search_all_records,
+                                                  get_search_total_count,
+                                                  fetch_search_next_record,
+                                                  free_search,
                                                   cb)
         })
     }
@@ -153,16 +306,16 @@ impl Wallet {
     /// # Arguments
     /// * `pool_name` - Name of the pool that corresponds to this wallet.
     /// * `name` - Name of the wallet.
-    /// * `xtype` (optional) - Type of the wallet. Defaults to 'default'.
+    /// * `storage_type` (optional) - Type of the wallet. Defaults to 'default'.
     ///                  Custom types can be registered with indy_register_wallet_type call.
     /// * `config` (optional) - Wallet configuration json. List of supported keys are defined by wallet type.
     ///                    if NULL, then default config will be used.
     /// * `credentials` (optional) - Wallet credentials json. List of supported keys are defined by wallet type.
     ///                    if NULL, then default config will be used.
-    pub fn create(pool_name: &str, wallet_name: &str, xtype: Option<&str>, config: Option<&str>, credentials: Option<&str>) -> Result<(), ErrorCode> {
+    pub fn create(pool_name: &str, wallet_name: &str, storage_type: Option<&str>, config: Option<&str>, credentials: Option<&str>) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-        let err = Wallet::_create(command_handle, pool_name, wallet_name, xtype, config, credentials, cb);
+        let err = Wallet::_create(command_handle, pool_name, wallet_name, storage_type, config, credentials, cb);
 
         ResultHandler::empty(err, receiver)
     }
@@ -172,17 +325,17 @@ impl Wallet {
     /// # Arguments
     /// * `pool_name` - Name of the pool that corresponds to this wallet.
     /// * `name` - Name of the wallet.
-    /// * `xtype` (optional) - Type of the wallet. Defaults to 'default'.
+    /// * `storage_type` (optional) - Type of the wallet. Defaults to 'default'.
     ///                  Custom types can be registered with indy_register_wallet_type call.
     /// * `config` (optional) - Wallet configuration json. List of supported keys are defined by wallet type.
     ///                    if NULL, then default config will be used.
     /// * `credentials` (optional) - Wallet credentials json. List of supported keys are defined by wallet type.
     ///                    if NULL, then default config will be used.
     /// * `timeout` - the maximum time this function waits for a response
-    pub fn create_timeout(pool_name: &str, wallet_name: &str, xtype: Option<&str>, config: Option<&str>, credentials: Option<&str>, timeout: Duration) -> Result<(), ErrorCode> {
+    pub fn create_timeout(pool_name: &str, wallet_name: &str, storage_type: Option<&str>, config: Option<&str>, credentials: Option<&str>, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
-        let err = Wallet::_create(command_handle, pool_name, wallet_name, xtype, config, credentials, cb);
+        let err = Wallet::_create(command_handle, pool_name, wallet_name, storage_type, config, credentials, cb);
 
         ResultHandler::empty_timeout(err, receiver, timeout)
     }
@@ -192,7 +345,7 @@ impl Wallet {
     /// # Arguments
     /// * `pool_name` - Name of the pool that corresponds to this wallet.
     /// * `name` - Name of the wallet.
-    /// * `xtype` (optional) - Type of the wallet. Defaults to 'default'.
+    /// * `storage_type` (optional) - Type of the wallet. Defaults to 'default'.
     ///                  Custom types can be registered with indy_register_wallet_type call.
     /// * `config` (optional) - Wallet configuration json. List of supported keys are defined by wallet type.
     ///                    if NULL, then default config will be used.
@@ -202,26 +355,26 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-    pub fn create_async<F: 'static>(pool_name: &str, wallet_name: &str, xtype: Option<&str>, config: Option<&str>, credentials: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+    pub fn create_async<F: 'static>(pool_name: &str, wallet_name: &str, storage_type: Option<&str>, config: Option<&str>, credentials: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
-        Wallet::_create(command_handle, pool_name, wallet_name, xtype, config, credentials, cb)
+        Wallet::_create(command_handle, pool_name, wallet_name, storage_type, config, credentials, cb)
     }
 
-    fn _create(command_handle: IndyHandle, pool_name: &str, wallet_name: &str, xtype: Option<&str>, config: Option<&str>, credentials: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _create(command_handle: IndyHandle, pool_name: &str, wallet_name: &str, storage_type: Option<&str>, config: Option<&str>, credentials: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let pool_name = c_str!(pool_name);
         let wallet_name = c_str!(wallet_name);
-        let xtype_str = opt_c_str!(xtype);
+        let storage_type_str = opt_c_str!(storage_type);
         let config_str = opt_c_str!(config);
-        let credentials_str = opt_c_str!(credentials);
+        let credentials = Wallet::_default_credentials(credentials);
 
         ErrorCode::from(unsafe {
             wallet::indy_create_wallet(command_handle,
                                        pool_name.as_ptr(),
                                        wallet_name.as_ptr(),
-                                       opt_c_ptr!(xtype, xtype_str),
+                                       opt_c_ptr!(storage_type, storage_type_str),
                                        opt_c_ptr!(config, config_str),
-                                       opt_c_ptr!(credentials, credentials_str),
+                                       credentials.as_ptr(),
                                        cb)
         })
     }
@@ -304,13 +457,13 @@ impl Wallet {
     fn _open(command_handle: IndyHandle, wallet_name: &str, config: Option<&str>, credentials: Option<&str>, cb: Option<ResponseI32CB>) -> ErrorCode {
         let wallet_name = c_str!(wallet_name);
         let config_str = opt_c_str!(config);
-        let credentials_str = opt_c_str!(credentials);
+        let credentials = Wallet::_default_credentials(credentials);
 
         ErrorCode::from(unsafe {
             wallet::indy_open_wallet(command_handle,
                                      wallet_name.as_ptr(),
                                      opt_c_ptr!(config, config_str),
-                                     opt_c_ptr!(credentials, credentials_str),
+                                     credentials.as_ptr(),
                                      cb)
         })
     }
@@ -396,9 +549,9 @@ impl Wallet {
 
     fn _delete(command_handle: IndyHandle, wallet_name: &str, credentials: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let wallet_name = c_str!(wallet_name);
-        let credentials_str = opt_c_str!(credentials);
+        let credentials = Wallet::_default_credentials(credentials);
 
-        ErrorCode::from(unsafe { wallet::indy_delete_wallet(command_handle, wallet_name.as_ptr(), opt_c_ptr!(credentials, credentials_str), cb) })
+        ErrorCode::from(unsafe { wallet::indy_delete_wallet(command_handle, wallet_name.as_ptr(), credentials.as_ptr(), cb) })
     }
 
     /// Closes opened wallet and frees allocated resources.
@@ -442,5 +595,109 @@ impl Wallet {
 
     fn _close(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         ErrorCode::from(unsafe { wallet::indy_close_wallet(command_handle, wallet_handle, cb) })
+    }
+
+    /// Create a new non-secret record in the wallet
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `value` - the value of record
+    /// * `tags_json` -  the record tags used for search and storing meta information as json:
+    ///   {
+    ///     "tagName1": <str>, // string tag (will be stored encrypted)
+    ///     "tagName2": <str>, // string tag (will be stored encrypted)
+    ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
+    ///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
+    ///   }
+    ///   Note that null means no tags
+    ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
+    ///   usage of this tag in complex search queries (comparison, predicates)
+    ///   Encrypted tags can be searched only for exact matching
+    pub fn add_record(wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, tags_json: Option<&str>) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_add_record(command_handle, wallet_handle, xtype, id, value, tags_json, cb);
+
+        ResultHandler::empty(err, receiver)
+    }
+
+    /// Create a new non-secret record in the wallet
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `value` - the value of record
+    /// * `tags_json` -  the record tags used for search and storing meta information as json:
+    ///   {
+    ///     "tagName1": <str>, // string tag (will be stored encrypted)
+    ///     "tagName2": <str>, // string tag (will be stored encrypted)
+    ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
+    ///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
+    ///   }
+    ///   Note that null means no tags
+    ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
+    ///   usage of this tag in complex search queries (comparison, predicates)
+    ///   Encrypted tags can be searched only for exact matching
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn add_record_timeout(wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, tags_json: Option<&str>, timeout: Duration) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_add_record(command_handle, wallet_handle, xtype, id, value, tags_json, cb);
+
+        ResultHandler::empty_timeout(err, receiver, timeout)
+    }
+
+    /// Create a new non-secret record in the wallet
+    ///
+    /// # Arguments
+    /// * `wallet_handle` - wallet handle (created by open_wallet)
+    /// * `xtype` - allows to separate different record types collections
+    /// * `id` - the id of record
+    /// * `value` - the value of record
+    /// * `tags_json` -  the record tags used for search and storing meta information as json:
+    ///   {
+    ///     "tagName1": <str>, // string tag (will be stored encrypted)
+    ///     "tagName2": <str>, // string tag (will be stored encrypted)
+    ///     "~tagName3": <str>, // string tag (will be stored un-encrypted)
+    ///     "~tagName4": <str>, // string tag (will be stored un-encrypted)
+    ///   }
+    ///   Note that null means no tags
+    ///   If tag name starts with "~" the tag will be stored un-encrypted that will allow
+    ///   usage of this tag in complex search queries (comparison, predicates)
+    ///   Encrypted tags can be searched only for exact matching
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn add_record_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, tags_json: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
+
+        Wallet::_add_record(command_handle, wallet_handle, xtype, id, value, tags_json, cb)
+    }
+
+    fn _add_record(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, tags_json: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+        let xtype = c_str!(xtype);
+        let id = c_str!(id);
+        let value = c_str!(value);
+        let tags_json_str = opt_c_str!(tags_json);
+        ErrorCode::from(unsafe {
+            non_secrets::indy_add_wallet_record(command_handle,
+                                                wallet_handle,
+                                                xtype.as_ptr(),
+                                                id.as_ptr(),
+                                                value.as_ptr(),
+                                                opt_c_ptr!(tags_json, tags_json_str),
+                                                 cb)
+        })
+    }
+
+    fn _default_credentials(credentials: Option<&str>) -> CString {
+        match credentials {
+            Some(s) => c_str!(s),
+            None => c_str!(r#"{"key":""}"#)
+        }
     }
 }

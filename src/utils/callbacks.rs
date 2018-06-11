@@ -15,6 +15,7 @@ use ffi::{ResponseEmptyCB,
           ResponseI32CB,
           ResponseStringCB,
           ResponseStringStringCB,
+          ResponseStringStringStringCB,
           ResponseStringStringU64CB,
           ResponseSliceCB,
           ResponseStringSliceCB,
@@ -140,6 +141,38 @@ impl ClosureHandler {
             let str1 = rust_str!(str1);
             let str2 = rust_str!(str2);
             cb(ErrorCode::from(err), str1, str2)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = SequenceUtils::get_next_id();
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(_callback))
+    }
+
+    pub fn cb_ec_string_string_string() -> (Receiver<(ErrorCode, String, String, String)>, IndyHandle, Option<ResponseStringStringStringCB>) {
+        let (sender, receiver) = channel();
+
+        let closure = Box::new(move |err, val1, val2, val3| {
+            sender.send((err, val1, val2, val3)).unwrap_or_else(log_error);
+        });
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string_string(closure);
+
+        (receiver, command_handle, cb)
+    }
+
+    pub fn convert_cb_ec_string_string_string(closure: Box<FnMut(ErrorCode, String, String, String) + Send>) -> (IndyHandle, Option<ResponseStringStringStringCB>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String, String, String) + Send>>> = Default::default();
+        }
+
+        extern "C" fn _callback(command_handle: IndyHandle, err: i32, str1: *const c_char, str2: *const c_char, str3: *const c_char) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let str1 = rust_str!(str1);
+            let str2 = rust_str!(str2);
+            let str3 = rust_str!(str3);
+            cb(ErrorCode::from(err), str1, str2, str3)
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();

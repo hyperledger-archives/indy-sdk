@@ -1,6 +1,9 @@
 macro_rules! c_str {
     ($x:ident) => {
         CString::new($x).unwrap()
+    };
+    ($x:expr) => {
+        CString::new($x).unwrap()
     }
 }
 
