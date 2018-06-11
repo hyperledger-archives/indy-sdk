@@ -2,8 +2,6 @@ use super::*;
 
 use {Error, Handle, CString};
 
-use std::os::raw::c_char;
-
 extern {
     #[no_mangle]
     pub fn indy_sign_and_submit_request(command_handle: Handle,

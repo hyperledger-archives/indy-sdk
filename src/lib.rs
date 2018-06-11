@@ -12,6 +12,7 @@ extern crate libindy_sys as ffi;
 #[macro_use]
 mod macros;
 
+pub mod blob_storage;
 pub mod crypto;
 pub mod did;
 pub mod ledger;
@@ -78,6 +79,12 @@ pub enum ErrorCode
     // IO Error
     CommonIOError = 114,
 
+    // Caller passed invalid value as param 13 (null, invalid json and etc..)
+    CommonInvalidParam13 = 115,
+
+    // Caller passed invalid value as param 14 (null, invalid json and etc..)
+    CommonInvalidParam14 = 116,
+
     // Wallet errors
     // Caller passed invalid wallet handle
     WalletInvalidHandle = 200,
@@ -102,6 +109,27 @@ pub enum ErrorCode
 
     // Attempt to open encrypted wallet with invalid credentials
     WalletAccessFailed = 207,
+
+    // Input provided to wallet operations is considered not valid
+    WalletInputError = 208,
+
+    // Decoding of wallet data during input/output failed
+    WalletDecodingError = 209,
+
+    // Storage error occurred during wallet operation
+    WalletStorageError = 210,
+
+    // Error during encryption-related operations
+    WalletEncryptionError = 211,
+
+    // Requested wallet item not found
+    WalletItemNotFound = 212,
+
+    // Returned if wallet's add_record operation is used with record name that already exists
+    WalletItemAlreadyExists = 213,
+
+    // Returned if provided wallet query is invalid
+    WalletQueryError = 214,
 
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
@@ -182,6 +210,8 @@ impl ErrorCode {
             CommonInvalidParam10 => "Caller passed invalid value as param 10",
             CommonInvalidParam11 => "Caller passed invalid value as param 11",
             CommonInvalidParam12 => "Caller passed invalid value as param 12",
+            CommonInvalidParam13 => "Caller passed invalid value as param 13",
+            CommonInvalidParam14 => "Caller passed invalid value as param 14",
             CommonInvalidState => "Invalid library state was detected in runtime. It signals library bug",
             CommonInvalidStructure => "Object (json, config, key, credential and etc...) passed by library caller has invalid structure",
             CommonIOError => "IO Error",
@@ -193,6 +223,13 @@ impl ErrorCode {
             WalletIncompatiblePoolError => "Trying to use wallet with pool that has different name",
             WalletAccessFailed => "Trying to open wallet encrypted wallet with invalid credentials",
             WalletAlreadyOpenedError => "Trying to open wallet that was opened already",
+            WalletInputError => "Input provided to wallet operations is considered not valid",
+            WalletDecodingError => "Decoding of wallet data during input/output failed",
+            WalletStorageError => "Storage error occurred during wallet operation",
+            WalletEncryptionError => "Error during encryption-related operations",
+            WalletItemNotFound => "Requested wallet item not found",
+            WalletItemAlreadyExists => "Returned if wallet's add_record operation is used with record name that already exists",
+            WalletQueryError => "Returned if provided wallet query is invalid",
             PoolLedgerNotCreatedError => "Trying to open pool ledger that wasn't created before",
             PoolLedgerInvalidPoolHandle => "Caller passed invalid pool ledger handle",
             PoolLedgerTerminated => "Pool ledger terminated",
