@@ -16,7 +16,9 @@ mod tests {
                     //This is ok, just delete
                     assert!(Wallet::delete(wallet_name, None).is_ok())
                 }
-                _ => panic!("{:#?}", e)
+                _ => {
+                    panic!("{:#?}", e)
+                }
             }
         }
     }
