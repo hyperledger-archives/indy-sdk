@@ -101,7 +101,7 @@ public class WalletSearch extends IndyJava.API implements AutoCloseable {
 	 *                      "tagName": "tagValue",
 	 *                      $or: {
 	 *                          "tagName2": { $regex: 'pattern' },
-	 *                          "tagName3": { $gte: 123 },
+	 *                          "tagName3": { $gte: '123' },
 	 *                      }
 	 *                    }
 	 * @param optionsJson {

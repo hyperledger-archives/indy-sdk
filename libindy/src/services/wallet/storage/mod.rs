@@ -11,12 +11,12 @@ pub enum Tag {
     PlainText(Vec<u8>, String)
 }
 
+
 #[derive(Debug)]
 pub enum TagName {
     OfEncrypted(Vec<u8>),
     OfPlain(Vec<u8>),
 }
-
 
 #[derive(Clone, Debug)]
 pub struct StorageEntity {
@@ -40,6 +40,7 @@ impl StorageEntity {
 
 pub trait StorageIterator {
     fn next(&mut self) -> Result<Option<StorageEntity>, WalletStorageError>;
+    fn get_total_count(&self) -> Result<Option<usize>, WalletStorageError>;
 }
 
 
@@ -60,7 +61,7 @@ pub trait WalletStorage {
 
 
 pub trait WalletStorageType {
-    fn create_storage(&self, name: &str, config: Option<&str>, credentials: &str, keys: &Vec<u8>) -> Result<(), WalletStorageError>;
+    fn create_storage(&self, name: &str, config: Option<&str>, credentials: &str, metadata: &Vec<u8>) -> Result<(), WalletStorageError>;
     fn open_storage(&self, name: &str, config: Option<&str>, credentials: &str) -> Result<Box<WalletStorage>, WalletStorageError>;
     fn delete_storage(&self, name: &str, config: Option<&str>, credentials: &str) -> Result<(), WalletStorageError>;
 }

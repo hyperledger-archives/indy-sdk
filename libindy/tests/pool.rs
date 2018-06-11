@@ -198,6 +198,37 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        pub fn open_pool_ledger_works_for_cached_txns() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "open_pool_ledger_works_for_cached_txns";
+            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
+            let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
+            PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
+            PoolUtils::dump_correct_genesis_txns_to_cache(pool_name).unwrap();
+
+            PoolUtils::open_pool_ledger(pool_name, None).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn open_pool_ledger_works_for_corrupted_cached_txns() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "open_pool_ledger_works_corrupted_for_cached_txns";
+            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
+            let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
+            PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
+            PoolUtils::dump_incorrect_genesis_txns_to_cache(pool_name).unwrap();
+
+            PoolUtils::open_pool_ledger(pool_name, None).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod refresh {

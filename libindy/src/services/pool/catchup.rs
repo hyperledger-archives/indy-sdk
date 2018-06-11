@@ -16,6 +16,7 @@ use super::{
 };
 use super::rust_base58::{FromBase58, ToBase58};
 use super::types::*;
+use services::pool::PoolWorker;
 
 pub const CATCHUP_ROUND_TIMEOUT: i64 = 50;
 
@@ -45,7 +46,8 @@ pub struct CatchupHandler {
     pub pending_catchup: Option<CatchUpProcess>,
     pub timeout: time::Tm,
     pub pool_id: i32,
-    pub nodes_votes: Vec<Option<(String, usize)>>,
+    pub nodes_votes: Vec<Option<(String, usize, Option<Vec<String>>)>>,
+    pub pool_name: String,
 }
 
 impl Default for CatchupHandler {
@@ -64,6 +66,7 @@ impl Default for CatchupHandler {
             pool_id: 0,
             nodes_votes: Vec::new(),
             timeout: time::now_utc(),
+            pool_name: "".to_string(),
         }
     }
 }
@@ -75,7 +78,7 @@ impl CatchupHandler {
                 //sending ledger status
                 //TODO not send ledger status directly as response on ping, wait pongs from all nodes?
                 let ls: LedgerStatus = LedgerStatus {
-                    txnSeqNo: self.nodes.len(),
+                    txnSeqNo: self.merkle_tree.count,
                     merkleRoot: self.merkle_tree.root_hash().as_slice().to_base58(),
                     ledgerId: 0,
                     ppSeqNo: None,
@@ -86,11 +89,11 @@ impl CatchupHandler {
                 CatchupProgress::InProgress
             }
             Message::LedgerStatus(ledger_status) => {
-                self.nodes_votes[src_ind] = Some((ledger_status.merkleRoot, ledger_status.txnSeqNo));
+                self.nodes_votes[src_ind] = Some((ledger_status.merkleRoot, ledger_status.txnSeqNo, None));
                 self.check_nodes_responses_on_status()?
             }
             Message::ConsistencyProof(cons_proof) => {
-                self.nodes_votes[src_ind] = Some((cons_proof.newMerkleRoot, cons_proof.seqNoEnd));
+                self.nodes_votes[src_ind] = Some((cons_proof.newMerkleRoot, cons_proof.seqNoEnd, Some(cons_proof.hashes)));
                 self.check_nodes_responses_on_status()?
             }
             Message::CatchupRep(catchup) => {
@@ -115,38 +118,64 @@ impl CatchupHandler {
         if self.pending_catchup.is_some() {
             return Ok(CatchupProgress::InProgress);
         }
-        let mut votes: HashMap<(String, usize), usize> = HashMap::new();
-        for node_vote in &self.nodes_votes {
-            if let &Some(ref node_vote) = node_vote {
-                let cnt = *votes.get(&node_vote).unwrap_or(&0) + 1;
-                votes.insert((node_vote.0.clone(), node_vote.1), cnt);
-            }
-        }
+
+        let votes: HashMap<(String, usize, Option<Vec<String>>), usize> = self.nodes_votes.iter().cloned()
+            .filter_map(|e| e)
+            .fold(HashMap::new(), |mut acc, vote| {
+                //WARN: It can be processed without excessive cloning two steps before, but then we will face double write borrowing.
+                //WARN: This is the most readable variant. However, not the most effective.
+                let cnt = acc.get(&vote).unwrap_or(&0) + 1;
+                acc.insert(vote, cnt);
+                acc
+            });
+
         if let Some((most_popular_vote, votes_cnt)) = votes.iter().max_by_key(|entry| entry.1) {
             if *votes_cnt == self.nodes.len() - self.f {
-                let &(ref target_mt_root, target_mt_size) = most_popular_vote;
-                let cur_mt_size = self.merkle_tree.count();
-                let cur_mt_hash = self.merkle_tree.root_hash().to_base58();
-                if target_mt_size == cur_mt_size {
-                    if cur_mt_hash.eq(target_mt_root) {
-                        return Ok(CatchupProgress::NotNeeded);
+                return self._try_to_catch_up(most_popular_vote).or_else(|err| {
+                    if PoolWorker::drop_saved_txns(&self.pool_name).is_ok() {
+                        self.merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name(&self.pool_name)?;
+                        self._try_to_catch_up(most_popular_vote)
                     } else {
-                        return Err(PoolError::CommonError(CommonError::InvalidState(
-                            "Ledger merkle tree doesn't acceptable for current tree.".to_string())));
+                        Err(err)
                     }
-                } else if target_mt_size > cur_mt_size {
-                    self.target_mt_size = target_mt_size;
-                    self.target_mt_root = target_mt_root.from_base58().map_err(|_|
-                        CommonError::InvalidStructure(
-                            "Can't parse target MerkleTree hash from nodes responses".to_string()))?;
-                    return Ok(CatchupProgress::ShouldBeStarted);
-                } else {
-                    return Err(PoolError::CommonError(CommonError::InvalidState(
-                        "Local merkle tree greater than mt from ledger".to_string())));
-                }
+                })
             }
         }
         Ok(CatchupProgress::InProgress)
+    }
+
+    fn _try_to_catch_up(&mut self, ledger_status: &(String, usize, Option<Vec<String>>)) -> Result<CatchupProgress, PoolError> {
+        let &(ref target_mt_root, target_mt_size, ref hashes) = ledger_status;
+        let cur_mt_size = self.merkle_tree.count();
+        let cur_mt_hash = self.merkle_tree.root_hash().to_base58();
+        if target_mt_size == cur_mt_size {
+            if cur_mt_hash.eq(target_mt_root) {
+                return Ok(CatchupProgress::NotNeeded);
+            } else {
+                return Err(PoolError::CommonError(CommonError::InvalidState(
+                    "Ledger merkle tree doesn't acceptable for current tree.".to_string())));
+            }
+        } else if target_mt_size > cur_mt_size {
+            self.target_mt_size = target_mt_size;
+            self.target_mt_root = target_mt_root.from_base58().map_err(|_|
+                CommonError::InvalidStructure(
+                    "Can't parse target MerkleTree hash from nodes responses".to_string()))?;
+            match hashes {
+                &None => {return Err(PoolError::from(CommonError::InvalidState("Empty consistency proof but catch up needed".to_string())));},
+                &Some(ref hashes) => {
+                    match CatchupHandler::check_cons_proofs(&self.merkle_tree, hashes, &self.target_mt_root, self.target_mt_size) {
+                        Ok(_) => (),
+                        Err(err) => {
+                            return Err(PoolError::from(err));
+                        }
+                    }
+                }
+            };
+            return Ok(CatchupProgress::ShouldBeStarted);
+        } else {
+            return Err(PoolError::CommonError(CommonError::InvalidState(
+                "Local merkle tree greater than mt from ledger".to_string())));
+        }
     }
 
     pub fn reset_nodes_votes(&mut self) {
@@ -239,15 +268,17 @@ impl CatchupHandler {
             let index = process.pending_reps.get_min_index()?;
             {
                 let &mut (ref mut first_resp, node_idx) = process.pending_reps.get_mut(index)
-                    .ok_or(CommonError::InvalidStructure(format!("Element not Found")))?;
+                    .ok_or(CommonError::InvalidStructure("Element not Found".to_string()))?;
                 if first_resp.min_tx()? - 1 != process.merkle_tree.count() { break; }
 
                 let mut temp_mt = process.merkle_tree.clone();
+                let mut vec_to_dump: Vec<Vec<u8>> = vec![];
                 while !first_resp.txns.is_empty() {
                     let key = first_resp.min_tx()?.to_string();
                     let new_gen_tx = first_resp.txns.remove(&key).unwrap();
                     if let Ok(new_get_txn_bytes) = rmp_serde::to_vec_named(&new_gen_tx) {
-                        temp_mt.append(new_get_txn_bytes)?;
+                        temp_mt.append(new_get_txn_bytes.clone())?;
+                        vec_to_dump.push(new_get_txn_bytes);
                     } else {
                         return Ok(CatchupStepResult::FailedAtNode(node_idx));
                     }
@@ -257,6 +288,9 @@ impl CatchupHandler {
                     .map_err(map_err_err!()).is_err() {
                     return Ok(CatchupStepResult::FailedAtNode(node_idx));
                 }
+
+                self.merkle_tree = temp_mt.clone();
+                PoolWorker::dump_new_txns(&self.pool_name, &vec_to_dump)?;
 
                 process.merkle_tree = temp_mt;
             }

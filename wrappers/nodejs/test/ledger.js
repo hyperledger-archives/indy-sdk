@@ -26,17 +26,18 @@ async function waitUntilApplied (ph, req, cond) {
 test('ledger', async function (t) {
   var pool = await initTestPool()
   var wName = 'wallet-' + cuid()
-  await indy.createWallet(pool.name, wName, 'default', null, null)
-  var wh = await indy.openWallet(wName, null, null)
+  var walletCredentials = {'key': 'key'}
+  await indy.createWallet(pool.name, wName, 'default', null, walletCredentials)
+  var wh = await indy.openWallet(wName, null, walletCredentials)
   var [trusteeDid] = await indy.createAndStoreMyDid(wh, {seed: '000000000000000000000000Trustee1'})
   var [myDid, myVerkey] = await indy.createAndStoreMyDid(wh, {seed: '00000000000000000000000000000My1', cid: true})
   var schemaName = 'schema-' + cuid()
   var [schemaId, schema] = await indy.issuerCreateSchema(myDid, schemaName, '1.0', ['name', 'age'])
 
   // Nym
-  var req = await indy.buildNymRequest(trusteeDid, myDid, myVerkey, null, null)
+  var req = await indy.buildNymRequest(trusteeDid, myDid, myVerkey, null, 'TRUSTEE')
   var res = await indy.signAndSubmitRequest(pool.handle, wh, trusteeDid, req)
-  t.is(res.result.verkey, myVerkey)
+  t.is(res.result.txn.data.verkey, myVerkey)
 
   req = await indy.buildGetNymRequest(trusteeDid, myDid)
   t.is(req.identifier, trusteeDid)
@@ -53,8 +54,8 @@ test('ledger', async function (t) {
   t.is(data[0], schemaId)
   t.is(data[1].name, schema.name)
   req = await indy.buildGetTxnRequest(myDid, data[1].seqNo)
-  res = await waitUntilApplied(pool.handle, req, res => res['result']['data']['seqNo'] != null)
-  t.is(res.result.data.data.name, schema.name)
+  res = await waitUntilApplied(pool.handle, req, res => res['result']['data']['txnMetadata']['seqNo'] != null)
+  t.is(res.result.data.txn.data.data.name, schema.name)
   schema = data[1]
 
   // Node
@@ -112,7 +113,7 @@ test('ledger', async function (t) {
 
   req = await indy.buildRevocRegDefRequest(myDid, revRegDef)
   res = await indy.signAndSubmitRequest(pool.handle, wh, myDid, req)
-  t.is(res.result.id, revRegDefId)
+  t.is(res.result.txn.data.id, revRegDefId)
 
   req = await indy.buildGetRevocRegDefRequest(myDid, revRegDefId)
   res = await waitUntilApplied(pool.handle, req, res => res['result']['seqNo'] != null)
@@ -141,6 +142,6 @@ test('ledger', async function (t) {
   t.is(typeof res[2], 'number')
 
   await indy.closeWallet(wh)
-  await indy.deleteWallet(wName, null)
+  await indy.deleteWallet(wName, walletCredentials)
   pool.cleanup()
 })
