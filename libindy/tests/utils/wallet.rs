@@ -168,4 +168,8 @@ impl WalletUtils {
 
         super::results::result_to_empty(err, receiver)
     }
+
+    pub fn prepare_export_wallet_config(path: &str) -> String {
+        format!(r##"{{"key": "{}", "path": "{}"}}"##, "test_key", path)
+    }
 }

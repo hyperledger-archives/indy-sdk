@@ -27,10 +27,6 @@ impl ChaCha20Poly1305IETF {
         increment_le(nonce);
     }
 
-    pub fn nonce_len() -> usize { chacha20poly1305_ietf::NONCEBYTES }
-
-    pub fn key_len() -> usize { chacha20poly1305_ietf::KEYBYTES }
-
     pub fn hmacsha256_authenticate(data: &[u8], hmac_key: &[u8]) -> Vec<u8> {
         hmacsha256::authenticate(
             data,

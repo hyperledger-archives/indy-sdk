@@ -713,13 +713,6 @@ impl DidCommandExecutor {
         self.wallet_service.get_indy_object(wallet_handle, &their_did, &RecordOptions::id_value(), &mut String::new())
     }
 
-//    fn _wallet_get_did_metadata(&self, wallet_handle: i32, did: &str) -> Option<String> {
-//        self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::full()).ok()
-//            .and_then(|rec| rec.get_tags().map(String::from))
-//            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-//            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
-//    }
-
     fn _wallet_get_did_metadata(&self, wallet_handle: i32, did: &str) -> Option<String> {
         self.wallet_service.get_indy_record::<Did>(wallet_handle, did, &RecordOptions::full()).ok()
             .and_then(|rec|

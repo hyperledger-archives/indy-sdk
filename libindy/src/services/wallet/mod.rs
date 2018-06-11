@@ -534,7 +534,11 @@ impl WalletService {
     pub fn export_wallet(&self, wallet_handle: i32, export_config_json: &str, version: u32) -> Result<(), WalletError> {
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
-                let export_config: WalletExportConfig = serde_json::from_str(export_config_json)?;
+                let export_config: WalletExportConfig = match serde_json::from_str(export_config_json) {
+                    Ok(config) => config,
+                    Err(_) => return Err(WalletError::CommonError(CommonError::InvalidStructure("export config not valid json".to_string()))),
+                };
+
                 let export_path = Path::new(&export_config.path);
                 if export_path.exists() {
                     return Err(WalletError::ExportPathExists);
@@ -555,7 +559,10 @@ impl WalletService {
                   storage_config: Option<&str>,
                   credentials: &str,
                   import_config_json: &str) -> Result<(), WalletError> {
-        let import_config: WalletExportConfig = serde_json::from_str(import_config_json)?;
+        let import_config: WalletExportConfig = match serde_json::from_str(import_config_json) {
+            Ok(config) => config,
+            Err(_) => return Err(WalletError::CommonError(CommonError::InvalidStructure("import config not valid json".to_string()))),
+        };
         let import_path = Path::new(&import_config.path);
         if !import_path.exists() {
             return Err(WalletError::ImportPathDoesNotExist);
@@ -1536,27 +1543,6 @@ mod tests {
 
 
     //    #[test]
-    //    fn wallet_service_search_records_works() {
-    //        TestUtils::cleanup_indy_home();
-    //
-    //        let wallet_service = WalletService::new();
-    //        wallet_service.create("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
-    //        let wallet_handle = wallet_service.open("wallet1", None, r#"{"key":"key"}"#).unwrap();
-    //
-    //        wallet_service.add_record(wallet_handle, "type1", "id1", "value1", "{}").unwrap();
-    //        wallet_service.add_record(wallet_handle, "type2", "id2", "value2", "{}").unwrap();
-    //
-    //        let mut search = wallet_service.search_records(wallet_handle, "type1", "{}", "{}").unwrap();
-    //        assert_eq!(1, search.get_total_count().unwrap().unwrap());
-    //
-    //        let record = search.fetch_next_record().unwrap().unwrap();
-    //        assert_eq!("id1", record.get_id());
-    //        assert_eq!("value1", record.get_value().unwrap());
-    //
-    //        TestUtils::cleanup_indy_home();
-    //    }
-    //
-    //    #[test]
     //    fn wallet_service_search_all_records_works() {
     //        TestUtils::cleanup_indy_home();
     //
@@ -1579,49 +1565,6 @@ mod tests {
     //        TestUtils::cleanup_indy_home();
     //    }
     //
-    //
-    //    //    #[test]
-    //    //    fn wallet_service_list_works_for_plugged() {
-    //    //        TestUtils::cleanup_indy_home();
-    //    //        InmemWallet::cleanup();
-    //    //
-    //    //        let wallet_service = WalletService::new();
-    //    //
-    //    //        wallet_service
-    //    //            .register_type(
-    //    //                "inmem",
-    //    //                InmemWallet::create,
-    //    //                InmemWallet::open,
-    //    //                InmemWallet::set,
-    //    //                InmemWallet::get,
-    //    //                InmemWallet::list,
-    //    //                InmemWallet::close,
-    //    //                InmemWallet::delete,
-    //    //                InmemWallet::free
-    //    //            )
-    //    //            .unwrap();
-    //    //
-    //    //        wallet_service.create("pool1", "wallet1", Some("inmem"), None, None).unwrap();
-    //    //        let wallet_handle = wallet_service.open("wallet1", Some("{\"freshness_time\": 1}"), None).unwrap();
-    //    //
-    //    //        wallet_service.set(wallet_handle, "key1::subkey1", "value1").unwrap();
-    //    //        wallet_service.set(wallet_handle, "key1::subkey2", "value2").unwrap();
-    //    //
-    //    //        let mut key_values = wallet_service.list(wallet_handle, "key1::").unwrap();
-    //    //        key_values.sort();
-    //    //        assert_eq!(2, key_values.len());
-    //    //
-    //    //        let (key, value) = key_values.pop().unwrap();
-    //    //        assert_eq!("key1::subkey2", key);
-    //    //        assert_eq!("value2", value);
-    //    //
-    //    //        let (key, value) = key_values.pop().unwrap();
-    //    //        assert_eq!("key1::subkey1", key);
-    //    //        assert_eq!("value1", value);
-    //    //
-    //    //        TestUtils::cleanup_indy_home();
-    //    //        InmemWallet::cleanup();
-    //    //    }
     //
 
     #[test]

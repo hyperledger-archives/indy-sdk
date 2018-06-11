@@ -129,13 +129,8 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let tags = match tags_json {
-            None => HashMap::new(),
-            Some(tags_string) =>  match serde_json::from_str(tags_string) {
-                Ok(tag_names) => tag_names,
-                Err(serde_json_err) => return Err(IndyError::WalletError(WalletError::InputError(format!("Invalid tags input: {}", tags_string))))
-            }
-        };
+        let tags = serde_json::from_str(tags_json.unwrap_or("{}"))
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize tags: {:?}", err)))?;
         let res = self.wallet_service.add_record(wallet_handle, type_, id, value, &tags)?; //TODO: question
 
         trace!("add_record <<< res: {:?}", res);
@@ -168,10 +163,8 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let tags: HashMap<String, String> = match serde_json::from_str(tags_json) {
-            Ok(tag_names) => tag_names,
-            Err(serde_json_err) => return Err(IndyError::WalletError(WalletError::InputError(format!("Invalid tags input: {}", tags_json))))
-        };
+        let tags = serde_json::from_str(tags_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize tags: {:?}", err)))?;
         let res = self.wallet_service.update_record_tags(wallet_handle, type_, id, &tags)?;
 
         trace!("update_record_tags <<< res: {:?}", res);
@@ -188,10 +181,8 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let tags: HashMap<String, String> = match serde_json::from_str(tags_json) {
-            Ok(tag_names) => tag_names,
-            Err(serde_json_err) => return Err(IndyError::WalletError(WalletError::InputError(format!("Invalid tags input: {}", tags_json))))
-        };
+        let tags = serde_json::from_str(tags_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize tags: {:?}", err)))?;
         let res = self.wallet_service.add_record_tags(wallet_handle, type_, id, &tags)?;
 
         trace!("add_record_tags <<< res: {:?}", res);

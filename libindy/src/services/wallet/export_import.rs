@@ -47,7 +47,7 @@ impl Header {
 
         let method_length = bytes_to_u16(&serialised[14..16]);
         if data_length < method_length {
-            return Err(WalletError::StructureError("Wallet header of insufficient size".to_string()));
+            return Err(WalletError::CommonError(CommonError::InvalidStructure("Wallet header of insufficient size".to_string())));
         }
         let method_start_index: usize = 16;
         let method_end_index: usize = method_start_index + method_length as usize;
@@ -57,7 +57,7 @@ impl Header {
 
         let nonce_length = bytes_to_u16(&serialised[method_end_index..method_end_index + 2]);
         if nonce_length > data_length {
-            return Err(WalletError::StructureError("Specified nonce length too long".to_string()));
+            return Err(WalletError::CommonError(CommonError::InvalidStructure("Specified nonce length too long".to_string())));
         }
         let nonce_start_index = method_end_index + 2;
         let nonce_end_index = nonce_start_index + nonce_length as usize;
@@ -67,7 +67,7 @@ impl Header {
 
         let salt_length = bytes_to_u16(&serialised[nonce_end_index..nonce_end_index+2]);
         if salt_length != data_length {
-            return Err(WalletError::StructureError("Wallet header lengths mismatch".to_string()));
+            return Err(WalletError::CommonError(CommonError::InvalidStructure("Wallet header lengths mismatch".to_string())));
         }
         let salt_start_index = nonce_end_index + 2;
         let salt_end_index = salt_start_index + salt_length as usize;
@@ -76,7 +76,7 @@ impl Header {
 
         let actual_hash = sha256_hash(&serialised[..salt_end_index])?;
         if actual_hash != &serialised[salt_end_index..salt_end_index+32] {
-            return Err(WalletError::StructureError("Wallet header hash mismatch".to_string()));
+            return Err(WalletError::CommonError(CommonError::InvalidStructure("Wallet header hash mismatch".to_string())));
         }
 
         Ok(Header {
@@ -167,11 +167,11 @@ pub (super) fn import(wallet: &Wallet, reader: Box<Read>, passphrase: &str) -> R
     let mut header_length_bytes: [u8; 2] = [0; 2];
     let read_count = reader.read(&mut header_length_bytes)?;
     if read_count < 2 {
-        return Err(WalletError::StructureError("Failed to read import header bytes".to_string()));
+        return Err(WalletError::CommonError(CommonError::InvalidStructure("Failed to read import header bytes".to_string())));
     }
     let header_length = bytes_to_u16(&header_length_bytes) as usize;
     if header_length < 48 {
-        return Err(WalletError::StructureError("Wallet import header not of sufficient minimal length".to_string()));
+        return Err(WalletError::CommonError(CommonError::InvalidStructure("Wallet import header not of sufficient minimal length".to_string())));
     }
 
     let mut header_data: Vec<u8> = vec![0; header_length + 2];
@@ -182,7 +182,7 @@ pub (super) fn import(wallet: &Wallet, reader: Box<Read>, passphrase: &str) -> R
     while header_read_count < header_length {
         let read_count = reader.read(&mut header_data[2 + header_read_count..])?;
         if read_count == 0 {
-            return Err(WalletError::StructureError("Header body length less than specified".to_string()));
+            return Err(WalletError::CommonError(CommonError::InvalidStructure("Header body length less than specified".to_string())));
         } else {
             header_read_count += read_count;
         }
@@ -220,7 +220,7 @@ pub (super) fn import(wallet: &Wallet, reader: Box<Read>, passphrase: &str) -> R
 
     add_records_from_buffer(wallet, &mut decrypted_buffer)?;
     if decrypted_buffer.len() != 0 {
-        return Err(WalletError::StructureError("Failed to import all content".to_string()));
+        return Err(WalletError::CommonError(CommonError::InvalidStructure("Failed to import all content".to_string())));
     }
 
     Ok(())
@@ -285,33 +285,33 @@ fn deserialise_record(mut buffer: &[u8]) -> Result<WalletRecord, WalletError> {
     let expected_total_length = buffer.len();
     let type_length = bytes_to_u32(&buffer[..4]) as usize;
     if type_length + 16 > buffer.len() {
-        return Err(WalletError::StructureError("Insufficient serialised data length".to_string()));
+        return Err(WalletError::CommonError(CommonError::InvalidStructure("Insufficient serialised data length".to_string())));
     }
     let type_ = String::from_utf8(buffer[4..4+type_length].to_owned())?;
     buffer = &buffer[4+type_length..];
 
     let name_length = bytes_to_u32(&buffer[..4]) as usize;
     if name_length + 12 > buffer.len() {
-        return Err(WalletError::StructureError("Insufficient serialised data length".to_string()));
+        return Err(WalletError::CommonError(CommonError::InvalidStructure("Insufficient serialised data length".to_string())));
     }
     let name = String::from_utf8(buffer[4..4+name_length].to_owned())?;
     buffer = &buffer[4+name_length..];
 
     let value_length = bytes_to_u32(&buffer[..4]) as usize;
     if value_length + 8 > buffer.len() {
-        return Err(WalletError::StructureError("Insufficient serialised data length".to_string()));
+        return Err(WalletError::CommonError(CommonError::InvalidStructure("Insufficient serialised data length".to_string())));
     }
     let value = String::from_utf8(buffer[4..4+value_length].to_owned())?;
     buffer = &buffer[4+value_length..];
 
     let tags_json_length = bytes_to_u32(&buffer[..4]) as usize;
     if tags_json_length > buffer.len() {
-        return Err(WalletError::StructureError("Insufficient serialised data length".to_string()));
+        return Err(WalletError::CommonError(CommonError::InvalidStructure("Insufficient serialised data length".to_string())));
     }
 
     let total_length = type_length + name_length + value_length + tags_json_length + 16;
     if total_length != expected_total_length {
-        return Err(WalletError::StructureError("Lengths mismatch during record deserialisation".to_string()));
+        return Err(WalletError::CommonError(CommonError::InvalidStructure("Lengths mismatch during record deserialisation".to_string())));
     }
 
     let tags_json = String::from_utf8(buffer[4..4+tags_json_length].to_owned())?;
@@ -521,7 +521,7 @@ mod tests {
         let mut serialised_header = header.serialise().unwrap();
         serialised_header[3] = 1;
         let res = Header::deserialise(&serialised_header);
-        assert_match!(Err(WalletError::StructureError(_)), res);
+        assert_match!(Err(WalletError::CommonError(_)), res);
     }
 
     #[test]
@@ -541,7 +541,7 @@ mod tests {
         serialised_header[index] = byte_value;
 
         let res = Header::deserialise(&serialised_header);
-        assert_match!(Err(WalletError::StructureError(_)), res);
+        assert_match!(Err(WalletError::CommonError(_)), res);
     }
 
     /**
@@ -592,7 +592,7 @@ mod tests {
 
         let serialised_length = bytes_to_u32(&buff[0..4]) as usize;
         let res = deserialise_record(&buff[4..]);
-        assert_match!(Err(WalletError::StructureError(_)), res);
+        assert_match!(Err(WalletError::CommonError(_)), res);
     }
 
     #[test]
@@ -617,7 +617,7 @@ mod tests {
         buff[name_length_index + 3] = new_name_length_bytes[3];
 
         let res = deserialise_record(&buff[4..]);
-        assert_match!(Err(WalletError::StructureError(_)), res);
+        assert_match!(Err(WalletError::CommonError(_)), res);
     }
 
     #[test]
@@ -642,7 +642,7 @@ mod tests {
         buff[value_length_index + 3] = new_value_length_bytes[3];
 
         let res = deserialise_record(&buff[4..]);
-        assert_match!(Err(WalletError::StructureError(_)), res);
+        assert_match!(Err(WalletError::CommonError(_)), res);
     }
 
     #[test]
@@ -667,7 +667,7 @@ mod tests {
         buff[tags_length_index + 3] = new_tags_length_bytes[3];
 
         let res = deserialise_record(&buff[4..]);
-        assert_match!(Err(WalletError::StructureError(_)), res);
+        assert_match!(Err(WalletError::CommonError(_)), res);
     }
 
 
@@ -760,7 +760,7 @@ mod tests {
 
         let res = import(&mut wallet, reader, key);
 
-        assert_match!(Err(WalletError::StructureError(_)), res);
+        assert_match!(Err(WalletError::CommonError(_)), res);
     }
 
     #[test]
@@ -772,7 +772,7 @@ mod tests {
 
         let res = import(&mut wallet, reader, key);
 
-        assert_match!(Err(WalletError::StructureError(_)), res);
+        assert_match!(Err(WalletError::CommonError(_)), res);
     }
 
     #[test]
@@ -931,7 +931,7 @@ mod tests {
         assert_match!(Err(WalletError::ItemNotFound), first_res);
 
         let res = import(&mut wallet, reader, key);
-        assert_match!(Err(WalletError::StructureError(_)), res);
+        assert_match!(Err(WalletError::CommonError(_)), res);
     }
 
     #[test]
@@ -977,7 +977,7 @@ mod tests {
         assert_match!(Err(WalletError::ItemNotFound), first_res);
 
         let res = import(&mut wallet, reader, key);
-        assert_match!(Err(WalletError::StructureError(_)), res);
+        assert_match!(Err(WalletError::CommonError(_)), res);
     }
 
     #[test]
