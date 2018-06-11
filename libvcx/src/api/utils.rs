@@ -17,7 +17,7 @@ pub struct Config {
     agency_did: String,
     agency_verkey: String,
     wallet_name: Option<String>,
-    wallet_key: Option<String>,
+    wallet_key: String,
     agent_seed: Option<String>,
     enterprise_seed: Option<String>,
 }
@@ -53,7 +53,7 @@ pub extern fn vcx_provision_agent(json: *const c_char) -> *mut c_char {
                                                          my_config.wallet_name,
                                                          my_config.agent_seed,
                                                          my_config.enterprise_seed,
-                                                         my_config.wallet_key) {
+                                                         &my_config.wallet_key, None, None, None) {
         Err(e) => {
             error!("Provision Agent Error {}.", e);
             return ptr::null_mut();
@@ -104,7 +104,7 @@ pub extern fn vcx_agent_provision_async(command_handle : u32,
                                                                 my_config.wallet_name,
                                                                 my_config.agent_seed,
                                                                 my_config.enterprise_seed,
-                                                                my_config.wallet_key) {
+                                                                &my_config.wallet_key, None, None, None) {
             Err(e) => {
                 error!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: NULL", command_handle, error_string(e));
                 cb(command_handle, 0, ptr::null_mut());
@@ -257,7 +257,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        let json_string = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":null}"#;
+        let json_string = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":"key"}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
 
         let result = vcx_agent_provision_async(0, c_json, Some(generic_cb));

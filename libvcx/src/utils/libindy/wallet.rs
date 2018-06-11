@@ -52,13 +52,13 @@ extern {
 
 pub fn get_wallet_handle() -> i32 { unsafe { WALLET_HANDLE } }
 
-pub fn create_wallet(wallet_name: &str, pool_name: &str, credentials: Option<&str>) -> Result<(), u32> {
+pub fn create_wallet(wallet_name: &str, pool_name: &str) -> Result<(), u32> {
     let create_obj = Return_I32::new()?;
     let xtype = Some("default");
     let c_pool_name = CString::new(pool_name).unwrap();
     let c_wallet_name = CString::new(wallet_name).unwrap();
     let c_xtype_str = xtype.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-    let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let credential_str = CString::new(settings::get_wallet_credentials()).unwrap();
 
     unsafe {
         let err = indy_create_wallet(create_obj.command_handle,
@@ -66,7 +66,7 @@ pub fn create_wallet(wallet_name: &str, pool_name: &str, credentials: Option<&st
                                      c_wallet_name.as_ptr(),
                                      if xtype.is_some() { c_xtype_str.as_ptr() } else { null() },
                                      null(),
-                                     if credentials.is_some() { credentials_str.as_ptr() } else { null() },
+                                     credential_str.as_ptr(),
                                      Some(create_obj.get_callback()));
 
         if err != 203 && err != 0 {
@@ -86,7 +86,7 @@ pub fn create_wallet(wallet_name: &str, pool_name: &str, credentials: Option<&st
     }
 }
 
-pub fn open_wallet(wallet_name: &str, credentials: Option<&str>) -> Result<i32, u32> {
+pub fn open_wallet(wallet_name: &str) -> Result<i32, u32> {
     if settings::test_indy_mode_enabled() {
         unsafe {WALLET_HANDLE = 1;}
         return Ok(1);
@@ -98,13 +98,13 @@ pub fn open_wallet(wallet_name: &str, credentials: Option<&str>) -> Result<i32, 
         let open_obj = Return_I32_I32::new()?;
 
         let wallet_name = CString::new(wallet_name).unwrap();
-        let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let credential_str = CString::new(settings::get_wallet_credentials()).unwrap();
 
         // Open Wallet
         let err = indy_open_wallet(open_obj.command_handle,
                                    wallet_name.as_ptr(),
                                    null(),
-                                   if credentials.is_some() { credentials_str.as_ptr() } else { null() },
+                                   credential_str.as_ptr(),
                                    Some(open_obj.get_callback()));
 
         if err != 206 && err != 0 {
@@ -150,8 +150,8 @@ pub fn init_wallet(wallet_name: &str) -> Result<i32, u32> {
     let c_wallet_name = CString::new(wallet_name).map_err(map_string_error)?;
     let xtype = CString::new("default").map_err(map_string_error)?;
 
-    create_wallet(wallet_name, &pool_name, settings::get_wallet_credentials().as_ref().map_or(None, |x| Some(&**x)))?;
-    open_wallet(wallet_name, settings::get_wallet_credentials().as_ref().map_or(None, |x| Some(&**x)))
+    create_wallet(wallet_name, &pool_name)?;
+    open_wallet(wallet_name)
 }
 
 pub fn close_wallet() -> Result<(), u32> {
@@ -178,13 +178,14 @@ pub fn delete_wallet(wallet_name: &str) -> Result<(), u32> {
 
     let rtn_obj = Return_I32::new()?;
     let wallet_name = CString::new(wallet_name).map_err(map_string_error)?;
+    let credentials =  CString::new(settings::get_wallet_credentials()).unwrap();
 
     unsafe {
         indy_function_eval(
             indy_delete_wallet(rtn_obj.command_handle,
-                              wallet_name.as_ptr(),
-                              null(),
-                              Some(rtn_obj.get_callback()))
+                               wallet_name.as_ptr(),
+                               credentials.as_ptr(),
+                               Some(rtn_obj.get_callback()))
         ).map_err(map_indy_error_code)?;
     }
     rtn_obj.receive(TimeoutUtils::some_long())
@@ -242,7 +243,6 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         settings::set_config_value(settings::CONFIG_WALLET_KEY,"pass");
-        println!("settigns: config wallet key: {}", settings::get_config_value(settings::CONFIG_WALLET_KEY).unwrap());
 
         let handle = init_wallet("password_wallet").unwrap();
 

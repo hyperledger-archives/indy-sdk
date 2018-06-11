@@ -305,7 +305,7 @@ pub fn release_all() {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     extern crate rand;
 
     use super::*;
@@ -375,13 +375,13 @@ mod tests {
     #[test]
     fn test_get_schema_attrs_from_ledger(){
         let wallet_name = "test_get_schema_attrs_from_ledger";
-        ::utils::devsetup::tests::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
 
-        let (_, schema_attrs ) = get_schema_attrs("id".to_string(), SCHEMA_ID.to_string()).unwrap();
+        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
+        let (_, schema_attrs ) = get_schema_attrs("id".to_string(), schema_id.clone()).unwrap();
 
         println!("{}", schema_attrs);
-        assert!(schema_attrs.contains(r#""version":"4.4.4""#));
-        assert!(schema_attrs.contains(r#""schema_id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4""#));
+        assert!(schema_attrs.contains(&schema_id));
 
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
@@ -391,14 +391,14 @@ mod tests {
     #[test]
     fn test_create_schema_with_pool(){
         let wallet_name = "test_create_schema";
-        ::utils::devsetup::tests::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         token_setup(None, None);
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
         let schema_version: String = format!("{}.{}",rand::thread_rng().gen::<u32>().to_string(),
                                              rand::thread_rng().gen::<u32>().to_string());
-        let did = r#"2hoqvcwupRTUNkXn6ArYzs"#.to_string();
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
         let handle = create_new_schema("id", did, schema_name, schema_version, data).unwrap();
 
@@ -412,13 +412,17 @@ mod tests {
     #[test]
     fn test_create_duplicate_fails(){
         let wallet_name = "test_create_duplicate_schema_fails";
-        ::utils::devsetup::tests::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         token_setup(None, None);
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
-        let version = r#"0.0.2"#.to_string();
-        let did = r#"2hoqvcwupRTUNkXn6ArYzs"#.to_string();
-        let rc = create_new_schema("id", did, "name".to_string(), version,data);
+        let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
+        let schema_version: String = format!("{}.{}",rand::thread_rng().gen::<u32>().to_string(),
+                                             rand::thread_rng().gen::<u32>().to_string());
+        let rc = create_new_schema("id", did.clone(), schema_name.clone(), schema_version.clone(), data.clone());
+        assert!(rc.is_ok());
+        let rc = create_new_schema("id", did.clone(), schema_name.clone(), schema_version.clone(), data.clone());
 
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         assert!(rc.is_err());
@@ -428,16 +432,16 @@ mod tests {
     #[test]
     fn from_pool_ledger_with_id(){
         let wallet_name = "from_pool_ledger_with_id";
-        ::utils::devsetup::tests::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
 
-        let schema_id = r#"2hoqvcwupRTUNkXn6ArYzs:2:schema_nam:2.2.2"#;
-        let expected_schema_data = r#"{"ver":"1.0","id":"2hoqvcwupRTUNkXn6ArYzs:2:schema_nam:2.2.2","name":"schema_nam","version":"2.2.2","attrNames":["sex","age","name","height"],"seqNo":1659}"#;
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (schema_id, schema_json) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
 
-        let rc = LedgerSchema::retrieve_schema("3hoqvcwupRTUNkXn6ArYzs", schema_id);
+        let rc = LedgerSchema::retrieve_schema(&did, &schema_id);
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
 
         let (id, retrieved_schema) = rc.unwrap();
-        assert!(retrieved_schema.contains(r#""ver":"1.0","id":"2hoqvcwupRTUNkXn6ArYzs:2:schema_nam:2.2.2","name":"schema_nam","version":"2.2.2""#));
+        assert!(retrieved_schema.contains(&schema_id));
 
     }
 

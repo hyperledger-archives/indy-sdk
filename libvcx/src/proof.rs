@@ -745,7 +745,6 @@ mod tests {
 
     #[test]
     fn test_get_proof() {
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
@@ -917,33 +916,15 @@ mod tests {
     #[test]
     fn test_proof_verification() {
         let wallet_name = "test_proof_verification";
-        ::utils::devsetup::tests::setup_dev_env(wallet_name);
-
-        let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({
-                   "height_1": json!({
-                       "name":"height",
-                       "restrictions": [json!({ "issuer_did": "2hoqvcwupRTUNkXn6ArYzs", "cred_def_id": "2hoqvcwupRTUNkXn6ArYzs:3:CL:1766", "schema_id": "2hoqvcwupRTUNkXn6ArYzs:2:schema_name:0.0.11" })]
-                   }),
-                   "zip_2": json!({
-                       "name":"zip",
-                       "restrictions": [json!({ "issuer_did": "2hoqvcwupRTUNkXn6ArYzs", "cred_def_id": "2hoqvcwupRTUNkXn6ArYzs:3:CL:2200", "schema_name": "Home Address - Test", "schema_id": "2hoqvcwupRTUNkXn6ArYzs:2:Home Address - Test:0.0.1"  })]
-                   }),
-                   "self_attest_3": json!({
-                       "name":"self_attest",
-                   }),
-               }),
-               "requested_predicates": json!({}),
-            }).to_string();
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (schemas, cred_defs, proof_req, proof) = ::utils::libindy::anoncreds::tests::create_proof();
 
         let mut proof_req_obj = ProofRequestMessage::create();
         proof_req_obj.proof_request_data = serde_json::from_str(&proof_req).unwrap();
 
         let mut proof_msg = ProofMessage::new();
-        proof_msg.libindy_proof = PROOF_JSON.to_string();
+        proof_msg.libindy_proof = proof;
 
         let mut proof = create_boxed_proof();
         proof.proof = Some(proof_msg);

@@ -54,8 +54,10 @@ mod tests {
     use api::VcxStateType;
     use api::ProofStateType;
     use serde_json::Value;
+    use rand::Rng;
     use std::thread;
     use std::time::Duration;
+    use ::utils::devsetup::tests::{setup_local_env, set_institution, set_consumer, cleanup_dev_env};
 
     #[cfg(feature = "pool_tests")]
     #[test]
@@ -63,7 +65,7 @@ mod tests {
         ::utils::logger::LoggerUtils::init();
         let test_name = "test_delete_connection";
         settings::set_defaults();
-        ::utils::devsetup::tests::setup_dev_env(test_name);
+        ::utils::devsetup::tests::setup_local_env(test_name);
         let alice = connection::build_connection("alice").unwrap();
         connection::delete_connection(alice).unwrap();
         assert!(connection::release(alice).is_err());
@@ -73,64 +75,86 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_real_proof() {
-        ::utils::logger::LoggerUtils::init_test_logging();
         settings::set_defaults();
-        let cred_def_id = ::utils::constants::ADDRESS_CRED_DEF_ID.to_string();
         //BE INSTITUTION AND GENERATE INVITE FOR CONSUMER
-        ::utils::devsetup::tests::setup_dev_env("test_real_proof");
+	    setup_local_env("test_real_proof");
+        let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let alice = connection::build_connection("alice").unwrap();
         connection::connect(alice, Some("{}".to_string())).unwrap();
         let details = connection::get_invite_details(alice, false).unwrap();
+        println!("sending connection invite");
         //BE CONSUMER AND ACCEPT INVITE FROM INSTITUTION
-        ::utils::devsetup::tests::be_consumer();
+        set_consumer();
         let faber = connection::build_connection_with_invite("faber", &details).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, connection::get_state(faber));
         assert_eq!(VcxStateType::VcxStateOfferSent as u32, connection::get_state(alice));
         connection::connect(faber, Some("{}".to_string())).unwrap();
+        println!("accepting connection invite");
         //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
-        ::utils::devsetup::tests::be_institution();
+        set_institution();
         thread::sleep(Duration::from_millis(2000));
         connection::update_state(alice).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, connection::get_state(alice));
         // AS INSTITUTION SEND CREDENTIAL OFFER
+        println!("creating schema/credential_def and paying fees");
+        let data = r#"["address1","address2","zip","city","state"]"#.to_string();
+        let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
+        let schema_version: String = format!("{}.{}",rand::thread_rng().gen::<u32>().to_string(),
+                                             rand::thread_rng().gen::<u32>().to_string());
+        let schema = ::schema::create_new_schema("id", institution_did.clone(), schema_name.clone(),schema_version, data).unwrap();
+        let schema_id = ::schema::get_schema_id(schema).unwrap();
+
+        let handle = ::credential_def::create_new_credentialdef("1".to_string(),
+                                                  schema_name,
+                                                  institution_did.clone(),
+                                                  schema_id.clone(),
+                                                  "tag_1".to_string(),
+                                                  r#"{"support_revocation":false}"#.to_string()).unwrap();
+
+        let cred_def_id = ::credential_def::get_cred_def_id(handle).unwrap();
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
         let credential_offer = issuer_credential::issuer_credential_create(cred_def_id.clone(),
                                                             "1".to_string(),
-                                                            settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap(),
+                                                            institution_did.clone(),
                                                             "credential_name".to_string(),
                                                             credential_data.to_owned(),
-                                                            0).unwrap();
+                                                            1).unwrap();
+        println!("sending credential offer");
         issuer_credential::send_credential_offer(credential_offer, alice).unwrap();
         thread::sleep(Duration::from_millis(2000));
         // AS CONSUMER SEND CREDENTIAL REQUEST
-        ::utils::devsetup::tests::be_consumer();
+        set_consumer();
         let credential_offers = credential::get_credential_offer_messages(faber, None).unwrap();
         let offers: Value = serde_json::from_str(&credential_offers).unwrap();
         let offers = serde_json::to_string(&offers[0]).unwrap();
         let credential = credential::credential_create_with_offer("TEST_CREDENTIAL", &offers).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, credential::get_state(credential).unwrap());
+        println!("sending credential request");
         credential::send_credential_request(credential, faber).unwrap();
         thread::sleep(Duration::from_millis(2000));
         // AS INSTITUTION SEND CREDENTIAL
-        ::utils::devsetup::tests::be_institution();
+        set_institution();
         issuer_credential::update_state(credential_offer);
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, issuer_credential::get_state(credential_offer));
+        println!("sending credential");
         issuer_credential::send_credential(credential_offer, alice).unwrap();
         thread::sleep(Duration::from_millis(2000));
         // AS CONSUMER STORE CREDENTIAL
-        ::utils::devsetup::tests::be_consumer();
+        tests::set_consumer();
         credential::update_state(credential).unwrap();
+        println!("storing credential");
+        let cred_id = credential::get_credential_id(credential).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, credential::get_state(credential).unwrap());
         // AS INSTITUTION SEND PROOF REQUEST
-        ::utils::devsetup::tests::be_institution();
+        tests::set_institution();
         let requested_attrs = json!([
            {
               "name":"address1",
               "restrictions": [{
                 "schema_name":"Home Address",
-                "issuer_did": ::utils::devsetup::tests::INSTITUTION_DID,
-                "schema_id": ::utils::constants::ADDRESS_SCHEMA_ID,
-                "cred_def_id": ::utils::constants::ADDRESS_CRED_DEF_ID,
+                "issuer_did": institution_did,
+                "schema_id": schema_id,
+                "cred_def_id": cred_def_id,
 
               }]
            },
@@ -138,9 +162,9 @@ mod tests {
               "name":"address2",
               "restrictions": [{
                 "schema_name":"Home Address",
-                "issuer_did": ::utils::devsetup::tests::INSTITUTION_DID,
-                "schema_id": ::utils::constants::ADDRESS_SCHEMA_ID,
-                "cred_def_id": ::utils::constants::ADDRESS_CRED_DEF_ID,
+                "issuer_did": institution_did,
+                "schema_id": schema_id,
+                "cred_def_id": cred_def_id,
 
               }]
            },
@@ -148,9 +172,9 @@ mod tests {
               "name":"city",
               "restrictions": [{
                 "schema_name":"Home Address",
-                "issuer_did": ::utils::devsetup::tests::INSTITUTION_DID,
-                "schema_id": ::utils::constants::ADDRESS_SCHEMA_ID,
-                "cred_def_id": ::utils::constants::ADDRESS_CRED_DEF_ID,
+                "issuer_did": institution_did,
+                "schema_id": schema_id,
+                "cred_def_id": cred_def_id,
 
               }]
            },
@@ -158,9 +182,9 @@ mod tests {
               "name":"state",
               "restrictions": [{
                 "schema_name":"Home Address",
-                "issuer_did": ::utils::devsetup::tests::INSTITUTION_DID,
-                "schema_id": ::utils::constants::ADDRESS_SCHEMA_ID,
-                "cred_def_id": ::utils::constants::ADDRESS_CRED_DEF_ID,
+                "issuer_did": institution_did,
+                "schema_id": schema_id,
+                "cred_def_id": cred_def_id,
 
               }]
            },
@@ -168,19 +192,20 @@ mod tests {
               "name":"zip",
               "restrictions": [{
                 "schema_name":"Home Address",
-                "issuer_did": ::utils::devsetup::tests::INSTITUTION_DID,
-                "schema_id": ::utils::constants::ADDRESS_SCHEMA_ID,
-                "cred_def_id": ::utils::constants::ADDRESS_CRED_DEF_ID,
+                "issuer_did": institution_did,
+                "schema_id": schema_id,
+                "cred_def_id": cred_def_id,
 
               }]
            }
         ]).to_string();
 
         let proof_req_handle = proof::create_proof("1".to_string(), requested_attrs, "[]".to_string(), "name".to_string()).unwrap();
+        println!("sending proof request");
         proof::send_proof_request(proof_req_handle, alice).unwrap();
         thread::sleep(Duration::from_millis(2000));
         // AS CONSUMER SEND PROOF
-        ::utils::devsetup::tests::be_consumer();
+        set_consumer();
         let requests = disclosed_proof::get_proof_request_messages(faber, None).unwrap();
         let requests: Value = serde_json::from_str(&requests).unwrap();
         let requests = serde_json::to_string(&requests[0]).unwrap();
@@ -189,7 +214,7 @@ mod tests {
                "attrs":{
                   "address1_1":{
                     "cred_info":{
-                       "referent": ::utils::constants::ADDRESS_CRED_ID,
+                       "referent": cred_id,
                        "attrs":{
                           "address1":"101 Tela Lane",
                           "address2":"101 Wilson Lane",
@@ -197,8 +222,8 @@ mod tests {
                           "state":"UT",
                           "city":"SLC"
                        },
-                       "schema_id": ::utils::constants::ADDRESS_SCHEMA_ID,
-                       "cred_def_id": ::utils::constants::ADDRESS_CRED_DEF_ID,
+                       "schema_id": schema_id,
+                       "cred_def_id": cred_def_id,
                        "rev_reg_id":null,
                        "cred_rev_id":null
                     },
@@ -206,7 +231,7 @@ mod tests {
                  },
                   "address2_2":{
                     "cred_info":{
-                       "referent": ::utils::constants::ADDRESS_CRED_ID,
+                       "referent": cred_id,
                        "attrs":{
                           "address1":"101 Tela Lane",
                           "address2":"101 Wilson Lane",
@@ -214,8 +239,8 @@ mod tests {
                           "state":"UT",
                           "city":"SLC"
                        },
-                       "schema_id": ::utils::constants::ADDRESS_SCHEMA_ID,
-                       "cred_def_id": ::utils::constants::ADDRESS_CRED_DEF_ID,
+                       "schema_id": schema_id,
+                       "cred_def_id": cred_def_id,
                        "rev_reg_id":null,
                        "cred_rev_id":null
                     },
@@ -223,7 +248,7 @@ mod tests {
                  },
                   "city_3":{
                     "cred_info":{
-                       "referent": ::utils::constants::ADDRESS_CRED_ID,
+                       "referent": cred_id,
                        "attrs":{
                           "address1":"101 Tela Lane",
                           "address2":"101 Wilson Lane",
@@ -231,8 +256,8 @@ mod tests {
                           "state":"UT",
                           "city":"SLC"
                        },
-                       "schema_id": ::utils::constants::ADDRESS_SCHEMA_ID,
-                       "cred_def_id": ::utils::constants::ADDRESS_CRED_DEF_ID,
+                       "schema_id": schema_id,
+                       "cred_def_id": cred_def_id,
                        "rev_reg_id":null,
                        "cred_rev_id":null
                     },
@@ -240,7 +265,7 @@ mod tests {
                  },
                   "state_4":{
                     "cred_info":{
-                       "referent": ::utils::constants::ADDRESS_CRED_ID,
+                       "referent": cred_id,
                        "attrs":{
                           "address1":"101 Tela Lane",
                           "address2":"101 Wilson Lane",
@@ -248,8 +273,8 @@ mod tests {
                           "state":"UT",
                           "city":"SLC"
                        },
-                       "schema_id": ::utils::constants::ADDRESS_SCHEMA_ID,
-                       "cred_def_id": ::utils::constants::ADDRESS_CRED_DEF_ID,
+                       "schema_id": schema_id,
+                       "cred_def_id": cred_def_id,
                        "rev_reg_id":null,
                        "cred_rev_id":null
                     },
@@ -257,7 +282,7 @@ mod tests {
                  },
                   "zip_5":{
                     "cred_info":{
-                       "referent": ::utils::constants::ADDRESS_CRED_ID,
+                       "referent": cred_id,
                        "attrs":{
                           "address1":"101 Tela Lane",
                           "address2":"101 Wilson Lane",
@@ -265,8 +290,8 @@ mod tests {
                           "state":"UT",
                           "city":"SLC"
                        },
-                       "schema_id": ::utils::constants::ADDRESS_SCHEMA_ID,
-                       "cred_def_id": ::utils::constants::ADDRESS_CRED_DEF_ID,
+                       "schema_id": schema_id,
+                       "cred_def_id": cred_def_id,
                        "rev_reg_id":null,
                        "cred_rev_id":null
                     },
@@ -274,18 +299,20 @@ mod tests {
                  }
                },
                "predicates":{
-
                }
             });
+
         disclosed_proof::generate_proof(proof_handle, selected_credentials.to_string(), "{}".to_string()).unwrap();
+        println!("sending proof");
         disclosed_proof::send_proof(proof_handle, faber).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, disclosed_proof::get_state(proof_handle).unwrap());
         thread::sleep(Duration::from_millis(5000));
         // AS INSTITUTION VALIDATE PROOF
-        ::utils::devsetup::tests::be_institution();
+        set_institution();
         proof::update_state(proof_req_handle);
         assert_eq!(proof::get_proof_state(proof_req_handle), ProofStateType::ProofValidated as u32);
         println!("proof validated!");
-        ::utils::devsetup::tests::cleanup_dev_env("test_real_proof");
+        let wallet = ::utils::libindy::payments::get_wallet_token_info().unwrap();
+        cleanup_dev_env("test_real_proof");
     }
 }

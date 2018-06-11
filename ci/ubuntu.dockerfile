@@ -40,7 +40,7 @@ RUN npm install typescript-compiler
 RUN mkdir -p /libindy
 WORKDIR /libindy
 
-ENV LIBINDY_DEB=libindy_1.4.0~533_amd64.deb
+ENV LIBINDY_DEB=libindy_1.4.0~560_amd64.deb
 ENV LIBINDY_DOWNLOAD_URL=https://repo.sovrin.org/sdk/lib/apt/xenial/master/$LIBINDY_DEB
 
 RUN curl -fsOSL $LIBINDY_DOWNLOAD_URL \
@@ -48,7 +48,7 @@ RUN curl -fsOSL $LIBINDY_DOWNLOAD_URL \
     && apt-get -f install
 
 # Install libnullpay
-ENV LIBNULLPAY_DEB=libnullpay_0.1.0~533_amd64.deb
+ENV LIBNULLPAY_DEB=libnullpay_0.1.0~560_amd64.deb
 ENV LIBNULLPAY_DOWNLOAD_URL=https://repo.sovrin.org/sdk/lib/apt/xenial/master/$LIBNULLPAY_DEB
 
 RUN curl -fsOSL $LIBNULLPAY_DOWNLOAD_URL\

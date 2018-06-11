@@ -629,37 +629,26 @@ mod tests {
         assert!(request.len() > 50);
     }
 
+    #[cfg(feature = "pool_tests")]
     #[test]
     fn test_retrieve_credentials() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_retrieve_creds_disclosed_proof";
-        ::utils::devsetup::tests::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        ::utils::libindy::payments::mint_tokens(None, Some(10000000)).unwrap();
+        ::utils::libindy::anoncreds::tests::create_and_store_credential();
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (_, _, req, _) = ::utils::libindy::anoncreds::tests::create_proof();
 
         let mut proof_req = ProofRequestMessage::create();
         let mut proof: DisclosedProof = Default::default();
-        let indy_proof_req = json!({
-           "nonce":"123432421212",
-           "name":"proof_req_1",
-           "version":"0.1",
-           "requested_attributes": json!({
-               "height_1": json!({
-                   "name":"height",
-                   "restrictions": [json!({ "issuer_did": "2hoqvcwupRTUNkXn6ArYzs" })]
-               }),
-               "zip_2": json!({
-                   "name":"zip",
-                   "restrictions": [json!({ "issuer_did": "2hoqvcwupRTUNkXn6ArYzs" })]
-               }),
-           }),
-           "requested_predicates": json!({}),
-        }).to_string();
-        proof_req.proof_request_data = serde_json::from_str(&indy_proof_req).unwrap();
+        proof_req.proof_request_data = serde_json::from_str(&req).unwrap();
         proof.proof_request = Some(proof_req);
 
-        let retrieved_creds: Value = serde_json::from_str(&proof.retrieve_credentials().unwrap()).unwrap();
-        let expected_creds: Value = serde_json::from_str(CREDS_FROM_PROOF_REQ).unwrap();
-        assert_eq!(retrieved_creds, expected_creds);
+        let retrieved_creds = proof.retrieve_credentials().unwrap();
+        println!("retrieved_creds: {}", retrieved_creds);
+        assert!(retrieved_creds.len() > 500);
 
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
@@ -669,12 +658,9 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_retrieve_creds_disclosed_proof";
-        ::utils::devsetup::tests::setup_dev_env(wallet_name);
 
         let proof: DisclosedProof = Default::default();
         assert_eq!(proof.retrieve_credentials(), Err(ProofError::ProofNotReadyError()));
-
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[test]
@@ -730,7 +716,9 @@ mod tests {
     fn test_generate_proof() {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_generate_proof";
-        ::utils::devsetup::tests::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (schema_id, _, cred_def_id, _, _, _, _, cred_id) = ::utils::libindy::anoncreds::tests::create_and_store_credential();
 
         let mut proof_req = ProofRequestMessage::create();
         let indy_proof_req = json!({
@@ -738,13 +726,13 @@ mod tests {
            "name":"proof_req_1",
            "version":"0.1",
            "requested_attributes": json!({
-               "height_1": json!({
-                   "name":"height",
-                   "restrictions": [json!({ "issuer_did": "2hoqvcwupRTUNkXn6ArYzs" })]
+               "address1_1": json!({
+                   "name":"address1",
+                   "restrictions": [json!({ "issuer_did": did })]
                }),
                "zip_2": json!({
                    "name":"zip",
-                   "restrictions": [json!({ "issuer_did": "2hoqvcwupRTUNkXn6ArYzs" })]
+                   "restrictions": [json!({ "issuer_did": did })]
                }),
                "self_attested_attr_3": json!({
                    "name":"self_attested_attr",
@@ -756,17 +744,17 @@ mod tests {
 
         let selected_credentials : Value = json!({
            "attrs":{
-              "height_1":{
+              "address1_1":{
                 "cred_info":{
-                   "referent":LICENCE_CRED_ID,
+                   "referent":cred_id,
                    "attrs":{
                       "sex":"male",
                       "age":"111",
                       "name":"Bob",
                       "height":"4'11"
                    },
-                   "schema_id": SCHEMA_ID,
-                   "cred_def_id": CRED_DEF_ID,
+                   "schema_id": schema_id,
+                   "cred_def_id": cred_def_id,
                    "rev_reg_id":null,
                    "cred_rev_id":null
                 },
@@ -774,7 +762,7 @@ mod tests {
               },
               "zip_2":{
                 "cred_info":{
-                   "referent":ADDRESS_CRED_ID,
+                   "referent":cred_id,
                    "attrs":{
                       "address1":"101 Tela Lane",
                       "address2":"101 Wilson Lane",
@@ -782,17 +770,15 @@ mod tests {
                       "state":"UT",
                       "city":"SLC"
                    },
-                   "schema_id":ADDRESS_SCHEMA_ID,
-                   "cred_def_id":ADDRESS_CRED_DEF_ID,
+                   "schema_id":schema_id,
+                   "cred_def_id":cred_def_id,
                    "rev_reg_id":null,
                    "cred_rev_id":null
                 },
                 "interval":null
              }
            },
-           "predicates":{
-
-           }
+           "predicates":{ }
         });
 
         let self_attested: Value = json!({

@@ -376,7 +376,7 @@ mod tests {
     #[test]
     fn test_vcx_create_schema_with_pool() {
         let wallet_name = "test_api_create_schema";
-        ::utils::devsetup::tests::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
 
         let data = r#"["name","male"]"#;
         let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
@@ -399,11 +399,12 @@ mod tests {
     #[test]
     fn test_vcx_schema_get_attrs_with_pool() {
         let wallet_name = "get_schema_atters_api";
-        ::utils::devsetup::tests::setup_dev_env(wallet_name);
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
 
         assert_eq!(vcx_schema_get_attributes(0,
                                      CString::new("Test Source ID").unwrap().into_raw(),
-                                     CString::new(SCHEMA_ID).unwrap().into_raw(),
+                                     CString::new(schema_id).unwrap().into_raw(),
                                      Some(get_attrs_pool_cb)), error::SUCCESS.code_num);
 
         thread::sleep(Duration::from_millis(1000));

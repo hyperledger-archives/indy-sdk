@@ -296,8 +296,7 @@ pub fn libindy_prover_get_credentials_for_proof_req(proof_req: &str) -> Result<S
 
 pub fn libindy_prover_create_credential_req(prover_did: &str,
                                             credential_offer_json: &str,
-                                            credential_def_json: &str,
-                                            master_secret_id: Option<String>) -> Result<(String, String), u32>
+                                            credential_def_json: &str) -> Result<(String, String), u32>
 {
     if settings::test_indy_mode_enabled() { return Ok((::utils::constants::CREDENTIAL_REQ_STRING.to_owned(), String::new())); }
 
@@ -307,7 +306,7 @@ pub fn libindy_prover_create_credential_req(prover_did: &str,
     let prover_did = CString::new(prover_did).map_err(map_string_error)?;
     let credential_offer_json = CString::new(credential_offer_json).map_err(map_string_error)?;
     let credential_def_json = CString::new(credential_def_json).map_err(map_string_error)?;
-    let master_secret_name = CString::new(master_secret_id.unwrap_or(settings::DEFAULT_LINK_SECRET_ALIAS.to_string())).map_err(map_string_error)?;
+    let master_secret_name = CString::new(settings::DEFAULT_LINK_SECRET_ALIAS.to_string()).map_err(map_string_error)?;
 
     unsafe {
         indy_function_eval(
@@ -432,230 +431,103 @@ pub fn libindy_issuer_create_schema(issuer_did: &str,
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     extern crate serde_json;
+    extern crate rand;
+    use rand::Rng;
     use settings;
-    use utils::libindy::wallet::{ init_wallet, delete_wallet, open_wallet};
     use utils::constants::*;
 
-    fn setup_non_pool_tests(wallet_name: &str) {
-        ::utils::logger::LoggerUtils::init();
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        ::utils::devsetup::tests::setup_wallet(wallet_name);
-        ::utils::devsetup::tests::set_institution_dev_config(wallet_name);
-        open_wallet(wallet_name, None).unwrap();
+    pub fn create_schema() -> (String, String) {
+        let data = r#"["address1","address2","zip","city","state"]"#.to_string();
+        let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
+        let schema_version: String = format!("{}.{}", rand::thread_rng().gen::<u32>().to_string(),
+                                             rand::thread_rng().gen::<u32>().to_string());
+        let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+
+        libindy_issuer_create_schema(&institution_did, &schema_name, &schema_version, &data).unwrap()
     }
 
-    fn cleanup_non_pool_tests(wallet_name: &str) {
-        delete_wallet(wallet_name).unwrap();
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+    pub fn create_schema_req(schema_json: &str) -> String {
+        let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        ::utils::libindy::ledger::libindy_build_schema_request(&institution_did, schema_json).unwrap()
     }
 
-    #[test]
-    fn simple_libindy_create_credential_offer_test() {
-        let wallet_name = "test_libindy_create_cred_offer";
-        setup_non_pool_tests(wallet_name);
-
-        let result = libindy_issuer_create_credential_offer(CRED_DEF_ID);
-
-        cleanup_non_pool_tests(wallet_name);
-        assert!(result.is_ok());
-        //println!("{}", result.unwrap());
+    pub fn write_schema(request: &str) {
+        let (payment_info, response) = ::utils::libindy::payments::pay_for_txn(&request, SCHEMA_TXN_TYPE).unwrap();
     }
 
-    #[test]
-    fn simple_libindy_issuer_create_credential_offer_req_and_cred() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_libindy_create_credential";
-        ::utils::devsetup::tests::setup_wallet(wallet_name);
-        open_wallet(wallet_name, None).unwrap();
-
-        let libindy_offer = libindy_issuer_create_credential_offer(CRED_DEF_ID).unwrap();
-
-        let (libindy_cred_req, cred_req_meta) = libindy_prover_create_credential_req(
-            &settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap(),
-            &libindy_offer,
-            CRED_DEF_JSON,
-            None).unwrap();
-
-        let encoded_cred_data = r#"{"age":["111","111"],"height":["4'11","25730877424947290072821310314181366395232879096832067784637233452620527354832"],"name":["Bob","93006290325627508022776103386395994712401809437930957652111221015872244345185"],"sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"]}"#;
-
-        let result = libindy_issuer_create_credential(
-            &libindy_offer,
-            &libindy_cred_req,
-            encoded_cred_data,
-            None,
-            None);
-        delete_wallet(wallet_name).unwrap();
-        assert!(result.is_ok());
-        let (str1, str2, str3) = result.unwrap();
+    pub fn create_and_write_test_schema() -> (String, String) {
+        let (schema_id, schema_json) = create_schema();
+        let req = create_schema_req(&schema_json);
+        write_schema(&req);
+        (schema_id, schema_json)
     }
 
-    #[test]
-    fn simple_libindy_create_schema() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_create_schema";
-        ::utils::devsetup::tests::setup_wallet(wallet_name);
-        init_wallet(wallet_name).unwrap();
+    pub fn create_and_store_credential_def() -> (String, String, String, String) {
+        /* create schema */
+        let (schema_id, schema_json) = create_and_write_test_schema();
 
-        let schema_data = r#"["name", "age", "sex", "height"]"#;
-        let result = libindy_issuer_create_schema(
-            &settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap(),
-            "schema_nam",
-            "2.2.2",
-            schema_data);
-        delete_wallet("test_create_schema").unwrap();
-        assert!(result.is_ok());
-        let (id, schema) = result.unwrap();
+        let name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
+        let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+
+        /* create cred-def */
+        let handle = ::credential_def::create_new_credentialdef("1".to_string(),
+                                                                name,
+                                                                institution_did.clone(),
+                                                                schema_id.clone(),
+                                                                "tag_1".to_string(),
+                                                                r#"{"support_revocation":false}"#.to_string()).unwrap();
+
+        let cred_def_id = ::credential_def::get_cred_def_id(handle).unwrap();
+        let (_, cred_def_json) = ::credential_def::retrieve_credential_def(&cred_def_id).unwrap();
+        (schema_id, schema_json, cred_def_id, cred_def_json)
     }
 
-    #[test]
-    fn simple_libindy_create_cred_def() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_create_cred_def";
-        ::utils::devsetup::tests::setup_wallet(wallet_name);
-        open_wallet(wallet_name, None).unwrap();
+    pub fn create_credential_offer() -> (String, String, String, String, String) {
+        let (schema_id, schema_json, cred_def_id, cred_def_json) = create_and_store_credential_def();
 
-        let result = libindy_create_and_store_credential_def(
-            "AQ2EZRY9JQ4ssjmZPL5MiU",
-            SCHEMA_JSON,
-           "tag_1",
-            Some(SigTypes::CL),
-            r#"{"support_revocation":false}"#
-        );
-        delete_wallet(wallet_name).unwrap();
-        assert!(result.is_ok());
-        let (id, cred) = result.unwrap();
+        let offer = ::utils::libindy::anoncreds::libindy_issuer_create_credential_offer(&cred_def_id).unwrap();
+        (schema_id, schema_json, cred_def_id, cred_def_json, offer)
     }
 
-    #[test]
-    //Todo: Get working. Works individually but fails during cargo test
-    fn simple_libindy_create_master_secret() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_create_ms";
-        ::utils::devsetup::tests::setup_wallet(wallet_name);
-        open_wallet(wallet_name, None).unwrap();
-
-        let rc = libindy_prover_create_master_secret("random_ms");
-        delete_wallet(wallet_name).unwrap();
-        assert!(rc.is_ok());
+    pub fn create_credential_req() -> (String, String, String, String, String, String, String) {
+        let (schema_id, schema_json, cred_def_id, cred_def_json, offer) = create_credential_offer();
+        let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (req, req_meta) = ::utils::libindy::anoncreds::libindy_prover_create_credential_req(&institution_did, &offer, &cred_def_json).unwrap();
+        (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta)
     }
 
-    #[test]
-    fn simple_libindy_create_cred_req() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_create_cred_req";
-        ::utils::devsetup::tests::setup_wallet(wallet_name);
-        open_wallet(wallet_name, None).unwrap();
+    pub fn create_and_store_credential() -> (String, String, String, String, String, String, String, String) {
 
-        let result = libindy_prover_create_credential_req(
-            &settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap(),
-            CRED_OFFER,
-            CRED_DEF_JSON,
-            None,
-        );
-        delete_wallet(wallet_name).unwrap();
-        assert!(result.is_ok());
-        let (cred_req, cred_req_meta) = result.unwrap();
+        let (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta) = create_credential_req();
+
+        /* create cred */
+        let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
+        let encoded_attributes = ::issuer_credential::encode_attributes(&credential_data).unwrap();
+        let (cred, _, _) = ::utils::libindy::anoncreds::libindy_issuer_create_credential(&offer, &req, &encoded_attributes, None, None).unwrap();
+        /* store cred */
+        let cred_id = ::utils::libindy::anoncreds::libindy_prover_store_credential(None, &req_meta, &cred, &cred_def_json, None).unwrap();
+        (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta, cred_id)
     }
 
-    #[test]
-    fn simple_libindy_prover_store_cred() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_store_cred2";
-        ::utils::devsetup::tests::setup_wallet(wallet_name);
-        open_wallet(wallet_name, None).unwrap();
-
-        let libindy_offer = libindy_issuer_create_credential_offer(CRED_DEF_ID).unwrap();
-
-        let (libindy_cred_req, cred_req_meta) = libindy_prover_create_credential_req(
-            &settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap(),
-            &libindy_offer,
-            CRED_DEF_JSON,
-            None,
-            ).unwrap();
-
-        let encoded_cred_data = r#"{"age":["111","111"],"height":["4'11","25730877424947290072821310314181366395232879096832067784637233452620527354832"],"name":["Bob","93006290325627508022776103386395994712401809437930957652111221015872244345185"],"sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"]}"#;
-
-        let (cred, _, _) = libindy_issuer_create_credential(
-            &libindy_offer,
-            &libindy_cred_req,
-            encoded_cred_data,
-            None,
-            None).unwrap();
-
-        let result = libindy_prover_store_credential(
-            None,
-            &cred_req_meta,
-            &cred,
-            CRED_DEF_JSON,
-            None);
-
-        delete_wallet(wallet_name).unwrap();
-        assert!(result.is_ok());
-        let cred_id = result.unwrap();
-    }
-
-    #[test]
-    fn simple_libindy_prover_get_creds_from_req() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_get_creds_from_req";
-        ::utils::devsetup::tests::setup_wallet(wallet_name);
-        open_wallet(wallet_name, None).unwrap();
+    pub fn create_proof() -> (String, String, String, String) {
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta, cred_id) = create_and_store_credential();
 
         let proof_req = json!({
            "nonce":"123432421212",
            "name":"proof_req_1",
            "version":"0.1",
            "requested_attributes": json!({
-               "height_1": json!({
-                   "name":"height",
-                   "restrictions": [json!({ "issuer_did": "2hoqvcwupRTUNkXn6ArYzs" })]
+               "address1_1": json!({
+                   "name":"address1",
+                   "restrictions": [json!({ "issuer_did": did })]
                }),
                "zip_2": json!({
                    "name":"zip",
-                   "restrictions": [json!({ "issuer_did": "2hoqvcwupRTUNkXn6ArYzs" })]
-               }),
-           }),
-           "requested_predicates": json!({}),
-        }).to_string();
-        let result = libindy_prover_get_credentials_for_proof_req(&proof_req);
-
-        delete_wallet(wallet_name).unwrap();
-        assert!(result.is_ok());
-        let creds = result.unwrap();
-    }
-
-    #[test]
-    fn test_prover_create_proof() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_prover_create_proof";
-        ::utils::devsetup::tests::setup_wallet(wallet_name);
-        open_wallet(wallet_name, None).unwrap();
-
-        let proof_req = json!({
-           "nonce":"123432421212",
-           "name":"proof_req_1",
-           "version":"0.1",
-           "requested_attributes": json!({
-               "height_1": json!({
-                   "name":"height",
-                   "restrictions": [json!({ "issuer_did": "2hoqvcwupRTUNkXn6ArYzs" })]
-               }),
-               "zip_2": json!({
-                   "name":"zip",
-                   "restrictions": [json!({ "issuer_did": "2hoqvcwupRTUNkXn6ArYzs" })]
+                   "restrictions": [json!({ "issuer_did": did })]
                }),
                "self_attest_3": json!({
                    "name":"self_attest",
@@ -669,87 +541,54 @@ mod tests {
                  "self_attest_3": "my_self_attested_val"
               },
               "requested_attributes":{
-                 "height_1": {"cred_id": LICENCE_CRED_ID, "revealed": true},
-                 "zip_2": {"cred_id": ADDRESS_CRED_ID, "revealed": true}
+                 "address1_1": {"cred_id": cred_id, "revealed": true},
+                 "zip_2": {"cred_id": cred_id, "revealed": true}
                 },
               "requested_predicates":{}
         }).to_string();
 
-        let schema_json: serde_json::Value = serde_json::from_str(SCHEMA_JSON).unwrap();
-        let address_schema_json: serde_json::Value = serde_json::from_str(ADDRESS_SCHEMA_JSON).unwrap();
+        let schema_json: serde_json::Value = serde_json::from_str(&schema_json).unwrap();
         let schemas = json!({
-            SCHEMA_ID: schema_json,
-            ADDRESS_SCHEMA_ID: address_schema_json,
+            schema_id: schema_json,
         }).to_string();
 
-        let cred_def_json: serde_json::Value = serde_json::from_str(CRED_DEF_JSON).unwrap();
-        let address_cred_def_json: serde_json::Value = serde_json::from_str(ADDRESS_CRED_DEF_JSON).unwrap();
+        let cred_def_json: serde_json::Value = serde_json::from_str(&cred_def_json).unwrap();
         let cred_defs = json!({
-            ADDRESS_CRED_DEF_ID: address_cred_def_json,
-            CRED_DEF_ID: cred_def_json,
+            cred_def_id: cred_def_json,
         }).to_string();
 
-        let result = libindy_prover_create_proof(
+       libindy_prover_get_credentials_for_proof_req(&proof_req).unwrap();
+
+        let proof = libindy_prover_create_proof(
             &proof_req,
             &requested_credentials_json,
             "main",
             &schemas,
             &cred_defs,
-            None);
-        delete_wallet(wallet_name).unwrap();
-        assert!(result.is_ok());
-        let proof = result.unwrap();
+            None).unwrap();
+        (schemas, cred_defs, proof_req, proof)
     }
 
+    #[cfg(feature = "pool_tests")]
     #[test]
     fn test_prover_verify_proof() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_verify_proof";
-        ::utils::devsetup::tests::setup_wallet(wallet_name);
-        open_wallet(wallet_name, None).unwrap();
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
 
-        let proof_req = json!({
-           "nonce":"123432421212",
-           "name":"proof_req_1",
-           "version":"0.1",
-           "requested_attributes": json!({
-               "height_1": json!({
-                   "name":"height",
-                   "restrictions": [json!({ "issuer_did": "2hoqvcwupRTUNkXn6ArYzs" })]
-               }),
-               "zip_2": json!({
-                   "name":"zip",
-                   "restrictions": [json!({ "issuer_did": "2hoqvcwupRTUNkXn6ArYzs" })]
-               }),
-               "self_attest_3": json!({
-                   "name":"self_attest",
-               }),
-           }),
-           "requested_predicates": json!({}),
-        }).to_string();
-
-        let schemas = json!({
-            SCHEMA_ID: serde_json::from_str::<serde_json::Value>(SCHEMA_JSON).unwrap(),
-            ADDRESS_SCHEMA_ID: serde_json::from_str::<serde_json::Value>(ADDRESS_SCHEMA_JSON).unwrap(),
-        }).to_string();
-
-        let cred_defs = json!({
-            CRED_DEF_ID: serde_json::from_str::<serde_json::Value>(CRED_DEF_JSON).unwrap(),
-            ADDRESS_CRED_DEF_ID: serde_json::from_str::<serde_json::Value>(ADDRESS_CRED_DEF_JSON).unwrap(),
-        }).to_string();
-
+        let (schemas, cred_defs, proof_req, proof) = create_proof();
 
         let result = libindy_verifier_verify_proof(
             &proof_req,
-            PROOF_JSON,
+            &proof,
             &schemas,
             &cred_defs,
             "{}",
             "{}",
         );
 
-        delete_wallet(wallet_name).unwrap();
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         assert!(result.is_ok());
         let proof_validation = result.unwrap();
         assert!(proof_validation, true);
