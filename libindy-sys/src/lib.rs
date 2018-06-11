@@ -1,6 +1,10 @@
+pub mod anoncreds;
+pub mod blob_storage;
 pub mod crypto;
 pub mod did;
 pub mod ledger;
+pub mod non_secrets;
+pub mod pairwise;
 pub mod payments;
 pub mod pool;
 pub mod wallet;
@@ -17,6 +21,7 @@ pub type ResponseBoolCB = extern fn(xcommand_handle: Handle, err: Error, bool1: 
 pub type ResponseI32CB = extern fn(xcommand_handle: Handle, err: Error, pool_handle: Handle);
 pub type ResponseStringCB = extern fn(xcommand_handle: Handle, err: Error, str1: CString);
 pub type ResponseStringStringCB = extern fn(xcommand_handle: Handle, err: Error, str1: CString, str2: CString);
+pub type ResponseStringStringStringCB = extern fn(xcommand_handle: Handle, err: Error, str1: CString, str2: CString, str3: CString);
 pub type ResponseSliceCB = extern fn(xcommand_handle: Handle, err: Error, raw: BString, len: u32);
 pub type ResponseStringSliceCB = extern fn(xcommand_handle: Handle, err: Error, str1: CString, raw: BString, len: u32);
 pub type ResponseStringStringU64CB = extern fn(xcommand_handle: Handle, err: Error, arg1: CString, arg2: CString, arg3: u64);
