@@ -72,7 +72,7 @@ pub struct WalletCredentials {
 
 impl WalletCredentials {
     fn parse(json: &str, salt: &[u8; ChaCha20Poly1305IETF::KEYBYTES]) -> Result<WalletCredentials, WalletError> {
-        if let serde_json::Value::Object(m) = serde_json::from_str(json)? {
+        if let Ok(serde_json::Value::Object(m)) = serde_json::from_str(json) {
             let master_key = if let Some(key) = m.get("key").and_then(|s| s.as_str()) {
                 let mut master_key: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
                 PwhashArgon2i13::derive_key(&mut master_key, key.as_bytes(), &salt)?;
@@ -101,7 +101,7 @@ impl WalletCredentials {
                 storage_credentials
             })
         } else {
-            return Err(WalletError::InputError(String::from("Credentials must be JSON object")));
+            return Err(WalletError::CommonError(CommonError::InvalidStructure("Credentials must be JSON object".to_string())));
         }
     }
 }
@@ -470,14 +470,6 @@ impl WalletService {
     pub fn search_all_records(&self, wallet_handle: i32) -> Result<WalletSearch, WalletError> {
         //        match self.wallets.borrow().get(&wallet_handle) {
         //            Some(wallet) => wallet.search_all_records(),
-        //            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
-        //        }
-        unimplemented!()
-    }
-
-    pub fn close_search(&self, wallet_handle: i32, search_handle: u32) -> Result<(), WalletError> {
-        //        match self.wallets.borrow().get(&wallet_handle) {
-        //            Some(wallet) => wallet.close_search(search_handle),
         //            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         //        }
         unimplemented!()
@@ -887,6 +879,24 @@ mod tests {
     }
 
     #[test]
+    fn wallet_service_create_wallet_returns_appropriate_error_if_invalid_config() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        let res = wallet_service.create_wallet("pool1", "test_wallet", None, Some("invalid storage config"), &_credentials());
+        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
+    }
+
+    #[test]
+    fn wallet_service_create_wallet_returns_appropriate_error_if_invalid_credentials_format() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        let res = wallet_service.create_wallet("pool1", "test_wallet", None, None, "badly_formatted_credentials");
+        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
+    }
+
+    #[test]
     fn wallet_service_delete_wallet_works() {
         _cleanup();
 
@@ -908,6 +918,38 @@ mod tests {
         wallet_service.create_wallet("pool1", "wallet1", Some("inmem"), None, &_credentials()).unwrap();
         wallet_service.delete_wallet("wallet1", &_credentials()).unwrap();
         wallet_service.create_wallet("pool1", "wallet1", Some("inmem"), None, &_credentials()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_delete_wallet_returnes_appropriate_error_for_nonexistant_wallet() {
+        _cleanup();
+        let wallet_service = WalletService::new();
+
+        let res = wallet_service.delete_wallet("test_wallet", &_credentials());
+
+        assert_match!(Err(WalletError::NotFound(_)), res);
+    }
+
+    #[test]
+    fn wallet_service_delete_wallet_returns_appropriate_error_if_badly_formatted_credentials() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let res = wallet_service.delete_wallet("test_wallet", "badly_formatted_credentials");
+
+        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
+    }
+
+    #[test]
+    fn wallet_service_delete_wallet_returns_appropriate_error_if_wrong_credentials() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let res = wallet_service.delete_wallet("test_wallet", &_credentials_for_new_key());
+
+        assert_match!(Err(WalletError::AccessFailed(_)), res);
     }
 
     #[test]
@@ -939,6 +981,41 @@ mod tests {
 
         wallet_service.create_wallet("pool1", "wallet1", Some("inmem"), None, &_credentials()).unwrap();
         wallet_service.open_wallet("wallet1", None, &_credentials()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_open_wallet_returns_appropriate_error_if_already_opened() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+        let res = wallet_service.open_wallet("test_wallet", None, &_credentials());
+
+        assert_match!(Err(WalletError::AlreadyOpened(_)), res);
+    }
+
+    #[test]
+    fn wallet_service_open_wallet_returns_appropriate_error_if_wrong_credentials() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let res = wallet_service.open_wallet("test_wallet", None, &_credentials_for_new_key());
+
+        assert_match!(Err(WalletError::AccessFailed(_)), res);
+    }
+
+    #[test]
+    fn wallet_service_open_wallet_without_master_key_in_credentials_returns_error() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let res = wallet_service.open_wallet("test_wallet", None, "{}");
+        assert_match!(Err(WalletError::InputError(_)), res);
     }
 
     #[test]
@@ -986,16 +1063,6 @@ mod tests {
     }
 
     #[test]
-    fn wallet_service_open_wallet_without_master_key_in_credentials_returns_error() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
-        let res = wallet_service.open_wallet("test_wallet", None, "{}");
-        assert_match!(Err(WalletError::InputError(_)), res);
-    }
-
-    #[test]
     fn wallet_service_close_wallet_works() {
         _cleanup();
 
@@ -1020,6 +1087,18 @@ mod tests {
 
         let wallet_handle = wallet_service.open_wallet("wallet1", None, &_credentials()).unwrap();
         wallet_service.close_wallet(wallet_handle).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_close_wallet_returns_appropriate_error_if_wrong_handle() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+        let res = wallet_service.close_wallet(wallet_handle + 1);
+
+        assert_match!(Err(WalletError::InvalidHandle(_)), res);
     }
 
     #[test]
