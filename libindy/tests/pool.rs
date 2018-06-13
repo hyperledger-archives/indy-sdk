@@ -427,9 +427,8 @@ mod medium_cases {
             let pool_name = "create_pool_ledger_config_works_for_outdated_genesis_transactions";
             let txn_file_path = PoolUtils::create_genesis_txn_file(pool_name, &txn_file_data, None);
             let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
-            PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
 
-            let res = PoolUtils::open_pool_ledger(pool_name, None);
+            let res = PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str()));
             assert_eq!(ErrorCode::PoolGenesisTransactionsOutdated, res.unwrap_err());
 
             TestUtils::cleanup_storage();

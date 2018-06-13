@@ -28,7 +28,7 @@ impl fmt::Display for PoolError {
             PoolError::Terminate => write!(f, "Pool work terminated"),
             PoolError::Timeout => write!(f, "Timeout"),
             PoolError::AlreadyExists(ref description) => write!(f, "Pool ledger config already exists {}", description),
-            PoolError::Outdated => write!(f, "Outdated"),
+            PoolError::Outdated => write!(f, "Pool Ledger genesis transactions have outdated format"),
             PoolError::CommonError(ref err) => err.fmt(f),
         }
     }
@@ -42,7 +42,7 @@ impl error::Error for PoolError {
             PoolError::Terminate => "Pool work terminated",
             PoolError::Timeout => "Timeout",
             PoolError::AlreadyExists(ref description) => description,
-            PoolError::Outdated => "Outdated",
+            PoolError::Outdated => "Pool Ledger genesis transactions have outdated format",
             PoolError::CommonError(ref err) => err.description(),
         }
     }

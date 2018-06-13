@@ -724,6 +724,8 @@ impl PoolService {
                 CommonError::InvalidStructure("Invalid Genesis Transaction file".to_string())));
         }
 
+        PoolWorker::_build_node_state(&mt)?;
+
         fs::create_dir_all(path.as_path()).map_err(map_err_trace!())?;
 
         path.push(name);
