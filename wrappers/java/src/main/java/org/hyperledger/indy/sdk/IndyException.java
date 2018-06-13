@@ -11,6 +11,7 @@ import org.hyperledger.indy.sdk.pool.InvalidPoolException;
 import org.hyperledger.indy.sdk.pool.PoolConfigNotCreatedException;
 import org.hyperledger.indy.sdk.pool.PoolLedgerConfigExistsException;
 import org.hyperledger.indy.sdk.pool.PoolLedgerTerminatedException;
+import org.hyperledger.indy.sdk.pool.PoolGenesisTransactionsOutdatedException;
 import org.hyperledger.indy.sdk.crypto.UnknownCryptoException;
 import org.hyperledger.indy.sdk.wallet.*;
 
@@ -118,6 +119,8 @@ public class IndyException extends Exception {
 				return new PoolLedgerConfigExistsException();
 			case PoolLedgerTimeout:
 				return new TimeoutException();
+			case PoolGenesisTransactionsOutdated:
+				return new PoolGenesisTransactionsOutdatedException();
 			case AnoncredsRevocationRegistryFullError:
 				return new RevocationRegistryFullException();
 			case AnoncredsInvalidUserRevocId:

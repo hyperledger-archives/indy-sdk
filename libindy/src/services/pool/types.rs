@@ -129,42 +129,6 @@ pub struct TxnMetadata {
     pub from: String
 }
 
-impl From<NodeTransaction> for NodeTransactionV1 {
-    fn from(node_txn: NodeTransaction) -> Self {
-        match node_txn {
-            NodeTransaction::NodeTransactionV1(n_txn) => n_txn,
-            NodeTransaction::NodeTransactionV0(n_txn) => {
-                let txn = Txn {
-                    txn_type: n_txn.txn_type,
-                    protocol_version: None,
-                    data: TxnData {
-                        data: n_txn.data,
-                        dest: n_txn.dest,
-                        verkey: n_txn.verkey
-                    },
-                    metadata: TxnMetadata {
-                        req_id: None,
-                        from: n_txn.identifier
-                    },
-                };
-                NodeTransactionV1 {
-                    txn,
-                    txn_metadata: Metadata {
-                        seq_no: None,
-                        txn_id: n_txn.txn_id,
-                        creation_time: None
-                    },
-                    req_signature: ReqSignature {
-                        type_: None,
-                        values: None
-                    },
-                    ver: "1".to_string(),
-                }
-            }
-        }
-    }
-}
-
 impl NodeTransactionV1 {
     pub fn update(&mut self, other: &mut NodeTransactionV1) -> Result<(), CommonError> {
         assert_eq!(self.txn.data.dest, other.txn.data.dest);

@@ -16,6 +16,7 @@ pub enum PoolError {
     Terminate,
     Timeout,
     AlreadyExists(String),
+    Outdated,
     CommonError(CommonError),
 }
 
@@ -27,6 +28,7 @@ impl fmt::Display for PoolError {
             PoolError::Terminate => write!(f, "Pool work terminated"),
             PoolError::Timeout => write!(f, "Timeout"),
             PoolError::AlreadyExists(ref description) => write!(f, "Pool ledger config already exists {}", description),
+            PoolError::Outdated => write!(f, "Outdated"),
             PoolError::CommonError(ref err) => err.fmt(f),
         }
     }
@@ -40,6 +42,7 @@ impl error::Error for PoolError {
             PoolError::Terminate => "Pool work terminated",
             PoolError::Timeout => "Timeout",
             PoolError::AlreadyExists(ref description) => description,
+            PoolError::Outdated => "Outdated",
             PoolError::CommonError(ref err) => err.description(),
         }
     }
@@ -47,7 +50,7 @@ impl error::Error for PoolError {
     fn cause(&self) -> Option<&error::Error> {
         match *self {
             PoolError::NotCreated(_) | PoolError::InvalidHandle(_) => None,
-            PoolError::Terminate | PoolError::Timeout => None,
+            PoolError::Terminate | PoolError::Timeout | PoolError::Outdated => None,
             PoolError::AlreadyExists(_) => None,
             PoolError::CommonError(ref err) => Some(err),
         }
@@ -81,6 +84,7 @@ impl ToErrorCode for PoolError {
             PoolError::Terminate => ErrorCode::PoolLedgerTerminated,
             PoolError::Timeout => ErrorCode::PoolLedgerTimeout,
             PoolError::AlreadyExists(_) => ErrorCode::PoolLedgerConfigAlreadyExistsError,
+            PoolError::Outdated => ErrorCode::PoolGenesisTransactionsOutdated,
             PoolError::CommonError(ref err) => err.to_error_code()
         }
     }

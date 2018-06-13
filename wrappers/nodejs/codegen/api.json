@@ -31,6 +31,7 @@
     "c305": "LedgerSecurityError",
     "c306": "PoolLedgerConfigAlreadyExistsError",
     "c307": "PoolLedgerTimeout",
+    "c308": "PoolGenesisTransactionsOutdated",
     "c400": "AnoncredsRevocationRegistryFullError",
     "c401": "AnoncredsInvalidUserRevocId",
     "c404": "AnoncredsMasterSecretDuplicateNameError",

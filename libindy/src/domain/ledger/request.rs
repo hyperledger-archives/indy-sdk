@@ -6,6 +6,8 @@ extern crate time;
 use self::indy_crypto::utils::json::JsonEncodable;
 
 
+const PROTOCOL_VERSION: u64 = 2;
+
 #[derive(Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Request<T: serde::Serialize> {
@@ -30,7 +32,7 @@ impl<T: serde::Serialize> Request<T> {
 
     pub fn build_request(identifier: &str, operation: T) -> Result<String, serde_json::Error> {
         let req_id = time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64;
-        serde_json::to_string(&Request::new(req_id, identifier, operation, 1))
+        serde_json::to_string(&Request::new(req_id, identifier, operation, PROTOCOL_VERSION))
     }
 }
 

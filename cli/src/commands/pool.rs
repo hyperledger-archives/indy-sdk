@@ -92,6 +92,7 @@ pub mod connect_command {
                     Err(ErrorCode::PoolLedgerNotCreatedError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                     Err(ErrorCode::PoolLedgerTerminated) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                     Err(ErrorCode::PoolLedgerTimeout) => Err(println_err!("Pool \"{}\" has not been connected.", name)),
+                    Err(ErrorCode::PoolGenesisTransactionsOutdated) => Err(println_err!("Pool \"{}\" is outdated.", name)),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                 }
             });

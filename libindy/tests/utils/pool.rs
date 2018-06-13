@@ -198,8 +198,8 @@ impl PoolUtils {
 
         let mut f = fs::File::create(&txn_file_path).map_err(|_| ErrorCode::CommonIOError)?;
         txns.iter().for_each(|vec| {
-            f.write_u64::<LittleEndian>(vec.len() as u64);
-            f.write_all(vec);
+            f.write_u64::<LittleEndian>(vec.len() as u64).unwrap();
+            f.write_all(vec).unwrap();
         });
 
         Ok(())

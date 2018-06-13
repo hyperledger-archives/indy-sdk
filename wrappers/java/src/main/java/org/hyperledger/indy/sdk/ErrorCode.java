@@ -215,6 +215,11 @@ public enum ErrorCode {
 	PoolLedgerConfigAlreadyExistsError(306),
 
 	/**
+	 * Attempt to connect to pool with outdated genesis transactions
+	 */
+	PoolGenesisTransactionsOutdated(308),
+
+	/**
 	 * Timeout for action
 	 */
 	PoolLedgerTimeout(307),
