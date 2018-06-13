@@ -289,7 +289,6 @@ mod tests {
         path
     }
 
-
     fn _cleanup() {
         std::fs::remove_dir_all(_wallet_path()).ok();
         std::fs::create_dir(_wallet_path()).ok();
@@ -366,34 +365,7 @@ mod tests {
         map.insert("retrieveTags", tags);
         serde_json::to_string(&map).unwrap()
     }
-//
-//    fn _create_valid_walle_config_str() -> &'static str {
-//        r##"{"storage": {"base": "/tmp"}}"##
-//    }
-//
-//    fn _create_storage_type() -> Box<StorageType> {
-//        Box::new(SQLiteStorageType::new())
-//    }
-//
-//    fn _create_storage() -> Box<Storage> {
-//        let storage_type = _create_storage_type();
-//        let storage = storage_type.create()
-//    }
-//
-//
-//    fn _bad_configs_list() -> Vec<&'static str> {
-//       return vec![
-//        "{}", // empty config
-//        "{\"foo\": \"bar\"}", // not a storage config
-//        "{\"storage\": {\"foo\": \"bar\"}}", // no base
-//        "{\"storage\": {\"base\": \"tmp}}", // wrong format for json
-//        // "{\"storage\": {\"base\": \":$%:^&:*`\"}}", // base is not a path
-//        // "{\"storage\": {\"base\": \"\"}}", // empty base
-//        // "{\"storage\": {\"base\": \"/tmp/../tmp\"}}", // base is a path traversal
-//        ]
-//    }
-//
-//
+
     fn _search_iterator_to_map<'a>(mut iterator: WalletIterator) -> HashMap<String, String> {
         let mut map = HashMap::new();
         loop {

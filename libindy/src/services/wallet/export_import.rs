@@ -372,7 +372,8 @@ mod tests {
     extern crate rand;
     use self::rand::*;
     use serde_json;
-
+    use ::utils::environment::EnvironmentUtils;
+    use ::utils::test::TestUtils;
     use services::wallet::storage::WalletStorageType;
     use services::wallet::storage::default::SQLiteStorageType;
     use services::wallet::wallet::{Keys, Wallet};
@@ -428,36 +429,39 @@ mod tests {
     }
 
     fn _create_export_file() -> Box<io::Write> {
-        let path_str = "/tmp/wallet/export_test";
-        let path = std::path::Path::new(path_str);
+        let mut path = EnvironmentUtils::tmp_file_path("export_directory");
         if path.exists() {
-            std::fs::remove_dir_all(path).unwrap();
+            std::fs::remove_dir_all(path.clone()).unwrap();
         }
-        std::fs::create_dir_all(path).unwrap();
+        std::fs::create_dir_all(path.clone()).unwrap();
 
-        let export_file_path = "/tmp/wallet/export_test/export";
+        let mut export_file_path = path.clone();
+        export_file_path.push("export_file");
         let file = std::fs::File::create(export_file_path).unwrap();
         Box::new(file)
     }
 
     fn _get_export_file_content() -> Vec<u8> {
-        let export_file_path = "/tmp/wallet/export_test/export";
-        let mut file = std::fs::File::open(export_file_path).unwrap();
+        let mut path = EnvironmentUtils::tmp_file_path("export_directory");
+        path.push("export_file");
+        let mut file = std::fs::File::open(path).unwrap();
         let mut v = Vec::new();
         let content = file.read_to_end(&mut v).expect("Failed to read exported file");
         v
     }
 
     fn _replace_export_file(data: Vec<u8>) {
-        let export_file_path = std::path::Path::new("/tmp/wallet/export_test/export");
-        std::fs::remove_file(export_file_path).unwrap();
-        let mut new_file = std::fs::File::create(export_file_path).unwrap();
+        let mut path = EnvironmentUtils::tmp_file_path("export_directory");
+        path.push("export_file");
+        std::fs::remove_file(path.clone()).unwrap();
+        let mut new_file = std::fs::File::create(path).unwrap();
         new_file.write_all(&data).unwrap();
     }
 
     fn _get_export_file_reader() -> Box<io::Read> {
-        let export_file_path = "/tmp/wallet/export_test/export";
-        Box::new(std::fs::File::open(export_file_path).unwrap())
+        let mut path = EnvironmentUtils::tmp_file_path("export_directory");
+        path.push("export_file");
+        Box::new(std::fs::File::open(path).unwrap())
     }
 
     fn _record_length_serialized(type_: &str, name: &str, value: &str, tags: &HashMap<String, String>) -> usize {

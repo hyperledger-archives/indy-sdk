@@ -829,20 +829,6 @@ mod tests {
     use utils::inmem_wallet::InmemWallet;
     use utils::test::TestUtils;
 
-    //    const POOL: &'static str = "pool";
-    //    const WALLET: &'static str = "wallet";
-    //    const DEFAULT: &'static str = "default";
-    //    const ID_1: &'static str = "id1";
-    //    const ID_2: &'static str = "id2";
-    //    const TYPE_1: &'static str = "type1";
-    //    const TYPE_2: &'static str = "type2";
-    //    const VALUE_1: &'static str = "value1";
-    //    const VALUE_2: &'static str = "value2";
-    //    const TAGS_EMPTY: &'static str = "{}";
-    //    const TAGS: &'static str = r#"{"tagName1":"tagValue1"}"##;
-    //    const QUERY_EMPTY: &'static str = "{}";
-    //    const OPTIONS_EMPTY: &'static str = "{}";
-
     type Tags = HashMap<String, String>;
 
     fn _fetch_options(type_: bool, value: bool, tags: bool) -> String {
@@ -1540,33 +1526,7 @@ mod tests {
         let retrieved_tags = item.tags.unwrap();
         assert_eq!(expected_tags, retrieved_tags);
     }
-
-
-    //    #[test]
-    //    fn wallet_service_search_all_records_works() {
-    //        TestUtils::cleanup_indy_home();
-    //
-    //        let wallet_service = WalletService::new();
-    //        wallet_service.create("pool1", "wallet1", None, None, r#"{"key":"key"}"#).unwrap();
-    //        let wallet_handle = wallet_service.open("wallet1", None, r#"{"key":"key"}"#).unwrap();
-    //
-    //        wallet_service.add_record(wallet_handle, "type1", "id1", "value1", "{}").unwrap();
-    //        wallet_service.add_record(wallet_handle, "type2", "id2", "value2", "{}").unwrap();
-    //
-    //        let mut search = wallet_service.search_all_records(wallet_handle).unwrap();
-    //        assert_eq!(2, search.get_total_count().unwrap().unwrap());
-    //
-    //        let record = search.fetch_next_record().unwrap().unwrap();
-    //        assert_eq!("value1", record.get_value().unwrap());
-    //
-    //        let record = search.fetch_next_record().unwrap().unwrap();
-    //        assert_eq!("value2", record.get_value().unwrap());
-    //
-    //        TestUtils::cleanup_indy_home();
-    //    }
-    //
-    //
-
+    
     #[test]
     fn wallet_service_get_pool_name_works() {
         _cleanup();
@@ -1690,28 +1650,30 @@ mod tests {
     /**
         Export/Import tests
     */
-    fn _get_export_dir_path() -> &'static str {
-         "/tmp/indy_wallet_export_tests"
+    fn _get_export_dir_path() -> PathBuf {
+        EnvironmentUtils::tmp_file_path("export_tests")
     }
 
-    fn _get_export_file_path() -> &'static str {
-        "/tmp/indy_wallet_export_tests/export_file"
+    fn _get_export_file_path() -> PathBuf {
+        let mut path = EnvironmentUtils::tmp_file_path("export_tests");
+        path.push("export_test");
+        path
     }
 
     fn _get_export_config() -> String {
-        format!(r##"{{"path": "{}", "key": "{}"}}"##, _get_export_file_path(), "export_key")
+        format!(r##"{{"path": "{}", "key": "{}"}}"##, _get_export_file_path().to_str().unwrap(), "export_key")
     }
 
     fn _prepare_export_path() {
-        let export_directory_path = Path::new(_get_export_dir_path());
+        let export_directory_path = _get_export_dir_path();
         if export_directory_path.exists() {
-            std::fs::remove_dir_all(export_directory_path).unwrap();
+            std::fs::remove_dir_all(export_directory_path.clone()).unwrap();
         }
         std::fs::create_dir(export_directory_path).unwrap();
     }
 
     fn _remove_export_path() {
-        let export_directory_path = Path::new(_get_export_dir_path());
+        let export_directory_path = _get_export_dir_path();
         if export_directory_path.exists() {
             std::fs::remove_dir_all(export_directory_path).unwrap();
         }
@@ -1727,7 +1689,7 @@ mod tests {
         let export_config = _get_export_config();
         wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
 
-        assert!(Path::new(_get_export_file_path()).exists());
+        assert!(Path::new(&_get_export_file_path()).exists());
         _remove_export_path();
     }
 
@@ -1745,7 +1707,7 @@ mod tests {
 
         let export_config = _get_export_config();
         wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
-        assert!(Path::new(_get_export_file_path()).exists());
+        assert!(Path::new(&_get_export_file_path()).exists());
 
         _remove_export_path();
     }
@@ -1755,7 +1717,7 @@ mod tests {
         _cleanup();
         _prepare_export_path();
         let export_file_path = _get_export_file_path();
-        File::create(Path::new(export_file_path)).unwrap();
+        File::create(Path::new(&export_file_path)).unwrap();
 
         let wallet_service = WalletService::new();
         wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
@@ -1764,7 +1726,7 @@ mod tests {
         let export_config = _get_export_config();
         let res = wallet_service.export_wallet(wallet_handle, &export_config, 0);
         assert_match!(Err(WalletError::ExportPathExists), res);
-        assert!(Path::new(_get_export_file_path()).exists());
+        assert!(Path::new(&_get_export_file_path()).exists());
 
         _remove_export_path();
     }
@@ -1801,7 +1763,7 @@ mod tests {
 
         let export_config = _get_export_config();
         wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
-        assert!(Path::new(_get_export_file_path()).exists());
+        assert!(Path::new(&_get_export_file_path()).exists());
 
         wallet_service.close_wallet(wallet_handle).unwrap();
         wallet_service.delete_wallet("test_wallet", &_credentials()).unwrap();
@@ -1824,7 +1786,7 @@ mod tests {
 
         let export_config = _get_export_config();
         wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
-        assert!(Path::new(_get_export_file_path()).exists());
+        assert!(Path::new(&_get_export_file_path()).exists());
 
         wallet_service.close_wallet(wallet_handle).unwrap();
         wallet_service.delete_wallet("test_wallet", &_credentials()).unwrap();
