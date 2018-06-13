@@ -66,6 +66,7 @@ struct CatchupSingleState<T: Networker> {
     target_mt_size: usize,
     merkle_tree: MerkleTree,
     networker: Rc<RefCell<T>>,
+    req_id: String,
 }
 
 impl<T: Networker> RequestState for CatchupSingleState<T> {}
@@ -187,8 +188,8 @@ impl<T: Networker> From<(MerkleTree, RequestSM<StartState<T>>)> for RequestSM<Ca
     }
 }
 
-impl<T: Networker> From<(MerkleTree, RequestSM<StartState<T>>, Vec<u8>, usize)> for RequestSM<CatchupSingleState<T>> {
-    fn from((merkle_tree, val, target_mt_root, target_mt_size): (MerkleTree, RequestSM<StartState<T>>, Vec<u8>, usize)) -> Self {
+impl<T: Networker> From<(MerkleTree, RequestSM<StartState<T>>, Vec<u8>, usize, String)> for RequestSM<CatchupSingleState<T>> {
+    fn from((merkle_tree, val, target_mt_root, target_mt_size, req_id): (MerkleTree, RequestSM<StartState<T>>, Vec<u8>, usize, String)) -> Self {
         RequestSM {
             f: val.f,
             cmd_ids: val.cmd_ids,
@@ -200,6 +201,7 @@ impl<T: Networker> From<(MerkleTree, RequestSM<StartState<T>>, Vec<u8>, usize)> 
                 target_mt_size,
                 networker: val.state.networker.clone(),
                 merkle_tree,
+                req_id,
             },
         }
     }
@@ -342,15 +344,15 @@ impl<T: Networker> RequestSMWrapper<T> {
                             seqNoEnd: seq_no_end.clone(),
                             catchupTill: target_mt_size,
                         };
-
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest(Message::CatchupReq(cr).to_json().expect("FIXME"))));
-                        (RequestSMWrapper::CatchupSingle((merkle, request, target_mt_root, target_mt_size).into()), None)
+                        let req_id = format!("{}{}", seq_no_start, seq_no_end);
+                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest(Message::CatchupReq(cr).to_json().expect("FIXME"), req_id.clone())));
+                        (RequestSMWrapper::CatchupSingle((merkle, request, target_mt_root, target_mt_size, req_id).into()), None)
                     }
                     RequestEvent::CustomSingleRequest(msg, req_id) => {
                         match req_id {
                             Ok(req_id) => {
                                 request.state.networker.borrow_mut()
-                                    .process_event(Some(NetworkerEvent::SendOneRequest(msg)));
+                                    .process_event(Some(NetworkerEvent::SendOneRequest(msg, req_id)));
                                 (RequestSMWrapper::Single(request.into()), None)
                             }
                             Err(e) => {
@@ -363,7 +365,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                         match req_id {
                             Ok(req_id) => {
                                 request.state.networker.borrow_mut()
-                                    .process_event(Some(NetworkerEvent::SendAllRequest(msg)));
+                                    .process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id)));
                                 (RequestSMWrapper::Full(request.into()), None)
                             }
                             Err(e) => {
@@ -376,7 +378,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                         match req_id {
                             Ok(req_id) => {
                                 request.state.networker.borrow_mut()
-                                    .process_event(Some(NetworkerEvent::SendAllRequest(msg)));
+                                    .process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id)));
                                 (RequestSMWrapper::Consensus(request.into()), None)
                             }
                             Err(e) => {
@@ -461,12 +463,11 @@ impl<T: Networker> RequestSMWrapper<T> {
                                 _send_ok_replies(&request.cmd_ids, &raw_msg);
                                 (RequestSMWrapper::Finish(request.into()), None)
                             } else {
-                                trace!("NEED TO RESEND");
-                                //TODO: resend to next node
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id)));
                                 (RequestSMWrapper::Single(request), None)
                             }
                         } else {
-                            //TODO: resend to next node
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id)));
                             (RequestSMWrapper::Single(request), None)
                         }
                     }
@@ -478,9 +479,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                         if _parse_nack(&mut request.state.nack_cnt, request.f, &raw_msg, &request.cmd_ids, &node_alias) {
                             (RequestSMWrapper::Finish(request.into()), None)
                         } else {
-                            //TODO: remap on RESEND
-                            request.state.networker.borrow_mut()
-                                .process_event(Some(NetworkerEvent::SendOneRequest(raw_msg)));
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id)));
                             (RequestSMWrapper::Single(request), None)
                         }
                     }
@@ -514,7 +513,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                         match _process_catchup_reply(&mut cr, &mut request.state.merkle_tree, &request.state.target_mt_root, request.state.target_mt_size, &request.pool_name) {
                             Ok(merkle) => (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::Synced(merkle))),
                             Err(err) => {
-                                //TODO: resend
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(request.state.req_id.clone())));
                                 (RequestSMWrapper::CatchupSingle(request), None)
                             }
                         }

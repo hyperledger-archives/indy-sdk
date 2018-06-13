@@ -1,4 +1,5 @@
 extern crate zmq;
+extern crate time;
 
 use self::zmq::PollItem;
 use self::zmq::Socket as ZSocket;
@@ -7,6 +8,10 @@ use errors::common::CommonError;
 use errors::pool::PoolError;
 use services::pool::events::*;
 use services::pool::types::*;
+use std::collections::HashMap;
+use std::cell::RefCell;
+use super::time::Duration;
+use utils::sequence::SequenceUtils;
 
 pub trait Networker {
     fn new() -> Self;
@@ -17,35 +22,67 @@ pub trait Networker {
 }
 
 pub struct ZMQNetworker {
-    pool_connections: Vec<PoolConnection>,
+    req_id_mappings: HashMap<String, i32>,
+    pool_connections: HashMap<i32, PoolConnection>,
     nodes: Vec<RemoteNode>,
 }
 
 impl Networker for ZMQNetworker {
     fn new() -> Self {
         ZMQNetworker {
-            pool_connections: Vec::new(),
+            req_id_mappings: HashMap::new(),
+            pool_connections: HashMap::new(),
             nodes: Vec::new(),
         }
     }
 
     fn fetch_events(&self, poll_items: &[PollItem]) -> Vec<PoolEvent> {
         let mut events = Vec::new();
-        for pc in &self.pool_connections {
+        for (_, pc) in &self.pool_connections {
             events.extend(pc.fetch_events(poll_items).into_iter());
         }
         events
     }
 
     fn process_event(&mut self, pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
-        match pe {
-            Some(NetworkerEvent::SendAllRequest(_)) | Some(NetworkerEvent::SendOneRequest(_)) => {
-                if self.pool_connections.last().map(PoolConnection::is_full).unwrap_or(true) {
-                    self.pool_connections.push(PoolConnection::new(self.nodes.clone()));
+        match pe.clone() {
+            Some(NetworkerEvent::SendAllRequest(_, req_id)) | Some(NetworkerEvent::SendOneRequest(_, req_id)) | Some(NetworkerEvent::Resend(req_id)) => {
+                let num = self.req_id_mappings.get(&req_id).map(|i| i.clone()).or_else(|| {
+                    self.req_id_mappings.iter()
+                        .fold(HashMap::new(), |mut acc, (req_id, pc_id)| {
+                            let insert = if let Some(mut cnt) = acc.get_mut(pc_id) {
+                                *cnt = *cnt + 1;
+                                false
+                            } else {
+                                true
+                            };
+
+                            if insert {
+                                acc.insert(pc_id, 1);
+                            }
+                            acc
+                        }).iter()
+                        .filter(|&(pc_id, cnt)|
+                            cnt >= &5 && self.pool_connections.get(pc_id).map(|pc| pc.is_active()).unwrap_or(false))
+                        .last().map(|(pc_id, cnt)| **pc_id)
+                });
+                match num {
+                    Some(idx) => {
+                        self.pool_connections.get(&idx).map(|pc| {
+                            pc.send_request(pe);
+                        });
+                        self.req_id_mappings.insert(req_id.clone(), idx);
+                    }
+                    None => {
+                        let pc_id = SequenceUtils::get_next_id();
+                        let pc = PoolConnection::new(self.nodes.clone());
+                        pc.send_request(pe);
+                        self.pool_connections.insert(pc_id, pc);
+                        self.req_id_mappings.insert(req_id.clone(), pc_id);
+                    }
                 }
-                self.pool_connections.last().expect("FIXME").send_request(pe);
                 None
-            },
+            }
             Some(NetworkerEvent::NodesStateUpdated(nodes)) => {
                 self.nodes = nodes;
                 None
@@ -56,12 +93,12 @@ impl Networker for ZMQNetworker {
 
     fn get_timeout(&self) -> i64 {
         self.pool_connections.iter()
-            .fold(::std::i64::MAX, |acc, cur| ::std::cmp::min(acc, PoolConnection::get_timeout(cur)))
+            .fold(::std::i64::MAX, |acc, (_, cur)| ::std::cmp::min(acc, PoolConnection::get_timeout(cur)))
     }
 
-    fn get_poll_items(&self) -> Vec<PollItem>{
+    fn get_poll_items(&self) -> Vec<PollItem> {
         self.pool_connections.iter()
-            .flat_map(PoolConnection::get_poll_items).collect()
+            .flat_map(|(_, pool)| pool.get_poll_items()).collect()
     }
 }
 
@@ -70,6 +107,8 @@ pub struct PoolConnection {
     sockets: Vec<Option<ZSocket>>,
     ctx: zmq::Context,
     key_pair: zmq::CurveKeyPair,
+    resend: RefCell<HashMap<String, (usize, String)>>,
+    time_created: time::Tm,
 }
 
 impl PoolConnection {
@@ -88,6 +127,8 @@ impl PoolConnection {
             sockets,
             ctx,
             key_pair,
+            resend: RefCell::new(HashMap::new()),
+            time_created: time::now(),
         }
     }
 
@@ -122,20 +163,29 @@ impl PoolConnection {
         -1 //FIXME
     }
 
-    fn is_full(&self) -> bool {
-        false //FIXME
+    fn is_active(&self) -> bool {
+        time::now() - self.time_created > Duration::seconds(5)
     }
 
     fn send_request(&self, pe: Option<NetworkerEvent>) {
         match pe {
-            Some(NetworkerEvent::SendOneRequest(msg)) => {
+            Some(NetworkerEvent::SendOneRequest(msg, req_id)) => {
                 let socket: &ZSocket = self.sockets[0].as_ref().expect("FIXME");
                 socket.send_str(&msg, zmq::DONTWAIT).expect("FIXME");
+                self.resend.borrow_mut().insert(req_id, (0, msg));
             }
-            Some(NetworkerEvent::SendAllRequest(msg)) => {
+            Some(NetworkerEvent::SendAllRequest(msg, _)) => {
                 self.sockets.iter().for_each(|socket| {
                     socket.as_ref().expect("FIXME").send_str(&msg, zmq::DONTWAIT).expect("FIXME")
                 });
+            }
+            Some(NetworkerEvent::Resend(req_id)) => {
+                if let Some(&mut (ref mut cnt, ref req)) = self.resend.borrow_mut().get_mut(&req_id) {
+                    *cnt = *cnt + 1;
+                    //TODO: FIXME: We can collect consensus just walking through if we are not collecting node aliases on the upper layer.
+                    let socket: &ZSocket = self.sockets[*cnt % self.sockets.len()].as_ref().expect("FIXME");
+                    socket.send_str(&req, zmq::DONTWAIT).expect("FIXME");
+                }
             }
             _ => ()
         }
@@ -179,7 +229,7 @@ impl Networker for MockNetworker {
         unimplemented!()
     }
 
-    fn get_poll_items(&self) -> Vec<PollItem>{
+    fn get_poll_items(&self) -> Vec<PollItem> {
         unimplemented!()
     }
 }
@@ -188,7 +238,7 @@ impl Networker for MockNetworker {
 #[cfg(test)]
 mod networker_tests {
     use super::*;
-    
+
     #[test]
     pub fn networker_new_works() {
         Networker::new();

@@ -28,10 +28,17 @@ const REQUEST_FOR_FULL: [&'static str; 2] = [
     constants::GET_VALIDATOR_INFO,
 ];
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NetworkerEvent {
-    SendOneRequest(String),
-    SendAllRequest(String),
+    SendOneRequest(
+        String, //msg
+        String, //req_id
+    ),
+    SendAllRequest(
+        String, //msg
+        String, //req_id
+    ),
+    Resend(String),
     NodesStateUpdated(Vec<RemoteNode>),
 }
 
@@ -194,7 +201,10 @@ impl Into<Option<RequestEvent>> for PoolEvent {
 impl Into<Option<NetworkerEvent>> for RequestEvent {
     fn into(self) -> Option<NetworkerEvent> {
         match self {
-            RequestEvent::LedgerStatus(ls, _, _) => Some(NetworkerEvent::SendAllRequest(Message::LedgerStatus(ls).to_json().expect("FIXME"))),
+            RequestEvent::LedgerStatus(ls, _, _) => {
+                let req_id = ls.merkleRoot.clone();
+                Some(NetworkerEvent::SendAllRequest(Message::LedgerStatus(ls).to_json().expect("FIXME"), req_id))
+            },
             _ => None
         }
     }
