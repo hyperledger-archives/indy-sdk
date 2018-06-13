@@ -23,42 +23,27 @@ extern crate rmp_serde;
 extern crate indy_crypto;
 
 
-use self::byteorder::{ByteOrder, LittleEndian, WriteBytesExt, ReadBytesExt};
-use self::rust_base58::FromBase58;
-use std::str::from_utf8;
-use self::time::{Duration, Tm};
+use self::byteorder::{ByteOrder, LittleEndian};
 use serde_json;
-use serde_json::Value as SJsonValue;
 use std::cell::RefCell;
-use std::cmp::max;
 use std::collections::HashMap;
 use std::error::Error;
-use std::{fmt, fs, io, thread};
-use std::fmt::Debug;
-use std::io::{Read, BufRead, Write};
-use std::ops::{Add, Sub};
+use std::fs;
+use std::io::Write;
 
 use api::ledger::{CustomFree, CustomTransactionParser};
-use commands::{Command, CommandExecutor};
-use commands::ledger::LedgerCommand;
-use commands::pool::PoolCommand;
 use errors::pool::PoolError;
 use errors::common::CommonError;
-//use self::catchup::CatchupHandler;
-//use self::transaction_handler::TransactionHandler;
 use self::types::*;
-use services::ledger::merkletree::merkletree::MerkleTree;
-use utils::crypto::box_::CryptoBox;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
-use self::indy_crypto::bls::VerKey;
-use std::path::PathBuf;
 use std::sync::Mutex;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use services::pool::pool::Pool;
 use services::pool::networker::ZMQNetworker;
 use services::pool::request_handler::RequestHandlerImpl;
+use self::zmq::Socket;
 
 lazy_static! {
     static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new());
@@ -161,9 +146,7 @@ impl PoolService {
         send_cmd_sock.connect(inproc_sock_name.as_str())?;
 
         new_pool.work(recv_cmd_sock);
-        let mut buf = [0u8; 4];
-        LittleEndian::write_i32(&mut buf, pool_handle);
-        send_cmd_sock.send_multipart(&["connect".as_bytes(), &buf], zmq::DONTWAIT)?;
+        self._send_msg(pool_handle, "connect", &send_cmd_sock);
 
         self.pending_pools.try_borrow_mut().map_err(CommonError::from)?.insert(new_pool.get_id(), (new_pool, send_cmd_sock));
         return Ok(pool_handle);
@@ -179,14 +162,12 @@ impl PoolService {
         Ok(pool_id)
     }
 
-    pub fn send_tx(&self, handle: i32, json: &str) -> Result<i32, PoolError> {
+    pub fn send_tx(&self, handle: i32, msg: &str) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
         self.open_pools.try_borrow().map_err(CommonError::from)?
             .get(&handle)
             .map(|&(_, ref socket)| {
-                let mut buf = [0u8; 4];
-                LittleEndian::write_i32(&mut buf, cmd_id);
-                socket.send_multipart(&[json.as_bytes(), &buf], zmq::DONTWAIT).expect("FIXME");
+                self._send_msg(cmd_id, msg, socket);
             }).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?;
         Ok(cmd_id)
     }
@@ -215,9 +196,7 @@ impl PoolService {
         let cmd_id: i32 = SequenceUtils::get_next_id();
         self.open_pools.try_borrow_mut().map_err(CommonError::from)?
             .remove(&handle).map(|(_, ref socket)| {
-                let mut buf = [0u8; 4];
-                LittleEndian::write_i32(&mut buf, cmd_id);
-                socket.send_multipart(&["exit".as_bytes(), &buf], zmq::DONTWAIT).expect("FIXME");
+                self._send_msg(cmd_id, "exit", socket);
             }).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?;
         Ok(cmd_id)
     }
@@ -226,11 +205,15 @@ impl PoolService {
         let cmd_id: i32 = SequenceUtils::get_next_id();
         self.open_pools.try_borrow_mut().map_err(CommonError::from)?
             .get(&handle).map(|&(_, ref socket)| {
-                let mut buf = [0u8; 4];
-                LittleEndian::write_i32(&mut buf, cmd_id);
-                socket.send_multipart(&["refresh".as_bytes(), &buf], zmq::DONTWAIT).expect("FIXME");
+                self._send_msg(cmd_id, "refresh", socket);
             }).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?;
         Ok(cmd_id)
+    }
+
+    fn _send_msg(&self, cmd_id: i32, msg: &str, socket: &Socket) {
+        let mut buf = [0u8; 4];
+        LittleEndian::write_i32(&mut buf, cmd_id);
+        socket.send_multipart(&[msg.as_bytes(), &buf], zmq::DONTWAIT).expect("FIXME");
     }
 
     pub fn list(&self) -> Result<Vec<serde_json::Value>, PoolError> {

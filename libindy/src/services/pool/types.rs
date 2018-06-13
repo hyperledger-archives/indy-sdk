@@ -5,16 +5,13 @@ extern crate serde_json;
 extern crate time;
 
 use std::cmp::Eq;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use super::zmq;
 
 use errors::common::CommonError;
 use utils::crypto::verkey_builder::build_full_verkey;
 
-use self::indy_crypto::bls;
 
-use services::ledger::merkletree::merkletree::MerkleTree;
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 
@@ -469,12 +466,6 @@ pub struct RemoteNode {
     pub public_key: Vec<u8>,
     pub zaddr: String,
     pub is_blacklisted: bool,
-}
-
-pub struct CatchUpProcess {
-    pub merkle_tree: MerkleTree,
-    pub pending_reps: Vec<(CatchupRep, usize)>,
-    pub resp_not_received_node_idx: HashSet<usize>,
 }
 
 pub trait MinValue {

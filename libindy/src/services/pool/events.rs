@@ -213,7 +213,7 @@ impl Into<Option<NetworkerEvent>> for RequestEvent {
 fn _parse_msg(msg: &str) -> Option<Message> {
     match Message::from_raw_str(msg).map_err(map_err_trace!()) {
         Ok(msg) => Some(msg),
-        Err(err) => None
+        _ => None
     }
 }
 

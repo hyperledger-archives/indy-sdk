@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use std::fs;
 use std::str::from_utf8;
-use self::byteorder::{ByteOrder, LittleEndian, WriteBytesExt, ReadBytesExt};
+use self::byteorder::{LittleEndian, WriteBytesExt, ReadBytesExt};
 use errors::common::CommonError;
 use std::io;
 use std::io::{Read, BufRead, Write};

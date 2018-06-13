@@ -49,7 +49,7 @@ impl Networker for ZMQNetworker {
             Some(NetworkerEvent::SendAllRequest(_, req_id)) | Some(NetworkerEvent::SendOneRequest(_, req_id)) | Some(NetworkerEvent::Resend(req_id)) => {
                 let num = self.req_id_mappings.get(&req_id).map(|i| i.clone()).or_else(|| {
                     self.req_id_mappings.iter()
-                        .fold(HashMap::new(), |mut acc, (req_id, pc_id)| {
+                        .fold(HashMap::new(), |mut acc, (_, pc_id)| {
                             let insert = if let Some(mut cnt) = acc.get_mut(pc_id) {
                                 *cnt = *cnt + 1;
                                 false
@@ -64,7 +64,7 @@ impl Networker for ZMQNetworker {
                         }).iter()
                         .filter(|&(pc_id, cnt)|
                             cnt >= &5 && self.pool_connections.get(pc_id).map(|pc| pc.is_active()).unwrap_or(false))
-                        .last().map(|(pc_id, cnt)| **pc_id)
+                        .last().map(|(pc_id, _)| **pc_id)
                 });
                 match num {
                     Some(idx) => {

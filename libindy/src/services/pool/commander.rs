@@ -1,9 +1,8 @@
 extern crate byteorder;
 
-use self::byteorder::{ByteOrder, LittleEndian, WriteBytesExt, ReadBytesExt};
+use self::byteorder::{ByteOrder, LittleEndian};
 
 use super::zmq;
-use std::collections::VecDeque;
 use errors::common::CommonError;
 use services::pool::events::PoolEvent;
 

@@ -15,7 +15,6 @@ use services::pool::types::HashableValue;
 use services::pool::catchup::{CatchupProgress, check_nodes_responses_on_status, check_cons_proofs};
 
 use self::rust_base58::FromBase58;
-use base64;
 use serde_json;
 use serde_json::Value as SJsonValue;
 use std::cell::RefCell;
@@ -31,7 +30,6 @@ use services::pool::merkle_tree_factory;
 use services::pool::types::CatchupReq;
 use services::pool::types::CatchupRep;
 use services::pool::types::Message;
-use commands::pool::PoolCommand;
 
 trait RequestState {
     fn is_terminal(&self) -> bool {
@@ -323,7 +321,7 @@ impl<T: Networker> RequestSMWrapper<T> {
             RequestSMWrapper::Start(request) => {
                 let ne: Option<NetworkerEvent> = re.clone().into();
                 match re {
-                    RequestEvent::LedgerStatus(ls, _, Some(merkle)) => {
+                    RequestEvent::LedgerStatus(_, _, Some(merkle)) => {
                         trace!("start catchup, ne: {:?}", ne);
                         request.state.networker.borrow_mut().process_event(ne);
                         (RequestSMWrapper::CatchupConsensus((merkle, request).into()), None)
@@ -392,7 +390,7 @@ impl<T: Networker> RequestSMWrapper<T> {
             }
             RequestSMWrapper::Consensus(mut request) => {
                 match re {
-                    RequestEvent::Reply(rep, raw_msg, node_alias, req_id) => {
+                    RequestEvent::Reply(_, raw_msg, node_alias, _) => {
                         if let Ok((_, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
                             let hashable = HashableValue { inner: result_without_proof };
 
@@ -430,7 +428,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                         //TODO: extend timeout
                         (RequestSMWrapper::Consensus(request), None)
                     }
-                    RequestEvent::ReqNACK(rep, raw_msg, node_alias, req_id) | RequestEvent::Reject(rep, raw_msg, node_alias, req_id) => {
+                    RequestEvent::ReqNACK(_, raw_msg, node_alias, _) | RequestEvent::Reject(_, raw_msg, node_alias, _) => {
                         if _parse_nack(&mut request.state.nack_cnt, request.f, &raw_msg, &request.cmd_ids, &node_alias) {
                             (RequestSMWrapper::Finish(request.into()), None)
                         } else {
@@ -442,7 +440,7 @@ impl<T: Networker> RequestSMWrapper<T> {
             }
             RequestSMWrapper::Single(mut request) => {
                 match re {
-                    RequestEvent::Reply(rep, raw_msg, node_alias, req_id) => {
+                    RequestEvent::Reply(_, raw_msg, node_alias, req_id) => {
                         trace!("reply on single request");
                         if let Ok((result, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
                             let hashable = HashableValue { inner: result_without_proof };
@@ -475,7 +473,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                         //TODO: extend timeout
                         (RequestSMWrapper::Single(request), None)
                     }
-                    RequestEvent::ReqNACK(rep, raw_msg, node_alias, req_id) | RequestEvent::Reject(rep, raw_msg, node_alias, req_id) => {
+                    RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) | RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
                         if _parse_nack(&mut request.state.nack_cnt, request.f, &raw_msg, &request.cmd_ids, &node_alias) {
                             (RequestSMWrapper::Finish(request.into()), None)
                         } else {
@@ -512,7 +510,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                     RequestEvent::CatchupRep(mut cr) => {
                         match _process_catchup_reply(&mut cr, &mut request.state.merkle_tree, &request.state.target_mt_root, request.state.target_mt_size, &request.pool_name) {
                             Ok(merkle) => (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::Synced(merkle))),
-                            Err(err) => {
+                            Err(_) => {
                                 request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(request.state.req_id.clone())));
                                 (RequestSMWrapper::CatchupSingle(request), None)
                             }
@@ -524,8 +522,7 @@ impl<T: Networker> RequestSMWrapper<T> {
             }
             RequestSMWrapper::Full(mut request) => {
                 match re {
-                    RequestEvent::Reply(rep, raw_msg, node_alias, req_id) => {
-                        let req_id = rep.req_id();
+                    RequestEvent::Reply(_, raw_msg, node_alias, _) => {
                         let first_resp = request.state.accum_reply.is_none();
                         if first_resp {
                             request.state.accum_reply = Some(HashableValue {
@@ -552,7 +549,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                         //TODO: extend timeout
                         (RequestSMWrapper::Full(request), None)
                     }
-                    RequestEvent::ReqNACK(rep, raw_msg, node_alias, req_id) | RequestEvent::Reject(rep, raw_msg, node_alias, req_id) => {
+                    RequestEvent::ReqNACK(_, raw_msg, node_alias, _) | RequestEvent::Reject(_, raw_msg, node_alias, _) => {
                         if _parse_nack(&mut request.state.nack_cnt, request.f, &raw_msg, &request.cmd_ids, &node_alias) {
                             (RequestSMWrapper::Finish(request.into()), None)
                         } else {

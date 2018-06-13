@@ -7,7 +7,6 @@ use std::marker::PhantomData;
 use std::cell::RefCell;
 use std::rc::Rc;
 use services::pool::types::LedgerStatus;
-use services::pool::types::CatchupReq;
 
 use services::pool::commander::Commander;
 use services::pool::events::*;
@@ -341,7 +340,10 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                         PoolWrapper::GettingCatchupTarget((request_handler, cmd_id, pool).into())
                     }
                 }
-                PoolEvent::Close(cmd_id) => PoolWrapper::Closed(pool.into()),
+                PoolEvent::Close(cmd_id) => {
+                    _close_pool_ack(cmd_id);
+                    PoolWrapper::Closed(pool.into())
+                },
                 _ => PoolWrapper::Initialization(pool)
             }
             PoolWrapper::GettingCatchupTarget(mut pool) => {
@@ -392,7 +394,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                         let request_handler = _get_request_handler_with_ledger_status_sent(pool.state.networker.clone(), &pool.pool_name);
                         PoolWrapper::GettingCatchupTarget((pool, request_handler, cmd_id).into())
                     },
-                    PoolEvent::SendRequest(cmd_id, req) => {
+                    PoolEvent::SendRequest(cmd_id, _) => {
                         trace!("received request to send");
                         let re: Option<RequestEvent> = pe.into();
                         let req_id = re.clone().map(|r| r.get_req_id()).expect("FIXME");
@@ -490,7 +492,6 @@ struct PoolThread<S: Networker, R: RequestHandler<S>> {
     events: VecDeque<PoolEvent>,
     commander: Commander,
     networker: Rc<RefCell<S>>,
-    name: String,
 }
 
 impl<S: Networker, R: RequestHandler<S>> PoolThread<S, R> {
@@ -501,7 +502,6 @@ impl<S: Networker, R: RequestHandler<S>> PoolThread<S, R> {
             events: VecDeque::new(),
             commander: Commander::new(cmd_socket),
             networker,
-            name
         }
     }
 
