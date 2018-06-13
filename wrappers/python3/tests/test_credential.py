@@ -234,3 +234,10 @@ async def test_send_request_with_bad_connection():
         await credential.send_request(connection, 0)
     assert ErrorCode.InvalidConnectionHandle == e.value.error_code
 
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_credential_get_payment_txn():
+    with pytest.raises(VcxError) as e:
+        credential = await Credential.create(source_id, offer)
+        await credential.get_payment_txn()
+    assert ErrorCode.NotReady == e.value.error_code

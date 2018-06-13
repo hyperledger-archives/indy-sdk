@@ -76,3 +76,16 @@ class CredentialDef(VcxBase):
 
     def release(self) -> None:
         self._release(CredentialDef, 'vcx_credentialdef_release')
+
+    async def get_payment_txn(self):
+        if not hasattr(CredentialDef.get_payment_txn, "cb"):
+            self.logger.debug("vcx_credentialdef_get_payment_txn: Creating callback")
+            CredentialDef.get_payment_txn.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_credential_handle = c_uint32(self.handle)
+
+        payment_txn = await do_call('vcx_credentialdef_get_payment_txn',
+                      c_credential_handle,
+                      CredentialDef.get_payment_txn.cb)
+
+        return json.loads(payment_txn.decode())

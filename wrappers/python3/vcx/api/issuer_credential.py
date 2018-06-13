@@ -86,3 +86,17 @@ class IssuerCredential(VcxStateful):
                       c_credential_handle,
                       c_connection_handle,
                       IssuerCredential.send_credential.cb)
+
+    async def get_payment_txn(self):
+        if not hasattr(IssuerCredential.get_payment_txn, "cb"):
+            self.logger.debug("vcx_issuer_credential_get_payment_txn: Creating callback")
+            IssuerCredential.get_payment_txn.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+        c_credential_handle = c_uint32(self.handle)
+
+        payment_txn = await do_call('vcx_issuer_credential_get_payment_txn',
+                      c_credential_handle,
+                      IssuerCredential.get_payment_txn.cb)
+
+        return json.loads(payment_txn.decode())
+

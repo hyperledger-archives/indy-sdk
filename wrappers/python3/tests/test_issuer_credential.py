@@ -191,3 +191,15 @@ async def test_send_credential_with_no_prior_offer():
         await issuer_credential.send_credential(connection)
     assert ErrorCode.NotReady == e.value.error_code
 
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_issuer_credential_get_payment_txn():
+    with pytest.raises(VcxError) as e:
+        issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def_id, name, price)
+        await issuer_credential.get_payment_txn()
+    assert ErrorCode.NotReady == e.value.error_code
+
+
+
+
+
