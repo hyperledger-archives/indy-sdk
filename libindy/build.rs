@@ -33,9 +33,7 @@ fn main() {
         }
     }
 		match &target {
-		x if x.contains("aarch64-linux-android") || x.contains("armv7-linux-androideabi") ||
-        x.contains("arm-linux-androideabi") || x.contains("i686-linux-android") ||
-        x.contains("x86_64-linux-android") => {
+		x if x.contains("linux-android")=> {
 			//statically link files
 			let openssl = match env::var("OPENSSL_LIB_DIR") {
 				Ok(val) => val,
