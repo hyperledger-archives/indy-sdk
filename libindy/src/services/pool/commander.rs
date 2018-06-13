@@ -28,9 +28,9 @@ impl Commander {
         let id = cmd.get(1).map(|cmd: &Vec<u8>| LittleEndian::read_i32(cmd.as_slice()))
             .unwrap_or(-1);
         if "exit".eq(cmd_s.as_str()) {
-            Some(PoolEvent::Close)  // FIXME pass id
+            Some(PoolEvent::Close(id))  // FIXME pass id
         } else if "refresh".eq(cmd_s.as_str()) {
-            Some(PoolEvent::Refresh) // FIXME pass id
+            Some(PoolEvent::Refresh(id)) // FIXME pass id
         } else if "connect".eq(cmd_s.as_str()){
             Some(PoolEvent::CheckCache(id))
         } else {

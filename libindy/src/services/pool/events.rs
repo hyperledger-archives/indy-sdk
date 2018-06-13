@@ -42,8 +42,12 @@ pub enum PoolEvent {
         String, // reply
         String, // node alias
     ),
-    Close,
-    Refresh,
+    Close(
+        i32, //cmd_id
+    ),
+    Refresh(
+        i32, //cmd_id
+    ),
     CatchupTargetFound(
         Vec<u8>, //target_mt_root
         usize, //target_mt_size

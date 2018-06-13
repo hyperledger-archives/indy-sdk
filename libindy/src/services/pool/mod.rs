@@ -181,7 +181,6 @@ impl PoolService {
 
     pub fn send_tx(&self, handle: i32, json: &str) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        //TODO: send command to ZMQ socket
         self.open_pools.try_borrow().map_err(CommonError::from)?
             .get(&handle)
             .map(|&(_, ref socket)| {
@@ -214,21 +213,23 @@ impl PoolService {
 
     pub fn close(&self, handle: i32) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        //TODO: send command to ZMQ socket
-//        self.open_pools.try_borrow_mut().map_err(CommonError::from)?
-//            .remove(&handle).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?
-//            .close(cmd_id)
-//            .map(|()| cmd_id)
+        self.open_pools.try_borrow_mut().map_err(CommonError::from)?
+            .remove(&handle).map(|(_, ref socket)| {
+                let mut buf = [0u8; 4];
+                LittleEndian::write_i32(&mut buf, cmd_id);
+                socket.send_multipart(&["exit".as_bytes(), &buf], zmq::DONTWAIT).expect("FIXME");
+            }).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?;
         Ok(cmd_id)
     }
 
     pub fn refresh(&self, handle: i32) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        //TODO: send command to ZMQ socket
-//        self.open_pools.try_borrow_mut().map_err(CommonError::from)?
-//            .get(&handle).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?
-//            .refresh(cmd_id)
-//            .map(|()| cmd_id)
+        self.open_pools.try_borrow_mut().map_err(CommonError::from)?
+            .get(&handle).map(|&(_, ref socket)| {
+                let mut buf = [0u8; 4];
+                LittleEndian::write_i32(&mut buf, cmd_id);
+                socket.send_multipart(&["refresh".as_bytes(), &buf], zmq::DONTWAIT).expect("FIXME");
+            }).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?;
         Ok(cmd_id)
     }
 
@@ -237,7 +238,7 @@ impl PoolService {
 
         let pool_home_path = EnvironmentUtils::pool_home_path();
         for entry in fs::read_dir(pool_home_path)? {
-            let dir_entry = if let Ok(dir_entry) = entry { dir_entry } else { continue };
+            let dir_entry = if let Ok(dir_entry) = entry { dir_entry } else { continue; };
             if let Some(pool_name) = dir_entry.path().file_name().and_then(|os_str| os_str.to_str()) {
                 let json = json!({"pool":pool_name.to_owned()});
                 pool.push(json);
@@ -351,7 +352,7 @@ mod tests {
                 worker: None,
                 name: pool_name.to_string(),
                 cmd_sock: recv_cmd_sock,
-                id: pool_id
+                id: pool_id,
             };
             ps.open_pools.borrow_mut().insert(pool_id, pool);
 
@@ -467,7 +468,7 @@ mod tests {
         assert_eq!(1, emulator_msgs.len());
         assert_eq!("pi", emulator_msgs[0]);
     }
-    
+
     #[test]
     pub fn pool_worker_works_for_deserialize_cache() {
         serde_json::from_str::<NodeTransaction>(NODE1).unwrap();
@@ -477,13 +478,13 @@ mod tests {
         let node2: NodeTransactionV0 = serde_json::from_str(NODE2).unwrap();
 
         let txn1_src = format!("{{\"data\":{{\"alias\":\"{}\",\"node_ip\":\"{}\",\"node_port\":{},\"services\":{:?}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
-                                       node1.data.alias, node1.data.node_ip.clone().unwrap(), node1.data.node_port.clone().unwrap(), node1.data.services.clone().unwrap(), node1.dest, node1.identifier, node1.txn_id.clone().unwrap());
+                               node1.data.alias, node1.data.node_ip.clone().unwrap(), node1.data.node_port.clone().unwrap(), node1.data.services.clone().unwrap(), node1.dest, node1.identifier, node1.txn_id.clone().unwrap());
         let txn2_src = format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{},\"node_ip\":\"{}\",\"node_port\":{}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
-                                       node1.data.alias, node1.data.client_ip.clone().unwrap(), node1.data.client_port.clone().unwrap(), node1.data.node_ip.clone().unwrap(), node1.data.node_port.unwrap(), node1.dest, node1.identifier, node1.txn_id.clone().unwrap());
+                               node1.data.alias, node1.data.client_ip.clone().unwrap(), node1.data.client_port.clone().unwrap(), node1.data.node_ip.clone().unwrap(), node1.data.node_port.unwrap(), node1.dest, node1.identifier, node1.txn_id.clone().unwrap());
         let txn3_src = format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
-                                       node2.data.alias, node2.data.client_ip.clone().unwrap(), node2.data.client_port.clone().unwrap(), node2.dest, node2.identifier, node2.txn_id.clone().unwrap());
+                               node2.data.alias, node2.data.client_ip.clone().unwrap(), node2.data.client_port.clone().unwrap(), node2.dest, node2.identifier, node2.txn_id.clone().unwrap());
         let txn4_src = format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{},\"node_ip\":\"{}\",\"node_port\":{},\"services\":{:?}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
-                                       node2.data.alias, node2.data.client_ip.clone().unwrap(), node2.data.client_port.clone().unwrap(), node2.data.node_ip.clone().unwrap(), node2.data.node_port.clone().unwrap(), node2.data.services.clone().unwrap(), node2.dest, node2.identifier, node2.txn_id.clone().unwrap());
+                               node2.data.alias, node2.data.client_ip.clone().unwrap(), node2.data.client_port.clone().unwrap(), node2.data.node_ip.clone().unwrap(), node2.data.node_port.clone().unwrap(), node2.data.services.clone().unwrap(), node2.dest, node2.identifier, node2.txn_id.clone().unwrap());
 
         let txns = format!("{}\n{}\n{}\n{}", txn1_src, txn2_src, txn3_src, txn4_src);
 
@@ -493,9 +494,9 @@ mod tests {
         let txn4_json: serde_json::Value = serde_json::from_str(&txn4_src).unwrap();
 
         let pool_cache = vec![rmp_serde::to_vec_named(&txn1_json).unwrap(),
-                             rmp_serde::to_vec_named(&txn2_json).unwrap(),
-                             rmp_serde::to_vec_named(&txn3_json).unwrap(),
-                             rmp_serde::to_vec_named(&txn4_json).unwrap()];
+                              rmp_serde::to_vec_named(&txn2_json).unwrap(),
+                              rmp_serde::to_vec_named(&txn3_json).unwrap(),
+                              rmp_serde::to_vec_named(&txn4_json).unwrap()];
 
         let pool_name = "test";
         let mut path = EnvironmentUtils::pool_path(pool_name);
@@ -692,7 +693,7 @@ mod tests {
                     client_port: Some(9700),
                     client_ip: Some("127.0.0.1".to_string()),
                     node_ip: Some("".to_string()),
-                    node_port: Some(0)
+                    node_port: Some(0),
                 },
                 txn_id: None,
                 verkey: None,
