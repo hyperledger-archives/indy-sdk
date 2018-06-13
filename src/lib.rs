@@ -12,6 +12,7 @@ extern crate libindy_sys as ffi;
 #[macro_use]
 mod macros;
 
+pub mod anoncreds;
 pub mod blob_storage;
 pub mod crypto;
 pub mod did;
