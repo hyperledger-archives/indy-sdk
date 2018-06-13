@@ -2,6 +2,7 @@ use {ErrorCode, IndyHandle};
 
 use std::ffi::CString;
 use std::time::Duration;
+use std::ptr::null;
 
 use utils::callbacks::ClosureHandler;
 use utils::results::ResultHandler;
