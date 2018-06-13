@@ -322,6 +322,18 @@ impl IssuerCredential {
         }
         Ok(())
     }
+
+    fn get_payment_txn(&self) -> Result<Option<payments::PaymentTxn>, u32> {
+        if self.price == 0 || self.payment_address.is_none() { return Ok(None); }
+
+        let payment_address = self.payment_address.clone().unwrap();
+
+        Ok(Some(payments::PaymentTxn {
+            amount: self.price,
+            inputs: vec![payment_address],
+            outputs: Vec::new(),
+        }))
+    }
 }
 
 pub fn encode_attributes(attributes: &str) -> Result<String, IssuerCredError> {
@@ -383,6 +395,14 @@ pub fn get_offer_uid(handle: u32) -> Result<String,u32> {
     match ISSUER_CREDENTIAL_MAP.lock().unwrap().get(&handle) {
         Some(credential) => Ok(credential.get_offer_uid().clone()),
         None => Err(error::INVALID_ISSUER_CREDENTIAL_HANDLE.code_num),
+    }
+}
+
+pub fn get_payment_txn(handle: u32) -> Option<payments::PaymentTxn> {
+    // get_payment_txn only ever returns Ok()
+    match ISSUER_CREDENTIAL_MAP.lock().unwrap().get(&handle) {
+        Some(c) => c.get_payment_txn().unwrap(),
+        None => None,
     }
 }
 
@@ -1043,5 +1063,7 @@ pub mod tests {
         credential.state = VcxStateType::VcxStateRequestReceived;
         credential.price = 200;
         assert!(credential.send_credential(connection_handle).is_err());
+        let payment = serde_json::to_string(&credential.get_payment_txn().unwrap().unwrap()).unwrap();
+        assert!(payment.len() > 20);
     }
 }

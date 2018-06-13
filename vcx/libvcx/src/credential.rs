@@ -20,7 +20,7 @@ use messages::extract_json_payload;
 use utils::libindy::anoncreds::{libindy_prover_create_credential_req, libindy_prover_store_credential};
 use utils::libindy::wallet;
 use utils::libindy::crypto;
-use utils::libindy::payments::pay_a_payee;
+use utils::libindy::payments::{pay_a_payee, PaymentTxn};
 
 use credential_def::retrieve_credential_def;
 use connection;
@@ -56,6 +56,7 @@ impl Default for Credential {
             cred_id: None,
             credential: None,
             payment_info: None,
+            payment_txn: None,
         }
     }
 }
@@ -79,6 +80,7 @@ pub struct Credential {
     credential: Option<String>,
     cred_id: Option<String>,
     payment_info: Option<PaymentInfo>,
+    payment_txn: Option<PaymentTxn>,
 }
 
 impl Credential {
@@ -146,7 +148,8 @@ impl Credential {
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_MESSAGE_RESPONSE.to_vec()); }
 
         if self.payment_info.is_some() {
-            let _receipt = self.submit_payment()?;
+            let (payment_txn, _) = self.submit_payment()?;
+            self.payment_txn = Some(payment_txn);
         }
         
         match messages::send_message().to(local_my_did)
@@ -288,6 +291,8 @@ impl Credential {
 
     fn get_source_id(&self) -> &String {&self.source_id}
 
+    fn get_payment_txn(&self) -> Result<Option<PaymentTxn>, u32> { Ok(self.payment_txn.clone()) }
+
     fn set_credential_offer(&mut self, offer: CredentialOffer){
         self.credential_offer = Some(offer);
     }
@@ -296,15 +301,14 @@ impl Credential {
         self.payment_info.is_some()
     }
 
-    fn submit_payment(&self) -> Result<String, CredentialError> {
+    fn submit_payment(&self) -> Result<(PaymentTxn, String), CredentialError> {
         debug!("submitting payment for premium credential");
-        if settings::test_indy_mode_enabled() { return Ok("RECEIPT OF SUBMISSION".to_string())};
         match &self.payment_info {
             &Some(ref pi) => {
                 let address = &pi.get_address()?;
                 let price = pi.get_price()?;
-                let receipt = pay_a_payee(price, address)?;
-                Ok(receipt)
+                let (payment_txn, receipt) = pay_a_payee(price, address)?;
+                Ok((payment_txn, receipt))
             },
             &None => Err(CredentialError::NoPaymentInformation()),
         }
@@ -362,6 +366,11 @@ pub fn get_credential(handle: u32) -> Result<String, CredentialError> {
     HANDLE_MAP.get(handle, |obj| {
         obj.get_credential().map_err(|e| e.to_error_code())
     }).map_err(|ec| CredentialError::CommonError(ec))
+}
+
+pub fn get_payment_txn(handle: u32) -> Option<PaymentTxn> {
+    // get_payment_txn only ever returns Ok()
+    HANDLE_MAP.get(handle, |obj| { obj.get_payment_txn()}).unwrap()
 }
 
 pub fn get_credential_offer(handle: u32) -> Result<String, CredentialError> {
@@ -539,8 +548,8 @@ pub fn is_payment_required(handle: u32) -> Result<bool, CredentialError> {
     }).map_err(handle_err)
 }
 
-pub fn submit_payment(handle: u32) -> Result<String, CredentialError> {
-    HANDLE_MAP.get(handle, |obj| {
+pub fn submit_payment(handle: u32) -> Result<(PaymentTxn, String), CredentialError> {
+    HANDLE_MAP.get_mut(handle, |obj| {
         obj.submit_payment().map_err(|e| e.to_error_code())
     }).map_err(handle_err)
 
@@ -675,7 +684,8 @@ pub mod tests {
         tests::setup_ledger_env(test_name);
         let cred = create_credential_with_price(25);
         assert!(cred.is_payment_required());
-        cred.submit_payment().unwrap();
+        let payment = serde_json::to_string(&cred.submit_payment().unwrap().0).unwrap();
+        assert!(payment.len() > 50);
         tests::cleanup_dev_env(test_name);
     }
 
