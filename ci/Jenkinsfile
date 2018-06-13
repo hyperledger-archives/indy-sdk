@@ -1,5 +1,10 @@
 #!groovy
 
+def rust
+def vcx_python
+def libindy
+def vcx_nodejs
+
 
 def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
@@ -14,6 +19,7 @@ node('ubuntu') {
         stage ('Checkout'){
             checkout scm
         }
+
         
         stage ('Build Rust Image') {
             rust = build('rust', 'vcx/ci/ubuntu.dockerfile', 'vcx')
@@ -61,13 +67,8 @@ node('ubuntu') {
 
         stage ('Test Node Wrapper'){
             testNodeWrapper(vcx_nodejs)
-        }
+        }       
 
-        // create the npm deb
-        stage('Create/Rename Npm Tgz File') {
-            npmFilename = createNpmTgz(rust, getVcxVersion(vcx_python).replaceAll("//s",""), "amd64", "vcx")
-        }
-        
         if (env.BRANCH_NAME == "master") {
             // create the debian of the library (just the libvcx.so file)
             stage('Build libvcx Debian and compress .so file') {
@@ -75,7 +76,8 @@ node('ubuntu') {
             }
             
             // create the npm deb 
-            createNpmDeb(rust, npmFilename)
+            createNpmDeb(rust, "*_amd64.tgz")
+            renameAndUploadNpmTgz(rust, "vcx")
 
             // create pip installable artifact
             stage ('Building Python Artifact') {
@@ -92,6 +94,11 @@ node('ubuntu') {
     } finally {
         step([$class: 'WsCleanup'])
     }
+}
+
+def getRevisionFromGit() {
+    revision = sh 'git log --pretty=format:\'%h\' -n 1'
+    return revision
 }
 
 def addCert(envn) {
@@ -226,12 +233,25 @@ def testNodeWrapper(envn) {
     }
 }
 
-def createNpmTgz(envn, version, arch, destDir) {
-    filename = 'vcx/wrappers/node/vcx-*.tgz'
-    version = version.replaceAll("\\s","")
-    newFilename = "vcx_${version}_${arch}.tgz"
-    sh "cp ${filename} ${destDir}/${newFilename}"
-    return newFilename
+def renameAndUploadNpmTgz(envn, destDir) {
+    envn.inside {
+        sh "pwd"
+        sh "ls"
+        CERT_SCRIPT = 'vcx/ci/scripts/getCert.sh'
+        sh "${CERT_SCRIPT}"
+        filename = 'vcx/wrappers/node/vcx-*.tgz'
+        sh "cp ${filename} vcx"
+        sh "ls vcx"
+        sh "echo ${destDir}"
+        
+        withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
+            sh "pwd"
+            sh "cd vcx; rename \"s/\\.tgz\$/_amd64\\.tgz/\" *.tgz"
+            sh "cd vcx; rename \"s/vcx-/vcx_/\" *.tgz"
+            sh 'cd vcx; ls -a'
+            sh "cd vcx; find . -type f -name '*.tgz' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/npm/upload -F 'file=@{}' \\;"  
+        }
+    }
 }
 
 // Creates debian that can install through npm.
@@ -249,7 +269,7 @@ def createNpmDeb(app, npmFilename){
                 // upload npm module
                 sh "find wrappers/node/ -type f -name 'vcx-*.tgz' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/agency_dev/upload -F file=@{} \\;"
                 sh "find wrappers/node/ -type f -name 'vcx-*.tgz' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/portal_dev/upload -F file=@{} \\;"
-                sh "find . -type f -name ${npmFilename} -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/npm/upload -F 'file=@{}' \\;"  
+  
                 // upload debian
                 sh "find . -type f -name 'vcx_*_amd64.deb' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/agency_dev/upload -F file=@{} \\;"
                 sh "find . -type f -name 'vcx_*_amd64.deb' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/portal_dev/upload -F file=@{} \\;"
