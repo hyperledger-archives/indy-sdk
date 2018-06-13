@@ -6,7 +6,7 @@ extern crate time;
 use self::indy_crypto::utils::json::JsonEncodable;
 
 
-const PROTOCOL_VERSION: u64 = 2;
+pub const PROTOCOL_VERSION: u64 = 2;
 
 #[derive(Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
