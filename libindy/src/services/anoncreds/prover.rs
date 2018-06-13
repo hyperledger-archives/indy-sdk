@@ -177,6 +177,7 @@ impl Prover {
 
         let credentials_for_proving = Prover::_prepare_credentials_for_proving(requested_credentials, proof_req);
         let mut sub_proof_index = 0;
+        let non_credential_schema = build_non_credential_schema()?;
 
         for (cred_key, &(ref req_attrs_for_cred, ref req_predicates_for_cred)) in credentials_for_proving.iter() {
             let credential: &Credential = credentials.get(cred_key.cred_id.as_str())
@@ -198,7 +199,7 @@ impl Prover {
             let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
 
             let credential_schema = build_credential_schema(&schema.attr_names)?;
-            let non_credential_schema = build_non_credential_schema()?;
+
             let credential_values = build_credential_values(&credential.values, Some(master_secret))?;
 
             let sub_proof_request = Prover::_build_sub_proof_request(req_attrs_for_cred, req_predicates_for_cred)?;
