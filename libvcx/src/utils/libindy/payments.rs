@@ -78,6 +78,37 @@ pub fn init_payments() -> Result<(), u32> {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct PaymentUTXO {
+    #[serde(rename = "paymentAddress")]
+    payment_address: String,
+    amount: u64,
+    extra: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct PaymentTxn {
+    pub amount: u64,
+    pub inputs: Vec<String>,
+    pub outputs: Vec<PaymentUTXO>,
+}
+
+impl PaymentTxn {
+    pub fn from_parts(inputs: &str, outputs: &str, amount: u64) -> Result<PaymentTxn, u32> {
+        let inputs: Vec<String> = serde_json::from_str(&inputs)
+            .map_err(|err| {error::INVALID_JSON.code_num})?;
+
+        let outputs: Vec<PaymentUTXO> = serde_json::from_str(&outputs)
+            .map_err(|err| {error::INVALID_JSON.code_num})?;
+
+        Ok(PaymentTxn {
+            amount,
+            inputs,
+            outputs,
+        })
+    }
+}
+
 pub fn create_address() -> Result<String, u32> {
     if settings::test_indy_mode_enabled() { return Ok(r#"pay:null:J81AxU9hVHYFtJc"#.to_string()); }
 
@@ -160,8 +191,8 @@ pub fn get_ledger_fees() -> Result<String, u32> {
         .map_err(map_rust_indy_sdk_error_code)
 }
 
-pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(String, String), u32> {
-    if settings::test_indy_mode_enabled() { return Ok((PARSED_TXN_PAYMENT_RESPONSE.to_string(), SUBMIT_SCHEMA_RESPONSE.to_string())); }
+pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(PaymentTxn, String), u32> {
+    if settings::test_indy_mode_enabled() { return Ok((PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"paymentAddress":"pay:null:xkIsxem0YNtHrRO"}]"#,1).unwrap(), SUBMIT_SCHEMA_RESPONSE.to_string())); }
 
     let txn_price = get_txn_price(txn_type)?;
 
@@ -169,7 +200,10 @@ pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(String, String), u32> {
 
     let output = outputs(refund, None, None).map_err(|e| e.to_error_code())?;
 
-    _submit_fees_request(req, &inputs, &output)
+    let (fee_response, txn_response) = _submit_fees_request(req, &inputs, &output)?;
+
+    let payment = PaymentTxn::from_parts(&inputs, &output, txn_price)?;
+    Ok((payment, txn_response))
 }
 
 fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(String, String), u32> {
@@ -190,13 +224,19 @@ fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(Strin
     Ok((parsed_response, response))
 }
 
-pub fn pay_a_payee(price: u64, address: &str) -> Result<String, PaymentError> {
+pub fn pay_a_payee(price: u64, address: &str) -> Result<(PaymentTxn, String), PaymentError> {
+    if settings::test_indy_mode_enabled() { return Ok((PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"paymentAddress":"pay:null:xkIsxem0YNtHrRO"}]"#,1).unwrap(), SUBMIT_SCHEMA_RESPONSE.to_string())); }
+
     let (remainder, input) = inputs(price)?;
     let output = outputs(remainder, Some(address.to_string()), Some(price))?;
 
+    let payment = PaymentTxn::from_parts(&input, &output, price).map_err(|e|PaymentError::CommonError(e))?;
     let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
     match Payment::build_payment_req(get_wallet_handle(), &my_did, &input, &output) {
-        Ok((request, payment_method)) => libindy_sign_and_submit_request(&my_did, &request).map_err(|ec| PaymentError::CommonError(ec)),
+        Ok((request, payment_method)) => {
+            let result = libindy_sign_and_submit_request(&my_did, &request).map_err(|ec| PaymentError::CommonError(ec))?;
+            Ok((payment, result))
+        },
         Err(ec) => {
             error!("error: {:?}", ec);
             Err(PaymentError::CommonError(ec as u32))
@@ -455,8 +495,7 @@ pub mod tests {
 
         // Schema
         let create_schema_req = ::utils::constants::SCHEMA_CREATE_JSON.to_string();
-        let (parsed_response, response) = pay_for_txn(&create_schema_req, "101").unwrap();
-        assert_eq!(parsed_response, PARSED_TXN_PAYMENT_RESPONSE.to_string());
+        let (payment, response) = pay_for_txn(&create_schema_req, "101").unwrap();
         assert_eq!(response, SUBMIT_SCHEMA_RESPONSE.to_string());
     }
 
@@ -472,14 +511,13 @@ pub mod tests {
         let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
         let start_wallet = get_wallet_token_info().unwrap();
 
-        let (price_response, response) = pay_for_txn(&create_schema_req, "101").unwrap();
+        let (payment, response) = pay_for_txn(&create_schema_req, "101").unwrap();
 
         let end_wallet = get_wallet_token_info().unwrap();
 
         tests::cleanup_dev_env(name);
-        assert!(price_response.contains(r#""amount":13"#));
-        let output_address: Vec<Value> = serde_json::from_str(&price_response).unwrap();
-        assert_eq!(output_address.len(), 1);
+        assert_eq!(payment.amount, 2);
+        assert_eq!(payment.outputs.len(), 1);
         assert_eq!(start_wallet.balance - 2, end_wallet.balance);
     }
 

@@ -1,4 +1,5 @@
 extern crate libc;
+extern crate serde_json;
 
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
@@ -208,6 +209,62 @@ pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32, cred_def_ha
                 warn!("vcx_credentialdef_get_cred_def_id(command_handle: {}, cred_def_handle: {}, rc: {}, cred_def_id: {})",
                       command_handle, cred_def_handle, error_string(x), "");
                 cb(command_handle, x, ptr::null_mut());
+            },
+        };
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Retrieve the txn associated with paying for the credential_def
+///
+/// #param
+/// handle: credential_def handle that was provided during creation.  Used to access credential_def object.
+///
+/// #Callback returns
+/// PaymentTxn json
+/// example: {
+///         "amount":25,
+///         "inputs":[
+///             "pay:null:1_3FvPC7dzFbQKzfG",
+///             "pay:null:1_lWVGKc07Pyc40m6"
+///         ],
+///         "outputs":[
+///             {"paymentAddress":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null},
+///             {"paymentAddress":"pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j","amount":25,"extra":null}
+///         ]
+///     }
+#[no_mangle]
+pub extern fn vcx_credentialdef_get_payment_txn(command_handle: u32,
+                                         handle: u32,
+                                         cb: Option<extern fn(xcommand_handle: u32, err: u32, txn: *const c_char)>) -> u32 {
+
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    info!("vcx_credentialdef_get_payment_txn(command_handle: {})", command_handle);
+
+    thread::spawn(move|| {
+        match credential_def::get_payment_txn(handle) {
+            Some(x) => {
+                match serde_json::to_string(&x) {
+                    Ok(x) => {
+                        info!("vcx_credentialdef_get_payment_txn_cb(command_handle: {}, rc: {}, : {}), source_id: {:?}",
+                              command_handle, error_string(0), x, credential_def::get_source_id(handle).unwrap_or_default());
+
+                        let msg = CStringUtils::string_to_cstring(x);
+                        cb(command_handle, 0, msg.as_ptr());
+                    }
+                    Err(_) => {
+                        error!("vcx_credentialdef_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {:?}",
+                               command_handle, error_string(error::INVALID_JSON.code_num), "null", credential_def::get_source_id(handle).unwrap_or_default());
+                        cb(command_handle, error::INVALID_JSON.code_num, ptr::null_mut());
+                    }
+                }
+            },
+            None => {
+                error!("vcx_credentialdef_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {:?}",
+                       command_handle, error_string(error::NOT_READY.code_num), "null", credential_def::get_source_id(handle).unwrap_or_default());
+                cb(command_handle, error::NOT_READY.code_num, ptr::null());
             },
         };
     });

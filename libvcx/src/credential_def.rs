@@ -10,7 +10,7 @@ use settings;
 use schema::LedgerSchema;
 use utils::constants::{ CRED_DEF_ID, CRED_DEF_JSON, CRED_DEF_TXN_TYPE };
 use utils::libindy::SigTypes;
-use utils::libindy::payments::pay_for_txn;
+use utils::libindy::payments::{pay_for_txn, PaymentTxn};
 use utils::libindy::anoncreds::{libindy_create_and_store_credential_def};
 use utils::libindy::ledger::{libindy_submit_request,
                              libindy_build_get_credential_def_txn,
@@ -31,6 +31,7 @@ pub struct CredentialDef {
     pub handle: u32,
     name: String,
     source_id: String,
+    payment_txn: Option<PaymentTxn>,
 }
 
 impl CredentialDef {
@@ -49,6 +50,7 @@ impl CredentialDef {
 
     pub fn set_source_id(&mut self, source_id: String) { self.source_id = source_id.clone(); }
 
+    fn get_payment_txn(&self) -> Result<Option<PaymentTxn>, u32> { Ok(self.payment_txn.clone()) }
 }
 
 //Todo: Add a get_cred_def_id call
@@ -63,7 +65,7 @@ pub fn create_new_credentialdef(source_id: String,
         .map_err(|x| CredDefError::CommonError(x.to_error_code()))?.schema_json;
 
     debug!("creating credentialdef with source_id: {}, name: {}, issuer_did: {}, schema_id: {}", source_id, name, issuer_did, schema_id);
-    let id= _create_and_store_credential_def( &issuer_did,
+    let (id, payment_txn) = _create_and_store_credential_def( &issuer_did,
                                                    &schema_json,
                                                    &tag,
                                                    Some(SigTypes::CL),
@@ -76,6 +78,7 @@ pub fn create_new_credentialdef(source_id: String,
         name,
         tag,
         id,
+        payment_txn,
     });
     {
         let mut m = CREDENTIALDEF_MAP.lock().unwrap();
@@ -91,8 +94,8 @@ fn _create_and_store_credential_def(issuer_did: &str,
                                    schema_json: &str,
                                    tag: &str,
                                    sig_type: Option<SigTypes>,
-                                   config_json: &str) -> Result<String, CredDefError> {
-    if settings::test_indy_mode_enabled() { return Ok(CRED_DEF_ID.to_string()); }
+                                   config_json: &str) -> Result<(String, Option<PaymentTxn>), CredDefError> {
+    if settings::test_indy_mode_enabled() { return Ok((CRED_DEF_ID.to_string(), None)); }
 
     let (id, cred_def_json) = libindy_create_and_store_credential_def(issuer_did,
                                                                       schema_json,
@@ -117,10 +120,10 @@ fn _create_and_store_credential_def(issuer_did: &str,
     let cred_def_req = libindy_build_create_credential_def_txn(issuer_did, &cred_def_json)
         .or(Err(CredDefError::CreateCredDefError()))?;
 
-    let (payment_info, response) = pay_for_txn(&cred_def_req, CRED_DEF_TXN_TYPE)
+    let (payment, response) = pay_for_txn(&cred_def_req, CRED_DEF_TXN_TYPE)
         .map_err(|err| CredDefError::CommonError(err))?;
 
-    Ok(id)
+    Ok((id, Some(payment)))
 }
 
 pub fn retrieve_credential_def(cred_def_id: &str) -> Result<(String, String), CredDefError> {
@@ -172,6 +175,14 @@ pub fn get_source_id(handle: u32) -> Result<String, u32> {
     match CREDENTIALDEF_MAP.lock().unwrap().get(&handle) {
         Some(c) => Ok(c.get_source_id().clone()),
         None => Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num),
+    }
+}
+
+pub fn get_payment_txn(handle: u32) -> Option<PaymentTxn> {
+    // get_payment_txn only ever returns Ok()
+    match CREDENTIALDEF_MAP.lock().unwrap().get(&handle) {
+        Some(c) => c.get_payment_txn().unwrap(),
+        None => None,
     }
 }
 
@@ -262,10 +273,12 @@ pub mod tests {
                                           did,
                                           schema_id,
                                           "tag_1".to_string(),
-                                          r#"{"support_revocation":false}"#.to_string());
+                                          r#"{"support_revocation":false}"#.to_string()).unwrap();
+
+        let payment = serde_json::to_string(&get_payment_txn(rc).unwrap()).unwrap();
+        assert!(payment.len() > 0);
 
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
-        assert!(rc.is_ok());
     }
 
     #[test]
@@ -274,7 +287,7 @@ pub mod tests {
         assert!(init_wallet("test_credential_def").unwrap() > 0);
         let wallet_handle = get_wallet_handle();
         let config = r#"{"support_revocation":false}"#;
-        let id = _create_and_store_credential_def(SCHEMAS_JSON, ISSUER_DID, "tag_1",Some(SigTypes::CL), config).unwrap();
+        let (id, _) = _create_and_store_credential_def(SCHEMAS_JSON, ISSUER_DID, "tag_1",Some(SigTypes::CL), config).unwrap();
         delete_wallet("test_credential_def").unwrap();
         assert_eq!(id, CRED_DEF_ID);
     }

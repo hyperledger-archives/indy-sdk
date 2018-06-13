@@ -373,7 +373,7 @@ pub extern fn vcx_wallet_send_tokens(command_handle: u32,
 
     thread::spawn(move|| {
         match pay_a_payee(tokens, &recipient) {
-            Ok(msg) => {
+            Ok((payment, msg)) => {
                 info!("vcx_wallet_send_tokens_cb(command_handle: {}, rc: {}, receipt: {})",
                       command_handle, error_string(0), msg);
                 let msg = CStringUtils::string_to_cstring(msg);

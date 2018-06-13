@@ -18,7 +18,7 @@ use utils::libindy::{
         libindy_parse_get_schema_response,
     },
     anoncreds::libindy_issuer_create_schema,
-    payments::pay_for_txn
+    payments::{pay_for_txn, PaymentTxn},
 };
 use error::schema::SchemaError;
 
@@ -50,6 +50,7 @@ pub struct CreateSchema {
     name: String,
     source_id: String,
     sequence_num: u32,
+    payment_txn: Option<PaymentTxn>,
 }
 
 pub trait Schema: ToString {
@@ -72,8 +73,8 @@ pub trait Schema: ToString {
     fn create_schema(submitter_did: &str,
                       name: &str,
                       version: &str,
-                      data: &str) -> Result<String, SchemaError> {
-        if settings::test_indy_mode_enabled() { return Ok(SCHEMA_ID.to_string()) }
+                      data: &str) -> Result<(String, Option<PaymentTxn>), SchemaError> {
+        if settings::test_indy_mode_enabled() { return Ok((SCHEMA_ID.to_string(), None)) }
 
         let (id, create_schema) = libindy_issuer_create_schema(submitter_did, name, version, data)
             .or(Err(SchemaError::InvalidSchemaCreation()))?;
@@ -81,12 +82,12 @@ pub trait Schema: ToString {
         let request = libindy_build_schema_request(submitter_did, &create_schema)
             .or(Err(SchemaError::InvalidSchemaCreation()))?;
 
-        let (payment_info, response) = pay_for_txn(&request, SCHEMA_TXN_TYPE)
+        let (payment, response) = pay_for_txn(&request, SCHEMA_TXN_TYPE)
             .map_err(|err| SchemaError::CommonError(err))?;
 
         Self::check_submit_schema_response(&response)?;
 
-        Ok(id)
+        Ok((id, Some(payment)))
     }
 
     fn check_submit_schema_response(txn: &str) -> Result<(), SchemaError> {
@@ -173,6 +174,7 @@ impl CreateSchema {
 
     pub fn get_schema_id(&self) -> &String { &self.schema_id }
 
+    fn get_payment_txn(&self) -> Result<Option<PaymentTxn>, u32> { Ok(self.payment_txn.clone()) }
 }
 
 pub fn create_new_schema(source_id: &str,
@@ -181,7 +183,7 @@ pub fn create_new_schema(source_id: &str,
                          version: String,
                          data: String) -> Result<u32, SchemaError> {
     debug!("creating schema with source_id: {}, name: {}, issuer_did: {}", source_id, schema_name, issuer_did);
-    let schema_id = LedgerSchema::create_schema(&issuer_did,
+    let (schema_id, payment_txn) = LedgerSchema::create_schema(&issuer_did,
                                                 &schema_name,
                                                 &version,
                                                 &data)?;
@@ -198,6 +200,7 @@ pub fn create_new_schema(source_id: &str,
         schema_id,
         //Todo: Take sequence number out. Id will be used instead
         sequence_num: 0,
+        payment_txn,
     });
 
     {
@@ -226,6 +229,7 @@ pub fn get_schema_attrs(source_id: String, schema_id: String) -> Result<(u32, St
         name: schema_data.name,
         version: schema_data.version,
         data: schema_data.attr_names,
+        payment_txn: None,
     });
 
     {
@@ -269,6 +273,14 @@ pub fn get_schema_id(handle: u32) -> Result<String, u32> {
     match SCHEMA_MAP.lock().unwrap().get(&handle) {
         Some(s) => Ok(s.get_schema_id().clone()),
         None => Err(error::INVALID_SCHEMA_HANDLE.code_num),
+    }
+}
+
+pub fn get_payment_txn(handle: u32) -> Option<PaymentTxn> {
+    // get_payment_txn only ever returns Ok()
+    match SCHEMA_MAP.lock().unwrap().get(&handle) {
+        Some(s) => s.get_payment_txn().unwrap(),
+        None => None,
     }
 }
 
@@ -332,9 +344,10 @@ pub mod tests {
             handle: 1,
             name: "schema_name".to_string(),
             sequence_num: 306,
+            payment_txn: None,
         };
         println!("{}", create_schema.to_string());
-        let create_schema_str = r#"{"data":["name","age","sex","height"],"version":"1.0","schema_id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4","name":"schema_name","source_id":"testId","sequence_num":306}"#;
+        let create_schema_str = r#"{"data":["name","age","sex","height"],"version":"1.0","schema_id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4","name":"schema_name","source_id":"testId","sequence_num":306,"payment_txn":null}"#;
         assert_eq!(create_schema.to_string(), create_schema_str.to_string());
     }
 
@@ -401,6 +414,8 @@ pub mod tests {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
         let handle = create_new_schema("id", did, schema_name, schema_version, data).unwrap();
+        let payment = serde_json::to_string(&get_payment_txn(handle).unwrap()).unwrap();
+        assert!(payment.len() > 50);
 
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         assert!(handle > 0);
