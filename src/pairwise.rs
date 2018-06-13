@@ -49,7 +49,7 @@ impl Pairwise {
         })
     }
 
-    pub fn create(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: &str) -> Result<(), ErrorCode> {
+    pub fn create(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pairwise::_create(command_handle, wallet_handle, their_did, my_did, metadata, cb);
@@ -58,7 +58,7 @@ impl Pairwise {
     }
 
     /// * `timeout` - the maximum time this function waits for a response
-    pub fn create_timeout(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: &str, timeout: Duration) -> Result<(), ErrorCode> {
+    pub fn create_timeout(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pairwise::_create(command_handle, wallet_handle, their_did, my_did, metadata, cb);
@@ -70,19 +70,19 @@ impl Pairwise {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-    pub fn create_async<F: 'static>(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+    pub fn create_async<F: 'static>(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Pairwise::_create(command_handle, wallet_handle, their_did, my_did, metadata, cb)
     }
 
-    fn _create(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _create(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let their_did = c_str!(their_did);
         let my_did = c_str!(my_did);
-        let metadata = c_str!(metadata);
+        let metadata_str = opt_c_str!(metadata);
 
         ErrorCode::from(unsafe {
-            pairwise::indy_create_pairwise(command_handle, wallet_handle, their_did.as_ptr(), my_did.as_ptr(), metadata.as_ptr(), cb)
+            pairwise::indy_create_pairwise(command_handle, wallet_handle, their_did.as_ptr(), my_did.as_ptr(), opt_c_ptr!(metadata, metadata_str), cb)
         })
     }
 
@@ -154,7 +154,7 @@ impl Pairwise {
         })
     }
 
-    pub fn set_metadata(wallet_handle: IndyHandle, their_did: &str, metadata: &str) -> Result<(), ErrorCode> {
+    pub fn set_metadata(wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pairwise::_set_metadata(command_handle, wallet_handle, their_did, metadata, cb);
@@ -163,7 +163,7 @@ impl Pairwise {
     }
 
     /// * `timeout` - the maximum time this function waits for a response
-    pub fn set_metadata_timeout(wallet_handle: IndyHandle, their_did: &str, metadata: &str, timeout: Duration) -> Result<(), ErrorCode> {
+    pub fn set_metadata_timeout(wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pairwise::_set_metadata(command_handle, wallet_handle, their_did, metadata, cb);
@@ -175,18 +175,18 @@ impl Pairwise {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-    pub fn set_metadata_async<F: 'static>(wallet_handle: IndyHandle, their_did: &str, metadata: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+    pub fn set_metadata_async<F: 'static>(wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Pairwise::_set_metadata(command_handle, wallet_handle, their_did, metadata, cb)
     }
 
-    fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, metadata: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let their_did = c_str!(their_did);
-        let metadata = c_str!(metadata);
+        let metadata_str = opt_c_str!(metadata);
 
         ErrorCode::from(unsafe {
-            pairwise::indy_set_pairwise_metadata(command_handle, wallet_handle, their_did.as_ptr(), metadata.as_ptr(), cb)
+            pairwise::indy_set_pairwise_metadata(command_handle, wallet_handle, their_did.as_ptr(), opt_c_ptr!(metadata, metadata_str), cb)
         })
     }
 }
