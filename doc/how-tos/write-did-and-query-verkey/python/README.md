@@ -122,6 +122,9 @@ You could also try to create a new steward identity without a seed, or
 with a different seed, and see what kind of error you get. Only identities
 with a trustee role can create stewards.
 
+There is an additional example in `extra/add_nym.py` which builds and submits 
+nym request to the ledger.
+
 ## Common errors
 Error `PoolLedgerConfigAlreadyExistsError`.   
 Delete config before creating:
