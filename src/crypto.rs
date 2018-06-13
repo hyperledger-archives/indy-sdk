@@ -89,7 +89,7 @@ impl Key {
     /// # Arguments
     /// * `wallet_handle` - wallet handle (created by Wallet::open)
     /// * `verkey` - the public key or key id where to store the metadata
-    /// * `metadata` - the metadata that will be stored with the key
+    /// * `metadata` - the metadata that will be stored with the key, can be empty string
     pub fn set_metadata(wallet_handle: IndyHandle, verkey: &str, metadata: &str) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -102,7 +102,7 @@ impl Key {
     /// # Arguments
     /// * `wallet_handle` - wallet handle (created by Wallet::open)
     /// * `verkey` - the public key or key id where to store the metadata
-    /// * `metadata` - the metadata that will be stored with the key
+    /// * `metadata` - the metadata that will be stored with the key, can be empty string
     /// * `timeout` - the maximum time this function waits for a response
     pub fn set_metadata_timeout(wallet_handle: IndyHandle, verkey: &str, metadata: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
@@ -116,7 +116,7 @@ impl Key {
     /// # Arguments
     /// * `wallet_handle` - wallet handle (created by Wallet::open)
     /// * `verkey` - the public key or key id where to store the metadata
-    /// * `metadata` - the metadata that will be stored with the key
+    /// * `metadata` - the metadata that will be stored with the key, can be empty string
     /// * `closure` - The closure that is called when finished
     pub fn set_metadata_async<F: 'static>(wallet_handle: IndyHandle, verkey: &str, metadata: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
