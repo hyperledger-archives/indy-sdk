@@ -418,6 +418,12 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                         }
                         PoolWrapper::Active(pool)
                     }
+                    PoolEvent::Timeout(req_id, _) => {
+                        if let Some(rh) = pool.state.request_handlers.get_mut(&req_id) {
+                            rh.process_event(pe.into());
+                        }
+                        PoolWrapper::Active(pool)
+                    }
                     _ => PoolWrapper::Active(pool)
                 }
             }
@@ -536,17 +542,17 @@ impl<S: Networker, R: RequestHandler<S>> PoolThread<S, R> {
             let mut poll_items = networker.get_poll_items();
             poll_items.push(self.commander.get_poll_item());
 
-            let timeout = networker.get_timeout();
+            let ((req_id, alias), timeout) = networker.get_timeout();
 
-            let poll_res = zmq::poll(&mut poll_items, timeout)
+            let poll_res = zmq::poll(&mut poll_items, ::std::cmp::max(timeout, 0))
                 .map_err(map_err_err!())
                 .map_err(|_| unimplemented!() /* FIXME */).unwrap();
 
             if poll_res == 0 {
-                self.events.push_back(PoolEvent::Timeout); // TODO check duplicate ?
+                self.events.push_back(PoolEvent::Timeout(req_id, alias)); // TODO check duplicate ?
             }
 
-            let mut events = networker.fetch_events(&poll_items[0..poll_items.len() - 1]);
+            let mut events = networker.fetch_events(poll_items.as_slice());
 
             if poll_items[poll_items.len() - 1].is_readable() { //TODO move into fetch events?
                 events.extend(self.commander.fetch_events());

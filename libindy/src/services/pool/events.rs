@@ -40,6 +40,14 @@ pub enum NetworkerEvent {
     ),
     Resend(String),
     NodesStateUpdated(Vec<RemoteNode>),
+    ExtendTimeout(
+        String, //req_id
+        String, //node_alias
+    ),
+    CleanTimeout(
+        String, //req_id
+        Option<String>, //node_alias
+    ),
 }
 
 #[derive(Clone, Debug)]
@@ -70,7 +78,10 @@ pub enum PoolEvent {
         i32, // cmd_id
         String, // request
     ),
-    Timeout
+    Timeout(
+        String, //req_id
+        String, //node alias
+    )
 }
 
 #[derive(Clone, Debug)]
@@ -84,6 +95,10 @@ pub enum RequestEvent {
         MerkleTree,
         usize, // target mt size
         Vec<u8> // target mt root
+    ),
+    Timeout(
+        String, //req_id
+        String, //node_alias
     ),
     CatchupRep(CatchupRep),
     CustomSingleRequest(
@@ -192,6 +207,7 @@ impl Into<Option<RequestEvent>> for PoolEvent {
                     Err(err) => Some(RequestEvent::CustomSingleRequest(msg, Err(err))),
                 }
             }
+            PoolEvent::Timeout(req_id, node_alias) => Some(RequestEvent::Timeout(req_id, node_alias)),
             _ => None
         }
     }
