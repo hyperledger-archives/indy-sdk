@@ -553,7 +553,7 @@ impl LedgerUtils {
                                                                                                        &schema_json,
                                                                                                        TAG_1,
                                                                                                        None,
-                                                                                                       &AnoncredsUtils::revocation_cred_def_config()).unwrap();
+                                                                                                       Some(&AnoncredsUtils::revocation_cred_def_config())).unwrap();
                 let cred_def_request = LedgerUtils::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
                 LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
 

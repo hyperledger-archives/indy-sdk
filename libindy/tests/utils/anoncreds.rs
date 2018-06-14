@@ -71,14 +71,14 @@ impl AnoncredsUtils {
     }
 
     pub fn issuer_create_credential_definition(wallet_handle: i32, issuer_did: &str, schema: &str, tag: &str,
-                                               signature_type: Option<&str>, config: &str) -> Result<(String, String), ErrorCode> {
+                                               signature_type: Option<&str>, config: Option<&str>) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
 
         let schema = CString::new(schema).unwrap();
         let tag = CString::new(tag).unwrap();
-        let signature_type_str = signature_type.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let issuer_did = CString::new(issuer_did).unwrap();
-        let config = CString::new(config).unwrap();
+        let signature_type_str = signature_type.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err =
             indy_issuer_create_and_store_credential_def(command_handle,
@@ -87,7 +87,7 @@ impl AnoncredsUtils {
                                                         schema.as_ptr(),
                                                         tag.as_ptr(),
                                                         if signature_type.is_some() { signature_type_str.as_ptr() } else { null() },
-                                                        config.as_ptr(),
+                                                        if config.is_some() { config_str.as_ptr() } else { null() },
                                                         cb);
 
         super::results::result_to_string_string(err, receiver)
@@ -679,7 +679,7 @@ impl AnoncredsUtils {
                                                                         &AnoncredsUtils::gvt_schema_json(),
                                                                         TAG_1,
                                                                         None,
-                                                                        &AnoncredsUtils::default_cred_def_config()).unwrap();
+                                                                        Some(&AnoncredsUtils::default_cred_def_config())).unwrap();
 
                 //3. Issuer1 Creates XYZ CredentialDefinition
                 let (issuer1_xyz_cred_deg_id, issuer1_xyz_credential_def_json) =
@@ -688,7 +688,7 @@ impl AnoncredsUtils {
                                                                         &AnoncredsUtils::xyz_schema_json(),
                                                                         TAG_1,
                                                                         None,
-                                                                        &AnoncredsUtils::default_cred_def_config()).unwrap();
+                                                                        Some(&AnoncredsUtils::default_cred_def_config())).unwrap();
 
                 //4. Issuer2 Creates GVT CredentialDefinition
                 let (issuer2_gvt_cred_def_id, issuer2_gvt_credential_def_json) =
@@ -697,7 +697,7 @@ impl AnoncredsUtils {
                                                                         &AnoncredsUtils::gvt_schema_json(),
                                                                         TAG_1,
                                                                         None,
-                                                                        &AnoncredsUtils::default_cred_def_config()).unwrap();
+                                                                        Some(&AnoncredsUtils::default_cred_def_config())).unwrap();
 
                 //5. Issuer1 Creates GVT CredentialOffer
                 let issuer1_gvt_credential_offer = AnoncredsUtils::issuer_create_credential_offer(wallet_handle, &issuer1_gvt_cred_deg_id).unwrap();
@@ -818,7 +818,7 @@ impl AnoncredsUtils {
                                                                                                &schema_json,
                                                                                                TAG_1,
                                                                                                None,
-                                                                                               &AnoncredsUtils::default_cred_def_config()).unwrap();
+                                                                                               Some(&AnoncredsUtils::default_cred_def_config())).unwrap();
 
         (schema_id, schema_json, cred_def_id, cred_def_json)
     }
@@ -840,7 +840,7 @@ impl AnoncredsUtils {
                                                                                                &schema_json,
                                                                                                TAG_1,
                                                                                                None,
-                                                                                               &AnoncredsUtils::revocation_cred_def_config()).unwrap();
+                                                                                               Some(&AnoncredsUtils::revocation_cred_def_config())).unwrap();
 
         // Issuer creates revocation registry
         let tails_writer_config = AnoncredsUtils::tails_writer_config();
