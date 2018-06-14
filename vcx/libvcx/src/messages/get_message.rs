@@ -105,7 +105,7 @@ impl GeneralMessage for GetMessages{
         }
 
         let data = encode::to_vec_named(&self.payload).unwrap();
-        debug!("get_message content: {:?}", data);
+        trace!("get_message content: {:?}", data);
 
         let msg = Bundled::create(data).encode()?;
 
@@ -178,7 +178,7 @@ pub struct GetMessagesResponse {
 fn parse_get_messages_response(response: Vec<u8>) -> Result<Vec<Message>, u32> {
     let data = unbundle_from_agency(response)?;
 
-    debug!("get_message response: {:?}", data[0]);
+    trace!("get_message response: {:?}", data[0]);
     let mut de = Deserializer::new(&data[0][..]);
     let response: GetMessagesResponse = match Deserialize::deserialize(&mut de) {
         Ok(x) => x,
@@ -209,7 +209,7 @@ pub fn get_matching_message(msg_uid:&str, pw_did: &str, pw_vk: &str, agent_did: 
             if response.len() == 0 {
                 Ok(get_message::Message::new())    
             } else {
-                debug!("message returned: {:?}", response[0]);
+                trace!("message returned: {:?}", response[0]);
                 Ok(response[0].to_owned())
             }
         },
@@ -233,7 +233,7 @@ pub fn get_all_message(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &st
 
 pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<Vec<u8>, u32> {
     let message = get_matching_message(msg_id, pw_did, pw_vk, agent_did, agent_vk)?;
-    debug!("checking for ref_msg: {:?}", message);
+    trace!("checking for ref_msg: {:?}", message);
     let msg_id;
     if message.status_code == MessageAccepted.as_string() && !message.ref_msg_id.is_none() {
         msg_id = message.ref_msg_id.unwrap()
@@ -244,7 +244,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
 
     let message = get_matching_message(&msg_id, pw_did, pw_vk, agent_did, agent_vk)?;
 
-    debug!("checking for pending message: {:?}", message);
+    trace!("checking for pending message: {:?}", message);
 
     // this will work for both claimReq and proof types
     if message.status_code == MessagePending.as_string() && !message.payload.is_none() {

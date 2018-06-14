@@ -404,7 +404,6 @@ fn test_check_value(){
 
     #[test]
     fn test_proof_with_self_attested_values(){
-        ::utils::logger::LoggerUtils::init();
         let mut proof = ProofMessage::from_str(PROOF).unwrap();
 
         let mut proof_req: ProofRequestData = from_str(REQUEST).unwrap();
@@ -420,7 +419,6 @@ fn test_check_value(){
 
     #[test]
     fn test_self_attested_fails_when_issuer_did_expected(){
-        ::utils::logger::LoggerUtils::init();
         let mut proof = ProofMessage::from_str(PROOF).unwrap();
 
         let mut proof_req: ProofRequestData = from_str(REQUEST).unwrap();

@@ -644,8 +644,6 @@ mod tests {
 
     #[test]
     fn test_vcx_credential_send_request() {
-        use utils;
-        utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle = credential::credential_create_with_offer("test_send_request",::utils::constants::CREDENTIAL_OFFER_JSON).unwrap();
@@ -757,6 +755,15 @@ mod tests {
 
         let handle = credential::from_string(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         assert_eq!(vcx_get_credential(command_handle, handle, Some(get_invalid_state_credential_cb)), error::SUCCESS.code_num);
+    }
 
+    #[test]
+    fn test_get_payment_txn() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+
+        let handle = credential::from_string(::utils::constants::FULL_CREDENTIAL_SERIALIZED).unwrap();
+        vcx_credential_get_payment_txn(0, handle, Some(get_offers_cb));
+        thread::sleep(Duration::from_millis(200));
     }
 }

@@ -632,8 +632,6 @@ pub mod tests {
         assert!(payment_required_credential.is_payment_required())
     }
 
-
-
     #[test]
     fn full_credential_test(){
         settings::set_defaults();
@@ -657,10 +655,10 @@ pub mod tests {
         assert_eq!(get_state(c_h).unwrap(), VcxStateType::VcxStateAccepted as u32);
         assert_eq!(get_credential_id(c_h).unwrap(), "cred_id"); // this is set in test mode
         assert!(get_credential(c_h).unwrap().len() > 100);
+        let serialized = to_string(c_h).unwrap();
+        println!("{}", serialized);
         wallet::delete_wallet("full_credential_test").unwrap();
     }
-
-
 
     #[test]
     fn test_get_credential_offer() {

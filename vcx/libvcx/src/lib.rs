@@ -62,7 +62,6 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_delete_connection() {
-        ::utils::logger::LoggerUtils::init();
         let test_name = "test_delete_connection";
         settings::set_defaults();
         ::utils::devsetup::tests::setup_local_env(test_name);

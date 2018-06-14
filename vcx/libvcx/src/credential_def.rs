@@ -95,7 +95,9 @@ fn _create_and_store_credential_def(issuer_did: &str,
                                    tag: &str,
                                    sig_type: Option<SigTypes>,
                                    config_json: &str) -> Result<(String, Option<PaymentTxn>), CredDefError> {
-    if settings::test_indy_mode_enabled() { return Ok((CRED_DEF_ID.to_string(), None)); }
+    if settings::test_indy_mode_enabled() {
+        return Ok((CRED_DEF_ID.to_string(), Some(PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"paymentAddress":"pay:null:xkIsxem0YNtHrRO"}]"#,1).unwrap())));
+    }
 
     let (id, cred_def_json) = libindy_create_and_store_credential_def(issuer_did,
                                                                       schema_json,
@@ -295,7 +297,6 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_credential_def_fails_when_already_created() {
-        ::utils::logger::LoggerUtils::init_test_logging();
         let wallet_name = "a_test_wallet";
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         let wallet_handle = get_wallet_handle();

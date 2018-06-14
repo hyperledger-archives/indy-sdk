@@ -22,9 +22,27 @@ static LOGGER_INIT: Once = ONCE_INIT;
 
 
 impl LoggerUtils {
+    pub fn init_test_logging(level: &str) {
+        // logger for testing purposes, sends to stdout (set env RUST_LOG to configure log level
+        let level = match env::var("RUST_LOG") {
+            Err(_) => level.to_string(),
+            Ok(value) =>  value,
+        };
+        env::set_var("RUST_LOG", &level);
+        LOGGER_INIT.call_once(|| {
+            env_logger::init().unwrap();
+        });
+    }
+
     pub fn init() {
 
+        match settings::get_config_value(settings::CONFIG_ENABLE_TEST_MODE) {
+            Ok(_) => return LoggerUtils::init_test_logging("off"),
+            Err(x) => (),
+        };
+
         // turn libindy logging off if RUST_LOG is not specified
+
         match env::var("RUST_LOG") {
             Err(_) => {
                 env::set_var("RUST_LOG", "off");
@@ -45,13 +63,7 @@ impl LoggerUtils {
         });
     }
 
-    pub fn init_test_logging() {
-        // logger for testing purposes, sends to stdout (set env RUST_LOG to configure log level
-        env::set_var("RUST_LOG", "trace");
-        LOGGER_INIT.call_once(|| {
-            env_logger::init().unwrap();
-        });
-    }
+
 }
 
 #[cfg(test)]

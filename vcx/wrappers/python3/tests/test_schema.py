@@ -51,9 +51,8 @@ async def test_deserialize_and_payment_txn():
     data = await schema.serialize()
     schema2 = await Schema.deserialize(data)
     assert schema2.source_id == data.get('source_id')
-    with pytest.raises(VcxError) as e:
-        await schema.get_payment_txn()
-    assert ErrorCode.NotReady == e.value.error_code
+    txn = await schema.get_payment_txn()
+    assert txn
 
 
 @pytest.mark.asyncio
