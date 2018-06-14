@@ -31,6 +31,7 @@ do
     rm ./libvcxall.so
     $NDK_DIR/${ndk_arch}/bin/${cross_compile}-clang -shared -o libvcxall.so -Wl,--whole-archive \
     libindy.so -Wl,-rpath,. \
+    libnullpay.so -Wl,-rpath,. \
     libvcx.so -Wl,-rpath,. \
     libzmq.so -Wl,-rpath,. \
     libsodium.so -Wl,-rpath,. \

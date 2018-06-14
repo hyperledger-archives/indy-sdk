@@ -79,6 +79,19 @@ if [ -z "${LIBINDY_DIR}" ] ; then
     fi
 fi
 
+if [ -z "${LIBNULLPAY_DIR}" ] ; then
+    LIBNULLPAY_DIR="libnullpay_${TARGET_ARCH}"
+    if [ -d "${LIBNULLPAY_DIR}" ] ; then
+        echo "Found ${LIBNULLPAY_DIR}"
+    elif [ -z "$8" ] ; then
+        echo STDERR "Missing LIBNULLPAY_DIR argument and environment variable"
+        echo STDERR "e.g. set LIBNULLPAY_DIR=<path> for environment or libnullpay_${TARGET_ARCH}"
+        exit 1
+    else
+        LIBNULLPAY_DIR=$8
+    fi
+fi
+
 
 if [ "$(uname)" == "Darwin" ]; then
     echo "Downloading NDK for OSX"
@@ -128,6 +141,7 @@ export SODIUM_INCLUDE_DIR=${WORKDIR}/${SODIUM_DIR}/include
 export LIBZMQ_LIB_DIR=${WORKDIR}/${LIBZMQ_DIR}/lib
 export LIBZMQ_INCLUDE_DIR=${WORKDIR}/${LIBZMQ_DIR}/include
 export LIBINDY_DIR=${WORKDIR}/${LIBINDY_DIR}
+export LIBNULLPAY_DIR=${WORKDIR}/${LIBNULLPAY_DIR}
 export TOOLCHAIN_DIR=${TOOLCHAIN_PREFIX}/${TARGET_ARCH}
 export PATH=${TOOLCHAIN_DIR}/bin:${PATH}
 export PKG_CONFIG_ALLOW_CROSS=1
@@ -151,7 +165,7 @@ rustup target add ${CROSS_COMPILE}
 
 pushd $LIBVCX
 export OPENSSL_STATIC=1
-cargo clean 
+cargo clean
 cargo build --release --target=${CROSS_COMPILE}
 popd
 

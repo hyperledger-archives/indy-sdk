@@ -13,22 +13,22 @@ public class CredentialApi extends VcxJava.API {
     private CredentialApi(){}
 
     private static Callback vcxCredentialCreateWithMsgidCB = new Callback() {
-        public void callback(int command_handle,int err,int credentailHandle){
-            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(command_handle);
+        public void callback(int command_handle,int err,int credentailHandle, String offer){
+            CompletableFuture<GetCredentialCreateMsgidResult> future = (CompletableFuture<GetCredentialCreateMsgidResult>) removeFuture(command_handle);
             if (!checkCallback(future,err)) return;
-            Integer result = credentailHandle;
+            GetCredentialCreateMsgidResult result = new GetCredentialCreateMsgidResult(credentailHandle, offer);
             future.complete(result);
         }
     };
 
-    public static CompletableFuture<Integer> credentialCreateWithMsgid(
+    public static CompletableFuture<GetCredentialCreateMsgidResult> credentialCreateWithMsgid(
             String sourceId,
             int connectionHandle,
             String msgId
     ) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(sourceId,"sourceId");
         ParamGuard.notNullOrWhiteSpace(msgId,"msgId");
-        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        CompletableFuture<GetCredentialCreateMsgidResult> future = new CompletableFuture<GetCredentialCreateMsgidResult>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_credential_create_with_msgid(
