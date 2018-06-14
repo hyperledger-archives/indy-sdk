@@ -495,7 +495,7 @@ pub fn parse_acceptance_details(handle: u32, message: &Message) -> Result<Sender
     // TODO: Refactor Error
     let payload = crypto::parse_msg(wallet::get_wallet_handle(),&my_vk,&payload).map_err(|e| {ConnectionError::CommonError(e)})?;
 
-    debug!("deserializing GetMsgResponse: {:?}", payload);
+    trace!("deserializing GetMsgResponse: {:?}", payload);
 
     let mut de = Deserializer::new(&payload[..]);
     let response: messages::get_message::GetMsgResponse = match Deserialize::deserialize(&mut de) {
@@ -660,7 +660,7 @@ pub fn generate_encrypted_payload(my_vk: &str, their_vk: &str, data: &str, msg_t
             return Err(ConnectionError::InvalidMessagePack());
         },
     };
-    debug!("Sending payload: {:?}", bytes);
+    trace!("Sending payload: {:?}", bytes);
     crypto::prep_msg(wallet::get_wallet_handle(),&my_vk, &their_vk, &bytes).map_err(|ec| ConnectionError::CommonError(ec))
 }
 
@@ -1077,7 +1077,6 @@ mod tests {
 
     #[test]
     fn test_create_with_valid_invite_details() {
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         wallet::init_wallet("create_with_details").unwrap();

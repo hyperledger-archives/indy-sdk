@@ -76,7 +76,6 @@
 //
 //    #[test]
 //    fn test_call_i32_r_i32() {
-//        ::utils::logger::LoggerUtils::init();
 //        call_i32_r_i32(44, test_indy_func).unwrap();
 //    }
 //}

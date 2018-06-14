@@ -74,7 +74,9 @@ pub trait Schema: ToString {
                       name: &str,
                       version: &str,
                       data: &str) -> Result<(String, Option<PaymentTxn>), SchemaError> {
-        if settings::test_indy_mode_enabled() { return Ok((SCHEMA_ID.to_string(), None)) }
+        if settings::test_indy_mode_enabled() {
+            return Ok((SCHEMA_ID.to_string(), Some(PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"paymentAddress":"pay:null:xkIsxem0YNtHrRO"}]"#,1).unwrap())));
+        }
 
         let (id, create_schema) = libindy_issuer_create_schema(submitter_did, name, version, data)
             .or(Err(SchemaError::InvalidSchemaCreation()))?;

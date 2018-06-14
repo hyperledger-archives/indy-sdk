@@ -515,4 +515,13 @@ mod tests {
                                              Some(get_attrs_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
+
+    #[test]
+    fn test_get_payment_txn() {
+        set_default_and_enable_test_mode();
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let handle = schema::create_new_schema("testid", did, "name".to_string(),"1.0".to_string(),"[\"name\":\"male\"]".to_string()).unwrap();
+        let rc = vcx_schema_get_payment_txn(0, handle, Some(get_id_cb));
+        thread::sleep(Duration::from_millis(200));
+    }
 }

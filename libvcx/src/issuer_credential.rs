@@ -675,7 +675,7 @@ pub mod tests {
             credential_request: Some(credential_req.to_owned()),
             credential_offer: Some(credential_offer.to_owned()),
             credential_id: String::from(DEFAULT_CREDENTIAL_ID),
-	        price: 0,
+	        price: 1,
             payment_address: Some("pay:null:9UFgyjuJxi1i1HD".to_string()),
             ref_msg_id: None,
             remote_did: DID.to_string(),

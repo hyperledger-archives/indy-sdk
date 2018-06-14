@@ -614,4 +614,13 @@ mod tests {
         assert_eq!(issuer_credential::set_credential_request(invalid_handle, credential_request), Err(IssuerCredError::InvalidHandle()));
     }
 
+    #[test]
+    fn test_get_payment_txn() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        let credential = issuer_credential::tests::create_standard_issuer_credential();
+        let handle = issuer_credential::from_string(&serde_json::to_string(&credential).unwrap()).unwrap();
+        vcx_issuer_credential_get_payment_txn(0, handle, Some(serialize_cb));
+        thread::sleep(Duration::from_millis(200));
+    }
 }

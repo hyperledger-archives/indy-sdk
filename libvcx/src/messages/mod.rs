@@ -181,7 +181,7 @@ pub fn bundle_for_agency(message: Vec<u8>, did: &str) -> Result<Vec<u8>, u32> {
     let agent_vk = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY).unwrap();
     let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).unwrap();
 
-    debug!("pre encryption msg: {:?}", message);
+    trace!("pre encryption msg: {:?}", message);
     let msg = crypto::prep_msg(wallet::get_wallet_handle(), &my_vk, &agent_vk, &message[..])?;
 
     debug!("forwarding agency bundle to {}", did);
@@ -192,9 +192,9 @@ pub fn bundle_for_agency(message: Vec<u8>, did: &str) -> Result<Vec<u8>, u32> {
     };
     let outer = encode::to_vec_named(&outer).unwrap();
 
-    debug!("forward bundle: {:?}", outer);
+    trace!("forward bundle: {:?}", outer);
     let msg = Bundled::create(outer).encode()?;
-    debug!("pre encryption bundle: {:?}", msg);
+    trace!("pre encryption bundle: {:?}", msg);
     crypto::prep_anonymous_msg(&agency_vk, &msg[..])
 }
 

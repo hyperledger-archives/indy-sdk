@@ -437,4 +437,13 @@ mod tests {
                                             Some(create_cb_get_id)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
+
+    #[test]
+    fn test_get_payment_txn() {
+        set_default_and_enable_test_mode();
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let handle = credential_def::create_new_credentialdef("sid".to_string(),"name".to_string(),did,SCHEMA_ID.to_string(),"tag".to_string(),"{}".to_string()).unwrap();
+        let rc = vcx_credentialdef_get_payment_txn(0, handle, Some(get_id_cb));
+        thread::sleep(Duration::from_millis(200));
+    }
 }
