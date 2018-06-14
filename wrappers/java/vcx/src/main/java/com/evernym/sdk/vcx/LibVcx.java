@@ -12,8 +12,8 @@ import java.io.File;
 
 public abstract class LibVcx {
 
-    public static final String LIBRARY_NAME = "vcx";
-    private static final String TAG ="VCX_ANDROID_WRAPPER";
+    private static final String LIBRARY_NAME = "vcx";
+    private static final String TAG ="VCX_ANDROID_WRAPPER::";
 	/*
      * Native library interface
 	 */
@@ -481,7 +481,6 @@ public abstract class LibVcx {
     }
 
     public static void initByLibraryName(String libraryName) {
-//		System.loadLibrary("vcx");
         System.loadLibrary(libraryName);
         api = Native.loadLibrary(libraryName, API.class);
     }

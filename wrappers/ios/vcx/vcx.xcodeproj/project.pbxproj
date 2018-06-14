@@ -22,6 +22,7 @@
 
 /* Begin PBXBuildFile section */
 		8E27AFF320A3BA8700EF8BA0 /* libvcx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E27AFF220A3BA8700EF8BA0 /* libvcx.a */; };
+		91E89EE420C8809D00F2CB29 /* libnullpay.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 91E89EE320C8809D00F2CB29 /* libnullpay.a */; };
 		DD2566F8209705E3002EBEBA /* vcx.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DD2566EE209705E3002EBEBA /* vcx.framework */; };
 		DD2566FD209705E3002EBEBA /* vcxTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD2566FC209705E3002EBEBA /* vcxTests.m */; };
 		DD2566FF209705E3002EBEBA /* vcx.h in Headers */ = {isa = PBXBuildFile; fileRef = DD2566F1209705E3002EBEBA /* vcx.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -102,6 +103,7 @@
 
 /* Begin PBXFileReference section */
 		8E27AFF220A3BA8700EF8BA0 /* libvcx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libvcx.a; path = lib/libvcx.a; sourceTree = "<group>"; };
+		91E89EE320C8809D00F2CB29 /* libnullpay.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libnullpay.a; path = lib/libnullpay.a; sourceTree = "<group>"; };
 		DD2566EE209705E3002EBEBA /* vcx.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = vcx.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD2566F1209705E3002EBEBA /* vcx.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vcx.h; sourceTree = "<group>"; };
 		DD2566F2209705E3002EBEBA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -149,6 +151,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				91E89EE420C8809D00F2CB29 /* libnullpay.a in Frameworks */,
 				DD64089E20AEB5160077EF05 /* libcrypto.a in Frameworks */,
 				DD64089F20AEB5160077EF05 /* libindy.a in Frameworks */,
 				DD6408A020AEB5160077EF05 /* libminiz.a in Frameworks */,
@@ -280,6 +283,7 @@
 		DD25682F2098B53C002EBEBA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				91E89EE320C8809D00F2CB29 /* libnullpay.a */,
 				DD858CC420A53DD7004B3CB5 /* libresolv.tbd */,
 				DD858CC220A53DCB004B3CB5 /* libstdc++.tbd */,
 				8E27AFF220A3BA8700EF8BA0 /* libvcx.a */,
@@ -770,6 +774,7 @@
 					"-lzmq",
 					"-lindy",
 					"-lvcx",
+					"-lnullpay",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "co.evernym.vcx-objc.vcx";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -816,6 +821,7 @@
 					"-lzmq",
 					"-lindy",
 					"-lvcx",
+					"-lnullpay",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "co.evernym.vcx-objc.vcx";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";

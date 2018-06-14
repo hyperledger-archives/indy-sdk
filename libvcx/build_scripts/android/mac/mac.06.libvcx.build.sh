@@ -23,6 +23,7 @@ export OPENSSL_DIR=$WORK_DIR/openssl_for_ios_and_android/output/android/openssl-
 export ANDROID_SODIUM_LIB=$WORK_DIR/libzmq-android/libsodium/libsodium_arm/lib
 export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_arm/lib
 export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/arm-linux-androideabi/release
+export LIBNULLPAY_DIR=$WORK_DIR/vcx-indy-sdk/libnullpay/target/arm-linux-androideabi/release
 cargo build --target arm-linux-androideabi --release --verbose
 
 export PATH=$WORK_DIR/NDK/arm/bin:$ORIGINAL_PATH
@@ -30,6 +31,7 @@ export OPENSSL_DIR=$WORK_DIR/openssl_for_ios_and_android/output/android/openssl-
 export ANDROID_SODIUM_LIB=$WORK_DIR/libzmq-android/libsodium/libsodium_armv7/lib
 export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_armv7/lib
 export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/armv7-linux-androideabi/release
+export LIBNULLPAY_DIR=$WORK_DIR/vcx-indy-sdk/libnullpay/target/armv7-linux-androideabi/release
 cargo build --target armv7-linux-androideabi --release --verbose
 
 export PATH=$WORK_DIR/NDK/arm64/bin:$ORIGINAL_PATH
@@ -37,6 +39,7 @@ export OPENSSL_DIR=$WORK_DIR/openssl_for_ios_and_android/output/android/openssl-
 export ANDROID_SODIUM_LIB=$WORK_DIR/libzmq-android/libsodium/libsodium_arm64/lib
 export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_arm64/lib
 export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/aarch64-linux-android/release
+export LIBNULLPAY_DIR=$WORK_DIR/vcx-indy-sdk/libnullpay/target/aarch64-linux-android/release
 cargo build --target aarch64-linux-android --release --verbose
 
 export PATH=$WORK_DIR/NDK/x86/bin:$ORIGINAL_PATH
@@ -44,6 +47,7 @@ export OPENSSL_DIR=$WORK_DIR/openssl_for_ios_and_android/output/android/openssl-
 export ANDROID_SODIUM_LIB=$WORK_DIR/libzmq-android/libsodium/libsodium_x86/lib
 export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_x86/lib
 export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/i686-linux-android/release
+export LIBNULLPAY_DIR=$WORK_DIR/vcx-indy-sdk/libnullpay/target/i686-linux-android/release
 cargo build --target i686-linux-android --release --verbose
 
 export PATH=$WORK_DIR/NDK/x86_64/bin:$ORIGINAL_PATH
@@ -51,6 +55,7 @@ export OPENSSL_DIR=$WORK_DIR/openssl_for_ios_and_android/output/android/openssl-
 export ANDROID_SODIUM_LIB=$WORK_DIR/libzmq-android/libsodium/libsodium_x86_64/lib
 export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_x86_64/lib
 export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/x86_64-linux-android/release
+export LIBNULLPAY_DIR=$WORK_DIR/vcx-indy-sdk/libnullpay/target/x86_64-linux-android/release
 cargo build --target x86_64-linux-android --release --verbose
 
 # This builds the library for code that runs in OSX
@@ -85,4 +90,3 @@ cargo build --target x86_64-apple-darwin --release --verbose
 
 #LIBINDY_DIR=/usr/local/lib RUST_BACKTRACE=1 cargo lipo
 #LIBINDY_DIR=/usr/local/lib cargo test
-

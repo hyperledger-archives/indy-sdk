@@ -18,10 +18,18 @@ def buildTime() {
     df.setTimeZone(TimeZone.getTimeZone("UTC"))
     return df.format(new Date())
 }
+
+def getKrakenPassFromEnv(){
+    return System.getenv( 'KRAKEN_PASS' )
+}
+
+def getKrakenUserFromEnv(){
+    return System.getenv( 'KRAKEN_USER' )
+}
 version = "${versionMajor()}"
 
 def fullVersionName() {
-    return "${versionMajor()}-${buildTime()}"
+    return "com.evernym-vcx_${versionMajor()}-${buildTime()}_x86-armv7"
 }
 
 description = """vcx"""
@@ -59,7 +67,7 @@ android {
 
 }
 
-
+archivesBaseName = fullVersionName()
 buildscript {
 
     repositories {
@@ -86,6 +94,16 @@ allprojects {
         jcenter()
     }
 }
+
+task uploadToKraken(type:Exec) {
+    executable "/bin/sh"
+    String krakenPass= getKrakenPassFromEnv()
+    String krakenUser= getKrakenUserFromEnv()
+    args "-c", "curl --insecure -u $krakenUser:$krakenPass -X POST -F file=@$buildDir/outputs/aar/${archivesBaseName}-release.aar https://kraken.corp.evernym.com/repo/android/upload"
+}
+
+uploadToKraken.dependsOn(assemble)
+
 dependencies {
 
     implementation 'net.java.dev.jna:jna:4.5.0@aar'
@@ -97,25 +115,4 @@ dependencies {
     testImplementation group: 'org.json', name: 'json', version:'20160810'
 
 }
-publishing {
-    publications {
-        mavenAar(MavenPublication) {
-            groupId 'com.evernym.sdk'
-            artifactId 'vcx'
-            version "${fullVersionName()}"
 
-            from components.android
-        }
-    }
-    repositories {
-        maven {
-            credentials {
-                username 'admin'
-                password 'password'
-            }
-            // change to point to your repo, e.g. http://my.org/repo
-
-            url "http://localhost:8085/artifactory/gradle-dev-local/"
-        }
-    }
-}

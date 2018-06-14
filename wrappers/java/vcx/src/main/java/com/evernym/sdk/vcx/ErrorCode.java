@@ -8,12 +8,12 @@ import java.util.Map;
  */
 public enum ErrorCode {
 
-    Success(0),
-    UnknownError(1001),
-    ConnectionError(1002),
+    SUCCESS(0),
+    UNKNOWN_ERROR(1001),
+    CONNECTION_ERROR(1002),
     InvalidConnectionHandle(1003),
-    InvalidConfiguration(1004),
-    NotReady(1005),
+    INVALID_CONFIGURATION(1004),
+    NOT_READY(1005),
     NO_ENDPOINT(1006),
     INVALID_OPTION(1007),
     INVALID_DID(1008),

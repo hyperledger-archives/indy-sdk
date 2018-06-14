@@ -85,12 +85,12 @@ public class VcxJava {
 		 * 
 		 * @param future The future.
 		 * @param err The error value to check.
-		 * @return true if the error code indeicated Success, otherwise false.
+		 * @return true if the error code indeicated SUCCESS, otherwise false.
 		 */
 		protected static boolean checkCallback(CompletableFuture<?> future, int err) {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(VcxException.fromSdkError(err)); return false; }
+			if (! ErrorCode.SUCCESS.equals(errorCode)) { future.completeExceptionally(VcxException.fromSdkError(err)); return false; }
 
 			return true;
 		}
@@ -105,7 +105,7 @@ public class VcxJava {
 		protected static void checkCallback(int err) throws VcxException {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) throw VcxException.fromSdkError(err);
+			if (! ErrorCode.SUCCESS.equals(errorCode)) throw VcxException.fromSdkError(err);
 		}
 
 		/**
@@ -117,7 +117,7 @@ public class VcxJava {
 		protected static void checkResult(int err) throws VcxException {
 			Log.d(TAG, "checkResult: " + err);
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) throw VcxException.fromSdkError(err);
+			if (! ErrorCode.SUCCESS.equals(errorCode)) throw VcxException.fromSdkError(err);
 		}
 
 		/*

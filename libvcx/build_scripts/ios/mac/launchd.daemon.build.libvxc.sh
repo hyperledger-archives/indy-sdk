@@ -3,7 +3,7 @@
 START_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $START_DIR
 cd ../../../../..
-git pull
+git pull > ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
 # git checkout libindy_refactor
 # git pull
 # git checkout mobile_vcx
