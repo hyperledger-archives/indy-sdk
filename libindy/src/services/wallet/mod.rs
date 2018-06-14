@@ -1659,7 +1659,11 @@ mod tests {
     }
 
     fn _get_export_config() -> String {
-        format!(r##"{{"path": "{}", "key": "{}"}}"##, _get_export_file_path().to_str().unwrap(), "export_key")
+        let json = json!({
+            "path": _get_export_file_path().to_str().unwrap(),
+            "key": "export_key",
+        });
+        serde_json::to_string(&json).unwrap()
     }
 
     fn _prepare_export_path() {

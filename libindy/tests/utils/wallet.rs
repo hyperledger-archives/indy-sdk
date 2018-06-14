@@ -11,6 +11,8 @@ use std::ptr::null;
 use std::sync::Mutex;
 use utils::constants::DEFAULT_WALLET_CREDENTIALS;
 
+use serde_json;
+
 pub struct WalletUtils {}
 
 impl WalletUtils {
@@ -170,6 +172,10 @@ impl WalletUtils {
     }
 
     pub fn prepare_export_wallet_config(path: &str) -> String {
-        format!(r##"{{"key": "{}", "path": "{}"}}"##, "test_key", path)
+        let json = json!({
+            "path": path,
+            "key": "export_key",
+        });
+        serde_json::to_string(&json).unwrap()
     }
 }
