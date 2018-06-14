@@ -783,10 +783,11 @@ mod tests {
     fn export_import_empty_wallet() {
         _cleanup();
         let mut wallet = _create_wallet();
-        let export_writer = _create_export_file();
         let key = "key";
-
-        export(&wallet, export_writer, key, 1).unwrap();
+        {
+            let export_writer = _create_export_file();
+            export(&wallet, export_writer, key, 1).unwrap();
+        }
         wallet.close().unwrap();
         _cleanup();
 
@@ -820,10 +821,11 @@ mod tests {
         let mut wallet = _create_wallet();
         wallet.add(type1, name1, value1, &tags1).unwrap();
         wallet.add(type2, name2, value2, &tags2).unwrap();
-        let export_writer = _create_export_file();
         let key = "key";
-
-        export(&wallet, export_writer, key, 1).unwrap();
+        {
+            let export_writer = _create_export_file();
+            export(&wallet, export_writer, key, 1).unwrap();
+        }
         wallet.close().unwrap();
         _cleanup();
 
@@ -866,11 +868,11 @@ mod tests {
             wallet.add("type", &name, &value, &tags).unwrap();
         }
         let total_unencrypted_length = total_item_length + item_count * 20;
-
-        let export_writer = _create_export_file();
         let key = "key";
-
-        export(&wallet, export_writer, key, 0).unwrap();
+        {
+            let export_writer = _create_export_file();
+            export(&wallet, export_writer, key, 0).unwrap();
+        }
         wallet.close().unwrap();
         _cleanup();
 
@@ -914,10 +916,11 @@ mod tests {
         let mut wallet = _create_wallet();
         wallet.add(type1, name1, value1, &tags1).unwrap();
         wallet.add(type2, name2, value2, &tags2).unwrap();
-        let export_writer = _create_export_file();
         let key = "key";
-
-        export(&wallet, export_writer, key, 1).unwrap();
+        {
+            let export_writer = _create_export_file();
+            export(&wallet, export_writer, key, 1).unwrap();
+        }
         wallet.close().unwrap();
         _cleanup();
 
@@ -960,10 +963,11 @@ mod tests {
         let mut wallet = _create_wallet();
         wallet.add(type1, name1, value1, &tags1).unwrap();
         wallet.add(type2, name2, value2, &tags2).unwrap();
-        let export_writer = _create_export_file();
         let key = "key";
-
-        export(&wallet, export_writer, key, 1).unwrap();
+        {
+            let export_writer = _create_export_file();
+            export(&wallet, export_writer, key, 1).unwrap();
+        }
         wallet.close().unwrap();
         _cleanup();
 
@@ -1006,10 +1010,11 @@ mod tests {
         let mut wallet = _create_wallet();
         wallet.add(type1, name1, value1, &tags1).unwrap();
         wallet.add(type2, name2, value2, &tags2).unwrap();
-        let export_writer = _create_export_file();
         let key = "key";
-
-        export(&wallet, export_writer, key, 1).unwrap();
+        {
+            let export_writer = _create_export_file();
+            export(&wallet, export_writer, key, 1).unwrap();
+        }
         wallet.close().unwrap();
         _cleanup();
 
@@ -1050,10 +1055,11 @@ mod tests {
         let mut wallet = _create_wallet();
         wallet.add(type1, name1, value1, &tags1).unwrap();
         wallet.add(type2, name2, value2, &tags2).unwrap();
-        let export_writer = _create_export_file();
         let key = "key";
-
-        export(&wallet, export_writer, key, 1).unwrap();
+        {
+            let export_writer = _create_export_file();
+            export(&wallet, export_writer, key, 1).unwrap();
+        }
         wallet.close().unwrap();
         _cleanup();
 
@@ -1091,10 +1097,11 @@ mod tests {
         let mut wallet = _create_wallet();
         wallet.add(type1, name1, value1, &tags1).unwrap();
         wallet.add(type2, name2, value2, &tags2).unwrap();
-        let export_writer = _create_export_file();
         let key = "key";
-
-        export(&wallet, export_writer, key, 1).unwrap();
+        {
+            let export_writer = _create_export_file();
+            export(&wallet, export_writer, key, 1).unwrap();
+        }
         wallet.close().unwrap();
         _cleanup();
 

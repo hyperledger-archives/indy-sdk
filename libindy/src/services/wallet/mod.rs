@@ -1672,13 +1672,6 @@ mod tests {
         std::fs::create_dir(export_directory_path).unwrap();
     }
 
-    fn _remove_export_path() {
-        let export_directory_path = _get_export_dir_path();
-        if export_directory_path.exists() {
-            std::fs::remove_dir_all(export_directory_path).unwrap();
-        }
-    }
-
     #[test]
     fn wallet_service_export_wallet_when_empty() {
         _cleanup();
@@ -1690,7 +1683,6 @@ mod tests {
         wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
 
         assert!(Path::new(&_get_export_file_path()).exists());
-        _remove_export_path();
     }
 
     #[test]
@@ -1708,8 +1700,6 @@ mod tests {
         let export_config = _get_export_config();
         wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
         assert!(Path::new(&_get_export_file_path()).exists());
-
-        _remove_export_path();
     }
 
     #[test]
@@ -1727,8 +1717,6 @@ mod tests {
         let res = wallet_service.export_wallet(wallet_handle, &export_config, 0);
         assert_match!(Err(WalletError::ExportPathExists), res);
         assert!(Path::new(&_get_export_file_path()).exists());
-
-        _remove_export_path();
     }
 
     #[test]
@@ -1745,8 +1733,6 @@ mod tests {
         let res = wallet_service.export_wallet(wallet_handle + 1, &export_config, 0);
         assert_match!(Err(WalletError::InvalidHandle(_)), res);
         assert!(!Path::new(&_get_export_file_path()).exists());
-
-        _remove_export_path();
     }
 
     #[test]
@@ -1771,8 +1757,6 @@ mod tests {
         wallet_service.import("pool1", "test_wallet", None, None, &_credentials(), &export_config).unwrap();
         let wallet_handle_2 = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
         wallet_service.get_record(wallet_handle_2, "type", "key1", "{}").unwrap();
-
-        _remove_export_path();
     }
 
     #[test]
@@ -1793,8 +1777,6 @@ mod tests {
 
         wallet_service.import("pool1", "test_wallet", None, None, &_credentials(), &export_config).unwrap();
         wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
-
-        _remove_export_path();
     }
 
     #[test]
@@ -1811,6 +1793,5 @@ mod tests {
 
         let res = wallet_service.open_wallet("test_wallet", None, &_credentials());
         assert_match!(Err(_), res);
-        _remove_export_path();
     }
 }
