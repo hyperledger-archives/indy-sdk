@@ -37,8 +37,6 @@ pub enum WalletError {
     ItemNotFound,
     ItemAlreadyExists,
     QueryError(String),
-    ExportPathExists,
-    ImportPathDoesNotExist,
 }
 
 
@@ -62,8 +60,6 @@ impl fmt::Display for WalletError {
             WalletError::ItemNotFound => write!(f, "Item not found"),
             WalletError::ItemAlreadyExists => write!(f, "Item already exists"),
             WalletError::QueryError(ref description) => write!(f, "{}", description),
-            WalletError::ExportPathExists => write!(f, "Export file already exists"),
-            WalletError::ImportPathDoesNotExist => write!(f, "Import file does not exist"),
         }
     }
 }
@@ -88,8 +84,6 @@ impl error::Error for WalletError {
             WalletError::ItemNotFound => "Item not found",
             WalletError::ItemAlreadyExists => "Item already exists",
             WalletError::QueryError(ref description) => description,
-            WalletError::ExportPathExists => "Export file already exists",
-            WalletError::ImportPathDoesNotExist => "Imort file does not exist",
         }
     }
 
@@ -112,8 +106,6 @@ impl error::Error for WalletError {
             WalletError::ItemNotFound => None,
             WalletError::ItemAlreadyExists => None,
             WalletError::QueryError(_) => None,
-            WalletError::ExportPathExists => None,
-            WalletError::ImportPathDoesNotExist => None,
         }
     }
 }
@@ -138,8 +130,6 @@ impl ToErrorCode for WalletError {
             WalletError::ItemNotFound => ErrorCode::WalletItemNotFound,
             WalletError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
             WalletError::QueryError(_) => ErrorCode::WalletQueryError,
-            WalletError::ExportPathExists => ErrorCode::CommonIOError,
-            WalletError::ImportPathDoesNotExist => ErrorCode::CommonIOError,
         }
     }
 }

@@ -782,13 +782,13 @@ mod tests {
     #[test]
     fn export_import_empty_wallet() {
         _cleanup();
-        let mut wallet = _create_wallet();
         let key = "key";
         {
+            let mut wallet = _create_wallet();
             let export_writer = _create_export_file();
             export(&wallet, export_writer, key, 1).unwrap();
+            wallet.close().unwrap();
         }
-        wallet.close().unwrap();
         _cleanup();
 
         let reader = _get_export_file_reader();
@@ -818,15 +818,15 @@ mod tests {
         tags2.insert("tag_name_22".to_string(), "tag_value_22".to_string());
         tags2.insert("~tag_name_23".to_string(), "tag_value_23".to_string());
         let record_2_length = _record_length_serialized(type2, name2, value2, &tags2);
-        let mut wallet = _create_wallet();
-        wallet.add(type1, name1, value1, &tags1).unwrap();
-        wallet.add(type2, name2, value2, &tags2).unwrap();
         let key = "key";
         {
+            let mut wallet = _create_wallet();
+            wallet.add(type1, name1, value1, &tags1).unwrap();
+            wallet.add(type2, name2, value2, &tags2).unwrap();
             let export_writer = _create_export_file();
             export(&wallet, export_writer, key, 1).unwrap();
+            wallet.close().unwrap();
         }
-        wallet.close().unwrap();
         _cleanup();
 
         let reader = _get_export_file_reader();
@@ -851,29 +851,29 @@ mod tests {
 
     #[test]
     fn export_import_multiple_items() {
-        _cleanup();
-        let mut wallet = _create_wallet();
-
-        let mut total_item_length = 0;
-        let item_count = rand::thread_rng().gen_range(40, 80);
-        for i in 0 .. item_count {
-            let name = format!("name_{}", i);
-            let value = format!("value_{}", i);
-            let mut tags = HashMap::new();
-            tags.insert(format!("tag_name_{}_1", i), format!("tag_value_{}_1", i));
-            tags.insert(format!("tag_name_{}_2", i), format!("tag_value_{}_2", i));
-            tags.insert(format!("~tag_name_{}_3", i), format!("tag_value_{}_3", i));
-            let tags_len = serde_json::to_string(&tags).unwrap().len();
-            total_item_length += (4 + name.len() + value.len() + tags_len);
-            wallet.add("type", &name, &value, &tags).unwrap();
-        }
-        let total_unencrypted_length = total_item_length + item_count * 20;
         let key = "key";
+        let item_count = rand::thread_rng().gen_range(40, 80);
+        _cleanup();
         {
+            let mut wallet = _create_wallet();
+
+            let mut total_item_length = 0;
+            for i in 0 .. item_count {
+                let name = format!("name_{}", i);
+                let value = format!("value_{}", i);
+                let mut tags = HashMap::new();
+                tags.insert(format!("tag_name_{}_1", i), format!("tag_value_{}_1", i));
+                tags.insert(format!("tag_name_{}_2", i), format!("tag_value_{}_2", i));
+                tags.insert(format!("~tag_name_{}_3", i), format!("tag_value_{}_3", i));
+                let tags_len = serde_json::to_string(&tags).unwrap().len();
+                total_item_length += (4 + name.len() + value.len() + tags_len);
+                wallet.add("type", &name, &value, &tags).unwrap();
+            }
+            let total_unencrypted_length = total_item_length + item_count * 20;
             let export_writer = _create_export_file();
             export(&wallet, export_writer, key, 0).unwrap();
+            wallet.close().unwrap();
         }
-        wallet.close().unwrap();
         _cleanup();
 
         let reader = _get_export_file_reader();
@@ -913,15 +913,15 @@ mod tests {
         tags2.insert("tag_name_22".to_string(), "tag_value_22".to_string());
         tags2.insert("~tag_name_23".to_string(), "tag_value_23".to_string());
         let record_2_length = _record_length_serialized(type2, name2, value2, &tags2);
-        let mut wallet = _create_wallet();
-        wallet.add(type1, name1, value1, &tags1).unwrap();
-        wallet.add(type2, name2, value2, &tags2).unwrap();
         let key = "key";
         {
+            let mut wallet = _create_wallet();
+            wallet.add(type1, name1, value1, &tags1).unwrap();
+            wallet.add(type2, name2, value2, &tags2).unwrap();
             let export_writer = _create_export_file();
             export(&wallet, export_writer, key, 1).unwrap();
+            wallet.close().unwrap();
         }
-        wallet.close().unwrap();
         _cleanup();
 
         // Modifying one of the bytes in the header hash
@@ -960,15 +960,15 @@ mod tests {
         tags2.insert("tag_name_22".to_string(), "tag_value_22".to_string());
         tags2.insert("~tag_name_23".to_string(), "tag_value_23".to_string());
         let record_2_length = _record_length_serialized(type2, name2, value2, &tags2);
-        let mut wallet = _create_wallet();
-        wallet.add(type1, name1, value1, &tags1).unwrap();
-        wallet.add(type2, name2, value2, &tags2).unwrap();
         let key = "key";
         {
+            let mut wallet = _create_wallet();
+            wallet.add(type1, name1, value1, &tags1).unwrap();
+            wallet.add(type2, name2, value2, &tags2).unwrap();
             let export_writer = _create_export_file();
             export(&wallet, export_writer, key, 1).unwrap();
+            wallet.close().unwrap();
         }
-        wallet.close().unwrap();
         _cleanup();
 
         // Modifying one of the bytes in the header (version)
@@ -1007,15 +1007,15 @@ mod tests {
         tags2.insert("tag_name_22".to_string(), "tag_value_22".to_string());
         tags2.insert("~tag_name_23".to_string(), "tag_value_23".to_string());
         let record_2_length = _record_length_serialized(type2, name2, value2, &tags2);
-        let mut wallet = _create_wallet();
-        wallet.add(type1, name1, value1, &tags1).unwrap();
-        wallet.add(type2, name2, value2, &tags2).unwrap();
         let key = "key";
         {
+            let mut wallet = _create_wallet();
+            wallet.add(type1, name1, value1, &tags1).unwrap();
+            wallet.add(type2, name2, value2, &tags2).unwrap();
             let export_writer = _create_export_file();
             export(&wallet, export_writer, key, 1).unwrap();
+            wallet.close().unwrap();
         }
-        wallet.close().unwrap();
         _cleanup();
 
         let mut content = _get_export_file_content();
@@ -1052,15 +1052,15 @@ mod tests {
         tags2.insert("tag_name_22".to_string(), "tag_value_22".to_string());
         tags2.insert("~tag_name_23".to_string(), "tag_value_23".to_string());
         let record_2_length = _record_length_serialized(type2, name2, value2, &tags2);
-        let mut wallet = _create_wallet();
-        wallet.add(type1, name1, value1, &tags1).unwrap();
-        wallet.add(type2, name2, value2, &tags2).unwrap();
         let key = "key";
         {
+            let mut wallet = _create_wallet();
+            wallet.add(type1, name1, value1, &tags1).unwrap();
+            wallet.add(type2, name2, value2, &tags2).unwrap();
             let export_writer = _create_export_file();
             export(&wallet, export_writer, key, 1).unwrap();
+            wallet.close().unwrap();
         }
-        wallet.close().unwrap();
         _cleanup();
 
         let mut content = _get_export_file_content();
@@ -1094,15 +1094,15 @@ mod tests {
         tags2.insert("tag_name_22".to_string(), "tag_value_22".to_string());
         tags2.insert("~tag_name_23".to_string(), "tag_value_23".to_string());
         let record_2_length = _record_length_serialized(type2, name2, value2, &tags2);
-        let mut wallet = _create_wallet();
-        wallet.add(type1, name1, value1, &tags1).unwrap();
-        wallet.add(type2, name2, value2, &tags2).unwrap();
         let key = "key";
         {
+            let mut wallet = _create_wallet();
+            wallet.add(type1, name1, value1, &tags1).unwrap();
+            wallet.add(type2, name2, value2, &tags2).unwrap();
             let export_writer = _create_export_file();
             export(&wallet, export_writer, key, 1).unwrap();
+            wallet.close().unwrap();
         }
-        wallet.close().unwrap();
         _cleanup();
 
         let mut content = _get_export_file_content();

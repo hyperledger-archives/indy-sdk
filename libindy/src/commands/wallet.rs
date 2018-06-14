@@ -255,7 +255,7 @@ impl WalletCommandExecutor {
         debug!("import >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}, import_config: {:?}",
                pool_name, name, storage_type, config, credentials, import_config);
 
-        let res = self.wallet_service.import(pool_name, name, storage_type, config, credentials, import_config)?;
+        let res = self.wallet_service.import_wallet(pool_name, name, storage_type, config, credentials, import_config)?;
 
         debug!("import <<< res: {:?}", res);
 

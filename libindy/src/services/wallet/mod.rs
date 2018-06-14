@@ -12,7 +12,7 @@ mod wallet;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
-use std::fs::{File, DirBuilder};
+use std::fs::{OpenOptions, File, DirBuilder};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::mem;
@@ -539,12 +539,11 @@ impl WalletService {
                     Err(_) => return Err(WalletError::CommonError(CommonError::InvalidStructure("export config not valid json".to_string()))),
                 };
 
-                let export_path = Path::new(&export_config.path);
-                if export_path.exists() {
-                    return Err(WalletError::ExportPathExists);
-                }
-
-                let export_file = File::create(export_path)?;
+                let export_file =
+                    OpenOptions::new()
+                        .write(true)
+                        .create_new(true)
+                        .open(export_config.path)?;
                 let writer = Box::new(export_file);
                 export(wallet, writer, &export_config.key, version)
             }
@@ -552,21 +551,21 @@ impl WalletService {
         }
     }
 
-    pub fn import(&self,
-                  pool_name: &str,
-                  name: &str,
-                  storage_type: Option<&str>,
-                  storage_config: Option<&str>,
-                  credentials: &str,
-                  import_config_json: &str) -> Result<(), WalletError> {
+    pub fn import_wallet(&self,
+                         pool_name: &str,
+                         name: &str,
+                         storage_type: Option<&str>,
+                         storage_config: Option<&str>,
+                         credentials: &str,
+                         import_config_json: &str) -> Result<(), WalletError> {
         let import_config: WalletExportConfig = match serde_json::from_str(import_config_json) {
             Ok(config) => config,
             Err(_) => return Err(WalletError::CommonError(CommonError::InvalidStructure("import config not valid json".to_string()))),
         };
-        let import_path = Path::new(&import_config.path);
-        if !import_path.exists() {
-            return Err(WalletError::ImportPathDoesNotExist);
-        }
+        let import_file =
+            OpenOptions::new()
+                .read(true)
+                .open(&import_config.path)?;
 
         // TODO - this can be refactor to skip the entire wallet_handle ceremony,
         // but in order to do that a lot of WalletService needs to be refactored
@@ -580,7 +579,6 @@ impl WalletService {
             Ok(wallet_handle) => {
                 let res = match self.wallets.borrow().get(&wallet_handle) {
                     Some(wallet) => {
-                        let import_file = File::open(import_path)?;
                         let reader = Box::new(import_file);
                         match import(wallet, reader, &import_config.key) {
                             Ok(_) => Ok(()),
@@ -1715,7 +1713,7 @@ mod tests {
 
         let export_config = _get_export_config();
         let res = wallet_service.export_wallet(wallet_handle, &export_config, 0);
-        assert_match!(Err(WalletError::ExportPathExists), res);
+        assert_match!(Err(WalletError::CommonError(CommonError::IOError(_))), res);
         assert!(Path::new(&_get_export_file_path()).exists());
     }
 
@@ -1754,7 +1752,7 @@ mod tests {
         wallet_service.close_wallet(wallet_handle).unwrap();
         wallet_service.delete_wallet("test_wallet", &_credentials()).unwrap();
 
-        wallet_service.import("pool1", "test_wallet", None, None, &_credentials(), &export_config).unwrap();
+        wallet_service.import_wallet("pool1", "test_wallet", None, None, &_credentials(), &export_config).unwrap();
         let wallet_handle_2 = wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
         wallet_service.get_record(wallet_handle_2, "type", "key1", "{}").unwrap();
     }
@@ -1775,7 +1773,7 @@ mod tests {
         wallet_service.close_wallet(wallet_handle).unwrap();
         wallet_service.delete_wallet("test_wallet", &_credentials()).unwrap();
 
-        wallet_service.import("pool1", "test_wallet", None, None, &_credentials(), &export_config).unwrap();
+        wallet_service.import_wallet("pool1", "test_wallet", None, None, &_credentials(), &export_config).unwrap();
         wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
     }
 
@@ -1788,8 +1786,8 @@ mod tests {
 
         let export_config = _get_export_config();
 
-        let res = wallet_service.import("pool1", "test_wallet", None, None, &_credentials(), &export_config);
-        assert_match!(Err(WalletError::ImportPathDoesNotExist), res);
+        let res = wallet_service.import_wallet("pool1", "test_wallet", None, None, &_credentials(), &export_config);
+        assert_match!(Err(WalletError::CommonError(CommonError::IOError(_))), res);
 
         let res = wallet_service.open_wallet("test_wallet", None, &_credentials());
         assert_match!(Err(_), res);
