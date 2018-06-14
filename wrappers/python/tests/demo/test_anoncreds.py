@@ -21,13 +21,14 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home, credentia
     (cred_def_id, cred_def_json) = \
         await anoncreds.issuer_create_and_store_credential_def(wallet_handle, issuer_did, schema_json, 'tag1', 'CL',
                                                                '{"support_revocation": false}')
-
+    print(cred_def_json)
     # 3. Prover create Master Secret
     master_secret_id = "master_secret"
     await anoncreds.prover_create_master_secret(wallet_handle, master_secret_id)
 
     # 4. Issuer create credential Offer
     cred_offer_json = await anoncreds.issuer_create_credential_offer(wallet_handle, cred_def_id)
+    print(cred_offer_json)
 
     # 5. Prover create credential Request
     (cred_req_json, cred_req_metadata_json) = \
@@ -59,9 +60,7 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home, credentia
         'requested_attributes': {
             'attr1_referent': {'name': 'name'}
         },
-        'requested_predicates': {
-            'predicate1_referent': {'name': 'age', 'p_type': '>=', 'p_value': 18}
-        }
+        'requested_predicates': {}
     })
 
     credential_for_proof_json = await anoncreds.prover_get_credentials_for_proof_req(wallet_handle, proof_req_json)
@@ -74,7 +73,7 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home, credentia
     requested_credentials_json = json.dumps({
         'self_attested_attributes': {},
         'requested_attributes': {'attr1_referent': {'cred_id': referent, 'revealed': True}},
-        'requested_predicates': {'predicate1_referent': {'cred_id': referent}}
+        'requested_predicates': {}
     })
 
     schemas_json = json.dumps({schema_id: json.loads(schema_json)})
@@ -85,6 +84,7 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home, credentia
                                                      master_secret_id, schemas_json, credential_defs_json,
                                                      revoc_states_json)
     proof = json.loads(proof_json)
+    print(proof_json)
 
     assert 'Alex' == proof['requested_proof']['revealed_attrs']['attr1_referent']['raw']
 
