@@ -116,9 +116,6 @@ pub enum ErrorCode
     // Returned if provided wallet query is invalid
     WalletQueryError = 214,
 
-    // Returned if wallet it not closed, which is required for the operation (currently for deletion)
-    WalletNotClosed = 215,
-
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
     PoolLedgerNotCreatedError = 300,

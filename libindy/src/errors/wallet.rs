@@ -134,7 +134,7 @@ impl ToErrorCode for WalletError {
             WalletError::ItemNotFound => ErrorCode::WalletItemNotFound,
             WalletError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
             WalletError::QueryError(_) => ErrorCode::WalletQueryError,
-            WalletError::NotClosed => ErrorCode::WalletNotClosed,
+            WalletError::NotClosed => ErrorCode::CommonInvalidState,
         }
     }
 }
