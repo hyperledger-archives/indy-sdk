@@ -535,7 +535,7 @@ impl AnoncredsUtils {
     pub fn credential_def_json() -> String {
         r#"{
            "ver":"1.0",
-           "id":"NcYxiDXkpYi6ov5FcYDi1e:\u0003:NcYxiDXkpYi6ov5FcYDi1e:\u0002:gvt:1.0:CL:TAG_1",
+           "id":"NcYxiDXkpYi6ov5FcYDi1e:3:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:CL:TAG_1",
            "schemaId":"NcYxiDXkpYi6ov5FcYDi1e:\u0002:gvt:1.0",
            "type":"CL",
            "tag":"TAG_1",
