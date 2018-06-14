@@ -90,8 +90,6 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String credDefId = createCredDefResult.getCredDefId();
 		String credDef = createCredDefResult.getCredDefJson();
 
-		System.out.println(credDef);
-
 		// Prover create Master Secret
 		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecretId).get();
 
@@ -117,9 +115,12 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
 				"                    \"requested_attributes\": {" +
-				"                          \"attr1_referent\":{\"name\":\"name\"}" +
+				"                          \"attr1_referent\":{\"name\":\"name\"}," +
+				"                          \"attr2_referent\":{\"name\":\"sex\"}," +
+				"                          \"attr3_referent\":{\"name\":\"phone\"}" +
 				"                     }," +
 				"                    \"requested_predicates\":{" +
+				"                         \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
 				"                    }" +
 				"                  }").toString();
 
@@ -127,18 +128,25 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		JSONObject credentialsForProof = new JSONObject(credentialsForProofJson);
 		JSONArray credentialsForAttribute1 = credentialsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
+		JSONArray credentialsForAttribute2 = credentialsForProof.getJSONObject("attrs").getJSONArray("attr2_referent");
+		JSONArray credentialsForAttribute3 = credentialsForProof.getJSONObject("attrs").getJSONArray("attr3_referent");
+		JSONArray credentialsForPredicate = credentialsForProof.getJSONObject("predicates").getJSONArray("predicate1_referent");
 
 		assertEquals(credentialsForAttribute1.length(), 1);
+		assertEquals(credentialsForAttribute2.length(), 1);
+		assertEquals(credentialsForAttribute3.length(), 0);
+		assertEquals(credentialsForPredicate.length(), 1);
 
 		String credentialUuid = credentialsForAttribute1.getJSONObject(0).getJSONObject("cred_info").getString("referent");
 
 		// Prover create Proof
 		String selfAttestedValue = "8-800-300";
 		String requestedCredentialsJson = new JSONObject(String.format("{\n" +
-				"                                          \"self_attested_attributes\":{},\n" +
-				"                                          \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true}},\n" +
-				"                                          \"requested_predicates\":{}\n" +
-				"                                        }", credentialUuid)).toString();
+				"                                          \"self_attested_attributes\":{\"attr3_referent\":\"%s\"},\n" +
+				"                                          \"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true},\n" +
+				"                                                                    \"attr2_referent\":{\"cred_id\":\"%s\", \"revealed\":false}},\n" +
+				"                                          \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\"}}\n" +
+				"                                        }", selfAttestedValue, credentialUuid, credentialUuid, credentialUuid)).toString();
 
 		String schemas = new JSONObject(String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema)).toString();
 		String credentialDefs = new JSONObject(String.format("{\"%s\":%s}", credDefId, credDef)).toString();
@@ -146,12 +154,10 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		String proofJson = Anoncreds.proverCreateProof(proverWallet, proofRequestJson, requestedCredentialsJson,
 				masterSecretId, schemas, credentialDefs, revocStates).get();
-
-		System.out.println(proofJson);
 		JSONObject proof = new JSONObject(proofJson);
 
 		// Verifier verify Proof
-		/*JSONObject revealedAttr1 = proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONObject("attr1_referent");
+		JSONObject revealedAttr1 = proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONObject("attr1_referent");
 		assertEquals("Alex", revealedAttr1.getString("raw"));
 
 		assertNotNull(proof.getJSONObject("requested_proof").getJSONObject("unrevealed_attrs").getJSONObject("attr2_referent").getInt("sub_proof_index"));
@@ -162,7 +168,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String revocRegs = new JSONObject("{}").toString();
 
 		Boolean valid = Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemas, credentialDefs, revocRegDefs, revocRegs).get();
-		assertTrue(valid);*/
+		assertTrue(valid);
 	}
 
 	@Test
