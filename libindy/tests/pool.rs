@@ -415,24 +415,6 @@ mod medium_cases {
 
             TestUtils::cleanup_storage();
         }
-
-        #[test]
-        fn create_pool_ledger_config_works_for_outdated_genesis_transactions() {
-            TestUtils::cleanup_storage();
-
-            let txn_file_data = r#"
-                {"data":{"alias":"Node1","client_ip":"192.168.1.35","client_port":9702,"node_ip":"192.168.1.35","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv","identifier":"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4","txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62","type":"0"}
-                {"data":{"alias":"Node2","client_ip":"192.168.1.35","client_port":9704,"node_ip":"192.168.1.35","node_port":9703,"services":["VALIDATOR"]},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb","identifier":"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy","txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc","type":"0"}"#;
-
-            let pool_name = "create_pool_ledger_config_works_for_outdated_genesis_transactions";
-            let txn_file_path = PoolUtils::create_genesis_txn_file(pool_name, &txn_file_data, None);
-            let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
-
-            let res = PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str()));
-            assert_eq!(ErrorCode::PoolGenesisTransactionsOutdated, res.unwrap_err());
-
-            TestUtils::cleanup_storage();
-        }
     }
 
     mod open {

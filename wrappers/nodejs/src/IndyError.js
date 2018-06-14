@@ -32,7 +32,6 @@ var errors = {
   305: 'LedgerSecurityError',
   306: 'PoolLedgerConfigAlreadyExistsError',
   307: 'PoolLedgerTimeout',
-  308: 'PoolGenesisTransactionsOutdated',
   400: 'AnoncredsRevocationRegistryFullError',
   401: 'AnoncredsInvalidUserRevocId',
   404: 'AnoncredsMasterSecretDuplicateNameError',

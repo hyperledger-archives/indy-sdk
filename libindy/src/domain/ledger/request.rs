@@ -5,8 +5,11 @@ extern crate time;
 
 use self::indy_crypto::utils::json::JsonEncodable;
 
+use std::sync::Mutex;
 
-pub const PROTOCOL_VERSION: u64 = 2;
+lazy_static! {
+    pub static ref PROTOCOL_VERSION: Mutex<u64> = Mutex::new(2);
+}
 
 #[derive(Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -20,7 +23,7 @@ pub struct Request<T: serde::Serialize> {
 }
 
 impl<T: serde::Serialize> Request<T> {
-    fn new(req_id: u64, identifier: &str, operation: T, protocol_version: u64) -> Request<T> {
+    pub fn new(req_id: u64, identifier: &str, operation: T, protocol_version: u64) -> Request<T> {
         Request {
             req_id,
             identifier: identifier.to_string(),
@@ -28,11 +31,6 @@ impl<T: serde::Serialize> Request<T> {
             protocol_version,
             signature: None
         }
-    }
-
-    pub fn build_request(identifier: &str, operation: T) -> Result<String, serde_json::Error> {
-        let req_id = time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64;
-        serde_json::to_string(&Request::new(req_id, identifier, operation, PROTOCOL_VERSION))
     }
 }
 

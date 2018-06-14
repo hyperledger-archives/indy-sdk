@@ -133,9 +133,6 @@ pub enum ErrorCode
     // Timeout for action
     PoolLedgerTimeout = 307,
 
-    // Attempt to connect to pool with outdated genesis transactions
-    PoolGenesisTransactionsOutdated = 308,
-
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 

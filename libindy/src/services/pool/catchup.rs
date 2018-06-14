@@ -78,13 +78,16 @@ impl CatchupHandler {
             Message::Pong => {
                 //sending ledger status
                 //TODO not send ledger status directly as response on ping, wait pongs from all nodes?
+                let mut protocol_version = PROTOCOL_VERSION.lock()
+                    .map_err(|err| PoolError::CommonError(CommonError::InvalidState(err.to_string())))?;
+
                 let ls: LedgerStatus = LedgerStatus {
                     txnSeqNo: self.merkle_tree.count,
                     merkleRoot: self.merkle_tree.root_hash().as_slice().to_base58(),
                     ledgerId: 0,
                     ppSeqNo: None,
                     viewNo: None,
-                    protocolVersion: Some(PROTOCOL_VERSION)
+                    protocolVersion: if *protocol_version > 1 { Some(protocol_version.clone()) } else { None }
                 };
                 let resp_msg: Message = Message::LedgerStatus(ls);
                 self.nodes[src_ind].send_msg(&resp_msg)?;

@@ -46,8 +46,10 @@ use utils::sequence::SequenceUtils;
 use self::indy_crypto::bls::VerKey;
 use std::path::PathBuf;
 use std::sync::Mutex;
+use domain::ledger::request::PROTOCOL_VERSION;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+
 
 pub struct PoolService {
     pending_pools: RefCell<HashMap<i32, Pool>>,
@@ -193,9 +195,18 @@ impl PoolWorker {
                     .map_err(|e|
                         CommonError::InvalidState(format!("MerkleTree contains invalid data {:?}", e)))?;
 
+            let mut protocol_version = PROTOCOL_VERSION.lock()
+                .map_err(|err| PoolError::CommonError(CommonError::InvalidState(err.to_string())))?;
+
             let mut gen_txn = match gen_txn {
-                NodeTransaction::NodeTransactionV0(_) => return Err(PoolError::Outdated),
-                NodeTransaction::NodeTransactionV1(txn) => txn
+                NodeTransaction::NodeTransactionV0(txn) => {
+                    *protocol_version = 1;
+                    NodeTransactionV1::from(txn)
+                }
+                NodeTransaction::NodeTransactionV1(txn) => {
+                    *protocol_version = 2;
+                    txn
+                }
             };
 
             if gen_tnxs.contains_key(&gen_txn.txn.data.dest) {
@@ -723,9 +734,7 @@ impl PoolService {
             return Err(PoolError::CommonError(
                 CommonError::InvalidStructure("Invalid Genesis Transaction file".to_string())));
         }
-
-        PoolWorker::_build_node_state(&mt)?;
-
+        
         fs::create_dir_all(path.as_path()).map_err(map_err_trace!())?;
 
         path.push(name);
@@ -1115,8 +1124,11 @@ mod tests {
     }
 
     #[test]
-    fn pool_worker_build_node_state_works_for_outdated_format() {
+    fn pool_worker_build_node_state_works_for_old_format() {
         TestUtils::cleanup_storage();
+
+        let node1: NodeTransactionV1 = NodeTransactionV1::from(serde_json::from_str::<NodeTransactionV0>(NODE1_OLD).unwrap());
+        let node2: NodeTransactionV1 = NodeTransactionV1::from(serde_json::from_str::<NodeTransactionV0>(NODE2_OLD).unwrap());
 
         let txns_src = format!("{}\n{}\n", NODE1_OLD, NODE2_OLD);
 
@@ -1131,8 +1143,17 @@ mod tests {
         f.sync_all().unwrap();
 
         let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
-        let res = PoolWorker::_build_node_state(&merkle_tree);
-        assert!(res.is_err());
+        let node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
+
+        let protocol_version = PROTOCOL_VERSION.lock().unwrap();
+        assert_eq!(1, *protocol_version);
+
+        assert_eq!(2, node_state.len());
+        assert!(node_state.contains_key("Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"));
+        assert!(node_state.contains_key("8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"));
+
+        assert_eq!(node_state["Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"], node1);
+        assert_eq!(node_state["8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"], node2);
     }
 
     #[test]
@@ -1155,6 +1176,9 @@ mod tests {
 
         let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
         let node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
+
+        let protocol_version = PROTOCOL_VERSION.lock().unwrap();
+        assert_eq!(2, *protocol_version);
 
         assert_eq!(4, node_state.len());
         assert!(node_state.contains_key("Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"));

@@ -129,6 +129,39 @@ pub struct TxnMetadata {
     pub from: String
 }
 
+impl From<NodeTransactionV0> for NodeTransactionV1 {
+    fn from(node_txn: NodeTransactionV0) -> Self {
+        {
+            let txn = Txn {
+                txn_type: node_txn.txn_type,
+                protocol_version: None,
+                data: TxnData {
+                    data: node_txn.data,
+                    dest: node_txn.dest,
+                    verkey: node_txn.verkey
+                },
+                metadata: TxnMetadata {
+                    req_id: None,
+                    from: node_txn.identifier
+                },
+            };
+            NodeTransactionV1 {
+                txn,
+                txn_metadata: Metadata {
+                    seq_no: None,
+                    txn_id: node_txn.txn_id,
+                    creation_time: None
+                },
+                req_signature: ReqSignature {
+                    type_: None,
+                    values: None
+                },
+                ver: "1".to_string(),
+            }
+        }
+    }
+}
+
 impl NodeTransactionV1 {
     pub fn update(&mut self, other: &mut NodeTransactionV1) -> Result<(), CommonError> {
         assert_eq!(self.txn.data.dest, other.txn.data.dest);
@@ -167,7 +200,8 @@ pub struct LedgerStatus {
     pub ledgerId: u8,
     pub ppSeqNo: Option<u32>,
     pub viewNo: Option<u32>,
-    pub protocolVersion: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub protocolVersion: Option<u64>
 }
 
 #[allow(non_snake_case)]
