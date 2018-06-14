@@ -78,17 +78,17 @@ void VcxWrapperCommonStringStringLongCallback(vcx_command_handle_t xcommand_hand
 
 - (void)connectionCreateWithInvite:(NSString *)invitationId
                      inviteDetails:(NSString *)inviteDetails
-                        completion:(void (^)(NSError *error, NSString *credentialHandle))completion;
+                        completion:(void (^)(NSError *error, NSInteger *connectionHandle))completion;
 
 - (void)connectionConnect:(VcxHandle *)connectionHandle
            connectionType:(NSString *)connectionType
                completion:(void (^)(NSError *error, NSString *inviteDetails))completion;
 
 - (void)connectionSerialize:(NSInteger *)connectionHandle
-                 completion:(void (^)(NSError *error, NSString *state))completion;
+                 completion:(void (^)(NSError *error, NSString *serializedConnection))completion;
 
 - (void)connectionDeserialize:(NSString *)serializedConnection
-                   completion:(void (^)(NSError *error, NSInteger *credentailHandle))completion;
+                   completion:(void (^)(NSError *error, NSInteger *connectionHandle))completion;
 
 - (void)agentUpdateInfo:(NSString *)config
              completion:(void (^)(NSError *error))completion;
@@ -102,7 +102,7 @@ void VcxWrapperCommonStringStringLongCallback(vcx_command_handle_t xcommand_hand
 - (void)credentialCreateWithMsgid:(NSString *)sourceId
                  connectionHandle:(VcxHandle *)connectionHandle
                             msgId:(NSString *)msgId
-                       completion:(void (^)(NSError *error, NSInteger *credentailHandle))completion;
+                       completion:(void (^)(NSError *error, NSInteger *credentialHandle, NSString *credentialOffer))completion;
 
 - (void)credentialSendRequest:(NSInteger *)credentailHandle
              connectionHandle:(VcxHandle *)connectionHandle
