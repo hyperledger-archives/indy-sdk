@@ -94,7 +94,7 @@ impl LedgerUtils {
 
     fn _extract_seq_no_from_reply(reply: &str) -> Result<u64, &'static str> {
         ::serde_json::from_str::<::serde_json::Value>(reply).map_err(|_| "Reply isn't valid JSON")?
-            ["result"]["seqNo"]
+            ["result"]["txnMetadata"]["seqNo"]
             .as_u64().ok_or("Missed seqNo in reply")
     }
 
@@ -506,6 +506,21 @@ impl LedgerUtils {
         super::results::result_to_string_string_u64(err, receiver)
     }
 
+    pub fn register_transaction_parser_for_sp(txn_type: &str, parse: CustomTransactionParser, free: CustomFree) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+
+        let txn_type = CString::new(txn_type).unwrap();
+
+        let err =
+            indy_register_transaction_parser_for_sp(command_handle,
+                                                    txn_type.as_ptr(),
+                                                    Some(parse),
+                                                    Some(free),
+                                                    cb);
+
+        super::results::result_to_empty(err, receiver)
+    }
+
     pub fn post_entities() -> (&'static str, &'static str, &'static str) {
         lazy_static! {
                     static ref COMMON_ENTITIES_INIT: Once = ONCE_INIT;
@@ -538,7 +553,7 @@ impl LedgerUtils {
                                                                                                        &schema_json,
                                                                                                        TAG_1,
                                                                                                        None,
-                                                                                                       &AnoncredsUtils::revocation_cred_def_config()).unwrap();
+                                                                                                       Some(&AnoncredsUtils::revocation_cred_def_config())).unwrap();
                 let cred_def_request = LedgerUtils::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
                 LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
 

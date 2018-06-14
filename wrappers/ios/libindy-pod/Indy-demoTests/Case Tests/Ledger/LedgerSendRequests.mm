@@ -18,10 +18,12 @@
 
     ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerWithPoolName:[TestUtils pool]
                                                                poolHandle:&poolHandle];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerWithPoolName() failed");
 
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
                                                                   xtype:nil
                                                                  handle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
     // Put setup code here. This method is called before the invocation of each test method in the class.
 }
 
@@ -698,7 +700,7 @@
 
     // 3. Build & submit get txn request
     NSDictionary *schemaResponse = [NSDictionary fromString:schemaResponseJson];
-    NSNumber *seqNo = (NSNumber *) schemaResponse[@"result"][@"seqNo"];
+    NSNumber *seqNo = (NSNumber *) schemaResponse[@"result"][@"txnMetadata"][@"seqNo"];
 
     NSString *getTxnRequest;
     ret = [[LedgerUtils sharedInstance] buildGetTxnRequestWithSubmitterDid:myDid
@@ -716,8 +718,8 @@
     NSDictionary *getTxnResponse = [NSDictionary fromString:getTxnResponseJson];
 
     NSDictionary *getTxnSchemaResult = getTxnResponse[@"result"][@"data"];
-    XCTAssertNotNil(getTxnSchemaResult[@"data"], @"getTxnSchemaResult[data] is nil");
-    XCTAssertNotNil(getTxnSchemaResult[@"seqNo"], @"getTxnSchemaResult[seqNo] is nil");
+    XCTAssertNotNil(getTxnSchemaResult[@"txn"][@"data"][@"data"], @"getTxnSchemaResult[data] is nil");
+    XCTAssertNotNil(getTxnSchemaResult[@"txnMetadata"][@"seqNo"], @"getTxnSchemaResult[seqNo] is nil");
 }
 
 // MARK: Pool upgrade

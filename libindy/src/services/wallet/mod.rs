@@ -531,7 +531,7 @@ impl WalletService {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct WalletRecord {
     #[serde(rename = "id")]
     name: String,

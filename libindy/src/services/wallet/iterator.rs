@@ -35,7 +35,12 @@ impl WalletIterator {
 
             let tags = decrypt_tags(&next_storage_entity.tags, &self.keys.tag_name_key, &self.keys.tag_value_key)?;
 
-            Ok(Some(WalletRecord::new(name, None, value, tags)))
+            let type_ = match next_storage_entity.type_ {
+                None => None,
+                Some(encrypted_type) => Some(String::from_utf8(decrypt(&encrypted_type, &self.keys.type_key)?)?)
+            };
+
+            Ok(Some(WalletRecord::new(name, type_, value, tags)))
         } else { Ok(None) }
     }
 

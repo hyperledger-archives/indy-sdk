@@ -576,7 +576,7 @@ fn ledger_demo_works() {
     assert_eq!(err, ErrorCode::Success);
     let (err, resp) = send_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
-    let nym_resp: Reply = serde_json::from_str(&resp).unwrap();
+    let nym_resp = serde_json::from_str::<serde_json::Value>(&resp).unwrap();
     info!("nym_resp_raw : {:?}", resp);
     info!("nym_resp     : {:?}", nym_resp);
 
