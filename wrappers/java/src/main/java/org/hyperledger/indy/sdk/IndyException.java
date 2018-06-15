@@ -88,7 +88,7 @@ public class IndyException extends Exception {
 				return new WalletDecodingException();
 			case WalletStorageError:
 				return new WalletStorageException();
-			case WalletEncryptonError:
+			case WalletEncryptionError:
 				return new WalletEncryptionException();
 			case WalletItemNotFound:
 				return new WalletItemNotFoundException();

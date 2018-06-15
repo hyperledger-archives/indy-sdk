@@ -84,7 +84,7 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     WalletStorageError = 210,
 
     // Error during encryption-related operations
-    WalletEncryptonError = 211,
+    WalletEncryptionError = 211,
 
     // Requested wallet item not found
     WalletItemNotFound = 212,
@@ -127,7 +127,7 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     
     AnoncredsAccumulatorIsFull = 402,
 
-    // Attempt to generate master secret with dupplicated name
+    // Attempt to generate master secret with duplicated name
     AnoncredsMasterSecretDuplicateNameError = 404,
     
     AnoncredsProofRejected = 405,

@@ -119,10 +119,10 @@ mod high_cases {
             let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
-            let nonexistant_addr = "pay:null:no-addr";
-            let res = payments_utils::get_utxos_with_balance(vec![nonexistant_addr.to_string()], wallet_handle, pool_handle, SUBMITTER_DID);
+            let nonexistent_addr = "pay:null:no-addr";
+            let res = payments_utils::get_utxos_with_balance(vec![nonexistent_addr.to_string()], wallet_handle, pool_handle, SUBMITTER_DID);
 
-            let res_vec = res.get(nonexistant_addr).unwrap();
+            let res_vec = res.get(nonexistent_addr).unwrap();
             assert_eq!(res_vec.len(), 0);
 
             pool::close(pool_handle).unwrap();

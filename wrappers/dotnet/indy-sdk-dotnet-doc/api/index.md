@@ -1,7 +1,7 @@
 
 # Namespaces
 The Indy SDK wrapper for .NET is separated into a series of namespaces that contain types for performing specific
-types of interactions.  The list of these namesaces and their function can be found below and the you can access the types
+types of interactions.  The list of these namespaces and their function can be found below and the you can access the types
 can be accessed by selecting the namespace from the sidebar.
 
 ## Hyperledger.Indy

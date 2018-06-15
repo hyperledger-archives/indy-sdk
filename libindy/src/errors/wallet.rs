@@ -126,7 +126,7 @@ impl ToErrorCode for WalletError {
             WalletError::InputError(_) => ErrorCode::WalletInputError,
             WalletError::EncodingError(_) => ErrorCode::WalletDecodingError,
             WalletError::StorageError(_) => ErrorCode::WalletStorageError,
-            WalletError::EncryptionError(_) => ErrorCode::WalletEncryptonError,
+            WalletError::EncryptionError(_) => ErrorCode::WalletEncryptionError,
             WalletError::ItemNotFound => ErrorCode::WalletItemNotFound,
             WalletError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
             WalletError::QueryError(_) => ErrorCode::WalletQueryError,

@@ -86,7 +86,7 @@ class ErrorCode(IntEnum):
     WalletStorageError = 210,
 
     # Error during encryption-related operations
-    WalletEncryptonError = 211,
+    WalletEncryptionError = 211,
 
     # Requested wallet item not found
     WalletItemNotFound = 212,
@@ -107,7 +107,7 @@ class ErrorCode(IntEnum):
     # Pool ledger terminated
     PoolLedgerTerminated = 302,
 
-    # No concensus during ledger operation
+    # No consensus during ledger operation
     LedgerNoConsensusError = 303,
 
     # Attempt to parse invalid transaction response
@@ -127,7 +127,7 @@ class ErrorCode(IntEnum):
 
     AnoncredsInvalidUserRevocId = 401,
 
-    # Attempt to generate master secret with dupplicated name
+    # Attempt to generate master secret with duplicated name
     AnoncredsMasterSecretDuplicateNameError = 404,
 
     AnoncredsProofRejected = 405,

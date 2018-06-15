@@ -448,7 +448,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn use_works_for_unknow_did() {
+        pub fn use_works_for_unknown_did() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 

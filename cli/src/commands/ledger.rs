@@ -2451,7 +2451,7 @@ pub mod tests {
                 params.insert("force", "true".to_string()); // because node_works test added fifth Node
                 cmd.execute(&ctx, &params).unwrap();
             }
-            // There is no way to read upgrade transaction to be sure about completly write before sending next one.
+            // There is no way to read upgrade transaction to be sure about completely write before sending next one.
             // So just sleep agains other places where control read request is available
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
             {

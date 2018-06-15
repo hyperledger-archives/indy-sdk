@@ -1475,7 +1475,7 @@
       "docs": "Refreshes a local copy of a pool ledger and updates pool nodes connections.\n\n#Params\nhandle: pool handle returned by indy_open_pool_ledger\n\n#Returns\nError code\n\n#Errors\nCommon*\nLedger*",
       "group": "pool",
       "params": [
-        {"name": "command_hangle", "type": "indy_handle_t"},
+        {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "handle", "type": "indy_handle_t"},
         {
           "name": "cb",
@@ -1507,7 +1507,7 @@
       "docs": "Closes opened pool ledger, opened nodes connections and frees allocated resources.\n\n#Params\nhandle: pool handle returned by indy_open_pool_ledger.\n\n#Returns\nError code\n\n#Errors\nCommon*\nLedger*",
       "group": "pool",
       "params": [
-        {"name": "command_hangle", "type": "indy_handle_t"},
+        {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "handle", "type": "indy_handle_t"},
         {
           "name": "cb",

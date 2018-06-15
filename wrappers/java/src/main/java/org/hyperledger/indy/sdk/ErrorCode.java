@@ -160,7 +160,7 @@ public enum ErrorCode {
 	/**
 	 * Error during encryption-related operations
 	 */
-	WalletEncryptonError(211),
+	WalletEncryptionError(211),
 
 	/**
 	 * Requested wallet item not found
@@ -195,7 +195,7 @@ public enum ErrorCode {
 	PoolLedgerTerminated(302),
 
 	/**
-	 *  No concensus during ledger operation
+	 *  No consensus during ledger operation
 	 */
 	LedgerNoConsensusError(303),
 
@@ -232,7 +232,7 @@ public enum ErrorCode {
 	AnoncredsInvalidUserRevocId(401),
 
 	/**
-	 * Attempt to generate master secret with dupplicated name
+	 * Attempt to generate master secret with duplicated name
 	 */
 	AnoncredsMasterSecretDuplicateNameError(404),
 
