@@ -259,6 +259,7 @@ mod high_cases {
             WalletUtils::create_wallet(POOL, wallet_name, None, None, None).unwrap();
             let wallet_handle = WalletUtils::open_wallet(wallet_name, None, None).unwrap();
             WalletUtils::export_wallet(wallet_handle, &config_json).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             assert!(path.exists());
             TestUtils::cleanup_storage();
@@ -296,7 +297,8 @@ mod high_cases {
             WalletUtils::delete_wallet(wallet_name, None).unwrap();
 
             WalletUtils::import_wallet(POOL, wallet_name, None, None, None, &config_json).unwrap();
-            WalletUtils::open_wallet(wallet_name, None, None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(wallet_name, None, None).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -561,6 +563,8 @@ mod medium_cases {
 
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
             assert!(path.exists());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
             TestUtils::cleanup_storage();
         }
 
@@ -576,9 +580,10 @@ mod medium_cases {
             let wallet_handle = WalletUtils::open_wallet(wallet_name, None, None).unwrap();
             let res = WalletUtils::export_wallet(wallet_handle, "{}");
 
-            // TODO - maybe introduce WalletConfigurationError
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
             assert!(path.exists());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
             TestUtils::cleanup_storage();
         }
 
@@ -594,8 +599,11 @@ mod medium_cases {
             WalletUtils::create_wallet(POOL, wallet_name, None, None, None).unwrap();
             let wallet_handle = WalletUtils::open_wallet(wallet_name, None, None).unwrap();
             let res = WalletUtils::export_wallet(wallet_handle + 1, &config_json);
+
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
             assert!(path.exists());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
             TestUtils::cleanup_storage();
         }
     }
