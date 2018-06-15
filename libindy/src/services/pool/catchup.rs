@@ -17,7 +17,7 @@ use super::{
 use super::rust_base58::{FromBase58, ToBase58};
 use super::types::*;
 use services::pool::PoolWorker;
-use domain::ledger::request::PROTOCOL_VERSION;
+use domain::ledger::request::ProtocolVersion;
 
 pub const CATCHUP_ROUND_TIMEOUT: i64 = 50;
 
@@ -78,8 +78,8 @@ impl CatchupHandler {
             Message::Pong => {
                 //sending ledger status
                 //TODO not send ledger status directly as response on ping, wait pongs from all nodes?
-                let mut protocol_version = PROTOCOL_VERSION.lock()
-                    .map_err(|err| PoolError::CommonError(CommonError::InvalidState(err.to_string())))?;
+
+                let protocol_version = ProtocolVersion::get();
 
                 let ls: LedgerStatus = LedgerStatus {
                     txnSeqNo: self.merkle_tree.count,
@@ -87,7 +87,7 @@ impl CatchupHandler {
                     ledgerId: 0,
                     ppSeqNo: None,
                     viewNo: None,
-                    protocolVersion: if *protocol_version > 1 { Some(protocol_version.clone()) } else { None }
+                    protocolVersion: if protocol_version > 1 { Some(protocol_version) } else { None }
                 };
                 let resp_msg: Message = Message::LedgerStatus(ls);
                 self.nodes[src_ind].send_msg(&resp_msg)?;

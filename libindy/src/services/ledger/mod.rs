@@ -9,7 +9,7 @@ use errors::common::CommonError;
 use errors::ledger::LedgerError;
 use serde_json::Value;
 use domain::ledger::constants::{NYM, ROLE_REMOVE, STEWARD, TRUSTEE, TRUST_ANCHOR, TGB};
-use domain::ledger::request::{Request, PROTOCOL_VERSION};
+use domain::ledger::request::Request;
 use domain::ledger::nym::GetNymOperation;
 use domain::ledger::attrib::{AttribOperation, GetAttribOperation};
 use domain::ledger::ddo::GetDdoOperation;
@@ -74,7 +74,8 @@ impl LedgerService {
             }
         }
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("NYM request json is invalid {:?}.", err)))?;
 
         info!("build_nym_request <<< request: {:?}", request);
 
@@ -86,7 +87,8 @@ impl LedgerService {
 
         let operation = GetNymOperation::new(dest.to_string());
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("GET_NYM request json is invalid {:?}.", err)))?;
 
         info!("build_get_nym_request <<< request: {:?}", request);
 
@@ -98,7 +100,8 @@ impl LedgerService {
 
         let operation = GetDdoOperation::new(dest.to_string());
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid get_ddo request json: {:?}", err)))?;
 
         info!("build_get_nym_request <<< request: {:?}", request);
 
@@ -122,7 +125,8 @@ impl LedgerService {
                                              raw.as_ref().map(|s| s.to_string()),
                                              enc.as_ref().map(|s| s.to_string()));
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("ATTRIB request json is invalid {:?}.", err)))?;
 
         info!("build_attrib_request <<< request: {:?}", request);
 
@@ -138,7 +142,8 @@ impl LedgerService {
         }
         let operation = GetAttribOperation::new(dest.to_string(), raw, hash, enc);
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("GET_ATTRIB request json is invalid {:?}.", err)))?;
 
         info!("build_get_attrib_request <<< request: {:?}", request);
 
@@ -156,7 +161,8 @@ impl LedgerService {
 
         let operation = SchemaOperation::new(schema_data);
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("SCHEMA request json is invalid {:?}.", err)))?;
 
         info!("build_schema_request <<< request: {:?}", request);
 
@@ -177,7 +183,8 @@ impl LedgerService {
         let data = GetSchemaOperationData::new(name, version);
         let operation = GetSchemaOperation::new(dest, data);
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("GET_SCHEMA request json is invalid {:?}.", err)))?;
 
         info!("build_get_schema_request <<< request: {:?}", request);
 
@@ -193,7 +200,8 @@ impl LedgerService {
 
         let operation = CredDefOperation::new(cred_def);
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("CRED_DEF request json is invalid {:?}.", err)))?;
 
         info!("build_cred_def_request <<< request: {:?}", request);
 
@@ -217,7 +225,8 @@ impl LedgerService {
 
         let operation = GetCredDefOperation::new(ref_, signature_type, origin);
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("GET_CRED_DEF request json is invalid {:?}.", err)))?;
 
         info!("build_get_cred_def_request <<< request: {:?}", request);
 
@@ -242,7 +251,8 @@ impl LedgerService {
 
         let operation = NodeOperation::new(dest.to_string(), data);
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("NODE request json is invalid {:?}.", err)))?;
 
         info!("build_node_request <<< request: {:?}", request);
 
@@ -254,7 +264,8 @@ impl LedgerService {
 
         let operation = GetValidatorInfoOperation::new();
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("GET_TXN request json is invalid {:?}.", err)))?;
 
         info!("build_get_validator_info_request <<< request: {:?}", request);
 
@@ -266,7 +277,8 @@ impl LedgerService {
 
         let operation = GetTxnOperation::new(data);
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("GET_TXN request json is invalid {:?}.", err)))?;
 
         info!("build_get_txn_request <<< request: {:?}", request);
 
@@ -278,7 +290,8 @@ impl LedgerService {
 
         let operation = PoolConfigOperation::new(writes, force);
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("POOL_CONFIG request json is invalid {:?}.", err)))?;
 
         info!("build_pool_config <<< request: {:?}", request);
 
@@ -294,7 +307,8 @@ impl LedgerService {
 
         let operation = PoolRestartOperation::new(action, datetime.map(String::from));
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid pool_restart request json: {:?}", err)))?;
 
         info!("build_pool_restart <<< request: {:?}", request);
 
@@ -323,7 +337,8 @@ impl LedgerService {
 
         let operation = PoolUpgradeOperation::new(name, version, action, sha256, timeout, schedule, justification, reinstall, force);
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("POOL_UPGRADE request json is invalid {:?}.", err)))?;
 
         info!("build_pool_upgrade <<< request: {:?}", request);
 
@@ -339,7 +354,8 @@ impl LedgerService {
 
         let rev_reg_def_operation = RevRegDefOperation::new(rev_reg_def);
 
-        let request = LedgerService::build_request(identifier, rev_reg_def_operation)?;
+        let request = Request::build_request(identifier, rev_reg_def_operation)
+            .map_err(|err| CommonError::InvalidState(format!("REVOC_REG_DEF request json is invalid {:?}.", err)))?;
 
         info!("build_revoc_reg_def_request <<< request: {:?}", request);
 
@@ -351,7 +367,8 @@ impl LedgerService {
 
         let operation = GetRevRegDefOperation::new(id);
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("GET_REVOC_REG_DEF request json is invalid {:?}.", err)))?;
 
         info!("build_get_revoc_reg_def_request <<< request: {:?}", request);
 
@@ -369,7 +386,8 @@ impl LedgerService {
 
         let operation = RevRegEntryOperation::new(revoc_def_type, revoc_reg_def_id, rev_reg_entry);
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("REVOC_REG_ENTRY request json is invalid {:?}.", err)))?;
 
         info!("build_revoc_reg_entry_request <<< request: {:?}", request);
 
@@ -381,7 +399,8 @@ impl LedgerService {
 
         let operation = GetRevRegOperation::new(revoc_reg_def_id, timestamp);
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("GET_REVOC_REG request json is invalid {:?}.", err)))?;
 
         info!("build_get_revoc_reg_request <<< request: {:?}", request);
 
@@ -393,7 +412,8 @@ impl LedgerService {
 
         let operation = GetRevRegDeltaOperation::new(revoc_reg_def_id, from, to);
 
-        let request = LedgerService::build_request(identifier, operation)?;
+        let request = Request::build_request(identifier, operation)
+            .map_err(|err| CommonError::InvalidState(format!("GET_REVOC_REG_DELTA request json is invalid {:?}.", err)))?;
 
         info!("build_get_revoc_reg_delta_request <<< request: {:?}", request);
 
@@ -550,17 +570,6 @@ impl LedgerService {
             Message::Reply(reply) =>
                 Ok(reply)
         }
-    }
-
-    pub fn build_request<T>(identifier: &str, operation: T) -> Result<String, CommonError> where T: serde::Serialize {
-        let req_id = time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64;
-
-        let protocol_version = PROTOCOL_VERSION.lock()
-            .map_err(|err| CommonError::InvalidState(err.to_string()))?;
-
-        let request_json = serde_json::to_string(&Request::new(req_id, identifier, operation, protocol_version.clone()))
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize request: {:?}", err)))?;
-        Ok(request_json)
     }
 }
 

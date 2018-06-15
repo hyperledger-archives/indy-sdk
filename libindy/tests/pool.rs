@@ -105,6 +105,8 @@ mod high_cases {
         fn open_pool_ledger_works() {
             TestUtils::cleanup_storage();
 
+            PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
             let pool_name = "pool_open";
             let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
             let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
@@ -119,6 +121,8 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")] //TODO Not implemented yet
         fn open_pool_ledger_works_for_config() {
             TestUtils::cleanup_storage();
+
+            PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
             let pool_name = "open_pool_ledger_works_for_config";
             let config = r#"{"refresh_on_open": true}"#;
@@ -151,30 +155,9 @@ mod high_cases {
         fn open_pool_ledger_works_for_two_nodes() {
             TestUtils::cleanup_storage();
 
+            PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
             let pool_name = "open_pool_ledger_works_for_two_nodes";
-            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, Some(2), None);
-            let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
-            PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
-
-            PoolUtils::open_pool_ledger(pool_name, None).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        #[cfg(feature = "local_nodes_pool")]
-        fn open_pool_ledger_works_for_two_nodes_new_format() {
-            TestUtils::cleanup_storage();
-
-            let test_pool_ip = EnvironmentUtils::test_pool_ip();
-
-            let txn_file_data = format!(r#"
-                {{"txn": {{"type": "0","data": {{"data": {{"alias":"Node1","client_ip":"{0}","client_port":9702,"node_ip":"{0}","node_port":9701,"services":["VALIDATOR"]}},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"}},"metadata": {{"from": "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4"}}}},"txnMetadata": {{"txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62"}}}}
-                {{"txn": {{"type": "0","data": {{"data": {{"alias":"Node2","client_ip":"{0}","client_port":9704,"node_ip":"{0}","node_port":9703,"services":["VALIDATOR"]}},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"}},"metadata": {{"from": "8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy"}}}},"txnMetadata": {{"txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc"}}}}"#, test_pool_ip);
-
-            let pool_name = "open_pool_ledger_works_for_two_nodes_new_format";
-            PoolUtils::create_genesis_txn_file(pool_name, &txn_file_data, None);
-
             let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, Some(2), None);
             let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
             PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
@@ -188,6 +171,8 @@ mod high_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_three_nodes() {
             TestUtils::cleanup_storage();
+
+            PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
             let pool_name = "open_pool_ledger_works_for_three_nodes";
             let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, Some(3), None);
@@ -204,6 +189,8 @@ mod high_cases {
         pub fn open_pool_ledger_works_for_cached_txns() {
             TestUtils::cleanup_storage();
 
+            PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
             let pool_name = "open_pool_ledger_works_for_cached_txns";
             let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
             let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
@@ -218,6 +205,8 @@ mod high_cases {
         #[test]
         pub fn open_pool_ledger_works_for_corrupted_cached_txns() {
             TestUtils::cleanup_storage();
+
+            PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
             let pool_name = "open_pool_ledger_works_corrupted_for_cached_txns";
             let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
@@ -358,6 +347,15 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
+
+    mod set_protocol_version {
+        use super::*;
+
+        #[test]
+        fn indy_set_protocol_version_works() {
+            PoolUtils::set_protocol_version(1).unwrap();
+        }
+    }
 }
 
 mod medium_cases {
@@ -451,6 +449,8 @@ mod medium_cases {
         fn open_pool_ledger_works_for_invalid_nodes_file() {
             TestUtils::cleanup_storage();
 
+            PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
             let pool_name = "open_pool_ledger_works_for_invalid_nodes_file";
             let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool_with_invalid_nodes(pool_name, None);
             let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
@@ -466,6 +466,8 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_wrong_alias() {
             TestUtils::cleanup_storage();
+
+            PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
             let pool_name = "open_pool_ledger_works_for_wrong_alias";
             let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool_with_wrong_alias(pool_name, None);
@@ -486,12 +488,31 @@ mod medium_cases {
             let name = "pool_open";
             let config = r#"{"refresh_on_open": "true"}"#;
 
+            PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
             let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(name, None, None);
             let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
             PoolUtils::create_pool_ledger_config(name, Some(pool_config.as_str())).unwrap();
 
             let res = PoolUtils::open_pool_ledger(name, Some(config));
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn open_pool_ledger_works_for_incompatible_protocol_version() {
+            TestUtils::cleanup_storage();
+
+            PoolUtils::set_protocol_version(1).unwrap();
+
+            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(POOL, None, None);
+            let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
+            PoolUtils::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
+
+            let res = PoolUtils::open_pool_ledger(POOL, None);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolGenesisTransactionsIncompatibleProtocolVersion);
 
             TestUtils::cleanup_storage();
         }
@@ -560,6 +581,16 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
+        }
+    }
+
+    mod set_protocol_version {
+        use super::*;
+
+        #[test]
+        fn indy_set_protocol_version_works_for_unsupported() {
+            let res = PoolUtils::set_protocol_version(0).unwrap_err();
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolGenesisTransactionsIncompatibleProtocolVersion);
         }
     }
 }

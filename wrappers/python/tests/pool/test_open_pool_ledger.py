@@ -18,3 +18,13 @@ async def test_open_pool_ledger_works_for_twice(pool_name, pool_config, pool_han
         await pool.open_pool_ledger(pool_name, pool_config)
 
     assert ErrorCode.PoolLedgerInvalidPoolHandle == e.value.error_code
+
+
+@pytest.mark.asyncio
+async def test_open_pool_ledger_works_for_incompatible_protocol_version(pool_ledger_config, pool_name):
+    await pool.set_protocol_version(1)
+
+    with pytest.raises(IndyError) as e:
+        await pool.open_pool_ledger(pool_name, None)
+
+    assert ErrorCode.PoolGenesisTransactionsIncompatibleProtocolVersion == e.value.error_code
