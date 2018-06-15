@@ -42,13 +42,10 @@ public class OpenWalletTest extends IndyIntegrationTest {
 
 
 	@Test
-	@Ignore
 	public void testOpenWalletWorksForEbcryptedWalletChangingCredentials() throws Exception {
 		Wallet.createWallet(POOL, "ForEbcryptedWalletChangingCredentials", TYPE, null, CREDENTIALS).get();
 
 		Wallet wallet = Wallet.openWallet("ForEbcryptedWalletChangingCredentials", null, "{\"key\": \"key\", \"rekey\": \"other_key\"}").get();
-		assertNotNull(wallet);
-
 		wallet.closeWallet().get();
 
 		wallet = Wallet.openWallet("ForEbcryptedWalletChangingCredentials", null, "{\"key\": \"other_key\"}").get();
@@ -66,7 +63,7 @@ public class OpenWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testOpenWalletWorksForNotCreatedWallet() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(IOException.class));
+		thrown.expectCause(isA(WalletNotFoundException.class));
 
 		Wallet.openWallet("openWalletWorksForNotCreatedWallet", null, CREDENTIALS).get();
 	}

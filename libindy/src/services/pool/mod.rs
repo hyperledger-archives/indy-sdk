@@ -15,8 +15,9 @@ extern crate rmp_serde;
 extern crate indy_crypto;
 
 
-use self::byteorder::{ByteOrder, LittleEndian};
+use self::byteorder::{ByteOrder, LittleEndian, WriteBytesExt, ReadBytesExt};
 use self::rust_base58::FromBase58;
+use std::str::from_utf8;
 use self::time::{Duration, Tm};
 use serde_json;
 use serde_json::Value as SJsonValue;
@@ -26,9 +27,10 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::{fmt, fs, io, thread};
 use std::fmt::Debug;
-use std::io::{BufRead, Write};
+use std::io::{Read, BufRead, Write};
 use std::ops::{Add, Sub};
 
+use api::ledger::{CustomFree, CustomTransactionParser};
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use commands::pool::PoolCommand;
@@ -43,12 +45,17 @@ use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
 use self::indy_crypto::bls::VerKey;
 use std::path::PathBuf;
+use std::sync::Mutex;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 pub struct PoolService {
     pending_pools: RefCell<HashMap<i32, Pool>>,
     open_pools: RefCell<HashMap<i32, Pool>>,
+}
+
+lazy_static! {
+    static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new());
 }
 
 struct Pool {
@@ -198,7 +205,7 @@ impl PoolWorker {
     }
 
     fn init_catchup(&mut self, refresh_cmd_id: Option<i32>) -> Result<(), PoolError> {
-        let mt = PoolWorker::_restore_merkle_tree_from_pool_name(self.name.as_str())?;
+        let mt = PoolWorker::restore_merkle_tree_from_pool_name(self.name.as_str())?;
         if mt.count() == 0 {
             return Err(PoolError::CommonError(
                 CommonError::InvalidState("Invalid Genesis Transaction file".to_string())));
@@ -210,6 +217,7 @@ impl PoolWorker {
             is_refresh: refresh_cmd_id.is_some(),
             pool_id: self.pool_id,
             timeout: time::now_utc().add(Duration::seconds(catchup::CATCHUP_ROUND_TIMEOUT)),
+            pool_name: self.name.clone(),
             ..Default::default()
         };
         self.handler = PoolWorkerHandler::CatchupHandler(catchup_handler);
@@ -249,26 +257,26 @@ impl PoolWorker {
     }
 
     fn process_actions(&mut self, actions: Vec<ZMQLoopAction>) -> Result<(), PoolError> {
-        for action in &actions {
-            match action {
-                &ZMQLoopAction::Terminate(cmd_id) => {
+        for action in actions {
+            match action  {
+                ZMQLoopAction::Terminate(cmd_id) => {
                     let res = self.handler.flush_requests(Err(PoolError::Terminate));
                     if cmd_id >= 0 {
                         CommandExecutor::instance().send(Command::Pool(PoolCommand::CloseAck(cmd_id, res)))?;
                     }
                     return Err(PoolError::Terminate);
                 }
-                &ZMQLoopAction::Refresh(cmd_id) => {
+                ZMQLoopAction::Refresh(cmd_id) => {
                     self.refresh(cmd_id)?;
                 }
-                &ZMQLoopAction::MessageToProcess(ref msg) => {
+                ZMQLoopAction::MessageToProcess(ref msg) => {
                     if let Some(new_mt) = self.handler.process_msg(&msg.message, msg.node_idx)? {
                         self.handler.flush_requests(Ok(()))?;
                         self.handler = PoolWorkerHandler::TransactionHandler(Default::default());
                         self.connect_to_known_nodes(Some(&new_mt))?;
                     }
                 }
-                &ZMQLoopAction::RequestToSend(ref req) => {
+                ZMQLoopAction::RequestToSend(ref req) => {
                     self.handler.send_request(req.request.as_str(), req.id).or_else(|err| {
                         CommandExecutor::instance()
                             .send(Command::Ledger(LedgerCommand::SubmitAck(req.id, Err(err))))
@@ -277,7 +285,7 @@ impl PoolWorker {
                             })
                     })?;
                 }
-                &ZMQLoopAction::Timeout => {
+                ZMQLoopAction::Timeout => {
                     self.handler.process_timeout()?;
                 }
             }
@@ -357,26 +365,13 @@ impl PoolWorker {
 
 
     fn _restore_merkle_tree_from_file(txn_file: &str) -> Result<MerkleTree, PoolError> {
-        PoolWorker::_restore_merkle_tree(&PathBuf::from(txn_file))
+        PoolWorker::_restore_merkle_tree_from_genesis(&PathBuf::from(txn_file))
     }
 
-    fn _restore_merkle_tree_from_pool_name(pool_name: &str) -> Result<MerkleTree, PoolError> {
-        let mut p = EnvironmentUtils::pool_path(pool_name);
-        //TODO firstly try to deserialize merkle tree
-        p.push(pool_name);
-        p.set_extension("txn");
-
-        if !p.exists() {
-            return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)));
-        }
-
-        PoolWorker::_restore_merkle_tree(&p)
-    }
-
-    fn _restore_merkle_tree(file_mame: &PathBuf) -> Result<MerkleTree, PoolError> {
+    fn _restore_merkle_tree_from_genesis(file_name: &PathBuf) -> Result<MerkleTree, PoolError> {
         let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
 
-        let f = fs::File::open(file_mame).map_err(map_err_trace!())?;
+        let f = fs::File::open(file_name).map_err(map_err_trace!())?;
 
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
@@ -389,6 +384,136 @@ impl PoolWorker {
             mt.append(bytes).map_err(map_err_trace!())?;
         }
         Ok(mt)
+    }
+
+    fn _restore_merkle_tree_from_cache(file_name: &PathBuf) -> Result<MerkleTree, PoolError> {
+        let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
+
+        let mut f = fs::File::open(file_name).map_err(map_err_trace!())?;
+
+        while let Ok(bytes) = f.read_u64::<LittleEndian>().map_err(CommonError::IOError).map_err(PoolError::from) {
+            let mut buf = vec![0; bytes as usize];
+            f.read(buf.as_mut()).map_err(map_err_trace!())?;
+            mt.append(buf.to_vec()).map_err(map_err_trace!())?;
+        }
+        Ok(mt)
+    }
+
+    pub fn restore_merkle_tree_from_pool_name(pool_name: &str) -> Result<MerkleTree, PoolError> {
+        let mut p = EnvironmentUtils::pool_path(pool_name);
+
+        let mut p_stored = p.clone();
+        p_stored.push("stored");
+        p_stored.set_extension("btxn");
+
+        if !p_stored.exists() {
+            p.push(pool_name);
+            p.set_extension("txn");
+
+            if !p.exists() {
+                return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)));
+            }
+
+            PoolWorker::_restore_merkle_tree_from_genesis(&p)
+        } else {
+            PoolWorker::_restore_merkle_tree_from_cache(&p_stored)
+        }
+    }
+
+    fn _parse_txn_from_json(txn: &[u8]) -> Result<Vec<u8>, CommonError> {
+        let txn_str = from_utf8(txn).map_err(|_| CommonError::InvalidStructure(format!("Can't parse valid UTF-8 string from this array: {:?}", txn)))?;
+
+        if txn_str.trim().is_empty() {
+            return Ok(vec![]);
+        }
+
+        let genesis_txn: SJsonValue = serde_json::from_str(txn_str.trim())
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
+        rmp_serde::encode::to_vec_named(&genesis_txn)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))
+    }
+
+    pub fn dump_new_txns(pool_name: &str, txns: &Vec<Vec<u8>>) -> Result<(), PoolError>{
+        let mut p = EnvironmentUtils::pool_path(pool_name);
+
+        p.push("stored");
+        p.set_extension("btxn");
+        if !p.exists() {
+            PoolWorker::_dump_genesis_to_stored(&p, pool_name)?;
+        }
+
+        let mut file = fs::OpenOptions::new().append(true).open(p)
+            .map_err(|e| CommonError::IOError(e))
+            .map_err(map_err_err!())?;
+
+        PoolWorker::_dump_vec_to_file(txns, &mut file)
+    }
+
+    fn _dump_genesis_to_stored(p: &PathBuf, pool_name: &str) -> Result<(), PoolError> {
+        let mut file = fs::File::create(p)
+            .map_err(|e| CommonError::IOError(e))
+            .map_err(map_err_err!())?;
+
+        let mut p_genesis = EnvironmentUtils::pool_path(pool_name);
+        p_genesis.push(pool_name);
+        p_genesis.set_extension("txn");
+
+        if !p_genesis.exists() {
+            return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)));
+        }
+        
+        let genesis_vec = PoolWorker::_genesis_to_binary(&p_genesis)?;
+        PoolWorker::_dump_vec_to_file(&genesis_vec, &mut file)
+    }
+
+    fn _dump_vec_to_file(v: &Vec<Vec<u8>>, file : &mut fs::File) -> Result<(), PoolError> {
+        v.into_iter().map(|vec| {
+            file.write_u64::<LittleEndian>(vec.len() as u64).map_err(map_err_trace!())?;
+            file.write_all(vec).map_err(map_err_trace!())
+        }).fold(Ok(()), |acc, next| {
+            match (acc, next) {
+                (Err(e), _) => Err(e),
+                (_, Err(e)) => Err(PoolError::CommonError(CommonError::IOError(e))),
+                _ => Ok(()),
+            }
+        })
+    }
+
+    fn _genesis_to_binary(p: &PathBuf) -> Result<Vec<Vec<u8>>, PoolError> {
+        let f = fs::File::open(p).map_err(map_err_trace!())?;
+        let reader = io::BufReader::new(&f);
+        reader
+            .lines()
+            .into_iter()
+            .map(|res| {
+                let line = res.map_err(map_err_trace!())?;
+                PoolWorker::_parse_txn_from_json(line.trim().as_bytes()).map_err(PoolError::from).map_err(map_err_err!())
+            })
+            .fold(Ok(Vec::new()), |acc, next| {
+                match (acc, next) {
+                    (Err(e), _) | (_, Err(e)) => Err(e),
+                    (Ok(mut acc), Ok(res)) => {
+                        let mut vec = vec![];
+                        vec.append(&mut acc);
+                        vec.push(res);
+                        Ok(vec)
+                    }
+                }
+            })
+    }
+
+    pub fn drop_saved_txns(pool_name: &str) -> Result<(), PoolError> {
+        warn!("Cache is invalid -- dropping it!");
+        let mut p = EnvironmentUtils::pool_path(pool_name);
+
+        p.push("stored");
+        p.set_extension("btxn");
+        if p.exists() {
+            fs::remove_file(p).map_err(CommonError::IOError).map_err(PoolError::from)?;
+            Ok(())
+        } else {
+            Err(PoolError::CommonError(CommonError::InvalidState("Can't recover to genesis -- no txns stored. Possible problems in genesis txns.".to_string())))
+        }
     }
 
     fn get_f(cnt: usize) -> usize {
@@ -418,6 +543,7 @@ impl Pool {
             handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
                 initiate_cmd_id: cmd_id,
                 pool_id,
+                pool_name: name.to_string(),
                 ..Default::default()
             }),
         };
@@ -663,6 +789,26 @@ impl PoolService {
         Ok(cmd_id)
     }
 
+    pub fn register_sp_parser(txn_type: &str,
+                              parser: CustomTransactionParser, free: CustomFree) -> Result<(), PoolError> {
+        if transaction_handler::REQUESTS_FOR_STATE_PROOFS.contains(&txn_type) {
+            return Err(PoolError::CommonError(CommonError::InvalidStructure(
+                format!("Try to override StateProof parser for default TXN_TYPE {}", txn_type))));
+        }
+        REGISTERED_SP_PARSERS.lock()
+            .map(|mut map| {
+                map.insert(txn_type.to_owned(), (parser, free));
+            })
+            .map_err(|_| PoolError::CommonError(CommonError::InvalidState(
+                "Can't register new SP parser: mutex lock error".to_owned())))
+    }
+
+    pub fn get_sp_parser(txn_type: &str) -> Option<(CustomTransactionParser, CustomFree)> {
+        REGISTERED_SP_PARSERS.lock().ok().and_then(|map| {
+            map.get(txn_type).map(Clone::clone)
+        })
+    }
+
     pub fn close(&self, handle: i32) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
         self.open_pools.try_borrow_mut().map_err(CommonError::from)?
@@ -868,7 +1014,10 @@ mod tests {
                 cmd_sock: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
                 open_cmd_id: 0,
                 name: "".to_string(),
-                handler: PoolWorkerHandler::CatchupHandler(Default::default()),
+                handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
+                    timeout: time::now_utc().add(Duration::seconds(2)),
+                    ..Default::default()
+                }),
             }
         }
     }
@@ -892,7 +1041,7 @@ mod tests {
         f.flush().unwrap();
         f.sync_all().unwrap();
 
-        let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
+        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
 
         assert_eq!(merkle_tree.count(), 2, "test restored MT size");
         assert_eq!(merkle_tree.root_hash_hex(), "ae7fb19d399b0b03ed298285d0da19ee6c6ba9ed7c063c95228c435d7ff97b4d", "test restored MT root hash");
@@ -910,6 +1059,50 @@ mod tests {
         let emulator_msgs: Vec<String> = handle.join().unwrap();
         assert_eq!(1, emulator_msgs.len());
         assert_eq!("pi", emulator_msgs[0]);
+    }
+    
+    #[test]
+    pub fn pool_worker_works_for_deserialize_cache() {
+        serde_json::from_str::<NodeTransaction>(NODE1).unwrap();
+        serde_json::from_str::<NodeTransaction>(NODE2).unwrap();
+
+        let node1: NodeTransactionV0 = serde_json::from_str(NODE1).unwrap();
+        let node2: NodeTransactionV0 = serde_json::from_str(NODE2).unwrap();
+
+        let txn1_src = format!("{{\"data\":{{\"alias\":\"{}\",\"node_ip\":\"{}\",\"node_port\":{},\"services\":{:?}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node1.data.alias, node1.data.node_ip.clone().unwrap(), node1.data.node_port.clone().unwrap(), node1.data.services.clone().unwrap(), node1.dest, node1.identifier, node1.txn_id.clone().unwrap());
+        let txn2_src = format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{},\"node_ip\":\"{}\",\"node_port\":{}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node1.data.alias, node1.data.client_ip.clone().unwrap(), node1.data.client_port.clone().unwrap(), node1.data.node_ip.clone().unwrap(), node1.data.node_port.unwrap(), node1.dest, node1.identifier, node1.txn_id.clone().unwrap());
+        let txn3_src = format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node2.data.alias, node2.data.client_ip.clone().unwrap(), node2.data.client_port.clone().unwrap(), node2.dest, node2.identifier, node2.txn_id.clone().unwrap());
+        let txn4_src = format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{},\"node_ip\":\"{}\",\"node_port\":{},\"services\":{:?}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node2.data.alias, node2.data.client_ip.clone().unwrap(), node2.data.client_port.clone().unwrap(), node2.data.node_ip.clone().unwrap(), node2.data.node_port.clone().unwrap(), node2.data.services.clone().unwrap(), node2.dest, node2.identifier, node2.txn_id.clone().unwrap());
+
+        let txns = format!("{}\n{}\n{}\n{}", txn1_src, txn2_src, txn3_src, txn4_src);
+
+        let txn1_json: serde_json::Value = serde_json::from_str(&txn1_src).unwrap();
+        let txn2_json: serde_json::Value = serde_json::from_str(&txn2_src).unwrap();
+        let txn3_json: serde_json::Value = serde_json::from_str(&txn3_src).unwrap();
+        let txn4_json: serde_json::Value = serde_json::from_str(&txn4_src).unwrap();
+
+        let pool_cache = vec![rmp_serde::to_vec_named(&txn1_json).unwrap(),
+                             rmp_serde::to_vec_named(&txn2_json).unwrap(),
+                             rmp_serde::to_vec_named(&txn3_json).unwrap(),
+                             rmp_serde::to_vec_named(&txn4_json).unwrap()];
+
+        let pool_name = "test";
+        let mut path = EnvironmentUtils::pool_path(pool_name);
+        fs::create_dir_all(path.as_path()).unwrap();
+        path.push("stored");
+        path.set_extension("btxn");
+        let mut f = fs::File::create(path.as_path()).unwrap();
+        pool_cache.iter().for_each(|vec| {
+            f.write_u64::<LittleEndian>(vec.len() as u64).unwrap();
+            f.write_all(vec).unwrap();
+        });
+
+        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
+        let node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
     }
 
     #[test]
@@ -939,7 +1132,7 @@ mod tests {
         f.flush().unwrap();
         f.sync_all().unwrap();
 
-        let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
+        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
         let node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
 
         assert_eq!(2, node_state.len());
@@ -974,7 +1167,7 @@ mod tests {
         f.flush().unwrap();
         f.sync_all().unwrap();
 
-        let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
+        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
         let node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
 
         assert_eq!(2, node_state.len());

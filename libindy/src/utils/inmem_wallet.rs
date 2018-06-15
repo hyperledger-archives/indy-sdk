@@ -1,66 +1,55 @@
 extern crate libc;
 extern crate time;
 extern crate indy_crypto;
+extern crate serde_json;
 
 use api::ErrorCode;
 use utils::cstring::CStringUtils;
 use utils::sequence::SequenceUtils;
 
 use self::libc::c_char;
-use self::time::Timespec;
 
 use std::collections::HashMap;
 use std::ffi::CString;
 use std::sync::Mutex;
-use std::ops::Sub;
-
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
-
-#[derive(Deserialize)]
-struct InmemWalletRuntimeConfig {
-    freshness_time: i64
-}
-
-impl<'a> JsonDecodable<'a> for InmemWalletRuntimeConfig {}
-
-impl Default for InmemWalletRuntimeConfig {
-    fn default() -> Self {
-        InmemWalletRuntimeConfig { freshness_time: 1000 }
-    }
-}
 
 #[derive(Debug)]
 struct InmemWalletContext {
-    name: String,
-    freshness_time: i64
+    name: String
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct InmemWalletRecord {
-    key: String,
-    value: String,
-    time_created: Timespec
+    type_: CString,
+    id: CString,
+    value: Vec<u8>,
+    tags: CString
 }
 
-#[derive(Debug, Serialize)]
-pub struct InmemWalletJSONValue {
-    pub key: String,
-    pub value: String
-}
-
-#[derive(Debug, Serialize)]
-pub struct InmemWalletJSONValues {
-    pub values: Vec<InmemWalletJSONValue>
-}
-
-impl JsonEncodable for InmemWalletJSONValues {}
-
-lazy_static! {
-    static ref INMEM_WALLETS: Mutex<HashMap<String, HashMap<String, InmemWalletRecord>>> = Default::default();
+#[derive(Debug, Clone)]
+struct InmemWalletEntity {
+    metadata: CString,
+    records: HashMap<String, InmemWalletRecord>
 }
 
 lazy_static! {
-    static ref INMEM_WALLET_HANDLES: Mutex<HashMap<i32, InmemWalletContext>> = Default::default();
+    static ref INMEM_WALLETS: Mutex<HashMap<String, InmemWalletEntity>> = Default::default();
+}
+
+lazy_static! {
+    static ref INMEM_OPEN_WALLETS: Mutex<HashMap<i32, InmemWalletContext>> = Default::default();
+}
+
+lazy_static! {
+    static ref ACTIVE_METADATAS: Mutex<HashMap<i32, CString>> = Default::default();
+}
+
+lazy_static! {
+    static ref ACTIVE_RECORDS: Mutex<HashMap<i32, InmemWalletRecord>> = Default::default();
+}
+
+lazy_static! {
+    static ref ACTIVE_SEARCHES: Mutex<HashMap<i32, Vec<InmemWalletRecord>,>> = Default::default();
 }
 
 pub struct InmemWallet {}
@@ -68,31 +57,27 @@ pub struct InmemWallet {}
 impl InmemWallet {
     pub extern "C" fn create(name: *const c_char,
                              _: *const c_char,
-                             _: *const c_char) -> ErrorCode {
+                             _: *const c_char,
+                             metadata: *const c_char) -> ErrorCode {
         check_useful_c_str!(name, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(metadata, ErrorCode::CommonInvalidStructure);
 
         let mut wallets = INMEM_WALLETS.lock().unwrap();
-
         if wallets.contains_key(&name) {
             // Invalid state as "already exists" case must be checked on service layer
             return ErrorCode::CommonInvalidState;
         }
-        wallets.insert(name.clone(), HashMap::new());
+        wallets.insert(name.clone(), InmemWalletEntity { metadata: CString::new(metadata).unwrap(), records: HashMap::new() });
+
         ErrorCode::Success
     }
 
     pub extern "C" fn open(name: *const c_char,
                            _: *const c_char,
-                           runtime_config: *const c_char,
+                           _: *const c_char,
                            _: *const c_char,
                            handle: *mut i32) -> ErrorCode {
         check_useful_c_str!(name, ErrorCode::CommonInvalidStructure);
-        check_useful_opt_c_str!(runtime_config, ErrorCode::CommonInvalidStructure);
-
-        let runtime_config = match runtime_config {
-            Some(config) => InmemWalletRuntimeConfig::from_json(config.as_str()).unwrap(), // FIXME: parse error!!!
-            None => InmemWalletRuntimeConfig::default()
-        };
 
         let wallets = INMEM_WALLETS.lock().unwrap();
 
@@ -100,24 +85,32 @@ impl InmemWallet {
             return ErrorCode::CommonInvalidState;
         }
 
-        let mut handles = INMEM_WALLET_HANDLES.lock().unwrap();
+        let mut handles = INMEM_OPEN_WALLETS.lock().unwrap();
         let xhandle = SequenceUtils::get_next_id();
         handles.insert(xhandle, InmemWalletContext {
-            name: name,
-            freshness_time: runtime_config.freshness_time
+            name,
         });
 
         unsafe { *handle = xhandle };
         ErrorCode::Success
     }
 
-    pub extern "C" fn set(xhandle: i32,
-                          key: *const c_char,
-                          value: *const c_char) -> ErrorCode {
-        check_useful_c_str!(key, ErrorCode::CommonInvalidStructure);
-        check_useful_c_str!(value, ErrorCode::CommonInvalidStructure);
+    fn build_record_id(type_: &str, id: &str) -> String {
+        format!("{}-{}", type_, id)
+    }
 
-        let handles = INMEM_WALLET_HANDLES.lock().unwrap();
+    pub extern "C" fn add_record(xhandle: i32,
+                                 type_: *const c_char,
+                                 id: *const c_char,
+                                 value: *const u8,
+                                 value_len: usize,
+                                 tags_json: *const c_char) -> ErrorCode {
+        check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
+        check_useful_c_byte_array!(value, value_len, ErrorCode::CommonInvalidStructure, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(tags_json, ErrorCode::CommonInvalidStructure);
+
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
@@ -133,20 +126,25 @@ impl InmemWallet {
 
         let wallet = wallets.get_mut(&wallet_context.name).unwrap();
 
-        wallet.insert(key.clone(), InmemWalletRecord {
-            key: key,
-            value: value,
-            time_created: time::get_time()
+        wallet.records.insert(InmemWallet::build_record_id(&type_, &id), InmemWalletRecord {
+            type_: CString::new(type_).unwrap(),
+            id: CString::new(id).unwrap(),
+            value,
+            tags: CString::new(tags_json).unwrap(),
         });
         ErrorCode::Success
     }
 
-    pub extern "C" fn get(xhandle: i32,
-                          key: *const c_char,
-                          value_ptr: *mut *const c_char) -> ErrorCode {
-        check_useful_c_str!(key, ErrorCode::CommonInvalidStructure);
+    pub extern "C" fn update_record_value(xhandle: i32,
+                                          type_: *const c_char,
+                                          id: *const c_char,
+                                          joined_value: *const u8,
+                                          joined_value_len: usize) -> ErrorCode {
+        check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
+        check_useful_c_byte_array!(joined_value, joined_value_len, ErrorCode::CommonInvalidStructure, ErrorCode::CommonInvalidStructure);
 
-        let handles = INMEM_WALLET_HANDLES.lock().unwrap();
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
@@ -154,29 +152,32 @@ impl InmemWallet {
 
         let wallet_context = handles.get(&xhandle).unwrap();
 
-        let wallets = INMEM_WALLETS.lock().unwrap();
+        let mut wallets = INMEM_WALLETS.lock().unwrap();
 
         if !wallets.contains_key(&wallet_context.name) {
             return ErrorCode::CommonInvalidState;
         }
 
-        let wallet = wallets.get(&wallet_context.name).unwrap();
+        let wallet = wallets.get_mut(&wallet_context.name).unwrap();
 
-        if !wallet.contains_key(&key) {
-            return ErrorCode::WalletNotFoundError;
+        match wallet.records.get_mut(&InmemWallet::build_record_id(&type_, &id)) {
+            Some(ref mut record) => record.value = joined_value,
+            None => return ErrorCode::WalletItemNotFound
         }
 
-        let ref value = wallet.get(&key).unwrap().value;
-        unsafe { *value_ptr = CString::new(value.as_str()).unwrap().into_raw(); }
         ErrorCode::Success
     }
 
-    pub extern "C" fn get_not_expired(xhandle: i32,
-                                      key: *const c_char,
-                                      value_ptr: *mut *const c_char) -> ErrorCode {
-        check_useful_c_str!(key, ErrorCode::CommonInvalidStructure);
+    pub extern "C" fn get_record(xhandle: i32,
+                                 type_: *const c_char,
+                                 id: *const c_char,
+                                 options_json: *const c_char,
+                                 handle: *mut i32) -> ErrorCode {
+        check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(options_json, ErrorCode::CommonInvalidStructure);
 
-        let handles = INMEM_WALLET_HANDLES.lock().unwrap();
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
@@ -192,26 +193,297 @@ impl InmemWallet {
 
         let wallet = wallets.get(&wallet_context.name).unwrap();
 
-        if !wallet.contains_key(&key) {
-            return ErrorCode::WalletNotFoundError;
+        let key = InmemWallet::build_record_id(&type_, &id);
+
+        if !wallet.records.contains_key(&key) {
+            return ErrorCode::WalletItemNotFound;
         }
 
-        let ref record = wallet.get(&key).unwrap();
+        let record = wallet.records.get(&key).unwrap();
 
-        if time::get_time().sub(record.time_created).num_seconds() > wallet_context.freshness_time {
-            return ErrorCode::WalletNotFoundError;
-        }
+        let record_handle = SequenceUtils::get_next_id();
 
-        unsafe { *value_ptr = CString::new(record.value.as_str()).unwrap().into_raw(); }
+        let mut handles = ACTIVE_RECORDS.lock().unwrap();
+        handles.insert(record_handle, record.clone());
+
+        unsafe { *handle = record_handle };
+
         ErrorCode::Success
     }
 
-    pub extern "C" fn list(xhandle: i32,
-                           key_prefix: *const c_char,
-                           values_json_ptr: *mut *const c_char) -> ErrorCode {
-        check_useful_c_str!(key_prefix, ErrorCode::CommonInvalidStructure);
+    pub extern "C" fn get_record_id(xhandle: i32,
+                                    record_handle: i32,
+                                    id_ptr: *mut *const c_char) -> ErrorCode {
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
 
-        let handles = INMEM_WALLET_HANDLES.lock().unwrap();
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let handles = ACTIVE_RECORDS.lock().unwrap();
+
+        if !handles.contains_key(&record_handle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let record = handles.get(&record_handle).unwrap();
+
+        unsafe { *id_ptr = record.id.as_ptr(); }
+
+        ErrorCode::Success
+    }
+
+    pub extern "C" fn get_record_type(xhandle: i32,
+                                      record_handle: i32,
+                                      type_ptr: *mut *const c_char) -> ErrorCode {
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let handles = ACTIVE_RECORDS.lock().unwrap();
+
+        if !handles.contains_key(&record_handle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let record = handles.get(&record_handle).unwrap();
+
+        unsafe { *type_ptr = record.type_.as_ptr(); }
+
+        ErrorCode::Success
+    }
+
+    pub extern "C" fn get_record_value(xhandle: i32,
+                                       record_handle: i32,
+                                       value_ptr: *mut *const u8,
+                                       value_len: *mut usize) -> ErrorCode {
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let handles = ACTIVE_RECORDS.lock().unwrap();
+
+        if !handles.contains_key(&record_handle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let record = handles.get(&record_handle).unwrap();
+
+        unsafe { *value_ptr = record.value.as_ptr() as *const u8; }
+        unsafe { *value_len = record.value.len() as usize; }
+
+        ErrorCode::Success
+    }
+
+    pub extern "C" fn get_record_tags(xhandle: i32,
+                                      record_handle: i32,
+                                      tags_json_ptr: *mut *const c_char) -> ErrorCode {
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let handles = ACTIVE_RECORDS.lock().unwrap();
+
+        if !handles.contains_key(&record_handle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let record = handles.get(&record_handle).unwrap();
+
+        unsafe { *tags_json_ptr = record.tags.as_ptr(); }
+
+        ErrorCode::Success
+    }
+
+
+    pub extern "C" fn free_record(xhandle: i32, record_handle: i32) -> ErrorCode {
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let mut handles = ACTIVE_RECORDS.lock().unwrap();
+
+        if !handles.contains_key(&record_handle) {
+            return ErrorCode::CommonInvalidState;
+        }
+        handles.remove(&record_handle);
+
+        ErrorCode::Success
+    }
+
+    pub extern "C" fn add_record_tags(xhandle: i32,
+                                      type_: *const c_char,
+                                      id: *const c_char,
+                                      tags_json: *const c_char) -> ErrorCode {
+        check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(tags_json, ErrorCode::CommonInvalidStructure);
+
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let wallet_context = handles.get(&xhandle).unwrap();
+
+        let mut wallets = INMEM_WALLETS.lock().unwrap();
+
+        if !wallets.contains_key(&wallet_context.name) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let wallet = wallets.get_mut(&wallet_context.name).unwrap();
+
+        match wallet.records.get_mut(&InmemWallet::build_record_id(&type_, &id)) {
+            Some(ref mut record) => {
+                let curr_tags_json =record.tags.to_str().unwrap().to_string() ;
+
+                let new_tags_result = serde_json::from_str::<HashMap<String, String>>(&tags_json);
+                let curr_tags_result = serde_json::from_str::<HashMap<String, String>>(&curr_tags_json);
+
+                let (new_tags, mut curr_tags) = match (new_tags_result, curr_tags_result) {
+                    (Ok(new), Ok(cur)) => (new, cur),
+                    _ => return ErrorCode::CommonInvalidStructure
+                };
+
+                curr_tags.extend(new_tags);
+
+                let new_tags_json = serde_json::to_string(&curr_tags).unwrap();
+
+                record.tags = CString::new(new_tags_json).unwrap();
+            }
+            None => return ErrorCode::WalletItemNotFound
+        }
+
+        ErrorCode::Success
+    }
+
+    pub extern "C" fn update_record_tags(xhandle: i32,
+                                         type_: *const c_char,
+                                         id: *const c_char,
+                                         tags_json: *const c_char) -> ErrorCode {
+        check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(tags_json, ErrorCode::CommonInvalidStructure);
+
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let wallet_context = handles.get(&xhandle).unwrap();
+
+        let mut wallets = INMEM_WALLETS.lock().unwrap();
+
+        if !wallets.contains_key(&wallet_context.name) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let wallet = wallets.get_mut(&wallet_context.name).unwrap();
+
+        match wallet.records.get_mut(&InmemWallet::build_record_id(&type_, &id)) {
+            Some(ref mut record) => record.tags = CString::new(tags_json).unwrap(),
+            None => return ErrorCode::WalletItemNotFound
+        }
+
+        ErrorCode::Success
+    }
+
+    pub extern "C" fn delete_record_tags(xhandle: i32,
+                                         type_: *const c_char,
+                                         id: *const c_char,
+                                         tag_names: *const c_char) -> ErrorCode {
+        check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(tag_names, ErrorCode::CommonInvalidStructure);
+
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let wallet_context = handles.get(&xhandle).unwrap();
+
+        let mut wallets = INMEM_WALLETS.lock().unwrap();
+
+        if !wallets.contains_key(&wallet_context.name) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let wallet = wallets.get_mut(&wallet_context.name).unwrap();
+
+        match wallet.records.get_mut(&InmemWallet::build_record_id(&type_, &id)) {
+            Some(ref mut record) => {
+                let curr_tags_json = record.tags.to_str().unwrap().to_string() ;
+
+                let mut curr_tags_res = serde_json::from_str::<HashMap<String, String>>(&curr_tags_json);
+                let tags_names_to_delete = serde_json::from_str::<Vec<String>>(&tag_names);
+
+                let (mut curr_tags, tags_delete) = match (curr_tags_res, tags_names_to_delete) {
+                    (Ok(cur), Ok(to_delete)) => (cur, to_delete),
+                    _ => return ErrorCode::CommonInvalidStructure
+                };
+
+                for tag_name in tags_delete {
+                    curr_tags.remove(&tag_name);
+                }
+
+                let new_tags_json = serde_json::to_string(&curr_tags).unwrap();
+
+                record.tags = CString::new(new_tags_json).unwrap()
+            }
+            None => return ErrorCode::WalletItemNotFound
+        }
+
+        ErrorCode::Success
+    }
+
+    pub extern "C" fn delete_record(xhandle: i32,
+                                    type_: *const c_char,
+                                    id: *const c_char) -> ErrorCode {
+        check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
+
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let wallet_context = handles.get(&xhandle).unwrap();
+
+        let mut wallets = INMEM_WALLETS.lock().unwrap();
+
+        if !wallets.contains_key(&wallet_context.name) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let wallet = wallets.get_mut(&wallet_context.name).unwrap();
+
+        let key = InmemWallet::build_record_id(&type_, &id);
+
+        if !wallet.records.contains_key(&key) {
+            return ErrorCode::WalletItemNotFound;
+        }
+
+        wallet.records.remove(&key);
+
+        ErrorCode::Success
+    }
+
+    pub extern "C" fn get_storage_metadata(xhandle: i32, metadata_ptr: *mut *const c_char, metadata_handle: *mut i32) -> ErrorCode {
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
@@ -227,26 +499,197 @@ impl InmemWallet {
 
         let wallet = wallets.get(&wallet_context.name).unwrap();
 
+        let metadata = wallet.metadata.clone();
+        let metadata_pointer = metadata.as_ptr();
 
-        let values = InmemWalletJSONValues {
-            values: wallet
-                .keys()
-                .filter(|&ref key| key.starts_with(&key_prefix))
-                .map(|&ref key| InmemWalletJSONValue {
-                    key: key.clone(),
-                    value: wallet.get(key).unwrap().value.clone()
-                })
-                .collect()
+        let handle = SequenceUtils::get_next_id();
+
+        let mut metadatas = ACTIVE_METADATAS.lock().unwrap();
+        metadatas.insert(handle, metadata);
+
+        unsafe { *metadata_ptr = metadata_pointer; }
+        unsafe { *metadata_handle = handle };
+
+        ErrorCode::Success
+    }
+
+    pub extern "C" fn set_storage_metadata(xhandle: i32, metadata: *const c_char) -> ErrorCode {
+        check_useful_c_str!(metadata, ErrorCode::CommonInvalidStructure);
+
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
         }
-            .to_json()
-            .unwrap();
 
-        unsafe { *values_json_ptr = CString::new(values.as_str()).unwrap().into_raw(); }
+        let wallet_context = handles.get(&xhandle).unwrap();
+
+        let mut wallets = INMEM_WALLETS.lock().unwrap();
+
+        if !wallets.contains_key(&wallet_context.name) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let wallet = wallets.get_mut(&wallet_context.name).unwrap();
+
+        wallet.metadata = CString::new(metadata).unwrap();
+
+        ErrorCode::Success
+    }
+
+    pub extern "C" fn free_storage_metadata(xhandle: i32, metadata_handler: i32) -> ErrorCode {
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let mut handles = ACTIVE_METADATAS.lock().unwrap();
+
+        if !handles.contains_key(&metadata_handler) {
+            return ErrorCode::CommonInvalidState;
+        }
+        handles.remove(&metadata_handler);
+
+        ErrorCode::Success
+    }
+
+    pub extern "C" fn search_records(xhandle: i32, type_: *const c_char, _query_json: *const c_char, _options_json: *const c_char, handle: *mut i32) -> ErrorCode {
+        check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
+
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let wallet_context = handles.get(&xhandle).unwrap();
+
+        let wallets = INMEM_WALLETS.lock().unwrap();
+
+        if !wallets.contains_key(&wallet_context.name) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let wallet = wallets.get(&wallet_context.name).unwrap();
+
+        let search_records = wallet.records
+            .iter()
+            .filter(|&(key, _)| key.starts_with(&type_))
+            .map(|(_, value)| value.clone())
+            .collect::<Vec<InmemWalletRecord>>();
+
+        let search_handle = SequenceUtils::get_next_id();
+
+        let mut searches = ACTIVE_SEARCHES.lock().unwrap();
+
+        searches.insert(search_handle, search_records);
+
+        unsafe { *handle = search_handle };
+
+        ErrorCode::Success
+    }
+
+    pub extern "C" fn search_all_records(xhandle: i32, handle: *mut i32) -> ErrorCode {
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let wallet_context = handles.get(&xhandle).unwrap();
+
+        let wallets = INMEM_WALLETS.lock().unwrap();
+
+        if !wallets.contains_key(&wallet_context.name) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let wallet = wallets.get(&wallet_context.name).unwrap();
+
+        let search_records = wallet.records
+            .values()
+            .cloned()
+            .collect::<Vec<InmemWalletRecord>>();
+
+        let search_handle = SequenceUtils::get_next_id();
+
+        let mut searches = ACTIVE_SEARCHES.lock().unwrap();
+
+        searches.insert(search_handle, search_records);
+
+        unsafe { *handle = search_handle };
+
+        ErrorCode::Success
+    }
+
+    pub extern "C" fn get_search_total_count(xhandle: i32, search_handle: i32, count: *mut usize) -> ErrorCode {
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let searches = ACTIVE_SEARCHES.lock().unwrap();
+
+        match searches.get(&search_handle) {
+            Some(records) => {
+                unsafe { *count = records.len() };
+            }
+            None => return ErrorCode::CommonInvalidState
+        }
+
+        ErrorCode::Success
+    }
+
+    pub extern "C" fn fetch_search_next_record(xhandle: i32, search_handle: i32, record_handle: *mut i32) -> ErrorCode {
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let mut searches = ACTIVE_SEARCHES.lock().unwrap();
+
+        match searches.get_mut(&search_handle) {
+            Some(records) => {
+                match records.pop() {
+                    Some(record) => {
+                        let handle = SequenceUtils::get_next_id();
+
+                        let mut handles = ACTIVE_RECORDS.lock().unwrap();
+                        handles.insert(handle, record.clone());
+
+                        unsafe { *record_handle = handle };
+                    }
+                    None => return ErrorCode::WalletItemNotFound
+                }
+            }
+            None => return ErrorCode::CommonInvalidState
+        }
+
+        ErrorCode::Success
+    }
+
+    pub extern "C" fn free_search(xhandle: i32, search_handle: i32) -> ErrorCode {
+        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+
+        if !handles.contains_key(&xhandle) {
+            return ErrorCode::CommonInvalidState;
+        }
+
+        let mut handles = ACTIVE_SEARCHES.lock().unwrap();
+
+        if !handles.contains_key(&search_handle) {
+            return ErrorCode::CommonInvalidState;
+        }
+        handles.remove(&search_handle);
+
         ErrorCode::Success
     }
 
     pub extern "C" fn close(xhandle: i32) -> ErrorCode {
-        let mut handles = INMEM_WALLET_HANDLES.lock().unwrap();
+        let mut handles = INMEM_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
@@ -271,17 +714,11 @@ impl InmemWallet {
         ErrorCode::Success
     }
 
-    pub extern "C" fn free(_: i32,
-                           value: *const c_char) -> ErrorCode {
-        unsafe { CString::from_raw(value as *mut c_char); }
-        ErrorCode::Success
-    }
-
     pub fn cleanup() {
         let mut wallets = INMEM_WALLETS.lock().unwrap();
         wallets.clear();
 
-        let mut handles = INMEM_WALLET_HANDLES.lock().unwrap();
+        let mut handles = INMEM_OPEN_WALLETS.lock().unwrap();
         handles.clear();
     }
 }

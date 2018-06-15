@@ -234,6 +234,7 @@ def linuxTesting(file, env_name, network_name) {
 
         sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
         sh "cp libindy/target/debug/libindy.so wrappers/python"
+        sh "cp libindy/target/debug/libindy.so wrappers/nodejs"
         sh "cp libindy/target/debug/libindy.so cli"
         sh "cp libindy/target/debug/libindy.so libnullpay"
 
@@ -250,6 +251,7 @@ def linuxTesting(file, env_name, network_name) {
 
         stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
         stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
+        stash includes: 'wrappers/nodejs/libindy.so', name: "LibindyNodejsSO${env_name}"
         stash includes: 'cli/libindy.so', name: "LibindyCliSO${env_name}"
         stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
 
@@ -282,6 +284,7 @@ def linuxTesting(file, env_name, network_name) {
                 },
                 "${env_name}-java-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
                 "${env_name}-python-test" : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
+                "${env_name}-nodejs-test" : { linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting) },
                 "${env_name}-cli-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) }
         ])
     }
@@ -335,6 +338,20 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
                 LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug,zmq=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
             '''
         }
+    }
+}
+
+def linuxNodejsTesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyNodejsSO${env_name}"
+    testEnv.inside("--network=${network_name}") {
+        echo "${env_name} Libindy Test: Test nodejs wrapper"
+
+        sh '''
+                cd wrappers/nodejs
+                npm run prepare
+                npm install
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=trace TEST_POOL_IP=10.0.0.2 npm test
+            '''
     }
 }
 

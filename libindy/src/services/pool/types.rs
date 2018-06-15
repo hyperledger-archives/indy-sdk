@@ -8,6 +8,7 @@ use std::cmp::Eq;
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use super::zmq;
+
 use errors::common::CommonError;
 use utils::crypto::verkey_builder::build_full_verkey;
 
@@ -43,10 +44,10 @@ fn string_or_number<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
         },
         Ok(serde_json::Value::Number(n)) => match n.as_u64() {
             Some(num) => Ok(Some(num)),
-            None => Err(serde::de::Error::custom(format!("Invalid Node transaction")))
+            None => Err(serde::de::Error::custom("Invalid Node transaction".to_string()))
         },
         Ok(serde_json::Value::Null) => Ok(None),
-        _ => Err(serde::de::Error::custom(format!("Invalid Node transaction"))),
+        _ => Err(serde::de::Error::custom("Invalid Node transaction".to_string())),
     }
 }
 
@@ -200,8 +201,8 @@ pub struct LedgerStatus {
     pub txnSeqNo: usize,
     pub merkleRoot: String,
     pub ledgerId: u8,
-    pub ppSeqNo: Option<String>,
-    pub viewNo: Option<String>,
+    pub ppSeqNo: Option<u32>,
+    pub viewNo: Option<u32>,
 }
 
 #[allow(non_snake_case)]
@@ -246,7 +247,7 @@ impl CatchupRep {
                 Some(m) => if val < m { min = Some(val) }
             }
         }
-        min.ok_or(CommonError::InvalidStructure(format!("Empty Map")))
+        min.ok_or(CommonError::InvalidStructure("Empty Map".to_string()))
     }
 }
 
@@ -389,6 +390,61 @@ impl Message {
 impl JsonEncodable for Message {}
 
 impl<'a> JsonDecodable<'a> for Message {}
+
+/**
+ Single item to verification:
+ - SP Trie with RootHash
+ - BLS MS
+ - set of key-value to verify
+*/
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ParsedSP {
+    /// encoded SP Trie transferred from Node to Client
+    pub proof_nodes: String,
+    /// RootHash of the Trie, start point for verification. Should be same with appropriate filed in BLS MS data
+    pub root_hash: String,
+    /// entities to verification against current SP Trie
+    pub kvs_to_verify: KeyValuesInSP,
+    /// BLS MS data for verification
+    pub multi_signature: serde_json::Value,
+}
+
+/**
+ Variants of representation for items to verify against SP Trie
+ Right now 2 options are specified:
+ - simple array of key-value pair
+ - whole subtrie
+*/
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[serde(tag = "type")]
+pub enum KeyValuesInSP {
+    Simple(KeyValueSimpleData),
+    SubTrie(KeyValuesSubTrieData),
+}
+
+/**
+ Simple variant of `KeyValuesInSP`.
+
+ All required data already present in parent SP Trie (built from `proof_nodes`).
+ `kvs` can be verified directly in parent trie
+*/
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct KeyValueSimpleData {
+    pub kvs: Vec<(String /* b64-encoded key */, Option<String /* val */>)>
+}
+
+/**
+ Subtrie variant of `KeyValuesInSP`.
+
+ In this case Client (libindy) should construct subtrie and append it into trie based on `proof_nodes`.
+ After this preparation each kv pair can be checked.
+*/
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct KeyValuesSubTrieData {
+    /// base64-encoded common prefix of each pair in `kvs`. Should be used to correct merging initial trie and subtrie
+    pub sub_trie_prefix: Option<String>,
+    pub kvs: Vec<(String /* b64-encoded key_suffix */, Option<String /* val */>)>,
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct PoolConfig {

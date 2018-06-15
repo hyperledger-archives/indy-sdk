@@ -1,6 +1,8 @@
 extern crate indy_crypto;
 extern crate serde_json;
 
+use std::collections::HashMap;
+
 use self::indy_crypto::utils::json::JsonDecodable;
 use errors::common::CommonError;
 use errors::wallet::WalletError;
@@ -128,7 +130,7 @@ impl CryptoCommandExecutor {
                     format!("Invalid KeyInfo json: {}", err.description())))?;
 
         let key = self.crypto_service.create_key(&key_info)?;
-        self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new())?;
 
         let res = key.verkey;
 
@@ -261,9 +263,10 @@ impl CryptoCommandExecutor {
 
         self.wallet_service.get_indy_record::<Key>(wallet_handle, &verkey, &RecordOptions::id())?;
 
-        let tags_json = json!({"metadata": metadata}).to_string();
+        let mut tags = HashMap::new();
+        tags.insert(String::from("metadata"), metadata);
 
-        let res = self.wallet_service.add_indy_record_tags::<Key>(wallet_handle, &verkey, &tags_json)?;
+        let res = self.wallet_service.add_indy_record_tags::<Key>(wallet_handle, &verkey, &tags)?;
 
         debug!("set_key_metadata <<< res: {:?}", res);
 
@@ -279,8 +282,7 @@ impl CryptoCommandExecutor {
 
         let res = self.wallet_service.get_indy_record::<Key>(wallet_handle, &verkey, &RecordOptions::full())?
             .get_tags()
-            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-            .and_then(|tags: serde_json::Value| tags["metadata"].as_str().map(String::from))
+            .and_then(|tags| tags.get("metadata").cloned())
             .ok_or(WalletError::ItemNotFound)?;
 
         debug!("get_key_metadata <<< res: {:?}", res);

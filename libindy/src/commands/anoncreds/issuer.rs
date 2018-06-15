@@ -65,7 +65,7 @@ pub enum IssuerCommand {
         String, // schema json
         String, // tag
         Option<String>, // type
-        String, // config_json
+        Option<String>, // config_json
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     CreateAndStoreRevocationRegistry(
         i32, // wallet handle
@@ -138,7 +138,7 @@ impl IssuerCommandExecutor {
             IssuerCommand::CreateAndStoreCredentialDefinition(wallet_handle, issuer_did, schema_json, tag, type_, config_json, cb) => {
                 info!(target: "issuer_command_executor", "CreateAndStoreCredentialDefinition command received");
                 cb(self.create_and_store_credential_definition(wallet_handle, &issuer_did, &schema_json, &tag,
-                                                               type_.as_ref().map(String::as_str), &config_json));
+                                                               type_.as_ref().map(String::as_str), config_json.as_ref().map(String::as_str)));
             }
             IssuerCommand::CreateAndStoreRevocationRegistry(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json,
                                                             tails_writer_handle, cb) => {
@@ -187,7 +187,7 @@ impl IssuerCommandExecutor {
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize AttributeNames: {:?}", err)))?;
 
         if attrs.is_empty() {
-            return Err(IndyError::CommonError(CommonError::InvalidStructure(format!("List of Schema attributes is empty"))));
+            return Err(IndyError::CommonError(CommonError::InvalidStructure("List of Schema attributes is empty".to_string())));
         }
 
         let schema_id = Schema::schema_id(issuer_did, name, version);
@@ -214,7 +214,7 @@ impl IssuerCommandExecutor {
                                               schema_json: &str,
                                               tag: &str,
                                               type_: Option<&str>,
-                                              config_json: &str) -> Result<(String, String), IndyError> {
+                                              config_json: Option<&str>) -> Result<(String, String), IndyError> {
         debug!("create_and_store_credential_definition >>> wallet_handle: {:?}, issuer_did: {:?}, schema_json: {:?}, tag: {:?}, \
               type_: {:?}, config_json: {:?}", wallet_handle, issuer_did, schema_json, tag, type_, config_json);
 
@@ -223,8 +223,12 @@ impl IssuerCommandExecutor {
         let schema: SchemaV1 = SchemaV1::from(Schema::from_json(schema_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Schema: {:?}", err)))?);
 
-        let cred_def_config: CredentialDefinitionConfig = CredentialDefinitionConfig::from_json(config_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinitionConfig: {:?}", err)))?;
+        let cred_def_config = match config_json {
+            Some(config) =>
+                CredentialDefinitionConfig::from_json(config)
+                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinitionConfig: {:?}", err)))?,
+            None => CredentialDefinitionConfig::default()
+        };
 
         let signature_type = match type_ {
             Some(type_) =>
@@ -262,9 +266,9 @@ impl IssuerCommandExecutor {
             value: cred_key_correctness_proof
         };
 
-        let cred_def_json = self.wallet_service.add_indy_object(wallet_handle, &cred_def_id, &cred_def, "{}")?;
-        self.wallet_service.add_indy_object(wallet_handle, &cred_def_id, &cred_def_priv_key, "{}")?;
-        self.wallet_service.add_indy_object(wallet_handle, &cred_def_id, &cred_def_correctness_proof, "{}")?;
+        let cred_def_json = self.wallet_service.add_indy_object(wallet_handle, &cred_def_id, &cred_def, &HashMap::new())?;
+        self.wallet_service.add_indy_object(wallet_handle, &cred_def_id, &cred_def_priv_key, &HashMap::new())?;
+        self.wallet_service.add_indy_object(wallet_handle, &cred_def_id, &cred_def_correctness_proof, &HashMap::new())?;
 
         self._wallet_set_schema_id(wallet_handle, &cred_def_id, &schema.id)?; // TODO: FIXME
 
@@ -345,11 +349,11 @@ impl IssuerCommandExecutor {
             value: revoc_key_private
         };
 
-        let revoc_reg_def_json = self.wallet_service.add_indy_object(wallet_handle, &rev_reg_id, &revoc_reg_def, "{}")?;
+        let revoc_reg_def_json = self.wallet_service.add_indy_object(wallet_handle, &rev_reg_id, &revoc_reg_def, &HashMap::new())?;
 
-        let revoc_reg_json = self.wallet_service.add_indy_object(wallet_handle, &rev_reg_id, &revoc_reg, "{}")?;
+        let revoc_reg_json = self.wallet_service.add_indy_object(wallet_handle, &rev_reg_id, &revoc_reg, &HashMap::new())?;
 
-        self.wallet_service.add_indy_object(wallet_handle, &rev_reg_id, &revoc_reg_def_priv, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &rev_reg_id, &revoc_reg_def_priv, &HashMap::new())?;
 
         let rev_reg_info = RevocationRegistryInfo {
             id: rev_reg_id.clone(),
@@ -357,7 +361,7 @@ impl IssuerCommandExecutor {
             used_ids: HashSet::new(),
         };
 
-        self.wallet_service.add_indy_object(wallet_handle, &rev_reg_id, &rev_reg_info, "{}")?;
+        self.wallet_service.add_indy_object(wallet_handle, &rev_reg_id, &rev_reg_info, &HashMap::new())?;
 
         debug!("create_and_store_revocation_registry <<< rev_reg_id: {:?}, revoc_reg_def_json: {:?}, revoc_reg_json: {:?}",
                rev_reg_id, revoc_reg_def_json, revoc_reg_json);
@@ -440,7 +444,7 @@ impl IssuerCommandExecutor {
                 rev_reg_info.curr_id = 1 + rev_reg_info.curr_id;
 
                 if rev_reg_info.curr_id > rev_reg_def.value.max_cred_num {
-                    return Err(IndyError::AnoncredsError(AnoncredsError::RevocationRegistryFull(format!("RevocationRegistryAccumulator is full"))));
+                    return Err(IndyError::AnoncredsError(AnoncredsError::RevocationRegistryFull("RevocationRegistryAccumulator is full".to_string())));
                 }
 
                 if rev_reg_def.value.issuance_type == IssuanceType::ISSUANCE_ON_DEMAND {
@@ -448,7 +452,7 @@ impl IssuerCommandExecutor {
                 }
 
                 let blob_storage_reader_handle = blob_storage_reader_handle
-                    .ok_or(IndyError::CommonError(CommonError::InvalidStructure(format!("TailsReaderHandle not found"))))?;
+                    .ok_or(IndyError::CommonError(CommonError::InvalidStructure("TailsReaderHandle not found".to_string())))?;
 
                 let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
                                                                blob_storage_reader_handle,
@@ -674,12 +678,12 @@ impl IssuerCommandExecutor {
 
     // TODO: DELETE IT
     fn _wallet_set_schema_id(&self, wallet_handle: i32, id: &str, schema_id: &str) -> Result<(), WalletError> {
-        self.wallet_service.add_record(wallet_handle, "Indy::SchemaId", id, schema_id, "{}")
+        self.wallet_service.add_record(wallet_handle, &self.wallet_service.add_prefix("SchemaId"), id, schema_id, &HashMap::new())
     }
 
     // TODO: DELETE IT
     fn _wallet_get_schema_id(&self, wallet_handle: i32, key: &str) -> Result<String, IndyError> {
-        let schema_id_record = self.wallet_service.get_record(wallet_handle, "Indy::SchemaId", &key, &RecordOptions::id_value())?;
+        let schema_id_record = self.wallet_service.get_record(wallet_handle, &self.wallet_service.add_prefix("SchemaId"), &key, &RecordOptions::id_value())?;
         Ok(schema_id_record.get_value()
             .ok_or(CommonError::InvalidStructure(format!("SchemaId not found for id: {}", key)))?.to_string())
     }

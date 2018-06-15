@@ -1231,7 +1231,11 @@ Errors: `Common*`
 Builds a GET\_TXN request. Request to get any transaction by its seq\_no.
 
 * `submitterDid`: String - DID of the request submitter.
-* `data`: Number
+* `ledgerType`: String - Type of the ledger the requested transaction belongs to:
+DOMAIN - used default
+POOL
+CONFIG
+* `data`: Requested transaction sequence number as it's stored on Ledger.
 * __->__ `request`: Json
 
 Errors: `Common*`
@@ -1582,8 +1586,12 @@ Creates a new secure wallet with the given unique name.
 Custom types can be registered with indy\_register\_wallet\_type call.
 * `config`: String? - Wallet configuration json. List of supported keys are defined by wallet type.
 if NULL, then default config will be used.
-* `credentials`: String? - Wallet credentials json. List of supported keys are defined by wallet type.
-if NULL, then default config will be used.
+* `credentials`: String? - Wallet credentials json. 
+```
+{
+    "key": "wallet pass phrase"
+}
+```
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
@@ -1603,8 +1611,12 @@ It is impossible to open wallet with the same name more than once.
     ... List of additional supported keys are defined by wallet type.
 }
 ````
-* `credentials`: String? - Wallet credentials json. List of supported keys are defined by wallet type.
-if NULL, then default credentials will be used.
+* `credentials`: String? - Wallet credentials json. 
+```
+{
+    "key": "wallet pass phrase"
+}
+```
 * __->__ `handle`: Handle (Number) - Handle to opened wallet to use in methods that require wallet access.
 
 Errors: `Common*`, `Wallet*`
@@ -1630,8 +1642,12 @@ Errors: `Common*`, `Wallet*`
 Deletes created wallet.
 
 * `name`: String - Name of the wallet to delete.
-* `credentials`: String? - Wallet credentials json. List of supported keys are defined by wallet type.
-if NULL, then default credentials will be used.
+* `credentials`: String? - Wallet credentials json. 
+```
+{
+    "key": "wallet pass phrase"
+}
+```
 * __->__ void
 
 Errors: `Common*`, `Wallet*`

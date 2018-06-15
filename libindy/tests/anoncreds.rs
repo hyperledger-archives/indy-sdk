@@ -24,7 +24,6 @@ use utils::anoncreds::AnoncredsUtils;
 use utils::blob_storage::BlobStorageUtils;
 use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, CREDENTIAL2_ID, CREDENTIAL3_ID, ANONCREDS_COMMON_WALLET};
 use utils::test::TestUtils;
-use utils::types::*;
 
 use indy::api::ErrorCode;
 use utils::inmem_wallet::InmemWallet;
@@ -77,7 +76,7 @@ mod high_cases {
                                                                           &AnoncredsUtils::gvt_schema_json(),
                                                                           TAG_1,
                                                                           None,
-                                                                          &AnoncredsUtils::default_cred_def_config());
+                                                                          Some(&AnoncredsUtils::default_cred_def_config()));
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1598,7 +1597,7 @@ mod medium_cases {
                                                                           &schema,
                                                                           TAG_1,
                                                                           None,
-                                                                          &AnoncredsUtils::default_cred_def_config());
+                                                                          Some(&AnoncredsUtils::default_cred_def_config()));
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1615,7 +1614,7 @@ mod medium_cases {
                                                                           &AnoncredsUtils::gvt_schema_json(),
                                                                           TAG_1,
                                                                           None,
-                                                                          &AnoncredsUtils::default_cred_def_config());
+                                                                          Some(&AnoncredsUtils::default_cred_def_config()));
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1635,7 +1634,7 @@ mod medium_cases {
                                                                           &serde_json::to_string(&schema).unwrap(),
                                                                           TAG_1,
                                                                           None,
-                                                                          &AnoncredsUtils::default_cred_def_config());
+                                                                          Some(&AnoncredsUtils::default_cred_def_config()));
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1650,7 +1649,7 @@ mod medium_cases {
                                                                 &AnoncredsUtils::gvt_schema_json(),
                                                                 TAG_1,
                                                                 Some(SIGNATURE_TYPE),
-                                                                &AnoncredsUtils::default_cred_def_config()).unwrap();
+                                                                Some(&AnoncredsUtils::default_cred_def_config())).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
         }
@@ -1666,7 +1665,7 @@ mod medium_cases {
                                                                           &AnoncredsUtils::gvt_schema_json(),
                                                                           TAG_1,
                                                                           Some("some_type"),
-                                                                          &AnoncredsUtils::default_cred_def_config());
+                                                                          Some(&AnoncredsUtils::default_cred_def_config()));
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1683,7 +1682,7 @@ mod medium_cases {
                                                                           &AnoncredsUtils::gvt_schema_json(),
                                                                           TAG_1,
                                                                           None,
-                                                                          "{}");
+                                                                          Some(r#"{"support_revocation":"TRUE"}"#));
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1700,11 +1699,23 @@ mod medium_cases {
                                                                           &AnoncredsUtils::gvt_schema_json(),
                                                                           TAG_1,
                                                                           Some(SIGNATURE_TYPE),
-                                                                          &AnoncredsUtils::default_cred_def_config());
+                                                                          Some(&AnoncredsUtils::default_cred_def_config()));
             assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsCredDefAlreadyExistsError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
+        }
 
+        #[test]
+        fn issuer_create_and_store_credential_def_works_for_null_config() {
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
+                                                                DID_MY1,
+                                                                &AnoncredsUtils::gvt_schema_json(),
+                                                                TAG_1,
+                                                                None,
+                                                                None).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
         }
     }
 
@@ -1761,7 +1772,7 @@ mod medium_cases {
 
         #[test]
         fn prover_create_credential_req_works_for_invalid_credential_def() {
-            let ( _, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+            let (_, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
             let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
@@ -2219,13 +2230,12 @@ mod demos {
     }
 
     #[test]
-    #[ignore]
-    fn anoncreds_works_for_custom_wallet() {
+    fn anoncreds_works_for_plugged_wallet() {
         TestUtils::cleanup_storage();
         InmemWallet::cleanup();
 
         //1. Registers new wallet type
-        WalletUtils::register_wallet_type(INMEM_TYPE, false).unwrap();
+        WalletUtils::register_wallet_storage(INMEM_TYPE, false).unwrap();
 
         //2. Creates and opens Issuer wallet
         let issuer_wallet_name = "custom_issuer_wallet";
@@ -4135,7 +4145,7 @@ mod demos {
                                                                                    &schema_json,
                                                                                    TAG_1,
                                                                                    None,
-                                                                                   &AnoncredsUtils::revocation_cred_def_config()).unwrap();
+                                                                                   Some(&AnoncredsUtils::revocation_cred_def_config())).unwrap();
 
         //4. Issuer creates revocation registry for 2 Credentials
         let tails_writer_config = AnoncredsUtils::tails_writer_config();
@@ -4302,7 +4312,7 @@ mod demos {
                                                              &cred_defs_json,
                                                              &rev_states_json).unwrap();
 
-        let proof: Proof = serde_json::from_str(&proof_json).unwrap();
+        let _proof: Proof = serde_json::from_str(&proof_json).unwrap();
 
         //9. Verifier verifies proof
         let rev_reg_defs_json = json!({}).to_string();
