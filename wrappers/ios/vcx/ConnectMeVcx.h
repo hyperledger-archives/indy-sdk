@@ -68,6 +68,12 @@ void VcxWrapperCommonStringStringLongCallback(vcx_command_handle_t xcommand_hand
                                               const char *arg2,
                                               unsigned long long arg3);
 
+void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
+                                          vcx_error_t err,
+                                          unsigned int handle,
+                                          const char *const arg2
+                                          );
+
 @interface ConnectMeVcx : NSObject
 
 - (void)initWithConfig:(NSString *)config
@@ -78,50 +84,50 @@ void VcxWrapperCommonStringStringLongCallback(vcx_command_handle_t xcommand_hand
 
 - (void)connectionCreateWithInvite:(NSString *)invitationId
                      inviteDetails:(NSString *)inviteDetails
-                        completion:(void (^)(NSError *error, NSInteger *connectionHandle))completion;
+                        completion:(void (^)(NSError *error, NSInteger connectionHandle))completion;
 
-- (void)connectionConnect:(VcxHandle *)connectionHandle
+- (void)connectionConnect:(VcxHandle)connectionHandle
            connectionType:(NSString *)connectionType
                completion:(void (^)(NSError *error, NSString *inviteDetails))completion;
 
-- (void)connectionSerialize:(NSInteger *)connectionHandle
+- (void)connectionSerialize:(NSInteger)connectionHandle
                  completion:(void (^)(NSError *error, NSString *serializedConnection))completion;
 
 - (void)connectionDeserialize:(NSString *)serializedConnection
-                   completion:(void (^)(NSError *error, NSInteger *connectionHandle))completion;
+                   completion:(void (^)(NSError *error, NSInteger connectionHandle))completion;
 
 - (void)agentUpdateInfo:(NSString *)config
              completion:(void (^)(NSError *error))completion;
 
-- (void)getCredential:(NSInteger *)credentailHandle
+- (void)getCredential:(NSInteger )credentailHandle
            completion:(void (^)(NSError *error, NSString *credential))completion;
 
 - (void)credentialCreateWithOffer:(NSString *)sourceId
                             offer:(NSString *)credentialOffer
-                       completion:(void (^)(NSError *error, NSInteger *credentailHandle))completion;
+                       completion:(void (^)(NSError *error, NSInteger credentailHandle))completion;
 - (void)credentialCreateWithMsgid:(NSString *)sourceId
-                 connectionHandle:(VcxHandle *)connectionHandle
+                 connectionHandle:(VcxHandle)connectionHandle
                             msgId:(NSString *)msgId
-                       completion:(void (^)(NSError *error, NSInteger *credentialHandle, NSString *credentialOffer))completion;
+                       completion:(void (^)(NSError *error, NSInteger credentialHandle, NSString *credentialOffer))completion;
 
-- (void)credentialSendRequest:(NSInteger *)credentailHandle
-             connectionHandle:(VcxHandle *)connectionHandle
+- (void)credentialSendRequest:(NSInteger)credentialHandle
+             connectionHandle:(VcxHandle)connectionHandle
                    completion:(void (^)(NSError *error))completion;
 
-- (void)credentialGetState:(NSInteger *)credentailHandle
-                completion:(void (^)(NSError *error, NSInteger *state))completion;
+- (void)credentialGetState:(NSInteger )credentialHandle
+                completion:(void (^)(NSError *error, NSInteger state))completion;
 
-- (void)credentialUpdateState:(NSInteger *)credentailHandle
-                completion:(void (^)(NSError *error, NSInteger *state))completion;
+- (void)credentialUpdateState:(NSInteger )credentailHandle
+                completion:(void (^)(NSError *error, NSInteger state))completion;
 
-- (void)credentialGetOffers:(VcxHandle *)connectionHandle
+- (void)credentialGetOffers:(VcxHandle)connectionHandle
                  completion:(void (^)(NSError *error, NSString *offers))completion;
 
-- (void)credentialSerialize:(NSInteger *)credentailHandle
+- (void)credentialSerialize:(NSInteger)credentialHandle
                  completion:(void (^)(NSError *error, NSString *state))completion;
 
 - (void)credentialDeserialize:(NSString *)serializedCredential
-                   completion:(void (^)(NSError *error, NSInteger *credentailHandle))completion;
+                   completion:(void (^)(NSError *error, NSInteger credentialHandle))completion;
 - (void)generateProof:(NSString *)proofRequestId
          requestedAttrs:(NSString *)requestedAttrs
     requestedPredicates:(NSString *)requestedPredicates
