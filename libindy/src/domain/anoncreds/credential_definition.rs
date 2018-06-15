@@ -33,12 +33,23 @@ impl SignatureType {
     }
 }
 
+fn default_false() -> bool { false }
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialDefinitionConfig {
+    #[serde(default = "default_false")]
     pub support_revocation: bool
 }
 
 impl<'a> JsonDecodable<'a> for CredentialDefinitionConfig {}
+
+impl Default for CredentialDefinitionConfig {
+    fn default() -> Self {
+        CredentialDefinitionConfig {
+            support_revocation: false
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialDefinitionData {

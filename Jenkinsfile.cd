@@ -492,7 +492,7 @@ def windowsPublishArtifact(testEnv, folder, packageName, packageType, packageVer
         unstash name: stashName
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-            sh "ci/win-zip-and-upload.sh $folder $packageName $packageType $packageVersion '${repo_key}' master 1"
+            sh "ci/win-zip-and-upload.sh $folder $packageName $packageType $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
         }
     }
 }

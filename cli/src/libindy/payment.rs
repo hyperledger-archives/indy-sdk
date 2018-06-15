@@ -201,6 +201,23 @@ impl Payment {
 
         super::results::result_to_string(err, receiver)
     }
+
+    pub fn parse_response_with_fees(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) =
+            super::callbacks::_closure_to_cb_ec_string();
+
+        let payment_method = CString::new(payment_method).unwrap();
+        let resp_json = CString::new(resp_json).unwrap();
+
+        let err = unsafe {
+            indy_parse_response_with_fees(command_handle,
+                                          payment_method.as_ptr(),
+                                          resp_json.as_ptr(),
+                                          cb)
+        };
+
+        super::results::result_to_string(err, receiver)
+    }
 }
 
 extern {
@@ -217,8 +234,8 @@ extern {
     fn indy_list_payment_addresses(command_handle: i32,
                                    wallet_handle: i32,
                                    cb: Option<extern fn(command_handle_: i32,
-                                                err: ErrorCode,
-                                                payment_addresses_json: *const c_char)>) -> ErrorCode;
+                                                        err: ErrorCode,
+                                                        payment_addresses_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
     fn indy_add_request_fees(command_handle: i32,
@@ -305,4 +322,12 @@ extern {
                                         cb: Option<extern fn(command_handle_: i32,
                                                              err: ErrorCode,
                                                              fees_json: *const c_char)>) -> ErrorCode;
+
+    #[no_mangle]
+    fn indy_parse_response_with_fees(command_handle: i32,
+                                     payment_method: *const c_char,
+                                     resp_json: *const c_char,
+                                     cb: Option<extern fn(command_handle_: i32,
+                                                          err: ErrorCode,
+                                                          utxo_json: *const c_char)>) -> ErrorCode;
 }
