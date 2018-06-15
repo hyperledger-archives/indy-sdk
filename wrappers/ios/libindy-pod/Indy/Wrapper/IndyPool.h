@@ -92,7 +92,7 @@
 
  By default PROTOCOL_VERSION=1.
  
- @param protocolVersion Protocol version will be used.
+ @param protocolVersion Protocol version will be used. Can be one of: 1,2.
  @param completion Completion callback, returns error code.
  */
 + (void)setProtocolVersion:(NSNumber *)protocolVersion

@@ -201,7 +201,7 @@ impl PoolWorker {
                     if protocol_version != 1 {
                         return Err(PoolError::PoolIncompatibleProtocolVersion(
                             format!("Libindy PROTOCOL_VERSION is {} but Pool Genesis Transactions are of version {}.\
-                             Call indy_set_protocol_version(1) to set correct PROTOCOL_VERSION", protocol_version, NodeTransactionV0::VERSION)))
+                             Call indy_set_protocol_version(1) to set correct PROTOCOL_VERSION", protocol_version, NodeTransactionV0::VERSION)));
                     }
                     NodeTransactionV1::from(txn)
                 }
@@ -209,7 +209,7 @@ impl PoolWorker {
                     if protocol_version != 2 {
                         return Err(PoolError::PoolIncompatibleProtocolVersion(
                             format!("Libindy PROTOCOL_VERSION is {} but Pool Genesis Transactions are of version {}.\
-                             Call indy_set_protocol_version(2) to set correct PROTOCOL_VERSION", protocol_version, NodeTransactionV1::VERSION)))
+                             Call indy_set_protocol_version(2) to set correct PROTOCOL_VERSION", protocol_version, NodeTransactionV1::VERSION)));
                     }
                     txn
                 }
@@ -740,7 +740,7 @@ impl PoolService {
             return Err(PoolError::CommonError(
                 CommonError::InvalidStructure("Invalid Genesis Transaction file".to_string())));
         }
-        
+
         fs::create_dir_all(path.as_path()).map_err(map_err_trace!())?;
 
         path.push(name);
@@ -847,16 +847,17 @@ impl PoolService {
 
     pub fn list(&self) -> Result<Vec<serde_json::Value>, PoolError> {
         let mut pool = Vec::new();
-
         let pool_home_path = EnvironmentUtils::pool_home_path();
-        for entry in fs::read_dir(pool_home_path)? {
-            let dir_entry = if let Ok(dir_entry) = entry { dir_entry } else { continue };
-            if let Some(pool_name) = dir_entry.path().file_name().and_then(|os_str| os_str.to_str()) {
-                let json = json!({"pool":pool_name.to_owned()});
-                pool.push(json);
+
+        if let Ok(entries) = fs::read_dir(pool_home_path) {
+            for entry in entries {
+                let dir_entry = if let Ok(dir_entry) = entry { dir_entry } else { continue };
+                if let Some(pool_name) = dir_entry.path().file_name().and_then(|os_str| os_str.to_str()) {
+                    let json = json!({"pool":pool_name.to_owned()});
+                    pool.push(json);
+                }
             }
         }
-
         Ok(pool)
     }
 
@@ -872,9 +873,9 @@ mod tests {
     use super::*;
     use utils::test::TestUtils;
 
-    const TEST_PROTOCOL_VERSION : usize = 2;
+    const TEST_PROTOCOL_VERSION: usize = 2;
 
-    fn _set_protocol_version(version: usize){
+    fn _set_protocol_version(version: usize) {
         ProtocolVersion::set(version);
     }
 
@@ -1070,7 +1071,7 @@ mod tests {
     pub const NODE3: &'static str = r#"{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node3","blskey":"3WFpdbg7C5cnLYZwFZevJqhubkFALBfCBBok15GdrKMUhUjGsk3jV6QKj6MZgEubF7oqCafxNdkm7eswgA4sdKTRc82tLGzZBd6vNqU8dupzup6uYUf32KTHTPQbuUM8Yk4QFXjEf2Usu2TJcNkdgpyeUSX42u5LqdDDpNSWUK5deC5","client_ip":"10.0.0.2","client_port":9706,"node_ip":"10.0.0.2","node_port":9705,"services":["VALIDATOR"]},"dest":"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya"},"metadata":{"from":"4cU41vWW82ArfxJxHkzXPG"},"type":"0"},"txnMetadata":{"seqNo":3,"txnId":"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4"},"ver":"1"}"#;
     pub const NODE4: &'static str = r#"{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node4","blskey":"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw","client_ip":"10.0.0.2","client_port":9708,"node_ip":"10.0.0.2","node_port":9707,"services":["VALIDATOR"]},"dest":"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA"},"metadata":{"from":"TWwCRQRZ2ZHMJFn9TzLp7W"},"type":"0"},"txnMetadata":{"seqNo":4,"txnId":"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008"},"ver":"1"}"#;
 
-    fn _write_genesis_txns(txns: &str){
+    fn _write_genesis_txns(txns: &str) {
         let pool_name = "test";
         let mut path = EnvironmentUtils::pool_path(pool_name);
         fs::create_dir_all(path.as_path()).unwrap();

@@ -268,7 +268,7 @@ pub extern fn indy_delete_pool_ledger_config(command_handle: i32,
 /// By default PROTOCOL_VERSION=1.
 ///
 /// #Params
-/// protocol_version: Protocol version will be used.
+/// protocol_version: Protocol version will be used. Can be one of: 1,2.
 ///
 /// #Returns
 /// Error code

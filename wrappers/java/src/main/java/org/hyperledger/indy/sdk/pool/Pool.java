@@ -221,7 +221,7 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 	 *
 	 * By default PROTOCOL_VERSION=1.
 	 *
-	 * @param protocolVersion Protocol version will be used.
+	 * @param protocolVersion Protocol version will be used. Can be one of: 1,2.
 	 *
 	 * @return A future that does not resolve a value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.

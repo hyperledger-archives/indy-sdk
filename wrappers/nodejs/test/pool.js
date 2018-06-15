@@ -19,6 +19,13 @@ test('pool', async function (t) {
     'genesis_txn': pool.file
   }), null)
 
+  await indy.setProtocolVersion(1)
+
+  err = await t.throws(indy.openPoolLedger(pool.name, 'null'))
+  t.is(err.indyName, 'PoolGenesisTransactionsIncompatibleProtocolVersion')
+
+  await indy.setProtocolVersion(2)
+
   var poolH = await indy.openPoolLedger(pool.name, 'null')
   t.truthy(poolH >= 0)
 
