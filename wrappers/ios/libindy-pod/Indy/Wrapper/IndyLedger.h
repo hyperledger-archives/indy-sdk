@@ -152,7 +152,7 @@
  @param completion Callback that takes command result as parameter. Request result as json.
  */
 + (void)buildGetValidatorInfo:(NSString *)submitterDid
-                    completion:(void (^)(NSError *error, NSString *requestJSON))completion;
+                   completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 // MARK: - Schema request
 
@@ -308,6 +308,7 @@
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
+                                ledgerType:(NSString *)ledgerType
                                       data:(NSNumber *)data
                                 completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
