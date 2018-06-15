@@ -502,6 +502,10 @@ extern "C" {
     /// #Params
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: DID of the request submitter.
+    /// ledger_type: (Optional) type of the ledger the requested transaction belongs to:
+    ///     DOMAIN - used default,
+    ///     POOL,
+    ///     CONFIG
     /// seq_no: seq_no of transaction in ledger.
     /// cb: Callback that takes command result as parameter.
     ///
@@ -513,6 +517,7 @@ extern "C" {
 
     extern indy_error_t indy_build_get_txn_request(indy_handle_t command_handle,
                                                    const char *  submitter_did,
+                                                   const char *  ledger_type,
                                                    indy_i32_t    data,
 
                                                    void           (*cb)(indy_handle_t xcommand_handle,
