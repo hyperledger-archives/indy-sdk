@@ -277,7 +277,7 @@ pub extern fn indy_delete_pool_ledger_config(command_handle: i32,
 /// Common*
 #[no_mangle]
 pub extern fn indy_set_protocol_version(command_handle: i32,
-                                        protocol_version: u64,
+                                        protocol_version: usize,
                                         cb: Option<extern fn(xcommand_handle: i32,
                                                              err: ErrorCode)>) -> ErrorCode {
     trace!("indy_set_protocol_version: >>> protocol_version: {:?}", protocol_version);

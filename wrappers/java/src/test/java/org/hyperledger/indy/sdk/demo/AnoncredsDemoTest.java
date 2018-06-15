@@ -52,6 +52,9 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 	@Before
 	public void createWallet() throws Exception {
+		// Set protocol version
+		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
+
 		// Create and Open Pool
 		poolName = PoolUtils.createPoolLedgerConfig();
 

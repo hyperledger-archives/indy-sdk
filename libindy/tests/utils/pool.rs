@@ -19,6 +19,7 @@ use std::io::Write;
 use std::ptr::null;
 use std::path::{Path, PathBuf};
 use utils::types::{Response, ResponseType};
+use utils::constants::PROTOCOL_VERSION;
 
 #[derive(Serialize, Deserialize)]
 struct PoolConfig {
@@ -206,6 +207,7 @@ impl PoolUtils {
     }
 
     pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, ErrorCode> {
+        PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
         let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
         let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
         PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str()))?;
@@ -234,6 +236,14 @@ impl PoolUtils {
         let pool_name = CString::new(pool_name).unwrap();
 
         let err = indy_delete_pool_ledger_config(command_handle, pool_name.as_ptr(), cb);
+
+        super::results::result_to_empty(err, receiver)
+    }
+
+    pub fn set_protocol_version(protocol_version: usize) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+
+        let err = indy_set_protocol_version(command_handle, protocol_version, cb);
 
         super::results::result_to_empty(err, receiver)
     }

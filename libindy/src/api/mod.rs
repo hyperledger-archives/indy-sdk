@@ -141,7 +141,7 @@ pub enum ErrorCode
     // Timeout for action
     PoolLedgerTimeout = 307,
 
-    // Timeout for action
+    // Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version
     PoolGenesisTransactionsIncompatibleProtocolVersion = 308,
 
     // Revocation registry is full and creation of new registry is necessary

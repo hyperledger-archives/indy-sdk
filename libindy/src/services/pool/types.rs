@@ -210,7 +210,7 @@ pub struct LedgerStatus {
     pub ppSeqNo: Option<u32>,
     pub viewNo: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub protocolVersion: Option<u64>
+    pub protocolVersion: Option<usize>
 }
 
 #[allow(non_snake_case)]
