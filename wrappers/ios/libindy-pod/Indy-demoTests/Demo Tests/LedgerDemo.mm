@@ -26,6 +26,10 @@
     NSString *myWalletName = @"my_wallet";
     NSString *theirWalletName = @"their_wallet";
 
+    // Set protocol version
+    ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
     // 1. Create ledger config from genesis txn file
     NSString *txnFilePath = [[PoolUtils sharedInstance] createGenesisTxnFileForTestPool:[TestUtils pool]
                                                                              nodesCount:nil

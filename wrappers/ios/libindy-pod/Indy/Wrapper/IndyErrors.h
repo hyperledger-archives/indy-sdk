@@ -120,6 +120,9 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     // Timeout for action
     PoolLedgerTimeout = 307,
 
+    // Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version
+    PoolGenesisTransactionsIncompatibleProtocolVersion = 308,
+
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
     

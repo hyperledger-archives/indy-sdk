@@ -39,14 +39,17 @@
 - (void)testOpenPoolLedgerWorks {
     NSString *poolName = @"testOpenPoolLedgerWorks";
 
+    NSError *ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
     NSString *txnFilePath = [[PoolUtils sharedInstance] createGenesisTxnFileForTestPool:poolName
                                                                              nodesCount:nil
                                                                             txnFilePath:nil];
     NSString *poolConfig = [[PoolUtils sharedInstance] poolConfigJsonForTxnFilePath:txnFilePath];
 
     // 1. Create pool ledger config
-    NSError *ret = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName
-                                                                       poolConfig:poolConfig];
+    ret = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName
+                                                              poolConfig:poolConfig];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfigWithPoolName() failed!");
 
     // 2. Open pool ledger
@@ -58,9 +61,12 @@
 }
 
 - (void)testOpenPoolLedgerWorksForInvalidName {
-    NSError *ret = [[PoolUtils sharedInstance] openPoolLedger:[TestUtils pool]
-                                                       config:nil
-                                                  poolHandler:nil];
+    NSError *ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
+    ret = [[PoolUtils sharedInstance] openPoolLedger:[TestUtils pool]
+                                              config:nil
+                                         poolHandler:nil];
     XCTAssertEqual(ret.code, PoolLedgerNotCreatedError, @"PoolUtils::openPoolLedger returned wrong code");
 }
 
@@ -76,6 +82,28 @@
                                               config:nil
                                          poolHandler:nil];
     XCTAssertEqual(ret.code, PoolLedgerInvalidPoolHandle, @"PoolUtils::openPoolLedger() failed second one!");
+}
+
+- (void)testOpenPoolLedgerWorksForIncompatibleProtocolVersion {
+    NSError *ret = [[PoolUtils sharedInstance] setProtocolVersion:@(1)];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
+    NSString *txnFilePath = [[PoolUtils sharedInstance] createGenesisTxnFileForTestPool:[TestUtils pool]
+                                                                             nodesCount:nil
+                                                                            txnFilePath:nil];
+    NSString *poolConfig = [[PoolUtils sharedInstance] poolConfigJsonForTxnFilePath:txnFilePath];
+
+    // 1. Create pool ledger config
+    ret = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:[TestUtils pool]
+                                                              poolConfig:poolConfig];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfigWithPoolName() failed!");
+
+    // 2. Open pool ledger
+    IndyHandle poolHandle = 0;
+    ret = [[PoolUtils sharedInstance] openPoolLedger:[TestUtils pool]
+                                              config:nil
+                                         poolHandler:&poolHandle];
+    XCTAssertEqual(ret.code, PoolGenesisTransactionsIncompatibleProtocolVersion, @"PoolUtils::openPoolLedger() failed!");
 }
 
 // MARK: - Refresh
@@ -161,6 +189,16 @@
     // 1. delete
     NSError *ret = [[PoolUtils sharedInstance] deletePoolWithName:[TestUtils pool]];
     XCTAssertEqual(ret.code, CommonIOError, @"PoolUtils::deletePoolWithName returned wrong code");
+}
+
+- (void)testSetProtocolVersionWorks {
+    NSError *ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+}
+
+- (void)testSetProtocolVersionWorksForUnsupported {
+    NSError *ret = [[PoolUtils sharedInstance] setProtocolVersion:@(0)];
+    XCTAssertEqual(ret.code, PoolGenesisTransactionsIncompatibleProtocolVersion, @"PoolUtils::setProtocolVersion() failed!");
 }
 
 @end

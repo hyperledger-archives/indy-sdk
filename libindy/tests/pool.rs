@@ -589,7 +589,7 @@ mod medium_cases {
 
         #[test]
         fn indy_set_protocol_version_works_for_unsupported() {
-            let res = PoolUtils::set_protocol_version(0).unwrap_err();
+            let res = PoolUtils::set_protocol_version(0);
             assert_eq!(res.unwrap_err(), ErrorCode::PoolGenesisTransactionsIncompatibleProtocolVersion);
         }
     }
