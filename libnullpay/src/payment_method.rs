@@ -82,6 +82,7 @@ pub mod add_request_fees {
             //we don't have enough money, send GET_TXN transaction to callback and in response PaymentsInsufficientFundsError will be returned
             ledger::build_get_txn_request(
                 submitter_did.as_str(),
+                None,
                 1,
                 Box::new(move |ec, res| {
                     let ec = if ec == ErrorCode::Success {
@@ -118,6 +119,7 @@ pub mod build_get_utxo_request {
 
         ledger::build_get_txn_request(
             submitter_did.as_str(),
+            None,
             1,
             Box::new(move |ec, res| {
                 let ec = if ec == ErrorCode::Success {
@@ -156,6 +158,7 @@ pub mod build_payment_req {
 
         ledger::build_get_txn_request(
             submitter_did.as_str(),
+            None,
             1,
             Box::new(move |ec, res| {
                 let total_balance = _count_total_inputs(&inputs_json);
@@ -204,6 +207,7 @@ pub mod build_mint_req {
         parse_json!(outputs_json, Vec<UTXOOutput>, ErrorCode::CommonInvalidStructure);
 
         ledger::build_get_txn_request(submitter_did.as_str(),
+                                      None,
                                       1,
                                       Box::new(move |ec, res| {
                                           if ec == ErrorCode::Success {
@@ -232,6 +236,7 @@ pub mod build_set_txn_fees_req {
         parse_json!(fees_json, HashMap<String, i32>, ErrorCode::CommonInvalidStructure);
 
         ledger::build_get_txn_request(submitter_did.as_str(),
+                                      None,
                                       1,
                                       Box::new(move |ec, res| {
                                           if ec == ErrorCode::Success {
@@ -253,6 +258,7 @@ pub mod build_get_txn_fees_req {
         trace!("libnullpay::build_get_txn_fees_req::handle << submitter_did: {}", submitter_did);
 
         ledger::build_get_txn_request(submitter_did.as_str(),
+                                      None,
                                       1,
                                       Box::new(move |ec, res| {
                                           let ec = if ec == ErrorCode::Success {
