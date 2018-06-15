@@ -59,7 +59,7 @@ impl fmt::Display for WalletError {
             WalletError::EncryptionError(ref description) => write!(f, "Wallet encryption error occurred. Description: {}", description),
             WalletError::ItemNotFound => write!(f, "Item not found"),
             WalletError::ItemAlreadyExists => write!(f, "Item already exists"),
-            WalletError::QueryError(ref description) => write!(f, "{}", description)
+            WalletError::QueryError(ref description) => write!(f, "{}", description),
         }
     }
 }
@@ -143,7 +143,7 @@ impl From<CommonError> for WalletError {
 
 impl From<io::Error> for WalletError {
     fn from(err: io::Error) -> WalletError {
-        WalletError::CommonError(CommonError::IOError(err))
+        WalletError::from(CommonError::from(err))
     }
 }
 
