@@ -8,7 +8,7 @@ use self::indy_crypto::utils::json::JsonEncodable;
 use std::sync::Mutex;
 
 lazy_static! {
-    pub static ref PROTOCOL_VERSION: Mutex<u64> = Mutex::new(2);
+    pub static ref PROTOCOL_VERSION: Mutex<u64> = Mutex::new(1);
 }
 
 #[derive(Serialize, PartialEq, Debug)]

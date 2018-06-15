@@ -74,6 +74,10 @@ pub struct NodeTransactionV0 {
     pub txn_type: String
 }
 
+impl NodeTransactionV0 {
+    pub const VERSION: &'static str = "1.3";
+}
+
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct NodeTransactionV1 {
@@ -81,6 +85,11 @@ pub struct NodeTransactionV1 {
     pub txn_metadata: Metadata,
     pub req_signature: ReqSignature,
     pub ver: String
+}
+
+
+impl NodeTransactionV1 {
+    pub const VERSION: &'static str = "1.4";
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]

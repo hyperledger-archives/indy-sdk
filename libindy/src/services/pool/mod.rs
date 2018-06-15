@@ -200,11 +200,19 @@ impl PoolWorker {
 
             let mut gen_txn = match gen_txn {
                 NodeTransaction::NodeTransactionV0(txn) => {
-                    *protocol_version = 1;
+                    if *protocol_version != 1 {
+                        return Err(PoolError::PoolIncompatibleProtocolVersion(
+                            format!("Libindy PROTOCOL_VERSION is {} but Pool Genesis Transactions are of version {}.\
+                             Call indy_set_protocol_version(1) to set correct PROTOCOL_VERSION", protocol_version, NodeTransactionV0::VERSION)))
+                    }
                     NodeTransactionV1::from(txn)
                 }
                 NodeTransaction::NodeTransactionV1(txn) => {
-                    *protocol_version = 2;
+                    if *protocol_version != 2 {
+                        return Err(PoolError::PoolIncompatibleProtocolVersion(
+                            format!("Libindy PROTOCOL_VERSION is {} but Pool Genesis Transactions are of version {}.\
+                             Call indy_set_protocol_version(2) to set correct PROTOCOL_VERSION", protocol_version, NodeTransactionV1::VERSION)))
+                    }
                     txn
                 }
             };

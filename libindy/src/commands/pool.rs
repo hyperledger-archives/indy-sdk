@@ -3,6 +3,7 @@ use errors::indy::IndyError;
 use errors::pool::PoolError;
 
 use services::pool::PoolService;
+use domain::ledger::request::PROTOCOL_VERSION;
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -30,6 +31,8 @@ pub enum PoolCommand {
             Box<Fn(Result<(), IndyError>) + Send>),
     RefreshAck(i32,
                Result<(), PoolError>),
+    SetProtocolVersion(u64, // protocol version
+            Box<Fn(Result<(), IndyError>) + Send>),
 }
 
 pub struct PoolCommandExecutor {
@@ -126,6 +129,10 @@ impl PoolCommandExecutor {
                     Err(err) => { error!("{:?}", err); }
                 }
             }
+            PoolCommand::SetProtocolVersion(protocol_version, cb) => {
+                info!(target: "pool_command_executor", "SetProtocolVersion command received");
+                cb(self.set_protocol_version(protocol_version));
+            }
         };
     }
 
@@ -216,5 +223,18 @@ impl PoolCommandExecutor {
         };
 
         debug!("refresh <<<");
+    }
+
+    fn set_protocol_version(&self, version: u64) -> Result<(), IndyError> {
+        debug!("set_protocol_version >>> version: {:?}", version);
+
+        let mut protocol_version = PROTOCOL_VERSION.lock()
+            .map_err(|err| CommonError::InvalidState(err.to_string()))?;
+
+        *protocol_version = version;
+
+        debug!("set_protocol_version <<<");
+
+        Ok(())
     }
 }

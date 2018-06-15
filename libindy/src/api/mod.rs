@@ -141,6 +141,9 @@ pub enum ErrorCode
     // Timeout for action
     PoolLedgerTimeout = 307,
 
+    // Timeout for action
+    PoolGenesisTransactionsIncompatibleProtocolVersion = 308,
+
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 
