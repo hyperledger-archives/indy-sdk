@@ -241,7 +241,7 @@ impl WalletService {
 
         let wallets = self.wallets.borrow();
         if wallets.values().any(|ref wallet| wallet.get_name() == name) {
-            return Err(WalletError::NotClosed);
+            return Err(WalletError::CommonError(CommonError::InvalidState("Wallet has to be closed before deleting".to_string())));
         }
 
         let wallet_descriptor_path = _wallet_descriptor_path(name);
@@ -925,7 +925,7 @@ mod tests {
 
         let res = wallet_service.delete_wallet("test_wallet", &_credentials());
 
-        assert_match!(Err(WalletError::NotClosed), res);
+        assert_match!(Err(WalletError::CommonError(CommonError::InvalidState(_))), res);
     }
 
     #[test]

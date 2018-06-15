@@ -37,7 +37,6 @@ pub enum WalletError {
     ItemNotFound,
     ItemAlreadyExists,
     QueryError(String),
-    NotClosed,
 }
 
 
@@ -61,7 +60,6 @@ impl fmt::Display for WalletError {
             WalletError::ItemNotFound => write!(f, "Item not found"),
             WalletError::ItemAlreadyExists => write!(f, "Item already exists"),
             WalletError::QueryError(ref description) => write!(f, "{}", description),
-            WalletError::NotClosed => write!(f, "Wallet must be closed"),
         }
     }
 }
@@ -86,7 +84,6 @@ impl error::Error for WalletError {
             WalletError::ItemNotFound => "Item not found",
             WalletError::ItemAlreadyExists => "Item already exists",
             WalletError::QueryError(ref description) => description,
-            WalletError::NotClosed => "Wallet must be closed",
         }
     }
 
@@ -109,7 +106,6 @@ impl error::Error for WalletError {
             WalletError::ItemNotFound => None,
             WalletError::ItemAlreadyExists => None,
             WalletError::QueryError(_) => None,
-            WalletError::NotClosed => None,
         }
     }
 }
@@ -134,7 +130,6 @@ impl ToErrorCode for WalletError {
             WalletError::ItemNotFound => ErrorCode::WalletItemNotFound,
             WalletError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
             WalletError::QueryError(_) => ErrorCode::WalletQueryError,
-            WalletError::NotClosed => ErrorCode::CommonInvalidState,
         }
     }
 }
