@@ -1,21 +1,26 @@
-libindy (1.4.0) unstable; urgency=medium
+libindy (1.5.0) unstable; urgency=medium
 
   [ Hyperledger ]
-  * Indy CLI tool added.
-  * Switching from DID-based crypto to keys-based crypto:
-    * All DID-based crypto functions (`signus` module) are removed.
-    * Added key-based `crypto` module.
-    * Added functions to resolve keys for DIDs.
-  * Agent API moved into `crypto` module.
-  * Support the latest version of CL crypto (through `indy-crypto` library):
-    * Added nonce for all protocol steps.
-    * Added consistency proofs for protocol steps.
-    * Representation of Proofs changed (sub-proofs now are ordered).
-  * Support of complete Credentials Revocation workflow in Anoncreds API:
-    * Support large Tails handling through BlobStorage API.
-    * Support new Revocation transactions.
-    * Add calls for remote Witness calculation.
-    * State-less approach in Credential issuance process.
-    * Unified reference approach for Anoncreds entities.
-  * Extend DID API: added some methods for iteration over entities in the wallet.
+  * Performed significant changes related to Wallet storage.
+      * Changed API of Plugged Wallet storage to extend set of commands related to working with storing data.
+      * Plugged wallet used to handles both security and storage layers. Now all encryption performs on Libindy level.
+      * The format of storing data was changed to support efficient search.
+      * Provided export/import functionality.
+  * Added Non-Secrets wallet API that allows store and read application specific data in the wallet.
+  * Added Generic Payments API that provides ability to register custom payment method
+  and then create payment addresses, build payment-related transactions, assign fees to transactions.
+  * Added ability loading custom plugins by Indy CLI.
+  * Added set of commands in Indy CLI providing ability to perform the main payments operations:
+    * Creation of payment address
+    * Listing of payment addresses
+    * Getting list of UTXO for payment address
+    * Sending payment transaction
+    * Adding fees to transactions
+    * Getting transactions fees amount
+  * Implemented simple `Nullpay` payment plugin that provide experience similar to real payments system.
+    * Implemented publishing of Ubuntu and Windows packages for `Nullpay` plugin.
+  * Added set of endpoints related to Ledger API. Implemented corresponding commands in Indy CLI.
+      * GET Validator Info request.
+      * Restart POOL request.
+      * Add Multi Signature to request.
   * Bugfixes.

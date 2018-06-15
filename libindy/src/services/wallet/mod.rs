@@ -632,7 +632,6 @@ impl Default for RecordOptions {
 }
 
 pub struct WalletSearch {
-    // TODO
     iter: iterator::WalletIterator,
 }
 

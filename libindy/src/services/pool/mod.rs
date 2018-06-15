@@ -759,7 +759,7 @@ impl PoolService {
         for pool in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
             if name.eq(pool.name.as_str()) {
                 //TODO change error
-                return Err(PoolError::InvalidHandle("Pool with same name already opened".to_string()));
+                return Err(PoolError::AlreadyExists("Pool with same name already opened".to_string()));
             }
         }
 

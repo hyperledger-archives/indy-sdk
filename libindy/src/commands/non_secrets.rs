@@ -129,7 +129,7 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.add_record(wallet_handle, type_, id, value, tags_json.unwrap_or("{}"))?; //TODO: question
+        let res = self.wallet_service.add_record(wallet_handle, type_, id, value, tags_json.unwrap_or("{}"))?;
 
         trace!("add_record <<< res: {:?}", res);
 
@@ -307,7 +307,7 @@ impl NonSecretsCommandExecutor {
 
     fn _check_type(&self, type_: &str) -> Result<(), IndyError> {
         if type_.starts_with(WalletService::PREFIX) {
-            return Err(IndyError::WalletError(WalletError::AccessFailed(format!("Record Type is available: {}", type_)))); //TODO: change error
+            return Err(IndyError::WalletError(WalletError::AccessFailed(format!("Record of type \"{}\" is not available", type_))));
         }
         Ok(())
     }

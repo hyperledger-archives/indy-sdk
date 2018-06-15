@@ -457,7 +457,7 @@ mod medium_cases {
             PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
 
             let res = PoolUtils::open_pool_ledger(pool_name, Some(pool_config.as_str()));
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);//TODO Replace on InvalidState Error
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);
 
             TestUtils::cleanup_storage();
         }

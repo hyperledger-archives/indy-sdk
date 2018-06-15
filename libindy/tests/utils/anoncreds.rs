@@ -672,7 +672,6 @@ impl AnoncredsUtils {
                 let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
 
                 //2. Issuer1 Creates GVT CredentialDefinition
-                //TODO Fix it.....Convert String to &'static str
                 let (issuer1_gvt_cred_deg_id, issuer1_gvt_credential_def_json) =
                     AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
                                                                         ISSUER_DID,
