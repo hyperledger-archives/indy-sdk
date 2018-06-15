@@ -65,7 +65,7 @@ pub enum IssuerCommand {
         String, // schema json
         String, // tag
         Option<String>, // type
-        String, // config_json
+        Option<String>, // config_json
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     CreateAndStoreRevocationRegistry(
         i32, // wallet handle
@@ -138,7 +138,7 @@ impl IssuerCommandExecutor {
             IssuerCommand::CreateAndStoreCredentialDefinition(wallet_handle, issuer_did, schema_json, tag, type_, config_json, cb) => {
                 info!(target: "issuer_command_executor", "CreateAndStoreCredentialDefinition command received");
                 cb(self.create_and_store_credential_definition(wallet_handle, &issuer_did, &schema_json, &tag,
-                                                               type_.as_ref().map(String::as_str), &config_json));
+                                                               type_.as_ref().map(String::as_str), config_json.as_ref().map(String::as_str)));
             }
             IssuerCommand::CreateAndStoreRevocationRegistry(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json,
                                                             tails_writer_handle, cb) => {
@@ -214,7 +214,7 @@ impl IssuerCommandExecutor {
                                               schema_json: &str,
                                               tag: &str,
                                               type_: Option<&str>,
-                                              config_json: &str) -> Result<(String, String), IndyError> {
+                                              config_json: Option<&str>) -> Result<(String, String), IndyError> {
         debug!("create_and_store_credential_definition >>> wallet_handle: {:?}, issuer_did: {:?}, schema_json: {:?}, tag: {:?}, \
               type_: {:?}, config_json: {:?}", wallet_handle, issuer_did, schema_json, tag, type_, config_json);
 
@@ -223,8 +223,12 @@ impl IssuerCommandExecutor {
         let schema: SchemaV1 = SchemaV1::from(Schema::from_json(schema_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Schema: {:?}", err)))?);
 
-        let cred_def_config: CredentialDefinitionConfig = CredentialDefinitionConfig::from_json(config_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinitionConfig: {:?}", err)))?;
+        let cred_def_config = match config_json {
+            Some(config) =>
+                CredentialDefinitionConfig::from_json(config)
+                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinitionConfig: {:?}", err)))?,
+            None => CredentialDefinitionConfig::default()
+        };
 
         let signature_type = match type_ {
             Some(type_) =>
