@@ -927,7 +927,11 @@ pub extern fn indy_build_get_validator_info_request(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: DID of the request submitter.
-/// seq_no: seq_no of transaction in ledger.
+/// ledger_type: (Optional) type of the ledger the requested transaction belongs to:
+///     DOMAIN - used default,
+///     POOL,
+///     CONFIG
+/// seq_no: requested transaction sequence number as it's stored on Ledger.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -938,20 +942,23 @@ pub extern fn indy_build_get_validator_info_request(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_build_get_txn_request(command_handle: i32,
                                          submitter_did: *const c_char,
+                                         ledger_type: *const c_char,
                                          seq_no: i32,
                                          cb: Option<extern fn(xcommand_handle: i32,
                                                               err: ErrorCode,
                                                               request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_txn_request: >>> submitter_did: {:?}, seq_no: {:?}", submitter_did, seq_no);
+    trace!("indy_build_get_txn_request: >>> submitter_did: {:?}, ledger_type: {:?}, seq_no: {:?}", submitter_did, ledger_type, seq_no);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(ledger_type, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_build_get_txn_request: entities >>> submitter_did: {:?}, seq_no: {:?}", submitter_did, seq_no);
+    trace!("indy_build_get_txn_request: entities >>> submitter_did: {:?}, ledger_type: {:?}, seq_no: {:?}", submitter_did, ledger_type, seq_no);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::BuildGetTxnRequest(
             submitter_did,
+            ledger_type,
             seq_no,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
