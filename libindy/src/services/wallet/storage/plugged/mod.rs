@@ -287,9 +287,9 @@ impl PluggedStorage {
 fn _tags_to_json(tags: &[Tag]) -> Result<String, WalletStorageError> {
     let mut string_tags = HashMap::new();
     for tag in tags {
-        match tag {
-            &Tag::Encrypted(ref name, ref value) => string_tags.insert(base64::encode(&name), base64::encode(&value)),
-            &Tag::PlainText(ref name, ref value) => string_tags.insert(format!("~{}", &base64::encode(&name)), value.to_string()),
+        match *tag {
+            Tag::Encrypted(ref name, ref value) => string_tags.insert(base64::encode(&name), base64::encode(&value)),
+            Tag::PlainText(ref name, ref value) => string_tags.insert(format!("~{}", &base64::encode(&name)), value.to_string()),
         };
     }
     serde_json::to_string(&string_tags).map_err(|err| WalletStorageError::IOError(err.to_string()))
@@ -326,9 +326,9 @@ fn _tags_names_to_json(tag_names: &[TagName]) -> Result<String, WalletStorageErr
 
     for tag_name in tag_names {
         tags.push(
-            match tag_name {
-                &TagName::OfEncrypted(ref tag_name) => base64::encode(tag_name),
-                &TagName::OfPlain(ref tag_name) => format!("~{}", base64::encode(tag_name))
+            match *tag_name {
+                TagName::OfEncrypted(ref tag_name) => base64::encode(tag_name),
+                TagName::OfPlain(ref tag_name) => format!("~{}", base64::encode(tag_name))
             }
         )
     }

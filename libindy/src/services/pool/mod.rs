@@ -86,63 +86,63 @@ impl PoolWorkerHandler {
             .map_err(|_|
                 CommonError::IOError(
                     io::Error::from(io::ErrorKind::InvalidData)))?;
-        match self {
-            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.process_msg(msg, raw_msg, src_ind),
-            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.process_msg(msg, raw_msg, src_ind),
+        match *self {
+            PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.process_msg(msg, raw_msg, src_ind),
+            PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.process_msg(msg, raw_msg, src_ind),
         }
     }
 
     fn send_request(&mut self, cmd: &str, cmd_id: i32) -> Result<(), PoolError> {
-        match self {
-            &mut PoolWorkerHandler::CatchupHandler(_) => {
+        match *self {
+            PoolWorkerHandler::CatchupHandler(_) => {
                 Err(PoolError::CommonError(
                     CommonError::InvalidState("Try send request while CatchUp.".to_string())))
             }
-            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => {
+            PoolWorkerHandler::TransactionHandler(ref mut ch) => {
                 ch.try_send_request(cmd, cmd_id)
             }
         }
     }
 
     fn flush_requests(&mut self, status: Result<(), PoolError>) -> Result<(), PoolError> {
-        match self {
-            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.flush_requests(status),
-            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.flush_requests(status),
+        match *self {
+            PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.flush_requests(status),
+            PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.flush_requests(status),
         }
     }
 
     fn nodes(&self) -> &Vec<RemoteNode> {
-        match self {
-            &PoolWorkerHandler::CatchupHandler(ref ch) => &ch.nodes,
-            &PoolWorkerHandler::TransactionHandler(ref ch) => &ch.nodes,
+        match *self {
+            PoolWorkerHandler::CatchupHandler(ref ch) => &ch.nodes,
+            PoolWorkerHandler::TransactionHandler(ref ch) => &ch.nodes,
         }
     }
 
     fn nodes_mut(&mut self) -> &mut Vec<RemoteNode> {
-        match self {
-            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => &mut ch.nodes,
-            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => &mut ch.nodes,
+        match *self {
+            PoolWorkerHandler::CatchupHandler(ref mut ch) => &mut ch.nodes,
+            PoolWorkerHandler::TransactionHandler(ref mut ch) => &mut ch.nodes,
         }
     }
 
     fn set_f(&mut self, f: usize) {
-        match self {
-            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.f = f,
-            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.f = f,
+        match *self {
+            PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.f = f,
+            PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.f = f,
         };
     }
 
     fn get_upcoming_timeout(&self) -> Option<Tm> {
-        match self {
-            &PoolWorkerHandler::CatchupHandler(ref ch) => ch.get_upcoming_timeout(),
-            &PoolWorkerHandler::TransactionHandler(ref ch) => ch.get_upcoming_timeout(),
+        match *self {
+            PoolWorkerHandler::CatchupHandler(ref ch) => ch.get_upcoming_timeout(),
+            PoolWorkerHandler::TransactionHandler(ref ch) => ch.get_upcoming_timeout(),
         }
     }
 
     fn process_timeout(&mut self) -> Result<(), PoolError> {
-        match self {
-            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.process_timeout(),
-            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.process_timeout(),
+        match *self {
+            PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.process_timeout(),
+            PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.process_timeout(),
         }
     }
 }

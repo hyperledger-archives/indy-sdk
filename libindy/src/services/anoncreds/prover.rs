@@ -324,10 +324,10 @@ impl Prover {
                                         restrictions: &Option<Vec<Filter>>) -> bool {
         trace!("_credential_satisfy_restrictions >>> credential_info: {:?}, restrictions: {:?}", credential_info, restrictions);
 
-        let res = match restrictions {
-            &Some(ref restrictions) => restrictions.iter().any(|restriction|
+        let res = match *restrictions {
+            Some(ref restrictions) => restrictions.iter().any(|restriction|
                 self.satisfy_restriction(credential_info, &restriction)),
-            &None => true
+            None => true
         };
 
         trace!("_credential_satisfy_restrictions <<< res: {:?}", res);

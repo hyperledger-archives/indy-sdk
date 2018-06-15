@@ -80,21 +80,21 @@ pub(super) fn decrypt(joined_data: &[u8], key: &[u8]) -> Result<Vec<u8>, WalletE
 }
 
 pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &[u8], tag_value_key: &[u8]) -> Result<Option<HashMap<String, String>>, WalletError> {
-    match etags {
-        &None => Ok(None),
-        &Some(ref etags) => {
+    match *etags {
+        None => Ok(None),
+        Some(ref etags) => {
             let mut tags: HashMap<String, String> = HashMap::new();
 
             for etag in etags {
-                let (name, value) = match etag {
-                    &Tag::PlainText(ref ename, ref value) => {
+                let (name, value) = match *etag {
+                    Tag::PlainText(ref ename, ref value) => {
                         let name = match decrypt(&ename, tag_name_key) {
                             Err(_) => return Err(WalletError::EncryptionError("Unable to decrypt tag name".to_string())),
                             Ok(tag_name_bytes) => format!("~{}", str::from_utf8(&tag_name_bytes)?)
                         };
                         (name, value.clone())
                     }
-                    &Tag::Encrypted(ref ename, ref evalue) => {
+                    Tag::Encrypted(ref ename, ref evalue) => {
                         let name = match decrypt(&ename, tag_name_key) {
                             Err(_) => return Err(WalletError::EncryptionError("Unable to decrypt tag name".to_string())),
                             Ok(tag_name) => String::from_utf8(tag_name)?

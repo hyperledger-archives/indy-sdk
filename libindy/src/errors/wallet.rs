@@ -214,8 +214,8 @@ pub enum WalletStorageError {
 
 impl From<rusqlite::Error> for WalletStorageError {
     fn from(err: rusqlite::Error) -> WalletStorageError {
-        match &err {
-            &rusqlite::Error::SqliteFailure(libsqlite3_sys::Error{code: libsqlite3_sys::ErrorCode::ConstraintViolation, extended_code: _}, _) => WalletStorageError::ItemAlreadyExists,
+        match err {
+            rusqlite::Error::SqliteFailure(libsqlite3_sys::Error{code: libsqlite3_sys::ErrorCode::ConstraintViolation, extended_code: _}, _) => WalletStorageError::ItemAlreadyExists,
             _ => WalletStorageError::IOError(format!("IO error during storage operation: {}", err.description()))
         }
     }
