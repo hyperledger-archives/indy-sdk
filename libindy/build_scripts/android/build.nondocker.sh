@@ -7,7 +7,7 @@ CROSS_COMPILE=$3
 
 if [ -z "${TARGET_ARCH}" ]; then
     echo STDERR "Missing TARGET_ARCH argument"
-    echo STDERR "e.g. x86 or arm"
+    echo STDERR "e.g. x86 or arm or arm64"
     echo "Sample : ./build.nondocker.sh x86 16 i686-linux-android dependencies/openssl/openssl_x86 dependencies/sodium/libsodium_x86 dependencies/zmq/libzmq_x86"
     exit 1
 fi
@@ -137,7 +137,7 @@ cp -rf ./../../Cargo.toml ${LIBINDY_SRC}
 
 pushd $LIBINDY_SRC
 export OPENSSL_STATIC=1
-#cargo clean
+cargo clean
 cargo build --release --target=${CROSS_COMPILE}
 popd
 

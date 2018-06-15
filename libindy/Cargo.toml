@@ -48,7 +48,7 @@ log = "0.4.1"
 openssl = { version = "=0.9.24", optional = true }
 owning_ref = "0.3.3"
 rand = "0.3"
-rusqlite = { version = "0.13.0", features=["bundled"] }
+rusqlite = "0.13.0"
 libsqlite3-sys = "0.9.1"
 rust-base58 = {version = "0.0.4", optional = true}
 base64 = "0.6.0"
@@ -73,3 +73,4 @@ features = ["v4"]
 
 [target.'cfg(target_os = "android")'.dependencies]
 android_logger = "0.5"
+rusqlite = { version = "0.13.0", features=["bundled"] }

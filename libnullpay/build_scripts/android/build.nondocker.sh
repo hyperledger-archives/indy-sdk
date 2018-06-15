@@ -104,7 +104,7 @@ cp -rf ./../../../libnullpay/include ${LIBNULLPAY_SRC}
 cp -rf ./../../../libnullpay/Cargo.toml ${LIBNULLPAY_SRC}
 pushd $LIBNULLPAY_SRC
 
-#cargo clean
+cargo clean
 cargo build --release --target=${CROSS_COMPILE} --verbose
 popd
 
