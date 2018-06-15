@@ -1231,7 +1231,11 @@ Errors: `Common*`
 Builds a GET\_TXN request. Request to get any transaction by its seq\_no.
 
 * `submitterDid`: String - DID of the request submitter.
-* `data`: Number
+* `ledgerType`: String - Type of the ledger the requested transaction belongs to:
+DOMAIN - used default
+POOL
+CONFIG
+* `data`: Requested transaction sequence number as it's stored on Ledger.
 * __->__ `request`: Json
 
 Errors: `Common*`

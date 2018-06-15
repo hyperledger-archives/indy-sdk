@@ -78,7 +78,7 @@ impl CatchupHandler {
                 //sending ledger status
                 //TODO not send ledger status directly as response on ping, wait pongs from all nodes?
                 let ls: LedgerStatus = LedgerStatus {
-                    txnSeqNo: self.nodes.len(),
+                    txnSeqNo: self.merkle_tree.count,
                     merkleRoot: self.merkle_tree.root_hash().as_slice().to_base58(),
                     ledgerId: 0,
                     ppSeqNo: None,
@@ -289,6 +289,7 @@ impl CatchupHandler {
                     return Ok(CatchupStepResult::FailedAtNode(node_idx));
                 }
 
+                self.merkle_tree = temp_mt.clone();
                 PoolWorker::dump_new_txns(&self.pool_name, &vec_to_dump)?;
 
                 process.merkle_tree = temp_mt;

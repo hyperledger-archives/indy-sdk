@@ -454,49 +454,46 @@ def ubuntuPublishing() {
 
 def windowsPublishing() {
     def libindyVersion
-    node('win2016') {
+    node('ubuntu') {
         stage('Publish Libindy Windows Files') {
-            def ws_path = "workspace/${env.JOB_NAME}".replace(' ', '_')
-            ws(ws_path) {
-                try {
-                    echo 'Publish Windows files: Checkout csm'
-                    checkout scm
+            try {
+                echo 'Publish Windows files: Checkout csm'
+                checkout scm
 
-                    libindyVersion = getSrcVersion("libindy")
+                libindyVersion = getSrcVersion("libindy")
 
-                    dir('libindy') {
-                        echo 'Publish Libindy Windows files'
-                        windowsPublishArtifact("libindy", "lib", libindyVersion, "LibindyWindowsBuildResult")
-                    }
+                echo 'Publish Windows files: Build docker image'
+                testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
-                    dir('cli') {
-                        echo 'Publish Indy Cli Windows files'
-                        windowsPublishArtifact("indy-cli", "executable", libindyVersion, "IndyCliWindowsBuildResult")
-                    }
+                echo 'Publish Libindy Windows files'
+                windowsPublishArtifact(testEnv, "libindy", "libindy", "lib", libindyVersion, "LibindyWindowsBuildResult")
 
-                    dir('libnullpay') {
-                        def libnullpayVersion = getSrcVersion("libnullpay")
+                echo 'Publish Indy Cli Windows files'
+                windowsPublishArtifact(testEnv, "cli", "indy-cli", "executable", libindyVersion, "IndyCliWindowsBuildResult")
 
-                        echo 'Publish Libnullpay Cli Windows files'
-                        windowsPublishArtifact("libnullpay", "lib", libnullpayVersion, "LibnullpayWindowsBuildResult")
-                    }
-                }
-                finally {
-                    echo 'Publish Windows files: Cleanup'
-                    cleanWs()
-                }
+                def libnullpayVersion = getSrcVersion("libnullpay")
+
+                echo 'Publish Libnullpay Cli Windows files'
+                windowsPublishArtifact(testEnv, "libnullpay", "libnullpay", "lib", libnullpayVersion, "LibnullpayWindowsBuildResult")
+            }
+            finally {
+                echo 'Publish Windows files: Cleanup'
+                step([$class: 'WsCleanup'])
             }
         }
-        cleanWs()
     }
     return libindyVersion
 }
 
-def windowsPublishArtifact(packageName, packageType, packageVersion, stashName) {
-    unstash name: stashName
+def windowsPublishArtifact(testEnv, folder, packageName, packageType, packageVersion, stashName) {
+    testEnv.inside {
+        sh 'chmod -R 777 ci'
 
-    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-        sh "../ci/win-zip-and-upload.sh $packageName $packageType $packageVersion '${repo_key}' ${env.BRANCH_NAME} $env.BUILD_NUMBER"
+        unstash name: stashName
+
+        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
+            sh "ci/win-zip-and-upload.sh $folder $packageName $packageType $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+        }
     }
 }
 

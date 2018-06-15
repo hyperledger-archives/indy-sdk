@@ -96,7 +96,7 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
 /// tag: allows to distinct between credential definitions for the same issuer and schema
 /// signature_type: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math. Supported types are:
 /// - 'CL': Camenisch-Lysyanskaya credential signature type
-/// config_json: type-specific configuration of credential definition as json:
+/// config_json: (optional) type-specific configuration of credential definition as json:
 /// - 'CL':
 ///   - support_revocation: whether to request non-revocation credential (optional, default false)
 /// cb: Callback that takes command result as parameter.
@@ -127,7 +127,7 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
     check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(tag, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(signature_type, ErrorCode::CommonInvalidParam6);
-    check_useful_c_str!(config_json, ErrorCode::CommonInvalidParam7);
+    check_useful_opt_c_str!(config_json, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     trace!("indy_issuer_create_and_store_credential_def: entities >>> wallet_handle: {:?}, issuer_did: {:?}, schema_json: {:?}, tag: {:?}, \

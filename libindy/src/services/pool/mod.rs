@@ -30,6 +30,7 @@ use std::fmt::Debug;
 use std::io::{Read, BufRead, Write};
 use std::ops::{Add, Sub};
 
+use api::ledger::{CustomFree, CustomTransactionParser};
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use commands::pool::PoolCommand;
@@ -44,12 +45,17 @@ use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
 use self::indy_crypto::bls::VerKey;
 use std::path::PathBuf;
+use std::sync::Mutex;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 pub struct PoolService {
     pending_pools: RefCell<HashMap<i32, Pool>>,
     open_pools: RefCell<HashMap<i32, Pool>>,
+}
+
+lazy_static! {
+    static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new());
 }
 
 struct Pool {
@@ -251,26 +257,26 @@ impl PoolWorker {
     }
 
     fn process_actions(&mut self, actions: Vec<ZMQLoopAction>) -> Result<(), PoolError> {
-        for action in &actions {
-            match action {
-                &ZMQLoopAction::Terminate(cmd_id) => {
+        for action in actions {
+            match action  {
+                ZMQLoopAction::Terminate(cmd_id) => {
                     let res = self.handler.flush_requests(Err(PoolError::Terminate));
                     if cmd_id >= 0 {
                         CommandExecutor::instance().send(Command::Pool(PoolCommand::CloseAck(cmd_id, res)))?;
                     }
                     return Err(PoolError::Terminate);
                 }
-                &ZMQLoopAction::Refresh(cmd_id) => {
+                ZMQLoopAction::Refresh(cmd_id) => {
                     self.refresh(cmd_id)?;
                 }
-                &ZMQLoopAction::MessageToProcess(ref msg) => {
+                ZMQLoopAction::MessageToProcess(ref msg) => {
                     if let Some(new_mt) = self.handler.process_msg(&msg.message, msg.node_idx)? {
                         self.handler.flush_requests(Ok(()))?;
                         self.handler = PoolWorkerHandler::TransactionHandler(Default::default());
                         self.connect_to_known_nodes(Some(&new_mt))?;
                     }
                 }
-                &ZMQLoopAction::RequestToSend(ref req) => {
+                ZMQLoopAction::RequestToSend(ref req) => {
                     self.handler.send_request(req.request.as_str(), req.id).or_else(|err| {
                         CommandExecutor::instance()
                             .send(Command::Ledger(LedgerCommand::SubmitAck(req.id, Err(err))))
@@ -279,7 +285,7 @@ impl PoolWorker {
                             })
                     })?;
                 }
-                &ZMQLoopAction::Timeout => {
+                ZMQLoopAction::Timeout => {
                     self.handler.process_timeout()?;
                 }
             }
@@ -783,6 +789,26 @@ impl PoolService {
         Ok(cmd_id)
     }
 
+    pub fn register_sp_parser(txn_type: &str,
+                              parser: CustomTransactionParser, free: CustomFree) -> Result<(), PoolError> {
+        if transaction_handler::REQUESTS_FOR_STATE_PROOFS.contains(&txn_type) {
+            return Err(PoolError::CommonError(CommonError::InvalidStructure(
+                format!("Try to override StateProof parser for default TXN_TYPE {}", txn_type))));
+        }
+        REGISTERED_SP_PARSERS.lock()
+            .map(|mut map| {
+                map.insert(txn_type.to_owned(), (parser, free));
+            })
+            .map_err(|_| PoolError::CommonError(CommonError::InvalidState(
+                "Can't register new SP parser: mutex lock error".to_owned())))
+    }
+
+    pub fn get_sp_parser(txn_type: &str) -> Option<(CustomTransactionParser, CustomFree)> {
+        REGISTERED_SP_PARSERS.lock().ok().and_then(|map| {
+            map.get(txn_type).map(Clone::clone)
+        })
+    }
+
     pub fn close(&self, handle: i32) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
         self.open_pools.try_borrow_mut().map_err(CommonError::from)?
@@ -988,7 +1014,10 @@ mod tests {
                 cmd_sock: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
                 open_cmd_id: 0,
                 name: "".to_string(),
-                handler: PoolWorkerHandler::CatchupHandler(Default::default()),
+                handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
+                    timeout: time::now_utc().add(Duration::seconds(2)),
+                    ..Default::default()
+                }),
             }
         }
     }

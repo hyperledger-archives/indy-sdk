@@ -19,7 +19,7 @@ use domain::ledger::rev_reg_def::{RevRegDefOperation, GetRevRegDefOperation, Get
 use domain::ledger::rev_reg::{RevRegEntryOperation, GetRevRegOperation, GetRevRegDeltaOperation, GetRevocRegReplyResult, GetRevocRegDeltaReplyResult};
 use domain::ledger::pool::{PoolConfigOperation, PoolUpgradeOperation, PoolRestartOperation};
 use domain::ledger::node::{NodeOperation, NodeOperationData};
-use domain::ledger::txn::GetTxnOperation;
+use domain::ledger::txn::{ GetTxnOperation, LedgerType};
 use domain::ledger::response::{Message, Reply};
 use domain::ledger::validator_info::GetValidatorInfoOperation;
 use domain::anoncreds::DELIMITER;
@@ -272,10 +272,17 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_get_txn_request(&self, identifier: &str, data: i32) -> Result<String, CommonError> {
-        info!("build_get_txn_request >>> identifier: {:?}, data {:?}", identifier, data);
+    pub fn build_get_txn_request(&self, identifier: &str, ledger_type: Option<&str>, seq_no: i32) -> Result<String, CommonError> {
+        info!("build_get_txn_request >>> identifier: {:?}, seq_no {:?}, ledger_type {:?}", identifier, ledger_type, seq_no);
 
-        let operation = GetTxnOperation::new(data);
+        let ledger_id = match ledger_type {
+            Some(type_) => LedgerType::from_json(&format!(r#""{}""#, type_))
+                .map_err(|_| CommonError::InvalidStructure(format!("Ledger type: {} does not supported", type_)))?
+                .to_id(),
+            None => LedgerType::DOMAIN.to_id()
+        };
+
+        let operation = GetTxnOperation::new(seq_no, ledger_id);
 
         let request = Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("GET_TXN request json is invalid {:?}.", err)))?;
@@ -803,9 +810,20 @@ mod tests {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1,"ledgerId":1},"protocolVersion":1"#;
 
-        let get_txn_request = ledger_service.build_get_txn_request(identifier, 1).unwrap();
+        let get_txn_request = ledger_service.build_get_txn_request(identifier, None, 1).unwrap();
+        assert!(get_txn_request.contains(expected_result));
+    }
+
+    #[test]
+    fn build_get_txn_request_works_for_ledger_type() {
+        let ledger_service = LedgerService::new();
+        let identifier = "identifier";
+
+        let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1,"ledgerId":0},"protocolVersion":1"#;
+
+        let get_txn_request = ledger_service.build_get_txn_request(identifier, Some("POOL"), 1).unwrap();
         assert!(get_txn_request.contains(expected_result));
     }
 }
