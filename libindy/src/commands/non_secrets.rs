@@ -129,7 +129,9 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.add_record(wallet_handle, type_, id, value, tags_json.unwrap_or("{}"))?; //TODO: question
+        let tags = serde_json::from_str(tags_json.unwrap_or("{}"))
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize tags: {:?}", err)))?;
+        let res = self.wallet_service.add_record(wallet_handle, type_, id, value, &tags)?; //TODO: question
 
         trace!("add_record <<< res: {:?}", res);
 
@@ -161,7 +163,9 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.update_record_tags(wallet_handle, type_, id, tags_json)?;
+        let tags = serde_json::from_str(tags_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize tags: {:?}", err)))?;
+        let res = self.wallet_service.update_record_tags(wallet_handle, type_, id, &tags)?;
 
         trace!("update_record_tags <<< res: {:?}", res);
 
@@ -177,7 +181,9 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.add_record_tags(wallet_handle, type_, id, tags_json)?;
+        let tags = serde_json::from_str(tags_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize tags: {:?}", err)))?;
+        let res = self.wallet_service.add_record_tags(wallet_handle, type_, id, &tags)?;
 
         trace!("add_record_tags <<< res: {:?}", res);
 
@@ -193,7 +199,11 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.delete_record_tags(wallet_handle, type_, id, tag_names_json)?;
+        let tag_names: Vec<&str> = match serde_json::from_str(tag_names_json) {
+            Ok(tag_names) => tag_names,
+            Err(serde_json_err) => return Err(IndyError::WalletError(WalletError::InputError(format!("Invalid tag names input: {}", tag_names_json))))
+        };
+        let res = self.wallet_service.delete_record_tags(wallet_handle, type_, id, &tag_names)?;
 
         trace!("delete_record_tags <<< res: {:?}", res);
 
@@ -224,15 +234,8 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let mut options = RecordOptions::from_json(options_json)
+        RecordOptions::from_json(options_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Options Json: {:?}", err)))?;
-
-        options.retrieve_type = Some(options.retrieve_type.unwrap_or(false));
-        options.retrieve_value = Some(options.retrieve_value.unwrap_or(true));
-        options.retrieve_tags = Some(options.retrieve_tags.unwrap_or(false));
-
-        let options_json = options.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize Options Json: {:?}", err)))?;
 
         let record = self.wallet_service.get_record(wallet_handle, type_, id, &options_json)?;
 
@@ -253,17 +256,8 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let mut options = SearchOptions::from_json(options_json)
+        SearchOptions::from_json(options_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Options Json: {:?}", err)))?;
-
-        options.retrieve_records = Some(options.retrieve_records.unwrap_or(true));
-        options.retrieve_total_count = Some(options.retrieve_total_count.unwrap_or(false));
-        options.retrieve_type = Some(options.retrieve_type.unwrap_or(false));
-        options.retrieve_value = Some(options.retrieve_value.unwrap_or(true));
-        options.retrieve_tags = Some(options.retrieve_tags.unwrap_or(false));
-
-        let options_json = options.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize Options Json: {:?}", err)))?;
 
         let search = self.wallet_service.search_records(wallet_handle, type_, query_json, &options_json)?;
 

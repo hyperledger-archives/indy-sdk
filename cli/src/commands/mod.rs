@@ -88,8 +88,9 @@ pub fn get_opt_bool_param(key: &str, params: &CommandParams) -> Result<Option<bo
 
 pub fn get_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Vec<&'a str>, ()> {
     match params.get(name) {
-        Some(v) => Ok(if v.is_empty() {Vec::new()} else { v.split(",").collect::<Vec<&'a str>>() }),
-        None => Err(println_err!("No required \"{}\" parameter present", name))
+        None => Err(println_err!("No required \"{}\" parameter present", name)),
+        Some(v) if v.is_empty() => Err(println_err!("No required \"{}\" parameter present", name)),
+        Some(v) => Ok(v.split(",").collect::<Vec<&'a str>>())
     }
 }
 
@@ -117,7 +118,7 @@ pub fn get_object_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<
 }
 
 fn extract_array_tuples<'a>(param: &'a str) -> Vec<String> {
-    let re = Regex::new(r#"\(([\w\d:;-_, ]+)\),?"#).unwrap();
+    let re = Regex::new(r#"\(([\w\d:;\-_, ]+)\),?"#).unwrap();
     re.captures_iter(param).map(|c| c[1].to_string()).collect::<Vec<String>>()
 }
 

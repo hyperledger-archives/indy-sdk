@@ -1,10 +1,8 @@
 package org.hyperledger.indy.sdk.non_secrets;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
-import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONObject;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
@@ -41,8 +39,7 @@ public class NonSecretsIntegrationTest extends IndyIntegrationTestWithSingleWall
 				break;
 			case "tags":
 				JSONObject expected = new JSONObject(expectedValue);
-				JSONObject actual = new JSONObject(record.getString("tags"));
-				assertTrue(expected.similar(actual));
+				assertTrue(expected.similar(record.getJSONObject("tags")));
 				break;
 			default:
 				assertTrue(false);
