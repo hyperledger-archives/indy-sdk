@@ -371,9 +371,9 @@ indy.buildNodeRequest = function buildNodeRequest (submitterDid, targetDid, data
   return cb.promise
 }
 
-indy.buildGetTxnRequest = function buildGetTxnRequest (submitterDid, data, cb) {
+indy.buildGetTxnRequest = function buildGetTxnRequest (submitterDid, ledgerType, data, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildGetTxnRequest(submitterDid, data, cb)
+  capi.buildGetTxnRequest(submitterDid, ledgerType, data, cb)
   return cb.promise
 }
 
