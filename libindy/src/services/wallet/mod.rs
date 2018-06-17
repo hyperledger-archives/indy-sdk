@@ -249,6 +249,11 @@ impl WalletService {
     pub fn delete_wallet(&self, name: &str, credentials: &str) -> Result<(), WalletError> {
         trace!("delete_wallet >>> name: {:?}, credentials: {:?}", name, credentials);
 
+        let wallets = self.wallets.borrow();
+        if wallets.values().any(|ref wallet| wallet.get_name() == name) {
+            return Err(WalletError::CommonError(CommonError::InvalidState("Wallet has to be closed before deleting".to_string())));
+        }
+
         let wallet_descriptor_path = _wallet_descriptor_path(name);
         if !wallet_descriptor_path.exists() {
             return Err(WalletError::NotFound("Wallet descriptor path does not exist.".to_string()));
@@ -976,6 +981,19 @@ mod tests {
         wallet_service.create_wallet("pool1", "wallet1", Some("inmem"), None, &_credentials()).unwrap();
         wallet_service.delete_wallet("wallet1", &_credentials()).unwrap();
         wallet_service.create_wallet("pool1", "wallet1", Some("inmem"), None, &_credentials()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_delete_wallet_returns_error_if_wallet_opened() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet("pool1", "test_wallet", None, None, &_credentials()).unwrap();
+        wallet_service.open_wallet("test_wallet", None, &_credentials()).unwrap();
+
+        let res = wallet_service.delete_wallet("test_wallet", &_credentials());
+
+        assert_match!(Err(WalletError::CommonError(CommonError::InvalidState(_))), res);
     }
 
     #[test]
