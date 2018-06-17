@@ -118,14 +118,21 @@ pub fn get_object_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<
 }
 
 fn extract_array_tuples<'a>(param: &'a str) -> Vec<String> {
-    let re = Regex::new(r#"\(([\w\d:;\-_, ]+)\),?"#).unwrap();
+    let re = Regex::new(r#"\(([^\(\)]+)\),?"#).unwrap();
     re.captures_iter(param).map(|c| c[1].to_string()).collect::<Vec<String>>()
 }
 
 pub fn get_str_tuple_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Vec<String>, ()> {
     match params.get(name) {
-        Some(v) => Ok(extract_array_tuples(v)),
-        None => Err(println_err!("No required \"{}\" parameter present", name))
+        Some(v) if !v.is_empty() => {
+            let tuples = extract_array_tuples(v);
+            if tuples.len() == 0 {
+                Err(println_err!("Parameter \"{}\" has invalid format", name))
+            } else {
+                Ok(tuples)
+            }
+        }
+        _ => Err(println_err!("No required \"{}\" parameter present", name))
     }
 }
 
