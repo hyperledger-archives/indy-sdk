@@ -9,7 +9,7 @@ using static Hyperledger.Indy.DidApi.NativeMethods;
 namespace Hyperledger.Indy.DidApi
 {
     /// <summary>
-    /// Provides cryptographic functionality.
+    /// Provides cryptographic functionality related to DIDs.
     /// </summary>
     public static class Did 
     {
