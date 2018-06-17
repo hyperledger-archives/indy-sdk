@@ -257,14 +257,15 @@ any one of the <code data-dev-comment-type="paramref" class="paramref">hash</cod
 parameters must also be provided, depending on what type of data should be stored.
 </p>
 </div>
-  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildClaimDefTxnAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildClaimDefTxnAsync*"></a>
-  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildClaimDefTxnAsync_System_String_System_Int32_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildClaimDefTxnAsync(System.String,System.Int32,System.String,System.String)">BuildClaimDefTxnAsync(String, Int32, String, String)</h4>
-  <div class="markdown level1 summary"><p>Builds a CLAIM_DEF ledger request.</p>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildCredDefRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildCredDefRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildCredDefRequestAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildCredDefRequestAsync(System.String,System.String)">BuildCredDefRequestAsync(String, String)</h4>
+  <div class="markdown level1 summary"><p>Builds an CRED_DEF request. Request to add a credential definition (in particular, public key),
+that Issuer creates for a particular Credential Schema.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildClaimDefTxnAsync(string submitterDid, int xref, string signatureType, string data)</code></pre>
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildCredDefRequestAsync(string submitterDid, string data)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -279,25 +280,13 @@ parameters must also be provided, depending on what type of data should be store
       <tr>
         <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
         <td><span class="parametername">submitterDid</span></td>
-        <td><p>The DID of the party that will submit the request.</p>
-</td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.int32(v=vs.110).aspx">Int32</a></td>
-        <td><span class="parametername">xref</span></td>
-        <td><p>The sequence number of schema.</p>
-</td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
-        <td><span class="parametername">signatureType</span></td>
-        <td><p>The signature type.</p>
+        <td><p>DID of the submitter stored in secured Wallet.</p>
 </td>
       </tr>
       <tr>
         <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
         <td><span class="parametername">data</span></td>
-        <td><p>A JSON string with the components of a key.</p>
+        <td><p>Credential definition json</p>
 </td>
       </tr>
     </tbody>
@@ -313,47 +302,19 @@ parameters must also be provided, depending on what type of data should be store
     <tbody>
       <tr>
         <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
-        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to a <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a> 
-containing the request JSON. </p>
+        <td><p>The cred def txn async.</p>
 </td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_LedgerApi_Ledger_BuildClaimDefTxnAsync_System_String_System_Int32_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p><p>
-Builds a request message that is suitable for storing a claim definition on a ledger.
-A claim definition is published by a claim issuer (e.g. a bank, passport office etc). It
-references the relevant schema, the issuer that published the claim definition, and the
-signature types used.
-</p>
-<p>
-The <code data-dev-comment-type="paramref" class="paramref">data</code> parameter expects a JSON string with the components of a key.<br>For example:</p>
-<pre><code>{
-    &quot;primary&quot;:{
-        &quot;n&quot;:&quot;1&quot;,
-        &quot;s&quot;:&quot;2&quot;,
-        &quot;rms&quot;:&quot;3&quot;,
-        &quot;r&quot;:{
-            &quot;name&quot;:&quot;1&quot;
-         },
-         &quot;rctxt&quot;:&quot;1&quot;,
-         &quot;z&quot;:&quot;1&quot;
-     }
-}</code></pre>
-
-<p>TODO: Better example required.
-</p>
-<div class="NOTE"><h5>note</h5><p>The <code data-dev-comment-type="paramref" class="paramref">signatureType</code> parameter only accepts the value
-&apos;CL&apos; at present.</p></div></p>
-</div>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetAttribRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetAttribRequestAsync*"></a>
-  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetAttribRequestAsync_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetAttribRequestAsync(System.String,System.String,System.String)">BuildGetAttribRequestAsync(String, String, String)</h4>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetAttribRequestAsync_System_String_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetAttribRequestAsync(System.String,System.String,System.String,System.String,System.String)">BuildGetAttribRequestAsync(String, String, String, String, String)</h4>
   <div class="markdown level1 summary"><p>Builds a GET_ATTRIB ledger request.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildGetAttribRequestAsync(string submitterDid, string targetDid, string data)</code></pre>
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildGetAttribRequestAsync(string submitterDid, string targetDid, string raw, string hash, string enc)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -379,9 +340,19 @@ The <code data-dev-comment-type="paramref" class="paramref">data</code> paramete
       </tr>
       <tr>
         <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
-        <td><span class="parametername">data</span></td>
+        <td><span class="parametername">raw</span></td>
         <td><p>The name of the attribute to get.</p>
 </td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">hash</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">enc</span></td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -402,20 +373,21 @@ containing the request JSON. </p>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetAttribRequestAsync_System_String_System_String_System_String__remarks">Remarks</h5>
+  <h5 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetAttribRequestAsync_System_String_System_String_System_String_System_String_System_String__remarks">Remarks</h5>
   <div class="markdown level1 remarks"><p>
 Builds a request message that is suitable for requesting an attribute from the 
 ledger.
 </p>
 </div>
-  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetClaimDefTxnAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetClaimDefTxnAsync*"></a>
-  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetClaimDefTxnAsync_System_String_System_Int32_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetClaimDefTxnAsync(System.String,System.Int32,System.String,System.String)">BuildGetClaimDefTxnAsync(String, Int32, String, String)</h4>
-  <div class="markdown level1 summary"><p>Builds a GET_CLAIM_DEF ledger request.</p>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetCredDefRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetCredDefRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetCredDefRequestAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetCredDefRequestAsync(System.String,System.String)">BuildGetCredDefRequestAsync(String, String)</h4>
+  <div class="markdown level1 summary"><p>Builds a GET_CRED_DEF request.Request to get a credential definition (in particular, public key),
+that Issuer creates for a particular Credential Schema.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildGetClaimDefTxnAsync(string submitterDid, int xref, string signatureType, string origin)</code></pre>
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildGetCredDefRequestAsync(string submitterDid, string id)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -430,25 +402,13 @@ ledger.
       <tr>
         <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
         <td><span class="parametername">submitterDid</span></td>
-        <td><p>The DID of the party that will submit the request.</p>
-</td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.int32(v=vs.110).aspx">Int32</a></td>
-        <td><span class="parametername">xref</span></td>
-        <td><p>The sequence number of the schema the claim definition targets.</p>
+        <td><p>Submitter did.</p>
 </td>
       </tr>
       <tr>
         <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
-        <td><span class="parametername">signatureType</span></td>
-        <td><p>The type of signature used in the claim definition.</p>
-</td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
-        <td><span class="parametername">origin</span></td>
-        <td><p>The DID of the issuer of the claim definition.</p>
+        <td><span class="parametername">id</span></td>
+        <td><p>Identifier.</p>
 </td>
       </tr>
     </tbody>
@@ -464,15 +424,11 @@ ledger.
     <tbody>
       <tr>
         <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
-        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to a <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a> 
-containing the request JSON. </p>
+        <td><p>The get cred def request async.</p>
 </td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetClaimDefTxnAsync_System_String_System_Int32_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>Builds a request message that is suitable for getting a claim definition from a ledger.</p>
-</div>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetDdoRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetDdoRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetDdoRequestAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetDdoRequestAsync(System.String,System.String)">BuildGetDdoRequestAsync(String, String)</h4>
   <div class="markdown level1 summary"><p>Builds a ledger request to get a DDO.</p>
@@ -589,14 +545,15 @@ Builds a request message that is suitable for requesting a NYM from the
 ledger.
 </p>
 </div>
-  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetSchemaRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetSchemaRequestAsync*"></a>
-  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetSchemaRequestAsync_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetSchemaRequestAsync(System.String,System.String,System.String)">BuildGetSchemaRequestAsync(String, String, String)</h4>
-  <div class="markdown level1 summary"><p>Builds a GET_SCHEMA ledger request.</p>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetRevocRegDefRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetRevocRegDefRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetRevocRegDefRequestAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetRevocRegDefRequestAsync(System.String,System.String)">BuildGetRevocRegDefRequestAsync(String, String)</h4>
+  <div class="markdown level1 summary"><p>Builds a GET_REVOC_REG_DEF request. Request to get a revocation registry definition,
+that Issuer creates for a particular Credential Definition.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildGetSchemaRequestAsync(string submitterDid, string dest, string data)</code></pre>
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildGetRevocRegDefRequestAsync(string submitterDid, string id)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -611,19 +568,13 @@ ledger.
       <tr>
         <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
         <td><span class="parametername">submitterDid</span></td>
-        <td><p>The DID of the party that will submit the request.</p>
+        <td><p>DID of the read request sender..</p>
 </td>
       </tr>
       <tr>
         <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
-        <td><span class="parametername">dest</span></td>
-        <td><p>The DID of the destination.</p>
-</td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
-        <td><span class="parametername">data</span></td>
-        <td><p>A JSON string specifying what schema to get.</p>
+        <td><span class="parametername">id</span></td>
+        <td><p>ID of Revocation Registry Definition in ledger..</p>
 </td>
       </tr>
     </tbody>
@@ -639,26 +590,179 @@ ledger.
     <tbody>
       <tr>
         <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
-        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to a <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a> 
-containing the request JSON. </p>
+        <td><p>Request result as json.</p>
 </td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetSchemaRequestAsync_System_String_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>
-Builds a request message that is suitable for requesting a schema from a ledger.
-</p>
-<p>
-The <code data-dev-comment-type="paramref" class="paramref">data</code> parameter must contain a JSON string with the members &quot;name&quot;,
-and &quot;version&quot; specifying the schema to get.  For example the following JSON describes
-a request for a schema with the name &quot;access&quot; that is version 1.0:
-<pre><code>{
-    &quot;name&quot;:&quot;access&quot;,
-    &quot;version&quot;:&quot;1.0&quot;
-}</code></pre>
-</p>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetRevocRegDeltaRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetRevocRegDeltaRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetRevocRegDeltaRequestAsync_System_String_System_String_System_Int64_System_Int64_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetRevocRegDeltaRequestAsync(System.String,System.String,System.Int64,System.Int64)">BuildGetRevocRegDeltaRequestAsync(String, String, Int64, Int64)</h4>
+  <div class="markdown level1 summary"><p>Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
+The Delta is defined by from and to timestamp fields.
+If from is not specified, then the whole state till to will be returned.</p>
 </div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildGetRevocRegDeltaRequestAsync(string submitterDid, string revocRegDefId, long from, long to)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">submitterDid</span></td>
+        <td><p>DID of the read request sender.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">revocRegDefId</span></td>
+        <td><p>ID of the corresponding Revocation Registry Definition in ledger.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.int64(v=vs.110).aspx">Int64</a></td>
+        <td><span class="parametername">from</span></td>
+        <td><p>Requested time represented as a total number of seconds from Unix Epoch.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.int64(v=vs.110).aspx">Int64</a></td>
+        <td><span class="parametername">to</span></td>
+        <td><p>Requested time represented as a total number of seconds from Unix Epoch.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>Request result as json.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetRevocRegRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetRevocRegRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetRevocRegRequestAsync_System_String_System_String_System_Int64_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetRevocRegRequestAsync(System.String,System.String,System.Int64)">BuildGetRevocRegRequestAsync(String, String, Int64)</h4>
+  <div class="markdown level1 summary"><p>Builds a GET_REVOC_REG request. Request to get the accumulated state of the Revocation Registry
+by ID. The state is defined by the given timestamp.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildGetRevocRegRequestAsync(string submitterDid, string revocRegDefId, long timestamp)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">submitterDid</span></td>
+        <td><p>DID of the read request sender.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">revocRegDefId</span></td>
+        <td><p>ID of the corresponding Revocation Registry Definition in ledger.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.int64(v=vs.110).aspx">Int64</a></td>
+        <td><span class="parametername">timestamp</span></td>
+        <td><p>Requested time represented as a total number of seconds from Unix Epoch</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>Request result as json..</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetSchemaRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetSchemaRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetSchemaRequestAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetSchemaRequestAsync(System.String,System.String)">BuildGetSchemaRequestAsync(String, String)</h4>
+  <div class="markdown level1 summary"><p>Builds a SCHEMA request. Request to add Credential&apos;s schema.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildGetSchemaRequestAsync(string submitterDid, string schemaId)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">submitterDid</span></td>
+        <td><p>DID of the submitter stored in secured Wallet..</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">schemaId</span></td>
+        <td><p>Schema ID in ledger</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>The get schema request async.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetTxnRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetTxnRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildGetTxnRequestAsync_System_String_System_Int32_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildGetTxnRequestAsync(System.String,System.Int32)">BuildGetTxnRequestAsync(String, Int32)</h4>
   <div class="markdown level1 summary"><p>Builds a GET_TXN request</p>
@@ -842,13 +946,301 @@ on the ledger.
 Only the <code data-dev-comment-type="paramref" class="paramref">submitterDid</code> and <code data-dev-comment-type="paramref" class="paramref">targetDid</code> parameters
 are required, however the other parameters provide greater control over the process.  Normally
 the <code data-dev-comment-type="paramref" class="paramref">targetDid</code> and <code data-dev-comment-type="paramref" class="paramref">verKey</code> parameters would be from values
-generated by a prior call to <a class="xref" href="Hyperledger.Indy.SignusApi.Signus.html#Hyperledger_Indy_SignusApi_Signus_CreateAndStoreMyDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">CreateAndStoreMyDidAsync(Wallet, String)</a>.
+generated by a prior call to <a class="xref" href="Hyperledger.Indy.DidApi.Did.html#Hyperledger_Indy_DidApi_Did_CreateAndStoreMyDidAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_">CreateAndStoreMyDidAsync(Wallet, String)</a>.
 </p>
 <p>
 The <code data-dev-comment-type="paramref" class="paramref">role</code> parameter dictates what permissions the NYM will have - valid values
 are &apos;STEWARD&apos; and &apos;TRUSTEE&apos; and &apos;TRUST_ANCHOR&apos;.
 </p>
 </div>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildPoolConfigRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildPoolConfigRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildPoolConfigRequestAsync_System_String_System_Boolean_System_Boolean_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildPoolConfigRequestAsync(System.String,System.Boolean,System.Boolean)">BuildPoolConfigRequestAsync(String, Boolean, Boolean)</h4>
+  <div class="markdown level1 summary"><p>Builds a POOL_CONFIG request.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildPoolConfigRequestAsync(string submitterDid, bool writes, bool force)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">submitterDid</span></td>
+        <td><p>Id of Identity stored in secured Wallet.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.boolean(v=vs.110).aspx">Boolean</a></td>
+        <td><span class="parametername">writes</span></td>
+        <td><p>If set to <code>true</code> writes.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.boolean(v=vs.110).aspx">Boolean</a></td>
+        <td><span class="parametername">force</span></td>
+        <td><p>If set to <code>true</code> force.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>Request result as json.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildPoolUpgradeRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildPoolUpgradeRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildPoolUpgradeRequestAsync_System_String_System_String_System_String_System_String_System_String_System_Int32_System_String_System_String_System_Boolean_System_Boolean_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildPoolUpgradeRequestAsync(System.String,System.String,System.String,System.String,System.String,System.Int32,System.String,System.String,System.Boolean,System.Boolean)">BuildPoolUpgradeRequestAsync(String, String, String, String, String, Int32, String, String, Boolean, Boolean)</h4>
+  <div class="markdown level1 summary"><p>Builds a POOL_UPGRADE request.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildPoolUpgradeRequestAsync(string submitterDid, string name, string version, string action, string sha256, int timeout, string schedule, string justification, bool reinstall, bool force)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">submitterDid</span></td>
+        <td><p>Submitter did.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">name</span></td>
+        <td><p>Name.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">version</span></td>
+        <td><p>Version.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">action</span></td>
+        <td><p>Either start or cancel</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">sha256</span></td>
+        <td><p>Sha256.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.int32(v=vs.110).aspx">Int32</a></td>
+        <td><span class="parametername">timeout</span></td>
+        <td><p>Timeout.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">schedule</span></td>
+        <td><p>Schedule.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">justification</span></td>
+        <td><p>Justification.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.boolean(v=vs.110).aspx">Boolean</a></td>
+        <td><span class="parametername">reinstall</span></td>
+        <td><p>If set to <code>true</code> reinstall.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.boolean(v=vs.110).aspx">Boolean</a></td>
+        <td><span class="parametername">force</span></td>
+        <td><p>If set to <code>true</code> force.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>Request result as json.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildRevocRegDefRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildRevocRegDefRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildRevocRegDefRequestAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildRevocRegDefRequestAsync(System.String,System.String)">BuildRevocRegDefRequestAsync(String, String)</h4>
+  <div class="markdown level1 summary"><p>Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry
+to an exists credential definition.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildRevocRegDefRequestAsync(string submitterDid, string data)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">submitterDid</span></td>
+        <td><p>DID of the submitter stored in secured Wallet.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">data</span></td>
+        <td><p>data: Revocation Registry data:
+{
+&quot;id&quot;: string - ID of the Revocation Registry,
+&quot;revocDefType&quot;: string - Revocation Registry type (only CL_ACCUM is supported for now),
+&quot;tag&quot;: string - Unique descriptive ID of the Registry,
+&quot;credDefId&quot;: string - ID of the corresponding CredentialDefinition,
+&quot;value&quot;: Registry-specific data {
+&quot;issuanceType&quot;: string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+&quot;maxCredNum&quot;: number - Maximum number of credentials the Registry can serve.
+&quot;tailsHash&quot;: string - Hash of tails.
+&quot;tailsLocation&quot;: string - Location of tails file.
+&quot;publicKeys&quot;: &lt;public_keys&gt; - Registry&apos;s public key.
+},
+&quot;ver&quot;: string - version of revocation registry definition json.
+}.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>The revoc reg def request async.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildRevocRegEntryRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildRevocRegEntryRequestAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildRevocRegEntryRequestAsync_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildRevocRegEntryRequestAsync(System.String,System.String,System.String,System.String)">BuildRevocRegEntryRequestAsync(String, String, String, String)</h4>
+  <div class="markdown level1 summary"><p>Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
+the new accumulator value and issued/revoked indices.
+This is just a delta of indices, not the whole list.
+So, it can be sent each time a new credential is issued/revoked.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; BuildRevocRegEntryRequestAsync(string submitterDid, string revocRegDefId, string revDefType, string value)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">submitterDid</span></td>
+        <td><p>DID of the submitter stored in secured Wallet.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">revocRegDefId</span></td>
+        <td><p>ID of the corresponding RevocRegDef.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">revDefType</span></td>
+        <td><p>Revocation Registry type (only CL_ACCUM is supported for now).</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">value</span></td>
+        <td><p>Registry-specific data: {
+value: {
+prevAccum: string - previous accumulator value.
+accum: string - current accumulator value.
+issued: array&lt;number&gt; - an array of issued indices.
+revoked: array&lt;number&gt; an array of revoked indices.
+},
+ver: string - version revocation registry entry json</p>
+<p>}.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
+        <td><p>The revoc reg entry request async.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_BuildSchemaRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildSchemaRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_BuildSchemaRequestAsync_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.BuildSchemaRequestAsync(System.String,System.String)">BuildSchemaRequestAsync(String, String)</h4>
   <div class="markdown level1 summary"><p>Builds a SCHEMA ledger request to store a schema.</p>
@@ -916,6 +1308,258 @@ a schema with the name &quot;access&quot; that is version 1.0 of the schema and 
 }</code></pre>
 </p>
 </div>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_ParseGetCredDefResponseAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.ParseGetCredDefResponseAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_ParseGetCredDefResponseAsync_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.ParseGetCredDefResponseAsync(System.String)">ParseGetCredDefResponseAsync(String)</h4>
+  <div class="markdown level1 summary"><p>Parse a GET_CRED_DEF response to get Credential Definition in the format compatible with Anoncreds API.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;ParseResponseResult&gt; ParseGetCredDefResponseAsync(string getCredDefResponse)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">getCredDefResponse</span></td>
+        <td><p>Get cred def response.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.LedgerApi.ParseResponseResult.html">ParseResponseResult</a>&gt;</td>
+        <td><p>The get cred def response async.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_ParseGetRevocRegDefResponseAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.ParseGetRevocRegDefResponseAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_ParseGetRevocRegDefResponseAsync_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.ParseGetRevocRegDefResponseAsync(System.String)">ParseGetRevocRegDefResponseAsync(String)</h4>
+  <div class="markdown level1 summary"><p>Parse a GET_REVOC_REG_DEF response to get Revocation Registry Definition in the format
+compatible with Anoncreds API.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;ParseResponseResult&gt; ParseGetRevocRegDefResponseAsync(string getRevocRegDefResponse)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">getRevocRegDefResponse</span></td>
+        <td><p>response of GET_REVOC_REG_DEF request..</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.LedgerApi.ParseResponseResult.html">ParseResponseResult</a>&gt;</td>
+        <td><p>Revocation Registry Definition Id and Revocation Registry Definition json.
+{
+&quot;id&quot;: string - ID of the Revocation Registry,
+&quot;revocDefType&quot;: string - Revocation Registry type (only CL_ACCUM is supported for now),
+&quot;tag&quot;: string - Unique descriptive ID of the Registry,
+&quot;credDefId&quot;: string - ID of the corresponding CredentialDefinition,
+&quot;value&quot;: Registry-specific data {
+&quot;issuanceType&quot;: string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+&quot;maxCredNum&quot;: number - Maximum number of credentials the Registry can serve.
+&quot;tailsHash&quot;: string - Hash of tails.
+&quot;tailsLocation&quot;: string - Location of tails file.
+&quot;publicKeys&quot;: &lt;public_keys&gt; - Registry&apos;s public key.
+},
+&quot;ver&quot;: string - version of revocation registry definition json.
+}.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_ParseGetRevocRegDeltaResponseAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.ParseGetRevocRegDeltaResponseAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_ParseGetRevocRegDeltaResponseAsync_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.ParseGetRevocRegDeltaResponseAsync(System.String)">ParseGetRevocRegDeltaResponseAsync(String)</h4>
+  <div class="markdown level1 summary"><p>Parse a GET_REVOC_REG_DELTA response to get Revocation Registry Delta in the format compatible with Anoncreds API.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;ParseRegistryResponseResult&gt; ParseGetRevocRegDeltaResponseAsync(string getRevocRegDeltaResponse)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">getRevocRegDeltaResponse</span></td>
+        <td><p>response of GET_REVOC_REG_DELTA request.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.LedgerApi.ParseRegistryResponseResult.html">ParseRegistryResponseResult</a>&gt;</td>
+        <td><p>Revocation Registry Definition Id, Revocation Registry Delta json and Timestamp.
+{
+&quot;value&quot;: Registry-specific data {
+prevAccum: string - previous accumulator value.
+accum: string - current accumulator value.
+issued: array&lt;number&gt; - an array of issued indices.
+revoked: array&lt;number&gt; an array of revoked indices.
+},
+&quot;ver&quot;: string - version revocation registry delta json
+}</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_ParseGetRevocRegResponseAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.ParseGetRevocRegResponseAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_ParseGetRevocRegResponseAsync_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.ParseGetRevocRegResponseAsync(System.String)">ParseGetRevocRegResponseAsync(String)</h4>
+  <div class="markdown level1 summary"><p>Parse a GET_REVOC_REG response to get Revocation Registry in the format compatible with Anoncreds API.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;ParseRegistryResponseResult&gt; ParseGetRevocRegResponseAsync(string getRevocRegResponse)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">getRevocRegResponse</span></td>
+        <td><p>response of GET_REVOC_REG request.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.LedgerApi.ParseRegistryResponseResult.html">ParseRegistryResponseResult</a>&gt;</td>
+        <td><p>Revocation Registry Definition Id, Revocation Registry json and Timestamp.
+{
+&quot;value&quot;: Registry-specific data {
+&quot;accum&quot;: string - current accumulator value.
+},
+&quot;ver&quot;: string - version revocation registry json
+}</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_LedgerApi_Ledger_ParseGetSchemaResponseAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.ParseGetSchemaResponseAsync*"></a>
+  <h4 id="Hyperledger_Indy_LedgerApi_Ledger_ParseGetSchemaResponseAsync_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.ParseGetSchemaResponseAsync(System.String)">ParseGetSchemaResponseAsync(String)</h4>
+  <div class="markdown level1 summary"><p>Parse a GET_SCHEMA response to get Schema in the format compatible with Anoncreds API.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;ParseResponseResult&gt; ParseGetSchemaResponseAsync(string getSchemaResponse)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">getSchemaResponse</span></td>
+        <td><p>response of GET_SCHEMA request.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.LedgerApi.ParseResponseResult.html">ParseResponseResult</a>&gt;</td>
+        <td><p>Schema Id and Schema json.
+{
+id: identifier of schema
+attrNames: array of attribute name strings
+name: Schema&apos;s name string
+version: Schema&apos;s version string
+ver: Version of the Schema json
+}</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
   <a id="Hyperledger_Indy_LedgerApi_Ledger_SignAndSubmitRequestAsync_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.SignAndSubmitRequestAsync*"></a>
   <h4 id="Hyperledger_Indy_LedgerApi_Ledger_SignAndSubmitRequestAsync_Hyperledger_Indy_PoolApi_Pool_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_" data-uid="Hyperledger.Indy.LedgerApi.Ledger.SignAndSubmitRequestAsync(Hyperledger.Indy.PoolApi.Pool,Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)">SignAndSubmitRequestAsync(Pool, Wallet, String, String)</h4>
   <div class="markdown level1 summary"><p>Signs and submits a request to the validator pool.</p>

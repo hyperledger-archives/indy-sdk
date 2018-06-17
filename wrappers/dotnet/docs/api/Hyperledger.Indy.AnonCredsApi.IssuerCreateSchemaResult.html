@@ -5,10 +5,10 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <title>Class ParseMsgResult
+    <title>Class IssuerCreateSchemaResult
    | Hyperledger Indy .NET Wrapper </title>
     <meta name="viewport" content="width=device-width">
-    <meta name="title" content="Class ParseMsgResult
+    <meta name="title" content="Class IssuerCreateSchemaResult
    | Hyperledger Indy .NET Wrapper ">
     <meta name="generator" content="docfx 2.25.1.0">
     
@@ -76,59 +76,70 @@
         </div>
         <div class="article row grid-right">
           <div class="col-md-10">
-            <article class="content wrap" id="_content" data-uid="Hyperledger.Indy.AgentApi.ParseMsgResult">
+            <article class="content wrap" id="_content" data-uid="Hyperledger.Indy.AnonCredsApi.IssuerCreateSchemaResult">
   
   
-  <h1 id="Hyperledger_Indy_AgentApi_ParseMsgResult" data-uid="Hyperledger.Indy.AgentApi.ParseMsgResult" class="text-break">Class ParseMsgResult
+  <h1 id="Hyperledger_Indy_AnonCredsApi_IssuerCreateSchemaResult" data-uid="Hyperledger.Indy.AnonCredsApi.IssuerCreateSchemaResult" class="text-break">Class IssuerCreateSchemaResult
   </h1>
-  <div class="markdown level0 summary"><p>Result of parsing a message.</p>
+  <div class="markdown level0 summary"><p>Issuer create schema result.</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
     <div class="level0"><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.object(v=vs.110).aspx">Object</a></div>
-    <div class="level1"><span class="xref">ParseMsgResult</span></div>
+    <div class="level1"><span class="xref">IssuerCreateSchemaResult</span></div>
   </div>
-  <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.AgentApi.html">Hyperledger.Indy.AgentApi</a></h6>
+  <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.AnonCredsApi.html">Hyperledger.Indy.AnonCredsApi</a></h6>
   <h6><strong>Assembly</strong>: Hyperledger.Indy.Sdk.dll</h6>
-  <h5 id="Hyperledger_Indy_AgentApi_ParseMsgResult_syntax">Syntax</h5>
+  <h5 id="Hyperledger_Indy_AnonCredsApi_IssuerCreateSchemaResult_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public class ParseMsgResult : Object</code></pre>
+    <pre><code class="lang-csharp hljs">public class IssuerCreateSchemaResult : Object</code></pre>
   </div>
-  <h3 id="properties">Properties
+  <h3 id="constructors">Constructors
   </h3>
-  <a id="Hyperledger_Indy_AgentApi_ParseMsgResult_Msg_" data-uid="Hyperledger.Indy.AgentApi.ParseMsgResult.Msg*"></a>
-  <h4 id="Hyperledger_Indy_AgentApi_ParseMsgResult_Msg" data-uid="Hyperledger.Indy.AgentApi.ParseMsgResult.Msg">Msg</h4>
-  <div class="markdown level1 summary"><p>Gets the parsed message.</p>
+  <a id="Hyperledger_Indy_AnonCredsApi_IssuerCreateSchemaResult__ctor_" data-uid="Hyperledger.Indy.AnonCredsApi.IssuerCreateSchemaResult.#ctor*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_IssuerCreateSchemaResult__ctor_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.IssuerCreateSchemaResult.#ctor(System.String,System.String)">IssuerCreateSchemaResult(String, String)</h4>
+  <div class="markdown level1 summary"><p>Initializes a new instance of the <a class="xref" href="Hyperledger.Indy.AnonCredsApi.IssuerCreateSchemaResult.html">IssuerCreateSchemaResult</a> class.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public byte[] Msg { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public IssuerCreateSchemaResult(string schemaId, string schemaJson)</code></pre>
   </div>
-  <h5 class="propertyValue">Property Value</h5>
+  <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
     <thead>
       <tr>
         <th>Type</th>
+        <th>Name</th>
         <th>Description</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.byte(v=vs.110).aspx">Byte</a>[]</td>
-        <td></td>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">schemaId</span></td>
+        <td><p>Schema identifier.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">schemaJson</span></td>
+        <td><p>Schema json.</p>
+</td>
       </tr>
     </tbody>
   </table>
-  <a id="Hyperledger_Indy_AgentApi_ParseMsgResult_SenderKey_" data-uid="Hyperledger.Indy.AgentApi.ParseMsgResult.SenderKey*"></a>
-  <h4 id="Hyperledger_Indy_AgentApi_ParseMsgResult_SenderKey" data-uid="Hyperledger.Indy.AgentApi.ParseMsgResult.SenderKey">SenderKey</h4>
-  <div class="markdown level1 summary"><p>Gets the key of the sender.</p>
+  <h3 id="properties">Properties
+  </h3>
+  <a id="Hyperledger_Indy_AnonCredsApi_IssuerCreateSchemaResult_SchemaId_" data-uid="Hyperledger.Indy.AnonCredsApi.IssuerCreateSchemaResult.SchemaId*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_IssuerCreateSchemaResult_SchemaId" data-uid="Hyperledger.Indy.AnonCredsApi.IssuerCreateSchemaResult.SchemaId">SchemaId</h4>
+  <div class="markdown level1 summary"><p>Gets the schema identifier.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public string SenderKey { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public string SchemaId { get; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -141,7 +152,33 @@
     <tbody>
       <tr>
         <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
-        <td></td>
+        <td><p>The schema identifier.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Hyperledger_Indy_AnonCredsApi_IssuerCreateSchemaResult_SchemaJson_" data-uid="Hyperledger.Indy.AnonCredsApi.IssuerCreateSchemaResult.SchemaJson*"></a>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_IssuerCreateSchemaResult_SchemaJson" data-uid="Hyperledger.Indy.AnonCredsApi.IssuerCreateSchemaResult.SchemaJson">SchemaJson</h4>
+  <div class="markdown level1 summary"><p>Gets the schema json.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public string SchemaJson { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><p>The schema json.</p>
+</td>
       </tr>
     </tbody>
   </table>

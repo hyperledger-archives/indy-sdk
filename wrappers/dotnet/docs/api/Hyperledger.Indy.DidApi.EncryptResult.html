@@ -5,10 +5,10 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <title>Class BoxResult
+    <title>Class EncryptResult
    | Hyperledger Indy .NET Wrapper </title>
     <meta name="viewport" content="width=device-width">
-    <meta name="title" content="Class BoxResult
+    <meta name="title" content="Class EncryptResult
    | Hyperledger Indy .NET Wrapper ">
     <meta name="generator" content="docfx 2.25.1.0">
     
@@ -76,70 +76,35 @@
         </div>
         <div class="article row grid-right">
           <div class="col-md-10">
-            <article class="content wrap" id="_content" data-uid="Hyperledger.Indy.CryptoApi.BoxResult">
+            <article class="content wrap" id="_content" data-uid="Hyperledger.Indy.DidApi.EncryptResult">
   
   
-  <h1 id="Hyperledger_Indy_CryptoApi_BoxResult" data-uid="Hyperledger.Indy.CryptoApi.BoxResult" class="text-break">Class BoxResult
+  <h1 id="Hyperledger_Indy_DidApi_EncryptResult" data-uid="Hyperledger.Indy.DidApi.EncryptResult" class="text-break">Class EncryptResult
   </h1>
-  <div class="markdown level0 summary"><p>The result of calling the <a class="xref" href="Hyperledger.Indy.CryptoApi.Crypto.html#Hyperledger_Indy_CryptoApi_Crypto_BoxAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_Byte___">BoxAsync(Wallet, String, String, Byte[])</a> method.</p>
+  <div class="markdown level0 summary"><p>The result of encryption.</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
     <div class="level0"><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.object(v=vs.110).aspx">Object</a></div>
-    <div class="level1"><span class="xref">BoxResult</span></div>
+    <div class="level1"><span class="xref">EncryptResult</span></div>
   </div>
-  <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.CryptoApi.html">Hyperledger.Indy.CryptoApi</a></h6>
+  <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.DidApi.html">Hyperledger.Indy.DidApi</a></h6>
   <h6><strong>Assembly</strong>: Hyperledger.Indy.Sdk.dll</h6>
-  <h5 id="Hyperledger_Indy_CryptoApi_BoxResult_syntax">Syntax</h5>
+  <h5 id="Hyperledger_Indy_DidApi_EncryptResult_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public class BoxResult : Object</code></pre>
+    <pre><code class="lang-csharp hljs">public sealed class EncryptResult : Object</code></pre>
   </div>
-  <h3 id="constructors">Constructors
-  </h3>
-  <a id="Hyperledger_Indy_CryptoApi_BoxResult__ctor_" data-uid="Hyperledger.Indy.CryptoApi.BoxResult.#ctor*"></a>
-  <h4 id="Hyperledger_Indy_CryptoApi_BoxResult__ctor_System_Byte___System_Byte___" data-uid="Hyperledger.Indy.CryptoApi.BoxResult.#ctor(System.Byte[],System.Byte[])">BoxResult(Byte[], Byte[])</h4>
-  <div class="markdown level1 summary"><p>Initializes a new BoxResult.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="decalaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public BoxResult(byte[] encryptedMessage, byte[] nonce)</code></pre>
-  </div>
-  <h5 class="parameters">Parameters</h5>
-  <table class="table table-bordered table-striped table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Name</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.byte(v=vs.110).aspx">Byte</a>[]</td>
-        <td><span class="parametername">encryptedMessage</span></td>
-        <td><p>The encrpyted message.</p>
-</td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.byte(v=vs.110).aspx">Byte</a>[]</td>
-        <td><span class="parametername">nonce</span></td>
-        <td><p>The nonce.</p>
-</td>
-      </tr>
-    </tbody>
-  </table>
   <h3 id="properties">Properties
   </h3>
-  <a id="Hyperledger_Indy_CryptoApi_BoxResult_EncryptedMessage_" data-uid="Hyperledger.Indy.CryptoApi.BoxResult.EncryptedMessage*"></a>
-  <h4 id="Hyperledger_Indy_CryptoApi_BoxResult_EncryptedMessage" data-uid="Hyperledger.Indy.CryptoApi.BoxResult.EncryptedMessage">EncryptedMessage</h4>
+  <a id="Hyperledger_Indy_DidApi_EncryptResult_EncryptedMsg_" data-uid="Hyperledger.Indy.DidApi.EncryptResult.EncryptedMsg*"></a>
+  <h4 id="Hyperledger_Indy_DidApi_EncryptResult_EncryptedMsg" data-uid="Hyperledger.Indy.DidApi.EncryptResult.EncryptedMsg">EncryptedMsg</h4>
   <div class="markdown level1 summary"><p>Gets the encrypted message.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public byte[] EncryptedMessage { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public byte[] EncryptedMsg { get; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -156,8 +121,8 @@
       </tr>
     </tbody>
   </table>
-  <a id="Hyperledger_Indy_CryptoApi_BoxResult_Nonce_" data-uid="Hyperledger.Indy.CryptoApi.BoxResult.Nonce*"></a>
-  <h4 id="Hyperledger_Indy_CryptoApi_BoxResult_Nonce" data-uid="Hyperledger.Indy.CryptoApi.BoxResult.Nonce">Nonce</h4>
+  <a id="Hyperledger_Indy_DidApi_EncryptResult_Nonce_" data-uid="Hyperledger.Indy.DidApi.EncryptResult.Nonce*"></a>
+  <h4 id="Hyperledger_Indy_DidApi_EncryptResult_Nonce" data-uid="Hyperledger.Indy.DidApi.EncryptResult.Nonce">Nonce</h4>
   <div class="markdown level1 summary"><p>Gets the nonce.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
