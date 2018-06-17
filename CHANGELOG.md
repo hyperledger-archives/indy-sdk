@@ -1,22 +1,22 @@
 # 1.5.0
 
-* Performed significant changes related to Wallet storage. 
+* Performed significant changes related to [Wallet Storage](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage):
     * Changed API of Plugged Wallet storage to extend set of commands related to working with storing data. 
     * Plugged wallet used to handles both security and storage layers. Now all encryption performs on Libindy level. 
     * The format of storing data was changed to support efficient search.
-    * Provided export/import functionality.
-* Added Non-Secrets wallet API that allows store and read application specific data in the wallet.
-* Added Generic Payments API that provides ability to register custom payment method 
+* Provided [Export/Import functionality](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/009-wallet-export-import).
+* Added [Non-Secrets API](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage#non-secrets-api) that allows store and read application specific data in the wallet.
+* Added [Generic Payments API](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/004-payment-interface#payment-method-api) that provides ability to register custom payment method 
 and then create payment addresses, build payment-related transactions, assign fees to transactions.
-* Added ability loading custom plugins by Indy CLI.
-* Added set of commands in Indy CLI providing ability to perform the main payments operations:
+* Added ability of [loading custom plugins by Indy CLI](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/006-cli-plugins).
+* Added the set of commands in Indy CLI providing ability to perform [the main payments operations](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/007-cli-payments):
   * Creation of payment address
   * Listing of payment addresses
   * Getting list of UTXO for payment address
   * Sending payment transaction
   * Adding fees to transactions
   * Getting transactions fees amount
-* Implemented simple `Nullpay` payment plugin that provide experience similar to real payments system.
+* Implemented simple [Nullpay payment plugin](https://github.com/hyperledger/indy-sdk/tree/master/libnullpay) that provide experience similar to real payments system.
   * Implemented publishing of Ubuntu and Windows packages for `Nullpay` plugin.
 * Added set of endpoints related to Ledger API. Implemented corresponding commands in Indy CLI. 
     * GET Validator Info request.
