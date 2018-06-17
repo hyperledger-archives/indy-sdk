@@ -129,7 +129,9 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.add_record(wallet_handle, type_, id, value, tags_json.unwrap_or("{}"))?;
+        let tags = serde_json::from_str(tags_json.unwrap_or("{}"))
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize tags: {:?}", err)))?;
+        let res = self.wallet_service.add_record(wallet_handle, type_, id, value, &tags)?; //TODO: question
 
         trace!("add_record <<< res: {:?}", res);
 
@@ -161,7 +163,9 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.update_record_tags(wallet_handle, type_, id, tags_json)?;
+        let tags = serde_json::from_str(tags_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize tags: {:?}", err)))?;
+        let res = self.wallet_service.update_record_tags(wallet_handle, type_, id, &tags)?;
 
         trace!("update_record_tags <<< res: {:?}", res);
 
@@ -177,7 +181,9 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.add_record_tags(wallet_handle, type_, id, tags_json)?;
+        let tags = serde_json::from_str(tags_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize tags: {:?}", err)))?;
+        let res = self.wallet_service.add_record_tags(wallet_handle, type_, id, &tags)?;
 
         trace!("add_record_tags <<< res: {:?}", res);
 
@@ -193,7 +199,11 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let res = self.wallet_service.delete_record_tags(wallet_handle, type_, id, tag_names_json)?;
+        let tag_names: Vec<&str> = match serde_json::from_str(tag_names_json) {
+            Ok(tag_names) => tag_names,
+            Err(serde_json_err) => return Err(IndyError::WalletError(WalletError::InputError(format!("Invalid tag names input: {}", tag_names_json))))
+        };
+        let res = self.wallet_service.delete_record_tags(wallet_handle, type_, id, &tag_names)?;
 
         trace!("delete_record_tags <<< res: {:?}", res);
 
