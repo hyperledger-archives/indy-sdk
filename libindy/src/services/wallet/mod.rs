@@ -1,5 +1,5 @@
-extern crate libc;
 extern crate indy_crypto;
+extern crate sodiumoxide;
 
 mod storage;
 mod encryption;
@@ -17,6 +17,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::mem;
 use named_type::NamedType;
+use std::rc::Rc;
 
 use serde_json;
 
@@ -25,7 +26,7 @@ use errors::wallet::WalletError;
 use errors::common::CommonError;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
-use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
+use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF, ChaCha20Poly1305IETFKey};
 
 use self::export_import::{export, import};
 use self::storage::{WalletStorage, WalletStorageType};
@@ -33,6 +34,8 @@ use self::storage::default::SQLiteStorageType;
 use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Wallet, Keys};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use self::sodiumoxide::utils::memzero;
+use self::encryption::derive_key;
 use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 
 
@@ -65,29 +68,25 @@ pub struct WalletConfig {
 
 impl<'a> JsonDecodable<'a> for WalletConfig {}
 
-#[derive(Debug)]
+
 pub struct WalletCredentials {
-    master_key: [u8; 32],
-    rekey: Option<[u8; 32]>,
+    master_key: ChaCha20Poly1305IETFKey,
+    rekey: Option<ChaCha20Poly1305IETFKey>,
     storage_credentials: String,
 }
 
 
 impl WalletCredentials {
-    fn parse(json: &str, salt: &[u8; ChaCha20Poly1305IETF::KEYBYTES]) -> Result<WalletCredentials, WalletError> {
+    fn parse(json: &str, salt: &[u8; PwhashArgon2i13::SALTBYTES]) -> Result<WalletCredentials, WalletError> {
         if let serde_json::Value::Object(m) = serde_json::from_str(json)? {
             let master_key = if let Some(key) = m.get("key").and_then(|s| s.as_str()) {
-                let mut master_key: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
-                PwhashArgon2i13::derive_key(&mut master_key, key.as_bytes(), &salt)?;
-                master_key
+                derive_key(key.as_bytes(), salt)?
             } else {
                 return Err(WalletError::InputError(String::from("Credentials missing 'key' field")));
             };
 
-            let rekey = if let Some(key) = m.get("rekey").and_then(|s| s.as_str()) {
-                let mut rekey: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
-                PwhashArgon2i13::derive_key(&mut rekey, key.as_bytes(), salt)?;
-                Some(rekey)
+            let rekey = if let Some(key) =  m.get("rekey").and_then(|s| s.as_str()) {
+                Some(derive_key(key.as_bytes(), salt)?)
             } else {
                 None
             };
@@ -225,7 +224,7 @@ impl WalletService {
             .recursive(true)
             .create(wallet_path)?;
 
-        storage_type.create_storage(name, storage_config, &credentials.storage_credentials, &Keys::gen_keys(credentials.master_key))?;
+        storage_type.create_storage(name, storage_config, &credentials.storage_credentials, &Keys::gen_keys(&credentials.master_key))?;
 
         let wallet_descriptor_json = WalletDescriptor::new(pool_name, xtype, name).to_json()?;
 
@@ -317,9 +316,9 @@ impl WalletService {
         let keys_vector = WalletService::decrypt_keys(storage.as_ref(), &credentials)?;
         let keys = Keys::new(keys_vector)?;
 
-        let wallet = Wallet::new(name, &descriptor.pool_name, storage, keys);
+        let wallet = Wallet::new(name, &descriptor.pool_name, storage, Rc::new(keys));
         if let Some(ref rekey) = credentials.rekey {
-            wallet.rotate_key(&rekey[..])?;
+            wallet.rotate_key(rekey)?;
         }
         let wallet_handle = SequenceUtils::get_next_id();
         wallets.insert(wallet_handle, Box::new(wallet));
