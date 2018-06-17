@@ -125,13 +125,13 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore]
         fn indy_delete_wallet_works_for_opened() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            WalletUtils::create_wallet(POOL, WALLET, None, None, None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(WALLET, None, None).unwrap();
             let res = WalletUtils::delete_wallet(WALLET, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
