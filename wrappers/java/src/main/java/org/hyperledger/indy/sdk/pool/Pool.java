@@ -217,7 +217,7 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 	 * Set PROTOCOL_VERSION to specific version.
 	 *
 	 * There is a global property PROTOCOL_VERSION that used in every request to the pool and
-	 * specified version of Indy Node which Libindy work.
+	 * specified version of Indy Node which Libindy works.
 	 *
 	 * By default PROTOCOL_VERSION=1.
 	 *

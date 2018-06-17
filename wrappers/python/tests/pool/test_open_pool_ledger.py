@@ -27,4 +27,4 @@ async def test_open_pool_ledger_works_for_incompatible_protocol_version(pool_led
     with pytest.raises(IndyError) as e:
         await pool.open_pool_ledger(pool_name, None)
 
-    assert ErrorCode.PoolGenesisTransactionsIncompatibleProtocolVersion == e.value.error_code
+    assert ErrorCode.PoolIncompatibleProtocolVersion == e.value.error_code

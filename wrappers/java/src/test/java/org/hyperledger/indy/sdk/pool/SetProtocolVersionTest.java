@@ -14,7 +14,7 @@ public class SetProtocolVersionTest extends IndyIntegrationTest {
 
 	@Test
 	public void testSetProtocolVersionWorksForUnsupported() throws Exception {
-		thrown.expectCause(isA(PoolGenesisTransactionsIncompatibleProtocolVersionException.class));
+		thrown.expectCause(isA(PoolIncompatibleProtocolVersionException.class));
 
 		Pool.setProtocolVersion(0).get();
 	}

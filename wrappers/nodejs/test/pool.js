@@ -22,7 +22,7 @@ test('pool', async function (t) {
   await indy.setProtocolVersion(1)
 
   err = await t.throws(indy.openPoolLedger(pool.name, 'null'))
-  t.is(err.indyName, 'PoolGenesisTransactionsIncompatibleProtocolVersion')
+  t.is(err.indyName, 'PoolIncompatibleProtocolVersion')
 
   await indy.setProtocolVersion(2)
 

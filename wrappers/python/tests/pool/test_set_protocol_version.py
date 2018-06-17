@@ -16,4 +16,4 @@ async def test_test_set_protocol_version_works_for_unsupported():
     with pytest.raises(IndyError) as e:
         await pool.set_protocol_version(0)
 
-    assert ErrorCode.PoolGenesisTransactionsIncompatibleProtocolVersion == e.value.error_code
+    assert ErrorCode.PoolIncompatibleProtocolVersion == e.value.error_code

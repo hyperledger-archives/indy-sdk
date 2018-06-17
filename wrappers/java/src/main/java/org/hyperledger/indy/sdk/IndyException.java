@@ -115,8 +115,8 @@ public class IndyException extends Exception {
 				return new PoolLedgerConfigExistsException();
 			case PoolLedgerTimeout:
 				return new TimeoutException();
-			case PoolGenesisTransactionsIncompatibleProtocolVersion:
-				return new PoolGenesisTransactionsIncompatibleProtocolVersionException();
+			case PoolIncompatibleProtocolVersion:
+				return new PoolIncompatibleProtocolVersionException();
 			case AnoncredsRevocationRegistryFullError:
 				return new RevocationRegistryFullException();
 			case AnoncredsInvalidUserRevocId:

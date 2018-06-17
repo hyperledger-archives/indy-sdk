@@ -77,7 +77,7 @@ public class OpenPoolTest extends IndyIntegrationTest {
 
 	@Test
 	public void testOpenPoolWorksForIncompatibleProtocolVersion() throws Exception {
-		thrown.expectCause(isA(PoolGenesisTransactionsIncompatibleProtocolVersionException.class));
+		thrown.expectCause(isA(PoolIncompatibleProtocolVersionException.class));
 
 		Pool.setProtocolVersion(1).get();
 

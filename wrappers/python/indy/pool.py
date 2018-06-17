@@ -168,7 +168,7 @@ async def set_protocol_version(protocol_version: int) -> None:
     Set PROTOCOL_VERSION to specific version.
 
     There is a global property PROTOCOL_VERSION that used in every request to the pool and
-    specified version of Indy Node which Libindy work.
+    specified version of Indy Node which Libindy works.
     By default PROTOCOL_VERSION=1.
 
     :param protocol_version: Protocol version will be used. Can be one of: 1,2.

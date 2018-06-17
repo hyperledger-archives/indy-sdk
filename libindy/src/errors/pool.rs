@@ -85,7 +85,7 @@ impl ToErrorCode for PoolError {
             PoolError::Terminate => ErrorCode::PoolLedgerTerminated,
             PoolError::Timeout => ErrorCode::PoolLedgerTimeout,
             PoolError::AlreadyExists(_) => ErrorCode::PoolLedgerConfigAlreadyExistsError,
-            PoolError::PoolIncompatibleProtocolVersion(_) => ErrorCode::PoolGenesisTransactionsIncompatibleProtocolVersion,
+            PoolError::PoolIncompatibleProtocolVersion(_) => ErrorCode::PoolIncompatibleProtocolVersion,
             PoolError::CommonError(ref err) => err.to_error_code()
         }
     }

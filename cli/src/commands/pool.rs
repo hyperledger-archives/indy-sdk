@@ -88,7 +88,7 @@ pub mod connect_command {
             .and_then(|_| {
                 match Pool::set_protocol_version(protocol_version) {
                     Ok(_) => Ok(()),
-                    Err(ErrorCode::PoolGenesisTransactionsIncompatibleProtocolVersion) =>
+                    Err(ErrorCode::PoolIncompatibleProtocolVersion) =>
                         Err(println_err!("Unsupported Protocol Version has been specified \"{}\".", protocol_version)),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                 }
@@ -103,7 +103,7 @@ pub mod connect_command {
                     Err(ErrorCode::CommonIOError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                     Err(ErrorCode::PoolLedgerTerminated) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                     Err(ErrorCode::PoolLedgerTimeout) => Err(println_err!("Pool \"{}\" has not been connected.", name)),
-                    Err(ErrorCode::PoolGenesisTransactionsIncompatibleProtocolVersion) =>
+                    Err(ErrorCode::PoolIncompatibleProtocolVersion) =>
                         Err(println_err!("Pool \"{}\" are not compatible with Protocol Version \"{}\".", name, protocol_version)),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                 }

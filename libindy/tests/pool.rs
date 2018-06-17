@@ -512,7 +512,7 @@ mod medium_cases {
             PoolUtils::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
 
             let res = PoolUtils::open_pool_ledger(POOL, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolGenesisTransactionsIncompatibleProtocolVersion);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolIncompatibleProtocolVersion);
 
             TestUtils::cleanup_storage();
         }
@@ -590,7 +590,7 @@ mod medium_cases {
         #[test]
         fn indy_set_protocol_version_works_for_unsupported() {
             let res = PoolUtils::set_protocol_version(0);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolGenesisTransactionsIncompatibleProtocolVersion);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolIncompatibleProtocolVersion);
         }
     }
 }

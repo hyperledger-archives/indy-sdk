@@ -222,7 +222,7 @@ public enum ErrorCode {
 	/**
 	 * Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version
 	 */
-	PoolGenesisTransactionsIncompatibleProtocolVersion(308),
+	PoolIncompatibleProtocolVersion(308),
 
 	// Crypto errors
 

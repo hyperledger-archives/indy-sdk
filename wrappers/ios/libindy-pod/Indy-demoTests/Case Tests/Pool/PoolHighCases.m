@@ -103,7 +103,7 @@
     ret = [[PoolUtils sharedInstance] openPoolLedger:[TestUtils pool]
                                               config:nil
                                          poolHandler:&poolHandle];
-    XCTAssertEqual(ret.code, PoolGenesisTransactionsIncompatibleProtocolVersion, @"PoolUtils::openPoolLedger() failed!");
+    XCTAssertEqual(ret.code, PoolIncompatibleProtocolVersion, @"PoolUtils::openPoolLedger() failed!");
 }
 
 // MARK: - Refresh
@@ -198,7 +198,7 @@
 
 - (void)testSetProtocolVersionWorksForUnsupported {
     NSError *ret = [[PoolUtils sharedInstance] setProtocolVersion:@(0)];
-    XCTAssertEqual(ret.code, PoolGenesisTransactionsIncompatibleProtocolVersion, @"PoolUtils::setProtocolVersion() failed!");
+    XCTAssertEqual(ret.code, PoolIncompatibleProtocolVersion, @"PoolUtils::setProtocolVersion() failed!");
 }
 
 @end
