@@ -60,7 +60,7 @@ public abstract class LibIndy {
 		public int indy_parse_get_cred_def_response(int command_handle, String get_cred_def_response, Callback cb);
 		public int indy_build_node_request(int command_handle, String submitter_did, String target_did, String data, Callback cb);
 		public int indy_build_get_validator_info_request(int command_handle, String submitter_did, Callback cb);
-		public int indy_build_get_txn_request(int command_handle, String submitter_did, int data, Callback cb);
+		public int indy_build_get_txn_request(int command_handle, String submitter_did, String ledger_type, int data, Callback cb);
 		public int indy_build_pool_config_request(int command_handle, String submitter_did, boolean writes, boolean force, Callback cb);
 		public int indy_build_pool_restart_request(int command_handle, String submitter_did, String action, String datetime, Callback cb);
 		public int indy_build_pool_upgrade_request(int command_handle, String submitter_did, String name, String version, String action, String sha256, int timeout, String schedule, String justification, boolean reinstall, boolean force, Callback cb);
