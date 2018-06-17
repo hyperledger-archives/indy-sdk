@@ -1,7 +1,7 @@
 # 1.5.0
 
 * Performed significant changes related to [Wallet Storage](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage):
-    * Changed API of Plugged Wallet storage to extend set of commands related to working with storing data. 
+    * Changed API of Plugged Wallet storage to extend set of commands related to working with stored data. 
     * Plugged wallet used to handles both security and storage layers. Now all encryption performs on Libindy level. 
     * The format of storing data was changed to support efficient search.
 * Provided [Export/Import functionality](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/009-wallet-export-import).
@@ -46,7 +46,7 @@ and then create payment addresses, build payment-related transactions, assign fe
 * Bugfixes.
 
 Notes:
-* There is [migration guide](doc/migration-guide.md) about API changes.
+* There is [migration guide](doc/migration-guide-1.3.0-1.4.0.md) about API changes.
 * The changes for Credential Revocation invalidates any Anoncreds made with SDK 1.3. They must be reissued.
 * This release is intended for development purposes only. The 1.5.0 release of the SDK will contain changes to the wallet format. If you plan to put durable artifacts in the wallet, let us know so we can discuss migration to the future format.
 

@@ -3,7 +3,7 @@ libindy (1.5.0) unstable; urgency=medium
   [ Hyperledger ]
 
   * Performed significant changes related to Wallet Storage:
-      * Changed API of Plugged Wallet storage to extend set of commands related to working with storing data.
+      * Changed API of Plugged Wallet storage to extend set of commands related to working with stored data.
       * Plugged wallet used to handles both security and storage layers. Now all encryption performs on Libindy level.
       * The format of storing data was changed to support efficient search.
   * Provided Export/Import functionality.
