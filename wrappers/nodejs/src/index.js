@@ -517,6 +517,12 @@ indy.deletePoolLedgerConfig = function deletePoolLedgerConfig (configName, cb) {
   return cb.promise
 }
 
+indy.setProtocolVersion = function setProtocolVersion (protocolVersion, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.setProtocolVersion(protocolVersion, cb)
+  return cb.promise
+}
+
 indy.createWallet = function createWallet (poolName, name, xtype, config, credentials, cb) {
   cb = wrapIndyCallback(cb)
   capi.createWallet(poolName, name, xtype, config, toJson(credentials), cb)

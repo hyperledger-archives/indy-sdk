@@ -786,8 +786,8 @@ pub mod custom_command {
     command!(CommandMetadata::build("custom", "Send custom transaction to the Ledger.")
                 .add_main_param("txn", "Transaction json")
                 .add_optional_param("sign", "Is signature required")
-                .add_example(r#"ledger custom {"reqId":1,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"105","dest":"V4SGRU86Z58d6TV7PBUe6f"},"protocolVersion":1}"#)
-                .add_example(r#"ledger custom {"reqId":2,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"1","dest":"VsKV7grR1BUE29mG2Fm2kX"},"protocolVersion":1} sign=true"#)
+                .add_example(r#"ledger custom {"reqId":1,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"105","dest":"V4SGRU86Z58d6TV7PBUe6f"},"protocolVersion":2}"#)
+                .add_example(r#"ledger custom {"reqId":2,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"1","dest":"VsKV7grR1BUE29mG2Fm2kX"},"protocolVersion":2} sign=true"#)
                 .finalize()
     );
 
@@ -2700,7 +2700,7 @@ pub mod tests {
                                                 "type":"105",
                                                 "dest":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL"
                                             },
-                                            "protocolVersion":1
+                                            "protocolVersion":2
                                           }"#;
 
         pub const TXN_FOR_SIGN: &'static str = r#"{
@@ -2711,7 +2711,7 @@ pub mod tests {
                                                         "dest":"E1XWGvsrVp5ZDif2uDdTAM",
                                                         "verkey":"86F43kmApX7Da5Rcba1vCbYmc7bbauEksGxPKy8PkZyb"
                                                     },
-                                                    "protocolVersion":1
+                                                    "protocolVersion":2
                                                   }"#;
 
         #[test]
@@ -2793,7 +2793,7 @@ pub mod tests {
                 params.insert("txn", format!(r#"
                                                     "reqId":1513241300414292814,
                                                     "identifier":"{}",
-                                                    "protocolVersion":1
+                                                    "protocolVersion":2
                                                   "#, DID_TRUSTEE));
                 cmd.execute(&ctx, &params).unwrap_err();
             }

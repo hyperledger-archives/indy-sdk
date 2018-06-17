@@ -66,6 +66,7 @@ public class IndyIntegrationTest {
 			"        \"age\": {\"raw\": \"28\", \"encoded\": \"28\"}\n" +
 			"    }";
 	protected String CREDENTIALS = "{\"key\": \"key\"}";
+	protected int PROTOCOL_VERSION = 2;
 
 
 	protected static final String TRUSTEE_IDENTITY_JSON =

@@ -393,15 +393,31 @@ def pool_config():
     return res
 
 
+@pytest.fixture
+def protocol_version():
+    logger = logging.getLogger(__name__)
+    logger.debug("protocol_version: >>>")
+
+    res = 2
+
+    logger.debug("protocol_version: <<< res: %r", res)
+    return res
+
+
 # noinspection PyUnusedLocal
 @pytest.fixture
-def pool_handle(event_loop, pool_name, pool_ledger_config, pool_config, pool_handle_cleanup):
+def pool_handle(event_loop, pool_name, pool_ledger_config, pool_config, pool_handle_cleanup, protocol_version):
     logger = logging.getLogger(__name__)
-    logger.debug("pool_handle: >>> pool_name: %r, pool_ledger_config: %r, pool_config: %r, pool_handle_cleanup: %r",
+    logger.debug("pool_handle: >>> pool_name: %r, pool_ledger_config: %r, pool_config: %r, pool_handle_cleanup: %r,"
+                 " protocol_version: %r",
                  pool_name,
                  pool_ledger_config,
                  pool_config,
-                 pool_handle_cleanup)
+                 pool_handle_cleanup,
+                 protocol_version)
+
+    logger.debug("pool_handle: Setting protocol version")
+    event_loop.run_until_complete(pool.set_protocol_version(protocol_version))
 
     logger.debug("pool_handle: Opening pool ledger")
     pool_handle = event_loop.run_until_complete(pool.open_pool_ledger(pool_name, pool_config))
