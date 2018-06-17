@@ -118,7 +118,7 @@ pub fn get_object_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<
 }
 
 fn extract_array_tuples<'a>(param: &'a str) -> Vec<String> {
-    let re = Regex::new(r#"\(([\w\d:;-_, ]+)\),?"#).unwrap();
+    let re = Regex::new(r#"\(([\w\d:;\-_, ]+)\),?"#).unwrap();
     re.captures_iter(param).map(|c| c[1].to_string()).collect::<Vec<String>>()
 }
 

@@ -29,7 +29,7 @@ static PAYMENT_METHOD_NAME: &str = "null";
 static POOL_NAME: &str = "pool_1";
 static SUBMITTER_DID: &str = "Th7MpTaRZVRYnPiabds81Y";
 static TRUSTEE_SEED: &str = "000000000000000000000000Trustee1";
-static FEES: &str = r#"{"1":1, "101":2}"#;
+static FEES: &str = r#"{"NYM":1, "SCHEMA":2}"#;
 
 mod high_cases {
     use super::*;
@@ -505,9 +505,9 @@ mod high_cases {
 
             let fees_stored = payments_utils::get_request_fees(wallet_handle, pool_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME);
 
-            let fee_1 = fees_stored.get("1").unwrap();
+            let fee_1 = fees_stored.get("NYM").unwrap();
             assert_eq!(fee_1, &1);
-            let fee_2 = fees_stored.get("101").unwrap();
+            let fee_2 = fees_stored.get("SCHEMA").unwrap();
             assert_eq!(fee_2, &2);
 
             pool::close(pool_handle).unwrap();
@@ -529,9 +529,9 @@ mod high_cases {
             let resp = payments::parse_get_utxo_response(PAYMENT_METHOD_NAME, resp.as_str()).unwrap();
             let map = serde_json::from_str::<HashMap<String, i32>>(resp.as_str()).unwrap();
 
-            let fee_1 = map.get("1").unwrap();
+            let fee_1 = map.get("NYM").unwrap();
             assert_eq!(fee_1, &1);
-            let fee_2 = map.get("101").unwrap();
+            let fee_2 = map.get("SCHEMA").unwrap();
             assert_eq!(fee_2, &2);
 
             pool::close(pool_handle).unwrap();

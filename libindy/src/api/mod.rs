@@ -141,6 +141,9 @@ pub enum ErrorCode
     // Timeout for action
     PoolLedgerTimeout = 307,
 
+    // Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version
+    PoolIncompatibleProtocolVersion = 308,
+
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 

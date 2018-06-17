@@ -3,11 +3,11 @@ use errors::indy::IndyError;
 use errors::pool::PoolError;
 
 use services::pool::PoolService;
+use domain::ledger::request::ProtocolVersion;
 
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
-
 
 pub enum PoolCommand {
     Create(String, // name
@@ -30,6 +30,8 @@ pub enum PoolCommand {
             Box<Fn(Result<(), IndyError>) + Send>),
     RefreshAck(i32,
                Result<(), PoolError>),
+    SetProtocolVersion(usize, // protocol version
+                       Box<Fn(Result<(), IndyError>) + Send>),
 }
 
 pub struct PoolCommandExecutor {
@@ -126,6 +128,10 @@ impl PoolCommandExecutor {
                     Err(err) => { error!("{:?}", err); }
                 }
             }
+            PoolCommand::SetProtocolVersion(protocol_version, cb) => {
+                info!(target: "pool_command_executor", "SetProtocolVersion command received");
+                cb(self.set_protocol_version(protocol_version));
+            }
         };
     }
 
@@ -216,5 +222,20 @@ impl PoolCommandExecutor {
         };
 
         debug!("refresh <<<");
+    }
+
+    fn set_protocol_version(&self, version: usize) -> Result<(), IndyError> {
+        debug!("set_protocol_version >>> version: {:?}", version);
+
+        if version != 1 && version != 2 {
+            return Err(IndyError::PoolError(
+                PoolError::PoolIncompatibleProtocolVersion(format!("Unsupported Protocol version: {}", version))));
+        }
+
+        ProtocolVersion::set(version);
+
+        debug!("set_protocol_version <<<");
+
+        Ok(())
     }
 }
