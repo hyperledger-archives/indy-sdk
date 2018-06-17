@@ -10,10 +10,10 @@
 		pool_handle = await pool.open_pool_ledger(config_name=pool_name, config=None)
 
 		print_log('\n3. Creating new secure wallet with the given unique name\n')
-		await wallet.create_wallet(pool_name, wallet_name, None, None, None)
+		await wallet.create_wallet(pool_name, wallet_name, None, None, wallet_credentials)
 
 		print_log('\n4. Open wallet and get handle from libindy to use in methods that require wallet access\n')
-		wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+		wallet_handle = await wallet.open_wallet(wallet_name, None, wallet_credentials)
 
 		# First, put a steward DID and its keypair in the wallet. This doesn't write anything to the ledger,
 		# but it gives us a key that we can use to sign a ledger transaction that we're going to submit later.

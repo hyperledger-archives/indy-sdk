@@ -27,6 +27,7 @@ public abstract class LibIndy {
 		public int indy_refresh_pool_ledger(int command_handle, int handle, Callback cb);
 		public int indy_close_pool_ledger(int command_handle, int handle, Callback cb);
 		public int indy_delete_pool_ledger_config(int command_handle, String config_name, Callback cb);
+		public int indy_set_protocol_version(int command_handle, int protocol_version, Callback cb);
 
 		// wallet.rs
 
