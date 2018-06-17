@@ -56,6 +56,7 @@ class Variables:
     wallet_name = "Evernym_wallet"
     pool_txn = "/var/lib/indy/sandbox/pool_transactions_sandbox_genesis"
     seed_trustanchor = "TestTrustAnchor00000000000000000"
+    wallet_credentials = json.dumps({"key": "wallet_key"})
 
 
 def print_log(value_color):
@@ -90,7 +91,7 @@ async def build_nym_request():
         print_log("3. Creates a new secure wallet with the given unique name.")
         await wallet.create_wallet(Variables.pool_name,
                                    Variables.wallet_name,
-                                   None, None, None)
+                                   None, None, Variables.wallet_credentials)
         print_log("DONE")
 
         # 4. Get wallet handle to use in methods that require wallet access.
@@ -98,7 +99,7 @@ async def build_nym_request():
                   "wallet access.")
         Variables.wallet_handle = await wallet.open_wallet(
             Variables.wallet_name,
-            None, None)
+            None, Variables.wallet_credentials)
         print_log("DONE - Wallet_handle: " + str(Variables.wallet_handle))
 
         # 5. Create then store DID and verkey of seed_default_steward,
