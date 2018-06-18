@@ -3911,7 +3911,7 @@ pub mod tests {
     }
 
     fn _ensure_cred_def_added(ctx: &CommandContext, did: &str, schema_id: &str) {
-        let id = build_schema_id(did, "CL", schema_id);
+        let id = build_cred_def_id(did, schema_id, "CL", "TAG");
         let request = Ledger::build_get_cred_def_request(DID_TRUSTEE, &id).unwrap();
         _submit_retry(ctx, &request, |response| {
             let cred_def: serde_json::Value = serde_json::from_str(&response).unwrap();

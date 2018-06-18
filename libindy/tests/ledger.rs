@@ -847,7 +847,7 @@ mod high_cases {
         fn indy_build_get_cred_def_request_works() {
             PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
-            let id = CredentialDefinition::cred_def_id(IDENTIFIER, &SEQ_NO.to_string(), SIGNATURE_TYPE, TAG_1);
+            let id = AnoncredsUtils::cred_def_id(IDENTIFIER, &SEQ_NO.to_string(), SIGNATURE_TYPE, TAG_1);
             let expected_result = format!(r#""identifier":"{}","operation":{{"type":"108","ref":{},"signature_type":"{}","origin":"{}","tag":"{}"}}"#,
                                           IDENTIFIER, SEQ_NO, SIGNATURE_TYPE, IDENTIFIER, TAG_1);
 

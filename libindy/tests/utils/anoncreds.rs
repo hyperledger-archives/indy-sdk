@@ -38,6 +38,8 @@ pub const COMMON_MASTER_SECRET: &'static str = "common_master_secret_name";
 pub const CREDENTIAL1_ID: &'static str = "credential1_id";
 pub const CREDENTIAL2_ID: &'static str = "credential2_id";
 pub const CREDENTIAL3_ID: &'static str = "credential3_id";
+pub const DELIMITER: &'static str = ":";
+pub const CRED_DEF_MARKER: &'static str = "3";
 
 macro_rules! map (
     { $($key:expr => $value:expr),+ } => {
@@ -403,16 +405,20 @@ impl AnoncredsUtils {
         serde_json::to_string(&Schema::SchemaV1(AnoncredsUtils::xyz_schema())).unwrap()
     }
 
+    pub fn cred_def_id(did: &str, schema_id: &str, signature_type: &str, tag: &str) -> String {
+        format!("{}{}{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id, DELIMITER, tag)
+    }
+
     pub fn issuer_1_gvt_cred_def_id() -> String {
-        CredentialDefinition::cred_def_id(ISSUER_DID, &AnoncredsUtils::gvt_schema_id(), SIGNATURE_TYPE, TAG_1)
+        AnoncredsUtils::cred_def_id(ISSUER_DID, &AnoncredsUtils::gvt_schema_id(), SIGNATURE_TYPE, TAG_1)
     }
 
     pub fn issuer_2_gvt_cred_def_id() -> String {
-        CredentialDefinition::cred_def_id(ISSUER_DID_2, &AnoncredsUtils::gvt_schema_id(), SIGNATURE_TYPE, TAG_1)
+        AnoncredsUtils::cred_def_id(ISSUER_DID_2, &AnoncredsUtils::gvt_schema_id(), SIGNATURE_TYPE, TAG_1)
     }
 
     pub fn issuer_1_xyz_cred_def_id() -> String {
-        CredentialDefinition::cred_def_id(ISSUER_DID, &AnoncredsUtils::xyz_schema_id(), SIGNATURE_TYPE, TAG_1)
+        AnoncredsUtils::cred_def_id(ISSUER_DID, &AnoncredsUtils::xyz_schema_id(), SIGNATURE_TYPE, TAG_1)
     }
 
     pub fn issuer_1_gvt_cred_offer_info() -> CredentialOfferInfo {
