@@ -1580,7 +1580,9 @@ Set PROTOCOL_VERSION to specific version.
 There is a global property PROTOCOL_VERSION that used in every request to the pool and specified version of Indy Node which Libindy works.
 By default PROTOCOL_VERSION=1.
 
-* `protocolVersion`: Number -  Protocol version will be used. Can be one of: 1,2.
+* `protocolVersion`: Number -  Protocol version will be used:
+    *1 - for Indy Node 1.3
+    *2 - for Indy Node 1.4
 * __->__ void
 
 Errors: `Common*`, `Pool*`
