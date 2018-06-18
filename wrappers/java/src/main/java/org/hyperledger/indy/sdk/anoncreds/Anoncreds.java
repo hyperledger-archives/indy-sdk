@@ -374,7 +374,7 @@ public class Anoncreds extends IndyJava.API {
 	 * @param signature_type       Credential definition signature_type (optional, 'CL' by default) that defines credentials signature and revocation math.
 	 *                   Supported types are:
 	 *                   - 'CL': Camenisch-Lysyanskaya credential signature signature_type
-	 * @param configJson Type-specific configuration of credential definition as json:
+	 * @param configJson (optional) Type-specific configuration of credential definition as json:
 	 *                   - 'CL':
 	 *                      - revocationSupport: whether to request non-revocation credential (optional, default false)
 	 * @return A future resolving to IssuerCreateAndStoreCredentialDefResult containing:.
@@ -394,7 +394,6 @@ public class Anoncreds extends IndyJava.API {
 		ParamGuard.notNullOrWhiteSpace(issuerDid, "issuerDid");
 		ParamGuard.notNullOrWhiteSpace(schemaJson, "schemaJson");
 		ParamGuard.notNullOrWhiteSpace(tag, "tag");
-		ParamGuard.notNullOrWhiteSpace(configJson, "configJson");
 
 		CompletableFuture<IssuerCreateAndStoreCredentialDefResult> future = new CompletableFuture<IssuerCreateAndStoreCredentialDefResult>();
 		int commandHandle = addFuture(future);

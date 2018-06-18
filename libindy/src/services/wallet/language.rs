@@ -29,8 +29,8 @@ impl TagName {
 impl string::ToString for TagName {
     fn to_string(&self) -> String {
         match *self {
-            TagName::EncryptedTagName(ref v) => base64::encode(v),
-            TagName::PlainTagName(ref v) => format!("~{}", base64::encode(v))
+            TagName::EncryptedTagName(ref v) => format!(r#""{}""#, base64::encode(v)),
+            TagName::PlainTagName(ref v) => format!(r#""~{}""#, base64::encode(v))
         }
     }
 }
@@ -50,8 +50,8 @@ impl From<String> for TargetValue {
 impl string::ToString for TargetValue {
     fn to_string(&self) -> String {
         match *self {
-            TargetValue::Unencrypted(ref s) => s.clone(),
-            TargetValue::Encrypted(ref v) => base64::encode(v),
+            TargetValue::Unencrypted(ref s) => format!(r#""{}""#, s),
+            TargetValue::Encrypted(ref v) => format!(r#""{}""#, base64::encode(v)),
         }
     }
 }
@@ -68,7 +68,6 @@ pub enum Operator {
     Gte(TagName, TargetValue),
     Lt(TagName, TargetValue),
     Lte(TagName, TargetValue),
-    Regex(TagName, TargetValue),
     Like(TagName, TargetValue),
     In(TagName, Vec<TargetValue>),
 }
@@ -120,39 +119,47 @@ impl Operator {
             _ => self
         }
     }
-}
 
-
-fn join_operator_strings(operators: &Vec<Operator>) -> String {
-    operators.iter()
-        .map(|o: &Operator| -> String { o.to_string() })
-        .collect::<Vec<String>>()
-        .join(",")
-}
-
-
-impl string::ToString for Operator {
-    fn to_string(&self) -> String {
-        match *self {
-            Operator::Eq(ref tag_name, ref tag_value) => format!(r#""{}":{}"#, tag_name.to_string(), tag_value.to_string()),
-            Operator::Neq(ref tag_name, ref tag_value) => format!(r#""{}": {{ "$neq":{} }}"#, tag_name.to_string(), tag_value.to_string()),
-            Operator::Gt(ref tag_name, ref tag_value) => format!(r#""{}": {{ "$gt":{} }}"#, tag_name.to_string(), tag_value.to_string()),
-            Operator::Gte(ref tag_name, ref tag_value) => format!(r#""{}": {{ "$gte":{} }}"#, tag_name.to_string(), tag_value.to_string()),
-            Operator::Lt(ref tag_name, ref tag_value) => format!(r#""{}": {{ "$lt":{} }}"#, tag_name.to_string(), tag_value.to_string()),
-            Operator::Lte(ref tag_name, ref tag_value) => format!(r#""{}": {{ "$lte":{} }}"#, tag_name.to_string(), tag_value.to_string()),
-            Operator::Like(ref tag_name, ref tag_value) => format!(r#""{}": {{ "$like":{} }}"#, tag_name.to_string(), tag_value.to_string()),
-            Operator::Regex(ref tag_name, ref tag_value) => format!(r#""{}": {{ "$regex":{} }}"#, tag_name.to_string(), tag_value.to_string()),
-            Operator::Not(ref stmt) => format!(r#""$not":{}"#, stmt.to_string()),
+    pub fn to_json(&self, top_level: bool) -> String {
+        let query = match *self {
+            Operator::Eq(ref tag_name, ref tag_value) => format!(r#"{}:{}"#, tag_name.to_string(), tag_value.to_string()),
+            Operator::Neq(ref tag_name, ref tag_value) => format!(r#"{}:{{"$neq":{}}}"#, tag_name.to_string(), tag_value.to_string()),
+            Operator::Gt(ref tag_name, ref tag_value) => format!(r#"{}:{{"$gt":{}}}"#, tag_name.to_string(), tag_value.to_string()),
+            Operator::Gte(ref tag_name, ref tag_value) => format!(r#"{}:{{"$gte":{}}}"#, tag_name.to_string(), tag_value.to_string()),
+            Operator::Lt(ref tag_name, ref tag_value) => format!(r#"{}:{{"$lt":{}}}"#, tag_name.to_string(), tag_value.to_string()),
+            Operator::Lte(ref tag_name, ref tag_value) => format!(r#"{}:{{"$lte":{}}}"#, tag_name.to_string(), tag_value.to_string()),
+            Operator::Like(ref tag_name, ref tag_value) => format!(r#"{}:{{"$like":{}}}"#, tag_name.to_string(), tag_value.to_string()),
+            Operator::Not(ref stmt) => format!(r#""$not":{}"#, stmt.to_json(true)),
             Operator::And(ref operators) => format!("{{{}}}", join_operator_strings(operators)),
-            Operator::Or(ref operators) => format!(r#""$or": [{}])"#, join_operator_strings(operators)),
+            Operator::Or(ref operators) => if operators.len() > 0 { format!(r#""$or":[{}]"#, join_operator_strings(operators)) } else { "{}".to_string() },
             Operator::In(ref tag_name, ref tag_values) => {
-                let strings = tag_values.iter().map(|v| v.to_string()).collect::<Vec<String>>().join(", ");
-                format!(r#""{}": {{ "$in": [{}] }}"#, tag_name.to_string(), strings)
+                let strings = tag_values.iter().map(|v| v.to_string()).collect::<Vec<String>>().join(",");
+                format!(r#"{}:{{"$in":[{}]}}"#, tag_name.to_string(), strings)
             }
+        };
+
+        if top_level && !query.starts_with('{') {
+            format!("{{{}}}", query)
         }
+        else {
+            query
+        }
+
     }
 }
 
+impl string::ToString for Operator {
+    fn to_string(&self) -> String {
+        self.to_json(true)
+    }
+}
+
+fn join_operator_strings(operators: &Vec<Operator>) -> String {
+    operators.iter()
+        .map(|o: &Operator| -> String { o.to_json(false) })
+        .collect::<Vec<String>>()
+        .join(",")
+}
 
 pub fn parse_from_json(json: &str) -> Result<Operator, WalletQueryError> {
     if let serde_json::Value::Object(map) = serde_json::from_str(json)? {
@@ -270,5 +277,1815 @@ fn parse_single_operator(operator_name: String, key: String, value: serde_json::
         }
         ("$in", _) => Err(WalletQueryError::ValueErr("$in must be used with array of strings".to_string())),
         (_, _) => Err(WalletQueryError::ValueErr(format!("Bad operator: {}", operator_name)))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    extern crate rand;
+
+    use super::*;
+    use self::rand::{thread_rng, Rng};
+
+    fn _random_vector(len: usize) -> Vec<u8> {
+        thread_rng().gen_iter().take(len).collect()
+    }
+
+    fn _random_string(len: usize) -> String {
+        thread_rng().gen_ascii_chars().take(len).collect()
+    }
+
+    #[test]
+    fn test_simple_operator_empty_and() {
+        let query = Operator::And(vec![]);
+
+        let json = query.to_string();
+
+        let expected = "{}";
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_simple_operator_empty_or() {
+        let query = Operator::Or(vec![]);
+
+        let json = query.to_string();
+
+        let expected = "{}";
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_simple_operator_empty_not() {
+        let query = Operator::Not(Box::new(Operator::And(vec![])));
+
+        let json = query.to_string();
+
+        let expected = r#"{"$not":{}}"#;
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_simple_operator_eq_plaintext_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Eq(
+            TagName::PlainTagName(name1.clone()),
+            TargetValue::Unencrypted(value1.clone())
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":"{}"}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_simple_operator_eq_encrypted_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_vector(10);
+
+        let query = Operator::Eq(
+            TagName::EncryptedTagName(name1.clone()),
+            TargetValue::Encrypted(value1.clone())
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"{}":"{}"}}"#, base64::encode(&name1), base64::encode(&value1));
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_simple_operator_neq_plaintext_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Neq(
+            TagName::PlainTagName(name1.clone()),
+            TargetValue::Unencrypted(value1.clone())
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$neq":"{}"}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_simple_operator_neq_encrypted_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_vector(10);
+
+        let query = Operator::Neq(
+            TagName::EncryptedTagName(name1.clone()),
+            TargetValue::Encrypted(value1.clone())
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"{}":{{"$neq":"{}"}}}}"#, base64::encode(&name1), base64::encode(&value1));
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_simple_operator_gt_plaintext_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Gt(
+            TagName::PlainTagName(name1.clone()),
+            TargetValue::Unencrypted(value1.clone())
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$gt":"{}"}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_simple_operator_gte_plaintext_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Gte(
+            TagName::PlainTagName(name1.clone()),
+            TargetValue::Unencrypted(value1.clone())
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$gte":"{}"}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_simple_operator_lt_plaintext_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Lt(
+            TagName::PlainTagName(name1.clone()),
+            TargetValue::Unencrypted(value1.clone())
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$lt":"{}"}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_simple_operator_lte_plaintext_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Lte(
+            TagName::PlainTagName(name1.clone()),
+            TargetValue::Unencrypted(value1.clone())
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$lte":"{}"}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_simple_operator_like_plaintext_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Like(
+            TagName::PlainTagName(name1.clone()),
+            TargetValue::Unencrypted(value1.clone())
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$like":"{}"}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_simple_operator_in_plaintext_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::In(
+            TagName::PlainTagName(name1.clone()),
+            vec![TargetValue::Unencrypted(value1.clone())]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$in":["{}"]}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_simple_operator_in_plaintexts_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let value2 = _random_string(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::In(
+            TagName::PlainTagName(name1.clone()),
+            vec![
+                TargetValue::Unencrypted(value1.clone()),
+                TargetValue::Unencrypted(value2.clone()),
+                TargetValue::Unencrypted(value3.clone()),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$in":["{}","{}","{}"]}}}}"#, base64::encode(&name1), value1, value2, value3);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_simple_operator_in_encrypted_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_vector(10);
+
+        let query = Operator::In(
+            TagName::EncryptedTagName(name1.clone()),
+            vec![TargetValue::Encrypted(value1.clone())]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"{}":{{"$in":["{}"]}}}}"#, base64::encode(&name1), base64::encode(&value1));
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_simple_operator_in_encrypted_values_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_vector(10);
+        let value2 = _random_vector(10);
+        let value3 = _random_vector(10);
+
+        let query = Operator::In(
+            TagName::EncryptedTagName(name1.clone()),
+            vec![
+                TargetValue::Encrypted(value1.clone()),
+                TargetValue::Encrypted(value2.clone()),
+                TargetValue::Encrypted(value3.clone()),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"{}":{{"$in":["{}","{}","{}"]}}}}"#,
+                               base64::encode(&name1),
+                               base64::encode(&value1),
+                               base64::encode(&value2),
+                               base64::encode(&value3)
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_one_eq_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Eq(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":"{}"}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_one_neq_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Neq(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$neq":"{}"}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_one_gt_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Gt(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$gt":"{}"}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_one_gte_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Gte(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$gte":"{}"}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_one_lt_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Lt(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$lt":"{}"}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_one_lte_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Lte(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$lte":"{}"}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_one_like_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Like(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$like":"{}"}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_one_in_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::In(
+                    TagName::PlainTagName(name1.clone()),
+                    vec![TargetValue::Unencrypted(value1.clone())]
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$in":["{}"]}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_one_not_eq_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Not(
+                    Box::new(
+                        Operator::Eq(
+                            TagName::PlainTagName(name1.clone()),
+                            TargetValue::Unencrypted(value1.clone())
+                        )
+                    )
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$not":{{"~{}":"{}"}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_multiple_eq_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Eq(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Eq(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Eq(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":"{}","~{}":"{}","~{}":"{}"}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3,
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_multiple_neq_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Neq(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Neq(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Neq(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$neq":"{}"}},"~{}":{{"$neq":"{}"}},"~{}":{{"$neq":"{}"}}}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_multiple_gt_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Gt(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Gt(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Gt(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                ),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$gt":"{}"}},"~{}":{{"$gt":"{}"}},"~{}":{{"$gt":"{}"}}}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_multiple_gte_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Gte(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Gte(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Gte(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                ),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$gte":"{}"}},"~{}":{{"$gte":"{}"}},"~{}":{{"$gte":"{}"}}}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_multiple_lt_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Lt(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Lt(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Lt(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                ),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$lt":"{}"}},"~{}":{{"$lt":"{}"}},"~{}":{{"$lt":"{}"}}}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_multiple_lte_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Lte(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Lte(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Lte(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                ),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$lte":"{}"}},"~{}":{{"$lte":"{}"}},"~{}":{{"$lte":"{}"}}}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_multiple_like_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Like(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Like(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Like(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                ),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$like":"{}"}},"~{}":{{"$like":"{}"}},"~{}":{{"$like":"{}"}}}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_multiple_in_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::In(
+                    TagName::PlainTagName(name1.clone()),
+                    vec![TargetValue::Unencrypted(value1.clone())]
+                ),
+                Operator::In(
+                    TagName::PlainTagName(name2.clone()),
+                    vec![TargetValue::Unencrypted(value2.clone())]
+                ),
+                Operator::In(
+                    TagName::PlainTagName(name3.clone()),
+                    vec![TargetValue::Unencrypted(value3.clone())]
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":{{"$in":["{}"]}},"~{}":{{"$in":["{}"]}},"~{}":{{"$in":["{}"]}}}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_multiple_not_eq_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Not(
+                    Box::new(
+                        Operator::Eq(
+                            TagName::PlainTagName(name1.clone()),
+                            TargetValue::Unencrypted(value1.clone())
+                        )
+                    )
+                ),
+                Operator::Not(
+                    Box::new(
+                        Operator::Eq(
+                            TagName::PlainTagName(name2.clone()),
+                            TargetValue::Unencrypted(value2.clone())
+                        )
+                    )
+                ),
+                Operator::Not(
+                    Box::new(
+                        Operator::Eq(
+                            TagName::PlainTagName(name3.clone()),
+                            TargetValue::Unencrypted(value3.clone())
+                        )
+                    )
+                ),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$not":{{"~{}":"{}"}},"$not":{{"~{}":"{}"}},"$not":{{"~{}":"{}"}}}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3,
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_with_multiple_mixed_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+        let name4 = _random_vector(10);
+        let value4 = _random_string(10);
+        let name5 = _random_vector(10);
+        let value5 = _random_string(10);
+        let name6 = _random_vector(10);
+        let value6 = _random_string(10);
+        let name7 = _random_vector(10);
+        let value7 = _random_string(10);
+        let name8 = _random_vector(10);
+        let value8a = _random_string(10);
+        let value8b = _random_string(10);
+        let name9 = _random_vector(10);
+        let value9 = _random_string(10);
+
+        let query = Operator::And(
+            vec![
+                Operator::Eq(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Neq(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Gt(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                ),
+                Operator::Gte(
+                    TagName::PlainTagName(name4.clone()),
+                    TargetValue::Unencrypted(value4.clone())
+                ),
+                Operator::Lt(
+                    TagName::PlainTagName(name5.clone()),
+                    TargetValue::Unencrypted(value5.clone())
+                ),
+                Operator::Lte(
+                    TagName::PlainTagName(name6.clone()),
+                    TargetValue::Unencrypted(value6.clone())
+                ),
+                Operator::Like(
+                    TagName::PlainTagName(name7.clone()),
+                    TargetValue::Unencrypted(value7.clone())
+                ),
+                Operator::In(
+                    TagName::PlainTagName(name8.clone()),
+                    vec![
+                        TargetValue::Unencrypted(value8a.clone()),
+                        TargetValue::Unencrypted(value8b.clone())
+                    ]
+                ),
+                Operator::Not(
+                    Box::new(
+                        Operator::Eq(
+                            TagName::PlainTagName(name9.clone()),
+                            TargetValue::Unencrypted(value9.clone())
+                        )
+                    )
+                ),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"~{}":"{}","~{}":{{"$neq":"{}"}},"~{}":{{"$gt":"{}"}},"~{}":{{"$gte":"{}"}},"~{}":{{"$lt":"{}"}},"~{}":{{"$lte":"{}"}},"~{}":{{"$like":"{}"}},"~{}":{{"$in":["{}","{}"]}},"$not":{{"~{}":"{}"}}}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3,
+                               base64::encode(&name4), value4,
+                               base64::encode(&name5), value5,
+                               base64::encode(&name6), value6,
+                               base64::encode(&name7), value7,
+                               base64::encode(&name8), value8a, value8b,
+                               base64::encode(&name9), value9,
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_one_eq_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Eq(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":"{}"]}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_one_neq_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Neq(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":{{"$neq":"{}"}}]}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_one_gt_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Gt(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":{{"$gt":"{}"}}]}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_one_gte_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Gte(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":{{"$gte":"{}"}}]}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_one_lt_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Lt(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":{{"$lt":"{}"}}]}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_one_lte_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Lte(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":{{"$lte":"{}"}}]}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_one_like_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Like(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":{{"$like":"{}"}}]}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_one_in_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::In(
+                    TagName::PlainTagName(name1.clone()),
+                    vec![TargetValue::Unencrypted(value1.clone())]
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":{{"$in":["{}"]}}]}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_one_not_eq_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Not(
+                    Box::new(
+                        Operator::Eq(
+                            TagName::PlainTagName(name1.clone()),
+                            TargetValue::Unencrypted(value1.clone())
+                        )
+                    )
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["$not":{{"~{}":"{}"}}]}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_multiple_eq_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Eq(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Eq(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Eq(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":"{}","~{}":"{}","~{}":"{}"]}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3,
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_multiple_neq_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Neq(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Neq(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Neq(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":{{"$neq":"{}"}},"~{}":{{"$neq":"{}"}},"~{}":{{"$neq":"{}"}}]}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_multiple_gt_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Gt(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Gt(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Gt(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                ),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":{{"$gt":"{}"}},"~{}":{{"$gt":"{}"}},"~{}":{{"$gt":"{}"}}]}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_multiple_gte_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Gte(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Gte(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Gte(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                ),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":{{"$gte":"{}"}},"~{}":{{"$gte":"{}"}},"~{}":{{"$gte":"{}"}}]}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_multiple_lt_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Lt(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Lt(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Lt(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                ),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":{{"$lt":"{}"}},"~{}":{{"$lt":"{}"}},"~{}":{{"$lt":"{}"}}]}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_multiple_lte_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Lte(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Lte(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Lte(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                ),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":{{"$lte":"{}"}},"~{}":{{"$lte":"{}"}},"~{}":{{"$lte":"{}"}}]}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_multiple_like_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Like(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Like(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Like(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                ),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":{{"$like":"{}"}},"~{}":{{"$like":"{}"}},"~{}":{{"$like":"{}"}}]}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_multiple_in_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::In(
+                    TagName::PlainTagName(name1.clone()),
+                    vec![TargetValue::Unencrypted(value1.clone())]
+                ),
+                Operator::In(
+                    TagName::PlainTagName(name2.clone()),
+                    vec![TargetValue::Unencrypted(value2.clone())]
+                ),
+                Operator::In(
+                    TagName::PlainTagName(name3.clone()),
+                    vec![TargetValue::Unencrypted(value3.clone())]
+                )
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":{{"$in":["{}"]}},"~{}":{{"$in":["{}"]}},"~{}":{{"$in":["{}"]}}]}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_multiple_not_eq_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Not(
+                    Box::new(
+                        Operator::Eq(
+                            TagName::PlainTagName(name1.clone()),
+                            TargetValue::Unencrypted(value1.clone())
+                        )
+                    )
+                ),
+                Operator::Not(
+                     Box::new(
+                         Operator::Eq(
+                            TagName::PlainTagName(name2.clone()),
+                            TargetValue::Unencrypted(value2.clone())
+                         )
+                     )
+                ),
+                Operator::Not(
+                    Box::new(
+                        Operator::Eq(
+                             TagName::PlainTagName(name3.clone()),
+                            TargetValue::Unencrypted(value3.clone())
+                        )
+                    )
+                ),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["$not":{{"~{}":"{}"}},"$not":{{"~{}":"{}"}},"$not":{{"~{}":"{}"}}]}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3,
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_or_with_multiple_mixed_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+        let name4 = _random_vector(10);
+        let value4 = _random_string(10);
+        let name5 = _random_vector(10);
+        let value5 = _random_string(10);
+        let name6 = _random_vector(10);
+        let value6 = _random_string(10);
+        let name7 = _random_vector(10);
+        let value7 = _random_string(10);
+        let name8 = _random_vector(10);
+        let value8a = _random_string(10);
+        let value8b = _random_string(10);
+        let name9 = _random_vector(10);
+        let value9 = _random_string(10);
+
+        let query = Operator::Or(
+            vec![
+                Operator::Eq(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                ),
+                Operator::Neq(
+                    TagName::PlainTagName(name2.clone()),
+                    TargetValue::Unencrypted(value2.clone())
+                ),
+                Operator::Gt(
+                    TagName::PlainTagName(name3.clone()),
+                    TargetValue::Unencrypted(value3.clone())
+                ),
+                Operator::Gte(
+                    TagName::PlainTagName(name4.clone()),
+                    TargetValue::Unencrypted(value4.clone())
+                ),
+                Operator::Lt(
+                    TagName::PlainTagName(name5.clone()),
+                    TargetValue::Unencrypted(value5.clone())
+                ),
+                Operator::Lte(
+                    TagName::PlainTagName(name6.clone()),
+                    TargetValue::Unencrypted(value6.clone())
+                ),
+                Operator::Like(
+                    TagName::PlainTagName(name7.clone()),
+                    TargetValue::Unencrypted(value7.clone())
+                ),
+                Operator::In(
+                    TagName::PlainTagName(name8.clone()),
+                    vec![
+                        TargetValue::Unencrypted(value8a.clone()),
+                        TargetValue::Unencrypted(value8b.clone())
+                    ]
+                ),
+                Operator::Not(
+                    Box::new(
+                        Operator::Eq(
+                             TagName::PlainTagName(name9.clone()),
+                            TargetValue::Unencrypted(value9.clone())
+                        )
+                    )
+                ),
+            ]
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$or":["~{}":"{}","~{}":{{"$neq":"{}"}},"~{}":{{"$gt":"{}"}},"~{}":{{"$gte":"{}"}},"~{}":{{"$lt":"{}"}},"~{}":{{"$lte":"{}"}},"~{}":{{"$like":"{}"}},"~{}":{{"$in":["{}","{}"]}},"$not":{{"~{}":"{}"}}]}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3,
+                               base64::encode(&name4), value4,
+                               base64::encode(&name5), value5,
+                               base64::encode(&name6), value6,
+                               base64::encode(&name7), value7,
+                               base64::encode(&name8), value8a, value8b,
+                               base64::encode(&name9), value9,
+        );
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_not_with_one_eq_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Not(
+            Box::new(
+                Operator::Eq(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            )
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$not":{{"~{}":"{}"}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_not_with_one_neq_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Not(
+            Box::new(
+                Operator::Neq(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            )
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$not":{{"~{}":{{"$neq":"{}"}}}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_not_with_one_gt_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Not(
+            Box::new(
+                Operator::Gt(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            )
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$not":{{"~{}":{{"$gt":"{}"}}}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_not_with_one_gte_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Not(
+            Box::new(
+                Operator::Gte(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            )
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$not":{{"~{}":{{"$gte":"{}"}}}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_not_with_one_lt_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Not(
+            Box::new(
+                Operator::Lt(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            )
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$not":{{"~{}":{{"$lt":"{}"}}}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_not_with_one_lte_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Not(
+            Box::new(
+                Operator::Lte(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            )
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$not":{{"~{}":{{"$lte":"{}"}}}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_not_with_one_like_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Not(
+            Box::new(
+                Operator::Like(
+                    TagName::PlainTagName(name1.clone()),
+                    TargetValue::Unencrypted(value1.clone())
+                )
+            )
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$not":{{"~{}":{{"$like":"{}"}}}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_not_with_one_in_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+
+        let query = Operator::Not(
+            Box::new(
+                Operator::In(
+                    TagName::PlainTagName(name1.clone()),
+                    vec![TargetValue::Unencrypted(value1.clone())]
+                )
+            )
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$not":{{"~{}":{{"$in":["{}"]}}}}}}"#, base64::encode(&name1), value1);
+
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_and_or_not_complex_case_to_string() {
+        let name1 = _random_vector(10);
+        let value1 = _random_string(10);
+        let name2 = _random_vector(10);
+        let value2 = _random_string(10);
+        let name3 = _random_vector(10);
+        let value3 = _random_string(10);
+        let name4 = _random_vector(10);
+        let value4 = _random_string(10);
+        let name5 = _random_vector(10);
+        let value5 = _random_string(10);
+        let name6 = _random_vector(10);
+        let value6 = _random_string(10);
+        let name7 = _random_vector(10);
+        let value7 = _random_string(10);
+        let name8 = _random_vector(10);
+        let value8 = _random_string(10);
+
+        let query = Operator::Not(
+            Box::new(
+                Operator::And(
+                    vec![
+                        Operator::Eq(
+                            TagName::PlainTagName(name1.clone()),
+                            TargetValue::Unencrypted(value1.clone())
+                        ),
+                        Operator::Or(
+                            vec![
+                                Operator::Gt(
+                                    TagName::PlainTagName(name2.clone()),
+                                    TargetValue::Unencrypted(value2.clone())
+                                ),
+                                Operator::Not(
+                                    Box::new(
+                                        Operator::Lte(
+                                            TagName::PlainTagName(name3.clone()),
+                                            TargetValue::Unencrypted(value3.clone())
+                                        )
+                                    )
+                                ),
+                                Operator::And(
+                                    vec![
+                                        Operator::Lt(
+                                            TagName::PlainTagName(name4.clone()),
+                                            TargetValue::Unencrypted(value4.clone())
+                                        ),
+                                        Operator::Not(
+                                            Box::new(
+                                                Operator::Gte(
+                                                    TagName::PlainTagName(name5.clone()),
+                                                    TargetValue::Unencrypted(value5.clone())
+                                                )
+                                            )
+                                        ),
+                                    ]
+                                )
+                            ]
+                        ),
+                        Operator::Not(
+                            Box::new(
+                                Operator::Like(
+                                    TagName::PlainTagName(name6.clone()),
+                                    TargetValue::Unencrypted(value6.clone())
+                                )
+                            )
+                        ),
+                        Operator::And(
+                            vec![
+                                Operator::Eq(
+                                    TagName::PlainTagName(name7.clone()),
+                                    TargetValue::Unencrypted(value7.clone())
+                                ),
+                                Operator::Not(
+                                    Box::new(
+                                        Operator::Neq(
+                                            TagName::PlainTagName(name8.clone()),
+                                            TargetValue::Unencrypted(value8.clone())
+                                        )
+                                    )
+                                ),
+                            ]
+                        )
+                    ]
+                )
+            )
+        );
+
+        let json = query.to_string();
+
+        let expected = format!(r#"{{"$not":{{"~{}":"{}","$or":["~{}":{{"$gt":"{}"}},"$not":{{"~{}":{{"$lte":"{}"}}}},{{"~{}":{{"$lt":"{}"}},"$not":{{"~{}":{{"$gte":"{}"}}}}}}],"$not":{{"~{}":{{"$like":"{}"}}}},{{"~{}":"{}","$not":{{"~{}":{{"$neq":"{}"}}}}}}}}}}"#,
+                               base64::encode(&name1), value1,
+                               base64::encode(&name2), value2,
+                               base64::encode(&name3), value3,
+                               base64::encode(&name4), value4,
+                               base64::encode(&name5), value5,
+                               base64::encode(&name6), value6,
+                               base64::encode(&name7), value7,
+                               base64::encode(&name8), value8,
+        );
+
+        assert_eq!(json, expected);
+
     }
 }
