@@ -19,8 +19,8 @@ use utils::constants::*;
 
 use std::collections::{HashSet, HashMap};
 
-use utils::domain::anoncreds::schema::{Schema, SchemaV1, SCHEMA_MARKER};
-use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig, CRED_DEF_MARKER};
+use utils::domain::anoncreds::schema::{Schema, SchemaV1};
+use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionConfig};
 use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryConfig;
 use utils::domain::anoncreds::credential::{AttributeValues, CredentialInfo};
 use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;

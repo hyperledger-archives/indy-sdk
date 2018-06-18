@@ -11,6 +11,7 @@ use self::indy_crypto::cl::{
     CredentialPrivateKey,
     CredentialKeyCorrectnessProof
 };
+use super::super::ledger::request::ProtocolVersion;
 
 use std::collections::HashMap;
 use named_type::NamedType;
@@ -80,7 +81,11 @@ pub enum CredentialDefinition {
 
 impl CredentialDefinition {
     pub fn cred_def_id(did: &str, schema_id: &str, signature_type: &str, tag: &str) -> String {
-        format!("{}{}{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id, DELIMITER, tag)
+        if ProtocolVersion::is_node_1_3(){
+            format!("{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id)
+        } else {
+            format!("{}{}{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id, DELIMITER, tag)
+        }
     }
 }
 

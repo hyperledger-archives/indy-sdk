@@ -8,6 +8,7 @@ use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use super::response::GetReplyResultV1;
 use super::super::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1, SignatureType};
+use super::super::ledger::request::ProtocolVersion;
 
 #[derive(Serialize, Debug)]
 pub struct CredDefOperation {
@@ -17,7 +18,8 @@ pub struct CredDefOperation {
     #[serde(rename = "type")]
     pub _type: String,
     pub signature_type: String,
-    pub tag: String
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tag: Option<String>
 }
 
 impl CredDefOperation {
@@ -27,7 +29,7 @@ impl CredDefOperation {
             // TODO: FIXME
             signature_type: data.signature_type.to_str().to_string(),
             data: data.value,
-            tag: data.tag.clone(),
+            tag: if ProtocolVersion::is_node_1_3() { None } else { Some(data.tag.clone()) },
             _type: CRED_DEF.to_string()
         }
     }
@@ -43,11 +45,12 @@ pub struct GetCredDefOperation {
     pub _ref: i32,
     pub signature_type: String,
     pub origin: String,
-    pub tag: String
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tag: Option<String>
 }
 
 impl GetCredDefOperation {
-    pub fn new(_ref: i32, signature_type: String, origin: String, tag: String) -> GetCredDefOperation {
+    pub fn new(_ref: i32, signature_type: String, origin: String, tag: Option<String>) -> GetCredDefOperation {
         GetCredDefOperation {
             _type: GET_CRED_DEF.to_string(),
             _ref,
@@ -78,7 +81,7 @@ pub struct GetCredDefResultV0 {
     pub seq_no: i32,
     pub signature_type: SignatureType,
     pub origin: String,
-    pub tag: String,
+    pub tag: Option<String>,
     pub data: CredentialDefinitionData
 }
 

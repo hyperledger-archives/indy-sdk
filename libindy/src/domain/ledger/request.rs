@@ -21,6 +21,10 @@ impl ProtocolVersion {
     pub fn get() -> usize {
         PROTOCOL_VERSION.load(Ordering::Relaxed)
     }
+
+    pub fn is_node_1_3() -> bool {
+        ProtocolVersion::get() == 1
+    }
 }
 
 

@@ -223,8 +223,7 @@ impl LedgerService {
         let signature_type = parts.get(2)
             .ok_or(CommonError::InvalidStructure(format!("Signature type not found in: {}", id)))?.to_string();
 
-        let tag = parts.get(4)
-            .ok_or(CommonError::InvalidStructure(format!("Tag not found in: {}", id)))?.to_string();
+        let tag = parts.get(4).map(|tag| tag.to_string());
 
         let operation = GetCredDefOperation::new(ref_, signature_type, origin, tag);
 
@@ -470,10 +469,10 @@ impl LedgerService {
 
         let cred_def = match reply.result() {
             GetCredDefReplyResult::GetCredDefReplyResultV0(res) => CredentialDefinitionV1 {
-                id: CredentialDefinition::cred_def_id(&res.origin, &res.ref_.to_string(), &res.signature_type.to_str(), &res.tag),
+                id: CredentialDefinition::cred_def_id(&res.origin, &res.ref_.to_string(), &res.signature_type.to_str(), &res.tag.clone().unwrap_or(String::new())),
                 schema_id: res.ref_.to_string(),
                 signature_type: res.signature_type,
-                tag: String::new(),
+                tag: res.tag.unwrap_or(String::new()),
                 value: res.data
             },
             GetCredDefReplyResult::GetCredDefReplyResultV1(res) => CredentialDefinitionV1 {
