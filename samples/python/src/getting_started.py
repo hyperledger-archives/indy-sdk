@@ -8,7 +8,7 @@ from typing import Optional
 
 from indy.error import ErrorCode, IndyError
 
-from src.utils import get_pool_genesis_txn_path, run_coroutine
+from src.utils import get_pool_genesis_txn_path, run_coroutine, PROTOCOL_VERSION
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -21,6 +21,10 @@ async def run():
     logger.info("Open Pool Ledger: {}".format(pool_name))
     pool_genesis_txn_path = get_pool_genesis_txn_path(pool_name)
     pool_config = json.dumps({"genesis_txn": str(pool_genesis_txn_path)})
+
+    # Set protocol version 2 to work with Indy Node 1.4
+    await pool.set_protocol_version(PROTOCOL_VERSION)
+
     try:
         await pool.create_pool_ledger_config(pool_name, pool_config)
     except IndyError as ex:
@@ -323,7 +327,6 @@ async def run():
     creds_for_job_application_proof_request = json.loads(
         await anoncreds.prover_get_credentials_for_proof_req(alice_wallet,
                                                              authdecrypted_job_application_proof_request_json))
-    print(creds_for_job_application_proof_request)
 
     cred_for_attr1 = creds_for_job_application_proof_request['attrs']['attr1_referent'][0]['cred_info']
     cred_for_attr2 = creds_for_job_application_proof_request['attrs']['attr2_referent'][0]['cred_info']

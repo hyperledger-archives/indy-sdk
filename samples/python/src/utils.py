@@ -3,6 +3,8 @@ from os import environ
 from pathlib import Path
 from tempfile import gettempdir
 
+PROTOCOL_VERSION = 2
+
 
 def path_home() -> Path:
     return Path.home().joinpath(".indy_client")

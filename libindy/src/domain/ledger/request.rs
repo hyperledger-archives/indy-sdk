@@ -48,7 +48,7 @@ impl<T: serde::Serialize> Request<T> {
 
     pub fn build_request(identifier: &str, operation: T) -> Result<String, serde_json::Error> {
         let req_id = time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64;
-        serde_json::to_string(&Request::new(req_id, identifier, operation, 1))
+        serde_json::to_string(&Request::new(req_id, identifier, operation, ProtocolVersion::get()))
     }
 }
 
