@@ -23,6 +23,8 @@ from indy.error import IndyError
 pool_name = 'pool'
 wallet_name = 'wallet'
 genesis_file_path = '/home/vagrant/code/evernym/indy-sdk/cli/docker_pool_transactions_genesis'
+wallet_credentials = json.dumps({"key": "wallet_key"})
+
 
 
 def print_log(value_color="", value_noncolor=""):
@@ -46,11 +48,11 @@ async def write_nym_and_query_verkey():
 
         # 3.
         print_log('\n3. Creating new secure wallet\n')
-        await wallet.create_wallet(pool_name, wallet_name, None, None, None)
+        await wallet.create_wallet(pool_name, wallet_name, None, None, wallet_credentials)
 
         # 4.
         print_log('\n4. Open wallet and get handle from libindy\n')
-        wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+        wallet_handle = await wallet.open_wallet(wallet_name, None, wallet_credentials)
 
         # 5.
         print_log('\n5. Generating and storing steward DID and verkey\n')
@@ -122,7 +124,7 @@ async def write_nym_and_query_verkey():
 
         # 14.
         print_log('\n14. Deleting created wallet\n')
-        await wallet.delete_wallet(wallet_name, None)
+        await wallet.delete_wallet(wallet_name, wallet_credentials)
 
         # 15.
         print_log('\n15. Deleting pool ledger config\n')

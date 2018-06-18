@@ -813,6 +813,7 @@ mod tests {
     use std::sync::RwLock;
     use self::rand::{thread_rng, Rng};
     use std::clone::Clone;
+    use ::utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 
     impl PartialEq for StorageEntity {
         fn eq(&self, other: &StorageEntity) -> bool {
@@ -1499,7 +1500,7 @@ mod tests {
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let value = EncryptedValue { data: _random_vector(256), key: _random_vector(60) };
+        let value = EncryptedValue{data: _random_vector(256), key: _random_vector(60)};
         let mut tags = Vec::new();
         tags.push(Tag::Encrypted(_random_vector(32), _random_vector(64)));
         tags.push(Tag::PlainText(_random_vector(32), _random_string(64)));
@@ -1531,7 +1532,7 @@ mod tests {
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let value = EncryptedValue { data: _random_vector(256), key: _random_vector(44) };
+        let value = EncryptedValue{data: _random_vector(256), key: _random_vector(44)};
 
         storage.update(&type_, &id, &value).unwrap();
 

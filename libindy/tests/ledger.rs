@@ -949,9 +949,17 @@ mod high_cases {
 
         #[test]
         fn indy_build_get_txn_request() {
-            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"3","data":{}}},"protocolVersion":1"#, IDENTIFIER, SEQ_NO);
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"3","data":{},"ledgerId":1}},"protocolVersion":1"#, IDENTIFIER, SEQ_NO);
 
-            let get_txn_request = LedgerUtils::build_get_txn_request(IDENTIFIER, SEQ_NO).unwrap();
+            let get_txn_request = LedgerUtils::build_get_txn_request(IDENTIFIER, SEQ_NO, None).unwrap();
+            assert!(get_txn_request.contains(&expected_result));
+        }
+
+        #[test]
+        fn indy_build_get_txn_request_for_ledger_type() {
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"3","data":{},"ledgerId":0}},"protocolVersion":1"#, IDENTIFIER, SEQ_NO);
+
+            let get_txn_request = LedgerUtils::build_get_txn_request(IDENTIFIER, SEQ_NO, Some("POOL")).unwrap();
             assert!(get_txn_request.contains(&expected_result));
         }
 
@@ -973,7 +981,7 @@ mod high_cases {
 
             thread::sleep(std::time::Duration::from_secs(3));
 
-            let get_txn_request = LedgerUtils::build_get_txn_request(&did, seq_no).unwrap();
+            let get_txn_request = LedgerUtils::build_get_txn_request(&did, seq_no, None).unwrap();
             let get_txn_response = LedgerUtils::submit_request(pool_handle, &get_txn_request).unwrap();
 
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
@@ -1010,7 +1018,7 @@ mod high_cases {
 
             thread::sleep(std::time::Duration::from_secs(3));
 
-            let get_txn_request = LedgerUtils::build_get_txn_request(&did, seq_no).unwrap();
+            let get_txn_request = LedgerUtils::build_get_txn_request(&did, seq_no, None).unwrap();
 
             let get_txn_response = LedgerUtils::submit_request(pool_handle, &get_txn_request).unwrap();
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();

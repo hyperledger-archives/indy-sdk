@@ -531,27 +531,26 @@
     XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");
 }
 
-- (void)testBuildGetValidatorInfo
-{
+- (void)testBuildGetValidatorInfo {
     [TestUtils cleanupStorage];
     NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
-    
+
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
-    
+
     expectedResult[@"operation"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"type"] = @"119";
-    
-    
+
+
     NSString *getValidatorInfoJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildGetValidatorInfo:identifier
                                                             resultJson:&getValidatorInfoJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::builGetValidatorInfo failed");
     XCTAssertNotNil(getValidatorInfoJson, @"getValidatorInfoJson is nil!");
     NSLog(@"getValidatorInfoJson: %@", getValidatorInfoJson);
-    
+
     NSDictionary *request = [NSDictionary fromString:getValidatorInfoJson];
     XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");
-    
+
     [TestUtils cleanupStorage];
 }
 
@@ -615,15 +614,17 @@
 
 - (void)testBuildGetTxnRequest {
     NSDictionary *expectedResult = @{
-            @"identifier":[TestUtils trusteeDid],
-            @"operation":@{
-                    @"type":@"3",
-                    @"data":@(1)
+            @"identifier": [TestUtils trusteeDid],
+            @"operation": @{
+                    @"type": @"3",
+                    @"data": @(1),
+                    @"ledgerId": @(1)
             }
     };
 
     NSString *requestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildGetTxnRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                         ledgerType:nil
                                                                                data:@(1)
                                                                          resultJson:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetTxnRequestWithSubmitterDid() failed");

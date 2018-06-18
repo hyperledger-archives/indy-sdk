@@ -4,8 +4,8 @@ use utils::callbacks;
 use std::sync::mpsc::channel;
 
 pub type IndyPaymentCallback = extern fn(command_handle_: i32,
-                                                err: ErrorCode,
-                                                payment_address: *const c_char) -> ErrorCode;
+                                         err: ErrorCode,
+                                         payment_address: *const c_char) -> ErrorCode;
 
 pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
                                             wallet_handle: i32,
@@ -110,6 +110,18 @@ pub fn register_payment_method(
     receiver.recv().unwrap()
 }
 
+pub fn list_payment_addresses(wallet_handle: i32,
+                              cb: Box<FnMut(ErrorCode, String) + Send>, ) -> ErrorCode {
+    let (command_handle, cb) = callbacks::closure_to_cb_ec_string(cb);
+
+    unsafe {
+        indy_list_payment_addresses(command_handle,
+                                    wallet_handle,
+                                    cb,
+        )
+    }
+}
+
 extern {
     #[no_mangle]
     pub fn indy_register_payment_method(
@@ -127,6 +139,13 @@ extern {
         build_get_txn_fees_req: Option<BuildGetTxnFeesReqCB>,
         parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
         cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode;
+
+    #[no_mangle]
+    fn indy_list_payment_addresses(command_handle: i32,
+                                   wallet_handle: i32,
+                                   cb: Option<extern fn(command_handle_: i32,
+                                                        err: ErrorCode,
+                                                        payment_addresses_json: *const c_char)>) -> ErrorCode;
 }
 
 

@@ -1,4 +1,5 @@
 extern crate owning_ref;
+extern crate sodiumoxide;
 
 mod query;
 mod transaction;
@@ -11,13 +12,16 @@ use serde_json;
 use self::owning_ref::OwningHandle;
 use std::rc::Rc;
 
+use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 use utils::environment::EnvironmentUtils;
 use errors::wallet::WalletStorageError;
 use errors::common::CommonError;
 use services::wallet::language;
+use sodiumoxide::utils::memzero;
 
 use super::{StorageIterator, WalletStorageType, WalletStorage, StorageEntity, EncryptedValue, Tag, TagName};
 use super::super::{RecordOptions, SearchOptions};
+
 
 const _SQLITE_DB: &str = "sqlite.db";
 const _PLAIN_TAGS_QUERY: &str = "SELECT name, value from tags_plaintext where item_id = ?";
@@ -731,6 +735,7 @@ mod tests {
     use super::super::Tag;
     use std::collections::HashMap;
     use std::env;
+    use ::utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 
 
     fn _create_and_open_test_storage() -> Box<WalletStorage> {
