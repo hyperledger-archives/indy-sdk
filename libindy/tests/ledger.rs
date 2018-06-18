@@ -341,8 +341,7 @@ mod high_cases {
                 \"operation\":{{\
                     \"dest\":\"{}\",\
                     \"type\":\"1\"\
-                }},\
-                \"protocolVersion\":1", IDENTIFIER, DEST);
+                }}", IDENTIFIER, DEST);
 
             let nym_request = LedgerUtils::build_nym_request(&IDENTIFIER, &DEST, None, None, None).unwrap();
             assert!(nym_request.contains(&expected_result));
@@ -362,8 +361,7 @@ mod high_cases {
                     \"role\":\"2\",\
                     \"type\":\"1\",\
                     \"verkey\":\"{}\"\
-                }},\
-                \"protocolVersion\":1", IDENTIFIER, alias, DEST, VERKEY_TRUSTEE);
+                }}", IDENTIFIER, alias, DEST, VERKEY_TRUSTEE);
 
             let nym_request = LedgerUtils::build_nym_request(&IDENTIFIER, &DEST, Some(VERKEY_TRUSTEE), Some(alias), Some(role)).unwrap();
             assert!(nym_request.contains(&expected_result));
@@ -378,8 +376,7 @@ mod high_cases {
                     \"dest\":\"{}\",\
                     \"role\":null,\
                     \"type\":\"1\"\
-                }},\
-                \"protocolVersion\":1", IDENTIFIER, DEST);
+                }}", IDENTIFIER, DEST);
 
             let nym_request = LedgerUtils::build_nym_request(&IDENTIFIER, &DEST, None, None, Some("")).unwrap();
             assert!(nym_request.contains(&expected_result));
@@ -393,8 +390,7 @@ mod high_cases {
                 \"operation\":{{\
                     \"type\":\"105\",\
                     \"dest\":\"{}\"\
-                }},\
-                \"protocolVersion\":1", IDENTIFIER, DEST);
+                }}", IDENTIFIER, DEST);
 
             let get_nym_request = LedgerUtils::build_get_nym_request(&IDENTIFIER, &DEST).unwrap();
             assert!(get_nym_request.contains(&expected_result));
@@ -483,8 +479,7 @@ mod high_cases {
                     \"type\":\"100\",\
                     \"dest\":\"{}\",\
                     \"raw\":\"{{\\\"endpoint\\\":{{\\\"ha\\\":\\\"127.0.0.1:5555\\\"}}}}\"\
-                }},\
-                \"protocolVersion\":1", IDENTIFIER, DEST);
+                }}", IDENTIFIER, DEST);
 
             let attrib_request = LedgerUtils::build_attrib_request(&IDENTIFIER, &DEST, None, Some(ATTRIB_RAW_DATA), None).unwrap();
             assert!(attrib_request.contains(&expected_result));
@@ -499,8 +494,7 @@ mod high_cases {
                     \"type\":\"100\",\
                     \"dest\":\"{}\",\
                     \"hash\":\"{}\"\
-                }},\
-                \"protocolVersion\":1", IDENTIFIER, DEST, ATTRIB_HASH_DATA);
+                }}", IDENTIFIER, DEST, ATTRIB_HASH_DATA);
 
             let attrib_request = LedgerUtils::build_attrib_request(&IDENTIFIER, &DEST, Some(ATTRIB_HASH_DATA), None, None).unwrap();
 
@@ -516,8 +510,7 @@ mod high_cases {
                     \"type\":\"100\",\
                     \"dest\":\"{}\",\
                     \"enc\":\"{}\"\
-                }},\
-                \"protocolVersion\":1", IDENTIFIER, DEST, ATTRIB_ENC_DATA);
+                }}", IDENTIFIER, DEST, ATTRIB_ENC_DATA);
 
             let attrib_request = LedgerUtils::build_attrib_request(&IDENTIFIER, &DEST, None, None, Some(ATTRIB_ENC_DATA)).unwrap();
             assert!(attrib_request.contains(&expected_result));
@@ -541,8 +534,7 @@ mod high_cases {
                     \"type\":\"104\",\
                     \"dest\":\"{}\",\
                     \"raw\":\"{}\"\
-                }},\
-                \"protocolVersion\":1", IDENTIFIER, DEST, raw);
+                }}", IDENTIFIER, DEST, raw);
 
             let get_attrib_request = LedgerUtils::build_get_attrib_request(&IDENTIFIER, &DEST, Some(raw), None, None).unwrap();
             assert!(get_attrib_request.contains(&expected_result));
@@ -557,8 +549,7 @@ mod high_cases {
                     \"type\":\"104\",\
                     \"dest\":\"{}\",\
                     \"hash\":\"{}\"\
-                }},\
-                \"protocolVersion\":1", IDENTIFIER, DEST, ATTRIB_HASH_DATA);
+                }}", IDENTIFIER, DEST, ATTRIB_HASH_DATA);
 
             let get_attrib_request = LedgerUtils::build_get_attrib_request(&IDENTIFIER, &DEST, None, Some(ATTRIB_HASH_DATA), None).unwrap();
             assert!(get_attrib_request.contains(&expected_result));
@@ -573,8 +564,7 @@ mod high_cases {
                     \"type\":\"104\",\
                     \"dest\":\"{}\",\
                     \"enc\":\"{}\"\
-                }},\
-                \"protocolVersion\":1", IDENTIFIER, DEST, ATTRIB_ENC_DATA);
+                }}", IDENTIFIER, DEST, ATTRIB_ENC_DATA);
 
             let get_attrib_request = LedgerUtils::build_get_attrib_request(&IDENTIFIER, &DEST, None, None, Some(ATTRIB_ENC_DATA)).unwrap();
             assert!(get_attrib_request.contains(&expected_result));
@@ -712,7 +702,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_schema_requests_works_for_correct_data_json() {
-            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"107","dest":"{}","data":{{"name":"gvt","version":"1.0"}}}},"protocolVersion":1"#,
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"107","dest":"{}","data":{{"name":"gvt","version":"1.0"}}}}"#,
                                           IDENTIFIER, ISSUER_DID);
 
             let get_schema_request = LedgerUtils::build_get_schema_request(IDENTIFIER, &AnoncredsUtils::gvt_schema_id()).unwrap();
@@ -766,7 +756,7 @@ mod high_cases {
 
         #[test]
         fn indy_build_node_request_works_for_correct_data_json() {
-            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"0","dest":"{}","data":{{"node_ip":"10.0.0.100","node_port":1,"client_ip":"10.0.0.100","client_port":1,"alias":"some","services":["VALIDATOR"],"blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba"}}}},"protocolVersion":1"#,
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"0","dest":"{}","data":{{"node_ip":"10.0.0.100","node_port":1,"client_ip":"10.0.0.100","client_port":1,"alias":"some","services":["VALIDATOR"],"blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba"}}}}"#,
                                           IDENTIFIER, DEST);
 
             let node_request = LedgerUtils::build_node_request(IDENTIFIER, DEST, NODE_DATA).unwrap();
@@ -854,7 +844,7 @@ mod high_cases {
         #[test]
         fn indy_build_get_cred_def_request_works() {
             let id = CredentialDefinition::cred_def_id(IDENTIFIER, &SEQ_NO.to_string(), SIGNATURE_TYPE);
-            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"108","ref":{},"signature_type":"{}","origin":"{}"}},"protocolVersion":1"#,
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"108","ref":{},"signature_type":"{}","origin":"{}"}}"#,
                                           IDENTIFIER, SEQ_NO, SIGNATURE_TYPE, IDENTIFIER);
 
             let get_cred_def_request = LedgerUtils::build_get_cred_def_txn(IDENTIFIER, &id).unwrap();
@@ -949,9 +939,17 @@ mod high_cases {
 
         #[test]
         fn indy_build_get_txn_request() {
-            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"3","data":{}}},"protocolVersion":1"#, IDENTIFIER, SEQ_NO);
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"3","data":{},"ledgerId":1}}"#, IDENTIFIER, SEQ_NO);
 
-            let get_txn_request = LedgerUtils::build_get_txn_request(IDENTIFIER, SEQ_NO).unwrap();
+            let get_txn_request = LedgerUtils::build_get_txn_request(IDENTIFIER, SEQ_NO, None).unwrap();
+            assert!(get_txn_request.contains(&expected_result));
+        }
+
+        #[test]
+        fn indy_build_get_txn_request_for_ledger_type() {
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"3","data":{},"ledgerId":0}}"#, IDENTIFIER, SEQ_NO);
+
+            let get_txn_request = LedgerUtils::build_get_txn_request(IDENTIFIER, SEQ_NO, Some("POOL")).unwrap();
             assert!(get_txn_request.contains(&expected_result));
         }
 
@@ -969,19 +967,20 @@ mod high_cases {
             let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
             let schema: serde_json::Value = serde_json::from_str(&schema_response).unwrap();
 
-            let seq_no = schema["result"]["seqNo"].as_i64().unwrap() as i32;
+            let seq_no = schema["result"]["txnMetadata"]["seqNo"].as_i64().unwrap() as i32;
 
             thread::sleep(std::time::Duration::from_secs(3));
 
-            let get_txn_request = LedgerUtils::build_get_txn_request(&did, seq_no).unwrap();
+            let get_txn_request = LedgerUtils::build_get_txn_request(&did, seq_no, None).unwrap();
             let get_txn_response = LedgerUtils::submit_request(pool_handle, &get_txn_request).unwrap();
 
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
-
-            let get_txn_schema_result: SchemaResult = serde_json::from_value(get_txn_response.result.data.unwrap()).unwrap();
+            let get_txn_schema_data: SchemaData = serde_json::from_value(
+                serde_json::Value::Object(get_txn_response.result.data.unwrap()["txn"]["data"]["data"].as_object().unwrap().clone())
+            ).unwrap();
 
             let expected_schema_data: SchemaData = serde_json::from_str(r#"{"name":"gvt","version":"1.0","attr_names":["name", "age", "sex", "height"]}"#).unwrap();
-            assert_eq!(expected_schema_data, get_txn_schema_result.data.unwrap());
+            assert_eq!(expected_schema_data, get_txn_schema_data);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1003,13 +1002,13 @@ mod high_cases {
             let schema_response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
             let schema: serde_json::Value = serde_json::from_str(&schema_response).unwrap();
 
-            let seq_no = schema["result"]["seqNo"].as_i64().unwrap() as i32;
+            let seq_no = schema["result"]["txnMetadata"]["seqNo"].as_i64().unwrap() as i32;
 
             let seq_no = seq_no + 1;
 
             thread::sleep(std::time::Duration::from_secs(3));
 
-            let get_txn_request = LedgerUtils::build_get_txn_request(&did, seq_no).unwrap();
+            let get_txn_request = LedgerUtils::build_get_txn_request(&did, seq_no, None).unwrap();
 
             let get_txn_response = LedgerUtils::submit_request(pool_handle, &get_txn_request).unwrap();
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
@@ -1441,6 +1440,29 @@ mod high_cases {
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod indy_register_transaction_parser_for_sp {
+        extern crate libc;
+
+        use super::*;
+
+        use self::libc::c_char;
+
+        #[test]
+        fn indy_register_transaction_parser_for_sp_works() {
+            TestUtils::cleanup_storage();
+
+            extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
+                unsafe { *parsed = msg; }
+                ErrorCode::Success
+            }
+            extern fn free(_buf: *const c_char) -> ErrorCode { ErrorCode::Success }
+
+            LedgerUtils::register_transaction_parser_for_sp("my_txn_type", parse, free).unwrap();
 
             TestUtils::cleanup_storage();
         }

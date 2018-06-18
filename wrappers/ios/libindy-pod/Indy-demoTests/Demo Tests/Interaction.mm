@@ -25,6 +25,10 @@
 
     NSError *ret;
 
+    // Set protocol version
+    ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
     // Create ledger config from genesis txn file
     NSString *txnFilePath = [[PoolUtils sharedInstance] createGenesisTxnFileForTestPool:[TestUtils pool]
                                                                              nodesCount:nil
@@ -321,7 +325,7 @@
                                                            outResponseJson:&revocRegEntryResponse];
     XCTAssertEqual(ret.code, Success, @"signAndSubmitRequestWithPoolHandle() failed!");
     NSDictionary *revocRegEntry = [NSDictionary fromString:revocRegEntryResponse];
-    NSNumber *entryTxnTime = revocRegEntry[@"result"][@"txnTime"];
+    NSNumber *entryTxnTime = revocRegEntry[@"result"][@"txnMetadata"][@"txnTime"];
 
     // Prover gets revocation registry definition from ledger
     NSDictionary *credential = [NSDictionary fromString:credentialJson];

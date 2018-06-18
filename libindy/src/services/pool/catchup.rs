@@ -17,6 +17,7 @@ use super::{
 use super::rust_base58::{FromBase58, ToBase58};
 use super::types::*;
 use services::pool::PoolWorker;
+use domain::ledger::request::ProtocolVersion;
 
 pub const CATCHUP_ROUND_TIMEOUT: i64 = 50;
 
@@ -77,12 +78,16 @@ impl CatchupHandler {
             Message::Pong => {
                 //sending ledger status
                 //TODO not send ledger status directly as response on ping, wait pongs from all nodes?
+
+                let protocol_version = ProtocolVersion::get();
+
                 let ls: LedgerStatus = LedgerStatus {
-                    txnSeqNo: self.nodes.len(),
+                    txnSeqNo: self.merkle_tree.count,
                     merkleRoot: self.merkle_tree.root_hash().as_slice().to_base58(),
                     ledgerId: 0,
                     ppSeqNo: None,
                     viewNo: None,
+                    protocolVersion: if protocol_version > 1 { Some(protocol_version) } else { None }
                 };
                 let resp_msg: Message = Message::LedgerStatus(ls);
                 self.nodes[src_ind].send_msg(&resp_msg)?;
@@ -138,7 +143,7 @@ impl CatchupHandler {
                     } else {
                         Err(err)
                     }
-                })
+                });
             }
         }
         Ok(CatchupProgress::InProgress)
@@ -161,7 +166,7 @@ impl CatchupHandler {
                 CommonError::InvalidStructure(
                     "Can't parse target MerkleTree hash from nodes responses".to_string()))?;
             match hashes {
-                &None => {return Err(PoolError::from(CommonError::InvalidState("Empty consistency proof but catch up needed".to_string())));},
+                &None => { return Err(PoolError::from(CommonError::InvalidState("Empty consistency proof but catch up needed".to_string()))); }
                 &Some(ref hashes) => {
                     match CatchupHandler::check_cons_proofs(&self.merkle_tree, hashes, &self.target_mt_root, self.target_mt_size) {
                         Ok(_) => (),
@@ -268,7 +273,7 @@ impl CatchupHandler {
             let index = process.pending_reps.get_min_index()?;
             {
                 let &mut (ref mut first_resp, node_idx) = process.pending_reps.get_mut(index)
-                    .ok_or(CommonError::InvalidStructure(format!("Element not Found")))?;
+                    .ok_or(CommonError::InvalidStructure("Element not Found".to_string()))?;
                 if first_resp.min_tx()? - 1 != process.merkle_tree.count() { break; }
 
                 let mut temp_mt = process.merkle_tree.clone();
@@ -289,6 +294,7 @@ impl CatchupHandler {
                     return Ok(CatchupStepResult::FailedAtNode(node_idx));
                 }
 
+                self.merkle_tree = temp_mt.clone();
                 PoolWorker::dump_new_txns(&self.pool_name, &vec_to_dump)?;
 
                 process.merkle_tree = temp_mt;

@@ -26,6 +26,8 @@ public class LedgerDemoTest extends IndyIntegrationTest {
 
 	@Test
 	public void testLedgerDemo() throws Exception {
+		// Set protocol version
+		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
 
 		// 1. Create ledger config from genesis txn file
 		String poolName = PoolUtils.createPoolLedgerConfig();
@@ -65,8 +67,8 @@ public class LedgerDemoTest extends IndyIntegrationTest {
 
 		JSONObject nymResponse = new JSONObject(nymResponseJson);
 
-		assertEquals(myDid, nymResponse.getJSONObject("result").getString("dest"));
-		assertEquals(myVerkey, nymResponse.getJSONObject("result").getString("verkey"));
+		assertEquals(myDid, nymResponse.getJSONObject("result").getJSONObject("txn").getJSONObject("data").getString("dest"));
+		assertEquals(myVerkey, nymResponse.getJSONObject("result").getJSONObject("txn").getJSONObject("data").getString("verkey"));
 
 		// 8. Close and delete My Wallet
 		myWallet.closeWallet().get();

@@ -1231,7 +1231,11 @@ Errors: `Common*`
 Builds a GET\_TXN request. Request to get any transaction by its seq\_no.
 
 * `submitterDid`: String - DID of the request submitter.
-* `data`: Number
+* `ledgerType`: String - Type of the ledger the requested transaction belongs to:
+DOMAIN - used default
+POOL
+CONFIG
+* `data`: Requested transaction sequence number as it's stored on Ledger.
 * __->__ `request`: Json
 
 Errors: `Common*`
@@ -1569,6 +1573,17 @@ Deletes created pool ledger configuration.
 * __->__ void
 
 Errors: `Common*`, `Ledger*`
+
+#### setProtocolVersion \( protocolVersion \) -&gt; void
+
+Set PROTOCOL_VERSION to specific version.
+There is a global property PROTOCOL_VERSION that used in every request to the pool and specified version of Indy Node which Libindy works.
+By default PROTOCOL_VERSION=1.
+
+* `protocolVersion`: Number -  Protocol version will be used. Can be one of: 1,2.
+* __->__ void
+
+Errors: `Common*`, `Pool*`
 
 ### wallet
 

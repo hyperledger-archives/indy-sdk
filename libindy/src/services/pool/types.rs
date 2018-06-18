@@ -8,6 +8,7 @@ use std::cmp::Eq;
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use super::zmq;
+
 use errors::common::CommonError;
 use utils::crypto::verkey_builder::build_full_verkey;
 
@@ -43,10 +44,10 @@ fn string_or_number<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
         },
         Ok(serde_json::Value::Number(n)) => match n.as_u64() {
             Some(num) => Ok(Some(num)),
-            None => Err(serde::de::Error::custom(format!("Invalid Node transaction")))
+            None => Err(serde::de::Error::custom("Invalid Node transaction".to_string()))
         },
         Ok(serde_json::Value::Null) => Ok(None),
-        _ => Err(serde::de::Error::custom(format!("Invalid Node transaction"))),
+        _ => Err(serde::de::Error::custom("Invalid Node transaction".to_string())),
     }
 }
 
@@ -73,6 +74,10 @@ pub struct NodeTransactionV0 {
     pub txn_type: String
 }
 
+impl NodeTransactionV0 {
+    pub const VERSION: &'static str = "1.3";
+}
+
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct NodeTransactionV1 {
@@ -80,6 +85,11 @@ pub struct NodeTransactionV1 {
     pub txn_metadata: Metadata,
     pub req_signature: ReqSignature,
     pub ver: String
+}
+
+
+impl NodeTransactionV1 {
+    pub const VERSION: &'static str = "1.4";
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -128,37 +138,34 @@ pub struct TxnMetadata {
     pub from: String
 }
 
-impl From<NodeTransaction> for NodeTransactionV1 {
-    fn from(node_txn: NodeTransaction) -> Self {
-        match node_txn {
-            NodeTransaction::NodeTransactionV1(n_txn) => n_txn,
-            NodeTransaction::NodeTransactionV0(n_txn) => {
-                let txn = Txn {
-                    txn_type: n_txn.txn_type,
-                    protocol_version: None,
-                    data: TxnData {
-                        data: n_txn.data,
-                        dest: n_txn.dest,
-                        verkey: n_txn.verkey
-                    },
-                    metadata: TxnMetadata {
-                        req_id: None,
-                        from: n_txn.identifier
-                    },
-                };
-                NodeTransactionV1 {
-                    txn,
-                    txn_metadata: Metadata {
-                        seq_no: None,
-                        txn_id: n_txn.txn_id,
-                        creation_time: None
-                    },
-                    req_signature: ReqSignature {
-                        type_: None,
-                        values: None
-                    },
-                    ver: "1".to_string(),
-                }
+impl From<NodeTransactionV0> for NodeTransactionV1 {
+    fn from(node_txn: NodeTransactionV0) -> Self {
+        {
+            let txn = Txn {
+                txn_type: node_txn.txn_type,
+                protocol_version: None,
+                data: TxnData {
+                    data: node_txn.data,
+                    dest: node_txn.dest,
+                    verkey: node_txn.verkey
+                },
+                metadata: TxnMetadata {
+                    req_id: None,
+                    from: node_txn.identifier
+                },
+            };
+            NodeTransactionV1 {
+                txn,
+                txn_metadata: Metadata {
+                    seq_no: None,
+                    txn_id: node_txn.txn_id,
+                    creation_time: None
+                },
+                req_signature: ReqSignature {
+                    type_: None,
+                    values: None
+                },
+                ver: "1".to_string(),
             }
         }
     }
@@ -202,6 +209,8 @@ pub struct LedgerStatus {
     pub ledgerId: u8,
     pub ppSeqNo: Option<u32>,
     pub viewNo: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub protocolVersion: Option<usize>
 }
 
 #[allow(non_snake_case)]
@@ -246,7 +255,7 @@ impl CatchupRep {
                 Some(m) => if val < m { min = Some(val) }
             }
         }
-        min.ok_or(CommonError::InvalidStructure(format!("Empty Map")))
+        min.ok_or(CommonError::InvalidStructure("Empty Map".to_string()))
     }
 }
 
@@ -389,6 +398,61 @@ impl Message {
 impl JsonEncodable for Message {}
 
 impl<'a> JsonDecodable<'a> for Message {}
+
+/**
+ Single item to verification:
+ - SP Trie with RootHash
+ - BLS MS
+ - set of key-value to verify
+*/
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ParsedSP {
+    /// encoded SP Trie transferred from Node to Client
+    pub proof_nodes: String,
+    /// RootHash of the Trie, start point for verification. Should be same with appropriate filed in BLS MS data
+    pub root_hash: String,
+    /// entities to verification against current SP Trie
+    pub kvs_to_verify: KeyValuesInSP,
+    /// BLS MS data for verification
+    pub multi_signature: serde_json::Value,
+}
+
+/**
+ Variants of representation for items to verify against SP Trie
+ Right now 2 options are specified:
+ - simple array of key-value pair
+ - whole subtrie
+*/
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[serde(tag = "type")]
+pub enum KeyValuesInSP {
+    Simple(KeyValueSimpleData),
+    SubTrie(KeyValuesSubTrieData),
+}
+
+/**
+ Simple variant of `KeyValuesInSP`.
+
+ All required data already present in parent SP Trie (built from `proof_nodes`).
+ `kvs` can be verified directly in parent trie
+*/
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct KeyValueSimpleData {
+    pub kvs: Vec<(String /* b64-encoded key */, Option<String /* val */>)>
+}
+
+/**
+ Subtrie variant of `KeyValuesInSP`.
+
+ In this case Client (libindy) should construct subtrie and append it into trie based on `proof_nodes`.
+ After this preparation each kv pair can be checked.
+*/
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct KeyValuesSubTrieData {
+    /// base64-encoded common prefix of each pair in `kvs`. Should be used to correct merging initial trie and subtrie
+    pub sub_trie_prefix: Option<String>,
+    pub kvs: Vec<(String /* b64-encoded key_suffix */, Option<String /* val */>)>,
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct PoolConfig {

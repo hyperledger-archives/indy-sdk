@@ -21,7 +21,7 @@ mod utils;
 
 #[cfg(feature = "local_nodes_pool")]
 use utils::callback::CallbackUtils;
-use utils::constants::DEFAULT_WALLET_CREDENTIALS;
+use utils::constants::{DEFAULT_WALLET_CREDENTIALS, PROTOCOL_VERSION};
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
@@ -416,6 +416,7 @@ fn ledger_demo_works() {
     let pool_name = "pool_1";
     let c_pool_name = CString::new(pool_name).unwrap();
 
+    let (set_protocol_version_receiver, set_protocol_version_command_handle, set_protocol_version_callback) = CallbackUtils::_closure_to_cb_ec();
     let (open_receiver, open_command_handle, open_callback) = CallbackUtils::_closure_to_cb_ec_i32();
     let (create_receiver, create_command_handle, create_callback) = CallbackUtils::_closure_to_cb_ec();
     let (send_receiver, send_command_handle, send_callback) = CallbackUtils::_closure_to_cb_ec_string();
@@ -430,6 +431,14 @@ fn ledger_demo_works() {
     let (close_pool_receiver, close_pool_command_handle, close_pool_callback) = CallbackUtils::_closure_to_cb_ec();
     let (close_my_wallet_receiver, close_my_wallet_command_handle, close_my_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
     let (close_their_wallet_receiver, close_their_wallet_command_handle, close_their_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
+
+    // Set protocol version
+    let err = indy_set_protocol_version(set_protocol_version_command_handle,
+                                        PROTOCOL_VERSION,
+                                        set_protocol_version_callback);
+    assert_eq!(err, ErrorCode::Success);
+    let err = set_protocol_version_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    assert_eq!(err, ErrorCode::Success);
 
     // 1. Create ledger config from genesis txn file
     let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
@@ -576,7 +585,7 @@ fn ledger_demo_works() {
     assert_eq!(err, ErrorCode::Success);
     let (err, resp) = send_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
-    let nym_resp: Reply = serde_json::from_str(&resp).unwrap();
+    let nym_resp = serde_json::from_str::<serde_json::Value>(&resp).unwrap();
     info!("nym_resp_raw : {:?}", resp);
     info!("nym_resp     : {:?}", nym_resp);
 
