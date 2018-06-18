@@ -2,7 +2,6 @@
 
 ## A Developer Guide for Libindy migration
 
-There are some APIs that have been added/changed in Libindy 1.5.0.
 This document is written for developers using Libindy 1.4.0 to provide necessary information and
 to simplify their transition to API of Libindy 1.5.0.
 
@@ -24,8 +23,8 @@ In the following tables, there are function that have been changed or added in L
 
 
 ### Wallet API
-Performed significant changes related to Wallet Storage. The Wallet Design document can be find [here](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage).
-* Changed API of Plugged Wallet storage to extend set of commands related to work with stored data. 
+Performed significant changes related to Wallet Storage. The complete Wallet Design document can be found [here](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage).
+* Changed API of Plugged Wallet storage to extend set of commands related to working with stored data. 
 <table>  
   <th>v1.4.0 - Wallet API</th>
   <th>v1.5.0 - Wallet API</th>
@@ -95,9 +94,9 @@ indy_register_wallet_storage(
 
 * Plugged wallet used to handle both security and storage layers. Now all encryption performs on Libindy level. \
 Because of this, `credentials_json` became the required parameter for the following functions:
-    * [indy_create_wallet](https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L142) - Creates a new secure wallet with the given unique name.
-    * [indy_open_wallet](https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L210) - Opens the wallet with specific name.
-    * [indy_delete_wallet](https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L475) - Deletes created wallet.
+    * [indy_create_wallet](https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L142) - Creates a new secure wallet
+    * [indy_open_wallet](https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L210) - Opens the wallet with specific name
+    * [indy_delete_wallet](https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L475) - Deletes created wallet
     
 The parameter `credentials_json` has the following format:
 ```
@@ -369,7 +368,7 @@ This API is intended to provide the ability to register custom payment method an
 * Adding fees to transactions
 * Getting transactions fees amount
 
-The design document can be find [here](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/004-payment-interface)
+The complete Payment design document can be found [here](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/004-payment-interface)
 
 <table>  
   <th colspan="2">v1.5.0 - Payments API</th>
@@ -655,7 +654,7 @@ There is a global property PROTOCOL_VERSION that used in every request to the po
 * PROTOCOL_VERSION=2 for IndyNode 1.4
 
 The function `indy_set_protocol_version` has been added to Libindy Pool API.\
-This function should be called during app initialization to specify PROTOCOL_VERSION.
+This function should be called during app initialization to set PROTOCOL_VERSION.
 
 <table>
   <th>v1.5.0 - Pool API</th>
@@ -743,7 +742,7 @@ indy_build_pool_restart_request(command_handle: i32,
   <tr>
     <th colspan="2">
         <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/ledger.rs#L1644">
-            Register callbacks
+            Register custom callbacks for parsing of state proofs
         </a>
     </th>
     </tr>

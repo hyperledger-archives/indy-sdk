@@ -2,13 +2,13 @@
 
 * Performed significant changes related to [Wallet Storage](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage):
     * Changed API of Plugged Wallet storage to extend set of commands related to working with stored data. 
-    * Plugged wallet used to handles both security and storage layers. Now all encryption performs on Libindy level. 
+    * Plugged wallet used to handle both security and storage layers. Now all encryption performs on Libindy level. 
     * The format of storing data was changed to support efficient search.
 * Provided [Export/Import functionality](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/009-wallet-export-import).
 * Added [Non-Secrets API](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage#non-secrets-api) that allows store and read application specific data in the wallet.
 * Added [Generic Payments API](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/004-payment-interface#payment-method-api) that provides ability to register custom payment method 
 and then create payment addresses, build payment-related transactions, assign fees to transactions.
-* Added ability of [loading custom plugins by Indy CLI](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/006-cli-plugins).
+* Added ability to [load custom plugins using Indy CLI](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/006-cli-plugins).
 * Added the set of commands in Indy CLI providing ability to perform [the main payments operations](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/007-cli-payments):
   * Creation of payment address
   * Listing of payment addresses
