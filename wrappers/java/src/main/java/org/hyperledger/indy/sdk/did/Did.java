@@ -573,6 +573,72 @@ public class Did extends IndyJava.API {
 	}
 
 	/**
+	 * Retrieves the information about the giving DID in the wallet.
+	 *
+	 * @param wallet The wallet.
+	 * @param did    The DID to retrieve metadata.
+	 * @return A future resolving to a did data: {
+	 *     "did": string - DID stored in the wallet,
+	 *     "verkey": string - The DIDs transport key (ver key, key id),
+	 *     "metadata": string - The meta information stored with the DID
+	 *   }
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> getDidWithMeta(
+			Wallet wallet,
+			String did) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_get_my_did_with_meta(
+				commandHandle,
+				walletHandle,
+				did,
+				getDidMetadataCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Retrieves the information about all DIDs stored in the wallet.
+	 *
+	 * @param wallet The wallet.
+	 * @return A future resolving to a list of dids: [{
+	 *     "did": string - DID stored in the wallet,
+	 *     "verkey": string - The DIDs transport key (ver key, key id).,
+	 *     "metadata": string - The meta information stored with the DID
+	 *   }]
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> getListMyDidsWithMeta(
+			Wallet wallet) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_list_my_dids_with_meta(
+				commandHandle,
+				walletHandle,
+				getDidMetadataCb);
+
+		checkResult(result);
+
+		return future;
+	}
+	
+	/**
 	 * Retrieves abbreviated verkey if it is possible otherwise return full verkey.
 	 *
 	 * @param did   DID.
