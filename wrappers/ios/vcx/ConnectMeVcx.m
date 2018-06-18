@@ -322,7 +322,7 @@ completion:(void (^)(NSError *error))completion
    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
    const char *invitationId_char = [invitationId cString];
    const char *inviteDetails_char = [inviteDetails cString];
-   ret = vcx_connection_create_with_invite(handle, invitationId_char, inviteDetails_char, VcxWrapperCommonNumberCallback);
+   ret = vcx_connection_create_with_invite(handle, invitationId_char, inviteDetails_char, VcxWrapperCommonHandleCallback);
    if( ret != 0 )
    {
        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -372,7 +372,7 @@ completion:(void (^)(NSError *error))completion
    vcx_error_t ret;
    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     const char *serialized_connection=[serializedConnection cString];
-    ret = vcx_connection_deserialize(handle, serialized_connection, VcxWrapperCommonNumberCallback);
+    ret = vcx_connection_deserialize(handle, serialized_connection, VcxWrapperCommonHandleCallback);
 
    if( ret != 0 )
    {

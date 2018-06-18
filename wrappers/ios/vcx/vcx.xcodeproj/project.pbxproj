@@ -21,8 +21,6 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		8E27AFF320A3BA8700EF8BA0 /* libvcx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E27AFF220A3BA8700EF8BA0 /* libvcx.a */; };
-		91E89EE420C8809D00F2CB29 /* libnullpay.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 91E89EE320C8809D00F2CB29 /* libnullpay.a */; };
 		DD2566F8209705E3002EBEBA /* vcx.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DD2566EE209705E3002EBEBA /* vcx.framework */; };
 		DD2566FD209705E3002EBEBA /* vcxTests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD2566FC209705E3002EBEBA /* vcxTests.m */; };
 		DD2566FF209705E3002EBEBA /* vcx.h in Headers */ = {isa = PBXBuildFile; fileRef = DD2566F1209705E3002EBEBA /* vcx.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -36,24 +34,16 @@
 		DD25673D2097138F002EBEBA /* vcx_demoUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = DD25673C2097138F002EBEBA /* vcx_demoUITests.m */; };
 		DD25674A2097173B002EBEBA /* vcx.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = DD2566EE209705E3002EBEBA /* vcx.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DD390C712099CD0A00B4EA94 /* vcx.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DD390C702099CD0A00B4EA94 /* vcx.framework */; };
-		DD64089E20AEB5160077EF05 /* libcrypto.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DD858CA620A47CE3004B3CB5 /* libcrypto.a */; };
-		DD64089F20AEB5160077EF05 /* libindy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DD858CA220A47CE3004B3CB5 /* libindy.a */; };
-		DD6408A020AEB5160077EF05 /* libminiz.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DD858CA420A47CE3004B3CB5 /* libminiz.a */; };
-		DD6408A120AEB5160077EF05 /* libsodium.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DD858CA720A47CE4004B3CB5 /* libsodium.a */; };
-		DD6408A220AEB5160077EF05 /* libsqlite3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DD858CA120A47CE3004B3CB5 /* libsqlite3.a */; };
-		DD6408A320AEB5160077EF05 /* libssl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DD858CA520A47CE3004B3CB5 /* libssl.a */; };
-		DD6408A420AEB5160077EF05 /* libzmq.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DD858CA320A47CE3004B3CB5 /* libzmq.a */; };
+		DD3D9DC520D3C4BC006794F9 /* libvcx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DD3D9DC320D3C4A9006794F9 /* libvcx.a */; };
+		DD3D9DC620D3C50F006794F9 /* libvcx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DD3D9DC320D3C4A9006794F9 /* libvcx.a */; };
 		DD858C9E20A45C11004B3CB5 /* ConnectMeVcx.m in Sources */ = {isa = PBXBuildFile; fileRef = DD858C9C20A45C11004B3CB5 /* ConnectMeVcx.m */; };
 		DD858C9F20A45C11004B3CB5 /* ConnectMeVcx.h in Headers */ = {isa = PBXBuildFile; fileRef = DD858C9D20A45C11004B3CB5 /* ConnectMeVcx.h */; };
-		DD858CA020A467D6004B3CB5 /* libvcx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E27AFF220A3BA8700EF8BA0 /* libvcx.a */; };
 		DD858CBC20A4AF7C004B3CB5 /* VcxCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = DD858CB620A4AF7B004B3CB5 /* VcxCallbacks.h */; };
 		DD858CBD20A4AF7C004B3CB5 /* VcxErrors.h in Headers */ = {isa = PBXBuildFile; fileRef = DD858CB720A4AF7B004B3CB5 /* VcxErrors.h */; };
 		DD858CBE20A4AF7C004B3CB5 /* VcxCallbacks.mm in Sources */ = {isa = PBXBuildFile; fileRef = DD858CB820A4AF7B004B3CB5 /* VcxCallbacks.mm */; };
 		DD858CBF20A4AF7C004B3CB5 /* VcxTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = DD858CB920A4AF7B004B3CB5 /* VcxTypes.h */; };
 		DD858CC020A4AF7C004B3CB5 /* NSError+VcxError.h in Headers */ = {isa = PBXBuildFile; fileRef = DD858CBA20A4AF7B004B3CB5 /* NSError+VcxError.h */; };
 		DD858CC120A4AF7C004B3CB5 /* NSError+VcxError.m in Sources */ = {isa = PBXBuildFile; fileRef = DD858CBB20A4AF7C004B3CB5 /* NSError+VcxError.m */; };
-		DD858CC320A53DCB004B3CB5 /* libstdc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = DD858CC220A53DCB004B3CB5 /* libstdc++.tbd */; };
-		DD858CC520A53DD7004B3CB5 /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = DD858CC420A53DD7004B3CB5 /* libresolv.tbd */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -127,6 +117,7 @@
 		DD25673C2097138F002EBEBA /* vcx_demoUITests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = vcx_demoUITests.m; sourceTree = "<group>"; };
 		DD25673E2097138F002EBEBA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		DD390C702099CD0A00B4EA94 /* vcx.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = vcx.framework; sourceTree = "<group>"; };
+		DD3D9DC320D3C4A9006794F9 /* libvcx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libvcx.a; path = vcx.framework/lib/libvcx.a; sourceTree = "<group>"; };
 		DD858C9C20A45C11004B3CB5 /* ConnectMeVcx.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ConnectMeVcx.m; sourceTree = "<group>"; };
 		DD858C9D20A45C11004B3CB5 /* ConnectMeVcx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ConnectMeVcx.h; sourceTree = "<group>"; };
 		DD858CA120A47CE3004B3CB5 /* libsqlite3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsqlite3.a; path = lib/libsqlite3.a; sourceTree = "<group>"; };
@@ -151,17 +142,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				91E89EE420C8809D00F2CB29 /* libnullpay.a in Frameworks */,
-				DD64089E20AEB5160077EF05 /* libcrypto.a in Frameworks */,
-				DD64089F20AEB5160077EF05 /* libindy.a in Frameworks */,
-				DD6408A020AEB5160077EF05 /* libminiz.a in Frameworks */,
-				DD6408A120AEB5160077EF05 /* libsodium.a in Frameworks */,
-				DD6408A220AEB5160077EF05 /* libsqlite3.a in Frameworks */,
-				DD6408A320AEB5160077EF05 /* libssl.a in Frameworks */,
-				DD6408A420AEB5160077EF05 /* libzmq.a in Frameworks */,
-				DD858CC520A53DD7004B3CB5 /* libresolv.tbd in Frameworks */,
-				DD858CC320A53DCB004B3CB5 /* libstdc++.tbd in Frameworks */,
-				DD858CA020A467D6004B3CB5 /* libvcx.a in Frameworks */,
+				DD3D9DC520D3C4BC006794F9 /* libvcx.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -177,7 +158,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8E27AFF320A3BA8700EF8BA0 /* libvcx.a in Frameworks */,
+				DD3D9DC620D3C50F006794F9 /* libvcx.a in Frameworks */,
 				DD390C712099CD0A00B4EA94 /* vcx.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -283,6 +264,7 @@
 		DD25682F2098B53C002EBEBA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				DD3D9DC320D3C4A9006794F9 /* libvcx.a */,
 				91E89EE320C8809D00F2CB29 /* libnullpay.a */,
 				DD858CC420A53DD7004B3CB5 /* libresolv.tbd */,
 				DD858CC220A53DCB004B3CB5 /* libstdc++.tbd */,
@@ -763,18 +745,12 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/lib",
+					"$(PROJECT_DIR)/vcx.framework/lib",
 				);
 				ONLY_ACTIVE_ARCH = NO;
 				"OTHER_LDFLAGS[arch=*]" = (
 					"-ObjC",
-					"-lssl",
-					"-lcrypto",
-					"-lsqlite3",
-					"-lsodium",
-					"-lzmq",
-					"-lindy",
 					"-lvcx",
-					"-lnullpay",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "co.evernym.vcx-objc.vcx";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -810,18 +786,12 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/lib",
+					"$(PROJECT_DIR)/vcx.framework/lib",
 				);
 				ONLY_ACTIVE_ARCH = NO;
 				"OTHER_LDFLAGS[arch=*]" = (
 					"-ObjC",
-					"-lssl",
-					"-lcrypto",
-					"-lsqlite3",
-					"-lsodium",
-					"-lzmq",
-					"-lindy",
 					"-lvcx",
-					"-lnullpay",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "co.evernym.vcx-objc.vcx";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -890,7 +860,10 @@
 				HEADER_SEARCH_PATHS = $SOURCE_ROOT/include;
 				INFOPLIST_FILE = "vcx-demo/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/lib";
+				LIBRARY_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/lib",
+					"$(PROJECT_DIR)/vcx.framework/lib",
+				);
 				"OTHER_LDFLAGS[arch=*]" = (
 					"-ObjC",
 					"-lvcx",
@@ -915,7 +888,10 @@
 				HEADER_SEARCH_PATHS = $SOURCE_ROOT/include;
 				INFOPLIST_FILE = "vcx-demo/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/lib";
+				LIBRARY_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/lib",
+					"$(PROJECT_DIR)/vcx.framework/lib",
+				);
 				"OTHER_LDFLAGS[arch=*]" = (
 					"-ObjC",
 					"-lvcx",
