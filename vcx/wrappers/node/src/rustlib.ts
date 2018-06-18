@@ -88,7 +88,8 @@ export interface IFFIEntryPoint {
   vcx_issuer_credential_serialize: (commandId: number, handle: string, cb: any) => number,
   vcx_issuer_credential_update_state: (commandId: number, handle: string, cb: any) => number,
   vcx_issuer_credential_get_state: (commandId: number, handle: string, cb: any) => number,
-  vcx_issuer_create_credential: any,
+  vcx_issuer_create_credential: (commandId: number, sourceId: string, credDefId: string, issuerDid: any,
+                                 attr: string, credentialName: string, price: number, cb: any) => number,
   vcx_issuer_send_credential: (commandId: number, credentialHandle: string, connectionHandle: string, cb: any) =>
    number,
   vcx_issuer_send_credential_offer: (commandId: number, credentialHandle: string, connectionHandle: string, cb: any) =>

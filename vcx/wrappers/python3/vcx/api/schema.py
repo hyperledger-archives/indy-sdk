@@ -7,6 +7,15 @@ import json
 
 
 class Schema(VcxBase):
+    """
+    Object that represents a schema written on the ledger.
+
+    Attributes:
+        source_id: user generated unique identifier
+        schema_id: the ledger ID of the schema
+        attrs: attribute/value pairs
+        version: version of the schema
+    """
 
     def __init__(self, source_id: str, name: str, version: str, attrs: list):
         VcxBase.__init__(self, source_id)
@@ -54,6 +63,16 @@ class Schema(VcxBase):
 
     @staticmethod
     async def create(source_id: str, name: str, version: str, attrs: list, payment_handle: int):
+        """
+        Creates a new schema object that is written to the ledger
+
+        :param source_id: Institution's unique ID for the schema
+        :param name: Name of schema
+        :param version: Version of the schema
+        :param attrs: Atttributes of the schema
+        :param payment_handle: NYI - payment of ledger fee is taken from wallet automatically
+        :return: schema object, written to ledger
+        """
         constructor_params = (source_id, name, version, attrs)
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
@@ -69,6 +88,12 @@ class Schema(VcxBase):
 
     @staticmethod
     async def deserialize(data: dict):
+        """
+        Create the object from a previously serialized object.
+
+        :param data: The output of the "serialize" call
+        :return: A re-instantiated object
+        """
         try:
             # Todo: Find better way to access attr_names. Potential for issues.
             schema = await Schema._deserialize("vcx_schema_deserialize",
@@ -85,6 +110,13 @@ class Schema(VcxBase):
 
     @staticmethod
     async def lookup(source_id: str, schema_id: str):
+        """
+        Create a new schema object from an existing ledger schema
+
+        :param source_id: Institution's personal identification for the schema
+        :param schema_id: Ledger schema ID for lookup
+        :return: schema object
+        """
         try:
             schema = Schema(source_id, '', '', [])
 
@@ -111,18 +143,38 @@ class Schema(VcxBase):
             raise VcxError(ErrorCode.InvalidSchema)
 
     async def serialize(self) -> dict:
+        """
+        Serialize the object for storage
+
+        :return: serialized object
+        """
         return await self._serialize(Schema, 'vcx_schema_serialize')
 
     def release(self) -> None:
+        """
+        destroy the object and release any memory associated with it
+
+        :return: None
+        """
         self._release(Schema, 'vcx_schema_release')
 
     async def get_schema_id(self):
+        """
+        Get the ledger ID of the object
+
+        :return: ID string
+        """
         cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
         c_handle = c_uint32(self.handle)
         id = await do_call('vcx_schema_get_schema_id', c_handle, cb)
         return id.decode()
 
     async def get_payment_txn(self):
+        """
+        Get the payment transaction information generated when paying the ledger fee
+
+        :return: JSON object with input address and output UTXOs
+        """
         if not hasattr(Schema.get_payment_txn, "cb"):
             self.logger.debug("vcx_schema_get_payment_txn: Creating callback")
             Schema.get_payment_txn.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))

@@ -176,6 +176,10 @@ pub fn delete_wallet(wallet_name: &str) -> Result<(), u32> {
         return Ok(())
     }
 
+    match close_wallet() {
+        Ok(_) => (),
+        Err(x) => (),
+    };
     let rtn_obj = Return_I32::new()?;
     let wallet_name = CString::new(wallet_name).map_err(map_string_error)?;
     let credentials =  CString::new(settings::get_wallet_credentials()).unwrap();
