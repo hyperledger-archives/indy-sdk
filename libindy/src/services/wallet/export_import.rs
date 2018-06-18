@@ -6,10 +6,10 @@ use std::collections::HashMap;
 use serde_json;
 
 use utils::crypto::hash::Hash;
-use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
+use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF, NONCE_LENGTH, ChaCha20Poly1305IETFNonce};
 use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 use utils::byte_array::_clone_into_array;
-use services::wallet::encryption::{decrypt_merged, decrypt, encrypt_as_not_searchable};
+use services::wallet::encryption::{decrypt_merged, decrypt, encrypt_as_not_searchable, derive_key};
 
 use errors::common::CommonError;
 
@@ -21,7 +21,7 @@ struct Header {
     version: u32,
     time: u64,
     encryption_method: String,
-    nonce: Vec<u8>,
+    nonce: ChaCha20Poly1305IETFNonce,
     salt: [u8; PwhashArgon2i13::SALTBYTES],
 }
 
@@ -34,7 +34,7 @@ impl Header {
         Header {
             version: version,
             encryption_method: encryption_method.to_owned(),
-            nonce: nonce.to_owned(),
+            nonce: ChaCha20Poly1305IETF::clone_nonce_from_slice(nonce),
             time: unix_time.as_secs(),
             salt: salt,
         }
@@ -83,7 +83,7 @@ impl Header {
             version: version,
             time: time,
             encryption_method: method,
-            nonce: nonce,
+            nonce: ChaCha20Poly1305IETF::clone_nonce_from_slice(&nonce),
             salt: salt,
         })
     }
@@ -91,7 +91,7 @@ impl Header {
     // Must return Result, since underlying hash library returns Result for some reason
     fn serialise(&self) -> Result<Vec<u8>, WalletError> {
         let mut v = Vec::new();
-        let header_length = (18 + self.encryption_method.len() + self.nonce.len() + self.salt.len() + 32) as u16;
+        let header_length = (18 + self.encryption_method.len() + NONCE_LENGTH + self.salt.len() + 32) as u16;
         v.extend(&u16_to_bytes(header_length));
         let version_bytes = u32_to_bytes(self.version);
         v.extend(&version_bytes);
@@ -100,9 +100,9 @@ impl Header {
         let method_length_bytes = u16_to_bytes(self.encryption_method.len() as u16);
         v.extend(&method_length_bytes);
         v.extend(self.encryption_method.as_bytes());
-        let nonce_length_bytes = u16_to_bytes(self.nonce.len() as u16);
+        let nonce_length_bytes = u16_to_bytes(NONCE_LENGTH as u16);
         v.extend(&nonce_length_bytes);
-        v.extend(&self.nonce);
+        v.extend(self.nonce.get_bytes());
         let salt_length_bytes = u16_to_bytes(self.salt.len() as u16);
         v.extend(&salt_length_bytes);
         v.extend(&self.salt);
@@ -114,15 +114,14 @@ impl Header {
 
 
 pub (super) fn export(wallet: &Wallet, writer: Box<Write>, passphrase: &str, version: u32) -> Result<(), WalletError> {
-    let mut key: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
     let salt = PwhashArgon2i13::gen_salt();
-    PwhashArgon2i13::derive_key(&mut key, passphrase.as_bytes(), &salt)?;
+    let key = derive_key(passphrase.as_bytes(), &salt)?;
     let mut writer = BufWriter::new(writer);
     let mut wallet_iterator = wallet.get_all()?;
     let mut nonce = ChaCha20Poly1305IETF::gen_nonce();
     let mut buffer = Vec::new();
 
-    let header = Header::new(version, "ChaCha20Poly1305IETF", &nonce, salt);
+    let header = Header::new(version, "ChaCha20Poly1305IETF", nonce.get_bytes(), salt);
     let serialised_header = header.serialise()?;
     writer.write_all(&serialised_header)?;
 
@@ -135,7 +134,7 @@ pub (super) fn export(wallet: &Wallet, writer: Box<Write>, passphrase: &str, ver
         let mut decrypt_index = 0;
         while decrypt_index + 1024 <= buffer.len() {
             let chunk = &buffer[decrypt_index .. decrypt_index+1024];
-            let (encrypted_chunk, _) = ChaCha20Poly1305IETF::encrypt(chunk, &key, Some(&nonce));
+            let encrypted_chunk = ChaCha20Poly1305IETF::encrypt(chunk, &key, &nonce);
             ChaCha20Poly1305IETF::increment_nonce(&mut nonce);
             writer.write_all(&encrypted_chunk)?;
             decrypt_index += 1024;
@@ -151,7 +150,7 @@ pub (super) fn export(wallet: &Wallet, writer: Box<Write>, passphrase: &str, ver
     }
 
     if buffer.len() > 0 {
-        let (last_encrypted_chunk, _) = ChaCha20Poly1305IETF::encrypt(&buffer, &key, Some(&nonce));
+        let last_encrypted_chunk = ChaCha20Poly1305IETF::encrypt(&buffer, &key, &nonce);
         writer.write_all(&last_encrypted_chunk)?;
     }
 
@@ -189,8 +188,7 @@ pub (super) fn import(wallet: &Wallet, reader: Box<Read>, passphrase: &str) -> R
     }
 
     let header = Header::deserialise(&header_data)?;
-    let mut key: [u8; ChaCha20Poly1305IETF::KEYBYTES] = [0; ChaCha20Poly1305IETF::KEYBYTES];
-    PwhashArgon2i13::derive_key(&mut key, passphrase.as_bytes(), &header.salt)?;
+    let key = derive_key(passphrase.as_bytes(), &header.salt)?;
     let mut nonce = header.nonce;
 
     let mut encrypted_chunk: [u8; 1040] = [0; 1040];
@@ -368,10 +366,12 @@ mod tests {
     use std::io;
     use std::io::{Read, BufReader};
     use std::env;
+    use std::rc::Rc;
     use std::collections::HashMap;
     extern crate rand;
     use self::rand::*;
     use serde_json;
+    use ::utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF, ChaCha20Poly1305IETFKey};
     use ::utils::environment::EnvironmentUtils;
     use ::utils::test::TestUtils;
     use services::wallet::storage::WalletStorageType;
@@ -379,7 +379,6 @@ mod tests {
     use services::wallet::wallet::{Keys, Wallet};
     use services::wallet::encryption::{decrypt_merged, decrypt, encrypt_as_not_searchable};
     use super::*;
-
 
     fn _wallet_path() -> std::path::PathBuf {
         let mut path = env::home_dir().unwrap();
@@ -405,7 +404,7 @@ mod tests {
         let pool_name = "test_pool";
         let storage_type = SQLiteStorageType::new();
         let master_key = _get_test_master_key();
-        storage_type.create_storage("test_wallet", None, "", &Keys::gen_keys(master_key)).unwrap();
+        storage_type.create_storage("test_wallet", None, "", &Keys::gen_keys(&master_key)).unwrap();
         let credentials = _credentials();
         let storage = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
 
@@ -416,16 +415,11 @@ mod tests {
             ).unwrap()
         ).unwrap();
 
-        Wallet::new(name, pool_name, storage, keys)
+        Wallet::new(name, pool_name, storage, Rc::new(keys))
     }
 
-    fn _get_test_master_key() -> [u8; 32] {
-        return [
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8,
-            1, 2, 3, 4, 5, 6, 7, 8
-        ];
+    fn _get_test_master_key() -> ChaCha20Poly1305IETFKey {
+        ChaCha20Poly1305IETF::generate_key()
     }
 
     fn _create_export_file() -> Box<io::Write> {
@@ -492,19 +486,19 @@ mod tests {
     */
     #[test]
     fn test_header_serialised_length() {
-        let nonce = vec![1,2,3,4,5];
+        let nonce = ChaCha20Poly1305IETF::gen_nonce();
         let salt = _get_test_salt();
-        let header = Header::new(1, "TEST_ENCRYPTION_METHOD", &nonce, salt);
+        let header = Header::new(1, "TEST_ENCRYPTION_METHOD", nonce.get_bytes(), salt);
         let serialised_header = header.serialise().unwrap();
 
-        assert_eq!(serialised_header.len(), 2 + 12 + 2 + "TEST_ENCRYPTION_METHOD".len() + 2 + 5 + 2 + 32 + 32);
+        assert_eq!(serialised_header.len(), 2 + 12 + 2 + "TEST_ENCRYPTION_METHOD".len() + 2 + NONCE_LENGTH + 2 + 32 + 32);
     }
 
     #[test]
     fn test_header_equal_after_deserialisation() {
-        let nonce = vec![1,2,3,4,5];
+        let nonce = ChaCha20Poly1305IETF::gen_nonce();
         let salt = _get_test_salt();
-        let header = Header::new(1, "TEST_ENCRYPTION_METHOD", &nonce, salt);
+        let header = Header::new(1, "TEST_ENCRYPTION_METHOD", nonce.get_bytes(), salt);
 
         let serialised_header = header.serialise().unwrap();
         let deserialised_header = Header::deserialise(&serialised_header).unwrap();
@@ -518,9 +512,9 @@ mod tests {
 
     #[test]
     fn test_header_deserialisation_raises_error_if_data_changed() {
-        let nonce = vec![1,2,3,4,5];
+        let nonce = ChaCha20Poly1305IETF::gen_nonce();
         let salt = _get_test_salt();
-        let header = Header::new(1, "TEST_ENCRYPTION_METHOD", &nonce, salt);
+        let header = Header::new(1, "TEST_ENCRYPTION_METHOD", nonce.get_bytes(), salt);
 
         let mut serialised_header = header.serialise().unwrap();
         serialised_header[3] = 1;
@@ -530,9 +524,9 @@ mod tests {
 
     #[test]
     fn test_header_deserialisation_raises_error_if_hash_changed() {
-        let nonce = vec![1,2,3,4,5];
+        let nonce = ChaCha20Poly1305IETF::gen_nonce();
         let salt = _get_test_salt();
-        let header = Header::new(1, "TEST_ENCRYPTION_METHOD", &nonce, salt);
+        let header = Header::new(1, "TEST_ENCRYPTION_METHOD", nonce.get_bytes(), salt);
 
         let mut serialised_header = header.serialise().unwrap();
         let index = serialised_header.len() - 5;

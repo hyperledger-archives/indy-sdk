@@ -37,12 +37,12 @@
 
 // MARK: - Pool ledger
 
-- (NSError *)openPoolLedger:(NSString*)poolName
-                     config:(NSString*)config
-                poolHandler:(IndyHandle*)handle;
+- (NSError *)openPoolLedger:(NSString *)poolName
+                     config:(NSString *)config
+                poolHandler:(IndyHandle *)handle;
 
-- (NSError*)createAndOpenPoolLedgerWithPoolName: (NSString *) poolName
-                                     poolHandle: (IndyHandle*) handle;
+- (NSError *)createAndOpenPoolLedgerWithPoolName:(NSString *)poolName
+                                      poolHandle:(IndyHandle *)handle;
 
 // MARK: - Actions
 
@@ -51,6 +51,8 @@
 - (NSError *)closeHandle:(IndyHandle)poolHandle;
 
 - (NSError *)deletePoolWithName:(NSString *)poolName;
+
+- (NSError *)setProtocolVersion:(NSNumber *)protocolVersion;
 
 - (NSError *)sendRequestWithPoolHandle:(IndyHandle)poolHandle
                                request:(NSString *)request

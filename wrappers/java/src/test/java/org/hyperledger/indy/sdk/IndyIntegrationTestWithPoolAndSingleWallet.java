@@ -20,6 +20,8 @@ public class IndyIntegrationTestWithPoolAndSingleWallet extends IndyIntegrationT
 
 	@Before
 	public void createPoolAndWallet() throws Exception {
+		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
+
 		String poolName = PoolUtils.createPoolLedgerConfig();
 		pool = Pool.openPoolLedger(poolName, null).get();
 
