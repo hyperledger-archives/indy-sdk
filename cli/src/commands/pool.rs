@@ -60,6 +60,7 @@ pub mod connect_command {
                 .add_main_param("name", "The name of pool")
                 .add_optional_param("protocol-version", "Pool protocol version will be used for requests. One of: 1, 2. (2 by default)")
                 .add_example("pool connect pool1")
+                .add_example("pool connect pool1 protocol-version=2")
                 .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {

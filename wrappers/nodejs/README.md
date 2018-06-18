@@ -36,6 +36,7 @@ npm install --save indy-sdk
 ```
 
 #### Troubleshooting
+Use environment variable `RUST_LOG={info|debug|trace}` to output logs of Libindy.
 
 ##### Linking errors
 
