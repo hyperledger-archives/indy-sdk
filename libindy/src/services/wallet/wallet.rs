@@ -1,6 +1,4 @@
-use std;
 use std::collections::HashMap;
-use std::io::{Write,Read};
 use std::rc::Rc;
 
 use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
@@ -9,7 +7,6 @@ use errors::wallet::WalletError;
 use errors::common::CommonError;
 
 use super::storage;
-use super::storage::StorageEntity;
 use super::iterator::WalletIterator;
 use super::encryption::*;
 use super::query_encryption::encrypt_query;

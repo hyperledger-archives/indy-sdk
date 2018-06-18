@@ -572,7 +572,6 @@ mod medium_cases {
         fn indy_export_wallet_returns_error_if_invalid_config() {
             TestUtils::cleanup_storage();
             let path = _prepare_export_wallet_path();
-            let path_str = path.to_str().unwrap();
             fs::File::create(&path).unwrap();
 
             let wallet_name = "indy_export_wallet_returns_error_if_invalid_config";
@@ -642,9 +641,6 @@ mod medium_cases {
         #[test]
         fn indy_import_wallet_returns_error_if_invalid_config() {
             TestUtils::cleanup_storage();
-            let path = _prepare_export_wallet_path();
-            let path_str = path.to_str().unwrap();
-            let config_json = WalletUtils::prepare_export_wallet_config(path_str);
 
             let wallet_name = "indy_import_wallet_returns_error_if_invalid_config";
             let res = WalletUtils::import_wallet(POOL, wallet_name, None, None, None, "{}");

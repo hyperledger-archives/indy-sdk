@@ -5,7 +5,6 @@ use std::collections::HashMap;
 
 use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 
-use errors::common::CommonError;
 use errors::wallet::WalletError;
 use services::wallet::WalletRecord;
 

@@ -9,7 +9,7 @@ use utils::crypto::hash::Hash;
 use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 use utils::byte_array::_clone_into_array;
-use services::wallet::encryption::{decrypt_merged, decrypt, encrypt_as_not_searchable};
+use services::wallet::encryption::{decrypt};
 
 use errors::common::CommonError;
 
@@ -251,11 +251,11 @@ fn add_records_from_buffer(wallet: &Wallet, buff: &mut Vec<u8>) -> Result<(), Wa
     Ok(())
 }
 
-
+#[allow(deprecated)]
 fn sha256_hash(input: &[u8]) -> Result<Vec<u8>, CommonError> {
     let mut hasher = Hash::new_context()?;
     hasher.update(input)?;
-    Ok(hasher.finish()?)
+    Ok(hasher.finish()?) // TODO: use of deprecated item 'openssl::hash::Hasher::finish': use finish2 instead
 }
 
 
@@ -373,11 +373,10 @@ mod tests {
     use self::rand::*;
     use serde_json;
     use ::utils::environment::EnvironmentUtils;
-    use ::utils::test::TestUtils;
     use services::wallet::storage::WalletStorageType;
     use services::wallet::storage::default::SQLiteStorageType;
     use services::wallet::wallet::{Keys, Wallet};
-    use services::wallet::encryption::{decrypt_merged, decrypt, encrypt_as_not_searchable};
+    use services::wallet::encryption::{decrypt_merged};
     use super::*;
 
 
@@ -429,7 +428,7 @@ mod tests {
     }
 
     fn _create_export_file() -> Box<io::Write> {
-        let mut path = EnvironmentUtils::tmp_file_path("export_directory");
+        let path = EnvironmentUtils::tmp_file_path("export_directory");
         if path.exists() {
             std::fs::remove_dir_all(path.clone()).unwrap();
         }
@@ -739,7 +738,7 @@ mod tests {
             tags.insert(format!("tag_name_{}_2", i), format!("tag_value_{}_2", i));
             tags.insert(format!("~tag_name_{}_3", i), format!("tag_value_{}_3", i));
             let tags_len = serde_json::to_string(&tags).unwrap().len();
-            total_item_length += (4 + name.len() + value.len() + tags_len);
+            total_item_length += 4 + name.len() + value.len() + tags_len;
             wallet.add("type", &name, &value, &tags).unwrap();
         }
         let total_unencrypted_length = total_item_length + item_count * 20;
@@ -866,7 +865,7 @@ mod tests {
                 tags.insert(format!("tag_name_{}_2", i), format!("tag_value_{}_2", i));
                 tags.insert(format!("~tag_name_{}_3", i), format!("tag_value_{}_3", i));
                 let tags_len = serde_json::to_string(&tags).unwrap().len();
-                total_item_length += (4 + name.len() + value.len() + tags_len);
+                total_item_length += 4 + name.len() + value.len() + tags_len;
                 wallet.add("type", &name, &value, &tags).unwrap();
             }
             let total_unencrypted_length = total_item_length + item_count * 20;

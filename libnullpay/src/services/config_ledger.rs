@@ -29,6 +29,7 @@ pub fn get_all_fees() -> HashMap<String, i32> {
     fees
 }
 
+#[allow(dead_code)]
 pub fn clear_fees() {
     let mut fees = FEES.lock().unwrap();
     fees.clear();
