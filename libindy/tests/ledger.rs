@@ -817,6 +817,8 @@ mod high_cases {
 
         #[test]
         fn indy_build_cred_def_request_works_for_correct_data_json() {
+            PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
             let cred_def_json = r#"{
                "ver":"1.0",
                "id":"cred_def_id",
@@ -843,6 +845,8 @@ mod high_cases {
 
         #[test]
         fn indy_build_get_cred_def_request_works() {
+            PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
             let id = CredentialDefinition::cred_def_id(IDENTIFIER, &SEQ_NO.to_string(), SIGNATURE_TYPE, TAG_1);
             let expected_result = format!(r#""identifier":"{}","operation":{{"type":"108","ref":{},"signature_type":"{}","origin":"{}","tag":"{}"}}"#,
                                           IDENTIFIER, SEQ_NO, SIGNATURE_TYPE, IDENTIFIER, TAG_1);

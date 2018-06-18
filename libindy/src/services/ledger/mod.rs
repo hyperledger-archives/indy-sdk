@@ -585,6 +585,7 @@ impl LedgerService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use domain::ledger::request::ProtocolVersion;
 
     #[test]
     fn build_nym_request_works_for_only_required_fields() {
@@ -769,6 +770,8 @@ mod tests {
 
     #[test]
     fn build_get_cred_def_request_works() {
+        ProtocolVersion::set(2);
+
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
         let id = CredentialDefinition::cred_def_id("origin", "1", "signature_type", "tag");

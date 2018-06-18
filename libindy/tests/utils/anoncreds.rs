@@ -9,6 +9,7 @@ use utils::environment::EnvironmentUtils;
 use utils::wallet::WalletUtils;
 use utils::blob_storage::BlobStorageUtils;
 use utils::test::TestUtils;
+use utils::pool::PoolUtils;
 use utils::types::CredentialOfferInfo;
 
 use std::ffi::CString;
@@ -656,6 +657,8 @@ impl AnoncredsUtils {
         unsafe {
             COMMON_WALLET_INIT.call_once(|| {
                 TestUtils::cleanup_storage();
+
+                PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
                 //1. Create and Open wallet
                 WalletUtils::create_wallet(POOL, ANONCREDS_COMMON_WALLET, None, None, None).unwrap();

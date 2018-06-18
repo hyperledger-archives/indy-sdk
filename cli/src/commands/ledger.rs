@@ -517,7 +517,7 @@ pub mod get_cred_def_command {
         let tag = get_opt_str_param("tag", params).map_err(error_err!())?.unwrap_or("");
         let origin = get_str_param("origin", params).map_err(error_err!())?;
 
-        let id = build_cred_def_id(&submitter_did, schema_id, signature_type, tag);
+        let id = build_cred_def_id(&origin, schema_id, signature_type, tag);
 
         let response = Ledger::build_get_cred_def_request(&submitter_did, &id)
             .and_then(|request| Ledger::submit_request(pool_handle, &request))
