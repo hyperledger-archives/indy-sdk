@@ -15,7 +15,6 @@ use std::fs;
 use std::fs::{OpenOptions, File, DirBuilder};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-use std::mem;
 use named_type::NamedType;
 use std::rc::Rc;
 
@@ -26,7 +25,7 @@ use errors::wallet::WalletError;
 use errors::common::CommonError;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
-use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF, ChaCha20Poly1305IETFKey};
+use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETFKey};
 
 use self::export_import::{export, import};
 use self::storage::{WalletStorage, WalletStorageType};
@@ -34,7 +33,6 @@ use self::storage::default::SQLiteStorageType;
 use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Wallet, Keys};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
-use self::sodiumoxide::utils::memzero;
 use self::encryption::derive_key;
 use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 
@@ -577,7 +575,7 @@ impl WalletService {
         match self.open_wallet(name, None, credentials) {
             Err(err) => {
                 // Ignores the error, since there is nothing that can be done
-                self.delete_wallet(name, credentials);
+                let _ = self.delete_wallet(name, credentials);
                 Err(err)
             }
             Ok(wallet_handle) => {
@@ -587,7 +585,7 @@ impl WalletService {
                         match import(wallet, reader, &import_config.key) {
                             Ok(_) => Ok(()),
                             err @ Err(_) => {
-                                self.delete_wallet(name, credentials);
+                                let _ = self.delete_wallet(name, credentials);
                                 err
                             }
                         }

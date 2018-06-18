@@ -199,10 +199,13 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let tag_names: Vec<&str> = match serde_json::from_str(tag_names_json) {
-            Ok(tag_names) => tag_names,
-            Err(serde_json_err) => return Err(IndyError::WalletError(WalletError::InputError(format!("Invalid tag names input: {}", tag_names_json))))
-        };
+        //let tag_names: Vec<&str> = match serde_json::from_str(tag_names_json) {
+            //Ok(tag_names) => tag_names,
+            //Err(serde_json_err) => return Err(IndyError::WalletError(WalletError::InputError(format!("Invalid tag names input: {}", tag_names_json))))
+        //};
+        let tag_names: Vec<&str> = serde_json::from_str(tag_names_json)
+            .map_err(|err| IndyError::WalletError(WalletError::InputError(format!("Cannot deserialize tag names: {}", err))))?;
+        
         let res = self.wallet_service.delete_record_tags(wallet_handle, type_, id, &tag_names)?;
 
         trace!("delete_record_tags <<< res: {:?}", res);

@@ -1,12 +1,10 @@
 extern crate sodiumoxide;
 use sodiumoxide::crypto::aead::chacha20poly1305_ietf;
-use sodiumoxide::crypto::auth::hmacsha256;
 
 use errors::common::CommonError;
 
 use sodiumoxide::utils::increment_le;
 use utils::byte_array::_clone_into_array;
-use utils::crypto::hmacsha256::{HMACSHA256, HMACSHA256Key};
 
 pub const NONCE_LENGTH: usize = chacha20poly1305_ietf::NONCEBYTES;
 pub const KEY_LENGTH: usize = chacha20poly1305_ietf::KEYBYTES;
@@ -55,7 +53,7 @@ impl ChaCha20Poly1305IETF {
         ChaCha20Poly1305IETFNonce { nonce: chacha20poly1305_ietf::Nonce(_clone_into_array(&bytes[..chacha20poly1305_ietf::NONCEBYTES])) }
     }
 
-    pub fn increment_nonce(mut nonce: &mut ChaCha20Poly1305IETFNonce) {
+    pub fn increment_nonce(nonce: &mut ChaCha20Poly1305IETFNonce) {
         increment_le(&mut nonce.nonce.0);
     }
 
@@ -101,7 +99,6 @@ mod tests {
     fn encrypt_decrypt_works() {
         let data = randombytes::randombytes(100);
         let key = ChaCha20Poly1305IETF::generate_key();
-        let hmac_key = HMACSHA256::generate_key();
 
         let (c, nonce) = ChaCha20Poly1305IETF::generate_nonce_and_encrypt(&data, &key);
         let u = ChaCha20Poly1305IETF::decrypt(&c, &key, &nonce).unwrap();

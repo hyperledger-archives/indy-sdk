@@ -1,11 +1,8 @@
 extern crate sodiumoxide;
 
-use std;
 use std::collections::HashMap;
-use std::io::{Write,Read};
 use std::rc::Rc;
 
-use serde_json;
 use utils::crypto::chacha20poly1305_ietf::{TAG_LENGTH, KEY_LENGTH, NONCE_LENGTH, ChaCha20Poly1305IETF,ChaCha20Poly1305IETFKey};
 use utils::crypto::hmacsha256::{HMACSHA256, HMACSHA256Key};
 
@@ -13,7 +10,6 @@ use errors::wallet::WalletError;
 use errors::common::CommonError;
 
 use super::storage;
-use super::storage::StorageEntity;
 use super::iterator::WalletIterator;
 use super::encryption::*;
 use super::query_encryption::encrypt_query;
