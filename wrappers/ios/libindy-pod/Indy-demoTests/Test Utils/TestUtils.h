@@ -101,4 +101,6 @@
 
 + (NSString *)tag;
 
++ (NSNumber *)protocolVersion;
+
 @end

@@ -169,7 +169,7 @@ indy> pool create [name=]<pool name> gen_txn_file=<gen txn file path>
 #### Connect
 Connect to Indy nodes pool and make it available for operation that require pool access. If there was pool connection it will be disconnected.
 ```
-indy> pool connect [name=]<pool name>
+indy> pool connect [name=]<pool name> [protocol-version=<version>]
 ```
 
 #### Disconnect
@@ -271,6 +271,12 @@ Send NODE transaction
 ledger node target=<target-value> node_ip=<node_ip-value> node_port=<node_port-value> client_ip=<client_ip-value> client_port=<client_port-value> alias=<alias-value> blskey=<blskey-value> [services=<services-value>]
 ```
 
+#### GET_VALIDATOR_INFO transaction
+Send GET_VALIDATOR_INFO transaction to get info from all nodes
+```
+ledger get-validator-info 
+```
+
 #### POOL_UPGRADE transaction
 Send POOL_UPGRADE transaction
 ```
@@ -326,7 +332,7 @@ ledger set-fees-prepare payment_method=<payment_method> fees=<txn-type-1>:<amoun
 ```
 
 #### Add multi signature to transaction
-Prepare SET_FEES transaction
+Add multi signature by current DID to transaction
 ```
 ledger sign-multi txn=<txn_json>
 ```

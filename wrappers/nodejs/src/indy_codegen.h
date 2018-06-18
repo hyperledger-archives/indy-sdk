@@ -2254,8 +2254,8 @@ void buildGetTxnRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* 
   }
 }
 NAN_METHOD(buildGetTxnRequest) {
-  if(info.Length() != 3){
-    return Nan::ThrowError(Nan::New("Expected 3 arguments: buildGetTxnRequest(submitter_did, data, cb(err, request))").ToLocalChecked());
+  if(info.Length() != 4){
+    return Nan::ThrowError(Nan::New("Expected 4 arguments: buildGetTxnRequest(submitter_did, ledger_type, data, cb(err, request))").ToLocalChecked());
   }
   Nan::Utf8String* arg0UTF = nullptr;
   const char* arg0 = nullptr;
@@ -2263,17 +2263,27 @@ NAN_METHOD(buildGetTxnRequest) {
     arg0UTF = new Nan::Utf8String(info[0]);
     arg0 = (const char*)(**arg0UTF);
   } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: buildGetTxnRequest(submitter_did, data, cb(err, request))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: buildGetTxnRequest(submitter_did, ledger_type, data, cb(err, request))").ToLocalChecked());
   }
-  if(!info[1]->IsInt32()){
-    return Nan::ThrowError(Nan::New("Expected indy_i32_t for data: buildGetTxnRequest(submitter_did, data, cb(err, request))").ToLocalChecked());
+
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for ledger_type: buildGetTxnRequest(submitter_did, ledger_type, data, cb(err, request))").ToLocalChecked());
   }
-  indy_i32_t arg1 = info[1]->Int32Value();
-  if(!info[2]->IsFunction()) {
+
+  if(!info[2]->IsInt32()){
+    return Nan::ThrowError(Nan::New("Expected indy_i32_t for data: buildGetTxnRequest(submitter_did, ledger_type, data, cb(err, request))").ToLocalChecked());
+  }
+  indy_i32_t arg2 = info[2]->Int32Value();
+  if(!info[3]->IsFunction()) {
     return Nan::ThrowError(Nan::New("buildGetTxnRequest arg 2 expected callback Function").ToLocalChecked());
   }
-  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[2]).ToLocalChecked());
-  indyCalled(icb, indy_build_get_txn_request(icb->handle, arg0, arg1, buildGetTxnRequest_cb));
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[3]).ToLocalChecked());
+  indyCalled(icb, indy_build_get_txn_request(icb->handle, arg0, arg1, arg2, buildGetTxnRequest_cb));
   delete arg0UTF;
 }
 
@@ -3053,6 +3063,27 @@ NAN_METHOD(deletePoolLedgerConfig) {
   delete arg0UTF;
 }
 
+void setProtocolVersion_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+NAN_METHOD(setProtocolVersion) {
+  if(info.Length() != 2){
+    return Nan::ThrowError(Nan::New("Expected 2 arguments: setProtocolVersion(protocol_version, cb(err))").ToLocalChecked());
+  }
+  if(!info[0]->IsUint32()){
+    return Nan::ThrowError(Nan::New("Expected Timestamp for timestamp: setProtocolVersion(protocol_version, cb(err))").ToLocalChecked());
+  }
+  long long arg0 = info[0]->Uint32Value();
+  if(!info[1]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("setProtocolVersion arg 1 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[1]).ToLocalChecked());
+  indyCalled(icb, indy_set_protocol_version(icb->handle, arg0, setProtocolVersion_cb));
+}
+
 void createWallet_cb(indy_handle_t handle, indy_error_t xerr) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3311,6 +3342,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "listPools", listPools);
   Nan::Export(target, "closePoolLedger", closePoolLedger);
   Nan::Export(target, "deletePoolLedgerConfig", deletePoolLedgerConfig);
+  Nan::Export(target, "setProtocolVersion", setProtocolVersion);
   Nan::Export(target, "createWallet", createWallet);
   Nan::Export(target, "openWallet", openWallet);
   Nan::Export(target, "listWallets", listWallets);

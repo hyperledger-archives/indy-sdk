@@ -11,6 +11,8 @@ use std::ptr::null;
 use std::sync::Mutex;
 use utils::constants::DEFAULT_WALLET_CREDENTIALS;
 
+use serde_json;
+
 pub struct WalletUtils {}
 
 impl WalletUtils {
@@ -135,5 +137,45 @@ impl WalletUtils {
         let err = indy_close_wallet(command_handle, wallet_handle, cb);
 
         super::results::result_to_empty(err, receiver)
+    }
+
+    pub fn export_wallet(wallet_handle: i32, export_config_json: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+        let export_config_json = CString::new(export_config_json).unwrap();
+
+        let err = indy_export_wallet(command_handle, wallet_handle, export_config_json.as_ptr(), cb);
+
+        super::results::result_to_empty(err, receiver)
+    }
+
+    pub fn import_wallet(pool_name: &str, wallet_name: &str, xtype: Option<&str>, config: Option<&str>, credentials: Option<&str>, import_config_json: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+
+        let pool_name = CString::new(pool_name).unwrap();
+        let wallet_name = CString::new(wallet_name).unwrap();
+        let xtype_str = xtype.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let credentials_str = CString::new(credentials.unwrap_or(DEFAULT_WALLET_CREDENTIALS)).unwrap();
+        let import_config_json = CString::new(import_config_json).unwrap();
+
+        let err =
+            indy_import_wallet(command_handle,
+                               pool_name.as_ptr(),
+                               wallet_name.as_ptr(),
+                               if xtype.is_some() { xtype_str.as_ptr() } else { null() },
+                               if config.is_some() { config_str.as_ptr() } else { null() },
+                               credentials_str.as_ptr(),
+                               import_config_json.as_ptr(),
+                               cb);
+
+        super::results::result_to_empty(err, receiver)
+    }
+
+    pub fn prepare_export_wallet_config(path: &str) -> String {
+        let json = json!({
+            "path": path,
+            "key": "export_key",
+        });
+        serde_json::to_string(&json).unwrap()
     }
 }

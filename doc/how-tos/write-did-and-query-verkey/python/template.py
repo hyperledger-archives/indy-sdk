@@ -21,6 +21,7 @@ from indy.error import IndyError
 pool_name = 'pool'
 wallet_name = 'wallet'
 genesis_file_path = '/home/vagrant/code/evernym/indy-sdk/cli/docker_pool_transactions_genesis'
+wallet_credentials = json.dumps({"key": "wallet_key"})
 
 
 def print_log(value_color="", value_noncolor=""):

@@ -371,9 +371,9 @@ indy.buildNodeRequest = function buildNodeRequest (submitterDid, targetDid, data
   return cb.promise
 }
 
-indy.buildGetTxnRequest = function buildGetTxnRequest (submitterDid, data, cb) {
+indy.buildGetTxnRequest = function buildGetTxnRequest (submitterDid, ledgerType, data, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildGetTxnRequest(submitterDid, data, cb)
+  capi.buildGetTxnRequest(submitterDid, ledgerType, data, cb)
   return cb.promise
 }
 
@@ -514,6 +514,12 @@ indy.closePoolLedger = function closePoolLedger (handle, cb) {
 indy.deletePoolLedgerConfig = function deletePoolLedgerConfig (configName, cb) {
   cb = wrapIndyCallback(cb)
   capi.deletePoolLedgerConfig(configName, cb)
+  return cb.promise
+}
+
+indy.setProtocolVersion = function setProtocolVersion (protocolVersion, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.setProtocolVersion(protocolVersion, cb)
   return cb.promise
 }
 
