@@ -58,3 +58,7 @@ export enum IndyTransactions {
   POOL_RESTART = '118',
   VALIDATOR_INFO = '119'
 }
+
+export interface IInitVCXOptions {
+  libVCXPath?: string
+}

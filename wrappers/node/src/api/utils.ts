@@ -1,16 +1,17 @@
 import { Callback } from 'ffi'
 
 import { VCXInternalError } from '../errors'
-import { rustAPI } from '../rustlib'
+import { initRustAPI, rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
-import { IndyTransactions } from './common'
+import { IInitVCXOptions, IndyTransactions } from './common'
 import { VCXBase } from './VCXBase'
 
-export async function provisionAgent (options: string): Promise<string> {
+export async function provisionAgent (configAgent: string, options: IInitVCXOptions = {}): Promise<string> {
   try {
+    initRustAPI(options.libVCXPath)
     return await createFFICallbackPromise<string>(
       (resolve, reject, cb) => {
-        const rc = rustAPI().vcx_agent_provision_async(0, options, cb)
+        const rc = rustAPI().vcx_agent_provision_async(0, configAgent, cb)
         if (rc) {
           reject(rc)
         }

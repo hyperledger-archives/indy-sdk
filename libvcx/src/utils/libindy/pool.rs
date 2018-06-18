@@ -56,6 +56,10 @@ extern {
     fn indy_close_pool_ledger(command_handle: i32,
                               handle: i32,
                               cb: Option<extern fn(xcommand_handle: i32, err: i32)>) -> i32;
+
+    fn indy_set_protocol_version(command_handle: i32,
+                                 version: usize,
+                                 cb: Option<extern fn(xcommand_handle: i32, err: i32)>) -> i32;
 }
 
 fn test_pool_ip() -> String { env::var("TEST_POOL_IP").unwrap_or("127.0.0.1".to_string()) }
@@ -103,6 +107,35 @@ pub fn pool_config_json(txn_file_path: &Path) -> String {
         .unwrap()
 }
 
+pub fn set_protocol_version() -> u32 {
+    let rtn_obj = match Return_I32::new() {
+        Ok(x) => x,
+        Err(x) => return x as u32,
+    };
+
+    unsafe {
+        let rc = indy_set_protocol_version(rtn_obj.command_handle,
+                                           2,
+                                           Some(rtn_obj.get_callback()));
+
+        if rc != 0 {
+            error!("indy_set_protocol_version returned: {}", rc);
+            return error::UNKNOWN_LIBINDY_ERROR.code_num;
+        }
+        match receive(&rtn_obj.receiver, TimeoutUtils::some_long()) {
+            Ok(_) => {
+                if rc != 0 {
+                    println!("indy_set_protocol_version returned: {}", rc);
+                    error::UNKNOWN_LIBINDY_ERROR.code_num
+                } else {
+                    0
+                }
+            },
+            Err(_) => error::UNKNOWN_LIBINDY_ERROR.code_num,
+        }
+    }
+}
+
 pub fn create_pool_ledger_config(pool_name: &str, path: Option<&Path>) -> Result<u32, u32> {
     let pool_config = match path {
         Some(c) => pool_config_json(c),
@@ -138,6 +171,8 @@ pub fn create_pool_ledger_config(pool_name: &str, path: Option<&Path>) -> Result
 }
 
 pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<u32, u32> {
+
+    set_protocol_version();
 
     let pool_name = CString::new(pool_name).map_err(map_string_error)?;
     let pool_config = match config {

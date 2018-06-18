@@ -312,6 +312,8 @@ impl IssuerCredential {
     }
 
     fn verify_payment(&mut self) -> Result<(), u32> {
+        if self.credential_name == "FREE" { return Ok(()); }
+
         if self.price > 0 {
             let invoice_address = self.payment_address.as_ref()
                 .ok_or(error::INVALID_PAYMENT_ADDRESS.code_num)?;

@@ -173,7 +173,7 @@ pub extern fn vcx_connection_connect(command_handle:u32,
     thread::spawn(move|| {
         match connect(connection_handle, options) {
             Ok(_) => {
-                match get_invite_details(connection_handle,true) {
+                match get_invite_details(connection_handle,false) {
                     Ok(x) => {
                         info!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
                               command_handle, connection_handle, error_string(0), x, source_id);

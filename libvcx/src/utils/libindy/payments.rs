@@ -18,7 +18,7 @@ use settings;
 
 static NULL_PAYMENT: &str = "null";
 static EMPTY_CONFIG: &str = "{}";
-static FEES: &str = r#"{"0":1, "1":1, "101":2, "102":42, "103":1999998889, "104":0, "105":0, "106":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
+static FEES: &str = r#"{"0":1, "NYM":1, "SCHEMA":2, "CRED_DEF":42, "103":1999998889, "104":0, "105":0, "106":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
 static PARSED_TXN_PAYMENT_RESPONSE: &str = r#"[{"amount":4,"extra":null,"input":"["pov:null:1","pov:null:2"]"}]"#;
 
 static PAYMENT_INIT: Once = ONCE_INIT;
@@ -404,8 +404,8 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let fees = get_ledger_fees().unwrap();
-        assert!(fees.contains(r#""101":2"#));
-        assert!(fees.contains(r#""1":1"#));
+        assert!(fees.contains(r#""SCHEMA":2"#));
+        assert!(fees.contains(r#""NYM":1"#));
     }
 
     #[cfg(feature = "pool_tests")]
@@ -416,8 +416,9 @@ pub mod tests {
         tests::setup_ledger_env(name);
         set_ledger_fees(None).unwrap();
         let fees = get_ledger_fees().unwrap();
-        assert!(fees.contains(r#""101":2"#));
-        assert!(fees.contains(r#""1":1"#));
+        println!("{}", fees);
+        assert!(fees.contains(r#""SCHEMA":2"#));
+        assert!(fees.contains(r#""NYM":1"#));
         tests::cleanup_dev_env(name);
     }
 
@@ -483,8 +484,8 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        assert_eq!(get_txn_price("101").unwrap(), 2);
-        assert_eq!(get_txn_price("102").unwrap(), 42);
+        assert_eq!(get_txn_price("SCHEMA").unwrap(), 2);
+        assert_eq!(get_txn_price("CRED_DEF").unwrap(), 42);
         assert_eq!(get_txn_price("Unknown txn type"), Err(error::UNKNOWN_TXN_TYPE.code_num));
     }
 
@@ -495,7 +496,7 @@ pub mod tests {
 
         // Schema
         let create_schema_req = ::utils::constants::SCHEMA_CREATE_JSON.to_string();
-        let (payment, response) = pay_for_txn(&create_schema_req, "101").unwrap();
+        let (payment, response) = pay_for_txn(&create_schema_req, "SCHEMA").unwrap();
         assert_eq!(response, SUBMIT_SCHEMA_RESPONSE.to_string());
     }
 
@@ -511,7 +512,7 @@ pub mod tests {
         let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
         let start_wallet = get_wallet_token_info().unwrap();
 
-        let (payment, response) = pay_for_txn(&create_schema_req, "101").unwrap();
+        let (payment, response) = pay_for_txn(&create_schema_req, "SCHEMA").unwrap();
 
         let end_wallet = get_wallet_token_info().unwrap();
 
