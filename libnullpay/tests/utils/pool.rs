@@ -14,7 +14,10 @@ pub struct PoolConfig {
     pub genesis_txn: String
 }
 
+const PROTOCOL_VERSION: usize = 2;
+
 pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<i32, ErrorCode> {
+    set_protocol_version(PROTOCOL_VERSION).unwrap();
     let txn_file_path = _create_genesis_txn_file_for_test_pool(pool_name, None, None);
     let pool_config = _pool_config_json(txn_file_path.as_path());
     _create_pool_ledger_config(pool_name, Some(pool_config.as_str()))?;
@@ -109,6 +112,15 @@ fn _open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<i32, Error
 }
 
 
+pub fn set_protocol_version(protocol_version: usize) -> Result<(), ErrorCode> {
+    let (receiver, cmd_id, cb) = super::callbacks::_closure_to_cb_ec();
+
+    let err = unsafe { indy_set_protocol_version(cmd_id, protocol_version, cb) };
+
+    super::results::result_to_empty(err, receiver)
+}
+
+
 extern {
     #[no_mangle]
     fn indy_open_pool_ledger(command_handle: i32,
@@ -129,4 +141,9 @@ extern {
     pub fn indy_close_pool_ledger(command_handle: i32,
                                   handle: i32,
                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode;
+
+    #[no_mangle]
+    pub fn indy_set_protocol_version(command_handle: i32,
+                                     protocol_version: usize,
+                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode;
 }

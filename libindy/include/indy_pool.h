@@ -38,6 +38,11 @@ extern "C" {
                                                        const char *  config_name,
                                                        void          (*cb)(indy_handle_t xcommand_handle, indy_error_t err)
                                                        );
+
+    extern indy_error_t indy_set_protocol_version(indy_handle_t command_handle,
+                                                  indy_u64_t    protocol_version,
+                                                  void          (*cb)(indy_handle_t xcommand_handle, indy_error_t err)
+                                                  );
 #ifdef __cplusplus
 }
 #endif

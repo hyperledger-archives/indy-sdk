@@ -361,6 +361,7 @@
 // MARK: Buildget txn request
 
 - (NSError *)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
+                                     ledgerType:(NSString *)ledgerType
                                            data:(NSNumber *)data
                                      resultJson:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
@@ -368,6 +369,7 @@
     __block NSString *result = nil;
 
     [IndyLedger buildGetTxnRequestWithSubmitterDid:submitterDid
+                                        ledgerType:ledgerType
                                               data:data
                                         completion:^(NSError *error, NSString *request) {
                                             err = error;
