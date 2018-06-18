@@ -29,11 +29,11 @@ else
     echo "Skipping download android-ndk-r16b-linux-x86_64.zip"
 fi
 
-if [ ! -f "libsodium-1.0.12.tar.gz" ] ; then
-    echo "Downloading libsodium-1.0.12.tar.gz"
-    wget -q wget https://github.com/jedisct1/libsodium/releases/download/1.0.12/libsodium-1.0.12.tar.gz
+if [ ! -f "libsodium-1.0.14.tar.gz" ] ; then
+    echo "Downloading libsodium-1.0.14.tar.gz"
+    wget -q wget https://github.com/jedisct1/libsodium/releases/download/1.0.14/libsodium-1.0.14.tar.gz
 else
-    echo "Skipping download libsodium-1.0.12.tar.gz"
+    echo "Skipping download libsodium-1.0.14.tar.gz"
 fi
 
 sudo docker build -t sodium-android:latest . --build-arg target_arch=${TARGET_ARCH} --build-arg target_api=${TARGET_API} --build-arg cross_compile=${CROSS_COMPILE}
