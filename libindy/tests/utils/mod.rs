@@ -40,7 +40,7 @@ pub mod cstring;
 #[path = "../../src/utils/byte_array.rs"]
 pub mod byte_array;
 
-#[path = "../../src/utils/inmem_wallet.rs"]
+#[path = "../../src/services/wallet/inmem_wallet.rs"]
 pub mod inmem_wallet;
 
 #[path = "../../src/domain/mod.rs"]
