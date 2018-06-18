@@ -7,8 +7,8 @@
     <ProjectGuid>{9FAB78CF-D983-49A2-9ED3-EA53A6E0A40F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>indy_sdk_dotnet_doc2</RootNamespace>
-    <AssemblyName>indy-sdk-dotnet-doc2</AssemblyName>
+    <RootNamespace>indy_sdk_dotnet_doc</RootNamespace>
+    <AssemblyName>indy-sdk-dotnet-doc</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>
