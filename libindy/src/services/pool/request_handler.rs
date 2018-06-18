@@ -392,27 +392,27 @@ impl<T: Networker> RequestSMWrapper<T> {
             }
             RequestSMWrapper::Consensus(mut request) => {
                 match re {
-                    RequestEvent::Reply(_, raw_msg, node_alias, _) => {
+                    RequestEvent::Reply(_, raw_msg, node_alias, req_id) => {
                         if let Ok((_, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
                             let hashable = HashableValue { inner: result_without_proof };
 
                             let cnt = {
                                 let set = request.state.replies.entry(hashable).or_insert(HashSet::new());
-                                set.insert(node_alias);
+                                set.insert(node_alias.clone());
                                 set.len()
                             };
 
                             if cnt > request.f {
                                 _send_ok_replies(&request.cmd_ids, &raw_msg);
-                                //TODO: remove timeout from networker
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                                 (RequestSMWrapper::Finish(request.into()), None)
                             } else if _is_consensus_reachable(&request.state.replies, request.f, request.nodes.len(), request.state.timeout_cnt.len(), request.state.nack_cnt.len()) {
-                                //TODO: remove single timeout from networker
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                                 (RequestSMWrapper::Consensus(request), None)
                             } else {
                                 //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
                                 _send_replies(&request.cmd_ids, Err(PoolError::Timeout));
-                                //TODO: remove timeout from networker
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                                 (RequestSMWrapper::Finish(request.into()), None)
                             }
                         } else {
@@ -423,28 +423,28 @@ impl<T: Networker> RequestSMWrapper<T> {
                         request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias)));
                         (RequestSMWrapper::Consensus(request), None)
                     }
-                    RequestEvent::ReqNACK(_, raw_msg, node_alias, _) | RequestEvent::Reject(_, raw_msg, node_alias, _) => {
+                    RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) | RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
                         if _parse_nack(&mut request.state.nack_cnt, request.f, &raw_msg, &request.cmd_ids, &node_alias) {
-                            //TODO: remove all timeouts from networker
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                             (RequestSMWrapper::Finish(request.into()), None)
                         } else if _is_consensus_reachable(&request.state.replies, request.f, request.nodes.len(), request.state.timeout_cnt.len(), request.state.nack_cnt.len()) {
-                            //TODO: remove single timeout from networker
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                             (RequestSMWrapper::Consensus(request), None)
                         } else {
                             _send_replies(&request.cmd_ids, Err(PoolError::Timeout));
-                            //TODO: remove all timeouts from networker
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                             (RequestSMWrapper::Finish(request.into()), None)
                         }
                     }
                     RequestEvent::Timeout(req_id, node_alias) => {
-                        //TODO: remove timeout from networker
-                        request.state.timeout_cnt.insert(node_alias);
+                        request.state.timeout_cnt.insert(node_alias.clone());
                         if _is_consensus_reachable(&request.state.replies, request.f, request.nodes.len(), request.state.timeout_cnt.len(), request.state.nack_cnt.len()) {
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                             (RequestSMWrapper::Consensus(request), None)
                         } else {
                             //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
                             _send_replies(&request.cmd_ids, Err(PoolError::Timeout));
-                            //TODO: remove all timeouts from networker
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                             (RequestSMWrapper::Finish(request.into()), None)
                         }
                     }
@@ -460,21 +460,21 @@ impl<T: Networker> RequestSMWrapper<T> {
 
                             let cnt = {
                                 let set = request.state.replies.entry(hashable).or_insert(HashSet::new());
-                                set.insert(node_alias);
+                                set.insert(node_alias.clone());
                                 set.len()
                             };
 
                             if cnt > request.f || _check_state_proof(&result, request.f, &request.generator, &request.nodes, &raw_msg) {
-                                //TODO: remove single timeout from networker
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias.clone()))));
                                 _send_ok_replies(&request.cmd_ids, &raw_msg);
                                 (RequestSMWrapper::Finish(request.into()), None)
                             } else {
-                                //TODO: remove single timeout from networker
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id.clone(), Some(node_alias))));
                                 request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id)));
                                 (RequestSMWrapper::Single(request), None)
                             }
                         } else {
-                            //TODO: remove single timeout from networker
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id.clone(), Some(node_alias))));
                             request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id)));
                             (RequestSMWrapper::Single(request), None)
                         }
@@ -485,16 +485,16 @@ impl<T: Networker> RequestSMWrapper<T> {
                     }
                     RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) | RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
                         if _parse_nack(&mut request.state.nack_cnt, request.f, &raw_msg, &request.cmd_ids, &node_alias) {
-                            //TODO: remove single timeout from networker
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                             (RequestSMWrapper::Finish(request.into()), None)
                         } else {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id)));
-                            //TODO: remove single timeout from networker
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone())));
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                             (RequestSMWrapper::Single(request), None)
                         }
                     }
-                    RequestEvent::Timeout(req_id, _) => {
-                        //TODO: remove single timeout from networker
+                    RequestEvent::Timeout(req_id, node_alias) => {
+                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id.clone(), Some(node_alias))));
                         request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id)));
                         (RequestSMWrapper::Single(request), None)
                     }
@@ -504,27 +504,29 @@ impl<T: Networker> RequestSMWrapper<T> {
             RequestSMWrapper::CatchupConsensus(mut request) => {
                 match re {
                     RequestEvent::LedgerStatus(ls, Some(node_alias), _) => {
-                        let (finished, result) = _process_catchup_target(ls.merkleRoot, ls.txnSeqNo, None, &node_alias, &mut request);
+                        let (finished, result) = _process_catchup_target(ls.merkleRoot.clone(), ls.txnSeqNo, None, &node_alias, &mut request);
+                        let req_id = ls.merkleRoot;
                         if finished {
-                            //TODO: remove all timeouts from networker
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                             (RequestSMWrapper::Finish(request.into()), result)
                         } else {
-                            //TODO: remove single timeout from networker
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                             (RequestSMWrapper::CatchupConsensus(request), result)
                         }
                     }
                     RequestEvent::ConsistencyProof(cp, node_alias) => {
                         let (finished, result) = _process_catchup_target(cp.newMerkleRoot, cp.seqNoEnd, Some(cp.hashes), &node_alias, &mut request);
+                        let req_id = cp.oldMerkleRoot;
                         if finished {
-                            //TODO: remove all timeouts from networker
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                             (RequestSMWrapper::Finish(request.into()), result)
                         } else {
-                            //TODO: remove single timeout from networker
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                             (RequestSMWrapper::CatchupConsensus(request), result)
                         }
                     }
-                    RequestEvent::Timeout(_, _) => {
-                        //TODO: remove timeout from networker
+                    RequestEvent::Timeout(req_id, node_alias) => {
+                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                         (RequestSMWrapper::CatchupConsensus(request), None)
                     }
                     _ => (RequestSMWrapper::CatchupConsensus(request), None)
@@ -532,21 +534,21 @@ impl<T: Networker> RequestSMWrapper<T> {
             }
             RequestSMWrapper::CatchupSingle(mut request) => {
                 match re {
-                    RequestEvent::CatchupRep(mut cr) => {
+                    RequestEvent::CatchupRep(mut cr, node_alias) => {
                         match _process_catchup_reply(&mut cr, &mut request.state.merkle_tree, &request.state.target_mt_root, request.state.target_mt_size, &request.pool_name) {
                             Ok(merkle) => {
-                                //TODO: remove single timeout from networker
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(request.state.req_id.clone(), None)));
                                 (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::Synced(merkle)))
                             },
                             Err(_) => {
-                                //TODO: remove single timeout from networker
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(request.state.req_id.clone(), None)));
                                 request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(request.state.req_id.clone())));
                                 (RequestSMWrapper::CatchupSingle(request), None)
                             }
                         }
                     }
-                    RequestEvent::Timeout(_, _) => {
-                        //TODO: remove single timeout from networker
+                    RequestEvent::Timeout(req_id, node_alias) => {
+                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                         request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(request.state.req_id.clone())));
                         (RequestSMWrapper::CatchupSingle(request), None)
                     }
@@ -555,28 +557,28 @@ impl<T: Networker> RequestSMWrapper<T> {
             }
             RequestSMWrapper::Full(mut request) => {
                 match re {
-                    RequestEvent::Reply(_, raw_msg, node_alias, _) => {
+                    RequestEvent::Reply(_, raw_msg, node_alias, req_id) => {
                         let first_resp = request.state.accum_reply.is_none();
                         if first_resp {
                             request.state.accum_reply = Some(HashableValue {
-                                inner: json!({node_alias: raw_msg})
+                                inner: json!({node_alias.clone(): raw_msg})
                             })
                         } else {
                             request.state.accum_reply.as_mut().unwrap()
                                 .inner.as_object_mut().unwrap()
-                                .insert(node_alias, SJsonValue::from(raw_msg));
+                                .insert(node_alias.clone(), SJsonValue::from(raw_msg));
                         }
 
                         let reply_cnt = request.state.accum_reply.as_ref().unwrap()
                             .inner.as_object().unwrap().len();
 
                         if reply_cnt == request.nodes.len() {
-                            //TODO: remove all timeouts from networker
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                             let reply = request.state.accum_reply.as_ref().unwrap().inner.to_string();
                             _send_ok_replies(&request.cmd_ids, &reply);
                             (RequestSMWrapper::Finish(request.into()), None)
                         } else {
-                            //TODO: remove single timeout from networker
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                             (RequestSMWrapper::Full(request), None)
                         }
                     }
@@ -584,12 +586,12 @@ impl<T: Networker> RequestSMWrapper<T> {
                         request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias)));
                         (RequestSMWrapper::Full(request), None)
                     }
-                    RequestEvent::ReqNACK(_, raw_msg, node_alias, _) | RequestEvent::Reject(_, raw_msg, node_alias, _) => {
+                    RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) | RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
                         if _parse_nack(&mut request.state.nack_cnt, request.f, &raw_msg, &request.cmd_ids, &node_alias) {
-                            //TODO: remove all timeouts from networker
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                             (RequestSMWrapper::Finish(request.into()), None)
                         } else {
-                            //TODO: remove single timeout from networker
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                             (RequestSMWrapper::Full(request), None)
                         }
                     }
@@ -742,7 +744,7 @@ fn _get_msg_result_without_state_proof(msg: &str) -> Result<(SJsonValue, SJsonVa
     Ok((msg_result, msg_result_without_proof))
 }
 
-pub fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_keys: &HashMap<String, Option<VerKey>>, raw_msg: &str) -> bool {
+fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_keys: &HashMap<String, Option<VerKey>>, raw_msg: &str) -> bool {
     debug!("TransactionHandler::process_reply: Try to verify proof and signature");
 
     match state_proof::parse_generic_reply_for_proof_checking(&msg_result, raw_msg) {

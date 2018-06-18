@@ -100,7 +100,10 @@ pub enum RequestEvent {
         String, //req_id
         String, //node_alias
     ),
-    CatchupRep(CatchupRep),
+    CatchupRep(
+        CatchupRep,
+        String, // node_alias
+    ),
     CustomSingleRequest(
         String, // message
         Result<String, CommonError>, // req_id
@@ -166,7 +169,7 @@ impl From<(String, String, Message)> for RequestEvent {
         match msg {
             //TODO: REMOVE UNWRAP!!!!!
             Message::CatchupReq(req) => RequestEvent::CatchupReq(MerkleTree::from_vec(Vec::new()).unwrap(), 0, vec![]),
-            Message::CatchupRep(rep) => RequestEvent::CatchupRep(rep),
+            Message::CatchupRep(rep) => RequestEvent::CatchupRep(rep, node_alias),
             Message::LedgerStatus(ls) => RequestEvent::LedgerStatus(ls, Some(node_alias), None),
             Message::ConsistencyProof(cp) => RequestEvent::ConsistencyProof(cp, node_alias),
             Message::Reply(rep) => {
