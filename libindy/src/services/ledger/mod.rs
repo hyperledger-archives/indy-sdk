@@ -19,7 +19,7 @@ use domain::ledger::rev_reg_def::{RevRegDefOperation, GetRevRegDefOperation, Get
 use domain::ledger::rev_reg::{RevRegEntryOperation, GetRevRegOperation, GetRevRegDeltaOperation, GetRevocRegReplyResult, GetRevocRegDeltaReplyResult};
 use domain::ledger::pool::{PoolConfigOperation, PoolUpgradeOperation, PoolRestartOperation};
 use domain::ledger::node::{NodeOperation, NodeOperationData};
-use domain::ledger::txn::{ GetTxnOperation, LedgerType};
+use domain::ledger::txn::{GetTxnOperation, LedgerType};
 use domain::ledger::response::{Message, Reply};
 use domain::ledger::validator_info::GetValidatorInfoOperation;
 use domain::anoncreds::DELIMITER;
@@ -223,7 +223,10 @@ impl LedgerService {
         let signature_type = parts.get(2)
             .ok_or(CommonError::InvalidStructure(format!("Signature type not found in: {}", id)))?.to_string();
 
-        let operation = GetCredDefOperation::new(ref_, signature_type, origin);
+        let tag = parts.get(4)
+            .ok_or(CommonError::InvalidStructure(format!("Tag not found in: {}", id)))?.to_string();
+
+        let operation = GetCredDefOperation::new(ref_, signature_type, origin, tag);
 
         let request = Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("GET_CRED_DEF request json is invalid {:?}.", err)))?;
@@ -467,7 +470,7 @@ impl LedgerService {
 
         let cred_def = match reply.result() {
             GetCredDefReplyResult::GetCredDefReplyResultV0(res) => CredentialDefinitionV1 {
-                id: CredentialDefinition::cred_def_id(&res.origin, &res.ref_.to_string(), &res.signature_type.to_str()),
+                id: CredentialDefinition::cred_def_id(&res.origin, &res.ref_.to_string(), &res.signature_type.to_str(), &res.tag),
                 schema_id: res.ref_.to_string(),
                 signature_type: res.signature_type,
                 tag: String::new(),
@@ -769,9 +772,9 @@ mod tests {
     fn build_get_cred_def_request_works() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
-        let id = CredentialDefinition::cred_def_id("origin", "1", "signature_type");
+        let id = CredentialDefinition::cred_def_id("origin", "1", "signature_type", "tag");
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"origin"},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"origin","tag":"tag"},"protocolVersion":1"#;
 
         let get_cred_def_request = ledger_service.build_get_cred_def_request(identifier, &id).unwrap();
         assert!(get_cred_def_request.contains(expected_result));

@@ -16,7 +16,8 @@ pub struct CredDefOperation {
     pub data: CredentialDefinitionData,
     #[serde(rename = "type")]
     pub _type: String,
-    pub signature_type: String
+    pub signature_type: String,
+    pub tag: String
 }
 
 impl CredDefOperation {
@@ -26,6 +27,7 @@ impl CredDefOperation {
             // TODO: FIXME
             signature_type: data.signature_type.to_str().to_string(),
             data: data.value,
+            tag: data.tag.clone(),
             _type: CRED_DEF.to_string()
         }
     }
@@ -40,16 +42,18 @@ pub struct GetCredDefOperation {
     #[serde(rename = "ref")]
     pub _ref: i32,
     pub signature_type: String,
-    pub origin: String
+    pub origin: String,
+    pub tag: String
 }
 
 impl GetCredDefOperation {
-    pub fn new(_ref: i32, signature_type: String, origin: String) -> GetCredDefOperation {
+    pub fn new(_ref: i32, signature_type: String, origin: String, tag: String) -> GetCredDefOperation {
         GetCredDefOperation {
             _type: GET_CRED_DEF.to_string(),
             _ref,
             signature_type,
-            origin
+            origin,
+            tag
         }
     }
 }
@@ -74,6 +78,7 @@ pub struct GetCredDefResultV0 {
     pub seq_no: i32,
     pub signature_type: SignatureType,
     pub origin: String,
+    pub tag: String,
     pub data: CredentialDefinitionData
 }
 

@@ -350,16 +350,6 @@ impl AnoncredsUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_id(identifier: &str, marker: &str, word1: &str, word2: &str) -> String {
-        let delimiter = ":";
-        format!("{}{}{}{}{}{}{}", identifier, delimiter, marker, delimiter, word1, delimiter, word2)
-    }
-
-    pub fn build_rev_reg_id(identifier: &str, marker: &str, word0: &str, word1: &str, word2: &str) -> String {
-        let delimiter = ":";
-        format!("{}{}{}{}{}{}{}{}{}", identifier, delimiter, marker, delimiter, word0, delimiter, word1, delimiter, word2)
-    }
-
     pub fn default_cred_def_config() -> String {
         serde_json::to_string(&CredentialDefinitionConfig { support_revocation: false }).unwrap()
     }
@@ -377,7 +367,7 @@ impl AnoncredsUtils {
     }
 
     pub fn gvt_schema_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID, SCHEMA_MARKER, GVT_SCHEMA_NAME, SCHEMA_VERSION)
+        Schema::schema_id(ISSUER_DID, GVT_SCHEMA_NAME, SCHEMA_VERSION)
     }
 
     pub fn gvt_schema() -> SchemaV1 {
@@ -395,7 +385,7 @@ impl AnoncredsUtils {
     }
 
     pub fn xyz_schema_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID, SCHEMA_MARKER, XYZ_SCHEMA_NAME, SCHEMA_VERSION)
+        Schema::schema_id(ISSUER_DID, XYZ_SCHEMA_NAME, SCHEMA_VERSION)
     }
 
     pub fn xyz_schema() -> SchemaV1 {
@@ -413,15 +403,15 @@ impl AnoncredsUtils {
     }
 
     pub fn issuer_1_gvt_cred_def_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID, CRED_DEF_MARKER, SIGNATURE_TYPE, &AnoncredsUtils::gvt_schema_id())
+        CredentialDefinition::cred_def_id(ISSUER_DID, &AnoncredsUtils::gvt_schema_id(), SIGNATURE_TYPE, TAG_1)
     }
 
     pub fn issuer_2_gvt_cred_def_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID_2, CRED_DEF_MARKER, SIGNATURE_TYPE, &AnoncredsUtils::gvt_schema_id())
+        CredentialDefinition::cred_def_id(ISSUER_DID_2, &AnoncredsUtils::gvt_schema_id(), SIGNATURE_TYPE, TAG_1)
     }
 
     pub fn issuer_1_xyz_cred_def_id() -> String {
-        AnoncredsUtils::build_id(ISSUER_DID, CRED_DEF_MARKER, SIGNATURE_TYPE, &AnoncredsUtils::xyz_schema_id())
+        CredentialDefinition::cred_def_id(ISSUER_DID, &AnoncredsUtils::xyz_schema_id(), SIGNATURE_TYPE, TAG_1)
     }
 
     pub fn issuer_1_gvt_cred_offer_info() -> CredentialOfferInfo {
@@ -535,8 +525,8 @@ impl AnoncredsUtils {
     pub fn credential_def_json() -> String {
         r#"{
            "ver":"1.0",
-           "id":"NcYxiDXkpYi6ov5FcYDi1e:\u0003:NcYxiDXkpYi6ov5FcYDi1e:\u0002:gvt:1.0:CL:TAG_1",
-           "schemaId":"NcYxiDXkpYi6ov5FcYDi1e:\u0002:gvt:1.0",
+           "id":"NcYxiDXkpYi6ov5FcYDi1e:3:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:CL:TAG_1",
+           "schemaId":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0",
            "type":"CL",
            "tag":"TAG_1",
            "value":{
@@ -613,7 +603,7 @@ impl AnoncredsUtils {
             "identifiers":[
                 {
                     "schema_id":"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0",
-                    "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0",
+                    "cred_def_id":"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:TAG_1",
                     "rev_reg_id":null,
                     "timestamp":null
                 }
