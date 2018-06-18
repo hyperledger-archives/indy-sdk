@@ -39,7 +39,6 @@ pub struct ChaCha20Poly1305IETF {}
 
 impl ChaCha20Poly1305IETF {
     pub fn clone_key_from_slice(bytes: &[u8]) -> ChaCha20Poly1305IETFKey {
-        println!("Cloning key from slice of length: {}", bytes.len());
         ChaCha20Poly1305IETFKey { key: chacha20poly1305_ietf::Key(_clone_into_array(bytes)) }
     }
 
