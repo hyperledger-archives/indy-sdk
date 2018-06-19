@@ -17,6 +17,7 @@ use super::{
 use super::rust_base58::{FromBase58, ToBase58};
 use super::types::*;
 use services::pool::PoolWorker;
+use domain::ledger::request::ProtocolVersion;
 
 pub const CATCHUP_ROUND_TIMEOUT: i64 = 50;
 
@@ -77,12 +78,16 @@ impl CatchupHandler {
             Message::Pong => {
                 //sending ledger status
                 //TODO not send ledger status directly as response on ping, wait pongs from all nodes?
+
+                let protocol_version = ProtocolVersion::get();
+
                 let ls: LedgerStatus = LedgerStatus {
                     txnSeqNo: self.merkle_tree.count,
                     merkleRoot: self.merkle_tree.root_hash().as_slice().to_base58(),
                     ledgerId: 0,
                     ppSeqNo: None,
                     viewNo: None,
+                    protocolVersion: if ProtocolVersion::is_node_1_3() { None } else { Some(protocol_version) }
                 };
                 let resp_msg: Message = Message::LedgerStatus(ls);
                 self.nodes[src_ind].send_msg(&resp_msg)?;
@@ -138,7 +143,7 @@ impl CatchupHandler {
                     } else {
                         Err(err)
                     }
-                })
+                });
             }
         }
         Ok(CatchupProgress::InProgress)
@@ -161,7 +166,7 @@ impl CatchupHandler {
                 CommonError::InvalidStructure(
                     "Can't parse target MerkleTree hash from nodes responses".to_string()))?;
             match hashes {
-                &None => {return Err(PoolError::from(CommonError::InvalidState("Empty consistency proof but catch up needed".to_string())));},
+                &None => { return Err(PoolError::from(CommonError::InvalidState("Empty consistency proof but catch up needed".to_string()))); }
                 &Some(ref hashes) => {
                     match CatchupHandler::check_cons_proofs(&self.merkle_tree, hashes, &self.target_mt_root, self.target_mt_size) {
                         Ok(_) => (),

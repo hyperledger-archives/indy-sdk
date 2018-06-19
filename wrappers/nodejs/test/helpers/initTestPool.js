@@ -2,6 +2,8 @@ var indy = require('../../')
 var makeTestPool = require('./makeTestPool')
 
 module.exports = async function () {
+  await indy.setProtocolVersion(2)
+
   var pool = await makeTestPool()
   await indy.createPoolLedgerConfig(pool.name, {
     'genesis_txn': pool.file

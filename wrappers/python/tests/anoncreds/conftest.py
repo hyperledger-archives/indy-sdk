@@ -106,9 +106,9 @@ def prover_did():
     return "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
 
 
-def build_id(identifier: str, marker: str, word1: str, word2: str):
+def build_id(identifier: str, marker: str, word1: str, word2: str, word3: str):
     delimiter = ":"
-    return identifier + delimiter + marker + delimiter + word1 + delimiter + word2
+    return identifier + delimiter + marker + delimiter + word1 + delimiter + word2 + delimiter + word3
 
 
 @pytest.fixture(scope="session")
@@ -163,18 +163,18 @@ def master_secret_id():
 
 
 @pytest.fixture(scope="session")
-def issuer_1_gvt_cred_def_id(issuer_did, gvt_schema_id):
-    return build_id(issuer_did, "3", "CL", gvt_schema_id)
+def issuer_1_gvt_cred_def_id(issuer_did, gvt_schema_id, tag):
+    return build_id(issuer_did, "3", "CL", gvt_schema_id, tag)
 
 
 @pytest.fixture(scope="session")
-def issuer_1_xyz_cred_def_id(issuer_did, xyz_schema_id):
-    return build_id(issuer_did, "3", "CL", xyz_schema_id)
+def issuer_1_xyz_cred_def_id(issuer_did, xyz_schema_id, tag):
+    return build_id(issuer_did, "3", "CL", xyz_schema_id, tag)
 
 
 @pytest.fixture(scope="session")
-def issuer_2_gvt_cred_def_id(issuer_did_2, gvt_schema_id):
-    return build_id(issuer_did_2, "3", "CL", gvt_schema_id)
+def issuer_2_gvt_cred_def_id(issuer_did_2, gvt_schema_id, tag):
+    return build_id(issuer_did_2, "3", "CL", gvt_schema_id, tag)
 
 
 @pytest.fixture(scope="session")
