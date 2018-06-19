@@ -19,10 +19,15 @@ use self::regex::Regex;
 use self::chrono::prelude::*;
 
 pub const DELIMITER: &'static str = ":";
-pub const SCHEMA_MARKER: &'static str = "\x02";
+pub const SCHEMA_MARKER: &'static str = "2";
+pub const CRED_DEF_MARKER: &'static str = "3";
 
-pub fn build_id(did: &str, name: &str, version: &str) -> String {
+pub fn build_schema_id(did: &str, name: &str, version: &str) -> String {
     format!("{}{}{}{}{}{}{}", did, DELIMITER, SCHEMA_MARKER, DELIMITER, name, DELIMITER, version)
+}
+
+pub fn build_cred_def_id(did: &str, schema_id: &str, signature_type: &str, tag: &str) -> String {
+    format!("{}{}{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id, DELIMITER, tag)
 }
 
 pub mod group {
@@ -283,7 +288,7 @@ pub mod schema_command {
         let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
         let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
 
-        let id = build_id(&submitter_did, name, version);
+        let id = build_schema_id(&submitter_did, name, version);
 
         let schema_data = {
             let mut json = JSONMap::new();
@@ -385,7 +390,7 @@ pub mod get_schema_command {
         let name = get_str_param("name", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
 
-        let id = build_id(target_did, name, version);
+        let id = build_schema_id(target_did, name, version);
 
         let response = Ledger::build_get_schema_request(&submitter_did, &id)
             .and_then(|request| Ledger::submit_request(pool_handle, &request))
@@ -418,6 +423,7 @@ pub mod cred_def_command {
     command!(CommandMetadata::build("cred-def", "Send Cred Def transaction to the Ledger.")
                 .add_required_param("schema_id", "Sequence number of schema")
                 .add_required_param("signature_type", "Signature type (only CL supported now)")
+                .add_optional_param("tag", "Allows to distinct between credential definitions for the same issuer and schema")
                 .add_required_param("primary", "Primary key in json format")
                 .add_optional_param("revocation", "Revocation key in json format")
                 .add_optional_param("fees_inputs","The list of UTXO inputs")
@@ -435,12 +441,13 @@ pub mod cred_def_command {
 
         let schema_id = get_str_param("schema_id", params).map_err(error_err!())?;
         let signature_type = get_str_param("signature_type", params).map_err(error_err!())?;
+        let tag = get_opt_str_param("tag", params).map_err(error_err!())?.unwrap_or("");
         let primary = get_object_param("primary", params).map_err(error_err!())?;
         let revocation = get_opt_str_param("revocation", params).map_err(error_err!())?;
         let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
         let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
 
-        let id = build_id(&submitter_did, schema_id, signature_type);
+        let id = build_cred_def_id(&submitter_did, schema_id, signature_type, tag);
 
         let cred_def_value = {
             let mut json = JSONMap::new();
@@ -455,7 +462,7 @@ pub mod cred_def_command {
             json.insert("id".to_string(), JSONValue::from(id));
             json.insert("schemaId".to_string(), JSONValue::from(schema_id));
             json.insert("type".to_string(), JSONValue::from(signature_type));
-            json.insert("tag".to_string(), JSONValue::from(String::new()));
+            json.insert("tag".to_string(), JSONValue::from(tag));
             json.insert("value".to_string(), JSONValue::from(cred_def_value));
             JSONValue::from(json).to_string()
         };
@@ -493,6 +500,7 @@ pub mod get_cred_def_command {
     command!(CommandMetadata::build("get-cred-def", "Get Cred Definition from Ledger.")
                 .add_required_param("schema_id", "Sequence number of schema")
                 .add_required_param("signature_type", "Signature type (only CL supported now)")
+                .add_optional_param("tag", "Allows to distinct between credential definitions for the same issuer and schema")
                 .add_required_param("origin", "Credential definition owner DID")
                 .add_example("ledger get-cred-def schema_id=1 signature_type=CL origin=VsKV7grR1BUE29mG2Fm2kX")
                 .finalize()
@@ -506,9 +514,10 @@ pub mod get_cred_def_command {
 
         let schema_id = get_str_param("schema_id", params).map_err(error_err!())?;
         let signature_type = get_str_param("signature_type", params).map_err(error_err!())?;
+        let tag = get_opt_str_param("tag", params).map_err(error_err!())?.unwrap_or("");
         let origin = get_str_param("origin", params).map_err(error_err!())?;
 
-        let id = build_id(origin, signature_type, schema_id);
+        let id = build_cred_def_id(&origin, schema_id, signature_type, tag);
 
         let response = Ledger::build_get_cred_def_request(&submitter_did, &id)
             .and_then(|request| Ledger::submit_request(pool_handle, &request))
@@ -2330,6 +2339,7 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("schema_id", schema_id.clone());
                 params.insert("signature_type", "CL".to_string());
+                params.insert("tag", "TAG".to_string());
                 params.insert("primary", CRED_DEF_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
@@ -2359,6 +2369,7 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("schema_id", schema_id.clone());
                 params.insert("signature_type", "CL".to_string());
+                params.insert("tag", "TAG".to_string());
                 params.insert("primary", CRED_DEF_DATA.to_string());
                 params.insert("fees_inputs", input);
                 params.insert("fees_outputs", OUTPUT.to_string());
@@ -2390,6 +2401,7 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("schema_id", schema_id.clone());
                 params.insert("signature_type", "CL".to_string());
+                params.insert("tag", "TAG".to_string());
                 params.insert("primary", CRED_DEF_DATA.to_string());
                 params.insert("fees_inputs", input);
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -2435,6 +2447,7 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("schema_id", "1".to_string());
                 params.insert("signature_type", "CL".to_string());
+                params.insert("tag", "TAG".to_string());
                 params.insert("primary", CRED_DEF_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
@@ -2455,6 +2468,7 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("schema_id", "1".to_string());
                 params.insert("signature_type", "CL".to_string());
+                params.insert("tag", "TAG".to_string());
                 params.insert("primary", CRED_DEF_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
@@ -2483,6 +2497,7 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("schema_id", schema_id.clone());
                 params.insert("signature_type", "CL".to_string());
+                params.insert("tag", "TAG".to_string());
                 params.insert("primary", CRED_DEF_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
@@ -2492,6 +2507,7 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("schema_id", schema_id);
                 params.insert("signature_type", "CL".to_string());
+                params.insert("tag", "TAG".to_string());
                 params.insert("origin", DID_TRUSTEE.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
@@ -2515,6 +2531,7 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("schema_id", "2".to_string());
                 params.insert("signature_type", "CL".to_string());
+                params.insert("tag", "TAG".to_string());
                 params.insert("origin", DID_MY3.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
@@ -2535,6 +2552,7 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("schema_id", "1".to_string());
                 params.insert("signature_type", "CL".to_string());
+                params.insert("tag", "TAG".to_string());
                 params.insert("origin", DID_TRUSTEE.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
@@ -3884,7 +3902,7 @@ pub mod tests {
     }
 
     fn _ensure_schema_added(ctx: &CommandContext, did: &str) {
-        let id = build_id(did, "gvt", "1.0");
+        let id = build_schema_id(did, "gvt", "1.0");
         let request = Ledger::build_get_schema_request(DID_TRUSTEE, &id).unwrap();
         _submit_retry(ctx, &request, |response| {
             let schema: serde_json::Value = serde_json::from_str(&response).unwrap();
@@ -3893,7 +3911,7 @@ pub mod tests {
     }
 
     fn _ensure_cred_def_added(ctx: &CommandContext, did: &str, schema_id: &str) {
-        let id = build_id(did, "CL", schema_id);
+        let id = build_cred_def_id(did, schema_id, "CL", "TAG");
         let request = Ledger::build_get_cred_def_request(DID_TRUSTEE, &id).unwrap();
         _submit_retry(ctx, &request, |response| {
             let cred_def: serde_json::Value = serde_json::from_str(&response).unwrap();

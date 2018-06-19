@@ -52,6 +52,6 @@ public class IssuerCreateAndStoreCredentialDefinitionTest extends AnoncredsInteg
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(CredDefAlreadyExistsException.class));
 
-		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, "Duplicate", null, defaultCredentialDefinitionConfig).get();
+		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, tag, null, defaultCredentialDefinitionConfig).get();
 	}
 }
