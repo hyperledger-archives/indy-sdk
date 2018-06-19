@@ -1,3 +1,5 @@
+extern crate serde_json;
+
 use std::error::Error;
 use std::fmt;
 use std::fmt::{Display, Formatter};
@@ -44,5 +46,11 @@ impl ToErrorCode for PaymentsError {
             PaymentsError::UnknownType(ref _str) => ErrorCode::PaymentUnknownMethodError,
             PaymentsError::IncompatiblePaymentError(ref _str) => ErrorCode::PaymentIncompatibleMethodsError,
         }
+    }
+}
+
+impl From<serde_json::Error> for PaymentsError {
+    fn from(err: serde_json::Error) -> PaymentsError {
+        PaymentsError::CommonError(CommonError::InvalidStructure(err.to_string()))
     }
 }
