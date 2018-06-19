@@ -38,11 +38,12 @@ impl Networker for ZMQNetworker {
     }
 
     fn fetch_events(&self, poll_items: &[PollItem]) -> Vec<PoolEvent> {
-        let mut events = Vec::new();
-        for (_, pc) in &self.pool_connections {
-            events.extend(pc.fetch_events(poll_items).into_iter());
-        }
-        events
+        let mut cnt = 0;
+        self.pool_connections.iter().map(|(_, pc)| {
+            let ocnt = cnt;
+            cnt = cnt + pc.nodes.len();
+            pc.fetch_events(&poll_items[ocnt..cnt])
+        }).flat_map(|v| v.into_iter()).collect()
     }
 
     fn process_event(&mut self, pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
