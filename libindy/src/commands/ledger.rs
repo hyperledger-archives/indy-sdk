@@ -384,10 +384,7 @@ impl LedgerCommandExecutor {
 
         let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_did.verkey, &RecordOptions::id_value(), &mut String::new())?;
 
-        let mut request: Value = serde_json::from_str(request_json)
-            .map_err(|err|
-                CryptoError::CommonError(
-                    CommonError::InvalidStructure(format!("Message is invalid json: {:?}", err))))?;
+        let mut request: Value = serde_json::from_str(request_json)?;
 
         if !request.is_object() {
             return Err(IndyError::CryptoError(CryptoError::CommonError(

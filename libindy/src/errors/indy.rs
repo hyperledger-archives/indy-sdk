@@ -1,3 +1,5 @@
+extern crate serde_json;
+
 use errors::anoncreds::AnoncredsError;
 use errors::common::CommonError;
 use errors::ledger::LedgerError;
@@ -12,6 +14,8 @@ use errors::ToErrorCode;
 
 use std::error;
 use std::fmt;
+
+use serde_json::Error;
 
 #[derive(Debug)]
 pub enum IndyError {
@@ -129,5 +133,11 @@ impl From<DidError> for IndyError {
 impl From<PaymentsError> for IndyError {
     fn from(err: PaymentsError) -> IndyError {
         IndyError::PaymentsError(err)
+    }
+}
+
+impl From<serde_json::Error> for IndyError {
+    fn from(err: serde_json::Error) -> IndyError {
+        IndyError::CommonError(CommonError::InvalidStructure(err.to_string()))
     }
 }
