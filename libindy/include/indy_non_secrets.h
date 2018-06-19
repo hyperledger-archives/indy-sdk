@@ -151,7 +151,7 @@ extern "C" {
     /// wallet_handle: wallet handle (created by open_wallet)
     /// type_: allows to separate different record types collections
     /// id: the id of record
-    /// options_json: //TODO: FIXME: Think about replacing by bitmaks
+    /// options_json: //TODO: FIXME: Think about replacing by bitmask
     ///  {
     ///    retrieveType: (optional, false by default) Retrieve record type,
     ///    retrieveValue: (optional, true by default) Retrieve record value,
@@ -193,7 +193,7 @@ extern "C" {
     ///      "tagName3": { $gte: '123' },
     ///    },
     ///  }
-    /// options_json: //TODO: FIXME: Think about replacing by bitmaks
+    /// options_json: //TODO: FIXME: Think about replacing by bitmask
     ///  {
     ///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
     ///    retrieveTotalCount: (optional, false by default) Calculate total count,
@@ -222,7 +222,7 @@ extern "C" {
     /// wallet_handle: wallet handle (created by open_wallet)
     /// type_: allows to separate different record types collections
     /// id: the id of record
-    /// options_json: //TODO: FIXME: Think about replacing by bitmaks
+    /// options_json: //TODO: FIXME: Think about replacing by bitmask
     ///  {
     ///    retrieveType: (optional, false by default) Retrieve record type,
     ///    retrieveValue: (optional, true by default) Retrieve record value,

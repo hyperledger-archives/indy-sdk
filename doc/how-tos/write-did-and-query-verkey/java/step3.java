@@ -10,8 +10,8 @@
         // expect.
         String did_json = "{\"seed\": \"" + stewardSeed + "\"}";
         DidResults.CreateAndStoreMyDidResult stewardResult = Did.createAndStoreMyDid(walletHandle, did_json).get();
-        String defautStewardDid = stewardResult.getDid();
-        System.out.println("Steward DID: " + defautStewardDid);
+        String defaultStewardDid = stewardResult.getDid();
+        System.out.println("Steward DID: " + defaultStewardDid);
         System.out.println("Steward Verkey: " + stewardResult.getVerkey());
 
         // Now, create a new DID and verkey for a trust anchor, and store it in our wallet as well. Don't use a seed;

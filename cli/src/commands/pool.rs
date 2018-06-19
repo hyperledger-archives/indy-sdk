@@ -289,7 +289,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn create_works_for_unknow_txn_file() {
+        pub fn create_works_for_unknown_txn_file() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
@@ -297,7 +297,7 @@ pub mod tests {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", POOL.to_string());
-                params.insert("gen_txn_file", "unknow_pool_transactions_genesis".to_string());
+                params.insert("gen_txn_file", "unknown_pool_transactions_genesis".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             TestUtils::cleanup_storage();

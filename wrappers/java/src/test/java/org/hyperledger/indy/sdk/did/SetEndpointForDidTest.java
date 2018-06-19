@@ -24,10 +24,10 @@ public class SetEndpointForDidTest extends IndyIntegrationTestWithPoolAndSingleW
 		assertEquals(ENDPOINT, receivedEndpoint.getAddress());
 		assertEquals(VERKEY, receivedEndpoint.getTransportKey());
 
-		String newEndpoin = "10.10.10.1:9710";
-		Did.setEndpointForDid(wallet, DID, newEndpoin, VERKEY_MY2).get();
+		String newEndpoint = "10.10.10.1:9710";
+		Did.setEndpointForDid(wallet, DID, newEndpoint, VERKEY_MY2).get();
 		DidResults.EndpointForDidResult updatedEndpoint = Did.getEndpointForDid(wallet, pool, DID).get();
-		assertEquals(newEndpoin, updatedEndpoint.getAddress());
+		assertEquals(newEndpoint, updatedEndpoint.getAddress());
 		assertEquals(VERKEY_MY2, updatedEndpoint.getTransportKey());
 	}
 

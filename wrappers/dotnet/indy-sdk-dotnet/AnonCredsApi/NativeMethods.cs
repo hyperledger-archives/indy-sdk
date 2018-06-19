@@ -24,7 +24,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="issuer_did">DID of schema issuer.</param>
         /// <param name="name">Name of the schema</param>
         /// <param name="version">Version of the schema</param>
-        /// <param name="attrs">A list of schema atribute descriptions.</param>
+        /// <param name="attrs">A list of schema attribute descriptions.</param>
         /// <param name="cb">Callback that takes command result as parameter</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_issuer_create_schema(int command_handle, string issuer_did, string name, string version, string attrs, IssuerCreateSchemaCompletedDelegate cb);

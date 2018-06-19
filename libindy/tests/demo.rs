@@ -589,7 +589,7 @@ fn ledger_demo_works() {
     info!("nym_resp_raw : {:?}", resp);
     info!("nym_resp     : {:?}", nym_resp);
 
-    // pause for syncronization of all nodes in the ledger
+    // pause for synchronization of all nodes in the ledger
     ::std::thread::sleep(TimeoutUtils::short_timeout());
 
     // 12. Prepare and send GET_NYM request
