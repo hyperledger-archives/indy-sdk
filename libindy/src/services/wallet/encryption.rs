@@ -9,13 +9,11 @@ use self::sodiumoxide::utils::memzero;
 use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF, ChaCha20Poly1305IETFKey, ChaCha20Poly1305IETFNonce, KEY_LENGTH, NONCE_LENGTH};
 use utils::crypto::hmacsha256::{HMACSHA256Key, HMACSHA256};
 use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
-use errors::wallet::WalletError;
 use services::wallet::WalletRecord;
 
 use super::wallet::Keys;
 use super::storage::{Tag, TagName, StorageEntity};
 
-use errors::common::CommonError;
 use errors::wallet::WalletError;
 
 pub(super) fn derive_key(input: &[u8], salt: &[u8; 32]) -> Result<ChaCha20Poly1305IETFKey, WalletError> {

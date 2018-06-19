@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::{OpenOptions, File, DirBuilder};
 use std::io::{Read, Write};
-use std::path::{PathBuf};
+use std::path::PathBuf;
 use named_type::NamedType;
 use std::rc::Rc;
 
@@ -25,7 +25,7 @@ use errors::wallet::WalletError;
 use errors::common::CommonError;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
-use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF, ChaCha20Poly1305IETFKey};
+use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETFKey;
 
 use self::export_import::{export, import};
 use self::storage::{WalletStorage, WalletStorageType};
@@ -33,7 +33,6 @@ use self::storage::default::SQLiteStorageType;
 use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Wallet, Keys};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
-use self::sodiumoxide::utils::memzero;
 use self::encryption::derive_key;
 use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 
@@ -84,7 +83,7 @@ impl WalletCredentials {
                 return Err(WalletError::InputError(String::from("Credentials missing 'key' field")));
             };
 
-            let rekey = if let Some(key) =  m.get("rekey").and_then(|s| s.as_str()) {
+            let rekey = if let Some(key) = m.get("rekey").and_then(|s| s.as_str()) {
                 Some(derive_key(key.as_bytes(), salt)?)
             } else {
                 None
@@ -371,7 +370,7 @@ impl WalletService {
     }
 
     pub fn add_indy_object<T>(&self, wallet_handle: i32, name: &str, object: &T, tags: &HashMap<String, String>)
-        -> Result<String, WalletError> where T: JsonEncodable, T: NamedType {
+                              -> Result<String, WalletError> where T: JsonEncodable, T: NamedType {
         let type_ = T::short_type_name();
         let object_json = object.to_json()
             .map_err(map_err_trace!())
@@ -409,7 +408,7 @@ impl WalletService {
     }
 
     pub fn add_indy_record_tags<T>(&self, wallet_handle: i32, name: &str, tags: &HashMap<String, String>)
-        -> Result<(), WalletError> where T: NamedType {
+                                   -> Result<(), WalletError> where T: NamedType {
         self.add_record_tags(wallet_handle, &self.add_prefix(T::short_type_name()), name, tags)
     }
 
@@ -421,7 +420,7 @@ impl WalletService {
     }
 
     pub fn update_indy_record_tags<T>(&self, wallet_handle: i32, name: &str, tags: &HashMap<String, String>)
-        -> Result<(), WalletError> where T: NamedType {
+                                      -> Result<(), WalletError> where T: NamedType {
         self.update_record_tags(wallet_handle, &self.add_prefix(T::short_type_name()), name, tags)
     }
 
@@ -1540,7 +1539,7 @@ mod tests {
         let retrieved_tags = item.tags.unwrap();
         assert_eq!(expected_tags, retrieved_tags);
     }
-    
+
     #[test]
     fn wallet_service_get_pool_name_works() {
         _cleanup();

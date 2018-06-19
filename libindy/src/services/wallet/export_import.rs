@@ -9,7 +9,7 @@ use utils::crypto::hash::Hash;
 use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF, NONCE_LENGTH, ChaCha20Poly1305IETFNonce};
 use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 use utils::byte_array::_clone_into_array;
-use services::wallet::encryption::{decrypt_merged, decrypt, encrypt_as_not_searchable, derive_key};
+use services::wallet::encryption::{decrypt, derive_key};
 
 use errors::common::CommonError;
 
@@ -65,7 +65,7 @@ impl Header {
         let nonce = nonce_slice.to_vec();
         data_length -= nonce_length;
 
-        let salt_length = bytes_to_u16(&serialised[nonce_end_index..nonce_end_index+2]);
+        let salt_length = bytes_to_u16(&serialised[nonce_end_index..nonce_end_index + 2]);
         if salt_length != data_length {
             return Err(WalletError::CommonError(CommonError::InvalidStructure("Wallet header lengths mismatch".to_string())));
         }
@@ -75,7 +75,7 @@ impl Header {
         let salt: [u8; PwhashArgon2i13::SALTBYTES] = _clone_into_array(salt_slice);
 
         let actual_hash = sha256_hash(&serialised[..salt_end_index])?;
-        if actual_hash != &serialised[salt_end_index..salt_end_index+32] {
+        if actual_hash != &serialised[salt_end_index..salt_end_index + 32] {
             return Err(WalletError::CommonError(CommonError::InvalidStructure("Wallet header hash mismatch".to_string())));
         }
 
@@ -113,7 +113,7 @@ impl Header {
 }
 
 
-pub (super) fn export(wallet: &Wallet, writer: Box<Write>, passphrase: &str, version: u32) -> Result<(), WalletError> {
+pub(super) fn export(wallet: &Wallet, writer: Box<Write>, passphrase: &str, version: u32) -> Result<(), WalletError> {
     let salt = PwhashArgon2i13::gen_salt();
     let key = derive_key(passphrase.as_bytes(), &salt)?;
     let mut writer = BufWriter::new(writer);
@@ -133,7 +133,7 @@ pub (super) fn export(wallet: &Wallet, writer: Box<Write>, passphrase: &str, ver
 
         let mut decrypt_index = 0;
         while decrypt_index + 1024 <= buffer.len() {
-            let chunk = &buffer[decrypt_index .. decrypt_index+1024];
+            let chunk = &buffer[decrypt_index..decrypt_index + 1024];
             let encrypted_chunk = ChaCha20Poly1305IETF::encrypt(chunk, &key, &nonce);
             ChaCha20Poly1305IETF::increment_nonce(&mut nonce);
             writer.write_all(&encrypted_chunk)?;
@@ -142,7 +142,7 @@ pub (super) fn export(wallet: &Wallet, writer: Box<Write>, passphrase: &str, ver
 
         let remaining = buffer.len() % 1024;
         if remaining > 0 {
-            for i in 0 .. remaining {
+            for i in 0..remaining {
                 buffer[i] = buffer[decrypt_index + i];
             }
         }
@@ -160,7 +160,7 @@ pub (super) fn export(wallet: &Wallet, writer: Box<Write>, passphrase: &str, ver
 }
 
 
-pub (super) fn import(wallet: &Wallet, reader: Box<Read>, passphrase: &str) -> Result<(), WalletError> {
+pub(super) fn import(wallet: &Wallet, reader: Box<Read>, passphrase: &str) -> Result<(), WalletError> {
     let mut reader = BufReader::new(reader);
 
     let mut header_length_bytes: [u8; 2] = [0; 2];
@@ -225,23 +225,22 @@ pub (super) fn import(wallet: &Wallet, reader: Box<Read>, passphrase: &str) -> R
 }
 
 
-
 fn add_records_from_buffer(wallet: &Wallet, buff: &mut Vec<u8>) -> Result<(), WalletError> {
     let mut index = 0;
     while index + 4 < buff.len() {
-        let item_length = bytes_to_u32(&buff[index..index+4]);
+        let item_length = bytes_to_u32(&buff[index..index + 4]);
         let end_index = index + 4 + item_length as usize;
         if end_index > buff.len() {
             break;
         }
 
-        let record = deserialise_record(&buff[index+4..end_index])?;
+        let record = deserialise_record(&buff[index + 4..end_index])?;
         wallet.add(&record.type_.unwrap(), &record.name, &record.value.unwrap(), &record.tags.unwrap())?;
         index = end_index;
     }
 
     let remaining = buff.len() - index;
-    for i in 0 .. remaining {
+    for i in 0..remaining {
         buff[i] = buff[index + i];
     }
     buff.resize(remaining, 0);
@@ -285,22 +284,22 @@ fn deserialise_record(mut buffer: &[u8]) -> Result<WalletRecord, WalletError> {
     if type_length + 16 > buffer.len() {
         return Err(WalletError::CommonError(CommonError::InvalidStructure("Insufficient serialised data length".to_string())));
     }
-    let type_ = String::from_utf8(buffer[4..4+type_length].to_owned())?;
-    buffer = &buffer[4+type_length..];
+    let type_ = String::from_utf8(buffer[4..4 + type_length].to_owned())?;
+    buffer = &buffer[4 + type_length..];
 
     let name_length = bytes_to_u32(&buffer[..4]) as usize;
     if name_length + 12 > buffer.len() {
         return Err(WalletError::CommonError(CommonError::InvalidStructure("Insufficient serialised data length".to_string())));
     }
-    let name = String::from_utf8(buffer[4..4+name_length].to_owned())?;
-    buffer = &buffer[4+name_length..];
+    let name = String::from_utf8(buffer[4..4 + name_length].to_owned())?;
+    buffer = &buffer[4 + name_length..];
 
     let value_length = bytes_to_u32(&buffer[..4]) as usize;
     if value_length + 8 > buffer.len() {
         return Err(WalletError::CommonError(CommonError::InvalidStructure("Insufficient serialised data length".to_string())));
     }
-    let value = String::from_utf8(buffer[4..4+value_length].to_owned())?;
-    buffer = &buffer[4+value_length..];
+    let value = String::from_utf8(buffer[4..4 + value_length].to_owned())?;
+    buffer = &buffer[4 + value_length..];
 
     let tags_json_length = bytes_to_u32(&buffer[..4]) as usize;
     if tags_json_length > buffer.len() {
@@ -312,10 +311,10 @@ fn deserialise_record(mut buffer: &[u8]) -> Result<WalletRecord, WalletError> {
         return Err(WalletError::CommonError(CommonError::InvalidStructure("Lengths mismatch during record deserialisation".to_string())));
     }
 
-    let tags_json = String::from_utf8(buffer[4..4+tags_json_length].to_owned())?;
+    let tags_json = String::from_utf8(buffer[4..4 + tags_json_length].to_owned())?;
     let tags: HashMap<String, String> = serde_json::from_str(&tags_json)?;
 
-    let wallet_record = WalletRecord::new(name,Some(type_), Some(value),Some(tags));
+    let wallet_record = WalletRecord::new(name, Some(type_), Some(value), Some(tags));
     Ok(wallet_record)
 }
 
@@ -368,7 +367,9 @@ mod tests {
     use std::env;
     use std::rc::Rc;
     use std::collections::HashMap;
+
     extern crate rand;
+
     use self::rand::*;
     use serde_json;
     use ::utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF, ChaCha20Poly1305IETFKey};
@@ -376,7 +377,7 @@ mod tests {
     use services::wallet::storage::WalletStorageType;
     use services::wallet::storage::default::SQLiteStorageType;
     use services::wallet::wallet::{Keys, Wallet};
-    use services::wallet::encryption::{decrypt_merged};
+    use services::wallet::encryption::decrypt_merged;
     use super::*;
 
     fn _wallet_path() -> std::path::PathBuf {
@@ -476,7 +477,6 @@ mod tests {
             0, 1, 2, 3, 4, 5, 6, 7,
             0, 1, 2, 3, 4, 5, 6, 7,
             0, 1, 2, 3, 4, 5, 6, 7,
-
         ]
     }
 
@@ -671,8 +671,6 @@ mod tests {
     /**
         Export/Import tests
     */
-
-
     #[test]
     fn export_empty_wallet() {
         _cleanup();
@@ -724,7 +722,7 @@ mod tests {
 
         let mut total_item_length = 0;
         let item_count = 300;
-        for i in 0 .. item_count {
+        for i in 0..item_count {
             let name = format!("name_{}", i);
             let value = format!("value_{}", i);
             let mut tags = HashMap::new();
@@ -851,7 +849,7 @@ mod tests {
             let mut wallet = _create_wallet();
 
             let mut total_item_length = 0;
-            for i in 0 .. item_count {
+            for i in 0..item_count {
                 let name = format!("name_{}", i);
                 let value = format!("value_{}", i);
                 let mut tags = HashMap::new();
@@ -874,7 +872,7 @@ mod tests {
         assert!(wallet.get_all().unwrap().next().unwrap().is_none());
         import(&mut wallet, reader, key).expect("Failed to import wallet");
 
-        for i in 0 .. item_count {
+        for i in 0..item_count {
             let name = format!("name_{}", i);
             let value = format!("value_{}", i);
             let mut tags = HashMap::new();

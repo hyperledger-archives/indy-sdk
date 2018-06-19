@@ -1,10 +1,8 @@
 extern crate sodiumoxide;
 
-use std;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use serde_json;
 use utils::crypto::chacha20poly1305_ietf::{TAG_LENGTH, KEY_LENGTH, NONCE_LENGTH, ChaCha20Poly1305IETF,ChaCha20Poly1305IETFKey};
 use utils::crypto::hmacsha256::{HMACSHA256, HMACSHA256Key};
 
