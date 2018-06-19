@@ -141,3 +141,9 @@ impl From<serde_json::Error> for IndyError {
         IndyError::CommonError(CommonError::InvalidStructure(err.to_string()))
     }
 }
+
+impl From<serde_json::Error> for PaymentsError {
+    fn from(err: serde_json::Error) -> PaymentsError {
+        PaymentsError::CommonError(CommonError::InvalidStructure(err.to_string()))
+    }
+}

@@ -261,7 +261,7 @@ impl PaymentsService {
 
     pub fn parse_method_from_inputs(&self, inputs: &str) -> Result<String, PaymentsError> {
         trace!("parse_method_from_inputs >>> inputs: {:?}", inputs);
-        let inputs: Vec<&str> = serde_json::from_str(inputs).map_err(|_| PaymentsError::CommonError(CommonError::InvalidStructure("Unable to parse inputs".to_string())))?;
+        let inputs: Vec<&str> = serde_json::from_str(inputs)?;
         let inputs_len = inputs.len();
         if inputs_len == 0 {
             error!("No inputs for transaction");
@@ -291,7 +291,7 @@ impl PaymentsService {
 
     pub fn parse_method_from_outputs(&self, outputs: &str) -> Result<String, PaymentsError> {
         trace!("parse_method_from_outputs >>> outputs: {:?}", outputs);
-        let outputs: Vec<Output> = serde_json::from_str(outputs).map_err(|_| PaymentsError::CommonError(CommonError::InvalidStructure("Unable to parse outputs".to_string())))?;
+        let outputs: Vec<Output> = serde_json::from_str(outputs)?;
         let outputs_len = outputs.len();
         if outputs_len == 0 {
             error!("No outputs for transaction");
