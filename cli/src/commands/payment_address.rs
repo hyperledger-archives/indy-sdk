@@ -100,6 +100,7 @@ pub fn handle_payment_error(err: ErrorCode, payment_method: Option<&str>) {
         ErrorCode::PaymentUnknownMethodError => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
         ErrorCode::PaymentIncompatibleMethodsError => println_err!("No method were scraped or more than one were scraped"),
         ErrorCode::PaymentInsufficientFundsError => println_err!("Insufficient funds on inputs"),
+        ErrorCode::CommonInvalidState => println_err!("Input not found"),
         ErrorCode::CommonInvalidStructure => println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc..."),
         err => println_err!("Indy SDK error occurred {:?}", err)
     }

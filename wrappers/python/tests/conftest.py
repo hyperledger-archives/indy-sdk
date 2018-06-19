@@ -16,6 +16,7 @@ logging.basicConfig(level=logging.DEBUG)
 @pytest.fixture(scope="session")
 def event_loop():
     loop = asyncio.get_event_loop()
+    loop.run_until_complete(pool.set_protocol_version(2))
     yield loop
     loop.close()
 
@@ -415,9 +416,6 @@ def pool_handle(event_loop, pool_name, pool_ledger_config, pool_config, pool_han
                  pool_config,
                  pool_handle_cleanup,
                  protocol_version)
-
-    logger.debug("pool_handle: Setting protocol version")
-    event_loop.run_until_complete(pool.set_protocol_version(protocol_version))
 
     logger.debug("pool_handle: Opening pool ledger")
     pool_handle = event_loop.run_until_complete(pool.open_pool_ledger(pool_name, pool_config))
