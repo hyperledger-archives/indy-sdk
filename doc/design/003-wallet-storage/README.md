@@ -176,7 +176,7 @@ extern pub fn indy_delete_wallet_record(command_handle: i32,
 /// wallet_handle: wallet handle (created by open_wallet)
 /// type_: allows to separate different record types collections
 /// id: the id of record
-/// options_json: //TODO: FIXME: Think about replacing by bitmaks
+/// options_json: //TODO: FIXME: Think about replacing by bitmask
 ///  {
 ///    retrieveType: (optional, false by default) Retrieve record type,
 ///    retrieveValue: (optional, true by default) Retrieve record value,
@@ -214,7 +214,7 @@ extern pub fn indy_get_wallet_record(command_handle: i32,
 ///      "tagName3": { $gte: 123 },
 ///    },
 ///  }
-/// options_json: //TODO: FIXME: Think about replacing by bitmaks
+/// options_json: //TODO: FIXME: Think about replacing by bitmask
 ///  {
 ///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
 ///    retrieveTotalCount: (optional, false by default) Calculate total count,
@@ -442,7 +442,7 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                            /// storage_handle: opened storage handle (See open handler)
                                            /// type_: allows to separate different record types collections
                                            /// id: the id of record
-                                           /// options_json: //TODO: FIXME: Think about replacing by bitmaks
+                                           /// options_json: //TODO: FIXME: Think about replacing by bitmask
                                            ///  {
                                            ///    retrieveType: (optional, false by default) Retrieve record type,
                                            ///    retrieveValue: (optional, true by default) Retrieve record value,
@@ -532,7 +532,7 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                           ///      "tagName3": { $gte: 123 },
                                           ///    },
                                           ///  }
-                                          /// options_json: //TODO: FIXME: Think about replacing by bitmaks
+                                          /// options_json: //TODO: FIXME: Think about replacing by bitmask
                                           ///  {
                                           ///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
                                           ///    retrieveTotalCount: (optional, false by default) Calculate total count,
