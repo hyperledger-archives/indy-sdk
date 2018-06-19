@@ -126,11 +126,7 @@ impl CryptoCommandExecutor {
     fn create_key(&self, wallet_handle: i32, key_info_json: String) -> Result<String> {
         debug!("create_key >>> wallet_handle: {:?}, key_info_json: {:?}", wallet_handle, key_info_json);
 
-        let key_info = KeyInfo::from_json(&key_info_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidStructure(
-                    format!("Invalid KeyInfo json: {}", err.description())))?;
+        let key_info : KeyInfo = serde_json::from_str(&key_info_json)?;
 
         let key = self.crypto_service.create_key(&key_info)?;
         self.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new())?;
