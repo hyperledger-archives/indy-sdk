@@ -219,20 +219,15 @@ impl IssuerCommandExecutor {
 
         self.crypto_service.validate_did(issuer_did)?;
 
-        let schema: SchemaV1 = SchemaV1::from(Schema::from_json(schema_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Schema: {:?}", err)))?);
+        let schema: SchemaV1 = SchemaV1::from(serde_json::from_str::<Schema>(schema_json)?);
 
-        let cred_def_config = match config_json {
-            Some(config) =>
-                CredentialDefinitionConfig::from_json(config)
-                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinitionConfig: {:?}", err)))?,
+        let cred_def_config : CredentialDefinitionConfig = match config_json {
+            Some(config) => serde_json::from_str(config)?,
             None => CredentialDefinitionConfig::default()
         };
 
-        let signature_type = match type_ {
-            Some(type_) =>
-                SignatureType::from_json(&format!("\"{}\"", type_))
-                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize SignatureType: {:?}", err)))?,
+        let signature_type : SignatureType = match type_ {
+            Some(type_) => serde_json::from_str(&format!("\"{}\"", type_))?,
             None => SignatureType::CL,
         };
 
@@ -286,20 +281,15 @@ impl IssuerCommandExecutor {
         debug!("create_and_store_revocation_registry >>> wallet_handle: {:?}, issuer_did: {:?}, type_: {:?}, tag: {:?}, cred_def_id: {:?}, config_json: {:?}, \
                tails_handle: {:?}", wallet_handle, issuer_did, type_, tag, cred_def_id, config_json, tails_writer_handle);
 
-        let rev_reg_config: RevocationRegistryConfig = RevocationRegistryConfig::from_json(config_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryConfig: {:?}", err)))?;
+        let rev_reg_config: RevocationRegistryConfig = serde_json::from_str(config_json)?;
 
-        let rev_reg_type = match type_ {
-            Some(type_) =>
-                RegistryType::from_json(&format!("\"{}\"", type_))
-                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryType: {:?}", err)))?,
+        let rev_reg_type : RegistryType = match type_ {
+            Some(type_) => serde_json::from_str(&format!("\"{}\"", type_))?,
             None => RegistryType::CL_ACCUM,
         };
 
-        let issuance_type = match rev_reg_config.issuance_type {
-            Some(type_) =>
-                IssuanceType::from_json(&format!("\"{}\"", type_))
-                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize IssuanceType: {:?}", err)))?,
+        let issuance_type : IssuanceType = match rev_reg_config.issuance_type {
+            Some(type_) => serde_json::from_str(&format!("\"{}\"", type_))?,
             None => IssuanceType::ISSUANCE_ON_DEMAND,
         };
 
@@ -650,14 +640,10 @@ impl IssuerCommandExecutor {
         debug!("merge_revocation_registry_deltas >>> rev_reg_delta_json: {:?}, other_rev_reg_delta_json: {:?}", rev_reg_delta_json, other_rev_reg_delta_json);
 
         let mut rev_reg_delta: RevocationRegistryDeltaV1 =
-            RevocationRegistryDeltaV1::from(
-                RevocationRegistryDelta::from_json(rev_reg_delta_json)
-                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDelta: {:?}", err)))?);
+            RevocationRegistryDeltaV1::from(serde_json::from_str::<RevocationRegistryDelta>(rev_reg_delta_json)?);
 
         let other_rev_reg_delta: RevocationRegistryDeltaV1 =
-            RevocationRegistryDeltaV1::from(
-                RevocationRegistryDelta::from_json(other_rev_reg_delta_json)
-                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize other RevocationRegistryDelta: {:?}", err)))?);
+            RevocationRegistryDeltaV1::from(serde_json::from_str::<RevocationRegistryDelta>(other_rev_reg_delta_json)?);
 
         rev_reg_delta.value.merge(&other_rev_reg_delta.value)
             .map_err(|err| IndyError::CommonError(CommonError::from(err)))?;
