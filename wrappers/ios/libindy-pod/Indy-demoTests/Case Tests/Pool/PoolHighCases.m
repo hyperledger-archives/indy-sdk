@@ -50,7 +50,7 @@
 
     // 1. Create pool ledger config
     NSError *ret = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:poolName
-                                                              poolConfig:poolConfig];
+                                                                       poolConfig:poolConfig];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfigWithPoolName() failed!");
 
     // 2. Open pool ledger
@@ -63,8 +63,8 @@
 
 - (void)testOpenPoolLedgerWorksForInvalidName {
     NSError *ret = [[PoolUtils sharedInstance] openPoolLedger:[TestUtils pool]
-                                              config:nil
-                                         poolHandler:nil];
+                                                       config:nil
+                                                  poolHandler:nil];
     XCTAssertEqual(ret.code, PoolLedgerNotCreatedError, @"PoolUtils::openPoolLedger returned wrong code");
 }
 
@@ -83,13 +83,16 @@
 }
 
 - (void)testOpenPoolLedgerWorksForIncompatibleProtocolVersion {
+    NSError *ret = [[PoolUtils sharedInstance] setProtocolVersion:@(1)];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
     NSString *txnFilePath = [[PoolUtils sharedInstance] createGenesisTxnFileForTestPool:[TestUtils pool]
                                                                              nodesCount:nil
                                                                             txnFilePath:nil];
     NSString *poolConfig = [[PoolUtils sharedInstance] poolConfigJsonForTxnFilePath:txnFilePath];
 
     // 1. Create pool ledger config
-    NSError *ret = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:[TestUtils pool]
+    ret = [[PoolUtils sharedInstance] createPoolLedgerConfigWithPoolName:[TestUtils pool]
                                                               poolConfig:poolConfig];
     XCTAssertEqual(ret.code, Success, @"PoolUtils::createPoolLedgerConfigWithPoolName() failed!");
 
