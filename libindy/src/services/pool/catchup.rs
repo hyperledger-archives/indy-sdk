@@ -78,7 +78,7 @@ pub fn check_cons_proofs(mt: &MerkleTree, cons_proofs: &Vec<String>, target_mt_r
                 format!("Can't decode node consistency proof: {}", err)))?)
     }
     if !mt.consistency_proof(target_mt_root, target_mt_size, &bytes_proofs)? {
-        return Err(CommonError::InvalidStructure("Consistency proof verification failed".to_string()));
+        return Err(CommonError::InvalidState("Consistency proof verification failed".to_string()));
     }
     Ok(())
 }

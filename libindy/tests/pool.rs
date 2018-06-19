@@ -169,7 +169,6 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-//        #[ignore]
         fn open_pool_ledger_works_for_three_nodes() {
             TestUtils::cleanup_storage();
 

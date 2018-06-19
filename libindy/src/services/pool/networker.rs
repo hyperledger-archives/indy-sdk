@@ -49,6 +49,7 @@ impl Networker for ZMQNetworker {
     fn process_event(&mut self, pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
         match pe.clone() {
             Some(NetworkerEvent::SendAllRequest(_, req_id)) | Some(NetworkerEvent::SendOneRequest(_, req_id)) | Some(NetworkerEvent::Resend(req_id)) => {
+                trace!("current mappings: {:?}", self.req_id_mappings);
                 let num = self.req_id_mappings.get(&req_id).map(|i| i.clone()).or_else(|| {
                     self.req_id_mappings.values()
                         .fold(HashMap::new(), |mut acc, pc_id| {
@@ -56,7 +57,7 @@ impl Networker for ZMQNetworker {
                             acc
                         }).iter()
                         .filter(|&(pc_id, cnt)|
-                            cnt >= &5 && self.pool_connections.get(pc_id).map(|pc| pc.is_active()).unwrap_or(false))
+                            cnt < &5 && self.pool_connections.get(pc_id).map(|pc| pc.is_active()).unwrap_or(false))
                         .last().map(|(pc_id, _)| **pc_id)
                 });
                 match num {
@@ -107,7 +108,6 @@ impl Networker for ZMQNetworker {
     }
 
     fn get_timeout(&self) -> ((String, String), i64) {
-        trace!("conn number: {:?}", self.pool_connections.len());
         self.pool_connections.values()
             .map(PoolConnection::get_timeout)
             .min_by(|&(_, val1), &(_, val2)| val1.cmp(&val2))
@@ -159,9 +159,7 @@ impl PoolConnection {
         assert_eq!(len, self.sockets.len());
         for i in 0..len {
             if let (&Some(ref s), rn) = (&self.sockets[i], &self.nodes[i]) {
-//                trace!("fetching events");
                 if poll_items[pi_idx].is_readable() {
-//                    trace!("fetching events 2");
                     if let Ok(Ok(str)) = s.recv_string(zmq::DONTWAIT) {
                         vec.push(PoolEvent::NodeReply(
                             str,
@@ -192,7 +190,8 @@ impl PoolConnection {
     }
 
     fn is_active(&self) -> bool {
-        time::now() - self.time_created > Duration::seconds(5)
+        trace!("time worked: {:?}", time::now() - self.time_created);
+        time::now() - self.time_created < Duration::seconds(5)
     }
 
     fn send_request(&self, pe: Option<NetworkerEvent>) {
