@@ -1,5 +1,6 @@
 extern crate zmq;
 extern crate indy_crypto;
+extern crate serde_json;
 
 use std::cell::{BorrowError, BorrowMutError};
 use std::error::Error;
@@ -169,6 +170,12 @@ impl From<indy_crypto::errors::IndyCryptoError> for CommonError {
             IndyCryptoError::IOError(err) => CommonError::IOError(err),
             _ => CommonError::InvalidStructure("Invalid error code".to_string())
         }
+    }
+}
+
+impl From<serde_json::Error> for CommonError {
+    fn from(err: serde_json::Error) -> CommonError {
+        CommonError::InvalidStructure(err.to_string())
     }
 }
 

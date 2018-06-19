@@ -153,9 +153,7 @@ impl LedgerService {
     pub fn build_schema_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
         info!("build_schema_request >>> identifier: {:?}, data: {:?}", identifier, data);
 
-        let schema = SchemaV1::from(
-            Schema::from_json(&data)
-                .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Schema: {:?}", err)))?);
+        let schema = SchemaV1::from(serde_json::from_str::<Schema>(&data)?);
 
         let schema_data = SchemaOperationData::new(schema.name, schema.version, schema.attr_names);
 
@@ -194,9 +192,7 @@ impl LedgerService {
     pub fn build_cred_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
         info!("build_cred_def_request >>> identifier: {:?}, data: {:?}", identifier, data);
 
-        let cred_def = CredentialDefinitionV1::from(
-            CredentialDefinition::from_json(&data)
-                .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinition: {:?}", err)))?);
+        let cred_def = CredentialDefinitionV1::from(serde_json::from_str::<CredentialDefinition>(&data)?);
 
         let operation = CredDefOperation::new(cred_def);
 
@@ -238,8 +234,7 @@ impl LedgerService {
     pub fn build_node_request(&self, identifier: &str, dest: &str, data: &str) -> Result<String, CommonError> {
         info!("build_node_request >>> identifier: {:?}, dest {:?}, data {:?}", identifier, dest, data);
 
-        let data = NodeOperationData::from_json(&data)
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {:?}", err)))?;
+        let data : NodeOperationData = serde_json::from_str(&data)?;
         if data.node_ip.is_none() && data.node_port.is_none()
             && data.client_ip.is_none() && data.client_port.is_none()
             && data.services.is_none() && data.blskey.is_none() {
@@ -357,9 +352,7 @@ impl LedgerService {
     pub fn build_revoc_reg_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
         info!("build_revoc_reg_def_request >>> identifier: {:?}, data {:?}", identifier, data);
 
-        let rev_reg_def = RevocationRegistryDefinitionV1::from(
-            RevocationRegistryDefinition::from_json(&data)
-                .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistryDefinition: {:?}", err)))?);
+        let rev_reg_def = RevocationRegistryDefinitionV1::from(serde_json::from_str::<RevocationRegistryDefinition>(&data)?);
 
         let rev_reg_def_operation = RevRegDefOperation::new(rev_reg_def);
 
@@ -389,9 +382,7 @@ impl LedgerService {
         info!("build_revoc_reg_entry_request >>> identifier: {:?}, revoc_reg_def_id {:?}, revoc_def_type {:?}, value {:?}",
               identifier, revoc_reg_def_id, revoc_def_type, value);
 
-        let rev_reg_entry = RevocationRegistryDeltaV1::from(
-            RevocationRegistryDelta::from_json(&value)
-                .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistry: {:?}", err)))?);
+        let rev_reg_entry = RevocationRegistryDeltaV1::from(serde_json::from_str::<RevocationRegistryDelta>(&value)?);
 
         let operation = RevRegEntryOperation::new(revoc_def_type, revoc_reg_def_id, rev_reg_entry);
 
