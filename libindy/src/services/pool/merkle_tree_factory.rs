@@ -16,6 +16,8 @@ use serde_json::Value as SJsonValue;
 use std::collections::HashMap;
 use services::pool::types::NodeTransactionV1;
 use services::pool::types::NodeTransaction;
+use domain::ledger::request::ProtocolVersion;
+use services::pool::types::NodeTransactionV0;
 
 pub fn create(pool_name: &str) -> Result<MerkleTree, PoolError> {
     let mut p = EnvironmentUtils::pool_path(pool_name);
@@ -29,6 +31,7 @@ pub fn create(pool_name: &str) -> Result<MerkleTree, PoolError> {
         p.set_extension("txn");
 
         if !p.exists() {
+            trace!("here");
             return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)));
         }
 
@@ -39,12 +42,12 @@ pub fn create(pool_name: &str) -> Result<MerkleTree, PoolError> {
 }
 
 pub fn drop_cache(pool_name: &str) -> Result<(), PoolError> {
-    warn!("Cache is invalid -- dropping it!");
     let mut p = EnvironmentUtils::pool_path(pool_name);
 
     p.push("stored");
     p.set_extension("btxn");
     if p.exists() {
+        warn!("Cache is invalid -- dropping it!");
         fs::remove_file(p).map_err(CommonError::IOError).map_err(PoolError::from)?;
         Ok(())
     } else {
@@ -114,6 +117,7 @@ fn _dump_genesis_to_stored(p: &PathBuf, pool_name: &str) -> Result<(), PoolError
     p_genesis.set_extension("txn");
 
     if !p_genesis.exists() {
+        trace!("here");
         return Err(PoolError::NotCreated(format!("Pool is not created for name: {:?}", pool_name)));
     }
 
@@ -170,7 +174,7 @@ fn _parse_txn_from_json(txn: &[u8]) -> Result<Vec<u8>, CommonError> {
         .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))
 }
 
-pub fn build_node_state(merkle_tree: &MerkleTree) -> Result<HashMap<String, NodeTransactionV1>, CommonError> {
+pub fn build_node_state(merkle_tree: &MerkleTree) -> Result<HashMap<String, NodeTransactionV1>, PoolError> {
     let mut gen_tnxs: HashMap<String, NodeTransactionV1> = HashMap::new();
 
     for gen_txn in merkle_tree {

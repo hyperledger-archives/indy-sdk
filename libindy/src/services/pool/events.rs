@@ -147,6 +147,7 @@ pub enum RequestEvent {
     PoolLedgerTxns,
     Ping,
     Pong,
+    Terminate,
 }
 
 impl RequestEvent {

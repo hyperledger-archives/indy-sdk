@@ -60,12 +60,14 @@ impl Networker for ZMQNetworker {
                 });
                 match num {
                     Some(idx) => {
+                        trace!("send request in existing conn");
                         self.pool_connections.get(&idx).map(|pc| {
                             pc.send_request(pe);
                         });
                         self.req_id_mappings.insert(req_id.clone(), idx);
                     }
                     None => {
+                        trace!("send request in new conn");
                         let pc_id = SequenceUtils::get_next_id();
                         let pc = PoolConnection::new(self.nodes.clone());
                         pc.send_request(pe);
@@ -104,6 +106,7 @@ impl Networker for ZMQNetworker {
     }
 
     fn get_timeout(&self) -> ((String, String), i64) {
+        trace!("conn number: {:?}", self.pool_connections.len());
         self.pool_connections.values()
             .map(PoolConnection::get_timeout)
             .min_by(|&(_, val1), &(_, val2)| val1.cmp(&val2))
@@ -155,7 +158,9 @@ impl PoolConnection {
         assert_eq!(len, self.sockets.len());
         for i in 0..len {
             if let (&Some(ref s), rn) = (&self.sockets[i], &self.nodes[i]) {
+//                trace!("fetching events");
                 if poll_items[pi_idx].is_readable() {
+//                    trace!("fetching events 2");
                     if let Ok(Ok(str)) = s.recv_string(zmq::DONTWAIT) {
                         vec.push(PoolEvent::NodeReply(
                             str,
@@ -193,7 +198,9 @@ impl PoolConnection {
         match pe {
             Some(NetworkerEvent::SendOneRequest(msg, req_id)) => {
                 let socket: &ZSocket = self.sockets[0].as_ref().expect("FIXME");
+                trace!("send single {:?}", msg);
                 socket.send_str(&msg, zmq::DONTWAIT).expect("FIXME");
+                trace!("sent");
                 self.timeouts.borrow_mut().insert((req_id.clone(), self.nodes[0].name.clone()), time::now());
                 self.resend.borrow_mut().insert(req_id, (0, msg));
             }

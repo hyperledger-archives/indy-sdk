@@ -345,7 +345,9 @@ impl<T: Networker> RequestSMWrapper<T> {
                             catchupTill: target_mt_size,
                         };
                         let req_id = format!("{}{}", seq_no_start, seq_no_end);
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest(Message::CatchupReq(cr).to_json().expect("FIXME"), req_id.clone())));
+                        let str = Message::CatchupReq(cr).to_json().expect("FIXME");
+                        trace!("catchup_req msg: {:?}", str);
+                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest(str, req_id.clone())));
                         (RequestSMWrapper::CatchupSingle((merkle, request, target_mt_root, target_mt_size, req_id).into()), None)
                     }
                     RequestEvent::CustomSingleRequest(msg, req_id) => {
@@ -448,6 +450,10 @@ impl<T: Networker> RequestSMWrapper<T> {
                             (RequestSMWrapper::Finish(request.into()), None)
                         }
                     }
+                    RequestEvent::Terminate => {
+                        _finish_request(&request.cmd_ids);
+                        (RequestSMWrapper::Finish(request.into()), None)
+                    }
                     _ => (RequestSMWrapper::Consensus(request), None)
                 }
             }
@@ -498,6 +504,10 @@ impl<T: Networker> RequestSMWrapper<T> {
                         request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id)));
                         (RequestSMWrapper::Single(request), None)
                     }
+                    RequestEvent::Terminate => {
+                        _finish_request(&request.cmd_ids);
+                        (RequestSMWrapper::Finish(request.into()), None)
+                    }
                     _ => (RequestSMWrapper::Single(request), None)
                 }
             }
@@ -529,6 +539,10 @@ impl<T: Networker> RequestSMWrapper<T> {
                         request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                         (RequestSMWrapper::CatchupConsensus(request), None)
                     }
+                    RequestEvent::Terminate => {
+                        _finish_request(&request.cmd_ids);
+                        (RequestSMWrapper::Finish(request.into()), None)
+                    }
                     _ => (RequestSMWrapper::CatchupConsensus(request), None)
                 }
             }
@@ -551,6 +565,10 @@ impl<T: Networker> RequestSMWrapper<T> {
                         request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                         request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(request.state.req_id.clone())));
                         (RequestSMWrapper::CatchupSingle(request), None)
+                    }
+                    RequestEvent::Terminate => {
+                        _finish_request(&request.cmd_ids);
+                        (RequestSMWrapper::Finish(request.into()), None)
                     }
                     _ => (RequestSMWrapper::CatchupSingle(request), None)
                 }
@@ -594,6 +612,10 @@ impl<T: Networker> RequestSMWrapper<T> {
                             request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                             (RequestSMWrapper::Full(request), None)
                         }
+                    }
+                    RequestEvent::Terminate => {
+                        _finish_request(&request.cmd_ids);
+                        (RequestSMWrapper::Finish(request.into()), None)
                     }
                     _ => (RequestSMWrapper::Full(request), None)
                 }
@@ -719,6 +741,10 @@ fn _process_catchup_reply(rep: &mut CatchupRep, merkle: &MerkleTree, target_mt_r
 
 fn _send_ok_replies(cmd_ids: &Vec<i32>, msg: &str) {
     _send_replies(cmd_ids, Ok(msg.to_string()))
+}
+
+fn _finish_request(cmd_ids: &Vec<i32>) {
+    _send_replies(cmd_ids, Err(PoolError::Terminate))
 }
 
 fn _send_replies(cmd_ids: &Vec<i32>, msg: Result<String, PoolError>) {

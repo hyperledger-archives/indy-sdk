@@ -238,7 +238,7 @@ impl PoolService {
     }
 }
 
-[cfg(test)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use utils::test::TestUtils;
