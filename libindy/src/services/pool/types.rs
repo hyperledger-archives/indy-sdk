@@ -200,6 +200,7 @@ pub struct LedgerStatus {
     pub ledgerId: u8,
     pub ppSeqNo: Option<u32>,
     pub viewNo: Option<u32>,
+    pub protocolVersion: Option<usize>
 }
 
 #[allow(non_snake_case)]

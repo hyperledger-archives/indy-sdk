@@ -179,7 +179,26 @@ pub fn build_node_state(merkle_tree: &MerkleTree) -> Result<HashMap<String, Node
                 .map_err(|e|
                     CommonError::InvalidState(format!("MerkleTree contains invalid data {:?}", e)))?;
 
-        let mut gen_txn: NodeTransactionV1 = NodeTransactionV1::from(gen_txn);
+        let protocol_version = ProtocolVersion::get();
+
+        let mut gen_txn = match gen_txn {
+            NodeTransaction::NodeTransactionV0(txn) => {
+                if protocol_version != 1 {
+                    return Err(PoolError::PoolIncompatibleProtocolVersion(
+                        format!("Libindy PROTOCOL_VERSION is {} but Pool Genesis Transactions are of version {}.\
+                             Call indy_set_protocol_version(1) to set correct PROTOCOL_VERSION", protocol_version, NodeTransactionV0::VERSION)));
+                }
+                NodeTransactionV1::from(txn)
+            }
+            NodeTransaction::NodeTransactionV1(txn) => {
+                if protocol_version != 2 {
+                    return Err(PoolError::PoolIncompatibleProtocolVersion(
+                        format!("Libindy PROTOCOL_VERSION is {} but Pool Genesis Transactions are of version {}.\
+                             Call indy_set_protocol_version(2) to set correct PROTOCOL_VERSION", protocol_version, NodeTransactionV1::VERSION)));
+                }
+                txn
+            }
+        };
 
         if gen_tnxs.contains_key(&gen_txn.txn.data.dest) {
             gen_tnxs.get_mut(&gen_txn.txn.data.dest).unwrap().update(&mut gen_txn)?;

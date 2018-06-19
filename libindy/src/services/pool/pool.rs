@@ -23,6 +23,7 @@ use commands::CommandExecutor;
 use commands::pool::PoolCommand;
 use utils::crypto::box_::CryptoBox;
 use services::ledger::merkletree::merkletree::MerkleTree;
+use domain::ledger::request::ProtocolVersion;
 
 
 trait PoolState {
@@ -589,12 +590,14 @@ fn _get_request_handler_with_ledger_status_sent<T: Networker, R: RequestHandler<
     let (nodes, remotes) = _get_nodes_and_remotes(&merkle);
     networker.borrow_mut().process_event(Some(NetworkerEvent::NodesStateUpdated(remotes)));
     let mut request_handler = R::new(networker.clone(), _get_f(nodes.len()), &vec![], &nodes, None, pool_name);
+    let protocol_version = ProtocolVersion::get();
     let ls = LedgerStatus {
         txnSeqNo: merkle.count(),
         merkleRoot: merkle.root_hash().as_slice().to_base58(),
         ledgerId: 0,
         ppSeqNo: None,
         viewNo: None,
+        protocolVersion: if protocol_version > 1 { Some(protocol_version) } else { None }
     };
     request_handler.process_event(Some(RequestEvent::LedgerStatus(ls, None, Some(merkle))));
     request_handler
