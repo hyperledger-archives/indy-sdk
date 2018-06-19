@@ -71,6 +71,10 @@ pub struct NodeTransactionV0 {
     pub txn_type: String
 }
 
+impl NodeTransactionV0 {
+    pub const VERSION: &'static str = "1.3";
+}
+
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct NodeTransactionV1 {
@@ -78,6 +82,11 @@ pub struct NodeTransactionV1 {
     pub txn_metadata: Metadata,
     pub req_signature: ReqSignature,
     pub ver: String
+}
+
+
+impl NodeTransactionV1 {
+    pub const VERSION: &'static str = "1.4";
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -126,37 +135,34 @@ pub struct TxnMetadata {
     pub from: String
 }
 
-impl From<NodeTransaction> for NodeTransactionV1 {
-    fn from(node_txn: NodeTransaction) -> Self {
-        match node_txn {
-            NodeTransaction::NodeTransactionV1(n_txn) => n_txn,
-            NodeTransaction::NodeTransactionV0(n_txn) => {
-                let txn = Txn {
-                    txn_type: n_txn.txn_type,
-                    protocol_version: None,
-                    data: TxnData {
-                        data: n_txn.data,
-                        dest: n_txn.dest,
-                        verkey: n_txn.verkey
-                    },
-                    metadata: TxnMetadata {
-                        req_id: None,
-                        from: n_txn.identifier
-                    },
-                };
-                NodeTransactionV1 {
-                    txn,
-                    txn_metadata: Metadata {
-                        seq_no: None,
-                        txn_id: n_txn.txn_id,
-                        creation_time: None
-                    },
-                    req_signature: ReqSignature {
-                        type_: None,
-                        values: None
-                    },
-                    ver: "1".to_string(),
-                }
+impl From<NodeTransactionV0> for NodeTransactionV1 {
+    fn from(node_txn: NodeTransactionV0) -> Self {
+        {
+            let txn = Txn {
+                txn_type: node_txn.txn_type,
+                protocol_version: None,
+                data: TxnData {
+                    data: node_txn.data,
+                    dest: node_txn.dest,
+                    verkey: node_txn.verkey
+                },
+                metadata: TxnMetadata {
+                    req_id: None,
+                    from: node_txn.identifier
+                },
+            };
+            NodeTransactionV1 {
+                txn,
+                txn_metadata: Metadata {
+                    seq_no: None,
+                    txn_id: node_txn.txn_id,
+                    creation_time: None
+                },
+                req_signature: ReqSignature {
+                    type_: None,
+                    values: None
+                },
+                ver: "1".to_string(),
             }
         }
     }
@@ -200,6 +206,7 @@ pub struct LedgerStatus {
     pub ledgerId: u8,
     pub ppSeqNo: Option<u32>,
     pub viewNo: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub protocolVersion: Option<usize>
 }
 

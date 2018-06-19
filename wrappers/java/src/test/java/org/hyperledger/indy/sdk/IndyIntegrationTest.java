@@ -66,6 +66,7 @@ public class IndyIntegrationTest {
 			"        \"age\": {\"raw\": \"28\", \"encoded\": \"28\"}\n" +
 			"    }";
 	protected String CREDENTIALS = "{\"key\": \"key\"}";
+	protected int PROTOCOL_VERSION = 2;
 
 
 	protected static final String TRUSTEE_IDENTITY_JSON =
@@ -90,6 +91,7 @@ public class IndyIntegrationTest {
 	public void setUp() throws Exception {
 		InitHelper.init();
 		StorageUtils.cleanupStorage();
+		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
 //		if (! isWalletRegistered) { TODO:FIXME
 //			Wallet.registerWalletType("inmem", new InMemWalletType()).get();
 //		}

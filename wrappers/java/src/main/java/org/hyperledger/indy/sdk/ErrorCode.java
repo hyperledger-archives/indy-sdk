@@ -219,6 +219,11 @@ public enum ErrorCode {
 	 */
 	PoolLedgerTimeout(307),
 
+	/**
+	 * Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version
+	 */
+	PoolIncompatibleProtocolVersion(308),
+
 	// Crypto errors
 
 	/**

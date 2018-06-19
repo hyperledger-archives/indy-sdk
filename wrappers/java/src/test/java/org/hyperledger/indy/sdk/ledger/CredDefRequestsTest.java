@@ -43,7 +43,8 @@ public class CredDefRequestsTest extends LedgerIntegrationTest {
 				"                \"primary\": {\"n\": \"1\", \"s\": \"2\", \"rms\": \"3\", \"r\": {\"name\": \"1\"}, \"rctxt\": \"1\", \"z\": \"1\"}\n" +
 				"            },\n" +
 				"            \"type\": \"102\",\n" +
-				"            \"signature_type\": \"CL\"\n" +
+				"            \"signature_type\": \"CL\",\n" +
+				"            \"tag\": \"TAG_1\"\n" +
 				"        }";
 
 		String credDefRequest = Ledger.buildCredDefRequest(DID, data).get();
@@ -54,14 +55,15 @@ public class CredDefRequestsTest extends LedgerIntegrationTest {
 	@Test
 	public void testBuildGetCredDefRequestWorks() throws Exception {
 		int seqNo = 1;
-		String id = DID + ":3:" + SIGNATURE_TYPE + ":" + seqNo;
+		String id = DID + ":3:" + SIGNATURE_TYPE + ":" + seqNo + ":" + TAG;
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{" +
 				"\"type\":\"108\"," +
 				"\"ref\":%d," +
 				"\"signature_type\":\"%s\"," +
-				"\"origin\":\"%s\"" +
-				"}", DID, seqNo, SIGNATURE_TYPE, DID);
+				"\"origin\":\"%s\"," +
+				"\"tag\":\"%s\"" +
+				"}", DID, seqNo, SIGNATURE_TYPE, DID, TAG);
 
 		String getCredDefRequest = Ledger.buildGetCredDefRequest(DID, id).get();
 

@@ -27,6 +27,7 @@ public abstract class LibIndy {
 		public int indy_refresh_pool_ledger(int command_handle, int handle, Callback cb);
 		public int indy_close_pool_ledger(int command_handle, int handle, Callback cb);
 		public int indy_delete_pool_ledger_config(int command_handle, String config_name, Callback cb);
+		public int indy_set_protocol_version(int command_handle, int protocol_version, Callback cb);
 
 		// wallet.rs
 
@@ -60,7 +61,7 @@ public abstract class LibIndy {
 		public int indy_parse_get_cred_def_response(int command_handle, String get_cred_def_response, Callback cb);
 		public int indy_build_node_request(int command_handle, String submitter_did, String target_did, String data, Callback cb);
 		public int indy_build_get_validator_info_request(int command_handle, String submitter_did, Callback cb);
-		public int indy_build_get_txn_request(int command_handle, String submitter_did, int data, Callback cb);
+		public int indy_build_get_txn_request(int command_handle, String submitter_did, String ledger_type, int data, Callback cb);
 		public int indy_build_pool_config_request(int command_handle, String submitter_did, boolean writes, boolean force, Callback cb);
 		public int indy_build_pool_restart_request(int command_handle, String submitter_did, String action, String datetime, Callback cb);
 		public int indy_build_pool_upgrade_request(int command_handle, String submitter_did, String name, String version, String action, String sha256, int timeout, String schedule, String justification, boolean reinstall, boolean force, Callback cb);
@@ -85,6 +86,8 @@ public abstract class LibIndy {
 		public int indy_get_endpoint_for_did(int command_handle, int wallet_handle, int pool_handle, String did, Callback cb);
 		public int indy_set_did_metadata(int command_handle, int wallet_handle, String did, String metadata, Callback cb);
 		public int indy_get_did_metadata(int command_handle, int wallet_handle, String did, Callback cb);
+		public int indy_get_my_did_with_meta(int command_handle, int wallet_handle, String did, Callback cb);
+		public int indy_list_my_dids_with_meta(int command_handle, int wallet_handle, Callback cb);
 		public int indy_abbreviate_verkey(int command_handle, String did, String full_verkey, Callback cb);
 
 		// crypto.rs

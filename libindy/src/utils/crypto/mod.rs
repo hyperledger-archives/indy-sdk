@@ -31,3 +31,7 @@ pub mod sealedbox;
 #[cfg(feature = "pwhash_argon2i13_sodium")]
 #[path = "pwhash_argon2i13/sodium.rs"]
 pub mod pwhash_argon2i13;
+
+#[cfg(feature = "hmacsha256_sodium")]
+#[path = "hmacsha256/sodium.rs"]
+pub mod hmacsha256;
