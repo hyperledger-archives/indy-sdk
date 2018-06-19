@@ -34,8 +34,8 @@ public class WriteSchemaAndCredDef {
 		System.out.println("\n5. Generating and storing steward DID and Verkey\n");
 		String did_json = "{\"seed\": \"" + stewardSeed + "\"}";
 		DidResults.CreateAndStoreMyDidResult stewardResult = Did.createAndStoreMyDid(walletHandle, did_json).get();
-		String defautStewardDid = stewardResult.getDid();
-		System.out.println("Steward DID: " + defautStewardDid);
+		String defaultStewardDid = stewardResult.getDid();
+		System.out.println("Steward DID: " + defaultStewardDid);
 		System.out.println("Steward Verkey: " + stewardResult.getVerkey());
 
 		// 6.
@@ -48,12 +48,12 @@ public class WriteSchemaAndCredDef {
 
 		// 7
 		System.out.println("\n7. Build NYM request to add Trust Anchor to the ledger\n");
-		String nymRequest = buildNymRequest(defautStewardDid, trustAnchorDID, trustAnchorVerkey, null, "TRUST_ANCHOR").get();
+		String nymRequest = buildNymRequest(defaultStewardDid, trustAnchorDID, trustAnchorVerkey, null, "TRUST_ANCHOR").get();
 		System.out.println("NYM request JSON:\n" + nymRequest);
 
 		// 8
 		System.out.println("\n8. Sending the nym request to ledger\n");
-		String nymResponseJson = signAndSubmitRequest(pool, walletHandle, defautStewardDid, nymRequest).get();
+		String nymResponseJson = signAndSubmitRequest(pool, walletHandle, defaultStewardDid, nymRequest).get();
 		System.out.println("NYM transaction response:\n" + nymResponseJson);
 
 		// 9
@@ -63,17 +63,17 @@ public class WriteSchemaAndCredDef {
 		String attributes = "[\"age\", \"sex\", \"height\", \"name\"]";
 		String schemaDataJSON = "{\"name\":\"" + name + "\",\"version\":\"" + version + "\",\"attr_names\":" + attributes + "}";
 		System.out.println("Schema: " + schemaDataJSON);
-		String schemaRequest = buildSchemaRequest(defautStewardDid, schemaDataJSON).get();
+		String schemaRequest = buildSchemaRequest(defaultStewardDid, schemaDataJSON).get();
 		System.out.println("Schema request:\n" + schemaRequest);
 
 		// 10
 		System.out.println("\n10. Sending the SCHEMA request to the ledger\n");
-		String schemaResponse = signAndSubmitRequest(pool, walletHandle, defautStewardDid, schemaRequest).get();
+		String schemaResponse = signAndSubmitRequest(pool, walletHandle, defaultStewardDid, schemaRequest).get();
 		System.out.println("Schema response:\n" + schemaResponse);
 
 		// 11
 		System.out.println("\n11. Creating and storing CLAIM DEFINITION using anoncreds as Trust Anchor, for the given Schema\n");
-		String schemaJSON = "{\"seqNo\": 1, \"dest\": \"" + defautStewardDid + "\", \"data\": " + schemaDataJSON + "}";
+		String schemaJSON = "{\"seqNo\": 1, \"dest\": \"" + defaultStewardDid + "\", \"data\": " + schemaDataJSON + "}";
 		System.out.println("Schema:\n" + schemaJSON);
 		String claimDef = issuerCreateAndStoreClaimDef(walletHandle, trustAnchorDID, schemaJSON, "CL", false).get();
 		System.out.println("Claim Definition:\n" + claimDef);
