@@ -724,9 +724,7 @@ impl PoolService {
         trace!("PoolService::create {} with config {:?}", name, config);
         let mut path = EnvironmentUtils::pool_path(name);
         let pool_config: PoolConfig = match config {
-            Some(config) => PoolConfig::from_json(config)
-                .map_err(|err|
-                    CommonError::InvalidStructure(format!("Invalid pool config format: {}", err.description())))?,
+            Some(config) => serde_json::from_str(config)?,
             None => PoolConfig::default_for_name(name)
         };
 

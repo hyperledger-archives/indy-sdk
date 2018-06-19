@@ -97,6 +97,12 @@ impl From<indy_crypto::errors::IndyCryptoError> for PoolError {
     }
 }
 
+impl From<serde_json::Error> for PoolError {
+    fn from(err: serde_json::Error) -> PoolError {
+        PoolError::CommonError(CommonError::InvalidStructure(err.to_string()))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     //use super::*;
