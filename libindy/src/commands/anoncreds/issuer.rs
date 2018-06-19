@@ -183,8 +183,7 @@ impl IssuerCommandExecutor {
 
         self.crypto_service.validate_did(issuer_did)?;
 
-        let attrs: HashSet<String> = serde_json::from_str(attrs)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize AttributeNames: {:?}", err)))?;
+        let attrs: HashSet<String> = serde_json::from_str(attrs)?;
 
         if attrs.is_empty() {
             return Err(IndyError::CommonError(CommonError::InvalidStructure("List of Schema attributes is empty".to_string())));
@@ -407,14 +406,11 @@ impl IssuerCommandExecutor {
         debug!("new_credential >>> wallet_handle: {:?}, cred_offer_json: {:?}, cred_req_json: {:?}, cred_values_json: {:?}, rev_reg_id: {:?}, blob_storage_reader_handle: {:?}",
                wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle);
 
-        let cred_offer: CredentialOffer = CredentialOffer::from_json(cred_offer_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialOffer: {:?}", err)))?;
+        let cred_offer: CredentialOffer = serde_json::from_str(cred_offer_json)?;
 
-        let cred_request: CredentialRequest = CredentialRequest::from_json(cred_req_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialRequest: {:?}", err)))?;
+        let cred_request: CredentialRequest = serde_json::from_str(cred_req_json)?;
 
-        let cred_values: HashMap<String, AttributeValues> = serde_json::from_str(cred_values_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialValues: {:?}", err)))?;
+        let cred_values: HashMap<String, AttributeValues> = serde_json::from_str(cred_values_json)?;
 
         let cred_def: CredentialDefinitionV1 =
             CredentialDefinitionV1::from(
