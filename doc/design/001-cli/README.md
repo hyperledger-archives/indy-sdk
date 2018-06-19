@@ -310,7 +310,7 @@ ledger get-utxo payment_address=<payment_address>
 #### PAYMENT transaction
 Send PAYMENT transaction
 ```
-ledger get-utxo inputs=<utxo-1>,..,<utxo-n> outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
+ledger payment inputs=<utxo-1>,..,<utxo-n> outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
 ```
 
 #### GET_FEES transaction

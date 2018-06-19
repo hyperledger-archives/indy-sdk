@@ -255,7 +255,7 @@ impl WalletService {
         if !wallet_descriptor_path.exists() {
             return Err(WalletError::NotFound("Wallet descriptor path does not exist.".to_string()));
         }
-        let descriptor_json = _read_file(wallet_descriptor_path)?; // FIXME: Better error!)?;
+        let descriptor_json = _read_file(wallet_descriptor_path)?;
         let descriptor: WalletDescriptor = WalletDescriptor::from_json(&descriptor_json)?;
 
         let storage_types = self.storage_types.borrow();

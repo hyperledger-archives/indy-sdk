@@ -1127,7 +1127,6 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        #[ignore] //FIXME currently unstable because pool isn't maintain restart transaction yet.
         fn indy_pool_restart_request_works_for_start_cancel_works() {
             TestUtils::cleanup_storage();
 
