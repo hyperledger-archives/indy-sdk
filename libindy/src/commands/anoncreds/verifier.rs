@@ -58,23 +58,17 @@ impl VerifierCommandExecutor {
                rev_reg_defs_json: {:?}, rev_reg_json: {:?}",
                proof_request_json, proof_json, schemas_json, cred_defs_json, rev_reg_defs_json, rev_reg_json);
 
-        let proof_req: ProofRequest = ProofRequest::from_json(proof_request_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize ProofRequest: {:?}", err)))?;
+        let proof_req: ProofRequest = serde_json::from_str(proof_request_json)?;
 
-        let schemas: HashMap<String, Schema> = serde_json::from_str(schemas_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of Schema: {:?}", err)))?;
+        let schemas: HashMap<String, Schema> = serde_json::from_str(schemas_json)?;
 
-        let cred_defs: HashMap<String, CredentialDefinition> = serde_json::from_str(cred_defs_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of CredentialDefinition: {:?}", err)))?;
+        let cred_defs: HashMap<String, CredentialDefinition> = serde_json::from_str(cred_defs_json)?;
 
-        let rev_reg_defs: HashMap<String, RevocationRegistryDefinition> = serde_json::from_str(rev_reg_defs_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationRegistryDef: {:?}", err)))?;
+        let rev_reg_defs: HashMap<String, RevocationRegistryDefinition> = serde_json::from_str(rev_reg_defs_json)?;
 
-        let rev_regs: HashMap<String, HashMap<u64, RevocationRegistry>> = serde_json::from_str(rev_reg_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationRegistry: {:?}", err)))?;
+        let rev_regs: HashMap<String, HashMap<u64, RevocationRegistry>> = serde_json::from_str(rev_reg_json)?;
 
-        let proof: Proof = Proof::from_json(&proof_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Proof: {:?}", err)))?;
+        let proof: Proof = serde_json::from_str(&proof_json)?;
 
         let requested_attrs: HashSet<String> =
             proof_req.requested_attributes
