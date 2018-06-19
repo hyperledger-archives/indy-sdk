@@ -164,7 +164,7 @@ impl PoolWorker {
 
         let gen_tnxs = PoolWorker::_build_node_state(&merkle_tree)?;
 
-        for (_, gen_txn) in &gen_tnxs {
+        for gen_txn in gen_tnxs.values() {
             let mut rn: RemoteNode = match RemoteNode::new(&gen_txn) {
                 Ok(rn) => rn,
                 Err(err) => {
