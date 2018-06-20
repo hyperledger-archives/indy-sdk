@@ -374,9 +374,7 @@ impl WalletService {
     pub fn add_indy_object<T>(&self, wallet_handle: i32, name: &str, object: &T, tags: &HashMap<String, String>)
         -> Result<String, WalletError> where T: JsonEncodable, T: NamedType {
         let type_ = T::short_type_name();
-        let object_json = object.to_json()
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize {:?}: {:?}", type_, err)))?;
+        let object_json = serde_json::to_string::<T>(object)?;
         self.add_record(wallet_handle, &self.add_prefix(type_), name, &object_json, tags)?;
         Ok(object_json)
     }
