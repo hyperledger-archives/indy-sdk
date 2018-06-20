@@ -390,9 +390,7 @@ impl WalletService {
         let type_ = T::short_type_name();
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => {
-                let object_json = object.to_json()
-                    .map_err(map_err_trace!())
-                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize {:?}: {:?}", type_, err)))?;
+                let object_json = serde_json::to_string::<T>(object)?;
                 wallet.update(&self.add_prefix(type_), name, &object_json)?;
                 Ok(object_json)
             }
@@ -680,7 +678,7 @@ impl RecordOptions {
             retrieve_tags: false
         };
 
-        options.to_json().unwrap()
+        serde_json::to_string(&options).unwrap()
     }
 
     pub fn id_value() -> String {
@@ -690,7 +688,7 @@ impl RecordOptions {
             retrieve_tags: false
         };
 
-        options.to_json().unwrap()
+        serde_json::to_string(&options).unwrap()
     }
 
     pub fn full() -> String {
@@ -700,7 +698,7 @@ impl RecordOptions {
             retrieve_tags: true
         };
 
-        options.to_json().unwrap()
+        serde_json::to_string(&options).unwrap()
     }
 }
 
@@ -754,7 +752,7 @@ impl SearchOptions {
             retrieve_tags: true
         };
 
-        options.to_json().unwrap()
+        serde_json::to_string(&options).unwrap()
     }
 
     pub fn id_value() -> String {
@@ -766,7 +764,7 @@ impl SearchOptions {
             retrieve_tags: false
         };
 
-        options.to_json().unwrap()
+        serde_json::to_string(&options).unwrap()
     }
 }
 
