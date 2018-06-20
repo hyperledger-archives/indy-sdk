@@ -315,7 +315,7 @@ pub extern fn indy_list_wallets(command_handle: i32,
 /// export_config_json: JSON containing settings for input operation.
 ///   {
 ///     "path": path of the file that contains exported wallet content
-///     "key": passphrase used to export key
+///     "key": passphrase used to derive export key
 ///   }
 ///
 /// #Returns
@@ -378,7 +378,7 @@ pub extern fn indy_export_wallet(command_handle: i32,
 /// import_config_json: JSON containing settings for input operation.
 ///   {
 ///     "path": path of the file that contains exported wallet content
-///     "key": passphrase used to export key
+///     "key": passphrase used to derive export key
 ///   }
 ///
 /// #Returns
@@ -387,6 +387,7 @@ pub extern fn indy_export_wallet(command_handle: i32,
 /// #Errors
 /// Common*
 /// Wallet*
+#[no_mangle]
 pub extern fn indy_import_wallet(command_handle: i32,
                                  pool_name: *const c_char,
                                  name: *const c_char,
