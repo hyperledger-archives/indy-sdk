@@ -143,7 +143,7 @@ impl Credential {
         let req: CredentialRequest = self.build_request(local_my_did, local_their_did)?;
         self.credential_request = Some(req.clone());
         let req = serde_json::to_string(&req).or(Err(CredentialError::InvalidCredentialJson()))?;
-        let data: Vec<u8> = connection::generate_encrypted_payload(local_my_vk, local_their_vk, &req, "CLAIM_REQ").map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
+        let data: Vec<u8> = connection::generate_encrypted_payload(local_my_vk, local_their_vk, &req, "CRED_REQ").map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
         let offer_msg_id = self.credential_offer.as_ref().unwrap().msg_ref_id.as_ref().ok_or(CredentialError::CommonError(error::CREATE_CREDENTIAL_REQUEST_ERROR.code_num))?;
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_MESSAGE_RESPONSE.to_vec()); }
 
@@ -154,7 +154,7 @@ impl Credential {
         
         match messages::send_message().to(local_my_did)
             .to_vk(local_my_vk)
-            .msg_type("claimReq")
+            .msg_type("credReq")
             .agent_did(local_agent_did)
             .agent_vk(local_agent_vk)
             .edge_agent_payload(&data)
@@ -187,7 +187,7 @@ impl Credential {
                                                          agent_vk)?;
 
         for msg in payload {
-            if msg.msg_type.eq("claim") {
+            if msg.msg_type.eq("cred") {
                 match msg.payload {
                     Some(ref data) => {
                         let data = to_u8(data);
@@ -411,7 +411,7 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> Result<
                                                               &agent_did,
                                                               &agent_vk).map_err(|ec| CredentialError::CommonError(ec))?;
 
-    if message.msg_type.eq("claimOffer") {
+    if message.msg_type.eq("credOffer") {
         let msg_data = match message.payload {
             Some(ref data) => {
                 let data = to_u8(data);
@@ -450,7 +450,7 @@ pub fn get_credential_offer_messages(connection_handle: u32, match_name: Option<
     let mut messages = Vec::new();
 
     for msg in payload {
-        if msg.msg_type.eq("claimOffer") {
+        if msg.msg_type.eq("credOffer") {
             let msg_data = match msg.payload {
                 Some(ref data) => {
                     let data = to_u8(data);

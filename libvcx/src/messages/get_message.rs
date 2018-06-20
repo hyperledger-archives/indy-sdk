@@ -246,7 +246,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
 
     trace!("checking for pending message: {:?}", message);
 
-    // this will work for both claimReq and proof types
+    // this will work for both credReq and proof types
     if message.status_code == MessagePending.as_string() && !message.payload.is_none() {
         let data = to_u8(message.payload.as_ref().unwrap());
         crypto::parse_msg(wallet::get_wallet_handle(), &pw_vk, &data)
@@ -300,7 +300,7 @@ mod tests {
             payload: None,
             sender_did: "WVsWVh8nL96BE3T3qwaCd5".to_string(),
             uid: "zjcynmq".to_string(),
-            msg_type: "claimOffer".to_string(),
+            msg_type: "credOffer".to_string(),
             ref_msg_id: None,
             delivery_details: Vec::new(),
         };
