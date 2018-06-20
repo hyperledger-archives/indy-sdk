@@ -13,7 +13,6 @@ use std::sync::Mutex;
 use utils::constants::DEFAULT_WALLET_CREDENTIALS;
 
 use std::path::PathBuf;
-use std::fs;
 
 use serde_json;
 

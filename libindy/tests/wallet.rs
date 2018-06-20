@@ -21,7 +21,6 @@ use utils::wallet::WalletUtils;
 use utils::test::TestUtils;
 use utils::did::DidUtils;
 use utils::constants::*;
-use utils::environment::EnvironmentUtils;
 
 use indy::api::ErrorCode;
 
@@ -645,10 +644,7 @@ mod medium_cases {
             WalletUtils::create_wallet(POOL, WALLET, None, None, None).unwrap();
             let wallet_handle = WalletUtils::open_wallet(WALLET, None, None).unwrap();
 
-            let (did, _) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
-            DidUtils::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
-
-            let did_with_meta = DidUtils::get_my_did_with_metadata(wallet_handle, &did).unwrap();
+            DidUtils::create_my_did(wallet_handle, "{}").unwrap();
 
             WalletUtils::export_wallet(wallet_handle, &config_json).unwrap();
 
