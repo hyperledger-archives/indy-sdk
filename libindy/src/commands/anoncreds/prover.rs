@@ -215,11 +215,9 @@ impl ProverCommandExecutor {
             master_secret_name: master_secret_id.to_string()
         };
 
-        let cred_req_json = credential_request.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize CredentialRequest: {:?}", err)))?;
+        let cred_req_json = serde_json::to_string(&credential_request)?;
 
-        let cred_req_metadata_json = credential_request_metadata.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize CredentialRequestMetadata: {:?}", err)))?;
+        let cred_req_metadata_json = serde_json::to_string(&credential_request_metadata)?;
 
         debug!("create_credential_request <<< cred_req_json: {:?}, cred_req_metadata_json: {:?}", cred_req_json, cred_req_metadata_json);
 
@@ -283,8 +281,7 @@ impl ProverCommandExecutor {
         credentials_info.retain(move |credential_info|
             self.anoncreds_service.prover.satisfy_restriction(credential_info, &filter));
 
-        let credentials_info_json = serde_json::to_string(&credentials_info)
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of CredentialInfo: {:?}", err)))?;
+        let credentials_info_json = serde_json::to_string(&credentials_info)?;
 
         debug!("get_credentials <<< credentials_info_json: {:?}", credentials_info_json);
 
@@ -337,8 +334,7 @@ impl ProverCommandExecutor {
         let mut credentials: Vec<CredentialInfo> = self.get_credentials_info(wallet_handle)?;
 
         let credentials_for_proof_request = self.anoncreds_service.prover.get_credentials_for_proof_req(&proof_request, &mut credentials)?;
-        let credentials_for_proof_request_json = credentials_for_proof_request.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize CredentialsForProofRequest: {:?}", err)))?;
+        let credentials_for_proof_request_json = serde_json::to_string(&credentials_for_proof_request)?;
 
         debug!("get_credentials_for_proof_req <<< credentials_for_proof_request_json: {:?}", credentials_for_proof_request_json);
 
@@ -390,7 +386,7 @@ impl ProverCommandExecutor {
             credentials.insert(cred_referent.clone(), credential);
         }
 
-        let proof = self.anoncreds_service.prover.create_proof(&credentials,
+        let proof : Proof = self.anoncreds_service.prover.create_proof(&credentials,
                                                                &proof_req,
                                                                &requested_credentials,
                                                                &master_secret.value,
@@ -398,8 +394,7 @@ impl ProverCommandExecutor {
                                                                &cred_defs_map_to_cred_defs_v1_map(cred_defs),
                                                                &rev_states)?;
 
-        let proof_json = Proof::to_json(&proof)
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize FullProof: {:?}", err)))?;
+        let proof_json = serde_json::to_string(&proof)?;
 
         debug!("create_proof <<< proof_json: {:?}", proof_json);
 
@@ -438,8 +433,7 @@ impl ProverCommandExecutor {
             timestamp,
         };
 
-        let revocation_state_json = revocation_state.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize RevocationState: {:?}", err)))?;
+        let revocation_state_json = serde_json::to_string(&revocation_state)?;
 
         debug!("create_revocation_state <<< revocation_state_json: {:?}", revocation_state_json);
 
@@ -477,8 +471,7 @@ impl ProverCommandExecutor {
         rev_state.rev_reg = RevocationRegistry::from(rev_reg_delta.value);
         rev_state.timestamp = timestamp;
 
-        let rev_state_json = rev_state.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize RevocationState: {:?}", err)))?;
+        let rev_state_json = serde_json::to_string(&rev_state)?;
 
         debug!("update_revocation_state <<< rev_state_json: {:?}", rev_state_json);
 
