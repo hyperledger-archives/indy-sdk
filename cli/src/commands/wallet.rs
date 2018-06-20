@@ -267,7 +267,7 @@ pub mod export_command {
 
         let export_config: String = json!({ "path": export_path.clone(), "key": export_key.clone() }).to_string();
 
-        trace!("Wallet::export_wallet try: wallet_name {}, export_path {}, export_key {}", wallet_name, export_path, export_key);
+        trace!("Wallet::export_wallet try: wallet_name {}, export_path {}", wallet_name, export_path);
 
         let res = Wallet::export_wallet(wallet_handle,
                                         export_config.as_str());
