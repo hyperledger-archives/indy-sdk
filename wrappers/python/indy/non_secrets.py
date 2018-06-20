@@ -280,7 +280,7 @@ async def get_wallet_record(wallet_handle: int,
     :param wallet_handle: wallet handler (created by open_wallet).
     :param type_: allows to separate different record types collections
     :param id: the id of record
-    :param options_json: //TODO: FIXME: Think about replacing by bitmaks
+    :param options_json: //TODO: FIXME: Think about replacing by bitmask
       {
         retrieveType: (optional, false by default) Retrieve record type,
         retrieveValue: (optional, true by default) Retrieve record value,
@@ -340,7 +340,7 @@ async def open_wallet_search(wallet_handle: int,
           "tagName3": { $gte: '123' },
         },
       }
-    :param options_json: //TODO: FIXME: Think about replacing by bitmaks
+    :param options_json: //TODO: FIXME: Think about replacing by bitmask
       {
         retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
         retrieveTotalCount: (optional, false by default) Calculate total count,

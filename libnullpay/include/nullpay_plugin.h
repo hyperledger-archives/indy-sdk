@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-    /// TODO: FIXME: Probide list of interfaces
+    /// TODO: FIXME: Provide list of interfaces
 
 #ifdef __cplusplus
 }

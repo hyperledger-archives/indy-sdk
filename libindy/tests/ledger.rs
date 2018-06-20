@@ -225,7 +225,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_sign_works_for_unknow_signer() {
+        fn indy_sign_works_for_unknown_signer() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
