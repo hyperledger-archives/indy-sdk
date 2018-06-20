@@ -243,8 +243,7 @@ impl NonSecretsCommandExecutor {
 
         let record = self.wallet_service.get_record(wallet_handle, type_, id, &options_json)?;
 
-        let res = record.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize WalletRecord: {:?}", err)))?;
+        let res = serde_json::to_string(&record)?;
 
         trace!("get_record <<< res: {:?}", res);
 
@@ -297,8 +296,7 @@ impl NonSecretsCommandExecutor {
             records: if records.is_empty() { None } else { Some(records) }
         };
 
-        let res = search_result.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize SearchRecords: {:?}", err)))?;
+        let res = serde_json::to_string(&search_result)?;
 
         trace!("fetch_search_next_records <<< res: {:?}", res);
 
