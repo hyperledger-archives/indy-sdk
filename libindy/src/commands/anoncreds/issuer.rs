@@ -199,8 +199,7 @@ impl IssuerCommandExecutor {
             seq_no: None
         });
 
-        let schema_json = schema.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize Schema: {:?}", err)))?;
+        let schema_json = serde_json::to_string(&schema)?;
 
         debug!("create_schema <<< schema_id: {:?}, schema_json: {:?}", schema_id, schema_json);
 
@@ -378,8 +377,7 @@ impl IssuerCommandExecutor {
             nonce
         };
 
-        let credential_offer_json = credential_offer.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize CredentialOffer: {:?}", err)))?;
+        let credential_offer_json = serde_json::to_string(&credential_offer)?;
 
         debug!("create_credential_offer <<< credential_offer_json: {:?}", credential_offer_json);
 
@@ -490,14 +488,11 @@ impl IssuerCommandExecutor {
             witness
         };
 
-        let cred_json = credential.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize Credential: {:?}", err)))?;
+        let cred_json = serde_json::to_string(&credential)?;
 
         let rev_reg_delta_json = match rev_reg_delta {
             Some(r_reg_delta) => {
-                Some(RevocationRegistryDelta::RevocationRegistryDeltaV1(RevocationRegistryDeltaV1 { value: r_reg_delta })
-                    .to_json()
-                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta: {:?}", err)))?)
+                Some(serde_json::to_string(&RevocationRegistryDelta::RevocationRegistryDeltaV1(RevocationRegistryDeltaV1 { value: r_reg_delta }))?)
             }
             None => None
         };
@@ -562,8 +557,7 @@ impl IssuerCommandExecutor {
 
         let rev_reg_delta = RevocationRegistryDelta::RevocationRegistryDeltaV1(RevocationRegistryDeltaV1 { value: rev_reg_delta });
 
-        let rev_reg_delta_json = rev_reg_delta.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta: {:?}", err)))?;
+        let rev_reg_delta_json = serde_json::to_string(&rev_reg_delta)?;
 
         let rev_reg = RevocationRegistry::RevocationRegistryV1(rev_reg);
 
@@ -621,8 +615,7 @@ impl IssuerCommandExecutor {
 
         let rev_reg_delta = RevocationRegistryDelta::RevocationRegistryDeltaV1(RevocationRegistryDeltaV1 { value: revocation_registry_delta });
 
-        let rev_reg_delta_json = rev_reg_delta.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta: {:?}", err)))?;
+        let rev_reg_delta_json = serde_json::to_string(&rev_reg_delta)?;
 
         let rev_reg = RevocationRegistry::RevocationRegistryV1(rev_reg);
 
@@ -650,8 +643,7 @@ impl IssuerCommandExecutor {
 
         let rev_reg_delta = RevocationRegistryDelta::RevocationRegistryDeltaV1(rev_reg_delta);
 
-        let merged_rev_reg_delta_json = rev_reg_delta.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta: {:?}", err)))?;
+        let merged_rev_reg_delta_json = serde_json::to_string(&rev_reg_delta)?;
 
         debug!("merge_revocation_registry_deltas <<< merged_rev_reg_delta: {:?}", merged_rev_reg_delta_json);
 
