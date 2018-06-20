@@ -49,7 +49,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
         /// <param name="issuer_did">a DID of the issuer signing claim_def transaction to the Ledger</param>
         /// <param name="schema_json">schema as a json</param>
-        /// <param name="tag">Allows to distinct between credential definitions for the same issuer and schema</param>
+        /// <param name="tag">Allows to distinct between credential definitions for the same issuer and schema (mandatory for indy-node version 1.4.x and higher)</param>
         /// <param name="type_">Signature type (optional). Currently only 'CL' is supported.</param>
         /// <param name="config_json">type-specific configuration of credential definition as json:
         /// - 'CL':

@@ -77,7 +77,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
     :param wallet_handle: wallet handler (created by open_wallet).
     :param issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
     :param schema_json: credential schema as a json
-    :param tag: allows to distinct between credential definitions for the same issuer and schema
+    :param tag: allows to distinct between credential definitions for the same issuer and schema (mandatory for indy-node version 1.4.x and higher)
     :param signature_type: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
     Supported types are:
         - 'CL': Camenisch-Lysyanskaya credential signature type

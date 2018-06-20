@@ -1158,7 +1158,7 @@ that Issuer creates for a particular Credential Schema.
     id: string - identifier of credential definition
     schemaId: string - identifier of stored in ledger schema
     type: string - type of the credential definition. CL is the only supported type now.
-    tag: string - allows to distinct between credential definitions for the same issuer and schema
+    tag: string - allows to distinct between credential definitions for the same issuer and schema. Note that it is mandatory for indy-node version 1.4.x and higher
     value: Dictionary with Credential Definition's data:
 {
         primary: primary credential public key,
@@ -1193,7 +1193,7 @@ Parse a GET\_CRED\_DEF response to get Credential Definition in the format compa
     id: string - identifier of credential definition
     schemaId: string - identifier of stored in ledger schema
     type: string - type of the credential definition. CL is the only supported type now.
-    tag: string - allows to distinct between credential definitions for the same issuer and schema
+    tag: string - allows to distinct between credential definitions for the same issuer and schema. Note that it is mandatory for indy-node version 1.4.x and higher
     value: Dictionary with Credential Definition's data: {
         primary: primary credential public key,
         Optional<revocation>: revocation credential public key
