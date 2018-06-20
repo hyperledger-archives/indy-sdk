@@ -43,8 +43,8 @@ public class RotateKeyOnTheLedger {
 		System.out.println("\n5. Generating and storing steward DID and Verkey\n");
 		String did_json = "{\"seed\": \"" + stewardSeed + "\"}";
 		DidResults.CreateAndStoreMyDidResult stewardResult = Did.createAndStoreMyDid(walletHandle, did_json).get();
-		String defautStewardDid = stewardResult.getDid();
-		System.out.println("Steward did: " + defautStewardDid);
+		String defaultStewardDid = stewardResult.getDid();
+		System.out.println("Steward did: " + defaultStewardDid);
 
 		// 6.
 		System.out.println("\n6. Generating and storing Trust Anchor DID and Verkey\n");
@@ -56,12 +56,12 @@ public class RotateKeyOnTheLedger {
 
 		// 7
 		System.out.println("\n7. Build NYM request to add Trust Anchor to the ledger\n");
-		String nymRequest = buildNymRequest(defautStewardDid, trustAnchorDID, trustAnchorVerkey, null, "TRUST_ANCHOR").get();
+		String nymRequest = buildNymRequest(defaultStewardDid, trustAnchorDID, trustAnchorVerkey, null, "TRUST_ANCHOR").get();
 		System.out.println("NYM request JSON:\n" + nymRequest);
 
 		// 8
 		System.out.println("\n8. Sending NYM request to ledger\n");
-		String nymResponseJson = signAndSubmitRequest(pool, walletHandle, defautStewardDid, nymRequest).get();
+		String nymResponseJson = signAndSubmitRequest(pool, walletHandle, defaultStewardDid, nymRequest).get();
 		System.out.println("NYM transaction response:\n" + nymResponseJson);
 
 		// 9

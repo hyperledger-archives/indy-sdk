@@ -53,7 +53,7 @@ note over al, le
 Alice revokes all her claims that include
 the old agent policy address <i>P</i> as
 a blinded attribute. Alice also petitions
-the Issuers to reuissue her claims.
+the Issuers to reissue her claims.
 
 How to invalidate claims that are not revocable?
 end note
