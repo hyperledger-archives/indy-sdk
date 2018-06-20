@@ -387,6 +387,7 @@ pub extern fn indy_export_wallet(command_handle: i32,
 /// #Errors
 /// Common*
 /// Wallet*
+#[no_mangle]
 pub extern fn indy_import_wallet(command_handle: i32,
                                  pool_name: *const c_char,
                                  name: *const c_char,
