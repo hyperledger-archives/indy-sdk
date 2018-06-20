@@ -5,6 +5,19 @@ def vcx_python
 def libindy
 def vcx_nodejs
 
+testing()
+
+//'Android' : { androidBuild() }
+
+def testing() {
+    stage('Testing') {
+        parallel([
+            'Main' : { mainUbuntu() },
+            'Android': { android() },
+            //'iOS' : { ios() }
+        ])
+    }
+}
 
 def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
@@ -14,85 +27,180 @@ def build(name, file, context='.', customParams = '') {
     return docker.build("$name", "${customParams} --build-arg uid=${getUserUid()} -f $file $context")
 }
 
-node('ubuntu') {
-    try {
-        stage ('Checkout'){
-            checkout scm
-        }
+def mainUbuntu() {
+    node('ubuntu') {
+        stage('Main Build - Ubuntu') {
+            try {
+                checkout scm
+                rust = build('rust', 'vcx/ci/ubuntu.dockerfile', 'vcx')
 
-        
-        stage ('Build Rust Image') {
-            rust = build('rust', 'vcx/ci/ubuntu.dockerfile', 'vcx')
-        }
-       
-        // update the versions in the toml file and package.json
-        stage('Updating Versions') {
-            updateVersions(rust)     
-        }
+                // update the versions in the toml file and package.json
+                updateVersions(rust)
 
-        // build and test the so file
-        stage ('Building Libvcx.so'){
-            buildRust(rust)
-        }
+                // build and test the so file
+                buildRust(rust)
 
-        // test rust
-        stage ('Testing Rust'){
-            testRust(rust)
-        }
-        
-        // update the so file to have version
-        stage('Updating .so file version') {
-            updateSo(rust)
-        }
-        
-        // image used as an intermediary, where the libvcx.so is placed into /usr/lib.  
-        // This image must be built after the rust build and tests have been run.
-        stage ('Build Libindy Image') {
-            libindy = build('libindy', 'vcx/ci/Dockerfile-libindy', 'vcx')
-        }
-        // test python wrapper, the image must be built after the libindy image build, and must be --no-cache
-        stage ('Build Python Image') {
-            vcx_python = build('vcx-python', 'vcx/wrappers/python3/ci/Dockerfile-python-wrapper', 'vcx', '--no-cache')
-        }
+                // test rust
+                testRust(rust)
 
-        stage ("Testing Python Wrapper"){
-            testPythonWrapper(vcx_python)
-        }
+                // update the so file to have version
+                updateSo(rust)
 
-        // test nodejs wrapper, the image must be built after  the libindy image build, and must be --no-cache
-        stage ('Build NodeJs Images') {
-            nodejs = build('nodejs', 'vcx/wrappers/node/ci/Dockerfile-nodejs', 'vcx')
-            vcx_nodejs = build('vcx-nodejs', 'vcx/wrappers/node/ci/Dockerfile-nodejs-wrapper', 'vcx', '--no-cache')
-        }
+                // image used as an intermediary, where the libvcx.so is placed into /usr/lib.
+                // This image must be built after the rust build and tests have been run.
+                libindy = build('libindy', 'vcx/ci/Dockerfile-libindy', 'vcx')
 
-        stage ('Test Node Wrapper'){
-            testNodeWrapper(vcx_nodejs)
-        }       
+                // test python wrapper, the image must be built after the libindy image build, and must be --no-cache
+                vcx_python = build('vcx-python', 'vcx/wrappers/python3/ci/Dockerfile-python-wrapper', 'vcx', '--no-cache')
+                testPythonWrapper(vcx_python)
 
-        if (env.BRANCH_NAME == "master") {
-            // create the debian of the library (just the libvcx.so file)
-            stage('Build libvcx Debian and compress .so file') {
-                createDeb(rust)
-            }
-            
-            // create the npm deb 
-            createNpmDeb(rust, "*_amd64.tgz")
-            renameAndUploadNpmTgz(rust, "vcx")
+                // test nodejs wrapper, the image must be built after  the libindy image build, and must be --no-cache
+                nodejs = build('nodejs', 'vcx/wrappers/node/ci/Dockerfile-nodejs', 'vcx')
+                vcx_nodejs = build('vcx-nodejs', 'vcx/wrappers/node/ci/Dockerfile-nodejs-wrapper', 'vcx', '--no-cache')
+                testNodeWrapper(vcx_nodejs)
 
-            // create pip installable artifact
-            stage ('Building Python Artifact') {
-                createPtyhonArtifact(vcx_python, getVcxVersion(vcx_python))
+                if (env.BRANCH_NAME == "master") {
+                    // create the debian of the library (just the libvcx.so file)
+                    createDeb(rust)
+
+                    // create the npm deb
+                    createNpmDeb(rust, "*_amd64.tgz")
+                    renameAndUploadNpmTgz(rust, "vcx")
+
+                    // create pip installable artifact
+                    createPtyhonArtifact(vcx_python, getVcxVersion(vcx_python))
+                }
+
+            } catch (Exception ex) {
+                currentBuild.result = "FAILED"
+                if (env.BRANCH_NAME == "master") {
+                    fail()
+                }
+                echo "$ex error"
+            } finally {
+                step([$class: 'WsCleanup'])
             }
         }
+    }
+}
 
-    } catch (Exception ex) {
-        currentBuild.result = "FAILED"
-        if (env.BRANCH_NAME == "master") {
-            fail()
+
+def android() {
+    node('ubuntu') {
+        stage('Android Build') {
+            try {
+                checkout scm
+
+                //Build android docker image
+                rust = build('rust', 'vcx/ci/android.dockerfile', 'vcx')
+                
+                //Build .so files for arm64, x86, and arm
+                buildAndroid(rust)
+
+                //Package .so files into .aar 
+                packageAndroid(rust)
+
+                if (env.BRANCH_NAME == "master") {
+                    //Publish package on aptly
+                    publishAndroid(rust)
+                }
+            } catch (Exception ex) {
+                currentBuild.result = "FAILED"
+                if (env.BRANCH_NAME == "master") {
+                    fail()
+                }
+                echo "$ex error"
+            } finally {
+                step([$class: 'WsCleanup'])
+            }
+
         }
-        echo "$ex error"
-    } finally {
-        step([$class: 'WsCleanup'])
+    }
+}
+
+def ios() {
+    node('macos') {
+        stage('iOS Build') {
+            try {
+                checkout scm
+                sh 'chmod +x vcx/ci/scripts/iosBuild.sh'
+                sh './vcx/ci/scripts/iosBuild.sh'
+                /*
+            // 1) Login to a new account on a macOS High Sierra (10.13.4) computer.
+            // ASSUMING THE LOGIN NAME IS: iosbuild1
+
+            // 2) Make sure that the oracle java SDK is installed on the mac
+                sh "brew update"                
+                sh "brew cask install java8"                
+
+            // 3) Checkout the sdk project using https://github.com/evernym/sdk.git or git@github.com:evernym/sdk.git
+                checkout scm
+                sh "brew install git"
+
+            // 4) Copy the sdk/vcx/libvcx/build_scripts/ios/mac/.bash_profile file to your home directory /Users/[username] and replace the
+            // username iosbuild1 with your username.
+
+            // 5) Re-start your terminal/iterm so that the bash settings take effect
+
+            // 6) Install Android Studio or start Android Studio to make sure that the Android sdk
+            // is installed at /Users/[username]/Library/Android/sdk (YES, this is for iOS but we make sure Android Studio is installed)
+                sh "brew install ruby"
+                sh "brew install curl"
+                //ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+                sh "brew doctor"
+                sh "brew install android-sdk"
+
+            // 7) Startup a terminal and cd into sdk/vcx/libvcx/build_scripts/ios/mac
+                sh "cd sdk/vcx/libvcx/build_scripts/ios/mac"
+
+            // 8) Run the script ./mac.01.libindy.setup.sh (make sure the brew install commands are successful)
+                sh "./mac.01.libindy.setup.sh"
+
+            // 9) Restart your terminal for environment variables to take effect and cd into sdk/vcx/libvcx/build_scripts/ios/mac
+            // 10) Run the script 'source ./mac.02.libindy.env.sh'
+                sh "./mac.02.libindy.env.sh"
+
+            // 9) Restart your terminal for environment variables to take effect and cd into sdk/vcx/libvcx/build_scripts/ios/mac
+            // 11) Run the script ./mac.03.libindy.build.sh
+                sh "./mac.03.libindy.build.sh"
+
+            // 12) Run the script ./mac.04.libvcx.setup.sh
+                sh "./mac.04.libvcx.setup.sh"
+
+            // 13) Run the script 'source ./mac.05.libvcx.env.sh'
+                sh "./mac.05.libvcx.env.sh"
+
+            // 14) Run the script ./mac.06.libvcx.build.sh (Test failures do not prevent the .a files from being correctly built)
+            // Check for error
+                sh "./mac.06.libvcx.build.sh"
+
+            // 15) Run the script ./mac.08.libssl.libcrypto.build.sh
+                sh "./mac.08.libssl.libcrypto.build.sh"
+
+            // 16) Run the script ./mac.09.libzmq.libsodium.build.sh
+                sh "./mac.09.libzmq.libsodium.build.sh"
+
+            // 17) Run the script ./mac.10.libminiz.libsqlite3.combine.sh
+                sh "./mac.10.libminiz.libsqlite3.combine.sh"
+
+            // 18) Run the script ./mac.11.copy.static.libs.to.app.sh
+                sh "./mac.11.copy.static.libs.to.app.sh"
+
+            // 19) Run the script ./mac.12.combine.static.libs.sh libvcxall
+                sh "./mac.12.combine.static.libs.sh libvcxall"
+                */
+
+            } catch (Exception ex) {
+                currentBuild.result = "FAILED"
+                if (env.BRANCH_NAME == "master") {
+                    fail()
+                }
+                echo "$ex error"
+            } finally {
+                step([$class: 'WsCleanup'])
+            }
+
+        }
     }
 }
 
@@ -106,14 +214,14 @@ def addCert(envn) {
         CERT_SCRIPT = 'vcx/ci/scripts/getCert.sh'
         // get Evernym Certificate onto machine
         sh "${CERT_SCRIPT}"
-    }    
+    }
 }
 
 def uploadPrivateNpm(envn) {
     envn.inside {
         withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
             // upload npm module
-            sh "find vcx/wrappers/node/ -type f -name 'vcx-*.tgz' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/npm/upload -F 'file=@{}' \\;"                      
+            sh "find vcx/wrappers/node/ -type f -name 'vcx-*.tgz' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/npm/upload -F 'file=@{}' \\;"
         }
     }
 }
@@ -134,10 +242,10 @@ def testPythonWrapper(envn){
     envn.inside {
         sh "python3 -m pytest"
     }
-    
+
 }
 
-def buildRust(envn){ 
+def buildRust(envn){
     envn.inside {
         sh "rustc --version"
         sh "gcc --version"
@@ -196,7 +304,7 @@ def createDeb(envn) {
 
         // get Evernym Certificate onto machine
         sh "${CERT_SCRIPT}"
-            
+
         // build debian
         sh 'cd vcx/libvcx/; cargo deb --no-build'
 
@@ -243,13 +351,13 @@ def renameAndUploadNpmTgz(envn, destDir) {
         sh "cp ${filename} vcx"
         sh "ls vcx"
         sh "echo ${destDir}"
-        
+
         withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
             sh "pwd"
             sh "cd vcx; rename \"s/\\.tgz\$/_amd64\\.tgz/\" *.tgz"
             sh "cd vcx; rename \"s/vcx-/vcx_/\" *.tgz"
             sh 'cd vcx; ls -a'
-            sh "cd vcx; find . -type f -name '*.tgz' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/npm/upload -F 'file=@{}' \\;"  
+            sh "cd vcx; find . -type f -name '*.tgz' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/npm/upload -F 'file=@{}' \\;"
         }
     }
 }
@@ -269,7 +377,7 @@ def createNpmDeb(app, npmFilename){
                 // upload npm module
                 sh "find wrappers/node/ -type f -name 'vcx-*.tgz' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/agency_dev/upload -F file=@{} \\;"
                 sh "find wrappers/node/ -type f -name 'vcx-*.tgz' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/portal_dev/upload -F file=@{} \\;"
-  
+
                 // upload debian
                 sh "find . -type f -name 'vcx_*_amd64.deb' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/agency_dev/upload -F file=@{} \\;"
                 sh "find . -type f -name 'vcx_*_amd64.deb' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/portal_dev/upload -F file=@{} \\;"
@@ -285,3 +393,38 @@ def fail() {
     slackSend message
 }
 
+def buildAndroid(envn) {
+    envn.inside {
+        ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'
+        sh "./${ANDROID_SCRIPT_PATH} arm"
+        sh "./${ANDROID_SCRIPT_PATH} x86"
+        sh "./${ANDROID_SCRIPT_PATH} arm64"
+        //Todo: get parallel processing to work. Currently it fails on Jenkins. It must share files or something
+        // parallel([
+        //     'arm': { sh "./${ANDROID_SCRIPT_PATH} arm"},
+        //     'x86': { sh "./${ANDROID_SCRIPT_PATH} x86"},
+        //     'arm64': { sh "./${ANDROID_SCRIPT_PATH} arm64"}
+        // ])
+    }
+}
+
+def packageAndroid(envn) {
+    envn.inside {
+        ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidPackage.sh'
+        sh "chmod +x ${ANDROID_SCRIPT_PATH}"
+        sh "./${ANDROID_SCRIPT_PATH}"
+    }
+}
+
+def publishAndroid(envn) {
+    sh "echo in publish fn"
+    envn.inside {
+        CERT_SCRIPT = 'vcx/ci/scripts/getCert.sh'
+        sh "${CERT_SCRIPT}"
+        sh "echo after getCert"
+        withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
+            sh "echo before publishing"
+            sh "find vcx/wrappers/java/vcx/build/outputs/aar/ -type f -name 'com.evernym-vcx_*-release.aar' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST  https://kraken.corp.evernym.com/repo/android/upload -F 'file=@{}' \\;"
+        }
+    }
+}

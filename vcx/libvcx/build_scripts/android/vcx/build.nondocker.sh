@@ -123,12 +123,13 @@ elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
     popd
 fi
 
-LIBVCX=${WORKDIR}/sdk/vcx/libvcx/
-cp -rf ./../../../../../vcx/libvcx/include ${LIBVCX}
-cp -rf ./../../../../../vcx/libvcx/scripts ${LIBVCX}
-cp -rf ./../../../../../vcx/libvcx/src ${LIBVCX}
-cp -rf ./../../../../../vcx/libvcx/build.rs ${LIBVCX}
-cp -rf ./../../../../../vcx/libvcx/Cargo.toml ${LIBVCX}
+#LIBVCX=${WORKDIR}/sdk/vcx/libvcx/
+#cp -rf ./../../../../../vcx/libvcx/include ${LIBVCX}
+#cp -rf ./../../../../../vcx/libvcx/scripts ${LIBVCX}
+#cp -rf ./../../../../../vcx/libvcx/src ${LIBVCX}
+#cp -rf ./../../../../../vcx/libvcx/build.rs ${LIBVCX}
+#cp -rf ./../../../../../vcx/libvcx/Cargo.toml ${LIBVCX}
+LIBVCX=../../../
 
 export PKG_CONFIG_ALLOW_CROSS=1
 export CARGO_INCREMENTAL=1
