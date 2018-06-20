@@ -747,15 +747,11 @@ impl PoolService {
         path.set_extension("json");
         let mut f: fs::File = fs::File::create(path.as_path()).map_err(map_err_trace!())?;
 
-        f.write(pool_config
-            .to_json()
-            .map_err(|err|
-                CommonError::InvalidState(format!("Can't serialize pool config: {}", err.description()))).map_err(map_err_trace!())?
-            .as_bytes()).map_err(map_err_trace!())?;
+        f.write(serde_json::to_string(&pool_config)?.as_bytes()).map_err(map_err_trace!())?;
         f.flush().map_err(map_err_trace!())?;
 
         // TODO probably create another one file pool.json with pool description,
-        // but now there is no info to save (except name witch equal to directory)
+        // but now there is no info to save (except name which is equal to directory)
 
         Ok(())
     }
