@@ -704,11 +704,8 @@ impl RemoteNode {
     }
 
     fn send_msg(&self, msg: &Message) -> Result<(), PoolError> {
-        self.send_str(
-            msg.to_json()
-                .map_err(|err|
-                    CommonError::InvalidState(format!("Can't serialize message: {}", err.description())))?
-                .as_str())
+        self.send_str(serde_json::to_string(&msg)?.as_str());
+        Ok(())
     }
 }
 
