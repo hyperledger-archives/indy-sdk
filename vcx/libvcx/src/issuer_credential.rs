@@ -138,12 +138,12 @@ impl IssuerCredential {
 
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_MESSAGE_RESPONSE.to_vec()); }
 
-        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &payload, "CLAIM_OFFER")
+        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &payload, "CRED_OFFER")
             .map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
 
         match messages::send_message().to(&self.issued_did)
             .to_vk(&self.issued_vk)
-            .msg_type("claimOffer")
+            .msg_type("credOffer")
             .edge_agent_payload(&data)
             .agent_did(&self.agent_did)
             .agent_vk(&self.agent_vk)
@@ -186,13 +186,13 @@ impl IssuerCredential {
 
         debug!("credential data: {}", data);
 
-        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &data, "CLAIM")
+        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &data, "CRED")
             .map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_MESSAGE_RESPONSE.to_vec()); }
 
         match messages::send_message().to(&self.issued_did)
             .to_vk(&self.issued_vk)
-            .msg_type("claim")
+            .msg_type("cred")
             .status_code(&MessageAccepted.as_string())
             .edge_agent_payload(&data)
             .agent_did(&self.agent_did)
@@ -269,7 +269,7 @@ impl IssuerCredential {
             claim_offer_id: self.msg_uid.clone(),
             from_did: String::from(did),
             version: String::from("0.1"),
-            msg_type: String::from("CLAIM"),
+            msg_type: String::from("CRED"),
             libindy_cred: cred,
             //Todo: need to add indy api calls to populate this field
             rev_reg_def_json: String::new(),
@@ -283,7 +283,7 @@ impl IssuerCredential {
         let libindy_offer = libindy_issuer_create_credential_offer(&self.cred_def_id)
             .map_err(|err| IssuerCredError::CommonError(err))?;
         Ok(CredentialOffer {
-            msg_type: String::from("CLAIM_OFFER"),
+            msg_type: String::from("CRED_OFFER"),
             version: String::from("0.1"),
             to_did: to_did.to_string(),
             from_did: self.issued_did.clone(),

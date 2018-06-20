@@ -237,7 +237,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
         let mut message = SendMessage {
-            message: "claimOffer".to_string(),
+            message: "credOffer".to_string(),
             to_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
             to_vk: "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string(),
             agent_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
