@@ -308,9 +308,7 @@ impl DidCommandExecutor {
             metadata: meta
         };
 
-        let res = did_with_meta.to_json()
-            .map_err(|err|
-                IndyError::CommonError(CommonError::InvalidState(format!("Can't serialize DID {}", err))))?;
+        let res = serde_json::to_string(&did_with_meta)?;
 
         debug!("get_my_did_with_meta <<< res: {:?}", res);
 
