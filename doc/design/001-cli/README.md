@@ -159,14 +159,14 @@ indy> wallet list
 Exports opened wallet to the specified file.
 
 ```indy-cli
-indy> wallet export path=<path-to-file> key=[<export key>]
+indy> wallet export export_path=<path-to-file> export_key=[<export key>]
 ```
 
 ### Import wallet
 Create new wallet and then import content from the specified file.
 
 ```indy-cli
-indy> wallet import <wallet name> pool_name=<pool name> key=<key> file=<path-to-file> import_key=<key used for export>
+indy> wallet import <wallet name> pool_name=<pool name> key=<key> export_path=<path-to-file> export_key=<key used for export>
 
 
 ### Pool management commands

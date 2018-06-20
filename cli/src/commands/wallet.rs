@@ -251,9 +251,9 @@ pub mod export_command {
     use super::*;
 
     command!(CommandMetadata::build("export", "Export opened wallet to the file")
-                .add_required_param("path", "Path to the export file")
-                .add_required_deferred_param("key", "Passphrase used to export key")
-                .add_example("wallet export path=/home/indy/export_wallet key=key")
+                .add_required_param("export_path", "Path to the export file")
+                .add_required_deferred_param("export_key", "Passphrase used to export key")
+                .add_example("wallet export export_path=/home/indy/export_wallet export_key=key")
                 .finalize()
     );
 
@@ -262,12 +262,12 @@ pub mod export_command {
 
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
-        let path = get_str_param("path", params).map_err(error_err!())?;
-        let key = get_str_param("key", params).map_err(error_err!())?;
+        let export_path = get_str_param("export_path", params).map_err(error_err!())?;
+        let export_key = get_str_param("export_key", params).map_err(error_err!())?;
 
-        let export_config: String = json!({ "path": path.clone(), "key": key.clone() }).to_string();
+        let export_config: String = json!({ "path": export_path.clone(), "key": export_key.clone() }).to_string();
 
-        trace!("Wallet::export_wallet try: wallet_name {}, path {}, key {}", wallet_name, path, key);
+        trace!("Wallet::export_wallet try: wallet_name {}, export_path {}, export_key {}", wallet_name, export_path, export_key);
 
         let res = Wallet::export_wallet(wallet_handle,
                                         export_config.as_str());
@@ -275,8 +275,8 @@ pub mod export_command {
         trace!("Wallet::export_wallet return: {:?}", res);
 
         let res = match res {
-            Ok(()) => Ok(println_succ!("Wallet \"{}\" has been exported to the file \"{}\"", wallet_name, path)),
-            Err(ErrorCode::CommonIOError) => Err(println_err!("Can not export Wallet: Path \"{}\" is invalid or file already exists", path)),
+            Ok(()) => Ok(println_succ!("Wallet \"{}\" has been exported to the file \"{}\"", wallet_name, export_path)),
+            Err(ErrorCode::CommonIOError) => Err(println_err!("Can not export Wallet: Path \"{}\" is invalid or file already exists", export_path)),
             Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -293,10 +293,10 @@ pub mod import_command {
                 .add_main_param("name", "The name of new wallet")
                 .add_required_param("pool_name", "The name of associated Indy pool")
                 .add_required_deferred_param("key", "Auth key for the wallet")
-                .add_required_param("file", "Path to the file that contains exported wallet content")
-                .add_required_deferred_param("import_key", "Passphrase used to export key")
-                .add_example("wallet create wallet1 pool_name=pool1 key file=/home/indy/export_wallet import_key")
-                .add_example("wallet create wallet1 pool_name=pool1 key=key file=/home/indy/export_wallet import_key=import_key")
+                .add_required_param("export_path", "Path to the file that contains exported wallet content")
+                .add_required_deferred_param("export_key", "Passphrase used to export key")
+                .add_example("wallet create wallet1 pool_name=pool1 key export_path=/home/indy/export_wallet export_key")
+                .add_example("wallet create wallet1 pool_name=pool1 key=key export_path=/home/indy/export_wallet export_key=export_key")
                 .finalize()
     );
 
@@ -306,13 +306,13 @@ pub mod import_command {
         let pool_name = get_str_param("pool_name", params).map_err(error_err!())?;
         let name = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
-        let file = get_str_param("file", params).map_err(error_err!())?;
-        let import_key = get_str_param("import_key", params).map_err(error_err!())?;
+        let export_path = get_str_param("export_path", params).map_err(error_err!())?;
+        let export_key = get_str_param("export_key", params).map_err(error_err!())?;
 
         let credentials: String = json!({ "key": key.clone() }).to_string();
-        let import_config: String = json!({ "path": file.clone(), "key": import_key.clone() }).to_string();
+        let import_config: String = json!({ "path": export_path.clone(), "key": export_key.clone() }).to_string();
 
-        trace!("Wallet::import_wallet try: name {}, pool_name {}, file {}", name, pool_name, file);
+        trace!("Wallet::import_wallet try: name {}, pool_name {}, export_path {}", name, pool_name, export_path);
 
         let res = Wallet::import_wallet(pool_name,
                                         name,
@@ -327,7 +327,7 @@ pub mod import_command {
         let res = match res {
             Ok(()) => Ok(println_succ!("Wallet \"{}\" has been created", name)),
             Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", name)),
-            Err(ErrorCode::CommonIOError) => Err(println_err!("Can not import Wallet from file: \"{}\"", file)),
+            Err(ErrorCode::CommonIOError) => Err(println_err!("Can not import Wallet from file: \"{}\"", export_path)),
             Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Can not import Wallet: Invalid file format or encryption key")),
             Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
@@ -670,8 +670,8 @@ pub mod tests {
             {
                 let cmd = export_command::new();
                 let mut params = CommandParams::new();
-                params.insert("path", path_str);
-                params.insert("key", EXPORT_KEY.to_string());
+                params.insert("export_path", path_str);
+                params.insert("export_key", EXPORT_KEY.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
 
@@ -693,8 +693,8 @@ pub mod tests {
             {
                 let cmd = export_command::new();
                 let mut params = CommandParams::new();
-                params.insert("path", path_str);
-                params.insert("key", EXPORT_KEY.to_string());
+                params.insert("export_path", path_str);
+                params.insert("export_key", EXPORT_KEY.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
@@ -726,8 +726,8 @@ pub mod tests {
                 params.insert("name", wallet_name.to_string());
                 params.insert("pool_name", POOL.to_string());
                 params.insert("key", WALLET_KEY.to_string());
-                params.insert("file", path_str);
-                params.insert("import_key", EXPORT_KEY.to_string());
+                params.insert("export_path", path_str);
+                params.insert("export_key", EXPORT_KEY.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
 
@@ -769,8 +769,8 @@ pub mod tests {
                 params.insert("name", WALLET.to_string());
                 params.insert("pool_name", POOL.to_string());
                 params.insert("key", WALLET_KEY.to_string());
-                params.insert("file", path_str);
-                params.insert("import_key", EXPORT_KEY.to_string());
+                params.insert("export_path", path_str);
+                params.insert("export_key", EXPORT_KEY.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
 
@@ -797,8 +797,8 @@ pub mod tests {
                 params.insert("name", wallet_name.to_string());
                 params.insert("pool_name", POOL.to_string());
                 params.insert("key", WALLET_KEY.to_string());
-                params.insert("file", path_str);
-                params.insert("import_key", "other_key".to_string());
+                params.insert("export_path", path_str);
+                params.insert("export_key", "other_key".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
 
@@ -823,8 +823,8 @@ pub mod tests {
                 params.insert("name", WALLET.to_string());
                 params.insert("pool_name", POOL.to_string());
                 params.insert("key", WALLET_KEY.to_string());
-                params.insert("file", path_str);
-                params.insert("import_key", EXPORT_KEY.to_string());
+                params.insert("export_path", path_str);
+                params.insert("export_key", EXPORT_KEY.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
 
@@ -901,8 +901,8 @@ pub mod tests {
     pub fn export_wallet(ctx: &CommandContext, path: &str) {
         let cmd = export_command::new();
         let mut params = CommandParams::new();
-        params.insert("path", path.to_string());
-        params.insert("key", EXPORT_KEY.to_string());
+        params.insert("export_path", path.to_string());
+        params.insert("export_key", EXPORT_KEY.to_string());
         cmd.execute(&ctx, &params).unwrap()
     }
 }
