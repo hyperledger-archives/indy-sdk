@@ -44,6 +44,12 @@ impl error::Error for LedgerError {
     }
 }
 
+impl From<serde_json::Error> for LedgerError {
+    fn from(err: serde_json::Error) -> LedgerError {
+        LedgerError::CommonError(CommonError::InvalidStructure(err.to_string()))
+    }
+}
+
 impl From<CommonError> for LedgerError {
     fn from(err: CommonError) -> Self {
         LedgerError::CommonError(err)
