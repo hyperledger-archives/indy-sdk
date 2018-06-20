@@ -44,7 +44,7 @@
  
  @param issuerDID DID of the issuer signing credential_def transaction to the Ledger
  @param schemaJSON Schema as a json
- @param tag: allows to distinct between credential definitions for the same issuer and schema (mandatory for indy-node version 1.4.x and higher)
+ @param tag: allows to distinct between credential definitions for the same issuer and schema
  @param type: type_: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
  Supported types are:
     - 'CL': Camenisch-Lysyanskaya credential signature type
