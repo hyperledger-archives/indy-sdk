@@ -269,7 +269,7 @@ impl WalletService {
         let credentials = WalletCredentials::parse(credentials, &config.salt)?;
 
         {
-            // check credentials and close conntection before deleting directory
+            // check credentials and close connection before deleting directory
             let storage = storage_type.open_storage(name, Some(&config_json), &credentials.storage_credentials)?;
 
             WalletService::decrypt_keys(storage.as_ref(), &credentials)?;
@@ -540,6 +540,14 @@ impl WalletService {
                     Ok(config) => config,
                     Err(_) => return Err(WalletError::CommonError(CommonError::InvalidStructure("export config not valid json".to_string()))),
                 };
+
+                let path = PathBuf::from(&export_config.path);
+
+                if let Some(parent_path) = path.parent() {
+                    fs::DirBuilder::new()
+                        .recursive(true)
+                        .create(parent_path)?;
+                }
 
                 let export_file =
                     OpenOptions::new()

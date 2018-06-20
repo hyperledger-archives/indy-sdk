@@ -91,6 +91,7 @@ public class IndyIntegrationTest {
 	public void setUp() throws Exception {
 		InitHelper.init();
 		StorageUtils.cleanupStorage();
+		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
 //		if (! isWalletRegistered) { TODO:FIXME
 //			Wallet.registerWalletType("inmem", new InMemWalletType()).get();
 //		}

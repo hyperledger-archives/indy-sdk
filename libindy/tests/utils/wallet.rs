@@ -4,12 +4,16 @@ use indy::api::wallet::*;
 use utils::callback::CallbackUtils;
 use utils::inmem_wallet::InmemWallet;
 use utils::sequence::SequenceUtils;
+use utils::environment::EnvironmentUtils;
 
 use std::collections::HashSet;
 use std::ffi::CString;
 use std::ptr::null;
 use std::sync::Mutex;
 use utils::constants::DEFAULT_WALLET_CREDENTIALS;
+
+use std::path::PathBuf;
+use std::fs;
 
 use serde_json;
 
@@ -171,9 +175,13 @@ impl WalletUtils {
         super::results::result_to_empty(err, receiver)
     }
 
-    pub fn prepare_export_wallet_config(path: &str) -> String {
+    pub fn export_wallet_path() -> PathBuf {
+        EnvironmentUtils::tmp_file_path("export_file")
+    }
+
+    pub fn prepare_export_wallet_config(path: &PathBuf) -> String {
         let json = json!({
-            "path": path,
+            "path": path.to_str().unwrap(),
             "key": "export_key",
         });
         serde_json::to_string(&json).unwrap()

@@ -72,7 +72,6 @@ public class PoolUtils {
 	}
 
 	public static Pool createAndOpenPoolLedger() throws IndyException, InterruptedException, ExecutionException, IOException {
-		Pool.setProtocolVersion(2).get();
 		String poolName = PoolUtils.createPoolLedgerConfig();
 
 		PoolJSONParameters.OpenPoolLedgerJSONParameter config = new PoolJSONParameters.OpenPoolLedgerJSONParameter(true, null, null);

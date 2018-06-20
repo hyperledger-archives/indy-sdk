@@ -239,7 +239,7 @@ impl IssuerCommandExecutor {
 
         let schema_id = schema.seq_no.map(|n| n.to_string()).unwrap_or(schema.id.clone());
 
-        let cred_def_id = CredentialDefinition::cred_def_id(issuer_did, &schema_id, &signature_type.to_str());
+        let cred_def_id = CredentialDefinition::cred_def_id(issuer_did, &schema_id, &signature_type.to_str(), tag);
 
         if self.wallet_service.record_exists::<CredentialDefinition>(wallet_handle, &cred_def_id)? {
             return Err(IndyError::AnoncredsError(AnoncredsError::CredDefAlreadyExists(format!("CredentialDefinition for cred_def_id: {:?} already exists", cred_def_id))));

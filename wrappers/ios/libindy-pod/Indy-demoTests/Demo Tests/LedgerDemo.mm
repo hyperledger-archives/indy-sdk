@@ -13,6 +13,10 @@
 - (void)setUp {
     [super setUp];
     [TestUtils cleanupStorage];
+
+    ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
     // Put setup code here. This method is called before the invocation of each test method in the class.
 }
 
@@ -25,10 +29,6 @@
 - (void)testLedgerDemo {
     NSString *myWalletName = @"my_wallet";
     NSString *theirWalletName = @"their_wallet";
-
-    // Set protocol version
-    ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
-    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
 
     // 1. Create ledger config from genesis txn file
     NSString *txnFilePath = [[PoolUtils sharedInstance] createGenesisTxnFileForTestPool:[TestUtils pool]
