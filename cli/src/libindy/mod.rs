@@ -97,7 +97,7 @@ pub enum ErrorCode
     WalletStorageError = 210,
 
     // Error during encryption-related operations
-    WalletEncryptonError = 211,
+    WalletEncryptionError = 211,
 
     // Requested wallet item not found
     WalletItemNotFound = 212,
@@ -118,7 +118,7 @@ pub enum ErrorCode
     // Pool ledger terminated
     PoolLedgerTerminated = 302,
 
-    // No concensus during ledger operation
+    // No consensus during ledger operation
     LedgerNoConsensusError = 303,
 
     // Attempt to parse invalid transaction response
@@ -204,14 +204,14 @@ impl ErrorCode {
             WalletInputError => "Input provided to wallet operations is considered not valid",
             WalletDecodingError => "Decoding of wallet data during input/output failed",
             WalletStorageError => "Storage error occurred during wallet operation",
-            WalletEncryptonError => "Error during encryption-related operations",
+            WalletEncryptionError => "Error during encryption-related operations",
             WalletItemNotFound => "Requested wallet item not found",
             WalletItemAlreadyExists => "Returned if wallet's add_record operation is used with record name that already exists",
             WalletQueryError => "Returned if provided wallet query is invalid",
             PoolLedgerNotCreatedError => "Trying to open pool ledger that wasn't created before",
             PoolLedgerInvalidPoolHandle => "Caller passed invalid pool ledger handle",
             PoolLedgerTerminated => "Pool ledger terminated",
-            LedgerNoConsensusError => "No concensus during ledger operation",
+            LedgerNoConsensusError => "No consensus during ledger operation",
             LedgerInvalidTransaction => "Attempt to send unknown or incomplete transaction message",
             LedgerSecurityError => "Attempt to send transaction without the necessary privileges",
             PoolLedgerConfigAlreadyExistsError => "Attempt to create pool ledger config with name used for another existing pool",

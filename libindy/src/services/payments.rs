@@ -93,7 +93,7 @@ impl PaymentsService {
     }
 
     pub fn add_request_fees(&self, cmd_handle: i32, method_type: &str, wallet_handle: i32, submitter_did: &str, req: &str, inputs: &str, outputs: &str) -> Result<(), PaymentsError> {
-        trace!("add_request_fees >>> method_type: {:?}, wallet_handle: {:?}, sumbitter_did: {:?}, req: {:?}, inputs: {:?}, outputs: {:?}", method_type, wallet_handle, submitter_did, req, inputs, outputs);
+        trace!("add_request_fees >>> method_type: {:?}, wallet_handle: {:?}, submitter_did: {:?}, req: {:?}, inputs: {:?}, outputs: {:?}", method_type, wallet_handle, submitter_did, req, inputs, outputs);
         let add_request_fees: AddRequestFeesCB = self.methods.borrow().get(method_type)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", method_type)))?.add_request_fees;
 

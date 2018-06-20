@@ -1286,7 +1286,7 @@ mod high_cases {
                "requested_attributes": json!({
                    "attr1_referent": json!({
                        "name":"name",
-                       "restrictions": [json!({ "schema_id": AnoncredsUtils::build_id(DID_TRUSTEE, "1", GVT_SCHEMA_NAME, SCHEMA_VERSION) })]
+                       "restrictions": [json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, GVT_SCHEMA_NAME, SCHEMA_VERSION) })]
                    })
                }),
                "requested_predicates": json!({
@@ -1317,7 +1317,7 @@ mod high_cases {
                "requested_attributes": json!({
                    "attr1_referent": json!({
                        "name":"name",
-                       "restrictions": [json!({ "cred_def_id": AnoncredsUtils::build_id(DID_TRUSTEE, "2", &AnoncredsUtils::gvt_schema_id(), GVT_SCHEMA_NAME) })]
+                       "restrictions": [json!({ "cred_def_id": CredentialDefinition::cred_def_id(DID_TRUSTEE, &AnoncredsUtils::gvt_schema_id(), "CL", TAG_1) })]
                    })
                }),
                "requested_predicates": json!({
@@ -1377,7 +1377,7 @@ mod high_cases {
                "requested_attributes": json!({}),
                "requested_predicates": json!({
                    "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
-                   "restrictions": [ json!({ "schema_id":AnoncredsUtils::build_id(DID_TRUSTEE, "1", "other_schema_name", SCHEMA_VERSION) })] })
+                   "restrictions": [ json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, "other_schema_name", SCHEMA_VERSION) })] })
                }),
             }).to_string();
 

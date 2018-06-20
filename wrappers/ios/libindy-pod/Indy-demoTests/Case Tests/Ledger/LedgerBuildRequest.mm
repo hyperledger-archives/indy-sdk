@@ -13,6 +13,10 @@
 - (void)setUp {
     [super setUp];
     [TestUtils cleanupStorage];
+
+    ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
     // Put setup code here. This method is called before the invocation of each test method in the class.
 }
 
@@ -234,6 +238,7 @@
                     @"data": @{
                             @"type": @"102",
                             @"signature_type": @"CL",
+                            @"tag": @"TAG1",
                             @"primary": data[@"value"][@"primary"]
                     }
             }
@@ -251,7 +256,7 @@
 }
 
 - (void)testBuildGetCredDefRequestWorks {
-    NSString *id = @"NcYxiDXkpYi6ov5FcYDi1e:03:CL:1";
+    NSString *id = @"NcYxiDXkpYi6ov5FcYDi1e:03:CL:1:TAG";
 
     NSDictionary *expectedResult = @{
             @"identifier": [TestUtils issuerDid],
@@ -259,6 +264,7 @@
                     @"ref": @(1),
                     @"type": @"108",
                     @"signature_type": @"CL",
+                    @"teg": @"TAG1",
                     @"origin": [TestUtils issuerDid]
             }
     };

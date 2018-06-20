@@ -271,7 +271,7 @@ impl WalletService {
         let credentials = WalletCredentials::parse(credentials, &config.salt)?;
 
         {
-            // check credentials and close conntection before deleting directory
+            // check credentials and close connection before deleting directory
             let storage = storage_type.open_storage(name, Some(&config_json), &credentials.storage_credentials)?;
 
             WalletService::decrypt_keys(storage.as_ref(), &credentials)?;

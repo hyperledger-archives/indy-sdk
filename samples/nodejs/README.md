@@ -16,4 +16,4 @@
 See documentation for the wrapper at [npmjs.com](https://www.npmjs.com/package/indy-sdk#installing).
 
 ### Ready to start consuming indy-sdk?
-This example pulls the wrapper from this repository, but you can download it yourself from the npm registery with `npm i indy-sdk`.
+This example pulls the wrapper from this repository, but you can download it yourself from the npm registry with `npm i indy-sdk`.

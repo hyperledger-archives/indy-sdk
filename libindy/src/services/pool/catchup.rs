@@ -87,7 +87,7 @@ impl CatchupHandler {
                     ledgerId: 0,
                     ppSeqNo: None,
                     viewNo: None,
-                    protocolVersion: if protocol_version > 1 { Some(protocol_version) } else { None }
+                    protocolVersion: if ProtocolVersion::is_node_1_3() { None } else { Some(protocol_version) }
                 };
                 let resp_msg: Message = Message::LedgerStatus(ls);
                 self.nodes[src_ind].send_msg(&resp_msg)?;

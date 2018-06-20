@@ -165,7 +165,7 @@ fail.
 
 Try transmitting the encrypted message over a different channel. For example,
 after Alice writes the message, email `encrypted.dat` or copy it over the network
-or send it as an attachment via Skype or slack. Then copy the received package
+or send it as an attachment via Skype or Slack. Then copy the received package
 into the correct folder with the name `encrypted.dat` and ask Bob to read it.
 
 Try modifying the script so it uses `anon_crypt()` instead of `auth_crypt()`. Notice the outcome.

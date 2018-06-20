@@ -837,7 +837,7 @@ Alice has two credentials that meets the proof requirements for this **Loan-Appl
     'cred_rev_id': None
   },
   {
-      'referent': 'Job-Certificate Credentail Referent',
+      'referent': 'Job-Certificate Credential Referent',
       'schema_key': job_certificate_schema_id,
       'cred_def_id': acme_job_certificate_cred_def_id,
       'attrs': {
