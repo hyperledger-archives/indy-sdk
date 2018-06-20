@@ -226,7 +226,7 @@ impl WalletService {
 
         storage_type.create_storage(name, storage_config, &credentials.storage_credentials, &Keys::gen_keys(&credentials.master_key))?;
 
-        let wallet_descriptor_json = WalletDescriptor::new(pool_name, xtype, name).to_json()?;
+        let wallet_descriptor_json = serde_json::to_string(&WalletDescriptor::new(pool_name, xtype, name))?;
 
         _write_file(wallet_descriptor_path, &wallet_descriptor_json)?;
         _write_file(_wallet_config_path(name), &config_json)?;
