@@ -149,9 +149,7 @@ impl PairwiseCommandExecutor {
             PairwiseInfo::from(
                 self.wallet_service.get_indy_object::<Pairwise>(wallet_handle, &their_did, &RecordOptions::id_value(), &mut String::new())?);
 
-        let res = pairwise_info.to_json()
-            .map_err(|e|
-                CommonError::InvalidState(format!("Can't serialize PairwiseInfo: {:?}", e)))?;
+        let res = serde_json::to_string(&pairwise_info)?;
 
         debug!("get_pairwise <<< res: {:?}", res);
 
