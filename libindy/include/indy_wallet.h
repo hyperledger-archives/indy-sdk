@@ -94,7 +94,7 @@ extern "C" {
                                                                           const char* type_,
                                                                           const char* id,
                                                                           const char* options_json,
-                                                                          int32_t* record_handle), // TODO: clarify mutable param
+                                                                          int32_t* record_handle),
 
                                                   indy_error_t (*getRecordIdFn)(indy_handle_t handle,
                                                                           indy_handle_t record_handle,

@@ -10,12 +10,8 @@ pub enum ResponseType {
 }
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct Response {
-    pub op: ResponseType,
-    pub reason: String,
-    pub req_id: u64,
-    pub identifier: String
+    pub op: ResponseType
 }
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
