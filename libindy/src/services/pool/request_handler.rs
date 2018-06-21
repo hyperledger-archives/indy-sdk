@@ -674,6 +674,23 @@ impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
     }
 }
 
+
+pub struct MockRequestHandler {}
+
+impl<T: Networker> RequestHandler<T> for MockRequestHandler {
+    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: &HashMap<String, Option<VerKey>>, generator: Option<Generator>, pool_name: &str) -> Self {
+        unimplemented!()
+    }
+
+    fn process_event(&mut self, ore: Option<RequestEvent>) -> Option<PoolEvent> {
+        unimplemented!()
+    }
+
+    fn is_terminal(&self) -> bool {
+        unimplemented!()
+    }
+}
+
 fn _is_consensus_reachable(replies: &HashMap<HashableValue, HashSet<String>>, f: usize, node_cnt: usize, timeout_cnt: usize, nack_cnt: usize) -> bool {
     let rep_no: usize = replies.values().map(|set| set.len()).sum();
     let max_no = replies.values().map(|set| set.len()).max().unwrap_or(0);

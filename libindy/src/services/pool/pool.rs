@@ -615,18 +615,6 @@ impl<S: Networker, R: RequestHandler<S>> PoolThread<S, R> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use services::pool::networker::MockNetworker;
-
-    #[test]
-    pub fn pool_new_works() {
-        let networker = MockNetworker::new();
-//        Pool::new(&Commander::new(), networker, MockConsensusCollector::new(&networker));
-    }
-}
-
 fn _get_f(cnt: usize) -> usize {
     if cnt < 4 {
         return 0;
@@ -716,4 +704,29 @@ fn _get_nodes_and_remotes(merkle: &MerkleTree) -> Result<(HashMap<String, Option
 fn _close_pool_ack(cmd_id: i32) {
     let pc = PoolCommand::CloseAck(cmd_id, Ok(()));
     CommandExecutor::instance().send(Command::Pool(pc)).unwrap();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use utils::test::TestUtils;
+    use services::pool::networker::MockNetworker;
+    use services::pool::request_handler::MockRequestHandler;
+
+    #[test]
+    pub fn pool_new_works() {
+        let p: Pool<MockNetworker, MockRequestHandler> = Pool::new("pool", 1);
+    }
+
+    #[test]
+    fn pool_worker_get_f_works() {
+        TestUtils::cleanup_storage();
+
+        assert_eq!(_get_f(0), 0);
+        assert_eq!(_get_f(3), 0);
+        assert_eq!(_get_f(4), 1);
+        assert_eq!(_get_f(5), 1);
+        assert_eq!(_get_f(6), 1);
+        assert_eq!(_get_f(7), 2);
+    }
 }

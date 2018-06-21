@@ -103,7 +103,7 @@ impl Networker for ZMQNetworker {
                 );
                 None
             }
-            _ => unimplemented!()
+            _ => None
         }
     }
 
@@ -293,12 +293,14 @@ mod networker_tests {
 
     #[test]
     pub fn networker_new_works() {
-        Networker::new();
+        ZMQNetworker::new();
     }
+
+
 
     #[test]
     pub fn networker_process_event_works() {
-        let networker = Networker::new();
+        let mut networker = ZMQNetworker::new();
         networker.process_event(None);
     }
 }

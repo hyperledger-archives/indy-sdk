@@ -452,3 +452,138 @@ fn _parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, par
         Ok(None)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    extern crate hex;
+    extern crate libc;
+
+    use self::hex::FromHex;
+    use time::Duration;
+    use time;
+    use std::os::raw::c_char;
+
+    #[test]
+    fn state_proof_nodes_parse_and_get_works() {
+        /*
+            '33' -> 'v1'
+            '34' -> 'v2'
+            '3C' -> 'v3'
+            '4'  -> 'v4'
+            'D'  -> 'v5asdfasdf'
+            'E'  -> 'v6fdsfdfs'
+        */
+        let str = "f8c0f7808080a0762fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080";
+        let vec = Vec::from_hex(str).unwrap();
+        let rlp = UntrustedRlp::new(vec.as_slice());
+        let proofs: Vec<Node> = rlp.as_list().unwrap();
+        info! ("Input");
+        for rlp in rlp.iter() {
+            info! ("{:?}", rlp.as_raw());
+        }
+        info! ("parsed");
+        let mut map: TrieDB = HashMap::new();
+        for node in &proofs {
+            info! ("{:?}", node);
+            let encoded = rlp_encode(node);
+            info! ("{:?}", encoded);
+            let mut hasher = sha3::Sha3_256::default();
+            hasher.input(encoded.to_vec().as_slice());
+            let out = hasher.result();
+            info! ("{:?}", out);
+            map.insert(out, node);
+        }
+        for k in 33..35 {
+            info! ("Try get {}", k);
+            let x = proofs[2].get_str_value(&map, k.to_string().as_bytes()).unwrap().unwrap();
+            info! ("{:?}", x);
+            assert_eq!(x, format!("v{}", k - 32));
+        }
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf() {
+        /*
+            '33' -> 'v1'
+            '34' -> 'v2'
+            '3C' -> 'v3'
+            '4'  -> 'v4'
+            'D'  -> 'v5asdfasdf'
+            'E'  -> 'v6fdsfdfs'
+        */
+        let proofs = Vec::from_hex("f8c0f7808080a0762fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080").unwrap();
+        let root_hash = Vec::from_hex("badc906111df306c6afac17b62f29792f0e523b67ba831651d6056529b6bf690").unwrap();
+        assert!(_verify_proof(proofs.as_slice(), root_hash.as_slice(), "33".as_bytes(), Some("v1")));
+        assert!(_verify_proof(proofs.as_slice(), root_hash.as_slice(), "34".as_bytes(), Some("v2")));
+        assert!(_verify_proof(proofs.as_slice(), root_hash.as_slice(), "3C".as_bytes(), Some("v3")));
+        assert!(_verify_proof(proofs.as_slice(), root_hash.as_slice(), "4".as_bytes(), Some("v4")));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_leaf_through_extension() {
+        /*
+            '33'  -> 'v1'
+            'D'   -> 'v2'
+            'E'   -> 'v3'
+            '333' -> 'v4'
+            '334' -> 'v5'
+        */
+        let proofs = Vec::from_hex("f8a8e4821333a05fff9765fa0c56a26b361c81b7883478da90259d0c469896e8da7edd6ad7c756f2808080dd808080c62084c3827634c62084c382763580808080808080808080808080808080808080808080808084c3827631f84e808080a06a4096e59e980d2f2745d0ed2d1779eb135a1831fd3763f010316d99fd2adbb3dd80808080c62084c3827632c62084c38276338080808080808080808080808080808080808080808080").unwrap();
+        let root_hash = Vec::from_hex("d01bd87a6105a945c5eb83e328489390e2843a9b588f03d222ab1a51db7b9fab").unwrap();
+        assert!(_verify_proof(proofs.as_slice(), root_hash.as_slice(), "333".as_bytes(), Some("v4")));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_get_value_from_full_node() {
+        /*
+            '33'  -> 'v1'
+            'D'   -> 'v2'
+            'E'   -> 'v3'
+            '333' -> 'v4'
+            '334' -> 'v5'
+        */
+        let proofs = Vec::from_hex("f8a8e4821333a05fff9765fa0c56a26b361c81b7883478da90259d0c469896e8da7edd6ad7c756f2808080dd808080c62084c3827634c62084c382763580808080808080808080808080808080808080808080808084c3827631f84e808080a06a4096e59e980d2f2745d0ed2d1779eb135a1831fd3763f010316d99fd2adbb3dd80808080c62084c3827632c62084c38276338080808080808080808080808080808080808080808080").unwrap();
+        let root_hash = Vec::from_hex("d01bd87a6105a945c5eb83e328489390e2843a9b588f03d222ab1a51db7b9fab").unwrap();
+        assert!(_verify_proof(proofs.as_slice(), root_hash.as_slice(), "33".as_bytes(), Some("v1")));
+    }
+
+    #[test]
+    fn state_proof_verify_proof_works_for_corrupted_rlp_bytes_for_proofs() {
+        let proofs = Vec::from_hex("f8c0f7798080a0792fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080").unwrap();
+        assert_eq! (_verify_proof(proofs.as_slice(), &[0x00], "".as_bytes(), None), false);
+    }
+
+    #[test]
+    fn transaction_handler_parse_generic_reply_for_proof_checking_works_for_plugged() {
+        extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
+            unsafe { *parsed = msg; }
+            ErrorCode::Success
+        }
+        extern fn free(_data: *const c_char) -> ErrorCode { ErrorCode::Success }
+
+        let parsed_sp = json!([{
+            "root_hash": "rh",
+            "proof_nodes": "pns",
+            "multi_signature": "ms",
+            "kvs_to_verify": {
+                "type": "Simple",
+                "kvs": [],
+            },
+        }]);
+
+        PoolService::register_sp_parser("test", parse, free).unwrap();
+        let mut parsed_sps = super::parse_generic_reply_for_proof_checking(&json!({"type".to_owned(): "test"}),
+                                                                       parsed_sp.to_string().as_str())
+            .unwrap();
+
+        assert_eq!(parsed_sps.len(), 1);
+        let parsed_sp = parsed_sps.remove(0);
+        assert_eq!(parsed_sp.root_hash, "rh");
+        assert_eq!(parsed_sp.multi_signature, "ms");
+        assert_eq!(parsed_sp.proof_nodes, "pns");
+        assert_eq!(parsed_sp.kvs_to_verify,
+                   KeyValuesInSP::Simple(KeyValueSimpleData { kvs: Vec::new() }));
+    }
+}

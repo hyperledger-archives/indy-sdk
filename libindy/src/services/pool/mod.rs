@@ -23,7 +23,7 @@ extern crate rmp_serde;
 extern crate indy_crypto;
 
 
-use self::byteorder::{ByteOrder, LittleEndian};
+use self::byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
 use serde_json;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -35,8 +35,10 @@ use api::ledger::{CustomFree, CustomTransactionParser};
 use errors::pool::PoolError;
 use errors::common::CommonError;
 use self::types::*;
+use utils::crypto::box_::CryptoBox;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
+use services::pool::rust_base58::FromBase58;
 use std::sync::Mutex;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
@@ -134,7 +136,6 @@ impl PoolService {
         let pool_handle: i32 = SequenceUtils::get_next_id();
         let mut new_pool = Pool::new(name, pool_handle);
         //FIXME process config: check None (use default), transfer to Pool instance
-
 
         let zmq_ctx = zmq::Context::new();
         let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR)?;
@@ -242,7 +243,13 @@ impl PoolService {
 mod tests {
     use super::*;
     use utils::test::TestUtils;
+    use domain::ledger::request::ProtocolVersion;
+    use std::thread;
+    use services::ledger::merkletree::merkletree::MerkleTree;
+    use time::Duration;
+    use std::marker::PhantomData;
 
+    pub const NODE1: &'static str = r#"{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba","client_ip":"10.0.0.2","client_port":9702,"node_ip":"10.0.0.2","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"},"metadata":{"from":"Th7MpTaRZVRYnPiabds81Y"},"type":"0"},"txnMetadata":{"seqNo":1,"txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62"},"ver":"1"}"#;
     const TEST_PROTOCOL_VERSION: usize = 2;
 
     fn _set_protocol_version(version: usize) {
@@ -252,6 +259,9 @@ mod tests {
     mod pool_service {
         use super::*;
         use std::path;
+        use std::marker::PhantomData;
+        use api::ErrorCode;
+        use std::os::raw::c_char;
 
         #[test]
         fn pool_service_new_works() {
@@ -280,12 +290,7 @@ mod tests {
             let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
             recv_soc.bind("inproc://test").unwrap();
             send_soc.connect("inproc://test").unwrap();
-            ps.open_pools.borrow_mut().insert(pool_id, Pool {
-                name: String::new(),
-                id: pool_id,
-                worker: None,
-                cmd_sock: send_soc,
-            });
+            ps.open_pools.borrow_mut().insert(pool_id, (Pool::new("", pool_id), send_soc));
             let cmd_id = ps.close(pool_id).unwrap();
             let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
             assert_eq!(recv.len(), 2);
@@ -304,12 +309,7 @@ mod tests {
             let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
             recv_soc.bind("inproc://test").unwrap();
             send_soc.connect("inproc://test").unwrap();
-            ps.open_pools.borrow_mut().insert(pool_id, Pool {
-                name: String::new(),
-                id: pool_id,
-                worker: None,
-                cmd_sock: send_soc,
-            });
+            ps.open_pools.borrow_mut().insert(pool_id, (Pool::new("", pool_id), send_soc));
             let cmd_id = ps.refresh(pool_id).unwrap();
             let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
             assert_eq!(recv.len(), 2);
@@ -346,19 +346,126 @@ mod tests {
             recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
             send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
 
-            let pool = Pool {
-                worker: None,
-                name: pool_name.to_string(),
-                cmd_sock: recv_cmd_sock,
-                id: pool_id
-            };
-            ps.open_pools.borrow_mut().insert(pool_id, pool);
+            let pool = Pool::new(pool_name, pool_id);
+            ps.open_pools.borrow_mut().insert(pool_id, (pool, send_cmd_sock));
 
             fs::create_dir_all(path.as_path()).unwrap();
             assert!(path.exists());
             let res = ps.delete(pool_name);
             assert_match!(Err(PoolError::CommonError(CommonError::InvalidState(_))), res);
             assert!(path.exists());
+        }
+
+        #[test]
+        fn pool_send_tx_works() {
+            TestUtils::cleanup_storage();
+
+            let name = "test";
+            let zmq_ctx = zmq::Context::new();
+            let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let inproc_sock_name: String = format!("inproc://pool_{}", name);
+            recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
+            send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
+            let pool = Pool::new(name, 0);
+            let ps = PoolService::new();
+            ps.open_pools.borrow_mut().insert(-1, (pool, send_cmd_sock));
+            let test_data = "str_instead_of_tx_json";
+            ps.send_tx(-1, test_data).unwrap();
+            assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
+        }
+
+        #[test]
+        fn pool_get_pool_name_works() {
+            TestUtils::cleanup_storage();
+            let name = "test";
+            let ps = PoolService::new();
+            let zmq_ctx = zmq::Context::new();
+            let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let pool = Pool::new(name, 0);
+            ps.open_pools.borrow_mut().insert(-1, (pool, send_cmd_sock));
+            assert_eq!(ps.get_pool_name(-1).unwrap(), name);
+        }
+
+        #[test]
+        fn pool_get_pool_name_works_for_invalid_handle() {
+            TestUtils::cleanup_storage();
+            let ps = PoolService::new();
+            assert_match!(Err(PoolError::InvalidHandle(_)), ps.get_pool_name(-1));
+        }
+
+        #[test]
+        fn pool_send_tx_works_for_invalid_handle() {
+            TestUtils::cleanup_storage();
+            let ps = PoolService::new();
+            assert_match!(Err(PoolError::InvalidHandle(_)), ps.send_tx(-1, "txn"));
+        }
+
+        #[test]
+        fn pool_close_works_for_invalid_handle() {
+            TestUtils::cleanup_storage();
+            let ps = PoolService::new();
+            assert_match!(Err(PoolError::InvalidHandle(_)), ps.close(-1));
+        }
+
+        #[test]
+        fn pool_refresh_works_for_invalid_handle() {
+            TestUtils::cleanup_storage();
+            let ps = PoolService::new();
+            assert_match!(Err(PoolError::InvalidHandle(_)), ps.refresh(-1));
+        }
+
+        #[test]
+        fn pool_register_sp_parser_works() {
+            TestUtils::cleanup_storage();
+            REGISTERED_SP_PARSERS.lock().unwrap().clear();
+            extern fn test_sp(reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode {
+                ErrorCode::Success
+            }
+            extern fn test_free(data: *const c_char) -> ErrorCode {
+                ErrorCode::Success
+            }
+            PoolService::register_sp_parser("test", test_sp, test_free).unwrap();
+        }
+
+        #[test]
+        fn pool_get_sp_parser_works() {
+            TestUtils::cleanup_storage();
+            REGISTERED_SP_PARSERS.lock().unwrap().clear();
+            extern fn test_sp(reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode {
+                ErrorCode::Success
+            }
+            extern fn test_free(data: *const c_char) -> ErrorCode {
+                ErrorCode::Success
+            }
+            PoolService::register_sp_parser("test", test_sp, test_free).unwrap();
+            PoolService::get_sp_parser("test").unwrap();
+        }
+
+        #[test]
+        fn pool_get_sp_parser_works_for_invalid_name() {
+            TestUtils::cleanup_storage();
+            REGISTERED_SP_PARSERS.lock().unwrap().clear();
+            assert_eq!(None, PoolService::get_sp_parser("test"));
+        }
+
+        #[test]
+        pub fn pool_add_open_pool_works() {
+            TestUtils::cleanup_storage();
+            let name = "test";
+            let ps = PoolService::new();
+            let zmq_ctx = zmq::Context::new();
+            let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let pool = Pool::new(name, 0);
+            ps.pending_pools.borrow_mut().insert(-1, (pool, send_cmd_sock));
+            assert_match!(Ok(-1), ps.add_open_pool(-1));
+        }
+
+        #[test]
+        pub fn pool_add_open_pool_works_for_no_pending_pool() {
+            TestUtils::cleanup_storage();
+            let ps = PoolService::new();
+            assert_match!(Err(PoolError::InvalidHandle(_)), ps.add_open_pool(-1));
         }
     }
 
@@ -374,9 +481,17 @@ mod tests {
         fn drop_test() {
             TestUtils::cleanup_storage();
             _set_protocol_version(TEST_PROTOCOL_VERSION);
+            let ps = PoolService::new();
 
             let pool_name = "pool_drop_works";
             let gen_txn = NODE1;
+
+            let zmq_ctx = zmq::Context::new();
+            let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let inproc_sock_name: String = format!("inproc://pool_{}", pool_name);
+            recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
+            send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
 
             // create minimal fs config stub before Pool::new()
             let mut pool_path = EnvironmentUtils::pool_path(pool_name);
@@ -386,304 +501,84 @@ mod tests {
             let mut file = fs::File::create(pool_path).unwrap();
             file.write(&gen_txn.as_bytes()).unwrap();
 
-            let pool = Pool::new(pool_name, -1).unwrap();
+            let mut pool = Pool::new(pool_name, -1);
+            pool.work(recv_cmd_sock);
+            ps.open_pools.borrow_mut().insert(-1, (pool, send_cmd_sock));
             thread::sleep(time::Duration::from_secs(1));
-            pool.close(-1).unwrap();
+            ps.close(-1).unwrap();
             thread::sleep(time::Duration::from_secs(1));
         }
 
         drop_test();
         TestUtils::cleanup_storage();
     }
-
-    #[test]
-    fn pool_send_tx_works() {
-        TestUtils::cleanup_storage();
-
-        let name = "test";
-        let zmq_ctx = zmq::Context::new();
-        let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
-        let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
-        let inproc_sock_name: String = format!("inproc://pool_{}", name);
-        recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
-        send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
-        let pool = Pool {
-            worker: None,
-            name: name.to_string(),
-            id: 0,
-            cmd_sock: send_cmd_sock,
-        };
-        let test_data = "str_instead_of_tx_json";
-        pool.send_tx(0, test_data).unwrap();
-        assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
-    }
-
-    impl Default for PoolWorker {
-        fn default() -> Self {
-            PoolWorker {
-                pool_id: 0,
-                cmd_sock: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
-                open_cmd_id: 0,
-                name: "".to_string(),
-                handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
-                    timeout: time::now_utc().add(Duration::seconds(2)),
-                    ..Default::default()
-                }),
-            }
-        }
-    }
-
-    pub const NODE1_OLD: &'static str = r#"{"data":{"alias":"Node1","client_ip":"192.168.1.35","client_port":9702,"node_ip":"192.168.1.35","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv","identifier":"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4","txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62","type":"0"}"#;
-    pub const NODE2_OLD: &'static str = r#"{"data":{"alias":"Node2","client_ip":"192.168.1.35","client_port":9704,"node_ip":"192.168.1.35","node_port":9703,"services":["VALIDATOR"]},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb","identifier":"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy","txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc","type":"0"}"#;
-
-    pub const NODE1: &'static str = r#"{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba","client_ip":"10.0.0.2","client_port":9702,"node_ip":"10.0.0.2","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"},"metadata":{"from":"Th7MpTaRZVRYnPiabds81Y"},"type":"0"},"txnMetadata":{"seqNo":1,"txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62"},"ver":"1"}"#;
-    pub const NODE2: &'static str = r#"{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node2","blskey":"37rAPpXVoxzKhz7d9gkUe52XuXryuLXoM6P6LbWDB7LSbG62Lsb33sfG7zqS8TK1MXwuCHj1FKNzVpsnafmqLG1vXN88rt38mNFs9TENzm4QHdBzsvCuoBnPH7rpYYDo9DZNJePaDvRvqJKByCabubJz3XXKbEeshzpz4Ma5QYpJqjk","client_ip":"10.0.0.2","client_port":9704,"node_ip":"10.0.0.2","node_port":9703,"services":["VALIDATOR"]},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"},"metadata":{"from":"EbP4aYNeTHL6q385GuVpRV"},"type":"0"},"txnMetadata":{"seqNo":2,"txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc"},"ver":"1"}"#;
-    pub const NODE3: &'static str = r#"{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node3","blskey":"3WFpdbg7C5cnLYZwFZevJqhubkFALBfCBBok15GdrKMUhUjGsk3jV6QKj6MZgEubF7oqCafxNdkm7eswgA4sdKTRc82tLGzZBd6vNqU8dupzup6uYUf32KTHTPQbuUM8Yk4QFXjEf2Usu2TJcNkdgpyeUSX42u5LqdDDpNSWUK5deC5","client_ip":"10.0.0.2","client_port":9706,"node_ip":"10.0.0.2","node_port":9705,"services":["VALIDATOR"]},"dest":"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya"},"metadata":{"from":"4cU41vWW82ArfxJxHkzXPG"},"type":"0"},"txnMetadata":{"seqNo":3,"txnId":"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4"},"ver":"1"}"#;
-    pub const NODE4: &'static str = r#"{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node4","blskey":"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw","client_ip":"10.0.0.2","client_port":9708,"node_ip":"10.0.0.2","node_port":9707,"services":["VALIDATOR"]},"dest":"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA"},"metadata":{"from":"TWwCRQRZ2ZHMJFn9TzLp7W"},"type":"0"},"txnMetadata":{"seqNo":4,"txnId":"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008"},"ver":"1"}"#;
-
-    fn _write_genesis_txns(txns: &str) {
-        let pool_name = "test";
-        let mut path = EnvironmentUtils::pool_path(pool_name);
-        fs::create_dir_all(path.as_path()).unwrap();
-        path.push(pool_name);
-        path.set_extension("txn");
-        let mut f = fs::File::create(path.as_path()).unwrap();
-        f.write(txns.as_bytes()).unwrap();
-        f.flush().unwrap();
-        f.sync_all().unwrap();
-    }
-
-    #[test]
-    fn pool_worker_restore_merkle_tree_works_from_genesis_txns() {
-        TestUtils::cleanup_storage();
-
-        let txns_src = format!("{}\n{}", NODE1, NODE2);
-        _write_genesis_txns(&txns_src);
-
-        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
-
-        assert_eq!(merkle_tree.count(), 2, "test restored MT size");
-        assert_eq!(merkle_tree.root_hash_hex(), "3768ef5b25a01d19c0fda687f2354b29e004821bce8557e70085379f536907ed", "test restored MT root hash");
-    }
-
-    #[test]
-    fn pool_worker_connect_to_known_nodes_works() {
-        TestUtils::cleanup_storage();
-
-        _set_protocol_version(TEST_PROTOCOL_VERSION);
-
-        let mut pw: PoolWorker = Default::default();
-        let (gt, handle) = nodes_emulator::start();
-        let mut merkle_tree: MerkleTree = MerkleTree::from_vec(Vec::new()).unwrap();
-        merkle_tree.append(rmp_serde::to_vec_named(&gt).unwrap()).unwrap();
-
-        pw.connect_to_known_nodes(Some(&merkle_tree)).unwrap();
-
-        let emulator_msgs: Vec<String> = handle.join().unwrap();
-        assert_eq!(1, emulator_msgs.len());
-        assert_eq!("pi", emulator_msgs[0]);
-    }
-
-    #[test]
-    pub fn pool_worker_works_for_deserialize_cache() {
-        TestUtils::cleanup_storage();
-
-        _set_protocol_version(TEST_PROTOCOL_VERSION);
-
-        let txn1_json: serde_json::Value = serde_json::from_str(NODE1).unwrap();
-        let txn2_json: serde_json::Value = serde_json::from_str(NODE2).unwrap();
-        let txn3_json: serde_json::Value = serde_json::from_str(NODE3).unwrap();
-        let txn4_json: serde_json::Value = serde_json::from_str(NODE4).unwrap();
-
-        let pool_cache = vec![rmp_serde::to_vec_named(&txn1_json).unwrap(),
-                              rmp_serde::to_vec_named(&txn2_json).unwrap(),
-                              rmp_serde::to_vec_named(&txn3_json).unwrap(),
-                              rmp_serde::to_vec_named(&txn4_json).unwrap()];
-
-        let pool_name = "test";
-        let mut path = EnvironmentUtils::pool_path(pool_name);
-        fs::create_dir_all(path.as_path()).unwrap();
-        path.push("stored");
-        path.set_extension("btxn");
-        let mut f = fs::File::create(path.as_path()).unwrap();
-        pool_cache.iter().for_each(|vec| {
-            f.write_u64::<LittleEndian>(vec.len() as u64).unwrap();
-            f.write_all(vec).unwrap();
-        });
-
-        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
-        let _node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
-    }
-
-    #[test]
-    fn pool_worker_build_node_state_works_for_old_format() {
-        TestUtils::cleanup_storage();
-
-        _set_protocol_version(1);
-
-        let node1: NodeTransactionV1 = NodeTransactionV1::from(serde_json::from_str::<NodeTransactionV0>(NODE1_OLD).unwrap());
-        let node2: NodeTransactionV1 = NodeTransactionV1::from(serde_json::from_str::<NodeTransactionV0>(NODE2_OLD).unwrap());
-
-        let txns_src = format!("{}\n{}\n", NODE1_OLD, NODE2_OLD);
-
-        _write_genesis_txns(&txns_src);
-
-        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
-        let node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
-
-        assert_eq!(1, ProtocolVersion::get());
-
-        assert_eq!(2, node_state.len());
-        assert!(node_state.contains_key("Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"));
-        assert!(node_state.contains_key("8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"));
-
-        assert_eq!(node_state["Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"], node1);
-        assert_eq!(node_state["8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"], node2);
-    }
-
-    #[test]
-    fn pool_worker_build_node_state_works_for_new_format() {
-        TestUtils::cleanup_storage();
-
-        _set_protocol_version(TEST_PROTOCOL_VERSION);
-
-        let node1: NodeTransactionV1 = serde_json::from_str(NODE1).unwrap();
-        let node2: NodeTransactionV1 = serde_json::from_str(NODE2).unwrap();
-
-        let txns_src = format!("{}\n{}\n{}\n{}\n", NODE1, NODE2, NODE3, NODE4);
-
-        _write_genesis_txns(&txns_src);
-
-        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
-        let node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
-
-        assert_eq!(2, ProtocolVersion::get());
-
-        assert_eq!(4, node_state.len());
-        assert!(node_state.contains_key("Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"));
-        assert!(node_state.contains_key("8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"));
-
-        assert_eq!(node_state["Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"], node1);
-        assert_eq!(node_state["8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"], node2);
-    }
-
-    #[test]
-    fn pool_worker_build_node_state_works_for_old_txns_format_and_2_protocol_version() {
-        TestUtils::cleanup_storage();
-
-        _set_protocol_version(TEST_PROTOCOL_VERSION);
-
-        let txns_src = format!("{}\n{}\n", NODE1_OLD, NODE2_OLD);
-
-        _write_genesis_txns(&txns_src);
-
-        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
-        let res = PoolWorker::_build_node_state(&merkle_tree);
-        assert_match!(Err(PoolError::PoolIncompatibleProtocolVersion(_)), res);
-    }
-
-    #[test]
-    fn pool_worker_build_node_state_works_for_new_txns_format_and_1_protocol_version() {
-        TestUtils::cleanup_storage();
-
-        _set_protocol_version(1);
-
-        let txns_src = format!("{}\n{}\n", NODE1, NODE2);
-
-        _write_genesis_txns(&txns_src);
-
-        let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
-        let res = PoolWorker::_build_node_state(&merkle_tree);
-        assert_match!(Err(PoolError::PoolIncompatibleProtocolVersion(_)), res);
-    }
-
-    #[test]
-    fn pool_worker_poll_zmq_works_for_terminate() {
-        TestUtils::cleanup_storage();
-
-        let ctx = zmq::Context::new();
-        let mut pw = PoolWorker {
-            cmd_sock: ctx.socket(zmq::SocketType::PAIR).expect("socket"),
-            ..Default::default()
-        };
-        let pair_socket_addr = "inproc://test_pool_worker_poll_zmq_works_for_terminate";
-        let send_cmd_sock = ctx.socket(zmq::SocketType::PAIR).expect("socket");
-        pw.cmd_sock.bind(pair_socket_addr).expect("bind");
-        send_cmd_sock.connect(pair_socket_addr).expect("connect");
-
-        let handle: thread::JoinHandle<Vec<ZMQLoopAction>> = thread::spawn(move || {
-            pw.poll_zmq().unwrap()
-        });
-        send_cmd_sock.send("exit".as_bytes(), zmq::DONTWAIT).expect("send");
-        let actions: Vec<ZMQLoopAction> = handle.join().unwrap();
-
-        assert_eq!(actions.len(), 1);
-        assert_eq!(actions[0], ZMQLoopAction::Terminate(-1));
-    }
-
-    #[test]
-    fn pool_worker_get_zmq_poll_items_works() {
-        TestUtils::cleanup_storage();
-
-        let pw: PoolWorker = Default::default();
-
-        let poll_items = pw.get_zmq_poll_items().unwrap();
-
-        assert_eq!(poll_items.len(), pw.handler.nodes().len() + 1);
-        //TODO compare poll items
-    }
-
-    #[test]
-    fn pool_worker_get_f_works() {
-        TestUtils::cleanup_storage();
-
-        assert_eq!(PoolWorker::get_f(0), 0);
-        assert_eq!(PoolWorker::get_f(3), 0);
-        assert_eq!(PoolWorker::get_f(4), 1);
-        assert_eq!(PoolWorker::get_f(5), 1);
-        assert_eq!(PoolWorker::get_f(6), 1);
-        assert_eq!(PoolWorker::get_f(7), 2);
-    }
-
-    #[test]
-    fn catchup_handler_start_catchup_works() {
-        TestUtils::cleanup_storage();
-
-        let mut ch: CatchupHandler = Default::default();
-        let (gt, handle) = nodes_emulator::start();
-        ch.merkle_tree.append(rmp_serde::to_vec_named(&gt).unwrap()).unwrap();
-        let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
-        rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap()).unwrap();
-        ch.nodes.push(rn);
-        ch.target_mt_size = 2;
-
-        ch.start_catchup().unwrap();
-
-        let emulator_msgs: Vec<String> = handle.join().unwrap();
-        assert_eq!(1, emulator_msgs.len());
-        let expected_resp: CatchupReq = CatchupReq {
-            ledgerId: 0,
-            seqNoStart: 2,
-            seqNoEnd: 2,
-            catchupTill: 2,
-        };
-        let act_resp = CatchupReq::from_json(emulator_msgs[0].as_str()).unwrap();
-        assert_eq!(expected_resp, act_resp);
-    }
-
-    #[test]
-    fn remote_node_connect_works_and_can_ping_pong() {
-        TestUtils::cleanup_storage();
-
-        let (gt, handle) = nodes_emulator::start();
-        let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
-        let ctx = zmq::Context::new();
-        rn.connect(&ctx, &zmq::CurveKeyPair::new().unwrap()).unwrap();
-        rn.send_str("pi").expect("send");
-        rn.zsock.as_ref().expect("sock").poll(zmq::POLLIN, nodes_emulator::POLL_TIMEOUT).expect("poll");
-        assert_eq!("po", rn.zsock.as_ref().expect("sock").recv_string(zmq::DONTWAIT).expect("recv").expect("string").as_str());
-        handle.join().expect("join");
-    }
+//
+//    impl Default for PoolWorker {
+//        fn default() -> Self {
+//            PoolWorker {
+//                pool_id: 0,
+//                cmd_sock: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
+//                open_cmd_id: 0,
+//                name: "".to_string(),
+//                handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
+//                    timeout: time::now_utc().add(Duration::seconds(2)),
+//                    ..Default::default()
+//                }),
+//            }
+//        }
+//    }
+
+//    #[test]
+//    fn pool_worker_get_zmq_poll_items_works() {
+//        TestUtils::cleanup_storage();
+//
+//        let pw: PoolWorker = Default::default();
+//
+//        let poll_items = pw.get_zmq_poll_items().unwrap();
+//
+//        assert_eq!(poll_items.len(), pw.handler.nodes().len() + 1);
+//        //TODO compare poll items
+//    }
+
+//    #[test]
+//    fn catchup_handler_start_catchup_works() {
+//        TestUtils::cleanup_storage();
+//
+//        let mut ch: CatchupHandler = Default::default();
+//        let (gt, handle) = nodes_emulator::start();
+//        ch.merkle_tree.append(rmp_serde::to_vec_named(&gt).unwrap()).unwrap();
+//        let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
+//        rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap()).unwrap();
+//        ch.nodes.push(rn);
+//        ch.target_mt_size = 2;
+//
+//        ch.start_catchup().unwrap();
+//
+//        let emulator_msgs: Vec<String> = handle.join().unwrap();
+//        assert_eq!(1, emulator_msgs.len());
+//        let expected_resp: CatchupReq = CatchupReq {
+//            ledgerId: 0,
+//            seqNoStart: 2,
+//            seqNoEnd: 2,
+//            catchupTill: 2,
+//        };
+//        let act_resp = CatchupReq::from_json(emulator_msgs[0].as_str()).unwrap();
+//        assert_eq!(expected_resp, act_resp);
+//    }
+
+//    #[test]
+//    fn remote_node_connect_works_and_can_ping_pong() {
+//        TestUtils::cleanup_storage();
+//
+//        let (gt, handle) = nodes_emulator::start();
+//        let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
+//        let ctx = zmq::Context::new();
+//        rn.connect(&ctx, &zmq::CurveKeyPair::new().unwrap()).unwrap();
+//        rn.send_str("pi").expect("send");
+//        rn.zsock.as_ref().expect("sock").poll(zmq::POLLIN, nodes_emulator::POLL_TIMEOUT).expect("poll");
+//        assert_eq!("po", rn.zsock.as_ref().expect("sock").recv_string(zmq::DONTWAIT).expect("recv").expect("string").as_str());
+//        handle.join().expect("join");
+//    }
 
     mod nodes_emulator {
         extern crate sodiumoxide;
