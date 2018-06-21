@@ -155,6 +155,20 @@ List all created wallets with corresponded status (indicates opened one):
 indy> wallet list
 ```
 
+### Export wallet
+Exports opened wallet to the specified file.
+
+```indy-cli
+indy> wallet export export_path=<path-to-file> export_key=[<export key>]
+```
+
+### Import wallet
+Create new wallet and then import content from the specified file.
+
+```indy-cli
+indy> wallet import <wallet name> pool_name=<pool name> key=<key> export_path=<path-to-file> export_key=<key used for export>
+
+
 ### Pool management commands
 ```
 indy> pool <subcommand>

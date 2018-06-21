@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.hyperledger.indy.sdk.utils.EnvironmentUtils.getIndyHomePath;
+import static org.hyperledger.indy.sdk.utils.EnvironmentUtils.getTmpPath;
 
 public class IndyIntegrationTest {
 
@@ -77,6 +78,14 @@ public class IndyIntegrationTest {
 
 	protected static final String MY1_IDENTITY_KEY_JSON =
 			new CryptoJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();
+
+	protected static final String EXPORT_KEY = "export_key";
+	protected static final String EXPORT_PATH = getTmpPath("export_wallet");
+	protected static final String EXPORT_CONFIG_JSON =
+			new JSONObject()
+					.put("key", EXPORT_KEY)
+					.put("path", EXPORT_PATH)
+					.toString();
 
 
 	@Rule

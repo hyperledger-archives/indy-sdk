@@ -543,6 +543,14 @@ impl WalletService {
                     Err(_) => return Err(WalletError::CommonError(CommonError::InvalidStructure("export config not valid json".to_string()))),
                 };
 
+                let path = PathBuf::from(&export_config.path);
+
+                if let Some(parent_path) = path.parent() {
+                    fs::DirBuilder::new()
+                        .recursive(true)
+                        .create(parent_path)?;
+                }
+
                 let export_file =
                     OpenOptions::new()
                         .write(true)
