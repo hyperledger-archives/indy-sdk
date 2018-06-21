@@ -21,7 +21,7 @@ public interface CustomWallet {
 	 * Gets a value from a wallet instance.
 	 * 
 	 * @param key The key of value to get.
-	 * @param resultString A result object to containthe value set by implementers.
+	 * @param resultString A result object to contain the value set by implementers.
 	 * @return An ErrorCode indicating the outcome.
 	 */
 	ErrorCode get(String key, StringByReference resultString);
@@ -30,7 +30,7 @@ public interface CustomWallet {
 	 * Gets an unexpired value from a wallet instance.
 	 * 
 	 * @param key The key of value to get.
-	 * @param resultString A result object to containthe value set by implementers.
+	 * @param resultString A result object to contain the value set by implementers.
 	 * @return An ErrorCode indicating the outcome.
 	 */
 	ErrorCode getNotExpired(String key, StringByReference resultString);
@@ -39,7 +39,7 @@ public interface CustomWallet {
 	 * Gets a list of values optionally filtered by key.
 	 * 
 	 * @param keyPrefix The prefix of the keys to filter on.  If null no filter will be applied.
-	 * @param resultString A result object to containthe value set by implementers.
+	 * @param resultString A result object to contain the value set by implementers.
 	 * @return An ErrorCode indicating the outcome.
 	 */
 	ErrorCode list(String keyPrefix, StringByReference resultString);   

@@ -7,7 +7,7 @@ package "Indy SDK" {
     application ..> i_payments_api
 
     note right of i_payments_api
-    An API that allows applciation
+    An API that allows application
     to work with payments
     end note
 

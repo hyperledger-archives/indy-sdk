@@ -94,7 +94,7 @@ extern "C" {
                                                                           const char* type_,
                                                                           const char* id,
                                                                           const char* options_json,
-                                                                          int32_t* record_handle), // TODO: clarify mutable param
+                                                                          int32_t* record_handle),
 
                                                   indy_error_t (*getRecordIdFn)(indy_handle_t handle,
                                                                           indy_handle_t record_handle,
@@ -318,6 +318,71 @@ extern "C" {
     extern indy_error_t indy_delete_wallet(indy_handle_t  command_handle,
                                            const char*    name,
                                            const char*    credentials,
+                                           void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                          );
+
+    /// Exports opened wallet
+    ///
+    /// #Params:
+    /// wallet_handle: wallet handle returned by indy_open_wallet
+    /// export_config_json: JSON containing settings for input operation.
+    ///   {
+    ///     "path": path of the file that contains exported wallet content
+    ///     "key": passphrase used to export key
+    ///   }
+    ///
+    /// #Returns
+    /// Error code
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+
+    extern indy_error_t indy_export_wallet(indy_handle_t  command_handle,
+                                           indy_handle_t  wallet_handle,
+                                           const char*    export_config_json,
+                                           void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                          );
+
+    // Creates a new secure wallet with the given unique name and then imports its content
+    // according to fields provided in import_config
+    // This can be seen as an indy_create_wallet call with additional content import
+    //
+    // #Params
+    // pool_name: Name of the pool that corresponds to this wallet
+    // name: Name of the wallet
+    // storage_type(optional): Type of the wallet storage. Defaults to 'default'.
+    //                  Custom storage types can be registered with indy_register_wallet_storage_call
+    /// config(optional): Wallet configuration json.
+    ///   {
+    ///       "storage": <object>  List of supported keys are defined by wallet type.
+    ///   }
+    /// credentials: Wallet credentials json (if NULL, then default config will be used).
+    ///   {
+    ///       "key": string,
+    ///       "storage": Optional<object>  List of supported keys are defined by wallet type.
+    ///
+    ///   }
+    /// import_config_json: JSON containing settings for input operation.
+    ///   {
+    ///     "path": path of the file that contains exported wallet content
+    ///     "key": passphrase used to export key
+    ///   }
+    ///
+    /// #Returns
+    /// Error code
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+
+    extern indy_error_t indy_import_wallet(indy_handle_t  command_handle,
+                                           const char*    pool_name,
+                                           const char*    name,
+                                           const char*    xtype,
+                                           const char*    config,
+                                           const char*    credentials,
+                                           const char*    import_config_json,
                                            void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
                                           );
 

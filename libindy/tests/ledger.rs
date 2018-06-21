@@ -41,8 +41,8 @@ use utils::constants::*;
 use self::openssl::hash::{MessageDigest, Hasher};
 use self::sodiumoxide::crypto::secretbox;
 
-use utils::domain::anoncreds::schema::SchemaV1;
-use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
+use utils::domain::anoncreds::schema::{Schema, SchemaV1};
+use utils::domain::anoncreds::credential_definition::{CredentialDefinitionV1};
 use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 use utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
 use utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
@@ -225,7 +225,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_sign_works_for_unknow_signer() {
+        fn indy_sign_works_for_unknown_signer() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
@@ -817,6 +817,8 @@ mod high_cases {
 
         #[test]
         fn indy_build_cred_def_request_works_for_correct_data_json() {
+            PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
             let cred_def_json = r#"{
                "ver":"1.0",
                "id":"cred_def_id",
@@ -835,7 +837,7 @@ mod high_cases {
                }
             }"#;
 
-            let expected_result = r#""operation":{"ref":1,"data":{"primary":{"n":"1","s":"2","rms":"3","r":{"name":"1"},"rctxt":"1","z":"1"}},"type":"102","signature_type":"CL"}"#;
+            let expected_result = r#""operation":{"ref":1,"data":{"primary":{"n":"1","s":"2","rms":"3","r":{"name":"1"},"rctxt":"1","z":"1"}},"type":"102","signature_type":"CL","tag":"TAG_1"}"#;
 
             let cred_def_request = LedgerUtils::build_cred_def_txn(IDENTIFIER, cred_def_json).unwrap();
             assert!(cred_def_request.contains(&expected_result));
@@ -843,9 +845,11 @@ mod high_cases {
 
         #[test]
         fn indy_build_get_cred_def_request_works() {
-            let id = CredentialDefinition::cred_def_id(IDENTIFIER, &SEQ_NO.to_string(), SIGNATURE_TYPE);
-            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"108","ref":{},"signature_type":"{}","origin":"{}"}}"#,
-                                          IDENTIFIER, SEQ_NO, SIGNATURE_TYPE, IDENTIFIER);
+            PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
+            let id = AnoncredsUtils::cred_def_id(IDENTIFIER, &SEQ_NO.to_string(), SIGNATURE_TYPE, TAG_1);
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"108","ref":{},"signature_type":"{}","origin":"{}","tag":"{}"}}"#,
+                                          IDENTIFIER, SEQ_NO, SIGNATURE_TYPE, IDENTIFIER, TAG_1);
 
             let get_cred_def_request = LedgerUtils::build_get_cred_def_txn(IDENTIFIER, &id).unwrap();
             assert!(get_cred_def_request.contains(&expected_result));
@@ -1127,7 +1131,6 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        #[ignore] //FIXME currently unstable because pool isn't maintain restart transaction yet.
         fn indy_pool_restart_request_works_for_start_cancel_works() {
             TestUtils::cleanup_storage();
 
@@ -1918,7 +1921,7 @@ mod medium_cases {
 
             let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
-            let get_schema_request = LedgerUtils::build_get_schema_request(&did, &AnoncredsUtils::build_id(DID, "1", "other_schema", "1.0")).unwrap();
+            let get_schema_request = LedgerUtils::build_get_schema_request(&did, &Schema::schema_id(DID, "other_schema", "1.0")).unwrap();
 
             let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request).unwrap();
 

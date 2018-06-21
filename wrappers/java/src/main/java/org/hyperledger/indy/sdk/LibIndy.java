@@ -41,6 +41,8 @@ public abstract class LibIndy {
 		public int indy_open_wallet(int command_handle, String name, String runtime_config, String credentials, Callback cb);
 		public int indy_close_wallet(int command_handle, int handle, Callback cb);
 		public int indy_delete_wallet(int command_handle, String name, String credentials, Callback cb);
+		public int indy_export_wallet(int command_handle, int handle, String exportConfigJson, Callback cb);
+		public int indy_import_wallet(int command_handle, String pool_name, String name, String xtype, String config, String credentials, String importConfigJson, Callback cb);
 
 		// ledger.rs
 

@@ -1,11 +1,8 @@
 extern crate sodiumoxide;
 
-use std;
 use std::collections::HashMap;
-use std::io::{Write,Read};
 use std::rc::Rc;
 
-use serde_json;
 use utils::crypto::chacha20poly1305_ietf::{TAG_LENGTH, KEY_LENGTH, NONCE_LENGTH, ChaCha20Poly1305IETF,ChaCha20Poly1305IETFKey};
 use utils::crypto::hmacsha256::{HMACSHA256, HMACSHA256Key};
 
@@ -13,7 +10,6 @@ use errors::wallet::WalletError;
 use errors::common::CommonError;
 
 use super::storage;
-use super::storage::StorageEntity;
 use super::iterator::WalletIterator;
 use super::encryption::*;
 use super::query_encryption::encrypt_query;
@@ -629,7 +625,7 @@ mod tests {
         let wallet = _create_wallet();
         let type_ = "test";
 
-        let res = wallet.delete(type_, "nonexistant_name");
+        let res = wallet.delete(type_, "nonexistent_name");
         assert_match!(Err(WalletError::ItemNotFound), res);
     }
 
@@ -1336,7 +1332,7 @@ mod tests {
 
         // unsuccessful unencrypted search with nonexisting value
         let query_json = jsonise!({
-            "~nonexistant_tag_name": {"$like": "tag_value_%"},
+            "~nonexistent_tag_name": {"$like": "tag_value_%"},
         });
         let mut iterator = wallet.search("test_type_", &query_json, Some(fetch_options)).unwrap();
         let res = iterator.next().unwrap();
@@ -1402,7 +1398,7 @@ mod tests {
 
         // unsuccessful unencrypted search with nonexisting value
         let query_json = jsonise!({
-            "~nonexistant_tag_name": {"$in": ["tag_value_1", "tag_value_3"]},
+            "~nonexistent_tag_name": {"$in": ["tag_value_1", "tag_value_3"]},
         });
         let mut iterator = wallet.search("test_type_", &query_json, Some(fetch_options)).unwrap();
         let res = iterator.next().unwrap();
@@ -1460,7 +1456,7 @@ mod tests {
 
         // unsuccessful encrypted search with nonexisting value
         let query_json = jsonise!({
-            "nonexistant_tag_name": {"$in": ["tag_value_1", "tag_value_3"]},
+            "nonexistent_tag_name": {"$in": ["tag_value_1", "tag_value_3"]},
         });
         let mut iterator = wallet.search("test_type_", &query_json, Some(fetch_options)).unwrap();
         let res = iterator.next().unwrap();

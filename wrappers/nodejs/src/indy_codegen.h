@@ -3263,6 +3263,109 @@ NAN_METHOD(deleteWallet) {
   delete arg1UTF;
 }
 
+void exportWallet_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+NAN_METHOD(exportWallet) {
+  if(info.Length() != 3){
+    return Nan::ThrowError(Nan::New("Expected 2 arguments: exportWallet(handle, export_config_json, cb(err))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for handle: exportWallet(handle, export_config_json, cb(err))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for credentials: exportWallet(handle, export_config_json, cb(err))").ToLocalChecked());
+  }
+
+  if(!info[2]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("exportWallet arg 2 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[2]).ToLocalChecked());
+  indyCalled(icb, indy_export_wallet(icb->handle, arg0, arg1, exportWallet_cb));
+  delete arg1UTF;
+}
+
+void importWallet_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+NAN_METHOD(importWallet) {
+  if(info.Length() != 7){
+    return Nan::ThrowError(Nan::New("Expected 6 arguments: importWallet(pool_name, name, xtype, config, credentials, import_config_json, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg0UTF = nullptr;
+  const char* arg0 = nullptr;
+  if(info[0]->IsString()){
+    arg0UTF = new Nan::Utf8String(info[0]);
+    arg0 = (const char*)(**arg0UTF);
+  } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for pool_name: importWallet(pool_name, name, xtype, config, credentials, import_config_json, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for name: importWallet(pool_name, name, xtype, config, credentials, import_config_json, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for xtype: importWallet(pool_name, name, xtype, config, credentials, import_config_json, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg3UTF = nullptr;
+  const char* arg3 = nullptr;
+  if(info[3]->IsString()){
+    arg3UTF = new Nan::Utf8String(info[3]);
+    arg3 = (const char*)(**arg3UTF);
+  } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for config: importWallet(pool_name, name, xtype, config, credentials, import_config_json, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg4UTF = nullptr;
+  const char* arg4 = nullptr;
+  if(info[4]->IsString()){
+    arg4UTF = new Nan::Utf8String(info[4]);
+    arg4 = (const char*)(**arg4UTF);
+  } else if(!info[4]->IsNull() && !info[4]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for credentials: importWallet(pool_name, name, xtype, config, credentials, import_config_json, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg5UTF = nullptr;
+  const char* arg5 = nullptr;
+  if(info[5]->IsString()){
+    arg5UTF = new Nan::Utf8String(info[5]);
+    arg5 = (const char*)(**arg5UTF);
+  } else if(!info[5]->IsNull() && !info[5]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for credentials: importWallet(pool_name, name, xtype, config, credentials, import_config_json, cb(err))").ToLocalChecked());
+  }
+  if(!info[6]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("importWallet arg 6 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[6]).ToLocalChecked());
+  indyCalled(icb, indy_import_wallet(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, importWallet_cb));
+  delete arg0UTF;
+  delete arg1UTF;
+  delete arg2UTF;
+  delete arg3UTF;
+  delete arg4UTF;
+  delete arg5UTF;
+}
+
 NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "issuerCreateSchema", issuerCreateSchema);
   Nan::Export(target, "issuerCreateAndStoreCredentialDef", issuerCreateAndStoreCredentialDef);
@@ -3348,5 +3451,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "listWallets", listWallets);
   Nan::Export(target, "closeWallet", closeWallet);
   Nan::Export(target, "deleteWallet", deleteWallet);
+  Nan::Export(target, "exportWallet", exportWallet);
+  Nan::Export(target, "importWallet", importWallet);
 }
 NODE_MODULE(indynodejs, InitAll)
