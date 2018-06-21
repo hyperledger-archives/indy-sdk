@@ -14,8 +14,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::{OpenOptions, File, DirBuilder};
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
-use std::mem;
+use std::path::PathBuf;
 use named_type::NamedType;
 use std::rc::Rc;
 
@@ -26,7 +25,7 @@ use errors::wallet::WalletError;
 use errors::common::CommonError;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
-use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF, ChaCha20Poly1305IETFKey};
+use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETFKey;
 
 use self::export_import::{export, import};
 use self::storage::{WalletStorage, WalletStorageType};
@@ -34,7 +33,6 @@ use self::storage::default::SQLiteStorageType;
 use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Wallet, Keys};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
-use self::sodiumoxide::utils::memzero;
 use self::encryption::derive_key;
 use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
 
@@ -85,7 +83,7 @@ impl WalletCredentials {
                 return Err(WalletError::InputError(String::from("Credentials missing 'key' field")));
             };
 
-            let rekey = if let Some(key) =  m.get("rekey").and_then(|s| s.as_str()) {
+            let rekey = if let Some(key) = m.get("rekey").and_then(|s| s.as_str()) {
                 Some(derive_key(key.as_bytes(), salt)?)
             } else {
                 None
@@ -257,7 +255,7 @@ impl WalletService {
         if !wallet_descriptor_path.exists() {
             return Err(WalletError::NotFound("Wallet descriptor path does not exist.".to_string()));
         }
-        let descriptor_json = _read_file(wallet_descriptor_path)?; // FIXME: Better error!)?;
+        let descriptor_json = _read_file(wallet_descriptor_path)?;
         let descriptor: WalletDescriptor = WalletDescriptor::from_json(&descriptor_json)?;
 
         let storage_types = self.storage_types.borrow();
@@ -372,7 +370,7 @@ impl WalletService {
     }
 
     pub fn add_indy_object<T>(&self, wallet_handle: i32, name: &str, object: &T, tags: &HashMap<String, String>)
-        -> Result<String, WalletError> where T: JsonEncodable, T: NamedType {
+                              -> Result<String, WalletError> where T: JsonEncodable, T: NamedType {
         let type_ = T::short_type_name();
         let object_json = serde_json::to_string::<T>(object)?;
         self.add_record(wallet_handle, &self.add_prefix(type_), name, &object_json, tags)?;
@@ -406,7 +404,7 @@ impl WalletService {
     }
 
     pub fn add_indy_record_tags<T>(&self, wallet_handle: i32, name: &str, tags: &HashMap<String, String>)
-        -> Result<(), WalletError> where T: NamedType {
+                                   -> Result<(), WalletError> where T: NamedType {
         self.add_record_tags(wallet_handle, &self.add_prefix(T::short_type_name()), name, tags)
     }
 
@@ -418,7 +416,7 @@ impl WalletService {
     }
 
     pub fn update_indy_record_tags<T>(&self, wallet_handle: i32, name: &str, tags: &HashMap<String, String>)
-        -> Result<(), WalletError> where T: NamedType {
+                                      -> Result<(), WalletError> where T: NamedType {
         self.update_record_tags(wallet_handle, &self.add_prefix(T::short_type_name()), name, tags)
     }
 
@@ -581,7 +579,7 @@ impl WalletService {
         match self.open_wallet(name, None, credentials) {
             Err(err) => {
                 // Ignores the error, since there is nothing that can be done
-                self.delete_wallet(name, credentials);
+                self.delete_wallet(name, credentials).ok(); // TODO: why do we ignore thr result here?  ok is used to avoid warning
                 Err(err)
             }
             Ok(wallet_handle) => {
@@ -591,7 +589,7 @@ impl WalletService {
                         match import(wallet, reader, &import_config.key) {
                             Ok(_) => Ok(()),
                             err @ Err(_) => {
-                                self.delete_wallet(name, credentials);
+                                self.delete_wallet(name, credentials).ok();  // TODO: why do we ignore thr result here?  ok is used to avoid warning
                                 err
                             }
                         }
@@ -721,7 +719,6 @@ impl Default for RecordOptions {
 }
 
 pub struct WalletSearch {
-    // TODO
     iter: iterator::WalletIterator,
 }
 
@@ -834,6 +831,7 @@ mod tests {
     use errors::wallet::WalletError;
     use utils::inmem_wallet::InmemWallet;
     use utils::test::TestUtils;
+    use std::path::Path;
 
     type Tags = HashMap<String, String>;
 
@@ -1545,7 +1543,7 @@ mod tests {
         let retrieved_tags = item.tags.unwrap();
         assert_eq!(expected_tags, retrieved_tags);
     }
-    
+
     #[test]
     fn wallet_service_get_pool_name_works() {
         _cleanup();

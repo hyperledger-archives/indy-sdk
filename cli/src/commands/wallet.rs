@@ -295,8 +295,8 @@ pub mod import_command {
                 .add_required_deferred_param("key", "Auth key for the wallet")
                 .add_required_param("export_path", "Path to the file that contains exported wallet content")
                 .add_required_deferred_param("export_key", "Passphrase used to derive export key")
-                .add_example("wallet create wallet1 pool_name=pool1 key export_path=/home/indy/export_wallet export_key")
-                .add_example("wallet create wallet1 pool_name=pool1 key=key export_path=/home/indy/export_wallet export_key=export_key")
+                .add_example("wallet import wallet1 pool_name=pool1 key export_path=/home/indy/export_wallet export_key")
+                .add_example("wallet import wallet1 pool_name=pool1 key=key export_path=/home/indy/export_wallet export_key=export_key")
                 .finalize()
     );
 
