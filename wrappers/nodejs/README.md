@@ -1666,6 +1666,48 @@ Deletes created wallet.
 
 Errors: `Common*`, `Wallet*`
 
+#### exportWallet \( handle, exportConfigJson \) -&gt; void
+
+Exports opened wallet
+
+* `handle`: Handle (Number) - wallet handle returned by indy\_open\_wallet.
+* `exportConfigJson`: String - JSON containing settings for input operation.
+```
+{
+    "path": path of the file that contains exported wallet content
+    "key": passphrase used to export key
+}
+```
+* __->__ void
+
+Errors: `Common*`, `Wallet*`
+
+#### importWallet \( poolName, name, xtype, config, credentials, importConfigJson \) -&gt; void
+
+Creates a new secure wallet with the given unique name and then imports its content according to fields provided in import_config This can be seen as an indy_create_wallet call with additional content import
+* `poolName`: String - Name of the pool that corresponds to this wallet.
+* `name`: String - Name of the wallet.
+* `xtype`: String? - Type of the wallet. Defaults to 'default'.
+Custom types can be registered with indy\_register\_wallet\_type call.
+* `config`: String? - Wallet configuration json. List of supported keys are defined by wallet type.
+if NULL, then default config will be used.
+* `credentials`: String - Wallet credentials json. 
+```
+{
+    "key": passphrase used to encrypt data
+    "storage": Optional<object>  List of supported keys are defined by wallet type.
+}
+```
+* `exportConfigJson`: String - JSON containing settings for input operation.
+```
+{
+    "path": path of the file that contains exported wallet content
+    "key": passphrase used to export key
+}
+```
+* __->__ void
+
+Errors: `Common*`, `Wallet*`
 
 [//]: # (CODEGEN-END - don't edit by hand see `codegen/index.js`)
 
