@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::{OpenOptions, File, DirBuilder};
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use named_type::NamedType;
 use std::rc::Rc;
 
@@ -25,7 +25,7 @@ use errors::wallet::WalletError;
 use errors::common::CommonError;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
-use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETFKey};
+use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETFKey;
 
 use self::export_import::{export, import};
 use self::storage::{WalletStorage, WalletStorageType};
@@ -83,7 +83,7 @@ impl WalletCredentials {
                 return Err(WalletError::InputError(String::from("Credentials missing 'key' field")));
             };
 
-            let rekey = if let Some(key) =  m.get("rekey").and_then(|s| s.as_str()) {
+            let rekey = if let Some(key) = m.get("rekey").and_then(|s| s.as_str()) {
                 Some(derive_key(key.as_bytes(), salt)?)
             } else {
                 None
@@ -255,7 +255,7 @@ impl WalletService {
         if !wallet_descriptor_path.exists() {
             return Err(WalletError::NotFound("Wallet descriptor path does not exist.".to_string()));
         }
-        let descriptor_json = _read_file(wallet_descriptor_path)?; // FIXME: Better error!)?;
+        let descriptor_json = _read_file(wallet_descriptor_path)?;
         let descriptor: WalletDescriptor = WalletDescriptor::from_json(&descriptor_json)?;
 
         let storage_types = self.storage_types.borrow();
@@ -269,7 +269,7 @@ impl WalletService {
         let credentials = WalletCredentials::parse(credentials, &config.salt)?;
 
         {
-            // check credentials and close conntection before deleting directory
+            // check credentials and close connection before deleting directory
             let storage = storage_type.open_storage(name, Some(&config_json), &credentials.storage_credentials)?;
 
             WalletService::decrypt_keys(storage.as_ref(), &credentials)?;
@@ -370,7 +370,7 @@ impl WalletService {
     }
 
     pub fn add_indy_object<T>(&self, wallet_handle: i32, name: &str, object: &T, tags: &HashMap<String, String>)
-        -> Result<String, WalletError> where T: JsonEncodable, T: NamedType {
+                              -> Result<String, WalletError> where T: JsonEncodable, T: NamedType {
         let type_ = T::short_type_name();
         let object_json = object.to_json()
             .map_err(map_err_trace!())
@@ -408,7 +408,7 @@ impl WalletService {
     }
 
     pub fn add_indy_record_tags<T>(&self, wallet_handle: i32, name: &str, tags: &HashMap<String, String>)
-        -> Result<(), WalletError> where T: NamedType {
+                                   -> Result<(), WalletError> where T: NamedType {
         self.add_record_tags(wallet_handle, &self.add_prefix(T::short_type_name()), name, tags)
     }
 
@@ -420,7 +420,7 @@ impl WalletService {
     }
 
     pub fn update_indy_record_tags<T>(&self, wallet_handle: i32, name: &str, tags: &HashMap<String, String>)
-        -> Result<(), WalletError> where T: NamedType {
+                                      -> Result<(), WalletError> where T: NamedType {
         self.update_record_tags(wallet_handle, &self.add_prefix(T::short_type_name()), name, tags)
     }
 
@@ -540,6 +540,14 @@ impl WalletService {
                     Ok(config) => config,
                     Err(_) => return Err(WalletError::CommonError(CommonError::InvalidStructure("export config not valid json".to_string()))),
                 };
+
+                let path = PathBuf::from(&export_config.path);
+
+                if let Some(parent_path) = path.parent() {
+                    fs::DirBuilder::new()
+                        .recursive(true)
+                        .create(parent_path)?;
+                }
 
                 let export_file =
                     OpenOptions::new()
@@ -715,7 +723,6 @@ impl Default for RecordOptions {
 }
 
 pub struct WalletSearch {
-    // TODO
     iter: iterator::WalletIterator,
 }
 
@@ -828,6 +835,7 @@ mod tests {
     use errors::wallet::WalletError;
     use utils::inmem_wallet::InmemWallet;
     use utils::test::TestUtils;
+    use std::path::Path;
 
     type Tags = HashMap<String, String>;
 
@@ -1539,7 +1547,7 @@ mod tests {
         let retrieved_tags = item.tags.unwrap();
         assert_eq!(expected_tags, retrieved_tags);
     }
-    
+
     #[test]
     fn wallet_service_get_pool_name_works() {
         _cleanup();

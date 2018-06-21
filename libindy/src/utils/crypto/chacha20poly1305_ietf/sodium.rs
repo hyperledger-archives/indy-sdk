@@ -1,4 +1,5 @@
 extern crate sodiumoxide;
+
 use sodiumoxide::crypto::aead::chacha20poly1305_ietf;
 
 use errors::common::CommonError;
@@ -41,7 +42,7 @@ impl ChaCha20Poly1305IETF {
     }
 
     pub fn generate_key() -> ChaCha20Poly1305IETFKey {
-        ChaCha20Poly1305IETFKey { key : chacha20poly1305_ietf::gen_key() }
+        ChaCha20Poly1305IETFKey { key: chacha20poly1305_ietf::gen_key() }
     }
 
     #[allow(dead_code)]

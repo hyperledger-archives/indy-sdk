@@ -1,4 +1,4 @@
-# Shmair secret API (indy-crypto and indy-sdk)
+# Shamir secret API (indy-crypto and indy-sdk)
 **Objective**: `indy-crypto` exposes the low level API for generating and reconstructing secrets. `indy-sdk` uses the underlying `indy-crypto` and exposes an API to shard a JSON message, store the shards and reconstitute the secret.
 
 ## Indy-crypto

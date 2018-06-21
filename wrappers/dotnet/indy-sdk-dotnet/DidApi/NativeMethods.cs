@@ -218,7 +218,7 @@ namespace Hyperledger.Indy.DidApi
         internal static extern int indy_abbreviate_verkey(int command_handle, string did, string full_verkey, AbbreviateVerkeyCompletedDelegate cb);
 
         /// <summary>
-        /// Delegate to be used on comletion of calls to indy_abbreviate_verkey
+        /// Delegate to be used on completion of calls to indy_abbreviate_verkey
         /// </summary>
         internal delegate void AbbreviateVerkeyCompletedDelegate(int xcommand_handle, int err, string verkey);
     }

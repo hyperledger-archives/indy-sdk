@@ -423,7 +423,7 @@ pub mod cred_def_command {
     command!(CommandMetadata::build("cred-def", "Send Cred Def transaction to the Ledger.")
                 .add_required_param("schema_id", "Sequence number of schema")
                 .add_required_param("signature_type", "Signature type (only CL supported now)")
-                .add_optional_param("tag", "Allows to distinct between credential definitions for the same issuer and schema")
+                .add_optional_param("tag", "Allows to distinct between credential definitions for the same issuer and schema. Note that it is mandatory for indy-node version 1.4.x and higher")
                 .add_required_param("primary", "Primary key in json format")
                 .add_optional_param("revocation", "Revocation key in json format")
                 .add_optional_param("fees_inputs","The list of UTXO inputs")
@@ -500,7 +500,7 @@ pub mod get_cred_def_command {
     command!(CommandMetadata::build("get-cred-def", "Get Cred Definition from Ledger.")
                 .add_required_param("schema_id", "Sequence number of schema")
                 .add_required_param("signature_type", "Signature type (only CL supported now)")
-                .add_optional_param("tag", "Allows to distinct between credential definitions for the same issuer and schema")
+                .add_optional_param("tag", "Allows to distinct between credential definitions for the same issuer and schema. Note that it is mandatory for indy-node version 1.4.x and higher")
                 .add_required_param("origin", "Credential definition owner DID")
                 .add_example("ledger get-cred-def schema_id=1 signature_type=CL origin=VsKV7grR1BUE29mG2Fm2kX")
                 .finalize()
@@ -2690,7 +2690,7 @@ pub mod tests {
                 params.insert("force", "true".to_string()); // because node_works test added fifth Node
                 cmd.execute(&ctx, &params).unwrap();
             }
-            // There is no way to read upgrade transaction to be sure about completly write before sending next one.
+            // There is no way to read upgrade transaction to be sure about completely write before sending next one.
             // So just sleep agains other places where control read request is available
             ::std::thread::sleep(::std::time::Duration::from_secs(1));
             {

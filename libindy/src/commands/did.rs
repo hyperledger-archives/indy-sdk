@@ -109,7 +109,7 @@ macro_rules! ensure_their_did {
               check_wallet_and_pool_handles_consistency!($self_.wallet_service, $self_.pool_service,
                                                          $wallet_handle, $pool_handle, $cb);
 
-              // No their their_did present in the wallet. Deffer this command until it is fetched from ledger.
+              // No their their_did present in the wallet. Defer this command until it is fetched from ledger.
               return $self_._fetch_their_did_from_ledger($wallet_handle, $pool_handle, &$their_did, $deferred_cmd);
             }
             Err(err) => return $cb(Err(IndyError::from(err)))
@@ -650,7 +650,7 @@ impl DidCommandExecutor {
     fn _fetch_their_did_from_ledger(&self,
                                     wallet_handle: i32, pool_handle: i32,
                                     did: &str, deferred_cmd: DidCommand) {
-        // Deffer this command until their did is fetched from ledger.
+        // Defer this command until their did is fetched from ledger.
         let deferred_cmd_id = self._defer_command(deferred_cmd);
 
         // TODO we need passing of my_did as identifier
@@ -679,7 +679,7 @@ impl DidCommandExecutor {
     fn _fetch_attrib_from_ledger(&self,
                                  wallet_handle: i32, pool_handle: i32,
                                  did: &str, deferred_cmd: DidCommand) {
-        // Deffer this command until their did is fetched from ledger.
+        // Defer this command until their did is fetched from ledger.
         let deferred_cmd_id = self._defer_command(deferred_cmd);
 
         // TODO we need passing of my_did as identifier

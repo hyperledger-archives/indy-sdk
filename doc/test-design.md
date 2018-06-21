@@ -75,7 +75,7 @@ Successful completion of High and Medium cases tests indicates Beta quality.
   * Invalid json format
   * Invalid json structure (missed fields and etc...)
   * Invalid base58
-  * Invalid crypto keys lenght and format
+  * Invalid crypto keys length and format
   * Invalid crypto primitives (bigints, points)
   * Invalid complex crypto structures (anoncreds structures mostly)
   * Invalid responses from 3d parties (Ledger, Agent)

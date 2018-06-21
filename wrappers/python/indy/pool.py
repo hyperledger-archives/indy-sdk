@@ -171,7 +171,9 @@ async def set_protocol_version(protocol_version: int) -> None:
     specified version of Indy Node which Libindy works.
     By default PROTOCOL_VERSION=1.
 
-    :param protocol_version: Protocol version will be used. Can be one of: 1,2.
+    :param protocol_version: Protocol version will be used:
+        1 - for Indy Node 1.3
+        2 - for Indy Node 1.4
     :return: Error code
     """
 

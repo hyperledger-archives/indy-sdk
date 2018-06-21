@@ -7,6 +7,8 @@ use indy::api::ErrorCode;
 
 use utils::callback::CallbackUtils;
 use utils::ledger::LedgerUtils;
+use utils::pool::PoolUtils;
+use utils::types::ResponseType;
 
 pub struct DidUtils {}
 
@@ -15,7 +17,8 @@ impl DidUtils {
         let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(::utils::constants::TRUSTEE_SEED))?;
         let (my_did, my_vk) = DidUtils::create_and_store_my_did(wallet_handle, None)?;
         let nym = LedgerUtils::build_nym_request(&trustee_did, &my_did, Some(&my_vk), None, Some("TRUSTEE"))?;
-        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym)?; //TODO check response type
+        let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym)?;
+        PoolUtils::check_response_type(&response, ResponseType::REPLY);
         Ok((my_did, my_vk))
     }
 

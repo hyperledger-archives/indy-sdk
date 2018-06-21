@@ -66,7 +66,7 @@
 
 @required
 /**
- Get not exspired value for key from wallet with handle.
+ Get not expired value for key from wallet with handle.
  
  @handle Wallet handle.
  */

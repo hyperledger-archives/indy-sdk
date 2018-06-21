@@ -4,9 +4,9 @@
 		String attributes = "[\"age\", \"sex\", \"height\", \"name\"]";
 		String schemaDataJSON = "{\"name\":\"" + name + "\",\"version\":\"" + version + "\",\"attr_names\":" + attributes + "}";
 		System.out.println("Schema: " + schemaDataJSON);
-		String schemaRequest = buildSchemaRequest(defautStewardDid, schemaDataJSON).get();
+		String schemaRequest = buildSchemaRequest(defaultStewardDid, schemaDataJSON).get();
 		System.out.println("Schema request:\n" + schemaRequest);
 
 		System.out.println("\n10. Sending the SCHEMA request to the ledger\n");
-		String schemaResponse = signAndSubmitRequest(pool, walletHandle, defautStewardDid, schemaRequest).get();
+		String schemaResponse = signAndSubmitRequest(pool, walletHandle, defaultStewardDid, schemaRequest).get();
 		System.out.println("Schema response:\n" + schemaResponse);
