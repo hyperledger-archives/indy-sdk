@@ -135,7 +135,7 @@ impl NonSecretsCommandExecutor {
 
         let tags = serde_json::from_str(tags_json.unwrap_or("{}"))
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize tags: {:?}", err)))?;
-        let res = self.wallet_service.add_record(wallet_handle, type_, id, value, &tags)?; //TODO: question
+        let res = self.wallet_service.add_record(wallet_handle, type_, id, value, &tags)?;
 
         trace!("add_record <<< res: {:?}", res);
 
@@ -203,10 +203,9 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        let tag_names: Vec<&str> = match serde_json::from_str(tag_names_json) {
-            Ok(tag_names) => tag_names,
-            Err(serde_json_err) => return Err(IndyError::WalletError(WalletError::InputError(format!("Invalid tag names input: {}", tag_names_json))))
-        };
+        let tag_names: Vec<&str> = serde_json::from_str(tag_names_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize tag names: {:?}", err)))?;
+
         let res = self.wallet_service.delete_record_tags(wallet_handle, type_, id, &tag_names)?;
 
         trace!("delete_record_tags <<< res: {:?}", res);
@@ -321,7 +320,7 @@ impl NonSecretsCommandExecutor {
 
     fn _check_type(&self, type_: &str) -> Result<()> {
         if type_.starts_with(WalletService::PREFIX) {
-            return Err(IndyError::WalletError(WalletError::AccessFailed(format!("Record Type is available: {}", type_)))); //TODO: change error
+            return Err(IndyError::WalletError(WalletError::AccessFailed(format!("Record of type \"{}\" is not available", type_))));
         }
         Ok(())
     }

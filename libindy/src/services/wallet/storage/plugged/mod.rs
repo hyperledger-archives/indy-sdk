@@ -813,7 +813,6 @@ mod tests {
     use std::sync::RwLock;
     use self::rand::{thread_rng, Rng};
     use std::clone::Clone;
-    use ::utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
 
     impl PartialEq for StorageEntity {
         fn eq(&self, other: &StorageEntity) -> bool {
