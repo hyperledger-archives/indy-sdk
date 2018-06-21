@@ -39,8 +39,8 @@ IW -> I: <schema_id>, <schema_json>
 I-[#blue]>L: send SCHEMA txn
 
 === Create Credential Definition ==
-P -[#blue]-> L: send GET_SCHEMA req
-L -[#blue]-> P: <schema>
+I -[#blue]-> L: send GET_SCHEMA req
+L -[#blue]-> I: <schema>
 I -> IW: <b>1. indy_issuer_create_and_store_credential_def
 IW -[#green]> IW: store public/private keys and correctness proof
 IW -> I: <cred_def_id>, <cred_def_json>
@@ -61,7 +61,7 @@ I-[#blue]>L: send REVOC_REG_ENTRY txn
 
 P -> PW: <b>5.indy_prover_create_master_secret
 PW -[#green]> PW: store master secret
-IW -> I: <master_secret_id>
+PW -> P: <master_secret_id>
 
 === Create Credential Offer ==
 

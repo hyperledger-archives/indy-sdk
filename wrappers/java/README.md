@@ -38,3 +38,6 @@ Then copy the resulting `libindy.so` to `./lib/`.
 Then run
 
     mvn clean install
+    
+#### Troubleshooting
+Use environment variable `RUST_LOG={info|debug|trace}` to output logs of Libindy.

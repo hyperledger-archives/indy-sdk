@@ -26,7 +26,6 @@ impl CredDefOperation {
     pub fn new(data: CredentialDefinitionV1) -> CredDefOperation {
         CredDefOperation {
             _ref: data.schema_id.parse::<i32>().unwrap_or(0),
-            // TODO: FIXME
             signature_type: data.signature_type.to_str().to_string(),
             data: data.value,
             tag: if ProtocolVersion::is_node_1_3() { None } else { Some(data.tag.clone()) },
