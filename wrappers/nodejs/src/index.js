@@ -553,4 +553,16 @@ indy.deleteWallet = function deleteWallet (name, credentials, cb) {
   return cb.promise
 }
 
+indy.exportWallet = function exportWallet (handle, exportConfigJson, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.exportWallet(handle, toJson(exportConfigJson), cb)
+  return cb.promise
+}
+
+indy.importWallet = function importWallet (poolName, name, xtype, config, credentials, importConfigJson, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.importWallet(poolName, name, xtype, config, toJson(credentials), toJson(importConfigJson), cb)
+  return cb.promise
+}
+
 module.exports = indy

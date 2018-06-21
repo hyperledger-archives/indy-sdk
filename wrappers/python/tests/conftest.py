@@ -173,6 +173,24 @@ def wallet_config():
 
 
 @pytest.fixture
+def export_key():
+    return "export_key"
+
+
+@pytest.fixture
+def export_path(path_temp):
+    return str(path_temp.joinpath("export_file"))
+
+
+@pytest.fixture
+def export_config(export_path, export_key):
+    return json.dumps({
+        'path': export_path,
+        'key': export_key
+    })
+
+
+@pytest.fixture
 def xwallet_cleanup():
     logger = logging.getLogger(__name__)
     logger.debug("wallet_cleanup: >>>")
