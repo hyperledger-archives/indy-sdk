@@ -18,12 +18,20 @@ impl Commander {
     }
 
     pub fn fetch_events(&self) -> Option<PoolEvent> {
-        let cmd = self.cmd_socket.recv_multipart(zmq::DONTWAIT).expect("FIXME");
+        let cmd = match self.cmd_socket.recv_multipart(zmq::DONTWAIT).map_err(map_err_trace!()) {
+            Ok(v) => v,
+            Err(_) => {
+                return None;
+            }
+        };
         trace!("cmd {:?}", cmd);
-        let cmd_s = String::from_utf8(cmd[0].clone())
+        let cmd_s = match String::from_utf8(cmd[0].clone())
             .map_err(|err|
                 CommonError::InvalidState(format!("Invalid command received: {:?}", err)))
-            .expect("FIXME");
+            .map_err(map_err_trace!()) {
+            Ok(cmd) => cmd,
+            Err(_) => {return None;}
+        };
         let id = cmd.get(1).map(|cmd: &Vec<u8>| LittleEndian::read_i32(cmd.as_slice()))
             .unwrap_or(-1);
         if "exit".eq(cmd_s.as_str()) {
@@ -45,6 +53,7 @@ impl Commander {
 mod commander_tests {
     use super::*;
     use utils::sequence::SequenceUtils;
+    use utils;
 
     #[test]
     pub fn commander_new_works() {
@@ -54,14 +63,37 @@ mod commander_tests {
     }
 
     #[test]
-    pub fn commander_fetch_close_event_works() {
+    pub fn commander_get_poll_item_works() {
         let zmq_ctx = zmq::Context::new();
-        let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+        let cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+        let cmd = Commander::new(cmd_sock);
+        cmd.get_poll_item();
+    }
+
+    #[test]
+    pub fn commander_fetch_works_when_socket_error() {
+        let zmq_ctx = zmq::Context::new();
         let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
 
-        let inproc_sock_name: String = format!("inproc://close");
-        recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
-        send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
+        let cmd = Commander::new(recv_cmd_sock);
+
+        assert_match!(None, cmd.fetch_events());
+    }
+
+    #[test]
+    pub fn commander_fetch_works_for_invalid_utf8() {
+        let (send_cmd_sock, recv_cmd_sock) = _create_pair_of_sockets("invalid_utf8");
+
+        let cmd = Commander::new(recv_cmd_sock);
+
+        let buf: &[u8] = &vec![225][0..];
+        send_cmd_sock.send_multipart(&[buf], zmq::DONTWAIT).expect("FIXME");
+        assert_match!(None, cmd.fetch_events());
+    }
+
+    #[test]
+    pub fn commander_fetch_close_event_works() {
+        let (send_cmd_sock, recv_cmd_sock) = _create_pair_of_sockets("close");
 
         let cmd = Commander::new(recv_cmd_sock);
 
@@ -75,13 +107,7 @@ mod commander_tests {
 
     #[test]
     pub fn commander_fetch_refresh_event_works() {
-        let zmq_ctx = zmq::Context::new();
-        let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
-        let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
-
-        let inproc_sock_name: String = format!("inproc://close");
-        recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
-        send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
+        let (send_cmd_sock, recv_cmd_sock) = _create_pair_of_sockets("refresh");
 
         let cmd = Commander::new(recv_cmd_sock);
 
@@ -95,13 +121,7 @@ mod commander_tests {
 
     #[test]
     pub fn commander_fetch_check_cache_event_works() {
-        let zmq_ctx = zmq::Context::new();
-        let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
-        let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
-
-        let inproc_sock_name: String = format!("inproc://close");
-        recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
-        send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
+        let (send_cmd_sock, recv_cmd_sock) = _create_pair_of_sockets("check_cache");
 
         let cmd = Commander::new(recv_cmd_sock);
 
@@ -115,13 +135,7 @@ mod commander_tests {
 
     #[test]
     pub fn commander_fetch_send_request_event_works() {
-        let zmq_ctx = zmq::Context::new();
-        let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
-        let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
-
-        let inproc_sock_name: String = format!("inproc://close");
-        recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
-        send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
+        let (send_cmd_sock, recv_cmd_sock) = _create_pair_of_sockets("send_request");
 
         let cmd = Commander::new(recv_cmd_sock);
 
@@ -131,5 +145,16 @@ mod commander_tests {
         let msg = "test";
         send_cmd_sock.send_multipart(&[msg.as_bytes(), &buf], zmq::DONTWAIT).expect("FIXME");
         assert_match!(Some(PoolEvent::SendRequest(cmd_id, msg)), cmd.fetch_events());
+    }
+
+    fn _create_pair_of_sockets(addr: &str) -> (zmq::Socket, zmq::Socket) {
+        let zmq_ctx = zmq::Context::new();
+        let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+        let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+
+        let inproc_sock_name: String = format!("inproc://{}", addr);
+        recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
+        send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
+        (send_cmd_sock, recv_cmd_sock)
     }
 }
