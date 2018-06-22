@@ -674,20 +674,20 @@ impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
     }
 }
 
-
+#[derive(Debug)]
 pub struct MockRequestHandler {}
 
 impl<T: Networker> RequestHandler<T> for MockRequestHandler {
     fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: &HashMap<String, Option<VerKey>>, generator: Option<Generator>, pool_name: &str) -> Self {
-        unimplemented!()
+        MockRequestHandler {}
     }
 
     fn process_event(&mut self, ore: Option<RequestEvent>) -> Option<PoolEvent> {
-        unimplemented!()
+        None
     }
 
     fn is_terminal(&self) -> bool {
-        unimplemented!()
+        true
     }
 }
 
@@ -798,5 +798,3 @@ fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_ke
         None => false
     }
 }
-
-//TODO: mocked one

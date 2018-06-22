@@ -266,7 +266,7 @@ pub struct MockNetworker {}
 #[cfg(test)]
 impl Networker for MockNetworker {
     fn new() -> Self {
-        unimplemented!()
+        MockNetworker {}
     }
 
     fn fetch_events(&self, poll_items: &[zmq::PollItem]) -> Vec<PoolEvent> {
@@ -274,7 +274,7 @@ impl Networker for MockNetworker {
     }
 
     fn process_event(&mut self, pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
-        unimplemented!()
+        None
     }
 
     fn get_timeout(&self) -> ((String, String), i64) {

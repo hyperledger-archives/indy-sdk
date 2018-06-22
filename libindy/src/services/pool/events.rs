@@ -246,7 +246,7 @@ fn _parse_req_id_and_op(msg: &str) -> Result<(String, String), CommonError> {
 
     let op = req_json["operation"]["type"]
         .as_str()
-        .ok_or(CommonError::InvalidStructure("No reqId in request".to_string()))?;
+        .ok_or(CommonError::InvalidStructure("No operation type in request".to_string()))?;
 
     Ok((req_id.to_string(), op.to_string()))
 }
