@@ -22,10 +22,7 @@ pub fn get_fee(txn_name: String) -> Option<i32> {
 
 pub fn get_all_fees() -> HashMap<String, i32> {
     let fees = FEES.lock().unwrap();
-    let fees: HashMap<String, i32> = fees
-        .iter()
-        .map(|(key, value)| (_txn_code_to_name(key), value.clone()))
-        .collect();
+    let fees: HashMap<String, i32> = fees.clone();
     fees
 }
 
@@ -34,7 +31,6 @@ pub fn clear_fees() {
     let mut fees = FEES.lock().unwrap();
     fees.clear();
 }
-
 
 fn _txn_name_to_code(txn: &str) -> String {
     match txn {
