@@ -76,9 +76,25 @@ impl LedgerUtils {
         super::results::result_to_string(err, receiver)
     }
 
+    pub fn multi_sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let request_json = CString::new(request_json).unwrap();
+
+        let err =
+            indy_multi_sign_request(command_handle,
+                                    wallet_handle,
+                                    submitter_did.as_ptr(),
+                                    request_json.as_ptr(),
+                                    cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
     fn _extract_seq_no_from_reply(reply: &str) -> Result<u64, &'static str> {
         ::serde_json::from_str::<::serde_json::Value>(reply).map_err(|_| "Reply isn't valid JSON")?
-            ["result"]["seqNo"]
+            ["result"]["txnMetadata"]["seqNo"]
             .as_u64().ok_or("Missed seqNo in reply")
     }
 
@@ -262,12 +278,26 @@ impl LedgerUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_txn_request(submitter_did: &str, data: i32) -> Result<String, ErrorCode> {
+    pub fn build_get_validator_info_request(submitter_did: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
 
-        let err = indy_build_get_txn_request(command_handle, submitter_did.as_ptr(), data, cb);
+        let err = indy_build_get_validator_info_request(command_handle, submitter_did.as_ptr(), cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn build_get_txn_request(submitter_did: &str, data: i32, ledger_type: Option<&str>) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let ledger_type_str = ledger_type.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+
+        let err = indy_build_get_txn_request(command_handle,
+                                             submitter_did.as_ptr(),
+                                             if ledger_type.is_some() { ledger_type_str.as_ptr() } else { null() },
+                                             data, cb);
 
         super::results::result_to_string(err, receiver)
     }
@@ -295,7 +325,7 @@ impl LedgerUtils {
                                                   submitter_did.as_ptr(),
                                                   action.as_ptr(),
                                                   if datetime.is_some() { datetime_str.as_ptr() } else { null() },
-                                                      cb);
+                                                  cb);
 
         super::results::result_to_string(err, receiver)
     }
@@ -480,6 +510,21 @@ impl LedgerUtils {
         super::results::result_to_string_string_u64(err, receiver)
     }
 
+    pub fn register_transaction_parser_for_sp(txn_type: &str, parse: CustomTransactionParser, free: CustomFree) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+
+        let txn_type = CString::new(txn_type).unwrap();
+
+        let err =
+            indy_register_transaction_parser_for_sp(command_handle,
+                                                    txn_type.as_ptr(),
+                                                    Some(parse),
+                                                    Some(free),
+                                                    cb);
+
+        super::results::result_to_empty(err, receiver)
+    }
+
     pub fn post_entities() -> (&'static str, &'static str, &'static str) {
         lazy_static! {
                     static ref COMMON_ENTITIES_INIT: Once = ONCE_INIT;
@@ -512,7 +557,7 @@ impl LedgerUtils {
                                                                                                        &schema_json,
                                                                                                        TAG_1,
                                                                                                        None,
-                                                                                                       &AnoncredsUtils::revocation_cred_def_config()).unwrap();
+                                                                                                       Some(&AnoncredsUtils::revocation_cred_def_config())).unwrap();
                 let cred_def_request = LedgerUtils::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
                 LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &cred_def_request).unwrap();
 
@@ -545,6 +590,8 @@ impl LedgerUtils {
                 let res = mem::transmute(&rev_reg_id as &str);
                 mem::forget(rev_reg_id);
                 REV_REG_DEF_ID = res;
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
             });
 
             (SCHEMA_ID, CRED_DEF_ID, REV_REG_DEF_ID)

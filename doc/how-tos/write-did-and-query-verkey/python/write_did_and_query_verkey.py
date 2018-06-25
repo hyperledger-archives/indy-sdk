@@ -16,13 +16,15 @@ import asyncio
 import json
 import pprint
 
-from indy import pool, ledger, wallet, signus
+from indy import pool, ledger, wallet, did
 from indy.error import IndyError
 
 
 pool_name = 'pool'
 wallet_name = 'wallet'
 genesis_file_path = '/home/vagrant/code/evernym/indy-sdk/cli/docker_pool_transactions_genesis'
+wallet_credentials = json.dumps({"key": "wallet_key"})
+
 
 
 def print_log(value_color="", value_noncolor=""):
@@ -46,23 +48,23 @@ async def write_nym_and_query_verkey():
 
         # 3.
         print_log('\n3. Creating new secure wallet\n')
-        await wallet.create_wallet(pool_name, wallet_name, None, None, None)
+        await wallet.create_wallet(pool_name, wallet_name, None, None, wallet_credentials)
 
         # 4.
         print_log('\n4. Open wallet and get handle from libindy\n')
-        wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+        wallet_handle = await wallet.open_wallet(wallet_name, None, wallet_credentials)
 
         # 5.
         print_log('\n5. Generating and storing steward DID and verkey\n')
         steward_seed = '000000000000000000000000Steward1'
         did_json = json.dumps({'seed': steward_seed})
-        steward_did, steward_verkey = await signus.create_and_store_my_did(wallet_handle, did_json)
+        steward_did, steward_verkey = await did.create_and_store_my_did(wallet_handle, did_json)
         print_log('Steward DID: ', steward_did)
         print_log('Steward Verkey: ', steward_verkey)
 
         # 6.
         print_log('\n6. Generating and storing trust anchor DID and verkey\n')
-        trust_anchor_did, trust_anchor_verkey = await signus.create_and_store_my_did(wallet_handle, "{}")
+        trust_anchor_did, trust_anchor_verkey = await did.create_and_store_my_did(wallet_handle, "{}")
         print_log('Trust anchor DID: ', trust_anchor_did)
         print_log('Trust anchor Verkey: ', trust_anchor_verkey)
 
@@ -88,7 +90,7 @@ async def write_nym_and_query_verkey():
         # 9.
         print_log('\n9. Generating and storing DID and verkey representing a Client '
                   'that wants to obtain Trust Anchor Verkey\n')
-        client_did, client_verkey = await signus.create_and_store_my_did(wallet_handle, "{}")
+        client_did, client_verkey = await did.create_and_store_my_did(wallet_handle, "{}")
         print_log('Client DID: ', client_did)
         print_log('Client Verkey: ', client_verkey)
 
@@ -122,7 +124,7 @@ async def write_nym_and_query_verkey():
 
         # 14.
         print_log('\n14. Deleting created wallet\n')
-        await wallet.delete_wallet(wallet_name, None)
+        await wallet.delete_wallet(wallet_name, wallet_credentials)
 
         # 15.
         print_log('\n15. Deleting pool ledger config\n')

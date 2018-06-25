@@ -26,7 +26,7 @@ pub struct CryptoBox {}
 impl CryptoBox {
     pub fn encrypt(private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError> {
         if nonce.len() != 24 {
-            return Err(CommonError::InvalidStructure(format!("Invalid nonce")))
+            return Err(CommonError::InvalidStructure("Invalid nonce".to_string()))
         }
 
         Ok(box_::seal(
@@ -39,7 +39,7 @@ impl CryptoBox {
 
     pub fn decrypt(private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError> {
         if nonce.len() != 24 {
-            return Err(CommonError::InvalidStructure(format!("Invalid nonce")))
+            return Err(CommonError::InvalidStructure("Invalid nonce".to_string()))
         }
 
         box_::open(
@@ -57,7 +57,7 @@ impl CryptoBox {
 
     pub fn create_key_pair_for_signature(seed: Option<&[u8]>) -> Result<(Vec<u8>, Vec<u8>), CommonError> {
         if seed.is_some() && seed.unwrap().len() != 32 {
-            return Err(CommonError::InvalidStructure(format!("Invalid seed")));
+            return Err(CommonError::InvalidStructure("Invalid seed".to_string()));
         }
 
         let (public_key, private_key) =
@@ -74,7 +74,7 @@ impl CryptoBox {
 
     pub fn sign(private_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError> {
         if private_key.len() != 64 {
-            return Err(CommonError::InvalidStructure(format!("Invalid sign key")));
+            return Err(CommonError::InvalidStructure("Invalid sign key".to_string()));
         }
 
         let mut pr_key: [u8; 64] = [0; 64];
@@ -88,11 +88,11 @@ impl CryptoBox {
 
     pub fn verify(public_key: &[u8], doc: &[u8], sign: &[u8]) -> Result<bool, CommonError> {
         if sign.len() != 64 {
-            return Err(CommonError::InvalidStructure(format!("Invalid signature")));
+            return Err(CommonError::InvalidStructure("Invalid signature".to_string()));
         }
 
         if public_key.len() != 32 {
-            return Err(CommonError::InvalidStructure(format!("Invalid verkey")));
+            return Err(CommonError::InvalidStructure("Invalid verkey".to_string()));
         }
 
         let mut signature: [u8; 64] = [0; 64];
@@ -107,7 +107,7 @@ impl CryptoBox {
 
     pub fn sk_to_curve25519(sk: &[u8]) -> Result<Vec<u8>, CommonError> {
         if sk.len() != 64 {
-            return Err(CommonError::InvalidStructure(format!("Invalid signkey")));
+            return Err(CommonError::InvalidStructure("Invalid signkey".to_string()));
         }
 
         let mut from: [u8; 64] = [0; 64];
@@ -121,7 +121,7 @@ impl CryptoBox {
 
     pub fn vk_to_curve25519(pk: &[u8]) -> Result<Vec<u8>, CommonError> {
         if pk.len() != 32 {
-            return Err(CommonError::InvalidStructure(format!("Invalid verkey")));
+            return Err(CommonError::InvalidStructure("Invalid verkey".to_string()));
         }
 
         let mut from: [u8; 32] = [0; 32];

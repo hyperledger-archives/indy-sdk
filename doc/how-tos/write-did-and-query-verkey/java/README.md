@@ -2,12 +2,12 @@
 
 Indy-SDK Developer Walkthrough #1, Java Edition
 
-[ [Python](../python/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
+[ [Python](../../not-yet-written.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
 
 
 ## Prerequisites
 
-Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../../prerequisites).
+Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../../prerequisites.md).
 
 
 ## Steps
@@ -112,7 +112,7 @@ Now that you have a trust anchor identity, you can write or query
 any number of additional identities to the ledger, with just a handful of
 lines of code. Try creating some.
 
-You might try the ["Rotate a Key"](../../rotate-key/java/README.md)
+You might try the ["Rotate a Key"](../../rotate-key/../not-yet-written.md)
 how-to, which can be done in only once step one you complete this one.
 
 You could also try to create a new steward identity without a seed, or

@@ -20,10 +20,9 @@ pub mod create_command {
     command!(CommandMetadata::build("create", "Create new wallet with specified name")
                 .add_main_param("name", "The name of new wallet")
                 .add_required_param("pool_name", "The name of associated Indy pool")
-                .add_optional_deferred_param("key", "Auth key for the wallet")
-                .add_example("wallet create wallet1 pool_name=pool1")
+                .add_required_deferred_param("key", "Auth key for the wallet")
                 .add_example("wallet create wallet1 pool_name=pool1 key")
-                .add_example("wallet create wallet1 pool_name=pool1 key=AAAAB3NzaC1yc2EA")
+                .add_example("wallet create wallet1 pool_name=pool1 key=key")
                 .finalize()
     );
 
@@ -32,9 +31,9 @@ pub mod create_command {
 
         let pool_name = get_str_param("pool_name", params).map_err(error_err!())?;
         let name = get_str_param("name", params).map_err(error_err!())?;
-        let key = get_opt_str_param("key", params).map_err(error_err!())?;
+        let key = get_str_param("key", params).map_err(error_err!())?;
 
-        let credentials: Option<String> = key.map(|key| json!({ "key": key }).to_string());
+        let credentials: String = json!({ "key": key.clone() }).to_string();
 
         trace!("Wallet::create_wallet try: name {}, pool_name {}", name, pool_name);
 
@@ -42,7 +41,7 @@ pub mod create_command {
                                         name,
                                         None,
                                         None,
-                                        credentials.as_ref().map(String::as_str),
+                                        credentials.as_str(),
         );
 
         trace!("Wallet::create_wallet return: {:?}", res);
@@ -64,32 +63,28 @@ pub mod open_command {
 
     command_with_cleanup!(CommandMetadata::build("open", "Open wallet with specified name. Also close previously opened.")
                             .add_main_param("name", "The name of wallet")
-                            .add_optional_deferred_param("key", "Auth key for the wallet")
+                            .add_required_deferred_param("key", "Auth key for the wallet")
                             .add_optional_deferred_param("rekey", "New auth key for the wallet (will replace previous one).")
-                            .add_example("wallet open wallet1")
                             .add_example("wallet open wallet1 key")
                             .add_example("wallet open wallet1 key rekey")
-                            .add_example("wallet open wallet1 key=AAAAB3NzaC1yc2EA rekey=BBBAB3NzaC1AS4AC")
+                            .add_example("wallet open wallet1 key=key rekey=other_key")
                             .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
-        let key = get_opt_str_param("key", params).map_err(error_err!())?;
+        let key = get_str_param("key", params).map_err(error_err!())?;
         let rekey = get_opt_str_param("rekey", params).map_err(error_err!())?;
 
         let credentials = {
             let mut json = JSONMap::new();
 
-            update_json_map_opt_key!(json, "key", key);
+            json.insert("key".to_string(), serde_json::Value::String(key.to_string()));
+
             update_json_map_opt_key!(json, "rekey", rekey);
 
-            if !json.is_empty() {
-                Some(JSONValue::from(json).to_string())
-            } else {
-                None
-            }
+            JSONValue::from(json).to_string()
         };
 
         let res = Ok(())
@@ -105,7 +100,7 @@ pub mod open_command {
                 }
             })
             .and_then(|_| {
-                match Wallet::open_wallet(name, None, credentials.as_ref().map(String::as_str)) {
+                match Wallet::open_wallet(name, None, &credentials) {
                     Ok(handle) => {
                         set_opened_wallet(ctx, Some((handle, name.to_owned())));
                         Ok(println_succ!("Wallet \"{}\" has been opened", name))
@@ -115,8 +110,8 @@ pub mod open_command {
                         match err {
                             ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid wallet config")),
                             ErrorCode::WalletAlreadyOpenedError => Err(println_err!("Wallet \"{}\" already opened", name)),
-                            ErrorCode::WalletAccessFailed => Err(println_err!("Cannot open encrypted wallet \"{}\"", name)),
-                            ErrorCode::CommonIOError => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
+                            ErrorCode::WalletAccessFailed => Err(println_err!("Cannot open wallet \"{}\". Invalid key \"{}\" has been provided", name, key)),
+                            ErrorCode::WalletNotFoundError => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
                             err => Err(println_err!("Indy SDK error occurred {:?}", err)),
                         }
                     }
@@ -161,7 +156,7 @@ pub mod list_command {
 
                 print_list_table(&wallets,
                                  &vec![("name", "Name"),
-                                       ("associated_pool_name", "Associated pool name"),
+                                       ("pool_name", "Associated pool name"),
                                        ("type", "Type")],
                                  "There are no wallets");
 
@@ -218,7 +213,9 @@ pub mod delete_command {
 
     command!(CommandMetadata::build("delete", "Delete wallet with specified name")
                 .add_main_param("name", "The name of deleted wallet")
-                .add_example("wallet delete wallet1")
+                .add_required_deferred_param("key", "Auth key for the wallet")
+                .add_example("wallet delete wallet1 key")
+                .add_example("wallet delete wallet1 key=key")
                 .finalize()
     );
 
@@ -226,6 +223,9 @@ pub mod delete_command {
         trace!("execute >> ctx: {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
+        let key = get_str_param("key", params).map_err(error_err!())?;
+
+        let credentials: String = json!({ "key": key }).to_string();
 
         if let Some((_, opened_wallet_name)) = get_opened_wallet(&ctx) {
             // TODO: Indy-Sdk allows delete opened wallet
@@ -234,9 +234,11 @@ pub mod delete_command {
             }
         }
 
-        let res = match Wallet::delete_wallet(name) {
+        let res = match Wallet::delete_wallet(name, credentials.as_str()) {
             Ok(()) => Ok(println_succ!("Wallet \"{}\" has been deleted", name)),
             Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
+            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
+            Err(ErrorCode::WalletAccessFailed) => Err(println_err!("Cannot delete wallet \"{}\". Invalid key \"{}\" has been provided ", name, key)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -248,36 +250,42 @@ pub mod delete_command {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use utils::test::TestUtils;
     use libindy::wallet::Wallet;
 
     const WALLET: &'static str = "wallet";
     const POOL: &'static str = "pool";
+    const WALLET_KEY: &'static str = "wallet_key";
 
     mod create {
         use super::*;
 
         #[test]
         pub fn create_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
-
             {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
                 params.insert("pool_name", POOL.to_string());
+                params.insert("key", WALLET_KEY.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
 
             let wallets = get_wallets();
             assert_eq!(1, wallets.len());
+
             assert_eq!(wallets[0]["name"].as_str().unwrap(), WALLET);
-            assert_eq!(wallets[0]["associated_pool_name"].as_str().unwrap(), POOL);
+            assert_eq!(wallets[0]["pool_name"].as_str().unwrap(), POOL);
 
             delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn create_works_for_twice() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_wallet(&ctx);
@@ -286,21 +294,37 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
                 params.insert("pool_name", POOL.to_string());
+                params.insert("key", WALLET_KEY.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn create_works_for_missed_pool_name() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
-
             {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+        }
+
+        #[test]
+        pub fn create_works_for_missed_credentials() {
+            let ctx = CommandContext::new();
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("pool_name", POOL.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            TestUtils::cleanup_storage();
         }
     }
 
@@ -309,6 +333,7 @@ pub mod tests {
 
         #[test]
         pub fn open_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_wallet(&ctx);
@@ -316,14 +341,18 @@ pub mod tests {
                 let cmd = open_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             ensure_opened_wallet_handle(&ctx).unwrap();
             close_and_delete_wallet(&ctx);
+
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn open_works_for_twice() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -331,17 +360,53 @@ pub mod tests {
                 let cmd = open_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
                 cmd.execute(&ctx, &params).unwrap(); //TODO: we close and open same wallet
             }
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn open_works_for_not_created() {
+            TestUtils::cleanup_storage();
+
             let cmd = open_command::new();
             let mut params = CommandParams::new();
             params.insert("name", WALLET.to_string());
+            params.insert("key", WALLET_KEY.to_string());
             cmd.execute(&CommandContext::new(), &params).unwrap_err();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn open_works_for_missed_key() {
+            let ctx = CommandContext::new();
+
+            create_wallet(&ctx);
+            {
+                let cmd = open_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            delete_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn open_works_for_wrong_key() {
+            let ctx = CommandContext::new();
+
+            create_wallet(&ctx);
+            {
+                let cmd = open_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", "other_key".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            delete_wallet(&ctx);
         }
     }
 
@@ -350,7 +415,9 @@ pub mod tests {
 
         #[test]
         pub fn list_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
+
             create_wallet(&ctx);
             {
                 let cmd = list_command::new();
@@ -358,16 +425,19 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap();
             }
             delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn list_works_for_empty_list() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
             {
                 let cmd = list_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
+            TestUtils::cleanup_storage();
         }
     }
 
@@ -376,6 +446,7 @@ pub mod tests {
 
         #[test]
         pub fn close_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -386,10 +457,12 @@ pub mod tests {
             }
             ensure_opened_wallet_handle(&ctx).unwrap_err();
             delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn close_works_for_not_opened() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_wallet(&ctx);
@@ -399,10 +472,12 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn close_works_for_twice() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
             create_and_open_wallet(&ctx);
             {
@@ -416,6 +491,7 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
         }
     }
 
@@ -424,6 +500,7 @@ pub mod tests {
 
         #[test]
         pub fn delete_works() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_wallet(&ctx);
@@ -431,22 +508,31 @@ pub mod tests {
                 let cmd = delete_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
                 cmd.execute(&CommandContext::new(), &params).unwrap();
             }
             let wallets = get_wallets();
             assert_eq!(0, wallets.len());
+
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn delete_works_for_not_created() {
+            TestUtils::cleanup_storage();
+
             let cmd = delete_command::new();
             let mut params = CommandParams::new();
             params.insert("name", WALLET.to_string());
+            params.insert("key", WALLET_KEY.to_string());
             cmd.execute(&CommandContext::new(), &params).unwrap_err();
+
+            TestUtils::cleanup_storage();
         }
 
         #[test]
         pub fn delete_works_for_opened() {
+            TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -454,9 +540,27 @@ pub mod tests {
                 let cmd = delete_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn delete_works_for_wrong_key() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_wallet(&ctx);
+            {
+                let cmd = delete_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", "other_key".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            TestUtils::cleanup_storage();
         }
     }
 
@@ -465,7 +569,7 @@ pub mod tests {
         let mut params = CommandParams::new();
         params.insert("name", WALLET.to_string());
         params.insert("pool_name", POOL.to_string());
-
+        params.insert("key", WALLET_KEY.to_string());
         create_cmd.execute(&ctx, &params).unwrap();
     }
 
@@ -475,12 +579,14 @@ pub mod tests {
             let mut params = CommandParams::new();
             params.insert("name", WALLET.to_string());
             params.insert("pool_name", POOL.to_string());
+            params.insert("key", WALLET_KEY.to_string());
             create_cmd.execute(&ctx, &params).unwrap();
         }
         {
             let cmd = open_command::new();
             let mut params = CommandParams::new();
             params.insert("name", WALLET.to_string());
+            params.insert("key", WALLET_KEY.to_string());
             cmd.execute(&ctx, &params).unwrap();
         }
 
@@ -498,6 +604,7 @@ pub mod tests {
             let cmd = delete_command::new();
             let mut params = CommandParams::new();
             params.insert("name", WALLET.to_string());
+            params.insert("key", WALLET_KEY.to_string());
             cmd.execute(&CommandContext::new(), &params).unwrap();
         }
     }
@@ -507,6 +614,7 @@ pub mod tests {
             let cmd = delete_command::new();
             let mut params = CommandParams::new();
             params.insert("name", WALLET.to_string());
+            params.insert("key", WALLET_KEY.to_string());
             cmd.execute(&ctx, &params).unwrap();
         }
     }

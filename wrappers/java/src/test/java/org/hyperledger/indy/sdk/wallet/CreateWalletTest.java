@@ -5,6 +5,7 @@ import static org.hamcrest.CoreMatchers.isA;
 import java.util.concurrent.ExecutionException;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -12,27 +13,23 @@ public class CreateWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCreateWalletWorks() throws Exception {
-		Wallet.createWallet(POOL, WALLET, TYPE, null, null).get();
+		Wallet.createWallet(POOL, WALLET, TYPE, null, CREDENTIALS).get();
 	}
 
 	@Test
+	@Ignore
 	public void testCreateWalletWorksForPlugged() throws Exception {
-		Wallet.createWallet(POOL, "pluggedWalletCreate", "inmem", null, null).get();
+		Wallet.createWallet(POOL, "pluggedWalletCreate", "inmem", null, CREDENTIALS).get();
 	}
 
 	@Test
 	public void testCreateWalletWorksForEmptyType() throws Exception {
-		Wallet.createWallet(POOL, WALLET, null, null, null).get();
+		Wallet.createWallet(POOL, WALLET, null, null, CREDENTIALS).get();
 	}
 
 	@Test
 	public void testCreateWalletWorksForConfigJson() throws Exception {
-		Wallet.createWallet(POOL, WALLET, null, "{\"freshness_time\":1000}", null).get();
-	}
-
-	@Test
-	public void testCreateWalletWorksForCredentialsJson() throws Exception {
-		Wallet.createWallet(POOL, WALLET, null, null, "{\"key\":\"testkey\"}").get();
+		Wallet.createWallet(POOL, WALLET, null, "{\"freshness_time\":1000}", CREDENTIALS).get();
 	}
 
 	@Test
@@ -40,14 +37,14 @@ public class CreateWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(UnknownWalletTypeException.class));
 
-		Wallet.createWallet(POOL, WALLET, "unknow_type", null, null).get();
+		Wallet.createWallet(POOL, WALLET, "unknow_type", null, CREDENTIALS).get();
 	}
 
 	@Test
 	public void testCreateWalletWorksForEmptyName() throws Exception {
 		thrown.expect(IllegalArgumentException.class);
 
-		Wallet.createWallet(POOL, "", TYPE, null, null).get();
+		Wallet.createWallet(POOL, "", TYPE, null, CREDENTIALS).get();
 	}
 
 	@Test
@@ -55,7 +52,7 @@ public class CreateWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletExistsException.class));
 
-		Wallet.createWallet(POOL, WALLET, TYPE, null, null).get();
-		Wallet.createWallet(POOL, WALLET, TYPE, null, null).get();
+		Wallet.createWallet(POOL, WALLET, TYPE, null, CREDENTIALS).get();
+		Wallet.createWallet(POOL, WALLET, TYPE, null, CREDENTIALS).get();
 	}
 }

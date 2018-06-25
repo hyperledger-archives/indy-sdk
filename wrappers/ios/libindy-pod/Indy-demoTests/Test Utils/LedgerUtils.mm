@@ -224,6 +224,25 @@
     return err;
 }
 
+- (NSError *)buildGetValidatorInfo:(NSString *)submitterDid
+                        resultJson:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+
+    [IndyLedger buildGetValidatorInfo:submitterDid
+                           completion:^(NSError *error, NSString *request) {
+                               err = error;
+                               result = request;
+                               [completionExpectation fulfill];
+                           }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = result;}
+    return err;
+}
+
 - (NSError *)parseGetSchemaResponse:(NSString *)getSchemaResponse
                            schemaId:(NSString **)schemaId
                          schemaJson:(NSString **)schemaJson {
@@ -342,6 +361,7 @@
 // MARK: Buildget txn request
 
 - (NSError *)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
+                                     ledgerType:(NSString *)ledgerType
                                            data:(NSNumber *)data
                                      resultJson:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
@@ -349,6 +369,7 @@
     __block NSString *result = nil;
 
     [IndyLedger buildGetTxnRequestWithSubmitterDid:submitterDid
+                                        ledgerType:ledgerType
                                               data:data
                                         completion:^(NSError *error, NSString *request) {
                                             err = error;
@@ -392,7 +413,7 @@
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
-    
+
     [IndyLedger buildPoolRestartRequestWithSubmitterDid:submitterDid
                                                  action:action
                                                datetime:datetime
@@ -401,9 +422,9 @@
                                                  result = request;
                                                  [completionExpectation fulfill];
                                              }];
-    
+
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
-    
+
     if (resultJson) {*resultJson = result;}
     return err;
 }
@@ -644,6 +665,26 @@
                             submitterdid:(NSString *)submitterDid
                              requestJson:(NSString *)requestJson
                               resultJson:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+
+    [IndyLedger signRequest:requestJson submitterDid:submitterDid walletHandle:walletHandle completion:^(NSError *error, NSString *signResult) {
+        err = error;
+        result = signResult;
+        [completionExpectation fulfill];
+    }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = result;}
+    return err;
+}
+
+- (NSError *)multiSignRequestWithWalletHandle:(IndyHandle)walletHandle
+                                 submitterdid:(NSString *)submitterDid
+                                  requestJson:(NSString *)requestJson
+                                   resultJson:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;

@@ -1,59 +1,67 @@
 extern crate libc;
 extern crate serde_json;
+extern crate indy_crypto;
 
-use api::ErrorCode;
 use errors::indy::IndyError;
 use errors::common::CommonError;
 use errors::wallet::WalletError;
 use services::wallet::WalletService;
+use api::wallet::*;
 use std::rc::Rc;
 
-use self::libc::c_char;
-
 pub enum WalletCommand {
-    RegisterWalletType(String, // xtype
-                       extern fn(name: *const c_char,
-                                 config: *const c_char,
-                                 credentials: *const c_char) -> ErrorCode, // create
-                       extern fn(name: *const c_char,
-                                 config: *const c_char,
-                                 runtime_config: *const c_char,
-                                 credentials: *const c_char,
-                                 handle: *mut i32) -> ErrorCode, // open
-                       extern fn(handle: i32,
-                                 key: *const c_char,
-                                 value: *const c_char) -> ErrorCode, // set
-                       extern fn(handle: i32,
-                                 key: *const c_char,
-                                 value_ptr: *mut *const c_char) -> ErrorCode, // get
-                       extern fn(handle: i32,
-                                 key: *const c_char,
-                                 value_ptr: *mut *const c_char) -> ErrorCode, // get_not_expired
-                       extern fn(handle: i32,
-                                 key_prefix: *const c_char,
-                                 values_json_ptr: *mut *const c_char) -> ErrorCode, // list
-                       extern fn(handle: i32) -> ErrorCode, // close
-                       extern fn(name: *const c_char,
-                                 config: *const c_char,
-                                 credentials: *const c_char) -> ErrorCode, // delete
-                       extern fn(wallet_handle: i32, str: *const c_char) -> ErrorCode, // free
+    RegisterWalletType(String, // type_
+                       WalletCreate, // create
+                       WalletOpen, // open
+                       WalletClose, // close
+                       WalletDelete, // delete
+                       WalletAddRecord, // add record
+                       WalletUpdateRecordValue, // update record value
+                       WalletUpdateRecordTags, // update record value
+                       WalletAddRecordTags, // add record tags
+                       WalletDeleteRecordTags, // delete record tags
+                       WalletDeleteRecord, // delete record
+                       WalletGetRecord, // get record
+                       WalletGetRecordId, // get record id
+                       WalletGetRecordType, // get record id
+                       WalletGetRecordValue, // get record value
+                       WalletGetRecordTags, // get record tags
+                       WalletFreeRecord, // free record
+                       WalletGetStorageMetadata, // get storage metadata
+                       WalletSetStorageMetadata, // set storage metadata
+                       WalletFreeStorageMetadata, // free storage metadata
+                       WalletSearchRecords, // search records
+                       WalletSearchAllRecords, // search all records
+                       WalletGetSearchTotalCount, // get search total count
+                       WalletFetchSearchNextRecord, // fetch search next record
+                       WalletFreeSearch, // free search
                        Box<Fn(Result<(), IndyError>) + Send>),
     Create(String, // pool name
            String, // wallet name
-           Option<String>, // wallet type
-           Option<String>, // wallet config
-           Option<String>, // wallet credentials
+           Option<String>, // storage type
+           Option<String>, // config
+           String, // credentials
            Box<Fn(Result<(), IndyError>) + Send>),
     Open(String, // wallet name
          Option<String>, // wallet runtime config
-         Option<String>, // wallet credentials
+         String, // wallet credentials
          Box<Fn(Result<i32, IndyError>) + Send>),
     Close(i32, // handle
           Box<Fn(Result<(), IndyError>) + Send>),
     ListWallets(Box<Fn(Result<String, IndyError>) + Send>),
     Delete(String, // name
-           Option<String>, // wallet credentials
-           Box<Fn(Result<(), IndyError>) + Send>)
+           String, // wallet credentials
+           Box<Fn(Result<(), IndyError>) + Send>),
+    Export(i32, // wallet_handle
+           String, // export config_json
+           Box<Fn(Result<(), IndyError>) + Send>),
+    Import(String, // pool name
+           String, // wallet name
+           Option<String>, // storage type
+           Option<String>, // config
+           String, // credentials
+           String, // import_config_json
+           Box<Fn(Result<(), IndyError>) + Send>),
 }
 
 pub struct WalletCommandExecutor {
@@ -63,124 +71,194 @@ pub struct WalletCommandExecutor {
 impl WalletCommandExecutor {
     pub fn new(wallet_service: Rc<WalletService>) -> WalletCommandExecutor {
         WalletCommandExecutor {
-            wallet_service: wallet_service
+            wallet_service
         }
     }
 
     pub fn execute(&self, command: WalletCommand) {
         match command {
-            WalletCommand::RegisterWalletType(xtype, create, open, set, get,
-                                              get_not_expired, list, close, delete, free, cb) => {
+            WalletCommand::RegisterWalletType(type_, create, open, close, delete, add_record,
+                                              update_record_value, update_record_tags, add_record_tags,
+                                              delete_record_tags, delete_record, get_record, get_record_id, get_record_type,
+                                              get_record_value, get_record_tags, free_record, get_storage_metadata, set_storage_metadata,
+                                              free_storage_metadata, search_records, search_all_records, get_search_total_count,
+                                              fetch_search_next_record, free_search, cb) => {
                 info!(target: "wallet_command_executor", "RegisterWalletType command received");
-                self.register_type(&xtype, create, open, set,
-                                   get, get_not_expired, list, close, delete, free, cb);
+                cb(self.register_type(&type_, create, open, close, delete, add_record,
+                                      update_record_value, update_record_tags, add_record_tags,
+                                      delete_record_tags, delete_record, get_record, get_record_id, get_record_type,
+                                      get_record_value, get_record_tags, free_record, get_storage_metadata, set_storage_metadata,
+                                      free_storage_metadata, search_records, search_all_records, get_search_total_count,
+                                      fetch_search_next_record, free_search));
             }
-            WalletCommand::Create(pool_name, name, xtype, config, credentials, cb) => {
+            WalletCommand::Create(pool_name, name, storage_type, config, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Create command received");
-                self.create(&pool_name, &name, xtype.as_ref().map(String::as_str),
-                            config.as_ref().map(String::as_str),
-                            credentials.as_ref().map(String::as_str), cb);
+                cb(self.create(&pool_name, &name, storage_type.as_ref().map(String::as_str),
+                               config.as_ref().map(String::as_str), &credentials));
             }
             WalletCommand::Open(name, runtime_config, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Open command received");
-                self.open(&name, runtime_config.as_ref().map(String::as_str),
-                          credentials.as_ref().map(String::as_str), cb);
+                cb(self.open(&name, runtime_config.as_ref().map(String::as_str), &credentials));
             }
             WalletCommand::Close(handle, cb) => {
                 info!(target: "wallet_command_executor", "Close command received");
-                self.close(handle, cb);
+                cb(self.close(handle));
             }
             WalletCommand::ListWallets(cb) => {
                 info!(target: "wallet_command_executor", "ListWallets command received");
-                self.list_wallets(cb);
+                cb(self.list_wallets());
             }
             WalletCommand::Delete(name, credentials, cb) => {
                 info!(target: "wallet_command_executor", "Delete command received");
-                self.delete(&name, credentials.as_ref().map(String::as_str), cb);
+                cb(self.delete(&name, &credentials));
+            }
+            WalletCommand::Export(wallet_handle, export_config_json, cb) => {
+                info!(target: "wallet_command_executor", "Export command received");
+                cb(self.export(wallet_handle, &export_config_json));
+            }
+            WalletCommand::Import(pool_name, name, storage_type, config, credentials, import_config, cb) => {
+                info!(target: "wallet_command_executor", "Import command received");
+                cb(self.import(&pool_name, &name, storage_type.as_ref().map(String::as_str),
+                               config.as_ref().map(String::as_str), &credentials, &import_config));
             }
         };
     }
 
     fn register_type(&self,
-                     xtype: &str,
-                     create: extern fn(name: *const c_char,
-                                       config: *const c_char,
-                                       credentials: *const c_char) -> ErrorCode,
-                     open: extern fn(name: *const c_char,
-                                     config: *const c_char,
-                                     runtime_config: *const c_char,
-                                     credentials: *const c_char,
-                                     handle: *mut i32) -> ErrorCode,
-                     set: extern fn(handle: i32,
-                                    key: *const c_char,
-                                    value: *const c_char) -> ErrorCode,
-                     get: extern fn(handle: i32,
-                                    key: *const c_char,
-                                    value_ptr: *mut *const c_char) -> ErrorCode,
-                     get_not_expired: extern fn(handle: i32,
-                                                key: *const c_char,
-                                                value_ptr: *mut *const c_char) -> ErrorCode,
-                     list: extern fn(handle: i32,
-                                     key_prefix: *const c_char,
-                                     values_json_ptr: *mut *const c_char) -> ErrorCode,
-                     close: extern fn(handle: i32) -> ErrorCode,
-                     delete: extern fn(name: *const c_char,
-                                       config: *const c_char,
-                                       credentials: *const c_char) -> ErrorCode,
-                     free: extern fn(wallet_handle: i32,
-                                     value: *const c_char) -> ErrorCode,
-                     cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self
+                     type_: &str,
+                     create: WalletCreate,
+                     open: WalletOpen,
+                     close: WalletClose,
+                     delete: WalletDelete,
+                     add_record: WalletAddRecord,
+                     update_record_value: WalletUpdateRecordValue,
+                     update_record_tags: WalletUpdateRecordTags,
+                     add_record_tags: WalletAddRecordTags,
+                     delete_record_tags: WalletDeleteRecordTags,
+                     delete_record: WalletDeleteRecord,
+                     get_record: WalletGetRecord,
+                     get_record_id: WalletGetRecordId,
+                     get_record_type: WalletGetRecordType,
+                     get_record_value: WalletGetRecordValue,
+                     get_record_tags: WalletGetRecordTags,
+                     free_record: WalletFreeRecord,
+                     get_storage_metadata: WalletGetStorageMetadata,
+                     set_storage_metadata: WalletSetStorageMetadata,
+                     free_storage_metadata: WalletFreeStorageMetadata,
+                     search_records: WalletSearchRecords,
+                     search_all_records: WalletSearchAllRecords,
+                     get_search_total_count: WalletGetSearchTotalCount,
+                     fetch_search_next_record: WalletFetchSearchNextRecord,
+                     free_search: WalletFreeSearch) -> Result<(), IndyError> {
+        info!("register_type >>>");
+
+        let res = self
             .wallet_service
-            .register_type(
-                xtype, create, open, set,
-                get, get_not_expired,
-                list, close, delete, free)
-            .map_err(IndyError::from));
+            .register_wallet_storage(
+                type_, create, open, close, delete, add_record, update_record_value, update_record_tags,
+                add_record_tags, delete_record_tags, delete_record, get_record, get_record_id, get_record_type,
+                get_record_value, get_record_tags, free_record, get_storage_metadata, set_storage_metadata,
+                free_storage_metadata, search_records, search_all_records,
+                get_search_total_count, fetch_search_next_record, free_search)?;
+
+        info!("register_type <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn create(&self,
               pool_name: &str,
               name: &str,
-              xtype: Option<&str>,
+              storage_type: Option<&str>,
               config: Option<&str>,
-              credentials: Option<&str>,
-              cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self.wallet_service.create(pool_name, xtype, name, config, credentials)
-            .map_err(|err| IndyError::WalletError(err)));
+              credentials: &str) -> Result<(), IndyError> {
+        debug!("create >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}",
+               pool_name, name, storage_type, config, credentials);
+
+        let res = self.wallet_service.create_wallet(pool_name, name, storage_type, config, credentials)?;
+
+        debug!("create <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn open(&self,
             name: &str,
             runtime_config: Option<&str>,
-            credentials: Option<&str>,
-            cb: Box<Fn(Result<i32, IndyError>) + Send>) {
-        cb(self.wallet_service.open(name, runtime_config, credentials)
-            .map_err(|err| IndyError::WalletError(err)));
+            credentials: &str) -> Result<i32, IndyError> {
+        debug!("open >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
+
+        let res = self.wallet_service.open_wallet(name, runtime_config, credentials)?;
+
+        debug!("open <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn close(&self,
-             handle: i32,
-             cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self.wallet_service.close(handle)
-            .map_err(|err| IndyError::WalletError(err)));
+             handle: i32) -> Result<(), IndyError> {
+        debug!("close >>> handle: {:?}", handle);
+
+        let res = self.wallet_service.close_wallet(handle)?;
+
+        debug!("close <<< res: {:?}", res);
+
+        Ok(res)
     }
 
-    fn list_wallets(&self, cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let result = self.wallet_service.list_wallets()
+    fn list_wallets(&self) -> Result<String, IndyError> {
+        debug!("list_wallets >>>");
+
+        let res = self.wallet_service.list_wallets()
             .and_then(|wallets|
                 serde_json::to_string(&wallets)
                     .map_err(|err|
-                        WalletError::CommonError(CommonError::InvalidState(format!("Can't serialize wallets list {}", err)))))
-            .map_err(IndyError::from);
-        cb(result)
+                        WalletError::CommonError(CommonError::InvalidState(format!("Can't serialize wallets list {}", err)))))?;
+
+        debug!("list_wallets << res: {:?}", res);
+
+        Ok(res)
     }
 
     fn delete(&self,
-              handle: &str,
-              credentials: Option<&str>,
-              cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self.wallet_service.delete(handle, credentials)
-            .map_err(|err| IndyError::WalletError(err)));
+              name: &str,
+              credentials: &str) -> Result<(), IndyError> {
+        debug!("delete >>> name: {:?}, credentials: {:?}", name, credentials);
+
+        let res = self.wallet_service.delete_wallet(name, credentials)?;
+
+        debug!("delete <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn export(&self,
+              wallet_handle: i32,
+              export_config_json: &str) -> Result<(), IndyError> {
+        debug!("export >>> handle: {:?}, export_config_json: {:?}", wallet_handle, export_config_json);
+
+        // TODO - later add proper versioning
+        let res = self.wallet_service.export_wallet(wallet_handle, export_config_json, 0)?;
+
+        debug!("export <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn import(&self,
+              pool_name: &str,
+              name: &str,
+              storage_type: Option<&str>,
+              config: Option<&str>,
+              credentials: &str,
+              import_config: &str) -> Result<(), IndyError> {
+        debug!("import >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}, import_config: {:?}",
+               pool_name, name, storage_type, config, credentials, import_config);
+
+        let res = self.wallet_service.import_wallet(pool_name, name, storage_type, config, credentials, import_config)?;
+
+        debug!("import <<< res: {:?}", res);
+
+        Ok(res)
     }
 }

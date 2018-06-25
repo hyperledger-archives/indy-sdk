@@ -36,6 +36,7 @@ public class AnoncredsIntegrationTest {
 	static String issuer1GvtCredReq;
 	static String issuer1GvtCredReqMetadata;
 	static String issuer1GvtCredential;
+	protected String CREDENTIALS = "{\"key\": \"key\"}";
 	String masterSecretId = "master_secret_name";
 	String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 	String proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
@@ -84,8 +85,8 @@ public class AnoncredsIntegrationTest {
 
 		String walletName = "anoncredsCommonWallet";
 
-		Wallet.createWallet("default", walletName, "default", null, null).get();
-		wallet = Wallet.openWallet(walletName, null, null).get();
+		Wallet.createWallet("default", walletName, "default", null, CREDENTIALS).get();
+		wallet = Wallet.openWallet(walletName, null, CREDENTIALS).get();
 
 		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult =
 				Anoncreds.issuerCreateSchema(issuerDid, gvtSchemaName, schemaVersion, gvtSchemaAttributes).get();

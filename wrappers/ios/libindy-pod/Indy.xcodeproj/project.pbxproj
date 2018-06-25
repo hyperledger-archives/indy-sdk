@@ -48,7 +48,11 @@
 		5DB57A601F711EE600EB4C90 /* IndyWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A381F711EE600EB4C90 /* IndyWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DB57A611F711EE600EB4C90 /* IndyWallet.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A391F711EE600EB4C90 /* IndyWallet.mm */; };
 		5DB57A621F711EE600EB4C90 /* IndyWalletProtocols.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A3A1F711EE600EB4C90 /* IndyWalletProtocols.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		ADF5F09002A987F55A08F493 /* IndyNonSecrets.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF5F1B3292A4FAEE6C9B4BB /* IndyNonSecrets.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		ADF5F180774B3F07CF685B00 /* IndyNonSecrets.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FD56969EAF15313B3399 /* IndyNonSecrets.mm */; };
 		ADF5F3B8EFC4D2816713001C /* IndyBlobStorage.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5F28481E59F87D3680FB0 /* IndyBlobStorage.mm */; };
+		ADF5F6E301043F50DBFA7C63 /* IndyPayment.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF5F582B274D01D39FAA3F8 /* IndyPayment.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		ADF5FB30996DEF39DCD1BB92 /* IndyPayment.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FAE758484DA836DF08D1 /* IndyPayment.mm */; };
 		ADF5FFAD8BF145CFC7C57C28 /* IndyBlobStorage.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF5F0289053914846F15C3E /* IndyBlobStorage.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		E32B103AE817115C80F0142F /* libPods-Indy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 788BE98286C5622244B9A7F5 /* libPods-Indy.a */; };
 /* End PBXBuildFile section */
@@ -100,7 +104,11 @@
 		5DB57A3A1F711EE600EB4C90 /* IndyWalletProtocols.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWalletProtocols.h; sourceTree = "<group>"; };
 		788BE98286C5622244B9A7F5 /* libPods-Indy.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Indy.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ADF5F0289053914846F15C3E /* IndyBlobStorage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyBlobStorage.h; sourceTree = "<group>"; };
+		ADF5F1B3292A4FAEE6C9B4BB /* IndyNonSecrets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyNonSecrets.h; sourceTree = "<group>"; };
 		ADF5F28481E59F87D3680FB0 /* IndyBlobStorage.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyBlobStorage.mm; sourceTree = "<group>"; };
+		ADF5F582B274D01D39FAA3F8 /* IndyPayment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyPayment.h; sourceTree = "<group>"; };
+		ADF5FAE758484DA836DF08D1 /* IndyPayment.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyPayment.mm; sourceTree = "<group>"; };
+		ADF5FD56969EAF15313B3399 /* IndyNonSecrets.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyNonSecrets.mm; sourceTree = "<group>"; };
 		CB6A56DBDD1F10585C90ECA8 /* Pods-Indy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy.release.xcconfig"; path = "Pods/Target Support Files/Pods-Indy/Pods-Indy.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -230,6 +238,10 @@
 				5DB57A3A1F711EE600EB4C90 /* IndyWalletProtocols.h */,
 				ADF5F28481E59F87D3680FB0 /* IndyBlobStorage.mm */,
 				ADF5F0289053914846F15C3E /* IndyBlobStorage.h */,
+				ADF5FAE758484DA836DF08D1 /* IndyPayment.mm */,
+				ADF5F582B274D01D39FAA3F8 /* IndyPayment.h */,
+				ADF5FD56969EAF15313B3399 /* IndyNonSecrets.mm */,
+				ADF5F1B3292A4FAEE6C9B4BB /* IndyNonSecrets.h */,
 			);
 			path = Wrapper;
 			sourceTree = "<group>";
@@ -270,6 +282,8 @@
 				5DB57A4F1F711EE600EB4C90 /* IndyKeychainWalletConfig.h in Headers */,
 				5DB57A5D1F711EE600EB4C90 /* IndyDid.h in Headers */,
 				ADF5FFAD8BF145CFC7C57C28 /* IndyBlobStorage.h in Headers */,
+				ADF5F6E301043F50DBFA7C63 /* IndyPayment.h in Headers */,
+				ADF5F09002A987F55A08F493 /* IndyNonSecrets.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -403,6 +417,8 @@
 				5D57DEE31F861FBD00CD63FE /* IndyPairwise.mm in Sources */,
 				5D57DED51F853A9700CD63FE /* StringExtensions.swift in Sources */,
 				ADF5F3B8EFC4D2816713001C /* IndyBlobStorage.mm in Sources */,
+				ADF5FB30996DEF39DCD1BB92 /* IndyPayment.mm in Sources */,
+				ADF5F180774B3F07CF685B00 /* IndyNonSecrets.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

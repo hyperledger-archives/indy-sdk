@@ -3,4 +3,4 @@
 This shows how to change the verkey that the ledger associates with
 a DID. It builds on ["Write DID and Query Its Verkey"](../write-did-and-query-verkey/README.md).
 
-[ [Python](python/README.md) | [Java](java/README.md) | [.NET](dotnet/README.md) | [Node.js](node/README.md) | [Objective C](objectivec/README.md) ]
+[ [Python](python/README.md) | [Java](java/README.md) | [.NET](../not-yet-written.md) | [Node.js](../not-yet-written.md) | [Objective C](../not-yet-written.md) ]

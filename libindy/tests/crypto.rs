@@ -11,7 +11,12 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
 extern crate log;
+extern crate named_type;
+#[macro_use]
+extern crate named_type_derive;
+extern crate byteorder;
 
 #[macro_use]
 mod utils;
@@ -86,7 +91,9 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            CryptoUtils::set_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
+
+            CryptoUtils::set_key_metadata(wallet_handle, &verkey, METADATA).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -99,13 +106,15 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            CryptoUtils::set_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
-            let metadata = CryptoUtils::get_key_metadata(wallet_handle, VERKEY).unwrap();
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
+
+            CryptoUtils::set_key_metadata(wallet_handle, &verkey, METADATA).unwrap();
+            let metadata = CryptoUtils::get_key_metadata(wallet_handle, &verkey).unwrap();
             assert_eq!(METADATA.to_string(), metadata);
 
             let new_metadata = "updated metadata";
-            CryptoUtils::set_key_metadata(wallet_handle, VERKEY, new_metadata).unwrap();
-            let updated_metadata = CryptoUtils::get_key_metadata(wallet_handle, VERKEY).unwrap();
+            CryptoUtils::set_key_metadata(wallet_handle, &verkey, new_metadata).unwrap();
+            let updated_metadata = CryptoUtils::get_key_metadata(wallet_handle, &verkey).unwrap();
             assert_eq!(new_metadata, updated_metadata);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -119,7 +128,9 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let res = CryptoUtils::set_key_metadata(wallet_handle + 1, VERKEY, METADATA);
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
+
+            let res = CryptoUtils::set_key_metadata(wallet_handle + 1, &verkey, METADATA);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -133,7 +144,9 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            CryptoUtils::set_key_metadata(wallet_handle, VERKEY, "").unwrap();
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
+
+            CryptoUtils::set_key_metadata(wallet_handle, &verkey, "").unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -165,9 +178,11 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            CryptoUtils::set_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
-            let metadata = CryptoUtils::get_key_metadata(wallet_handle, VERKEY).unwrap();
+            CryptoUtils::set_key_metadata(wallet_handle, &verkey, METADATA).unwrap();
+
+            let metadata = CryptoUtils::get_key_metadata(wallet_handle, &verkey).unwrap();
             assert_eq!(METADATA.to_string(), metadata);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -181,9 +196,11 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            CryptoUtils::set_key_metadata(wallet_handle, VERKEY, "").unwrap();
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
-            let metadata = CryptoUtils::get_key_metadata(wallet_handle, VERKEY).unwrap();
+            CryptoUtils::set_key_metadata(wallet_handle, &verkey, "").unwrap();
+
+            let metadata = CryptoUtils::get_key_metadata(wallet_handle, &verkey).unwrap();
             assert_eq!("", metadata);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -197,8 +214,10 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let res = CryptoUtils::get_key_metadata(wallet_handle, VERKEY);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
+
+            let res = CryptoUtils::get_key_metadata(wallet_handle, &verkey);
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -211,9 +230,11 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            CryptoUtils::set_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
+            let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
-            let res = CryptoUtils::get_key_metadata(wallet_handle + 1, VERKEY);
+            CryptoUtils::set_key_metadata(wallet_handle, &verkey, METADATA).unwrap();
+
+            let res = CryptoUtils::get_key_metadata(wallet_handle + 1, &verkey);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -248,7 +269,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = CryptoUtils::sign(wallet_handle, VERKEY, MESSAGE.as_bytes());
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -365,7 +386,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = CryptoUtils::auth_crypt(wallet_handle, VERKEY_MY2, VERKEY, MESSAGE.as_bytes());
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -463,7 +484,7 @@ mod high_cases {
             let encrypted_msg = CryptoUtils::auth_crypt(wallet_handle, &sender_vk, &VERKEY_TRUSTEE, MESSAGE.as_bytes()).unwrap();
 
             let res = CryptoUtils::anon_decrypt(wallet_handle, &VERKEY_TRUSTEE, &encrypted_msg);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -565,7 +586,7 @@ mod high_cases {
             let encrypted_msg = CryptoUtils::anon_crypt(&VERKEY_TRUSTEE, MESSAGE.as_bytes()).unwrap();
 
             let res = CryptoUtils::anon_decrypt(wallet_handle, &VERKEY_TRUSTEE, &encrypted_msg);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -589,5 +610,99 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+    }
+}
+
+mod load {
+    extern crate rand;
+
+    use super::*;
+
+    use self::rand::{Rng, OsRng};
+
+    use std::cmp::max;
+    use std::thread;
+    use std::time::{Duration, SystemTime};
+
+    use utils::sequence::SequenceUtils;
+
+    const AGENT_CNT: usize = 10;
+    const DATA_SZ: usize = 10 * 1024;
+    const OPERATIONS_CNT: usize = 10;
+
+    /**
+     Environment varibales can be used for tuning this test:
+     - AGENTS_CNT - count of parallel agents
+     - OPERATIONS_CNT - operations per agent (consequence in same agent)
+     - DATA_SZ - data size for encryption
+    */
+    #[test]
+    fn parallel_auth_encrypt() {
+        TestUtils::cleanup_storage();
+
+        let agent_cnt = std::env::var("AGENTS_CNT").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(AGENT_CNT);
+        let data_sz = std::env::var("DATA_SZ").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(DATA_SZ);
+        let operations_cnt = std::env::var("OPERATIONS_CNT").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(OPERATIONS_CNT);
+
+        let mut agents = Vec::new();
+        let mut os_rng = OsRng::new().unwrap();
+        for _ in 0..agent_cnt {
+            let wallet_name = format!("load-wallet-name-{}", SequenceUtils::get_next_id());
+            WalletUtils::create_wallet(POOL, &wallet_name, None, None, Some(DEFAULT_WALLET_CREDENTIALS)).unwrap();
+            let wallet = WalletUtils::open_wallet(&wallet_name, None, Some(DEFAULT_WALLET_CREDENTIALS)).unwrap();
+            let (_did, verkey) = DidUtils::create_and_store_my_did(wallet, None).unwrap();
+            let mut data = vec![0u8; data_sz];
+            os_rng.fill_bytes(&mut data.as_mut_slice());
+            agents.push((wallet, verkey, data));
+        }
+
+        let start_time = SystemTime::now();
+
+        let mut results = Vec::new();
+
+        for (wallet, verkey, data) in agents {
+            let thread = thread::spawn(move || {
+                let mut time_diffs = Vec::new();
+                for _ in 0..operations_cnt {
+                    let time = SystemTime::now();
+                    let _encrypted = CryptoUtils::auth_crypt(wallet, &verkey, &verkey, data.as_slice()).unwrap();
+                    let time_diff = SystemTime::now().duration_since(time).unwrap();
+                    time_diffs.push(time_diff);
+                }
+
+                WalletUtils::close_wallet(wallet).unwrap();
+                time_diffs
+            });
+            results.push(thread);
+        }
+
+        let mut all_diffs = Vec::new();
+        for result in results {
+            all_diffs.push(result.join().unwrap());
+        }
+        let total_duration = SystemTime::now().duration_since(start_time).unwrap();
+
+        let mut time_diff_max = Duration::from_secs(0);
+        let mut time_sum_diff = Duration::from_secs(0);
+        for time_diffs in all_diffs {
+            warn!("{:?}", time_diffs);
+            time_diff_max = time_diffs.iter().fold(time_diff_max, |acc, cur| max(acc, *cur));
+            time_sum_diff = time_diffs.iter().fold(time_sum_diff, |acc, cur| acc + *cur);
+        }
+
+        warn!("================= Settings =================\n\
+        Agent cnt:               \t{:?}\n\
+        Operations per agent cnt:\t{:?}\n\
+        Data size:               \t{:?}",
+              agent_cnt, operations_cnt, data_sz);
+
+        warn!("================= Summary =================\n\
+        Max pending:   \t{:?}\n\
+        Total ops cnt: \t{:?}\n\
+        Sum pending:   \t{:?}\n\
+        Total duration:\t{:?}",
+              time_diff_max, agent_cnt * operations_cnt, time_sum_diff, total_duration);
+
+        TestUtils::cleanup_storage();
     }
 }

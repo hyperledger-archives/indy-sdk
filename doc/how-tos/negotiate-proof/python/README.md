@@ -2,12 +2,12 @@
 
 Indy-SDK Developer Walkthrough #5, Python Edition
 
-[ [Java](../java/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
+[ [Java](../../not-yet-written.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
 
 
 ## Prerequisites
 
-Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../../prerequisites).
+Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../../prerequisites.md).
 
 
 ## Steps
@@ -25,7 +25,7 @@ you'll be writing.
 
 ### Step 2
 
-This how-to builds on the work in ["Issue Credential"](../issue-credential/python/README.md).
+This how-to builds on the work in ["Issue Credential"](../issue-credential/../not-yet-written.md).
 Rather than duplicate our explanation of those steps here, we will simply
 copy that code as our starting point.
 
@@ -39,7 +39,7 @@ Save the updated version of `negotiate_proof.py`.
 Proof negotiation typically begins when a *verifier* (also called a *relying party*)
 requests proof. (As with credential issuance, the process has three logical
 phases, but it is rare to begin with a proof offer. However, if an initial
-proof request is met with a [counter-offer](https://github.com/TechWritingWhiz/indy-sdk/tree/master/doc/how-tos/negotiate-proof/python), the offering phase of the
+proof request is met with a counter-offer, the offering phase of the
 sequence becomes relevant.)
 
 ![3 phases of proof negotiation; first phase is uncommon](../3-phases.png)
@@ -92,5 +92,5 @@ Run the [finished code](negotiate_proof.py) and observe the whole sequence.
 
 ## More experiments
 
-You might try the ["Send a Secure Message"](../../send-secure-msg/python/README.md)
+You might try the ["Send a Secure Message"](../../send-secure-msg/../not-yet-written.md)
 how-to.

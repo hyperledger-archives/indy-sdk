@@ -6,10 +6,10 @@ import json
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_anoncreds_demo_works(pool_name, wallet_name, path_home):
+async def test_anoncreds_demo_works(pool_name, wallet_name, path_home, credentials):
     # 1. Create My Wallet and Get Wallet Handle
-    await wallet.create_wallet(pool_name, wallet_name, None, None, None)
-    wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+    await wallet.create_wallet(pool_name, wallet_name, None, None, credentials)
+    wallet_handle = await wallet.open_wallet(wallet_name, None, credentials)
 
     # 2. Issuer create credential Definition for Schema
     issuer_did = 'NcYxiDXkpYi6ov5FcYDi1e'
@@ -97,14 +97,15 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home):
 
     # 11. Close wallet
     await wallet.close_wallet(wallet_handle)
+    await wallet.delete_wallet(wallet_name, credentials)
 
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name, path_home):
+async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name, path_home, credentials):
     # 1. Create My Wallet and Get Wallet Handle
-    await wallet.create_wallet(pool_name, wallet_name, None, None, None)
-    wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+    await wallet.create_wallet(pool_name, wallet_name, None, None, credentials)
+    wallet_handle = await wallet.open_wallet(wallet_name, None, credentials)
 
     issuer_did = 'NcYxiDXkpYi6ov5FcYDi1e'
     prover_did = 'VsKV7grR1BUE29mG2Fm2kX'
@@ -208,3 +209,4 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name,
 
     # 14. Close wallet
     await wallet.close_wallet(wallet_handle)
+    await wallet.delete_wallet(wallet_name, credentials)

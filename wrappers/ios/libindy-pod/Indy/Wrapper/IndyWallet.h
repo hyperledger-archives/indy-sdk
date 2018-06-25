@@ -46,8 +46,9 @@
  @param config Wallet configuration json. List of supported keys are defined by wallet type.
                If NULL, then default config will be used.
 
- @paran credentials Wallet credentials json. List of supported keys are defined by wallet type.
-                    If NULL, then default config will be used.
+ @param credentials Wallet credentials json: {
+     "key": <string>
+ }
  @param completion Completion callback that returns error code.
 */
 - (void)createWalletWithName:(NSString *)name
@@ -75,8 +76,9 @@
  }
  @endcode
  
- @param credentials Wallet credentials json. List of supported keys are defined by wallet type.
- If NULL, then default config will be used.
+ @param credentials Wallet credentials json: {
+     "key": <string>
+ }
  
  @param completion Completion callback that returns error code and created handle to opened wallet to use in methods that require wallet access.
  */
@@ -99,8 +101,9 @@
  
  @param walletName of the wallet to delete.
  
- @param credentials Wallet credentials json. List of supported keys are defined by wallet type.
-                    If NULL, then default credentials will be used.
+ @param credentials Wallet credentials json: {
+     "key": <string>
+ }
  @param completion Completion callback that returns error code.
  */
 - (void)deleteWalletWithName:(NSString *)walletName

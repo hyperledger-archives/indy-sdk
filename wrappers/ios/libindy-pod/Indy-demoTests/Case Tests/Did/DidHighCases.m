@@ -121,7 +121,7 @@
                                                identityJson:@"{}"
                                                walletHandle:walletHandle
                                                 outMyVerKey:nil];
-    XCTAssertEqual(ret.code, WalletNotFoundError, @"DidUtils:replaceKeysStartForDid returned wrong code.");
+    XCTAssertEqual(ret.code, WalletItemNotFound, @"DidUtils:replaceKeysStartForDid returned wrong code.");
 }
 
 // MARK: - Replace keys apply
@@ -162,7 +162,7 @@
     // 2. Replace keys apply
     ret = [[DidUtils sharedInstance] replaceKeysApplyForDid:myDid
                                                walletHandle:walletHandle];
-    XCTAssertEqual(ret.code, WalletNotFoundError, @"DidUtils::replaceKeysApplyForDid() returned wrong error code.");
+    XCTAssertEqual(ret.code, WalletItemNotFound, @"DidUtils::replaceKeysApplyForDid() returned wrong error code.");
 }
 
 // MARK: - Replace key
