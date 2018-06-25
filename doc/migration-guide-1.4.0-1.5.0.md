@@ -39,7 +39,12 @@ Functions from older version are listed in the left column, and the equivalent n
   for 3d party wallets implementations.
 * Libindy v1.5 changes wallet format to allow efficient and flexible search for entities with pagination support.
   *WARNING* wallet format of libindy v1.5 isn't compatible with a wallet format of libindy v1.4.
-* There have been added functions that allow performing Export/Import of Wallet.
+* There have been added functions that allow performing Export/Import of Wallet. Note these endpoints are EXPERIMENTAL.
+  Function signature and behavior may change in the future releases.
+* ```indy_list_wallets``` endpoint is DEPRECATED and will be removed in the next release. The main idea is avoid
+  maintaining created wallet list on libindy side. It will allow to access wallets from a cluster and solve
+  some problems on mobile platforms. ```indy_create_wallet``` and ```indy_open_wallet``` endpoints will
+  also get related changes in the next release.
 
 References:
 
@@ -479,6 +484,9 @@ This API is intended to provide the ability to register custom payment method an
 * Sending payment transaction
 * Adding fees to transactions
 * Getting transactions fees amount
+
+Note all endpoints in this group are EXPERIMENTAL. Function signatures and behavior may change
+in the future releases.
 
 References:
 
