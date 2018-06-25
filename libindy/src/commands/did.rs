@@ -217,7 +217,7 @@ impl DidCommandExecutor {
         let (did, key) = self.crypto_service.create_my_did(&my_did_info)?;
 
         if self.wallet_service.record_exists::<Did>(wallet_handle, &did.did)? {
-            return Err(IndyError::DidError(DidError::AlreadyExistsError(did.to_string())));
+            return Err(IndyError::DidError(DidError::AlreadyExistsError(did.did)));
         };
 
         self.wallet_service.add_indy_object(wallet_handle, &did.did, &did, &HashMap::new())?;
