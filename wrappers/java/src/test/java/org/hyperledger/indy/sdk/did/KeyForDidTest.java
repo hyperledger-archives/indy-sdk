@@ -48,7 +48,7 @@ public class KeyForDidTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 	@Test
 	public void testKeyForDidWorksForNoKey() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStateException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		Did.keyForDid(pool, wallet, DID_MY2).get();
 	}
