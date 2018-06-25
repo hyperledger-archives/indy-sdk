@@ -1,14 +1,12 @@
 import { Callback } from 'ffi'
 import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
-import { collectionRenameItemKeys } from '../utils/collection-helpers'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { StateType } from './common'
 import { Connection } from './connection'
-import { VCXBase } from './VCXBase'
-import { VCXBaseWithState } from './VCXBaseWithState'
+import { VCXBaseWithState } from './vcx-base-with-state'
 
-export interface IProofConfig {
+export interface IProofCreateData {
   sourceId: string,
   attrs: IProofAttr[],
   name: string,
@@ -89,6 +87,59 @@ export interface IProofPredicate {
  * @class Class representing a Connection
  */
 export class Proof extends VCXBaseWithState<IProofData> {
+  /**
+   * @memberof Proof
+   * @description Builds a generic Proof object
+   * @static
+   * @async
+   * @function create
+   * @param {IProofCreateData} data
+   * @example <caption>Example of IProofConfig</caption>
+   * {sourceId: string,attrs: [{restrictions: [IFilter ...], name: "attrName"}], name: "name of proof"}
+   * @returns {Promise<Proof>} A Proof Object
+   */
+  public static async create ({ sourceId, ...createDataRest }: IProofCreateData): Promise<Proof> {
+    try {
+      const proof = new Proof(sourceId, createDataRest)
+      const commandHandle = 0
+      await proof._create((cb) => rustAPI().vcx_proof_create(
+        commandHandle,
+        proof.sourceId,
+        JSON.stringify(createDataRest.attrs),
+        JSON.stringify([]),
+        createDataRest.name,
+        cb
+      ))
+      return proof
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * @description Builds a Proof object with defined attributes.
+   * Attributes are provided by a previous call to the serialize function.
+   * @static
+   * @async
+   * @memberof Proof
+   * @function deserialize
+   * @param {IProofData} proofData - Data obtained by serialize api. Used to create proof object.
+   * @returns {Promise<Proof>} A Proof Object
+   */
+  public static async deserialize (proofData: IProofData) {
+    try {
+      const attrs = JSON.parse(proofData.requested_attrs)
+      const constructorParams: IProofConstructorData = {
+        attrs,
+        name: proofData.name
+      }
+      const proof = await super._deserialize(Proof, proofData, constructorParams)
+      return proof
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
   protected _releaseFn = rustAPI().vcx_proof_release
   protected _updateStFn = rustAPI().vcx_proof_update_state
   protected _getStFn = rustAPI().vcx_proof_get_state
@@ -106,56 +157,6 @@ export class Proof extends VCXBaseWithState<IProofData> {
 
   /**
    * @memberof Proof
-   * @description Builds a generic Proof object
-   * @static
-   * @async
-   * @function create
-   * @param {IProofConfig} data
-   * @example <caption>Example of IProofConfig</caption>
-   * {sourceId: string,attrs: [{restrictions: [IFilter ...], name: "attrName"}], name: "name of proof"}
-   * @returns {Promise<Proof>} A Proof Object
-   */
-  static async create ({ sourceId, ...createDataRest }: IProofConfig): Promise<Proof> {
-    const proof = new Proof(sourceId, createDataRest)
-    const commandHandle = 0
-
-    try {
-      await proof._create((cb) => rustAPI().vcx_proof_create(
-        commandHandle,
-        proof.sourceId,
-        JSON.stringify(collectionRenameItemKeys(createDataRest.attrs)),
-        JSON.stringify([]),
-        createDataRest.name,
-        cb
-      ))
-      return proof
-    } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_proof_create')
-    }
-  }
-
-  /**
-   * @description Builds a Proof object with defined attributes.
-   * Attributes are provided by a previous call to the serialize function.
-   * @static
-   * @async
-   * @memberof Proof
-   * @function deserialize
-   * @param {IProofData} proofData - Data obtained by serialize api. Used to create proof object.
-   * @returns {Promise<Proof>} A Proof Object
-   */
-  static async deserialize (proofData: IProofData) {
-    const attrs = JSON.parse(proofData.requested_attrs)
-    const constructorParams: IProofConstructorData = {
-      attrs,
-      name: proofData.name
-    }
-    const proof = await super._deserialize(Proof, proofData, constructorParams)
-    return proof
-  }
-
-  /**
-   * @memberof Proof
    * @description Sends a proof request to the end user.
    * Proof request is made up of the data provided in the creation of this object
    * @async
@@ -164,7 +165,7 @@ export class Proof extends VCXBaseWithState<IProofData> {
    * @function requestProof
    * @returns {Promise<void>}
    */
-  async requestProof (connection: Connection): Promise<void> {
+  public async requestProof (connection: Connection): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
           (resolve, reject, cb) => {
@@ -185,7 +186,7 @@ export class Proof extends VCXBaseWithState<IProofData> {
             })
         )
     } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_proof_send_request')
+      throw new VCXInternalError(err)
     }
   }
 
@@ -197,7 +198,7 @@ export class Proof extends VCXBaseWithState<IProofData> {
    * @param {Connection} connection
    * @returns {Promise<IProofResponses>} The proof and the state of the proof (valid | invalid | undefined)
    */
-  async getProof (connection: Connection): Promise<IProofResponses> {
+  public async getProof (connection: Connection): Promise<IProofResponses> {
     try {
       const proofRes = await createFFICallbackPromise<{ proofState: ProofState, proofData: string}>(
           (resolve, reject, cb) => {
@@ -220,7 +221,7 @@ export class Proof extends VCXBaseWithState<IProofData> {
       this._proofState = proofRes.proofState
       return { proof: proofRes.proofData, proofState: proofRes.proofState }
     } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_get_proof')
+      throw new VCXInternalError(err)
     }
   }
 

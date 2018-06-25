@@ -1,26 +1,12 @@
 import * as ffi from 'ffi'
 import { VCXInternalError } from '../errors'
-import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise, ICbRef } from '../utils/ffi-helpers'
 import { GCWatcher } from '../utils/memory-management-helpers'
 
 export type IVCXBaseCreateFn = (cb: ICbRef) => number
 
 export abstract class VCXBase<SerializedData> extends GCWatcher {
-  protected abstract _serializeFn: (commandHandle: number, handle: string, cb: ICbRef) => number
-  protected abstract _deserializeFn: (commandHandle: number, handle: string, cb: ICbRef) => number
-  protected _sourceId: string
-
-  constructor (sourceId: string) {
-    super()
-    this._sourceId = sourceId
-  }
-
-  static errorMessage (errorCode: number): string {
-    return rustAPI().vcx_error_c_message(errorCode)
-  }
-
-  static async _deserialize<T extends VCXBase<any> = any, P = object> (
+  public static async _deserialize<T extends VCXBase<any> = any, P = object> (
     VCXClass: new(sourceId: string, ...args: any[]) => T,
     objData: { source_id: string },
     constructorParams?: P
@@ -30,8 +16,17 @@ export abstract class VCXBase<SerializedData> extends GCWatcher {
       await obj._initFromData(objData)
       return obj
     } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), `${this.name}:_deserialize`)
+      throw new VCXInternalError(err)
     }
+  }
+
+  protected abstract _serializeFn: (commandHandle: number, handle: string, cb: ICbRef) => number
+  protected abstract _deserializeFn: (commandHandle: number, handle: string, cb: ICbRef) => number
+  protected _sourceId: string
+
+  constructor (sourceId: string) {
+    super()
+    this._sourceId = sourceId
   }
 
   /**
@@ -43,7 +38,7 @@ export abstract class VCXBase<SerializedData> extends GCWatcher {
    * @returns {Promise<SerializedData>} - Json object with all of the underlying Rust attributes.
    * Same json object structure that is passed to the deserialize function.
    */
-  async serialize (): Promise<SerializedData> {
+  public async serialize (): Promise<SerializedData> {
     try {
       const dataStr = await createFFICallbackPromise<string>(
         (resolve, reject, cb) => {
@@ -72,7 +67,7 @@ export abstract class VCXBase<SerializedData> extends GCWatcher {
       const data: SerializedData = JSON.parse(dataStr)
       return data
     } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), `${this.constructor.name}:serialize`)
+      throw new VCXInternalError(err)
     }
   }
 

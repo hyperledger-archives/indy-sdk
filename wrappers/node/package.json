@@ -35,20 +35,24 @@
     },
     "scripts": {
         "compile": "./node_modules/.bin/tsc -p ./tsconfig.json",
-        "test": "mocha -gc --expose-gc test/**/*Test.js && mocha -gc --expose-gc test/**/*Test.separate.js",
-        "lint": "./node_modules/.bin/tslint --type-check -c ./tslint.json -p ./tsconfig.json && ./node_modules/.bin/standard 'test/**/*.js'",
-        "doc-gen": "./node_modules/.bin/jsdoc -r -d doc dist/*"
+        "lint": "./node_modules/.bin/tslint --type-check -c ./tslint.json -p ./tsconfig.json && ./node_modules/.bin/tslint --type-check -c ./test/tslint.json -p ./test/tsconfig.json",
+        "doc-gen": "./node_modules/.bin/jsdoc -r -d doc dist/*",
+        "test": "export TS_NODE_PROJECT=\"./test/tsconfig.json\" export NODE_ENV='test' && export RUST_LOG=\"trace\" && export RUST_BACKTRACE=full && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite1/**/*.test.ts && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite2/**/*.test.ts"
     },
     "devDependencies": {
+        "@types/chai": "^4.1.4",
         "@types/lodash": "^4.14.109",
+        "@types/mocha": "^5.2.3",
+        "@types/sinon": "^5.0.1",
         "@types/weak": "^1.0.0",
+        "app-module-path": "^2.2.0",
         "chai": "^4.1.2",
         "jsdoc": "^3.5.5",
         "mocha": "^3.5.3",
         "sinon": "^4.1.2",
-        "standard": "^10.0.3",
+        "ts-node": "^6.1.2",
         "tslint": "^5.8.0",
-        "tslint-config-standard": "^6.0.1",
+        "tslint-config-standard": "^7.1.0",
         "typescript": "^2.9.1"
     },
     "main": "dist/index.js",

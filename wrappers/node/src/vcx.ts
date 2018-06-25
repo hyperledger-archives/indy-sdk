@@ -13,7 +13,7 @@ export interface IVCXRuntimeConfig {
 // I made it a class just in case we think of more needed configs
 
 export class VCXRuntime {
-  readonly ffi: IFFIEntryPoint
+  public readonly ffi: IFFIEntryPoint
   private _config: IVCXRuntimeConfig
 
   constructor (config: IVCXRuntimeConfig = {}) {

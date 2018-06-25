@@ -4,20 +4,19 @@ import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { Connection } from './connection'
-import { VCXBase } from './VCXBase'
-import { VCXBaseWithState } from './VCXBaseWithState'
+import { VCXBaseWithState } from './vcx-base-with-state'
 
 export interface IDisclosedProofData {
   source_id: string,
 }
 
-export type IDisclosedProofRequest = string
+export type IDisclosedProofRequest = object
 
 export interface IDisclosedProofCreateData {
   // We're going to need it in the future
   connection: Connection,
   sourceId: string,
-  request: IDisclosedProofRequest
+  request: string
 }
 
 export interface IDisclosedProofCreateWithMsgIdData {
@@ -50,14 +49,7 @@ export interface IGenerateProofData {
 }
 
 export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
-  protected _releaseFn = rustAPI().vcx_disclosed_proof_release
-  protected _updateStFn = rustAPI().vcx_disclosed_proof_update_state
-  protected _getStFn = rustAPI().vcx_disclosed_proof_get_state
-  protected _serializeFn = rustAPI().vcx_disclosed_proof_serialize
-  protected _deserializeFn = rustAPI().vcx_disclosed_proof_deserialize
-  private _proofReq: string = ''
-
-  static async create ({ sourceId, request }: IDisclosedProofCreateData): Promise<DisclosedProof> {
+  public static async create ({ sourceId, request }: IDisclosedProofCreateData): Promise<DisclosedProof> {
     const newObj = new DisclosedProof(sourceId)
     try {
       await newObj._create((cb) => rustAPI().vcx_disclosed_proof_create_with_request(
@@ -69,11 +61,11 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
       )
       return newObj
     } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_disclosed_proof_create_with_request`)
+      throw new VCXInternalError(err)
     }
   }
 
-  static async createWithMsgId ({ connection, sourceId, msgId }: IDisclosedProofCreateWithMsgIdData):
+  public static async createWithMsgId ({ connection, sourceId, msgId }: IDisclosedProofCreateWithMsgIdData):
   Promise<DisclosedProof> {
     try {
       return await createFFICallbackPromise<DisclosedProof>(
@@ -96,24 +88,24 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
               const handleStr = handle.toString()
               newObj._setHandle(handleStr)
               newObj._proofReq = proofReq
-              resolve( newObj )
+              resolve(newObj)
             })
       )
     } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_disclosed_proof_create_with_msgid`)
+      throw new VCXInternalError(err)
     }
   }
 
-  static async deserialize (data: IDisclosedProofData) {
+  public static async deserialize (data: IDisclosedProofData) {
     try {
       const newObj = await super._deserialize<DisclosedProof, {}>(DisclosedProof, data)
       return newObj
     } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_disclosed_proof_deserialize`)
+      throw new VCXInternalError(err)
     }
   }
 
-  static async getRequests (connection: Connection): Promise<IDisclosedProofRequest[]> {
+  public static async getRequests (connection: Connection): Promise<IDisclosedProofRequest[]> {
     const requestsStr = await createFFICallbackPromise<string>(
       (resolve, reject, cb) => {
         const rc = rustAPI().vcx_disclosed_proof_get_requests(0, connection.handle, cb)
@@ -136,7 +128,14 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
     return requests
   }
 
-  async getCredentials (): Promise<IRetrievedCreds> {
+  protected _releaseFn = rustAPI().vcx_disclosed_proof_release
+  protected _updateStFn = rustAPI().vcx_disclosed_proof_update_state
+  protected _getStFn = rustAPI().vcx_disclosed_proof_get_state
+  protected _serializeFn = rustAPI().vcx_disclosed_proof_serialize
+  protected _deserializeFn = rustAPI().vcx_disclosed_proof_deserialize
+  private _proofReq: string = ''
+
+  public async getCredentials (): Promise<IRetrievedCreds> {
     try {
       const credsStr = await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
@@ -159,11 +158,11 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
       const creds: IRetrievedCreds = JSON.parse(credsStr)
       return creds
     } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_disclosed_proof_retrieve_credentials`)
+      throw new VCXInternalError(err)
     }
   }
 
-  async sendProof (connection: Connection): Promise<void> {
+  public async sendProof (connection: Connection): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
           (resolve, reject, cb) => {
@@ -184,11 +183,11 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
             })
         )
     } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_disclosed_proof_send_proof`)
+      throw new VCXInternalError(err)
     }
   }
 
-  async generateProof ({ selectedCreds, selfAttestedAttrs }: IGenerateProofData): Promise<void> {
+  public async generateProof ({ selectedCreds, selfAttestedAttrs }: IGenerateProofData): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
           (resolve, reject, cb) => {
@@ -215,7 +214,7 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
             })
         )
     } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), `vcx_disclosed_proof_generate_proof`)
+      throw new VCXInternalError(err)
     }
   }
 

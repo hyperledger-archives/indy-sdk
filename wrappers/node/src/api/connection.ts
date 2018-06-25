@@ -3,8 +3,7 @@ import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { StateType } from './common'
-import { VCXBase } from './VCXBase'
-import { VCXBaseWithState } from './VCXBaseWithState'
+import { VCXBaseWithState } from './vcx-base-with-state'
 
 /**
  * @description Interface that represents the attributes of a Connection object.
@@ -24,51 +23,43 @@ export interface IConnectionData {
   state: StateType
 }
 
-export interface IRecipientInfo {
+export interface IConnectionCreateData {
   id: string
 }
 
 export type IConnectionInvite = string
 
-export interface IRecipientInviteInfo extends IRecipientInfo {
+export interface IRecipientInviteInfo extends IConnectionCreateData {
   invite: IConnectionInvite
 }
 
 export interface IConnectOptions {
-  phone?: string,
-  timeout?: number
+  phone?: string
 }
 
 /**
  * @class Class representing a Connection
  */
 export class Connection extends VCXBaseWithState<IConnectionData> {
-  protected _releaseFn = rustAPI().vcx_connection_release
-  protected _updateStFn = rustAPI().vcx_connection_update_state
-  protected _getStFn = rustAPI().vcx_connection_get_state
-  protected _serializeFn = rustAPI().vcx_connection_serialize
-  protected _deserializeFn = rustAPI().vcx_connection_deserialize
-  protected _inviteDetailFn = rustAPI().vcx_connection_invite_details
-
   /**
    * @memberof Connection
    * @description Builds a generic Connection object.
    * @static
    * @async
    * @function create
-   * @param {IRecipientInfo} recipientInfo
+   * @param {IConnectionCreateData} recipientInfo
    * @example <caption>Example of recipientInfo</caption>
    * {id: "123"}
    * @returns {Promise<Connection>} A Connection Object
    */
-  static async create ({ id }: IRecipientInfo): Promise<Connection> {
-    const connection = new Connection(id)
-    const commandHandle = 0
+  public static async create ({ id }: IConnectionCreateData): Promise<Connection> {
     try {
+      const connection = new Connection(id)
+      const commandHandle = 0
       await connection._create((cb) => rustAPI().vcx_connection_create(commandHandle, id, cb))
       return connection
     } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_create')
+      throw new VCXInternalError(err)
     }
   }
 
@@ -78,12 +69,12 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    * @static
    * @async
    * @function create
-   * @param {IRecipientInfo} recipientInfo
+   * @param {IConnectionCreateData} recipientInfo
    * @example <caption>Example of recipientInfo</caption>
    * {id: "123"}
    * @returns {Promise<Connection>} A Connection Object
    */
-  static async createWithInvite ({ id, invite }: IRecipientInviteInfo): Promise<Connection> {
+  public static async createWithInvite ({ id, invite }: IRecipientInviteInfo): Promise<Connection> {
     const connection = new Connection(id)
     const commandHandle = 0
     try {
@@ -92,7 +83,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
 
       return connection
     } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_create_with_invite')
+      throw new VCXInternalError(err)
     }
   }
 
@@ -109,17 +100,25 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    * invite_detail:{e:"",rid:"",sakdp:"",sn:"",sD:"",lu:"",sVk:"",tn:""}}
    * @returns {Promise<Connection>} A Connection Object
    */
-  static async deserialize (connectionData: IConnectionData) {
+  public static async deserialize (connectionData: IConnectionData) {
     const connection = await super._deserialize(Connection, connectionData)
     return connection
   }
+
+  protected _releaseFn = rustAPI().vcx_connection_release
+  protected _updateStFn = rustAPI().vcx_connection_update_state
+  protected _getStFn = rustAPI().vcx_connection_get_state
+  protected _serializeFn = rustAPI().vcx_connection_serialize
+  protected _deserializeFn = rustAPI().vcx_connection_deserialize
+  protected _inviteDetailFn = rustAPI().vcx_connection_invite_details
+
   /**
    * @memberof Connection
    * @description Deletes and releases a connection
    * @function delete
    * @returns {Promis<void>}
    */
-  async delete (): Promise<void> {
+  public async delete (): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
         (resolve, reject, cb) => {
@@ -140,7 +139,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
           })
       )
     } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_delete_connection')
+      throw new VCXInternalError(err)
     }
   }
   /**
@@ -153,10 +152,9 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    * { phone: "800", timeout: 30 }
    * @returns {Promise<string}
    */
-  async connect ( options: IConnectOptions = {} ): Promise<string> {
-    const phone = options.phone
+  public async connect ({ phone }: IConnectOptions = {}): Promise<string> {
     const connectionType: string = phone ? 'SMS' : 'QR'
-    const connectionData: string = JSON.stringify({connection_type: connectionType, phone})
+    const connectionData: string = JSON.stringify({ connection_type: connectionType, phone })
     try {
       return await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
@@ -174,14 +172,14 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
                 return
               }
               if (!details) {
-                reject('no details returned')
+                reject(`Connection ${this.sourceId} connect returned empty string`)
                 return
               }
               resolve(details)
             })
         )
     } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_connect')
+      throw new VCXInternalError(err)
     }
   }
 
@@ -193,7 +191,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    * @function inviteDetails
    * @returns {Promise<string>} - String with the details
    */
-  async inviteDetails (abbr: boolean = false): Promise<IConnectionInvite> {
+  public async inviteDetails (abbr: boolean = false): Promise<IConnectionInvite> {
     try {
       const data = await createFFICallbackPromise<string>(
         (resolve, reject, cb) => {
@@ -219,7 +217,7 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
       )
       return data
     } catch (err) {
-      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_invite_details')
+      throw new VCXInternalError(err)
     }
   }
 }
