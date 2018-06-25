@@ -872,7 +872,8 @@ pub mod get_utxo_command {
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&utxo,
-                                 &vec![("input", "Input"),
+                                 &vec![("txo", "Txo"),
+                                       ("paymentAddress", "Payment Address"),
                                        ("amount", "Amount"),
                                        ("extra", "Extra")],
                                  "There are no utxo's");
@@ -922,7 +923,8 @@ pub mod payment_command {
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&utxo,
-                                 &vec![("input", "Input"),
+                                 &vec![("txo", "Txo"),
+                                       ("paymentAddress", "Payment Address"),
                                        ("amount", "Amount"),
                                        ("extra", "Extra")],
                                  "There are no utxo's");
@@ -1166,7 +1168,8 @@ fn print_response_utxo(utxo: Option<Vec<serde_json::Value>>) -> Result<(), ()> {
         if !utxo.is_empty() {
             println_succ!("Following Utxo has been received.");
             print_list_table(&utxo,
-                             &vec![("input", "Input"),
+                             &vec![("txo", "Txo"),
+                                   ("paymentAddress", "Payment Address"),
                                    ("amount", "Amount"),
                                    ("extra", "Extra")],
                              "");
