@@ -3,8 +3,7 @@ import { Callback } from 'ffi'
 import { VCXInternalError } from '../errors'
 import { initRustAPI, rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
-import { IInitVCXOptions, IndyTransactions } from './common'
-import { VCXBase } from './VCXBase'
+import { IInitVCXOptions } from './common'
 
 export async function provisionAgent (configAgent: string, options: IInitVCXOptions = {}): Promise<string> {
   try {
@@ -28,7 +27,7 @@ export async function provisionAgent (configAgent: string, options: IInitVCXOpti
         })
     )
   } catch (err) {
-    throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_provision_agent_async')
+    throw new VCXInternalError(err)
   }
 }
 
@@ -53,7 +52,7 @@ export async function updateAgentInfo (options: string): Promise<string> {
         })
     )
   } catch (err) {
-    throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_update_agent_info')
+    throw new VCXInternalError(err)
   }
 }
 
@@ -61,12 +60,9 @@ export function getVersion (): string {
   return rustAPI().vcx_version()
 }
 
-export type ILedgerFees = {
-  [P in IndyTransactions]: number
-}
-export async function getLedgerFees (): Promise<Partial<ILedgerFees>> {
+export async function getLedgerFees (): Promise<string> {
   try {
-    const ledgerFeesStr = await createFFICallbackPromise<string>(
+    const ledgerFees = await createFFICallbackPromise<string>(
       (resolve, reject, cb) => {
         const rc = rustAPI().vcx_ledger_get_fees(0, cb)
         if (rc) {
@@ -84,9 +80,9 @@ export async function getLedgerFees (): Promise<Partial<ILedgerFees>> {
           resolve(fees)
         })
     )
-    if (ledgerFeesStr) { return JSON.parse(ledgerFeesStr) } else { return JSON.parse('{}') }
+    return ledgerFees
   } catch (err) {
-    throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_ledger_get_fees')
+    throw new VCXInternalError(err)
   }
 }
 
@@ -94,10 +90,14 @@ export function shutdownVcx (deleteWallet: boolean): number {
   return rustAPI().vcx_shutdown(deleteWallet)
 }
 
-export function updateInstitutionConfigs (name: string, logoUrl: string): number {
+export interface IUpdateInstitutionConfigs {
+  name: string,
+  logoUrl: string
+}
+export function updateInstitutionConfigs ({ name, logoUrl }: IUpdateInstitutionConfigs): number {
   const rc = rustAPI().vcx_update_institution_info(name, logoUrl)
   if (rc) {
-    throw new VCXInternalError(rc, VCXBase.errorMessage(rc), 'vcx_update_institution_info')
+    throw new VCXInternalError(rc)
   }
   return rc
 }

@@ -55,7 +55,6 @@ def mainUbuntu() {
                 testPythonWrapper(vcx_python)
 
                 // test nodejs wrapper, the image must be built after  the libindy image build, and must be --no-cache
-                nodejs = build('nodejs', 'vcx/wrappers/node/ci/Dockerfile-nodejs', 'vcx')
                 vcx_nodejs = build('vcx-nodejs', 'vcx/wrappers/node/ci/Dockerfile-nodejs-wrapper', 'vcx', '--no-cache')
                 testNodeWrapper(vcx_nodejs)
 
@@ -330,11 +329,11 @@ def createDeb(envn) {
 def testNodeWrapper(envn) {
     dir('vcx/wrappers/node'){
         envn.inside() {
-            sh 'npm install'
             sh 'npm -v'
+            sh 'npm ci'
             sh 'npm run lint'
-            sh 'npm run compile'
             sh 'npm test'
+            sh 'npm run compile'
             sh 'npm pack'
             archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.tgz'
         }

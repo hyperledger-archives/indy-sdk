@@ -8,12 +8,10 @@
     "baseUrl": "./",
     "strict": true,
     "strictFunctionTypes": false,
-    "noUnusedLocals": true
+    "noUnusedLocals": true,
+    "preserveConstEnums": true
   },
   "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules"
+    "./src/*"
   ]
 }

@@ -1,0 +1,2 @@
+export const VCX_CONFIG_TEST_MODE = 'ENABLE_TEST_MODE'
+export const TIMEOUT_GC = 30000

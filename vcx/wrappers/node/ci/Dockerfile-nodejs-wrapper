@@ -1,8 +1,20 @@
-# Development
-FROM nodejs
-ARG uid=1000
+# Development 
+FROM libindy 
+ 
+ARG uid=1000 
+ 
+# Update environment 
+# JRE installation and gcc 
+RUN apt-get update -y && apt-get install -y ca-certificates \ 
+    debhelper \ 
+    curl  
+ 
+# Install Nodejs  
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \ 
+    && apt-get install -y nodejs 
+
 # Assumes we are in the ./vcx directory
-RUN npm install typescript-compiler
+RUN npm i -g npm@6.1.0
 COPY libvcx/target/debug/libvcx.so /usr/lib
 RUN useradd -ms /bin/bash -u $uid vcx
 USER vcx
