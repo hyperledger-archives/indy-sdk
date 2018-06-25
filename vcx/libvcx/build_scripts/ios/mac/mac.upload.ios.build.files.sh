@@ -36,6 +36,7 @@ fi
 cd $VCX_SDK/vcx/wrappers/ios/vcx
 mkdir -p vcx.framework/lib
 cp -v lib/libvcxall.a vcx.framework/lib/libvcx.a
+#cp -v lib/libnullpay.a vcx.framework/lib/libnullpay.a
 cp -v ConnectMeVcx.h vcx.framework/Headers
 cp -v include/libvcx.h vcx.framework/Headers
 cp -v vcx/vcx.h vcx.framework/Headers

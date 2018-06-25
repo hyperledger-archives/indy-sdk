@@ -751,6 +751,7 @@
 				"OTHER_LDFLAGS[arch=*]" = (
 					"-ObjC",
 					"-lvcx",
+					"-lnullpay",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "co.evernym.vcx-objc.vcx";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -792,6 +793,7 @@
 				"OTHER_LDFLAGS[arch=*]" = (
 					"-ObjC",
 					"-lvcx",
+					"-lnullpay",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "co.evernym.vcx-objc.vcx";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";

@@ -7,6 +7,8 @@ if [ "$DOCKER_CMD" = "" ]; then
 fi
 
 #1) Install Rust and rustup (https://www.rust-lang.org/install.html).
+#To get into the if statement below execute the following command...
+# mv /Users/norm/.cargo/bin/rustup /Users/norm/.cargo/bin/rustup.bak
 RUSTUP_VERSION=`rustup --version`
 if [ "$?" != "0" ]; then
     if [ -f $HOME/.cargo/bin/rustup ]; then
@@ -57,6 +59,7 @@ if [ "$ANDROID_SDK_MANAGER" != "" ]; then
             ./mac.libssl.libcrypto.build.sh
             ./mac.libzmq.libsodium.build.sh
             ./mac.build.libz.sh
+            ./mac.build.libsqlite3.sh
         fi
 else
     echo "ERROR: You must first install the android sdkmanager and set the environment variable ANDROID_HOME, the easiest way is via Android Studio!!"

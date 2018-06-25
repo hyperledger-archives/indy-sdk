@@ -37,4 +37,5 @@ do
     ln -f -v $WORK_DIR/libzmq-android/libsodium/libsodium_${target_arch}/lib/libsodium.so $VCX_SDK/vcx/wrappers/java/android/vcxtest/app/jni/${target_arch}
     ln -f -v $WORK_DIR/libzmq-android/zmq/libzmq_${target_arch}/lib/libzmq.so $VCX_SDK/vcx/wrappers/java/android/vcxtest/app/jni/${target_arch}
     ln -f -v $WORK_DIR/libz-android/zlib/lib/${target_arch}/libz.so $VCX_SDK/vcx/wrappers/java/android/vcxtest/app/jni/${target_arch}
+    ln -f -v $WORK_DIR/libsqlite3-android/sqlite3-android/obj/local/${openssl_arch}/libsqlite3.so $VCX_SDK/vcx/wrappers/java/android/vcxtest/app/jni/${target_arch}
 done
