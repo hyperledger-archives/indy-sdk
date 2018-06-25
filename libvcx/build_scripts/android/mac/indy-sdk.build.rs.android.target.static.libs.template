@@ -10,5 +10,7 @@
         println!("cargo:rustc-link-search=native={}",android_sodium_lib);
         let android_zmq_lib = env::var("ANDROID_ZMQ_LIB").unwrap();
         println!("cargo:rustc-link-search=native={}",android_zmq_lib);
+        let android_sqlite_lib = env::var("ANDROID_SQLITE_LIB").unwrap();
+        println!("cargo:rustc-link-search=native={}",android_sqlite_lib);
     }
 }

@@ -1,6 +1,8 @@
 #!/bin/sh
 
 #1) Install Rust and rustup (https://www.rust-lang.org/install.html).
+#To get into the if statement below execute the following command...
+# mv /Users/norm/.cargo/bin/rustup /Users/norm/.cargo/bin/rustup.bak
 RUSTUP_VERSION=`rustup --version`
 if [ "$?" != "0" ]; then
     if [ -f $HOME/.cargo/bin/rustup ]; then
@@ -45,6 +47,14 @@ if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
     
     rustup target remove aarch64-linux-android armv7-linux-androideabi arm-linux-androideabi i686-linux-android x86_64-linux-android
     rustup target add aarch64-apple-ios armv7-apple-ios armv7s-apple-ios x86_64-apple-ios i386-apple-ios
+
+    RUST_TARGETS=$(rustc --print target-list|grep -i ios)
+    if [ "RUST_TARGETS" = "" ]; then
+        sudo xcodebuild -license
+        echo "If you have successfully accepted the xcode build license then just re-run this script."
+        echo "If you were not able to successfully accept the xcode build license then run this command in a terminal 'sudo xcodebuild -license' until it is successful before you attempt to re-run this script"
+        exit 1
+    fi
 
     cargo install cargo-lipo
     cargo install cargo-xcode
