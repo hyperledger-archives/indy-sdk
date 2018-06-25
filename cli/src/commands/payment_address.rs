@@ -100,12 +100,14 @@ pub fn handle_payment_error(err: ErrorCode, payment_method: Option<&str>) {
         ErrorCode::PaymentUnknownMethodError => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
         ErrorCode::PaymentIncompatibleMethodsError => println_err!("No method were scraped or more than one were scraped"),
         ErrorCode::PaymentInsufficientFundsError => println_err!("Insufficient funds on inputs"),
+        ErrorCode::CommonInvalidState => println_err!("Input not found"),
         ErrorCode::CommonInvalidStructure => println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc..."),
         err => println_err!("Indy SDK error occurred {:?}", err)
     }
 }
 
 #[cfg(test)]
+#[cfg(feature = "nullpay_plugin")]
 pub mod tests {
     use super::*;
     use utils::test::TestUtils;
@@ -117,7 +119,6 @@ pub mod tests {
         use super::*;
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn create_works() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -139,7 +140,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn create_works_for_seed() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -162,7 +162,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn create_works_for_unknown_payment_method() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -179,7 +178,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn create_works_for_no_opened_wallet() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -198,7 +196,6 @@ pub mod tests {
         use super::*;
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn list_works() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -219,7 +216,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn list_works_for_empty_list() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -239,7 +235,6 @@ pub mod tests {
         }
 
         #[test]
-        #[cfg(feature = "nullpay_plugin")]
         pub fn list_works_for_no_opened_wallet() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();

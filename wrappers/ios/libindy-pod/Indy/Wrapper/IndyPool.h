@@ -27,7 +27,7 @@
  */
 + (void)createPoolLedgerConfigWithPoolName:(NSString *)name
                                 poolConfig:(NSString *)poolConfig
-                                completion:(void (^)(NSError *error)) completion;
+                                completion:(void (^)(NSError *error))completion;
 
 /**
  Opens pool ledger and performs connecting to pool nodes.
@@ -55,7 +55,7 @@
  */
 + (void)openPoolLedgerWithName:(NSString *)name
                     poolConfig:(NSString *)poolConfig
-                    completion:(void (^)(NSError *error, IndyHandle poolHandle)) completion;
+                    completion:(void (^)(NSError *error, IndyHandle poolHandle))completion;
 
 /**
  Refreshes a local copy of a pool ledger and updates pool nodes connections.
@@ -64,7 +64,7 @@
  @param completion Callback, returns error code.
  */
 + (void)refreshPoolLedgerWithHandle:(IndyHandle)poolHandle
-                         completion:(void (^)(NSError *error)) completion;
+                         completion:(void (^)(NSError *error))completion;
 
 /**
  Closes opened pool ledger, opened nodes connections and frees allocated resources.
@@ -73,7 +73,7 @@
  @param completion Completion callback, returns error code.
  */
 + (void)closePoolLedgerWithHandle:(IndyHandle)poolHandle
-                       completion:(void (^)(NSError *error)) completion;
+                       completion:(void (^)(NSError *error))completion;
 
 /**
  Deletes created pool ledger configuration.
@@ -82,6 +82,22 @@
  @param completion Completion callback, returns error code.
  */
 + (void)deletePoolLedgerConfigWithName:(NSString *)name
-                            completion:(void (^)(NSError *error)) completion;
+                            completion:(void (^)(NSError *error))completion;
+
+/**
+ Set PROTOCOL_VERSION to specific version.
+
+ There is a global property PROTOCOL_VERSION that used in every request to the pool and
+ specified version of Indy Node which Libindy works.
+
+ By default PROTOCOL_VERSION=1.
+ 
+ @param protocolVersion Protocol version will be used:
+    1 - for Indy Node 1.3
+    2 - for Indy Node 1.4
+ @param completion Completion callback, returns error code.
+ */
++ (void)setProtocolVersion:(NSNumber *)protocolVersion
+                completion:(void (^)(NSError *error))completion;
 
 @end

@@ -6,12 +6,12 @@ use self::indy_crypto::cl::{CredentialPublicKey};
 use self::indy_crypto::cl::verifier::Verifier as CryptoVerifier;
 use services::anoncreds::helpers::*;
 
-use domain::schema::SchemaV1;
-use domain::credential_definition::CredentialDefinitionV1 as CredentialDefinition;
-use domain::revocation_registry_definition::RevocationRegistryDefinitionV1;
-use domain::proof::{Proof, RequestedProof};
-use domain::proof_request::{ProofRequest, AttributeInfo, PredicateInfo};
-use domain::revocation_registry::RevocationRegistryV1;
+use domain::anoncreds::schema::SchemaV1;
+use domain::anoncreds::credential_definition::CredentialDefinitionV1 as CredentialDefinition;
+use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use domain::anoncreds::proof::{Proof, RequestedProof};
+use domain::anoncreds::proof_request::{ProofRequest, AttributeInfo, PredicateInfo};
+use domain::anoncreds::revocation_registry::RevocationRegistryV1;
 
 pub struct Verifier {}
 
@@ -40,8 +40,8 @@ impl Verifier {
                 .ok_or(CommonError::InvalidStructure(format!("CredentialDefinition not found for id: {:?}", identifier.cred_def_id)))?;
 
             let (rev_reg_def, rev_reg) = if cred_def.value.revocation.is_some() {
-                let timestamp = identifier.timestamp.clone().ok_or(CommonError::InvalidStructure(format!("Timestamp not found")))?;
-                let rev_reg_id = identifier.rev_reg_id.clone().ok_or(CommonError::InvalidStructure(format!("Revocation Registry Id not found")))?;
+                let timestamp = identifier.timestamp.clone().ok_or(CommonError::InvalidStructure("Timestamp not found".to_string()))?;
+                let rev_reg_id = identifier.rev_reg_id.clone().ok_or(CommonError::InvalidStructure("Revocation Registry Id not found".to_string()))?;
                 let rev_reg_def = Some(rev_reg_defs.get(&rev_reg_id)
                     .ok_or(CommonError::InvalidStructure(format!("RevocationRegistryDefinition not found for id: {:?}", identifier.rev_reg_id)))?);
                 let rev_regs_for_cred = rev_regs.get(&rev_reg_id)

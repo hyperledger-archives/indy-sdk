@@ -7,6 +7,8 @@ use indy::api::ErrorCode;
 
 use utils::callback::CallbackUtils;
 use utils::ledger::LedgerUtils;
+use utils::pool::PoolUtils;
+use utils::types::ResponseType;
 
 pub struct DidUtils {}
 
@@ -15,7 +17,8 @@ impl DidUtils {
         let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(::utils::constants::TRUSTEE_SEED))?;
         let (my_did, my_vk) = DidUtils::create_and_store_my_did(wallet_handle, None)?;
         let nym = LedgerUtils::build_nym_request(&trustee_did, &my_did, Some(&my_vk), None, Some("TRUSTEE"))?;
-        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym)?; //TODO check response type
+        let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym)?;
+        PoolUtils::check_response_type(&response, ResponseType::REPLY);
         Ok((my_did, my_vk))
     }
 
@@ -157,6 +160,16 @@ impl DidUtils {
         let did = CString::new(did).unwrap();
 
         let err = indy_get_did_metadata(command_handle, wallet_handle, did.as_ptr(), cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn get_my_did_with_metadata(wallet_handle: i32, did: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let did = CString::new(did).unwrap();
+
+        let err = indy_get_my_did_with_meta(command_handle, wallet_handle, did.as_ptr(), cb);
 
         super::results::result_to_string(err, receiver)
     }

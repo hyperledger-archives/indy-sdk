@@ -8,6 +8,7 @@ pub mod pool;
 pub mod did;
 pub mod wallet;
 pub mod blob_storage;
+pub mod non_secrets;
 pub mod payments;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -94,6 +95,27 @@ pub enum ErrorCode
     // Attempt to open encrypted wallet with invalid credentials
     WalletAccessFailed = 207,
 
+    // Input provided to wallet operations is considered not valid
+    WalletInputError = 208,
+
+    // Decoding of wallet data during input/output failed
+    WalletDecodingError = 209,
+
+    // Storage error occurred during wallet operation
+    WalletStorageError = 210,
+
+    // Error during encryption-related operations
+    WalletEncryptionError = 211,
+
+    // Requested wallet item not found
+    WalletItemNotFound = 212,
+
+    // Returned if wallet's add_record operation is used with record name that already exists
+    WalletItemAlreadyExists = 213,
+
+    // Returned if provided wallet query is invalid
+    WalletQueryError = 214,
+
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
     PoolLedgerNotCreatedError = 300,
@@ -104,7 +126,7 @@ pub enum ErrorCode
     // Pool ledger terminated
     PoolLedgerTerminated = 302,
 
-    // No concensus during ledger operation
+    // No consensus during ledger operation
     LedgerNoConsensusError = 303,
 
     // Attempt to parse invalid transaction response
@@ -118,6 +140,10 @@ pub enum ErrorCode
 
     // Timeout for action
     PoolLedgerTimeout = 307,
+
+    // Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version.
+    // Call pool.indy_set_protocol_version to set correct Protocol version.
+    PoolIncompatibleProtocolVersion = 308,
 
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,

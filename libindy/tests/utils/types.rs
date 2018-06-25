@@ -1,6 +1,6 @@
 extern crate serde_json;
 
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub enum ResponseType {
@@ -10,12 +10,8 @@ pub enum ResponseType {
 }
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct Response {
-    pub op: ResponseType,
-    pub reason: String,
-    pub req_id: u64,
-    pub identifier: String
+    pub op: ResponseType
 }
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
@@ -137,7 +133,22 @@ pub struct CredentialOfferInfo {
     pub cred_def_id: String
 }
 
-#[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Eq, PartialEq, Clone)]
+pub struct WalletRecord {
+    pub id: String,
+    #[serde(rename = "type")]
+    pub type_: Option<String>,
+    pub value: Option<String>,
+    pub tags: Option<HashMap<String, String>>
+}
+
+#[serde(rename_all = "camelCase")]
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SearchRecords {
+    pub total_count: Option<i32>,
+    pub records: Option<Vec<WalletRecord>>
+}
+
 pub struct Utxo {
     pub input: String,
     pub amount: i32,

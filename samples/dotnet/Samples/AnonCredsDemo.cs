@@ -19,6 +19,10 @@ namespace Hyperledger.Indy.Samples
             var issuerWalletName = "issuerWallet";
             var proverWalletName = "proverWallet";
 
+            var issuerWalletCredentials = "{\"key\":\"issuer_wallet_key\"}";
+            var proverWalletCredentials = "{\"key\":\"prover_wallet_key\"}";
+
+
             var issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
             var proverDid = "VsKV7grR1BUE29mG2Fm2kX";
 
@@ -28,15 +32,15 @@ namespace Hyperledger.Indy.Samples
                 await PoolUtils.CreatePoolLedgerConfig();
 
                 //2. Issuer Create and Open Wallet
-                await WalletUtils.CreateWalletAsync(PoolUtils.DEFAULT_POOL_NAME, issuerWalletName, "default", null, null);
+                await WalletUtils.CreateWalletAsync(PoolUtils.DEFAULT_POOL_NAME, issuerWalletName, "default", null, issuerWalletCredentials);
 
                 //3. Prover Create and Open Wallet
-                await WalletUtils.CreateWalletAsync(PoolUtils.DEFAULT_POOL_NAME, proverWalletName, "default", null, null);
+                await WalletUtils.CreateWalletAsync(PoolUtils.DEFAULT_POOL_NAME, proverWalletName, "default", null, proverWalletCredentials);
 
                 // Open pool and wallets in using statements to ensure they are closed when finished.
                 using (var pool = await Pool.OpenPoolLedgerAsync(PoolUtils.DEFAULT_POOL_NAME, "{}"))
-                using (var issuerWallet = await Wallet.OpenWalletAsync(issuerWalletName, null, null))
-                using (var proverWallet = await Wallet.OpenWalletAsync(proverWalletName, null, null))
+                using (var issuerWallet = await Wallet.OpenWalletAsync(issuerWalletName, null, issuerWalletCredentials))
+                using (var proverWallet = await Wallet.OpenWalletAsync(proverWalletName, null, proverWalletCredentials))
                 {
                     //4. Issuer Creates Credential Schema
                     var schemaName = "gvt";
@@ -148,8 +152,8 @@ namespace Hyperledger.Indy.Samples
             finally
             {
                 //15. Delete wallets and Pool ledger config
-                await WalletUtils.DeleteWalletAsync(issuerWalletName, null);
-                await WalletUtils.DeleteWalletAsync(proverWalletName, null);
+                await WalletUtils.DeleteWalletAsync(issuerWalletName, issuerWalletCredentials);
+                await WalletUtils.DeleteWalletAsync(proverWalletName, proverWalletCredentials);
                 await PoolUtils.DeletePoolLedgerConfigAsync(PoolUtils.DEFAULT_POOL_NAME);
             }
 

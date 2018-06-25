@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.hyperledger.indy.sdk.utils.EnvironmentUtils.getIndyHomePath;
+import static org.hyperledger.indy.sdk.utils.EnvironmentUtils.getTmpPath;
 
 public class IndyIntegrationTest {
 
@@ -65,6 +66,8 @@ public class IndyIntegrationTest {
 			"        \"height\": {\"raw\": \"175\", \"encoded\": \"175\"},\n" +
 			"        \"age\": {\"raw\": \"28\", \"encoded\": \"28\"}\n" +
 			"    }";
+	protected String CREDENTIALS = "{\"key\": \"key\"}";
+	protected int PROTOCOL_VERSION = 2;
 
 
 	protected static final String TRUSTEE_IDENTITY_JSON =
@@ -75,6 +78,14 @@ public class IndyIntegrationTest {
 
 	protected static final String MY1_IDENTITY_KEY_JSON =
 			new CryptoJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();
+
+	protected static final String EXPORT_KEY = "export_key";
+	protected static final String EXPORT_PATH = getTmpPath("export_wallet");
+	protected static final String EXPORT_CONFIG_JSON =
+			new JSONObject()
+					.put("key", EXPORT_KEY)
+					.put("path", EXPORT_PATH)
+					.toString();
 
 
 	@Rule
@@ -89,9 +100,10 @@ public class IndyIntegrationTest {
 	public void setUp() throws Exception {
 		InitHelper.init();
 		StorageUtils.cleanupStorage();
-		if (! isWalletRegistered) {
-			Wallet.registerWalletType("inmem", new InMemWalletType()).get();
-		}
+		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
+//		if (! isWalletRegistered) { TODO:FIXME
+//			Wallet.registerWalletType("inmem", new InMemWalletType()).get();
+//		}
 		isWalletRegistered = true;
 	}
 

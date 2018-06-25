@@ -4,19 +4,25 @@ use indy::api::wallet::*;
 use utils::callback::CallbackUtils;
 use utils::inmem_wallet::InmemWallet;
 use utils::sequence::SequenceUtils;
+use utils::environment::EnvironmentUtils;
 
 use std::collections::HashSet;
 use std::ffi::CString;
 use std::ptr::null;
 use std::sync::Mutex;
+use utils::constants::DEFAULT_WALLET_CREDENTIALS;
+
+use std::path::PathBuf;
+
+use serde_json;
 
 pub struct WalletUtils {}
 
 impl WalletUtils {
-    pub fn register_wallet_type(xtype: &str, force_create: bool) -> Result<(), ErrorCode> {
+    pub fn register_wallet_storage(xtype: &str, force_create: bool) -> Result<(), ErrorCode> {
         lazy_static! {
-            static ref REGISERED_WALLETS: Mutex<HashSet<String>> = Default::default();
-        }
+                    static ref REGISERED_WALLETS: Mutex<HashSet<String>> = Default::default();
+                }
 
         let mut wallets = REGISERED_WALLETS.lock().unwrap();
 
@@ -29,18 +35,33 @@ impl WalletUtils {
 
         let xxtype = CString::new(xtype).unwrap();
 
-        let err = indy_register_wallet_type(
+        let err = indy_register_wallet_storage(
             command_handle,
             xxtype.as_ptr(),
             Some(InmemWallet::create),
             Some(InmemWallet::open),
-            Some(InmemWallet::set),
-            Some(InmemWallet::get),
-            Some(InmemWallet::get_not_expired),
-            Some(InmemWallet::list),
             Some(InmemWallet::close),
             Some(InmemWallet::delete),
-            Some(InmemWallet::free),
+            Some(InmemWallet::add_record),
+            Some(InmemWallet::update_record_value),
+            Some(InmemWallet::update_record_tags),
+            Some(InmemWallet::add_record_tags),
+            Some(InmemWallet::delete_record_tags),
+            Some(InmemWallet::delete_record),
+            Some(InmemWallet::get_record),
+            Some(InmemWallet::get_record_id),
+            Some(InmemWallet::get_record_type),
+            Some(InmemWallet::get_record_value),
+            Some(InmemWallet::get_record_tags),
+            Some(InmemWallet::free_record),
+            Some(InmemWallet::get_storage_metadata),
+            Some(InmemWallet::set_storage_metadata),
+            Some(InmemWallet::free_storage_metadata),
+            Some(InmemWallet::search_records),
+            Some(InmemWallet::search_all_records),
+            Some(InmemWallet::get_search_total_count),
+            Some(InmemWallet::fetch_search_next_record),
+            Some(InmemWallet::free_search),
             cb
         );
 
@@ -56,7 +77,7 @@ impl WalletUtils {
         let wallet_name = CString::new(wallet_name).unwrap();
         let xtype_str = xtype.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-        let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let credentials_str = CString::new(credentials.unwrap_or(DEFAULT_WALLET_CREDENTIALS)).unwrap();
 
         let err =
             indy_create_wallet(command_handle,
@@ -64,7 +85,7 @@ impl WalletUtils {
                                wallet_name.as_ptr(),
                                if xtype.is_some() { xtype_str.as_ptr() } else { null() },
                                if config.is_some() { config_str.as_ptr() } else { null() },
-                               if credentials.is_some() { credentials_str.as_ptr() } else { null() },
+                               credentials_str.as_ptr(),
                                cb);
 
         super::results::result_to_empty(err, receiver)
@@ -75,13 +96,13 @@ impl WalletUtils {
 
         let wallet_name = CString::new(wallet_name).unwrap();
         let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-        let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let credentials_str = CString::new(credentials.unwrap_or(DEFAULT_WALLET_CREDENTIALS)).unwrap();
 
         let err =
             indy_open_wallet(command_handle,
                              wallet_name.as_ptr(),
                              if config.is_some() { config_str.as_ptr() } else { null() },
-                             if credentials.is_some() { credentials_str.as_ptr() } else { null() },
+                             credentials_str.as_ptr(),
                              cb);
 
         super::results::result_to_int(err, receiver)
@@ -94,12 +115,21 @@ impl WalletUtils {
         WalletUtils::open_wallet(&wallet_name, None, None)
     }
 
-    pub fn delete_wallet(wallet_name: &str) -> Result<(), ErrorCode> {
+    pub fn create_and_open_plugged_wallet(pool_name: &str) -> Result<i32, ErrorCode> {
+        let wallet_name = format!("default-wallet-name-{}", SequenceUtils::get_next_id());
+
+        WalletUtils::register_wallet_storage("inmem", false).unwrap();
+        WalletUtils::create_wallet(pool_name, &wallet_name, Some("inmem"), None, None).unwrap();
+        WalletUtils::open_wallet(&wallet_name, None, None)
+    }
+
+    pub fn delete_wallet(wallet_name: &str, credentials: Option<&str>) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let wallet_name = CString::new(wallet_name).unwrap();
+        let credentials_str = CString::new(credentials.unwrap_or(DEFAULT_WALLET_CREDENTIALS)).unwrap();
 
-        let err = indy_delete_wallet(command_handle, wallet_name.as_ptr(), null(), cb);
+        let err = indy_delete_wallet(command_handle, wallet_name.as_ptr(), credentials_str.as_ptr(), cb);
 
         super::results::result_to_empty(err, receiver)
     }
@@ -110,5 +140,49 @@ impl WalletUtils {
         let err = indy_close_wallet(command_handle, wallet_handle, cb);
 
         super::results::result_to_empty(err, receiver)
+    }
+
+    pub fn export_wallet(wallet_handle: i32, export_config_json: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+        let export_config_json = CString::new(export_config_json).unwrap();
+
+        let err = indy_export_wallet(command_handle, wallet_handle, export_config_json.as_ptr(), cb);
+
+        super::results::result_to_empty(err, receiver)
+    }
+
+    pub fn import_wallet(pool_name: &str, wallet_name: &str, xtype: Option<&str>, config: Option<&str>, credentials: Option<&str>, import_config_json: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+
+        let pool_name = CString::new(pool_name).unwrap();
+        let wallet_name = CString::new(wallet_name).unwrap();
+        let xtype_str = xtype.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let credentials_str = CString::new(credentials.unwrap_or(DEFAULT_WALLET_CREDENTIALS)).unwrap();
+        let import_config_json = CString::new(import_config_json).unwrap();
+
+        let err =
+            indy_import_wallet(command_handle,
+                               pool_name.as_ptr(),
+                               wallet_name.as_ptr(),
+                               if xtype.is_some() { xtype_str.as_ptr() } else { null() },
+                               if config.is_some() { config_str.as_ptr() } else { null() },
+                               credentials_str.as_ptr(),
+                               import_config_json.as_ptr(),
+                               cb);
+
+        super::results::result_to_empty(err, receiver)
+    }
+
+    pub fn export_wallet_path() -> PathBuf {
+        EnvironmentUtils::tmp_file_path("export_file")
+    }
+
+    pub fn prepare_export_wallet_config(path: &PathBuf) -> String {
+        let json = json!({
+            "path": path.to_str().unwrap(),
+            "key": "export_key",
+        });
+        serde_json::to_string(&json).unwrap()
     }
 }

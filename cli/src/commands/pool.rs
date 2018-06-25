@@ -7,6 +7,8 @@ use libindy::ErrorCode;
 use libindy::pool::Pool;
 use utils::table::print_list_table;
 
+const PROTOCOL_VERSION: usize = 2;
+
 pub mod group {
     use super::*;
 
@@ -56,13 +58,16 @@ pub mod connect_command {
 
     command_with_cleanup!(CommandMetadata::build("connect", "Connect to pool with specified name. Also disconnect from previously connected.")
                 .add_main_param("name", "The name of pool")
+                .add_optional_param("protocol-version", "Pool protocol version will be used for requests. One of: 1, 2. (2 by default)")
                 .add_example("pool connect pool1")
+                .add_example("pool connect pool1 protocol-version=2")
                 .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
+        let protocol_version = get_opt_number_param::<usize>("protocol-version", params).map_err(error_err!())?.unwrap_or(PROTOCOL_VERSION);
 
         let res = Ok(())
             .and_then(|_| {
@@ -72,6 +77,7 @@ pub mod connect_command {
                             set_connected_pool(ctx, None);
                             Ok(println_succ!("Pool \"{}\" has been disconnected", name))
                         }
+                        Err(ErrorCode::PoolLedgerNotCreatedError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                         Err(ErrorCode::PoolLedgerTerminated) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                         Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid pool ledger config.")),
                         Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
@@ -81,14 +87,25 @@ pub mod connect_command {
                 }
             })
             .and_then(|_| {
+                match Pool::set_protocol_version(protocol_version) {
+                    Ok(_) => Ok(()),
+                    Err(ErrorCode::PoolIncompatibleProtocolVersion) =>
+                        Err(println_err!("Unsupported Protocol Version has been specified \"{}\".", protocol_version)),
+                    Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                }
+            })
+            .and_then(|_| {
                 match Pool::open_pool_ledger(name, None) {
                     Ok(handle) => {
                         set_connected_pool(ctx, Some((handle, name.to_owned())));
                         Ok(println_succ!("Pool \"{}\" has been connected", name))
                     }
+                    Err(ErrorCode::PoolLedgerNotCreatedError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                     Err(ErrorCode::CommonIOError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                     Err(ErrorCode::PoolLedgerTerminated) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                     Err(ErrorCode::PoolLedgerTimeout) => Err(println_err!("Pool \"{}\" has not been connected.", name)),
+                    Err(ErrorCode::PoolIncompatibleProtocolVersion) =>
+                        Err(println_err!("Pool \"{}\" are not compatible with Protocol Version \"{}\".", name, protocol_version)),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                 }
             });
@@ -273,7 +290,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn create_works_for_unknow_txn_file() {
+        pub fn create_works_for_unknown_txn_file() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
@@ -281,7 +298,7 @@ pub mod tests {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", POOL.to_string());
-                params.insert("gen_txn_file", "unknow_pool_transactions_genesis".to_string());
+                params.insert("gen_txn_file", "unknown_pool_transactions_genesis".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             TestUtils::cleanup_storage();
@@ -333,6 +350,40 @@ pub mod tests {
             cmd.execute(&CommandContext::new(), &params).unwrap_err();
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        pub fn connect_works_for_invalid_protocol_version() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_pool(&ctx);
+            {
+                let cmd = connect_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", POOL.to_string());
+                params.insert("protocol-version", "0".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn connect_works_for_incompatible_protocol_version() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_pool(&ctx);
+            {
+                let cmd = connect_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", POOL.to_string());
+                params.insert("protocol-version", "1".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod list {
@@ -361,7 +412,7 @@ pub mod tests {
             {
                 let cmd = list_command::new();
                 let params = CommandParams::new();
-                cmd.execute(&ctx, &params).unwrap_err();
+                cmd.execute(&ctx, &params).unwrap();
             }
             TestUtils::cleanup_storage();
         }
@@ -480,7 +531,6 @@ pub mod tests {
         params.insert("gen_txn_file", "docker_pool_transactions_genesis".to_string());
         cmd.execute(&ctx, &params).unwrap();
     }
-
 
     pub fn create_and_connect_pool(ctx: &CommandContext) {
         {

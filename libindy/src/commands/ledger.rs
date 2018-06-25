@@ -3,6 +3,8 @@ extern crate indy_crypto;
 
 use self::serde_json::Value;
 
+use api::ledger::{CustomFree, CustomTransactionParser};
+
 use errors::common::CommonError;
 use errors::pool::PoolError;
 use errors::crypto::CryptoError;
@@ -10,8 +12,9 @@ use errors::indy::IndyError;
 
 use services::pool::PoolService;
 use services::crypto::CryptoService;
-use services::crypto::types::{Did, Key};
-use services::wallet::WalletService;
+use domain::crypto::key::Key;
+use domain::crypto::did::Did;
+use services::wallet::{WalletService, RecordOptions};
 use services::ledger::LedgerService;
 
 
@@ -25,7 +28,6 @@ use std::rc::Rc;
 use utils::crypto::base58::Base58;
 
 use utils::crypto::signature_serializer::serialize_signature;
-use self::indy_crypto::utils::json::JsonDecodable;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
@@ -113,6 +115,7 @@ pub enum LedgerCommand {
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetTxnRequest(
         String, // submitter did
+        Option<String>, // ledger type
         i32, // data
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildPoolConfigRequest(
@@ -170,7 +173,12 @@ pub enum LedgerCommand {
         Box<Fn(Result<String, IndyError>) + Send>),
     ParseGetRevocRegDeltaResponse(
         String, // get revocation registry delta response
-        Box<Fn(Result<(String, String, u64), IndyError>) + Send>)
+        Box<Fn(Result<(String, String, u64), IndyError>) + Send>),
+    RegisterSPParser(
+        String, // txn type
+        CustomTransactionParser,
+        CustomFree,
+        Box<Fn(Result<(), IndyError>) + Send>),
 }
 
 pub struct LedgerCommandExecutor {
@@ -211,6 +219,10 @@ impl LedgerCommandExecutor {
                 self.send_callbacks.borrow_mut().remove(&handle)
                     .expect("Expect callback to process ack command")
                     (result.map_err(IndyError::from));
+            }
+            LedgerCommand::RegisterSPParser(txn_type, parser, free, cb) => {
+                info!(target: "ledger_command_executor", "RegisterSPParser command received");
+                cb(self.register_sp_parser(&txn_type, parser, free));
             }
             LedgerCommand::SignRequest(wallet_handle, submitter_did, request_json, cb) => {
                 info!(target: "ledger_command_executor", "SignRequest command received");
@@ -281,9 +293,9 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildGetValidatorInfoRequest command received");
                 cb(self.build_get_validator_info_request(&submitter_did));
             }
-            LedgerCommand::BuildGetTxnRequest(submitter_did, data, cb) => {
+            LedgerCommand::BuildGetTxnRequest(submitter_did, ledger_type, seq_no, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetTxnRequest command received");
-                cb(self.build_get_txn_request(&submitter_did, data));
+                cb(self.build_get_txn_request(&submitter_did, ledger_type.as_ref().map(String::as_str), seq_no));
             }
             LedgerCommand::BuildPoolConfigRequest(submitter_did, writes, force, cb) => {
                 info!(target: "ledger_command_executor", "BuildPoolConfigRequest command received");
@@ -335,6 +347,15 @@ impl LedgerCommandExecutor {
         };
     }
 
+    fn register_sp_parser(&self, txn_type: &str,
+                          parser: CustomTransactionParser, free: CustomFree) -> Result<(), IndyError> {
+        debug!("register_sp_parser >>> txn_type: {:?}, parser: {:?}, free: {:?}",
+               txn_type, parser, free);
+
+        PoolService::register_sp_parser(txn_type, parser, free)
+            .map_err(IndyError::from)
+    }
+
     fn sign_and_submit_request(&self,
                                pool_handle: i32,
                                wallet_handle: i32,
@@ -357,15 +378,11 @@ impl LedgerCommandExecutor {
                      submitter_did: &str,
                      request_json: &str,
                      signature_type: SignatureType) -> Result<String, IndyError> {
-        trace!("_sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+        debug!("_sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
 
-        let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", submitter_did))?;
-        let my_did = Did::from_json(&my_did_json)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid my_did_json: {}", err.to_string())))?;
+        let my_did: Did = self.wallet_service.get_indy_object(wallet_handle, &submitter_did, &RecordOptions::id_value(), &mut String::new())?;
 
-        let my_key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", my_did.verkey))?;
-        let my_key = Key::from_json(&my_key_json)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid my_key_json: {}", err.to_string())))?;
+        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_did.verkey, &RecordOptions::id_value(), &mut String::new())?;
 
         let mut request: Value = serde_json::from_str(request_json)
             .map_err(|err|
@@ -383,7 +400,7 @@ impl LedgerCommandExecutor {
                 request.remove("signature");
                 request.remove("signatures");
                 request
-            }).ok_or(CommonError::InvalidState(format!("Cannot deserialize request")))?;
+            }).ok_or(CommonError::InvalidState("Cannot deserialize request".to_string()))?;
 
         let serialized_request = serialize_signature(message_without_signatures)?;
         let signature = self.crypto_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
@@ -406,7 +423,7 @@ impl LedgerCommandExecutor {
                 CryptoError::CommonError(
                     CommonError::InvalidState(format!("Can't serialize message after signing: {}", err.description()))))?;
 
-        trace!("_sign_request <<< res: {:?}", res);
+        debug!("_sign_request <<< res: {:?}", res);
 
         Ok(res)
     }
@@ -648,7 +665,7 @@ impl LedgerCommandExecutor {
     }
 
     fn build_get_validator_info_request(&self,
-                             submitter_did: &str) -> Result<String, IndyError> {
+                                        submitter_did: &str) -> Result<String, IndyError> {
         info!("build_get_validator_info_request >>> submitter_did: {:?}", submitter_did);
 
         self.crypto_service.validate_did(submitter_did)?;
@@ -662,14 +679,14 @@ impl LedgerCommandExecutor {
 
     fn build_get_txn_request(&self,
                              submitter_did: &str,
-                             data: i32) -> Result<String, IndyError> {
-        debug!("build_get_txn_request >>> submitter_did: {:?}, data: {:?}",
-               submitter_did, data);
+                             ledger_type: Option<&str>,
+                             seq_no: i32) -> Result<String, IndyError> {
+        debug!("build_get_txn_request >>> submitter_did: {:?}, ledger_type: {:?}, seq_no: {:?}",
+               submitter_did, ledger_type, seq_no);
 
         self.crypto_service.validate_did(submitter_did)?;
 
-        let res = self.ledger_service.build_get_txn_request(submitter_did,
-                                                            data)?;
+        let res = self.ledger_service.build_get_txn_request(submitter_did, ledger_type, seq_no)?;
 
         debug!("build_get_txn_request <<< res: {:?}", res);
 

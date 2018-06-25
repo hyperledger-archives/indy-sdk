@@ -5,7 +5,7 @@ extern crate rust_base58;
 
 use errors::common::CommonError;
 use services::blob_storage::BlobStorageService;
-use domain::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 
 use self::indy_crypto::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
 use self::indy_crypto::errors::IndyCryptoError;
@@ -28,11 +28,12 @@ impl SDKTailsAccessor {
                tails_reader_handle: i32,
                rev_reg_def: &RevocationRegistryDefinitionV1) -> Result<SDKTailsAccessor, CommonError> {
         let tails_hash = rev_reg_def.value.tails_hash.from_base58()
-            .map_err(|_| CommonError::InvalidState(format!("Invalid base58 for Tails hash")))?;
+            .map_err(|_| CommonError::InvalidState("Invalid base58 for Tails hash".to_string()))?;
 
         let tails_reader_handle = tails_service.open_blob(tails_reader_handle,
                                                           &rev_reg_def.value.tails_location,
                                                           tails_hash.as_slice())?;
+
         Ok(SDKTailsAccessor {
             tails_service,
             tails_reader_handle

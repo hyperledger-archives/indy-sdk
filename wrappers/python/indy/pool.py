@@ -161,3 +161,33 @@ async def delete_pool_ledger_config(config_name: str) -> None:
 
     logger.debug("delete_pool_ledger_config: <<< res: %r", res)
     return res
+
+
+async def set_protocol_version(protocol_version: int) -> None:
+    """
+    Set PROTOCOL_VERSION to specific version.
+
+    There is a global property PROTOCOL_VERSION that used in every request to the pool and
+    specified version of Indy Node which Libindy works.
+    By default PROTOCOL_VERSION=1.
+
+    :param protocol_version: Protocol version will be used:
+        1 - for Indy Node 1.3
+        2 - for Indy Node 1.4
+    :return: Error code
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("set_protocol_version: >>> protocol_version: %r",
+                 protocol_version)
+
+    if not hasattr(delete_pool_ledger_config, "cb"):
+        logger.debug("set_protocol_version: Creating callback")
+        delete_pool_ledger_config.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    res = await do_call('indy_set_protocol_version',
+                        protocol_version,
+                        delete_pool_ledger_config.cb)
+
+    logger.debug("set_protocol_version: <<< res: %r", res)
+    return res

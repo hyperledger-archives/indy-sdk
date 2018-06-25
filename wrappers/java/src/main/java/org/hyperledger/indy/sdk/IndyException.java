@@ -7,10 +7,7 @@ import org.hyperledger.indy.sdk.ledger.LedgerInvalidTransactionException;
 import org.hyperledger.indy.sdk.ledger.LedgerSecurityException;
 import org.hyperledger.indy.sdk.ledger.TimeoutException;
 import org.hyperledger.indy.sdk.payments.*;
-import org.hyperledger.indy.sdk.pool.InvalidPoolException;
-import org.hyperledger.indy.sdk.pool.PoolConfigNotCreatedException;
-import org.hyperledger.indy.sdk.pool.PoolLedgerConfigExistsException;
-import org.hyperledger.indy.sdk.pool.PoolLedgerTerminatedException;
+import org.hyperledger.indy.sdk.pool.*;
 import org.hyperledger.indy.sdk.crypto.UnknownCryptoException;
 import org.hyperledger.indy.sdk.wallet.*;
 
@@ -81,7 +78,21 @@ public class IndyException extends Exception {
 			case WalletAlreadyExistsError:
 				return new WalletExistsException();
 			case WalletNotFoundError:
-				return new WalletValueNotFoundException();
+				return new WalletNotFoundException();
+			case WalletInputError:
+				return new WalletInputException();
+			case WalletDecodingError:
+				return new WalletDecodingException();
+			case WalletStorageError:
+				return new WalletStorageException();
+			case WalletEncryptionError:
+				return new WalletEncryptionException();
+			case WalletItemNotFound:
+				return new WalletItemNotFoundException();
+			case WalletItemAlreadyExists:
+				return new WalletItemAlreadyExistsException();
+			case WalletQueryError:
+				return new WalletInvalidQueryException();
 			case WalletIncompatiblePoolError:
 				return new WrongWalletForPoolException();
 			case WalletAlreadyOpenedError:
@@ -104,6 +115,8 @@ public class IndyException extends Exception {
 				return new PoolLedgerConfigExistsException();
 			case PoolLedgerTimeout:
 				return new TimeoutException();
+			case PoolIncompatibleProtocolVersion:
+				return new PoolIncompatibleProtocolVersionException();
 			case AnoncredsRevocationRegistryFullError:
 				return new RevocationRegistryFullException();
 			case AnoncredsInvalidUserRevocId:

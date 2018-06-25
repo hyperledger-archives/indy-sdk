@@ -15,6 +15,7 @@ pub mod types;
 pub mod pairwise;
 pub mod constants;
 pub mod blob_storage;
+pub mod non_secrets;
 pub mod results;
 pub mod payments;
 pub mod rand_utils;
@@ -33,6 +34,11 @@ pub mod sequence;
 #[allow(unused_macros)]
 #[path = "../../src/utils/cstring.rs"]
 pub mod cstring;
+
+#[macro_use]
+#[allow(unused_macros)]
+#[path = "../../src/utils/byte_array.rs"]
+pub mod byte_array;
 
 #[path = "../../src/utils/inmem_wallet.rs"]
 pub mod inmem_wallet;

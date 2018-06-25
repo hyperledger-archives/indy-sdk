@@ -34,7 +34,7 @@ async def test_get_pairwise_works_for_not_created_pairwise(wallet_handle, identi
 
     with pytest.raises(IndyError) as e:
         await pairwise.get_pairwise(wallet_handle, their_did)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio

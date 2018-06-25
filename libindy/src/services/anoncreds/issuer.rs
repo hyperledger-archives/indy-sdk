@@ -20,11 +20,11 @@ use self::indy_crypto::cl::{
 };
 use self::indy_crypto::cl::issuer::Issuer as CryptoIssuer;
 
-use domain::schema::SchemaV1;
-use domain::credential_definition::{CredentialDefinitionV1 as CredentialDefinition, CredentialDefinitionData};
-use domain::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
-use domain::credential::AttributeValues;
-use domain::credential_request::CredentialRequest;
+use domain::anoncreds::schema::SchemaV1;
+use domain::anoncreds::credential_definition::{CredentialDefinitionV1 as CredentialDefinition, CredentialDefinitionData};
+use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
+use domain::anoncreds::credential::AttributeValues;
+use domain::anoncreds::credential_request::CredentialRequest;
 
 pub struct Issuer {}
 
@@ -108,13 +108,13 @@ impl Issuer {
             if rev_idx.is_some() {
                 let rev_idx = rev_idx.unwrap();
                 let rev_reg = rev_reg
-                    .ok_or(CommonError::InvalidState(format!("RevocationRegistry not found")))?;
+                    .ok_or(CommonError::InvalidState("RevocationRegistry not found".to_string()))?;
                 let rev_key_priv = rev_key_priv
-                    .ok_or(CommonError::InvalidState(format!("RevocationKeyPrivate not found")))?;
+                    .ok_or(CommonError::InvalidState("RevocationKeyPrivate not found".to_string()))?;
                 let rev_reg_def = rev_reg_def
-                    .ok_or(CommonError::InvalidState(format!("RevocationRegistryDefinitionValue not found")))?;
+                    .ok_or(CommonError::InvalidState("RevocationRegistryDefinitionValue not found".to_string()))?;
                 let rev_tails_accessor = rev_tails_accessor
-                    .ok_or(CommonError::InvalidState(format!("RevocationTailsAccessor not found")))?;
+                    .ok_or(CommonError::InvalidState("RevocationTailsAccessor not found".to_string()))?;
 
                 CryptoIssuer::sign_credential_with_revoc(&cred_request.prover_did,
                                                          &cred_request.blinded_ms,

@@ -169,7 +169,13 @@ def iosTesting() {
 
                 dir('wrappers/ios/libindy-pod') {
                     echo "iOS Test: Installing dependencies (pods)"
-                    sh "pod install --repo-update"
+
+                    withEnv([
+                            "GEM_PATH=$HOME/.gem.indy_sdk",
+                            "GEM_HOME=$HOME/.gem.indy_sdk"
+                    ]) {
+                        sh "pod install --repo-update"
+                    }
                 }
 
                 // FIXME replace this hack (manually rewrite installed pod)
@@ -220,6 +226,7 @@ def linuxTesting(file, env_name, network_name) {
         poolInst = openPool(env_name, network_name)
 
         def testEnv
+        def libindyFeatures = "--features sodium_static"
 
         dir('libindy') {
             echo "${env_name} Libindy Test: Build docker image"
@@ -227,12 +234,13 @@ def linuxTesting(file, env_name, network_name) {
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libindy Test: Build"
-                sh "cargo build"
+                sh "cargo build $libindyFeatures"
             }
         }
 
         sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
         sh "cp libindy/target/debug/libindy.so wrappers/python"
+        sh "cp libindy/target/debug/libindy.so wrappers/nodejs"
         sh "cp libindy/target/debug/libindy.so cli"
         sh "cp libindy/target/debug/libindy.so libnullpay"
 
@@ -249,6 +257,7 @@ def linuxTesting(file, env_name, network_name) {
 
         stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
         stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
+        stash includes: 'wrappers/nodejs/libindy.so', name: "LibindyNodejsSO${env_name}"
         stash includes: 'cli/libindy.so', name: "LibindyCliSO${env_name}"
         stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
 
@@ -259,10 +268,10 @@ def linuxTesting(file, env_name, network_name) {
                             echo "${env_name} Libindy Test: Test"
 
                             echo "${env_name} Libindy Test: Build Test"
-                            sh "RUST_BACKTRACE=1 cargo test --no-run"
+                            sh "RUST_BACKTRACE=1 cargo test --no-run $libindyFeatures"
 
                             echo "${env_name} Libindy Test: Run tests"
-                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
+                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test $libindyFeatures"
                         }
                     }
                 },
@@ -281,6 +290,7 @@ def linuxTesting(file, env_name, network_name) {
                 },
                 "${env_name}-java-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
                 "${env_name}-python-test" : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
+                "${env_name}-nodejs-test" : { linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting) },
                 "${env_name}-cli-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) }
         ])
     }
@@ -334,6 +344,20 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
                 LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug,zmq=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
             '''
         }
+    }
+}
+
+def linuxNodejsTesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyNodejsSO${env_name}"
+    testEnv.inside("--network=${network_name}") {
+        echo "${env_name} Libindy Test: Test nodejs wrapper"
+
+        sh '''
+                cd wrappers/nodejs
+                npm run prepare
+                npm install
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=trace TEST_POOL_IP=10.0.0.2 npm test
+            '''
     }
 }
 
@@ -422,7 +446,7 @@ def closePool(env_name, network_name, poolInst) {
 }
 
 def setupRust() {
-    sh "rustup default 1.25.0"
+    sh "rustup default 1.26.0"
 }
 
 def setupRustIOS() {
@@ -434,4 +458,3 @@ def setupBrewPackages() {
     sh "brew switch openssl 1.0.2l"
     sh "brew switch zeromq 4.2.3"
 }
-

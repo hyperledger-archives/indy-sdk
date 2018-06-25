@@ -7,6 +7,7 @@ import utils.PoolUtils;
 
 import static org.hyperledger.indy.sdk.anoncreds.Anoncreds.*;
 import static org.junit.Assert.*;
+import static utils.PoolUtils.PROTOCOL_VERSION;
 
 
 class Anoncreds {
@@ -19,17 +20,22 @@ class Anoncreds {
 		String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 		String proverDid = "VsKV7grR1BUE29mG2Fm2kX";
 
+		// Set protocol version 2 to work with Indy Node 1.4
+		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
+
 		//1. Create and Open Pool
 		String poolName = PoolUtils.createPoolLedgerConfig();
 		Pool pool = Pool.openPoolLedger(poolName, "{}").get();
 
 		//2. Issuer Create and Open Wallet
-		Wallet.createWallet(poolName, issuerWalletName, "default", null, null).get();
-		Wallet issuerWallet = Wallet.openWallet(issuerWalletName, null, null).get();
+		String issuerWalletCredentials = "{\"key\":\"issuer_wallet_key\"}";
+		Wallet.createWallet(poolName, issuerWalletName, "default", null, issuerWalletCredentials).get();
+		Wallet issuerWallet = Wallet.openWallet(issuerWalletName, null, issuerWalletCredentials).get();
 
 		//3. Prover Create and Open Wallet
-		Wallet.createWallet(poolName, proverWalletName, "default", null, null).get();
-		Wallet proverWallet = Wallet.openWallet(proverWalletName, null, null).get();
+		String proverWalletCredentials = "{\"key\":\"prover_wallet_key\"}";
+		Wallet.createWallet(poolName, proverWalletName, "default", null, proverWalletCredentials).get();
+		Wallet proverWallet = Wallet.openWallet(proverWalletName, null, proverWalletCredentials).get();
 
 		//4. Issuer Creates Credential Schema
 		String schemaName = "gvt";
@@ -138,11 +144,11 @@ class Anoncreds {
 
 		//14. Close and Delete issuer wallet
 		issuerWallet.closeWallet().get();
-		Wallet.deleteWallet(issuerWalletName, null).get();
+		Wallet.deleteWallet(issuerWalletName, issuerWalletCredentials).get();
 
 		//15. Close and Delete prover wallet
 		proverWallet.closeWallet().get();
-		Wallet.deleteWallet(proverWalletName, null).get();
+		Wallet.deleteWallet(proverWalletName, proverWalletCredentials).get();
 
 		//16. Close pool
 		pool.closePoolLedger().get();

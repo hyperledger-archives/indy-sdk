@@ -1,5 +1,5 @@
 		print_log('\n13. Reading new verkey from wallet\n')
-		verkey_in_wallet = await signus.key_for_local_did(wallet_handle, trust_anchor_did)
+		verkey_in_wallet = await did.key_for_local_did(wallet_handle, trust_anchor_did)
 		print_log('Trust Anchor Verkey in wallet: ', verkey_in_wallet)
 
 		print_log('\n14. Building GET_NYM request to get Trust Anchor verkey\n')
@@ -27,7 +27,7 @@
 		await pool.close_pool_ledger(pool_handle)
 
 		print_log('\n18. Deleting created wallet\n')
-		await wallet.delete_wallet(wallet_name, None)
+		await wallet.delete_wallet(wallet_name, wallet_credentials)
 
 		print_log('\n19. Deleting pool ledger config')
 		await pool.delete_pool_ledger_config(pool_name)

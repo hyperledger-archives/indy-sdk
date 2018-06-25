@@ -176,10 +176,11 @@ extern pub fn indy_delete_wallet_record(command_handle: i32,
 /// wallet_handle: wallet handle (created by open_wallet)
 /// type_: allows to separate different record types collections
 /// id: the id of record
-/// options_json: //TODO: FIXME: Think about replacing by bitmaks
+/// options_json: //TODO: FIXME: Think about replacing by bitmask
 ///  {
+///    retrieveType: (optional, false by default) Retrieve record type,
 ///    retrieveValue: (optional, true by default) Retrieve record value,
-///    retrieveTags: (optional, true by default) Retrieve record tags
+///    retrieveTags: (optional, false by default) Retrieve record tags
 ///  }
 /// #Returns
 /// wallet record json:
@@ -213,12 +214,12 @@ extern pub fn indy_get_wallet_record(command_handle: i32,
 ///      "tagName3": { $gte: 123 },
 ///    },
 ///  }
-/// options_json: //TODO: FIXME: Think about replacing by bitmaks
+/// options_json: //TODO: FIXME: Think about replacing by bitmask
 ///  {
 ///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
 ///    retrieveTotalCount: (optional, false by default) Calculate total count,
 ///    retrieveValue: (optional, true by default) Retrieve record value,
-///    retrieveTags: (optional, true by default) Retrieve record tags,
+///    retrieveTags: (optional, false by default) Retrieve record tags,
 ///  }
 /// #Returns
 /// wallet_search_handle: Wallet search handle that can be used later
@@ -441,11 +442,11 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                            /// storage_handle: opened storage handle (See open handler)
                                            /// type_: allows to separate different record types collections
                                            /// id: the id of record
-                                           /// options_json: //TODO: FIXME: Think about replacing by bitmaks
+                                           /// options_json: //TODO: FIXME: Think about replacing by bitmask
                                            ///  {
                                            ///    retrieveType: (optional, false by default) Retrieve record type,
                                            ///    retrieveValue: (optional, true by default) Retrieve record value,
-                                           ///    retrieveTags: (optional, true by default) Retrieve record tags
+                                           ///    retrieveTags: (optional, false by default) Retrieve record tags
                                            ///  }
                                            /// record_handle_p: pointer to store retrieved record handle
                                            get_record: Option<extern fn(storage_handle: i32,
@@ -531,13 +532,13 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
                                           ///      "tagName3": { $gte: 123 },
                                           ///    },
                                           ///  }
-                                          /// options_json: //TODO: FIXME: Think about replacing by bitmaks
+                                          /// options_json: //TODO: FIXME: Think about replacing by bitmask
                                           ///  {
                                           ///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
                                           ///    retrieveTotalCount: (optional, false by default) Calculate total count,
                                           ///    retrieveType: (optional, false by default) Retrieve record type,
                                           ///    retrieveValue: (optional, true by default) Retrieve record value,
-                                          ///    retrieveTags: (optional, true by default) Retrieve record tags,
+                                          ///    retrieveTags: (optional, false by default) Retrieve record tags,
                                           ///  }
                                           /// search_handle_p: pointer to store wallet search handle
                                           search_records: Option<extern fn(storage_handle: i32,

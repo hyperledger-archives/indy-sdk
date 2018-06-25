@@ -85,3 +85,6 @@ For 0.1.1 and 0.1.2 versions:
 ```
 
 All wrapper types and classes have prefix `Indy`.
+
+#### Troubleshooting
+Use environment variable `RUST_LOG={info|debug|trace}` to output logs of Libindy.
