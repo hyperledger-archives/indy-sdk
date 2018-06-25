@@ -505,9 +505,9 @@ mod high_cases {
 
             let fees_stored = payments_utils::get_request_fees(wallet_handle, pool_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME);
 
-            let fee_1 = fees_stored.get("NYM").unwrap();
+            let fee_1 = fees_stored.get("1").unwrap();
             assert_eq!(fee_1, &1);
-            let fee_2 = fees_stored.get("SCHEMA").unwrap();
+            let fee_2 = fees_stored.get("101").unwrap();
             assert_eq!(fee_2, &2);
 
             pool::close(pool_handle).unwrap();
@@ -526,12 +526,12 @@ mod high_cases {
 
             let req = payments::build_get_txn_fees_req(wallet_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME).unwrap();
             let resp = ledger::submit_request(pool_handle, req.as_str()).unwrap();
-            let resp = payments::parse_get_utxo_response(PAYMENT_METHOD_NAME, resp.as_str()).unwrap();
+            let resp = payments::parse_get_txn_fees_response(PAYMENT_METHOD_NAME, resp.as_str()).unwrap();
             let map = serde_json::from_str::<HashMap<String, i32>>(resp.as_str()).unwrap();
 
-            let fee_1 = map.get("NYM").unwrap();
+            let fee_1 = map.get("1").unwrap();
             assert_eq!(fee_1, &1);
-            let fee_2 = map.get("SCHEMA").unwrap();
+            let fee_2 = map.get("101").unwrap();
             assert_eq!(fee_2, &2);
 
             pool::close(pool_handle).unwrap();
