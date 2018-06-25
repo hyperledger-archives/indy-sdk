@@ -20,6 +20,9 @@ async def create_payment_address(wallet_handle: int,
      Note that payment method should be able to resolve this
      secret by fully resolvable payment address format.
 
+     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+     in the future releases.
+
     :param wallet_handle: wallet handle (created by open_wallet).
     :param payment_method: Payment method to use (for example, 'sov').
     :param config: payment address config as json:
@@ -57,6 +60,9 @@ async def create_payment_address(wallet_handle: int,
 async def list_payment_addresses(wallet_handle: int) -> str:
     """
      Lists all payment addresses that are stored in the wallet
+
+     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+     in the future releases.
 
     :param wallet_handle: wallet handle (created by open_wallet).
     :return: payment_addresses_json: json array of string with json addresses
@@ -99,6 +105,9 @@ async def add_request_fees(wallet_handle: int,
 
      Format of inputs is specific for payment method. Usually it should reference payment transaction
      with at least one output that corresponds to payment address that user owns.
+
+     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+     in the future releases.
 
     :param wallet_handle: wallet handle (created by open_wallet).
     :param submitter_did : DID of request sender
@@ -154,6 +163,9 @@ async def parse_response_with_fees(payment_method: str,
     """
      Parses response for Indy request with fees.
 
+     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+     in the future releases.
+
     :param payment_method: Payment method to use (for example, 'sov').
     :param resp_json: response for Indy request with fees
                Note: this param will be used to determine payment_method
@@ -194,6 +206,9 @@ async def build_get_utxo_request(wallet_handle: int,
     Builds Indy request for getting UTXO list for payment address
     according to this payment method.
 
+    Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+    in the future releases.
+
     :param wallet_handle: wallet handle (created by open_wallet).
     :param submitter_did : DID of request sender
     :param payment_address: target payment address
@@ -230,6 +245,9 @@ async def parse_get_utxo_response(payment_method: str,
                                   resp_json: str) -> str:
     """
      Parses response for Indy request for getting UTXO list.
+
+     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+     in the future releases.
 
     :param payment_method: Payment method to use (for example, 'sov').
     :param resp_json: resp_json: response for Indy request for getting UTXO list
@@ -275,6 +293,9 @@ async def build_payment_req(wallet_handle: int,
 
      Format of inputs is specific for payment method. Usually it should reference payment transaction
      with at least one output that corresponds to payment address that user owns.
+
+     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+     in the future releases.
 
     :param wallet_handle: wallet handle (created by open_wallet).
     :param submitter_did : DID of request sender
@@ -324,6 +345,9 @@ async def parse_payment_response(payment_method: str,
     """
      Parses response for Indy request for getting UTXO list.
 
+     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+     in the future releases.
+
     :param payment_method: Payment method to use (for example, 'sov').
     :param resp_json: resp_json: response for Indy request for getting UTXO list
                       Note: this param will be used to determine payment_method
@@ -368,6 +392,9 @@ async def build_mint_req(wallet_handle: int,
      Format of inputs is specific for payment method. Usually it should reference payment transaction
      with at least one output that corresponds to payment address that user owns.
 
+     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+     in the future releases.
+
     :param wallet_handle: wallet handle (created by open_wallet).
     :param submitter_did : DID of request sender
     :param outputs_json: The list of UTXO outputs as json array:
@@ -411,6 +438,9 @@ async def build_set_txn_fees_req(wallet_handle: int,
                                  fees_json: str) -> str:
     """
     Builds Indy request for setting fees for transactions in the ledger
+
+    Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+    in the future releases.
 
     :param wallet_handle: wallet handle (created by open_wallet).
     :param submitter_did:  DID of request sender
@@ -458,6 +488,9 @@ async def build_get_txn_fees_req(wallet_handle: int,
     """
     Builds Indy request for getting fees for transactions in the ledger
 
+    Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+    in the future releases.
+
     :param wallet_handle: wallet handle (created by open_wallet).
     :param submitter_did: DID of request sender
     :param payment_method: Payment method to use (for example, 'sov').
@@ -493,6 +526,9 @@ async def parse_get_txn_fees_response(payment_method: str,
                                       resp_json: str) -> str:
     """
     Parses response for Indy request for getting fees
+
+    Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+    in the future releases.
 
     :param payment_method: Payment method to use (for example, 'sov').
     :param resp_json: response for Indy request for getting fees
