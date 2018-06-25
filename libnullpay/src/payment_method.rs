@@ -12,7 +12,6 @@ use utils::cstring::CStringUtils;
 
 use serde_json::{from_str, to_string};
 use std::collections::HashMap;
-use std::ffi::CString;
 use std::os::raw::c_char;
 
 use std::thread;
@@ -334,7 +333,7 @@ fn _process_parse_response(cmd_handle: i32, response: *const c_char, cb: Option<
 }
 
 fn _process_callback(cmd_handle: i32, err: ErrorCode, response: String, cb: Option<IndyPaymentCallback>) -> ErrorCode {
-    let response = CString::new(response).unwrap();
+    let response = CStringUtils::string_to_cstring(response);
     match cb {
         Some(cb) => cb(cmd_handle, err, response.as_ptr()),
         None => err

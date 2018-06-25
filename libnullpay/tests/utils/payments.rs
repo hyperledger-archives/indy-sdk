@@ -199,6 +199,7 @@ pub fn build_get_txn_fees_req(wallet_handle: i32, submitter_did: &str, payment_m
     super::results::result_to_string(err, receiver)
 }
 
+#[allow(dead_code)]
 pub fn parse_get_txn_fees_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
     let (receiver, command_handle, cb) =
         super::callbacks::_closure_to_cb_ec_string();
