@@ -8,11 +8,15 @@ libindy (1.5.0) unstable; urgency=medium
     All encryption is performed in libindy. It simplifies plugged wallets and provides warranty of a good security level
     for 3d party wallets implementations.
   * The format of wallet data was changed for better security and support of efficient search
-* Added [Wallet Export/Import API](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/009-wallet-export-import) and
+* Added EXPERIMENTAL [Wallet Export/Import API](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/009-wallet-export-import) and
   corresponded commands to Indy CLI
+* ```indy_list_wallets``` endpoint is DEPRECATED and will be removed in the next release. The main idea is avoid
+  maintaining created wallet list on libindy side. It will allow to access wallets from a cluster and solve
+  some problems on mobile platforms. ```indy_create_wallet``` and ```indy_open_wallet``` endpoints will
+  also get related changes in the next release.
 * Added [Non-Secrets API](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage#non-secrets-api) that allows store and read  
   application specific data in the wallet
-* Added [Generic Payments API](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/004-payment-interface#payment-method-api) that provides
+* Added EXPERIMENTAL [Generic Payments API](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/004-payment-interface#payment-method-api) that provides
   ability to register custom payment method
   and then create payment addresses, build payment-related transactions, assign fees to transactions
 * Added ability to [load custom plugins using Indy CLI](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/006-cli-plugins)

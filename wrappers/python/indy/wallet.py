@@ -161,6 +161,9 @@ async def export_wallet(handle: int,
     """
     Exports opened wallet to the file.
 
+    Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+    in the future releases.
+
     :param handle: wallet handle returned by indy_open_wallet.
     :param export_config_json: JSON containing settings for input operation.
        {
@@ -199,6 +202,9 @@ async def import_wallet(pool_name: str,
     Creates a new secure wallet with the given unique name and then imports its content
     according to fields provided in import_config
     This can be seen as an indy_create_wallet call with additional content import
+
+    Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+    in the future releases.
 
     :param pool_name: Name of the pool that corresponds to this wallet.
     :param name: Name of the wallet.
