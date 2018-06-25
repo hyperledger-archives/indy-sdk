@@ -270,6 +270,8 @@ pub extern fn indy_open_wallet(command_handle: i32,
 
 /// Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool
 ///
+/// Note this function is DEPRECATED and will be removed in the next release.
+///
 /// #Returns
 /// wallets list json: [{
 ///    "name": <string>
@@ -309,6 +311,9 @@ pub extern fn indy_list_wallets(command_handle: i32,
 }
 
 /// Exports opened wallet
+///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
 ///
 /// #Params:
 /// wallet_handle: wallet handle returned by indy_open_wallet
@@ -356,15 +361,18 @@ pub extern fn indy_export_wallet(command_handle: i32,
 }
 
 
-// Creates a new secure wallet with the given unique name and then imports its content
-// according to fields provided in import_config
-// This can be seen as an indy_create_wallet call with additional content import
-//
-// #Params
-// pool_name: Name of the pool that corresponds to this wallet
-// name: Name of the wallet
-// storage_type(optional): Type of the wallet storage. Defaults to 'default'.
-//                  Custom storage types can be registered with indy_register_wallet_storage_call
+/// Creates a new secure wallet with the given unique name and then imports its content
+/// according to fields provided in import_config
+/// This can be seen as an indy_create_wallet call with additional content import
+///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
+///
+/// #Params
+/// pool_name: Name of the pool that corresponds to this wallet
+/// name: Name of the wallet
+/// storage_type(optional): Type of the wallet storage. Defaults to 'default'.
+///                  Custom storage types can be registered with indy_register_wallet_storage_call
 /// config(optional): Wallet configuration json.
 ///   {
 ///       "storage": <object>  List of supported keys are defined by wallet type.

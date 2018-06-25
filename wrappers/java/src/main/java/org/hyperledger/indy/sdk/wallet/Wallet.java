@@ -267,6 +267,8 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	/**
 	 * Exports opened wallet to the file.
 	 *
+	 * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+     * the future releases.
 	 * @param wallet The wallet to export.
 	 * @param exportConfigJson: JSON containing settings for input operation.
 	 *   {
@@ -304,6 +306,8 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * according to fields provided in import_config
 	 * This can be seen as an indy_create_wallet call with additional content import
 	 *
+	 * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+     * the future releases.
 	 * @param poolName Name of the pool that corresponds to this wallet.
 	 * @param name Name of the wallet.
 	 * @param xtype Type of the wallet. Defaults to 'default'.
