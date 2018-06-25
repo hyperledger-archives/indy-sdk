@@ -3869,7 +3869,7 @@ pub mod tests {
 
         let utxos = serde_json::from_str::<serde_json::Value>(&utxo_json).unwrap();
         let utxo: &serde_json::Value = &utxos.as_array().unwrap()[0];
-        utxo["input"].as_str().unwrap().to_string()
+        utxo["txo"].as_str().unwrap().to_string()
     }
 
     #[cfg(feature = "nullpay_plugin")]
