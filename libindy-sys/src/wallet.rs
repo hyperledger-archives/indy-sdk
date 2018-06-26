@@ -365,6 +365,22 @@ extern {
                             cb: Option<ResponseI32CB>) -> Error;
 
     #[no_mangle]
+    pub fn indy_export_wallet(command_handle: Handle,
+                              wallet_handle: Handle,
+                              export_config_json: CString,
+                              cb: Option<ResponseEmptyCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_import_wallet(command_handle: Handle,
+                              pool_name: CString,
+                              name: CString,
+                              storage_type: CString,
+                              config: CString,
+                              credentials: CString,
+                              import_config_json: CString,
+                              cb: Option<ResponseEmptyCB>) -> Error;
+
+    #[no_mangle]
     pub fn indy_list_wallets(command_handle: Handle,
                              cb: Option<ResponseStringCB>) -> Error;
 
