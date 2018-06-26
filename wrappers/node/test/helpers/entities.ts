@@ -56,25 +56,32 @@ export const credentialDefCreate = async (data = dataCredentialDefCreate()) => {
   return credentialDef
 }
 
-const credentialOffer = [{
-  claim_id: 'defaultCredentialId',
-  claim_name: 'Credential',
-  cred_def_id: 'id',
-  credential_attrs: {
-    address1: ['101 Tela Lane'],
-    address2: ['101 Wilson Lane'],
-    city: ['SLC'],
-    state: ['UT'],
-    zip: ['87121']
+export const credentialOffer = [
+  {
+    claim_id: 'defaultCredentialId',
+    claim_name: 'Credential',
+    cred_def_id: 'id',
+    credential_attrs: {
+      address1: ['101 Tela Lane'],
+      address2: ['101 Wilson Lane'],
+      city: ['SLC'],
+      state: ['UT'],
+      zip: ['87121']
+    },
+    from_did: '8XFh8yBzrpJQmNyZzgoTqB',
+    libindy_offer: '{}',
+    msg_ref_id: '123',
+    msg_type: 'CLAIM_OFFER',
+    schema_seq_no: 1487,
+    to_did: '8XFh8yBzrpJQmNyZzgoTqB',
+    version: '0.1'
   },
-  from_did: '8XFh8yBzrpJQmNyZzgoTqB',
-  libindy_offer: '{}',
-  msg_ref_id: '123',
-  msg_type: 'CLAIM_OFFER',
-  schema_seq_no: 1487,
-  to_did: '8XFh8yBzrpJQmNyZzgoTqB',
-  version: '0.1'
-}]
+  {
+    payment_addr: 'pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j',
+    payment_required: 'one-time',
+    price: 5
+  }
+]
 
 export const dataCredentialCreateWithOffer = async (): Promise<ICredentialCreateWithOffer> => {
   const connection = await connectionCreateConnect()
