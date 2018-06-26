@@ -567,7 +567,7 @@ fn ledger_demo_works() {
             dest: my_did.clone(),
             type_: "1".to_string(),
         },
-        protocol_version: 1,
+        protocol_version: 2,
         req_id: nym_req_id,
         signature: None,
     };
@@ -602,7 +602,7 @@ fn ledger_demo_works() {
             type_: "105".to_string(),
             dest: my_did.clone(),
         },
-        protocol_version: 1,
+        protocol_version: 2,
     };
 
     let request = serde_json::to_string(&get_nym_txn).unwrap();
