@@ -116,7 +116,7 @@ build_libindy() {
     PREBUILT_BIN=../../../..
     pushd ${LIBINDY_PATH}
     mkdir -p toolchains/
-    ./build.nondocker.sh ${ARCH} ${PLATFORM} ${TRIPLET} ${PREBUILT_BIN}/openssl_${ARCH} ${PREBUILT_BIN}/libsodium_${ARCH} ${PREBUILT_BIN}/libzmq_${ARCH}
+    ./build.withoutdocker.sh ${ARCH} ${PLATFORM} ${TRIPLET} ${PREBUILT_BIN}/openssl_${ARCH} ${PREBUILT_BIN}/libsodium_${ARCH} ${PREBUILT_BIN}/libzmq_${ARCH}
     popd
     mv ${LIBINDY_PATH}/libindy_${ARCH} .
     mv ${LIBINDY_PATH}/toolchains indy-sdk/libnullpay/build_scripts/android
@@ -134,7 +134,7 @@ build_libnullpay() {
     if [ ! -d toolchains ]; then
         mkdir toolchains/linux
     fi
-    ./build.nondocker.sh ${ARCH} ${PLATFORM} ${TRIPLET} ${LIBINDY_BIN}
+    ./build.withoutdocker.sh ${ARCH} ${PLATFORM} ${TRIPLET} ${LIBINDY_BIN}
     popd
 
     mv ${LIBNULLPAY_PATH}/libnullpay_${ARCH} .
