@@ -46,7 +46,7 @@ public class GetRecordTest extends NonSecretsIntegrationTest {
 		assertEquals(id, record.getString("id"));
 		assertEquals(type, record.getString("type"));
 		assertEquals(value, record.getString("value"));
-		assertTrue(new JSONObject(tags).similar(new JSONObject(record.getString("tags"))));
+		assertTrue(new JSONObject(tags).similar(record.getJSONObject("tags")));
 	}
 
 	@Test

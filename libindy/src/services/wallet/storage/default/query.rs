@@ -11,7 +11,20 @@ pub fn wql_to_sql<'a>(class: &'a Vec<u8>, op: &'a Operator, options: Option<&str
     let mut arguments: Vec<&ToSql> = Vec::new();
     arguments.push(class);
     let clause_string = operator_to_sql(op, &mut arguments)?;
-    let mut query_string = "SELECT i.id, i.name, i.value, i.key FROM items as i WHERE i.type = ?".to_string();
+    let mut query_string = "SELECT i.id, i.name, i.value, i.key, i.type FROM items as i WHERE i.type = ?".to_string();
+    if !clause_string.is_empty() {
+        query_string.push_str(" AND ");
+        query_string.push_str(&clause_string);
+    }
+    Ok((query_string, arguments))
+}
+
+
+pub fn wql_to_sql_count<'a>(class: &'a Vec<u8>, op: &'a Operator) -> Result<(String, Vec<&'a ToSql>), WalletQueryError> {
+    let mut arguments: Vec<&ToSql> = Vec::new();
+    arguments.push(class);
+    let clause_string = operator_to_sql(op, &mut arguments)?;
+    let mut query_string = "SELECT count(*) FROM items as i WHERE i.type = ?".to_string();
     if !clause_string.is_empty() {
         query_string.push_str(" AND ");
         query_string.push_str(&clause_string);
@@ -29,7 +42,6 @@ fn operator_to_sql<'a>(op: &'a Operator, arguments: &mut Vec<&'a ToSql>) -> Resu
         Operator::Lt(ref tag_name, ref target_value) => lt_to_sql(tag_name, target_value, arguments),
         Operator::Lte(ref tag_name, ref target_value) => lte_to_sql(tag_name, target_value, arguments),
         Operator::Like(ref tag_name, ref target_value) => like_to_sql(tag_name, target_value, arguments),
-        Operator::Regex(ref tag_name, ref target_value) => regex_to_sql(tag_name, target_value, arguments),
         Operator::In(ref tag_name, ref target_values) => in_to_sql(tag_name, target_values, arguments),
         Operator::And(ref suboperators) => and_to_sql(suboperators, arguments),
         Operator::Or(ref suboperators) => or_to_sql(suboperators, arguments),
@@ -128,18 +140,6 @@ fn like_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Ve
             Ok("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value LIKE ?))".to_string())
         },
         _ => Err(WalletQueryError::StructureErr("Invalid combination of tag name and value for $like operator".to_string()))
-    }
-}
-
-
-fn regex_to_sql<'a>(name: &'a TagName, value: &'a TargetValue, arguments: &mut Vec<&'a ToSql>) -> Result<String, WalletQueryError> {
-    match (name, value) {
-        (&TagName::PlainTagName(ref queried_name), &TargetValue::Unencrypted(ref queried_value)) => {
-            arguments.push(queried_name);
-            arguments.push(queried_value);
-            Ok("(i.id in (SELECT item_id FROM tags_plaintext WHERE name = ? AND value REGEXP ?))".to_string())
-        },
-        _ => Err(WalletQueryError::StructureErr("Invalid combination of tag name and value for $regex operator".to_string()))
     }
 }
 

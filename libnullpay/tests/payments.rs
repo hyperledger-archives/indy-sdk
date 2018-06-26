@@ -29,7 +29,7 @@ static PAYMENT_METHOD_NAME: &str = "null";
 static POOL_NAME: &str = "pool_1";
 static SUBMITTER_DID: &str = "Th7MpTaRZVRYnPiabds81Y";
 static TRUSTEE_SEED: &str = "000000000000000000000000Trustee1";
-static FEES: &str = r#"{"1":1, "101":2}"#;
+static FEES: &str = r#"{"NYM":1, "SCHEMA":2}"#;
 
 mod high_cases {
     use super::*;
@@ -85,7 +85,7 @@ mod high_cases {
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
             let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
-            let mint: Vec<(String, i32, Option<&str>)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, (i+1) as i32, None)).collect();
+            let mint: Vec<(String, i32, Option<&str>)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, (i + 1) as i32, None)).collect();
 
             payments_utils::mint_tokens(mint, wallet_handle, pool_handle, SUBMITTER_DID);
 
@@ -119,10 +119,10 @@ mod high_cases {
             let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
-            let nonexistant_addr = "pay:null:no-addr";
-            let res = payments_utils::get_utxos_with_balance(vec![nonexistant_addr.to_string()], wallet_handle, pool_handle, SUBMITTER_DID);
+            let nonexistent_addr = "pay:null:no-addr";
+            let res = payments_utils::get_utxos_with_balance(vec![nonexistent_addr.to_string()], wallet_handle, pool_handle, SUBMITTER_DID);
 
-            let res_vec = res.get(nonexistant_addr).unwrap();
+            let res_vec = res.get(nonexistent_addr).unwrap();
             assert_eq!(res_vec.len(), 0);
 
             pool::close(pool_handle).unwrap();
@@ -144,7 +144,7 @@ mod high_cases {
             let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
             let mint: Vec<UTXOOutput> = addresses.clone().into_iter().enumerate().map(|(i, payment_address)| UTXOOutput {
                 payment_address,
-                amount: ((i+1)*10) as i32,
+                amount: ((i + 1) * 10) as i32,
                 extra: None
             }).collect();
 
@@ -154,7 +154,7 @@ mod high_cases {
 
             ledger::submit_request(pool_handle, req.as_str()).unwrap();
 
-            let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle,SUBMITTER_DID);
+            let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
 
             let utxo_1 = utxos.get(addresses.get(0).unwrap()).unwrap();
             assert_eq!(utxo_1.len(), 1);
@@ -191,7 +191,7 @@ mod high_cases {
             let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
 
             //3. Mint tokens
-            let mint: Vec<(String, i32, Option<&str>)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, ((i+2)*10) as i32, None)).collect();
+            let mint: Vec<(String, i32, Option<&str>)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, ((i + 2) * 10) as i32, None)).collect();
             payments_utils::mint_tokens(mint, wallet_handle, pool_handle, my_did.as_str());
 
             //4. Get created UTXOs
@@ -202,10 +202,10 @@ mod high_cases {
 
             //6. Create inputs and outputs
             let addr_1 = addresses.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
             let inputs = serde_json::to_string(&utxos_1).unwrap();
 
-            let outputs = vec![UTXOOutput{
+            let outputs = vec![UTXOOutput {
                 payment_address: addresses.get(1).unwrap().to_string(),
                 amount: 19,
                 extra: None
@@ -260,10 +260,10 @@ mod high_cases {
             let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
 
             let addr_1 = addresses.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
             let inputs = serde_json::to_string(&utxos_1).unwrap();
 
-            let outputs = vec![UTXOOutput{
+            let outputs = vec![UTXOOutput {
                 payment_address: addresses.get(1).unwrap().to_string(),
                 amount: 19,
                 extra: None
@@ -284,6 +284,56 @@ mod high_cases {
             wallet::close_wallet(wallet_handle).unwrap();
             test_utils::cleanup_storage();
         }
+
+        #[test]
+        pub fn add_request_fees_works_for_utxo_not_correspond_to_wallet() {
+            test_utils::cleanup_storage();
+            plugin::init_plugin();
+
+            let wallet_handle_1 = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle_2 = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+
+            let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
+
+            //1. Prepare new nym request
+            let (trustee_did, _) = did::create_and_store_my_did(wallet_handle_1, Some(TRUSTEE_SEED)).unwrap();
+            let (my_did, my_vk) = did::create_and_store_my_did(wallet_handle_1, None).unwrap();
+            let nym_req = ledger::build_nym_request(&trustee_did, &my_did, &my_vk, "aaa", "TRUSTEE").unwrap();
+
+            //2. Create addresses 1
+            let addresses_1 = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle_1, PAYMENT_METHOD_NAME);
+
+            //4. Mint tokens
+            let mint: Vec<(String, i32, Option<&str>)> = addresses_1.clone().into_iter().enumerate().map(|(i, addr)| (addr, ((i + 2) * 10) as i32, None)).collect();
+            payments_utils::mint_tokens(mint, wallet_handle_1, pool_handle, my_did.as_str());
+
+            //5. Get created UTXOs
+            let utxos = payments_utils::get_utxos_with_balance(addresses_1.clone(), wallet_handle_1, pool_handle, my_did.as_str());
+
+            //6. Set transaction fees
+            payments_utils::set_request_fees(wallet_handle_1, pool_handle, my_did.as_str(), PAYMENT_METHOD_NAME, FEES);
+
+            //7. Create inputs and outputs
+            let addr_1 = addresses_1.get(0).unwrap();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
+            let inputs = serde_json::to_string(&utxos_1).unwrap();
+
+            let outputs = vec![UTXOOutput {
+                payment_address: addresses_1.get(1).unwrap().to_string(),
+                amount: 19,
+                extra: None
+            }];
+            let outputs = serde_json::to_string(&outputs).unwrap();
+
+            //8. Add fees to request by using other wallet
+            let res = payments::add_request_fees(wallet_handle_2, my_did.as_str(), nym_req.as_str(), inputs.as_str(), outputs.as_str());
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);
+
+            pool::close(pool_handle).unwrap();
+            wallet::close_wallet(wallet_handle_1).unwrap();
+            wallet::close_wallet(wallet_handle_2).unwrap();
+            test_utils::cleanup_storage();
+        }
     }
 
     mod payment {
@@ -300,17 +350,17 @@ mod high_cases {
             let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
 
             //2. Mint tokens and get created utxos
-            let mint: Vec<(String, i32, Option<&str>)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, ((i+2)*10) as i32, None)).collect();
+            let mint: Vec<(String, i32, Option<&str>)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, ((i + 2) * 10) as i32, None)).collect();
             payments_utils::mint_tokens(mint, wallet_handle, pool_handle, SUBMITTER_DID);
 
             let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
 
             //3. Prepare inputs and outputs for payment txn
             let addr_1 = addresses.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
             let inputs = serde_json::to_string(&utxos_1).unwrap();
 
-            let outputs = vec![UTXOOutput{
+            let outputs = vec![UTXOOutput {
                 payment_address: addresses.get(1).unwrap().to_string(),
                 amount: 19,
                 extra: None
@@ -330,7 +380,7 @@ mod high_cases {
             let utxos: Vec<UTXOInfo> = serde_json::from_str(payment_resp_parsed.as_str()).unwrap();
             assert_eq!(utxos.len(), 2);
 
-            let utxos: HashMap<i32, String> = utxos.into_iter().map(|info| (info.amount, info.input)).collect();
+            let utxos: HashMap<i32, String> = utxos.into_iter().map(|info| (info.amount, info.txo)).collect();
             let payment_utxo = utxos.get(&19).unwrap();
             let change_utxo = utxos.get(&1).unwrap();
 
@@ -367,16 +417,16 @@ mod high_cases {
 
             let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
 
-            let mint: Vec<(String, i32, Option<&str>)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, ((i+2)*10) as i32, None)).collect();
+            let mint: Vec<(String, i32, Option<&str>)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, ((i + 2) * 10) as i32, None)).collect();
             payments_utils::mint_tokens(mint, wallet_handle, pool_handle, SUBMITTER_DID);
 
             let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
 
             let addr_1 = addresses.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
             let inputs = serde_json::to_string(&utxos_1).unwrap();
 
-            let outputs = vec![UTXOOutput{
+            let outputs = vec![UTXOOutput {
                 payment_address: addresses.get(1).unwrap().to_string(),
                 amount: 119,
                 extra: None
@@ -397,6 +447,45 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
+            test_utils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn payment_request_works_for_utxo_not_correspond_to_wallet() {
+            test_utils::cleanup_storage();
+            plugin::init_plugin();
+            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle_2 = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
+
+            //1. Create addresses
+            let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
+
+            //2. Mint tokens and get created utxos
+            let mint: Vec<(String, i32, Option<&str>)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, ((i + 2) * 10) as i32, None)).collect();
+            payments_utils::mint_tokens(mint, wallet_handle, pool_handle, SUBMITTER_DID);
+
+            let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
+
+            //3. Prepare inputs and outputs for payment txn
+            let addr_1 = addresses.get(0).unwrap();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
+            let inputs = serde_json::to_string(&utxos_1).unwrap();
+
+            let outputs = vec![UTXOOutput {
+                payment_address: addresses.get(1).unwrap().to_string(),
+                amount: 19,
+                extra: None
+            }];
+            let outputs = serde_json::to_string(&outputs).unwrap();
+
+            //4. Build and send payment txn
+            let res = payments::build_payment_req(wallet_handle_2, SUBMITTER_DID, inputs.as_str(), outputs.as_str());
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);
+
+            pool::close(pool_handle).unwrap();
+            wallet::close_wallet(wallet_handle).unwrap();
+            wallet::close_wallet(wallet_handle_2).unwrap();
             test_utils::cleanup_storage();
         }
     }
@@ -437,7 +526,7 @@ mod high_cases {
 
             let req = payments::build_get_txn_fees_req(wallet_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME).unwrap();
             let resp = ledger::submit_request(pool_handle, req.as_str()).unwrap();
-            let resp = payments::parse_get_utxo_response(PAYMENT_METHOD_NAME, resp.as_str()).unwrap();
+            let resp = payments::parse_get_txn_fees_response(PAYMENT_METHOD_NAME, resp.as_str()).unwrap();
             let map = serde_json::from_str::<HashMap<String, i32>>(resp.as_str()).unwrap();
 
             let fee_1 = map.get("1").unwrap();
@@ -454,10 +543,10 @@ mod high_cases {
 
 mod medium_cases {
     use super::*;
-    
+
     mod add_request_fees {
         use super::*;
-        
+
         #[test]
         pub fn add_request_fees_works_for_request_without_operation() {
             test_utils::cleanup_storage();
@@ -474,10 +563,10 @@ mod medium_cases {
             let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
 
             let addr_1 = addresses.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
             let inputs = serde_json::to_string(&utxos_1).unwrap();
 
-            let outputs = vec![UTXOOutput{
+            let outputs = vec![UTXOOutput {
                 payment_address: addresses.get(1).unwrap().to_string(),
                 amount: 19,
                 extra: None
@@ -516,10 +605,10 @@ mod medium_cases {
             let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
 
             let addr_1 = addresses.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
             let inputs = serde_json::to_string(&utxos_1).unwrap();
 
-            let outputs = vec![UTXOOutput{
+            let outputs = vec![UTXOOutput {
                 payment_address: addresses.get(1).unwrap().to_string(),
                 amount: 19,
                 extra: None
@@ -542,10 +631,10 @@ mod medium_cases {
             test_utils::cleanup_storage();
         }
     }
-    
+
     mod fees {
         use super::*;
-        
+
         #[test]
         pub fn build_set_txn_fees_works_for_invalid_json() {
             test_utils::cleanup_storage();

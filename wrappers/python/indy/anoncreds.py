@@ -63,7 +63,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
                                                  schema_json: str,
                                                  tag: str,
                                                  signature_type: Optional[str],
-                                                 config_json: str) -> (str, str):
+                                                 config_json: Optional[str]) -> (str, str):
     """
     Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for
     signing credentials and secrets used for credentials revocation.
@@ -81,7 +81,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
     :param signature_type: credential definition type (optional, 'CL' by default) that defines credentials signature and revocation math.
     Supported types are:
         - 'CL': Camenisch-Lysyanskaya credential signature type
-    :param  config_json: type-specific configuration of credential definition as json:
+    :param  config_json: (optional) type-specific configuration of credential definition as json:
         - 'CL':
           - support_revocation: whether to request non-revocation credential (optional, default false)
     :return: 
@@ -108,7 +108,7 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
     c_schema_json = c_char_p(schema_json.encode('utf-8'))
     c_tag = c_char_p(tag.encode('utf-8'))
     c_signature_type = c_char_p(signature_type.encode('utf-8')) if signature_type is not None else None
-    c_config_json = c_char_p(config_json.encode('utf-8'))
+    c_config_json = c_char_p(config_json.encode('utf-8')) if config_json is not None else None
 
     (credential_def_id, credential_def_json) = await do_call('indy_issuer_create_and_store_credential_def',
                                                              c_wallet_handle,

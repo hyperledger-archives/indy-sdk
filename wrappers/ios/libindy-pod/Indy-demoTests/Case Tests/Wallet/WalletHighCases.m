@@ -12,6 +12,10 @@
 - (void)setUp {
     [super setUp];
     [TestUtils cleanupStorage];
+
+    NSError *ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
     // Put setup code here. This method is called before the invocation of each test method in the class.
 }
 
@@ -148,7 +152,7 @@
 
 - (void)testDeleteWalletWorksForUnknown {
     NSError *ret = [[WalletUtils sharedInstance] deleteWalletWithName:@"testDeleteWalletWorksForUnknown"];
-    XCTAssertEqual(ret.code, CommonIOError, @"WalletUtils:deleteWalletWithName() returned wrong error");
+    XCTAssertEqual(ret.code, WalletNotFoundError, @"WalletUtils:deleteWalletWithName() returned wrong error");
 }
 
 // MARK: - Open wallet
@@ -200,7 +204,7 @@
     NSError *ret = [[WalletUtils sharedInstance] openWalletWithName:[TestUtils wallet]
                                                              config:nil
                                                           outHandle:nil];
-    XCTAssertEqual(ret.code, CommonIOError, @"WalletUtils:openWalletWithName() failed");
+    XCTAssertEqual(ret.code, WalletNotFoundError, @"WalletUtils:openWalletWithName() failed");
 }
 
 // MARK: - Close wallet
@@ -271,5 +275,123 @@
 //
 //    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
 //}
+
+- (void)testExportWalletWorks {
+    // 1. create and open wallet
+    IndyHandle walletHandle;
+    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
+                                                                           xtype:nil
+                                                                          handle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndOpenWalletWithPoolName() failed");
+
+    // 2. create did
+    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+                                                       myDidJson:@"{}"
+                                                        outMyDid:nil
+                                                     outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed");
+
+    // 3. export wallet
+    NSString *exportFile = [TestUtils tmpFilePathAppending:@"export_wallet"];
+
+    NSString *exportConfig = [[AnoncredsUtils sharedInstance] toJson:@{
+            @"path": exportFile,
+            @"key": @"export_key"
+    }];
+
+    ret = [[WalletUtils sharedInstance] exportWalletWithHandle:walletHandle
+                                              exportConfigJson:exportConfig];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndOpenWalletWithPoolName() failed");
+
+    // 4. check file exists
+    XCTAssertEqual(YES, [[NSFileManager defaultManager] fileExistsAtPath:exportFile], @"FILE NOT FOUND");
+
+    // 5. close wallet
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:closeWalletWithHandle failed");
+
+    [[NSFileManager defaultManager] removeItemAtPath:exportFile error:nil];
+}
+
+- (void)testImportWalletWorks {
+    // create wallet
+    NSError *ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
+                                                               walletName:[TestUtils wallet]
+                                                                    xtype:nil
+                                                                   config:nil];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
+
+    // open wallet
+    IndyHandle walletHandle = 0;
+    ret = [[WalletUtils sharedInstance] openWalletWithName:[TestUtils wallet]
+                                                    config:nil
+                                                 outHandle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName failed");
+
+    // create did
+    NSString *did;
+    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+                                                       myDidJson:@"{}"
+                                                        outMyDid:&did
+                                                     outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed");
+
+    // get key for did before export
+    NSString *keyForDidBeforeExport;
+    ret = [[DidUtils sharedInstance] keyForLocalDid:did
+                                       walletHandle:walletHandle
+                                                key:&keyForDidBeforeExport];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::keyForDid() failed");
+
+    // 3. export wallet
+    NSString *exportFile = [TestUtils tmpFilePathAppending:@"export_wallet"];
+
+    NSString *exportConfig = [[AnoncredsUtils sharedInstance] toJson:@{
+            @"path": exportFile,
+            @"key": @"export_key"
+    }];
+
+    ret = [[WalletUtils sharedInstance] exportWalletWithHandle:walletHandle
+                                              exportConfigJson:exportConfig];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndOpenWalletWithPoolName() failed");
+
+    // close wallet
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:closeWalletWithHandle failed");
+
+    // delete wallet
+    ret = [[WalletUtils sharedInstance] deleteWalletWithName:[TestUtils wallet]];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:deleteWalletWithName failed");
+
+    // import wallet
+    ret = [[WalletUtils sharedInstance] importWalletWithPoolName:[TestUtils pool]
+                                                      walletName:[TestUtils wallet]
+                                                           xtype:nil
+                                                          config:nil
+                                                importConfigJson:exportConfig];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName() failed");
+
+    // open wallet
+    ret = [[WalletUtils sharedInstance] openWalletWithName:[TestUtils wallet]
+                                                    config:nil
+                                                 outHandle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:openWalletWithName failed");
+
+    // get key for did after import
+    NSString *keyForDidAfterImport;
+    ret = [[DidUtils sharedInstance] keyForLocalDid:did
+                                       walletHandle:walletHandle
+                                                key:&keyForDidAfterImport];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::keyForDid() failed");
+
+    // compare keys
+    XCTAssertTrue([keyForDidBeforeExport isEqualToString:keyForDidAfterImport]);
+
+    // close wallet
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:closeWalletWithHandle failed");
+
+    [[NSFileManager defaultManager] removeItemAtPath:exportFile error:nil];
+}
 
 @end

@@ -13,6 +13,10 @@
 - (void)setUp {
     [super setUp];
     [TestUtils cleanupStorage];
+
+    ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
     // Put setup code here. This method is called before the invocation of each test method in the class.
 }
 
@@ -234,6 +238,7 @@
                     @"data": @{
                             @"type": @"102",
                             @"signature_type": @"CL",
+                            @"tag": @"TAG1",
                             @"primary": data[@"value"][@"primary"]
                     }
             }
@@ -251,7 +256,7 @@
 }
 
 - (void)testBuildGetCredDefRequestWorks {
-    NSString *id = @"NcYxiDXkpYi6ov5FcYDi1e:03:CL:1";
+    NSString *id = @"NcYxiDXkpYi6ov5FcYDi1e:03:CL:1:TAG";
 
     NSDictionary *expectedResult = @{
             @"identifier": [TestUtils issuerDid],
@@ -259,6 +264,7 @@
                     @"ref": @(1),
                     @"type": @"108",
                     @"signature_type": @"CL",
+                    @"teg": @"TAG1",
                     @"origin": [TestUtils issuerDid]
             }
     };
@@ -531,27 +537,26 @@
     XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");
 }
 
-- (void)testBuildGetValidatorInfo
-{
+- (void)testBuildGetValidatorInfo {
     [TestUtils cleanupStorage];
     NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
-    
+
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
-    
+
     expectedResult[@"operation"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"type"] = @"119";
-    
-    
+
+
     NSString *getValidatorInfoJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildGetValidatorInfo:identifier
                                                             resultJson:&getValidatorInfoJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::builGetValidatorInfo failed");
     XCTAssertNotNil(getValidatorInfoJson, @"getValidatorInfoJson is nil!");
     NSLog(@"getValidatorInfoJson: %@", getValidatorInfoJson);
-    
+
     NSDictionary *request = [NSDictionary fromString:getValidatorInfoJson];
     XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");
-    
+
     [TestUtils cleanupStorage];
 }
 
@@ -615,15 +620,17 @@
 
 - (void)testBuildGetTxnRequest {
     NSDictionary *expectedResult = @{
-            @"identifier":[TestUtils trusteeDid],
-            @"operation":@{
-                    @"type":@"3",
-                    @"data":@(1)
+            @"identifier": [TestUtils trusteeDid],
+            @"operation": @{
+                    @"type": @"3",
+                    @"data": @(1),
+                    @"ledgerId": @(1)
             }
     };
 
     NSString *requestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildGetTxnRequestWithSubmitterDid:[TestUtils trusteeDid]
+                                                                         ledgerType:nil
                                                                                data:@(1)
                                                                          resultJson:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetTxnRequestWithSubmitterDid() failed");

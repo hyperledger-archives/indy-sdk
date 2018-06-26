@@ -9,6 +9,7 @@ import utils.PoolUtils;
 import static org.hyperledger.indy.sdk.ledger.Ledger.buildNymRequest;
 import static org.hyperledger.indy.sdk.ledger.Ledger.signAndSubmitRequest;
 import static org.junit.Assert.assertEquals;
+import static utils.PoolUtils.PROTOCOL_VERSION;
 
 
 class Ledger {
@@ -19,6 +20,9 @@ class Ledger {
 		String myWalletName = "myWallet";
 		String theirWalletName = "theirWallet";
 		String trusteeSeed = "000000000000000000000000Trustee1";
+
+		// Set protocol version 2 to work with Indy Node 1.4
+		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
 
 		// 1. Create ledger config from genesis txn file
 		String poolName = PoolUtils.createPoolLedgerConfig();
@@ -54,8 +58,8 @@ class Ledger {
 
 		JSONObject nymResponse = new JSONObject(nymResponseJson);
 
-		assertEquals(myDid, nymResponse.getJSONObject("result").getString("dest"));
-		assertEquals(myVerkey, nymResponse.getJSONObject("result").getString("verkey"));
+		assertEquals(myDid, nymResponse.getJSONObject("result").getJSONObject("txn").getJSONObject("data").getString("dest"));
+		assertEquals(myVerkey, nymResponse.getJSONObject("result").getJSONObject("txn").getJSONObject("data").getString("verkey"));
 
 		// 8. Close and delete My Wallet
 		myWallet.closeWallet().get();

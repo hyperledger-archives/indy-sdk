@@ -25,7 +25,7 @@ pub enum AnoncredsError {
 impl fmt::Display for AnoncredsError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            AnoncredsError::MasterSecretDuplicateNameError(ref description) => write!(f, "Dupplicated master secret: {}", description),
+            AnoncredsError::MasterSecretDuplicateNameError(ref description) => write!(f, "Duplicated master secret: {}", description),
             AnoncredsError::ProofRejected(ref description) => write!(f, "Proof rejected: {}", description),
             AnoncredsError::RevocationRegistryFull(ref description) => write!(f, "Revocation registry is full: {}", description),
             AnoncredsError::InvalidUserRevocId(ref description) => write!(f, "Invalid revocation id: {}", description),
@@ -89,7 +89,7 @@ impl From<indy_crypto::errors::IndyCryptoError> for AnoncredsError {
             IndyCryptoError::AnoncredsProofRejected(err) => AnoncredsError::ProofRejected(err),
             IndyCryptoError::AnoncredsInvalidRevocationAccumulatorIndex(err) => AnoncredsError::InvalidUserRevocId(err),
             IndyCryptoError::AnoncredsCredentialRevoked(err) => AnoncredsError::CredentialRevoked(err),
-            _ => AnoncredsError::CommonError(CommonError::InvalidStructure("Invalid error code".to_string()))
+            err => AnoncredsError::CommonError(CommonError::from(err))
         }
     }
 }

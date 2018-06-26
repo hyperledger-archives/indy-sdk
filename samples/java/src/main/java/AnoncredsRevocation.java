@@ -11,6 +11,7 @@ import utils.PoolUtils;
 import static org.hyperledger.indy.sdk.anoncreds.Anoncreds.*;
 import static org.junit.Assert.*;
 import static utils.EnvironmentUtils.getIndyHomePath;
+import static utils.PoolUtils.PROTOCOL_VERSION;
 
 
 class AnoncredsRevocation {
@@ -22,6 +23,9 @@ class AnoncredsRevocation {
 		String proverWalletName = "trusteeWallet";
 		String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 		String proverDid = "VsKV7grR1BUE29mG2Fm2kX";
+
+		// Set protocol version 2 to work with Indy Node 1.4
+		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
 
 		//1. Create and Open Pool
 		String poolName = PoolUtils.createPoolLedgerConfig();
