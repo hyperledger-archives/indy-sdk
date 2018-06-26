@@ -23,7 +23,16 @@ impl EnvironmentUtils {
     }
 
     pub fn android_indy_client_dir_path() -> PathBuf{
-        let android_dir = env::var("EXTERNAL_STORAGE").unwrap() + "/.indy_client";
+        let external_storage= env::var("EXTERNAL_STORAGE");
+        let android_dir :String;
+        match external_storage {
+            Ok (val) => android_dir = val + "/.indy_client",
+            Err(err) => {
+                error!("Unable to find EXTERNAL_STORAGE android environment variable which holds the location to external storage file path");
+                panic!("Failed to find external storage path {:?}", err)
+            }
+        }
+
         PathBuf::from(android_dir)
     }
 
