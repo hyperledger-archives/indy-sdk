@@ -41,6 +41,8 @@ public abstract class LibIndy {
 		public int indy_open_wallet(int command_handle, String name, String runtime_config, String credentials, Callback cb);
 		public int indy_close_wallet(int command_handle, int handle, Callback cb);
 		public int indy_delete_wallet(int command_handle, String name, String credentials, Callback cb);
+		public int indy_export_wallet(int command_handle, int handle, String exportConfigJson, Callback cb);
+		public int indy_import_wallet(int command_handle, String pool_name, String name, String xtype, String config, String credentials, String importConfigJson, Callback cb);
 
 		// ledger.rs
 
@@ -86,6 +88,8 @@ public abstract class LibIndy {
 		public int indy_get_endpoint_for_did(int command_handle, int wallet_handle, int pool_handle, String did, Callback cb);
 		public int indy_set_did_metadata(int command_handle, int wallet_handle, String did, String metadata, Callback cb);
 		public int indy_get_did_metadata(int command_handle, int wallet_handle, String did, Callback cb);
+		public int indy_get_my_did_with_meta(int command_handle, int wallet_handle, String did, Callback cb);
+		public int indy_list_my_dids_with_meta(int command_handle, int wallet_handle, Callback cb);
 		public int indy_abbreviate_verkey(int command_handle, String did, String full_verkey, Callback cb);
 
 		// crypto.rs

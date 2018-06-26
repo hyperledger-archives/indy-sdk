@@ -164,7 +164,7 @@ impl PoolWorker {
 
         let gen_tnxs = PoolWorker::_build_node_state(&merkle_tree)?;
 
-        for (_, gen_txn) in &gen_tnxs {
+        for gen_txn in gen_tnxs.values() {
             let mut rn: RemoteNode = match RemoteNode::new(&gen_txn) {
                 Ok(rn) => rn,
                 Err(err) => {
@@ -1169,6 +1169,8 @@ mod tests {
 
         assert_eq!(node_state["Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"], node1);
         assert_eq!(node_state["8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"], node2);
+
+        _set_protocol_version(TEST_PROTOCOL_VERSION);
     }
 
     #[test]
@@ -1225,6 +1227,8 @@ mod tests {
         let merkle_tree = PoolWorker::restore_merkle_tree_from_pool_name("test").unwrap();
         let res = PoolWorker::_build_node_state(&merkle_tree);
         assert_match!(Err(PoolError::PoolIncompatibleProtocolVersion(_)), res);
+
+        _set_protocol_version(TEST_PROTOCOL_VERSION);
     }
 
     #[test]

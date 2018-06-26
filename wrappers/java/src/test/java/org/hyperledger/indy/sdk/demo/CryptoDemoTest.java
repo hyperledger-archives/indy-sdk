@@ -25,9 +25,6 @@ public class CryptoDemoTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCryptoDemo() throws Exception {
-		// Set protocol version
-		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
-
 		//1. Create and Open Pool
 		String poolName = PoolUtils.createPoolLedgerConfig();
 

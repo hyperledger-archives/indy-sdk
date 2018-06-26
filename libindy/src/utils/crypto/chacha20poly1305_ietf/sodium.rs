@@ -1,12 +1,11 @@
 extern crate sodiumoxide;
+
 use sodiumoxide::crypto::aead::chacha20poly1305_ietf;
-use sodiumoxide::crypto::auth::hmacsha256;
 
 use errors::common::CommonError;
 
 use sodiumoxide::utils::increment_le;
 use utils::byte_array::_clone_into_array;
-use utils::crypto::hmacsha256::{HMACSHA256, HMACSHA256Key};
 
 pub const NONCE_LENGTH: usize = chacha20poly1305_ietf::NONCEBYTES;
 pub const KEY_LENGTH: usize = chacha20poly1305_ietf::KEYBYTES;
@@ -39,12 +38,11 @@ pub struct ChaCha20Poly1305IETF {}
 
 impl ChaCha20Poly1305IETF {
     pub fn clone_key_from_slice(bytes: &[u8]) -> ChaCha20Poly1305IETFKey {
-        println!("Cloning key from slice of length: {}", bytes.len());
         ChaCha20Poly1305IETFKey { key: chacha20poly1305_ietf::Key(_clone_into_array(bytes)) }
     }
 
     pub fn generate_key() -> ChaCha20Poly1305IETFKey {
-        ChaCha20Poly1305IETFKey { key : chacha20poly1305_ietf::gen_key() }
+        ChaCha20Poly1305IETFKey { key: chacha20poly1305_ietf::gen_key() }
     }
 
     #[allow(dead_code)]
@@ -56,7 +54,7 @@ impl ChaCha20Poly1305IETF {
         ChaCha20Poly1305IETFNonce { nonce: chacha20poly1305_ietf::Nonce(_clone_into_array(&bytes[..chacha20poly1305_ietf::NONCEBYTES])) }
     }
 
-    pub fn increment_nonce(mut nonce: &mut ChaCha20Poly1305IETFNonce) {
+    pub fn increment_nonce(nonce: &mut ChaCha20Poly1305IETFNonce) {
         increment_le(&mut nonce.nonce.0);
     }
 
@@ -102,7 +100,6 @@ mod tests {
     fn encrypt_decrypt_works() {
         let data = randombytes::randombytes(100);
         let key = ChaCha20Poly1305IETF::generate_key();
-        let hmac_key = HMACSHA256::generate_key();
 
         let (c, nonce) = ChaCha20Poly1305IETF::generate_nonce_and_encrypt(&data, &key);
         let u = ChaCha20Poly1305IETF::decrypt(&c, &key, &nonce).unwrap();

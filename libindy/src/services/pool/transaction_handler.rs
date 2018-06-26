@@ -262,7 +262,7 @@ impl TransactionHandler {
                         "Can't flash all transaction requests with common success status".to_string())));
             }
             Err(_) => {
-                for (_, pending_cmd) in &mut self.pending_commands {
+                for pending_cmd in self.pending_commands.values_mut() {
                     pending_cmd.terminate_parent_cmds(false)?
                 }
                 Ok(())
@@ -652,7 +652,7 @@ impl TransactionHandler {
             self.pending_commands.remove(&cmd);
         }
 
-        for (_, pc) in &mut self.pending_commands {
+        for pc in self.pending_commands.values_mut() {
             let is_timeout = pc.resendable_request.as_ref()
                 .and_then(|resend| resend.next_try_send_time)
                 .map(|next_try_send_time| next_try_send_time <= time::now_utc())

@@ -88,7 +88,7 @@
 
 /**
  Builds Indy request for getting UTXO list for payment address
- according to this payment method.ayment transaction
+ according to this payment method.payment transaction
  with at least one output that corresponds to payment address that user owns.
 
  @param requestJson Request data json.

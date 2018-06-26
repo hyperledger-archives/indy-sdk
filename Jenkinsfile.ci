@@ -169,7 +169,13 @@ def iosTesting() {
 
                 dir('wrappers/ios/libindy-pod') {
                     echo "iOS Test: Installing dependencies (pods)"
-                    sh "pod install --repo-update"
+
+                    withEnv([
+                            "GEM_PATH=$HOME/.gem.indy_sdk",
+                            "GEM_HOME=$HOME/.gem.indy_sdk"
+                    ]) {
+                        sh "pod install --repo-update"
+                    }
                 }
 
                 // FIXME replace this hack (manually rewrite installed pod)

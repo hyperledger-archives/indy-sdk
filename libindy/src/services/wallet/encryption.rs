@@ -14,7 +14,6 @@ use services::wallet::WalletRecord;
 use super::wallet::Keys;
 use super::storage::{Tag, TagName, StorageEntity};
 
-use errors::common::CommonError;
 use errors::wallet::WalletError;
 
 pub(super) fn derive_key(input: &[u8], salt: &[u8; 32]) -> Result<ChaCha20Poly1305IETFKey, WalletError> {

@@ -25,8 +25,8 @@
  @param completion Completion callback with errord code indicating result.
 */
 - (void)registerWalletType:(NSString *)type
-        withImplementation:(Class<IndyWalletProtocol>)implementation
-                completion:(void (^)(NSError *error)) completion;
+        withImplementation:(Class <IndyWalletProtocol>)implementation
+                completion:(void (^)(NSError *error))completion;
 
 /**
  Register Keychain Wallet type with default implementation
@@ -35,7 +35,8 @@
  @param completion Completion callback with errord code indicating result.
 */
 - (void)registerIndyKeychainWalletType:(NSString *)type
-                            completion:(void (^)(NSError *error)) completion;
+                            completion:(void (^)(NSError *error))completion;
+
 /**
  Creates a new secure wallet with the given unique name.
  
@@ -56,7 +57,7 @@
                         type:(NSString *)type
                       config:(NSString *)config
                  credentials:(NSString *)credentials
-                  completion:(void (^)(NSError *error)) completion;
+                  completion:(void (^)(NSError *error))completion;
 
 /**
  Opens the wallet with specific name.
@@ -85,7 +86,7 @@
 - (void)openWalletWithName:(NSString *)name
              runtimeConfig:(NSString *)config
                credentials:(NSString *)credentials
-                completion:(void (^)(NSError *error, IndyHandle walletHandle )) completion;
+                completion:(void (^)(NSError *error, IndyHandle walletHandle))completion;
 
 /**
  Closes opened wallet and frees allocated resources.
@@ -94,7 +95,7 @@
  @param completion Completion callback that returns error code.
  */
 - (void)closeWalletWithHandle:(IndyHandle)walletHandle
-                   completion:(void (^)(NSError *error ))completion;
+                   completion:(void (^)(NSError *error))completion;
 
 /**
  Deletes created wallet.
@@ -108,7 +109,58 @@
  */
 - (void)deleteWalletWithName:(NSString *)walletName
                  credentials:(NSString *)credentials
-                  completion:(void (^)(NSError *error ))completion;
+                  completion:(void (^)(NSError *error))completion;
+
+
+/**
+ Exports opened wallet.
+
+ Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+ in the future releases.
+
+ @param walletHandle  wallet handle returned by IndyWallet::openWalletWithName.
+ @param exportConfigJson  JSON containing settings for input operation.
+   {
+     "path": path of the file that contains exported wallet content
+     "key": passphrase used to export key
+   }
+ @param completion Completion callback that returns error code.
+ */
+- (void)exportWalletWithHandle:(IndyHandle)walletHandle
+              exportConfigJson:(NSString *)exportConfigJson
+                    completion:(void (^)(NSError *error))completion;
+
+/**
+ Creates a new secure wallet with the given unique name and then imports its content
+ according to fields provided in import_config
+ This can be seen as an indy_create_wallet call with additional content import
+
+ Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
+ in the future releases.
+
+ @param poolName   Name of the pool that corresponds to this wallet.
+ @param name Name of the wallet.
+ @param type Type of the wallet. Defaults to 'default'.
+             Custom types can be registered with IndyWallet:registerWalletType:withImplementation:completion.
+ @param config Wallet configuration json. List of supported keys are defined by wallet type.
+               If NULL, then default config will be used.
+ @param credentials Wallet credentials json: {
+     "key": <string>
+ }
+ @param importConfigJson  JSON containing settings for input operation.
+   {
+     "path": path of the file that contains exported wallet content
+     "key": passphrase used to export key
+   }
+ @param completion Completion callback that returns error code.
+*/
+- (void)importWalletWithName:(NSString *)name
+                    poolName:(NSString *)poolName
+                        type:(NSString *)type
+                      config:(NSString *)config
+                 credentials:(NSString *)credentials
+            importConfigJson:(NSString *)importConfigJson
+                  completion:(void (^)(NSError *error))completion;
 
 /**
  Delete all keychain wallets from Keychain.
