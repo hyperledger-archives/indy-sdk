@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-#!/usr/bin/env bash
-
 WORKDIR=${PWD}
 TARGET_ARCH=$1
 TARGET_API=$2
@@ -11,28 +9,28 @@ export INDY_DIR=$4
 if [ -z "${TARGET_ARCH}" ]; then
     echo STDERR "Missing TARGET_ARCH argument"
     echo STDERR "e.g. x86 or arm"
-    echo "Sample : ./build.nondocker.sh x86 16 i686-linux-android <ABSOLUTE_PATH_TO_LIBINDY_BINARIES_DIR>"
+    echo "Sample : ./build.withoutdocker.sh x86 16 i686-linux-android <ABSOLUTE_PATH_TO_LIBINDY_BINARIES_DIR>"
     exit 1
 fi
 
 if [ -z "${TARGET_API}" ]; then
     echo STDERR "Missing TARGET_API argument"
     echo STDERR "e.g. 21"
-    echo "Sample : ./build.nondocker.sh x86 16 i686-linux-android <ABSOLUTE_PATH_TO_LIBINDY_BINARIES_DIR>"
+    echo "Sample : ./build.withoutdocker.sh x86 16 i686-linux-android <ABSOLUTE_PATH_TO_LIBINDY_BINARIES_DIR>"
     exit 1
 fi
 
 if [ -z "${CROSS_COMPILE}" ]; then
     echo STDERR "Missing CROSS_COMPILE argument"
     echo STDERR "e.g. i686-linux-android"
-    echo "Sample : ./build.nondocker.sh x86 16 i686-linux-android <ABSOLUTE_PATH_TO_LIBINDY_BINARIES_DIR>"
+    echo "Sample : ./build.withoutdocker.sh x86 16 i686-linux-android <ABSOLUTE_PATH_TO_LIBINDY_BINARIES_DIR>"
     exit 1
 fi
 
 if [ -z "${INDY_DIR}" ]; then
     echo STDERR "Missing INDY_DIR argument"
     echo STDERR "Should have path to directory containing libindy binaries"
-    echo "Sample : ./build.nondocker.sh x86 16 i686-linux-android <ABSOLUTE_PATH_TO_LIBINDY_BINARIES_DIR>"
+    echo "Sample : ./build.withoutdocker.sh x86 16 i686-linux-android <ABSOLUTE_PATH_TO_LIBINDY_BINARIES_DIR>"
     exit 1
 fi
 

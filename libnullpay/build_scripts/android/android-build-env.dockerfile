@@ -1,22 +1,15 @@
 FROM ubuntu:16.04
-LABEL maintainer="Michael Lodder <redmike7@gmail.com>"
+LABEL maintainer="Mohammad Abdul Sami <faisal00813@gmail.com>"
 
 ARG target_arch
 ARG target_api
 ARG cross_compile
-ARG openssl_dir
-ARG sodium_dir
-ARG libzmq_dir
-ARG final
+ARG indy_dir
 
 ENV TARGET_ARCH ${target_arch}
 ENV TARGET_API ${target_api}
 ENV CROSS_COMPILE ${cross_compile}
-ENV OPENSSL_DIR /home/indy_user/openssl
-ENV SODIUM_LIB_DIR /home/indy_user/sodium/lib
-ENV SODIUM_INCLUDE_DIR /home/indy_user/sodium/include
-ENV LIBZMQ_LIB_DIR /home/indy_user/libzmq/lib
-ENV LIBZMQ_INCLUDE_DIR /home/indy_user/libzmq/include
+ENV INDY_DIR /home/indy_user/indy
 ENV ANDROID_NDK_ROOT /home/indy_user/android-ndk-r16b
 ENV TOOLCHAIN_DIR /home/indy_user/${target_arch}
 ENV PATH ${TOOLCHAIN_DIR}/bin:${PATH}
@@ -27,7 +20,6 @@ ENV CXX=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE}-clang++
 ENV CXXLD=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE}-ld
 ENV RANLIB=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE}-ranlib
 ENV TARGET=android
-ENV FINAL=${final}
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get -qq update -y && apt-get -qq install -y zip unzip libtool curl wget python3 pkg-config libzmq3-dev 2>&1 > /dev/null
 RUN useradd -m -d /home/indy_user -s /bin/bash indy_user && mkdir -p /etc/sudoers.d/
@@ -40,10 +32,8 @@ WORKDIR /home/indy_user
 COPY android-ndk-r16b-linux-x86_64.zip /home/indy_user/
 RUN unzip -qq /home/indy_user/android-ndk-r16b-linux-x86_64.zip -d /home/indy_user/
 COPY --chown=indy_user:indy_user indy-sdk/ /home/indy_user/indy-sdk/
-COPY --chown=indy_user:indy_user ${openssl_dir}/ /home/indy_user/openssl/
-COPY --chown=indy_user:indy_user ${sodium_dir}/ /home/indy_user/sodium/
-COPY --chown=indy_user:indy_user ${libzmq_dir}/ /home/indy_user/libzmq/
-COPY --chown=indy_user:indy_user make_indy.sh /home/indy_user/
-RUN chmod a+x make_indy.sh
-RUN ./make_indy.sh
-RUN echo "libindy android build successful"
+COPY --chown=indy_user:indy_user ${indy_dir}/ /home/indy_user/indy/
+COPY --chown=indy_user:indy_user make_nullpay.sh /home/indy_user/
+RUN chmod a+x make_nullpay.sh
+RUN ./make_nullpay.sh
+RUN echo "libnullpay android build successful"

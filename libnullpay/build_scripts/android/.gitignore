@@ -2,4 +2,7 @@
 *
 
 # Except
-!build.nondocker.sh
+!build.withoutdocker.sh
+!build.sh
+!make_nullpay.sh
+!android-build-env.dockerfile
