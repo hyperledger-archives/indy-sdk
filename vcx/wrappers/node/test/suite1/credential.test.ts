@@ -5,6 +5,7 @@ import {
   connectionCreateConnect,
   credentialCreateWithMsgId,
   credentialCreateWithOffer,
+  credentialOffer,
   dataCredentialCreateWithMsgId,
   dataCredentialCreateWithOffer
 } from 'helpers/entities'
@@ -198,8 +199,7 @@ describe('Credential:', () => {
   })
 
   describe('getPaymentTxn:', () => {
-    // TODO: Enable me once https://evernym.atlassian.net/browse/EN-669 is resolved
-    it.skip('success', async () => {
+    it('success', async () => {
       const data = await dataCredentialCreateWithOffer()
       const credential = await credentialCreateWithOffer(data)
       await credential.sendRequest({ connection: data.connection, payment: 0 })
@@ -213,6 +213,21 @@ describe('Credential:', () => {
       assert.property(paymentTxn, 'amount')
       assert.property(paymentTxn, 'inputs')
       assert.property(paymentTxn, 'outputs')
+    })
+
+    // TODO: Enable once https://evernym.atlassian.net/browse/EN-669 is resolved
+    it.skip('throws: no paymentTxn', async () => {
+      const data = await dataCredentialCreateWithOffer()
+      data.offer = JSON.stringify([credentialOffer[0]])
+      const credential = await credentialCreateWithOffer(data)
+      await credential.sendRequest({ connection: data.connection, payment: 0 })
+      assert.equal(await credential.getState(), StateType.OfferSent)
+      VCXMock.setVcxMock(VCXMockMessage.CredentialResponse)
+      await credential.updateState()
+      assert.equal(await credential.getState(), StateType.Accepted)
+      const error = await shouldThrow(() => credential.getPaymentTxn())
+      // Change to equal a specific payment related code
+      assert.notEqual(error.vcxCode, VCXCode.NOT_READY)
     })
   })
 
