@@ -423,7 +423,7 @@ pub mod cred_def_command {
     command!(CommandMetadata::build("cred-def", "Send Cred Def transaction to the Ledger.")
                 .add_required_param("schema_id", "Sequence number of schema")
                 .add_required_param("signature_type", "Signature type (only CL supported now)")
-                .add_optional_param("tag", "Allows to distinct between credential definitions for the same issuer and schema")
+                .add_optional_param("tag", "Allows to distinct between credential definitions for the same issuer and schema. Note that it is mandatory for indy-node version 1.4.x and higher")
                 .add_required_param("primary", "Primary key in json format")
                 .add_optional_param("revocation", "Revocation key in json format")
                 .add_optional_param("fees_inputs","The list of UTXO inputs")
@@ -500,7 +500,7 @@ pub mod get_cred_def_command {
     command!(CommandMetadata::build("get-cred-def", "Get Cred Definition from Ledger.")
                 .add_required_param("schema_id", "Sequence number of schema")
                 .add_required_param("signature_type", "Signature type (only CL supported now)")
-                .add_optional_param("tag", "Allows to distinct between credential definitions for the same issuer and schema")
+                .add_optional_param("tag", "Allows to distinct between credential definitions for the same issuer and schema. Note that it is mandatory for indy-node version 1.4.x and higher")
                 .add_required_param("origin", "Credential definition owner DID")
                 .add_example("ledger get-cred-def schema_id=1 signature_type=CL origin=VsKV7grR1BUE29mG2Fm2kX")
                 .finalize()
@@ -872,7 +872,8 @@ pub mod get_utxo_command {
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&utxo,
-                                 &vec![("input", "Input"),
+                                 &vec![("txo", "Txo"),
+                                       ("paymentAddress", "Payment Address"),
                                        ("amount", "Amount"),
                                        ("extra", "Extra")],
                                  "There are no utxo's");
@@ -922,7 +923,8 @@ pub mod payment_command {
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&utxo,
-                                 &vec![("input", "Input"),
+                                 &vec![("txo", "Txo"),
+                                       ("paymentAddress", "Payment Address"),
                                        ("amount", "Amount"),
                                        ("extra", "Extra")],
                                  "There are no utxo's");
@@ -1166,7 +1168,8 @@ fn print_response_utxo(utxo: Option<Vec<serde_json::Value>>) -> Result<(), ()> {
         if !utxo.is_empty() {
             println_succ!("Following Utxo has been received.");
             print_list_table(&utxo,
-                             &vec![("input", "Input"),
+                             &vec![("txo", "Txo"),
+                                   ("paymentAddress", "Payment Address"),
                                    ("amount", "Amount"),
                                    ("extra", "Extra")],
                              "");
@@ -3866,7 +3869,7 @@ pub mod tests {
 
         let utxos = serde_json::from_str::<serde_json::Value>(&utxo_json).unwrap();
         let utxo: &serde_json::Value = &utxos.as_array().unwrap()[0];
-        utxo["input"].as_str().unwrap().to_string()
+        utxo["txo"].as_str().unwrap().to_string()
     }
 
     #[cfg(feature = "nullpay_plugin")]

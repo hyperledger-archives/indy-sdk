@@ -202,7 +202,7 @@ mod high_cases {
 
             //6. Create inputs and outputs
             let addr_1 = addresses.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
             let inputs = serde_json::to_string(&utxos_1).unwrap();
 
             let outputs = vec![UTXOOutput {
@@ -260,7 +260,7 @@ mod high_cases {
             let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
 
             let addr_1 = addresses.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
             let inputs = serde_json::to_string(&utxos_1).unwrap();
 
             let outputs = vec![UTXOOutput {
@@ -315,7 +315,7 @@ mod high_cases {
 
             //7. Create inputs and outputs
             let addr_1 = addresses_1.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
             let inputs = serde_json::to_string(&utxos_1).unwrap();
 
             let outputs = vec![UTXOOutput {
@@ -357,7 +357,7 @@ mod high_cases {
 
             //3. Prepare inputs and outputs for payment txn
             let addr_1 = addresses.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
             let inputs = serde_json::to_string(&utxos_1).unwrap();
 
             let outputs = vec![UTXOOutput {
@@ -380,7 +380,7 @@ mod high_cases {
             let utxos: Vec<UTXOInfo> = serde_json::from_str(payment_resp_parsed.as_str()).unwrap();
             assert_eq!(utxos.len(), 2);
 
-            let utxos: HashMap<i32, String> = utxos.into_iter().map(|info| (info.amount, info.input)).collect();
+            let utxos: HashMap<i32, String> = utxos.into_iter().map(|info| (info.amount, info.txo)).collect();
             let payment_utxo = utxos.get(&19).unwrap();
             let change_utxo = utxos.get(&1).unwrap();
 
@@ -423,7 +423,7 @@ mod high_cases {
             let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
 
             let addr_1 = addresses.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
             let inputs = serde_json::to_string(&utxos_1).unwrap();
 
             let outputs = vec![UTXOOutput {
@@ -469,7 +469,7 @@ mod high_cases {
 
             //3. Prepare inputs and outputs for payment txn
             let addr_1 = addresses.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
             let inputs = serde_json::to_string(&utxos_1).unwrap();
 
             let outputs = vec![UTXOOutput {
@@ -505,9 +505,9 @@ mod high_cases {
 
             let fees_stored = payments_utils::get_request_fees(wallet_handle, pool_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME);
 
-            let fee_1 = fees_stored.get("NYM").unwrap();
+            let fee_1 = fees_stored.get("1").unwrap();
             assert_eq!(fee_1, &1);
-            let fee_2 = fees_stored.get("SCHEMA").unwrap();
+            let fee_2 = fees_stored.get("101").unwrap();
             assert_eq!(fee_2, &2);
 
             pool::close(pool_handle).unwrap();
@@ -526,12 +526,12 @@ mod high_cases {
 
             let req = payments::build_get_txn_fees_req(wallet_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME).unwrap();
             let resp = ledger::submit_request(pool_handle, req.as_str()).unwrap();
-            let resp = payments::parse_get_utxo_response(PAYMENT_METHOD_NAME, resp.as_str()).unwrap();
+            let resp = payments::parse_get_txn_fees_response(PAYMENT_METHOD_NAME, resp.as_str()).unwrap();
             let map = serde_json::from_str::<HashMap<String, i32>>(resp.as_str()).unwrap();
 
-            let fee_1 = map.get("NYM").unwrap();
+            let fee_1 = map.get("1").unwrap();
             assert_eq!(fee_1, &1);
-            let fee_2 = map.get("SCHEMA").unwrap();
+            let fee_2 = map.get("101").unwrap();
             assert_eq!(fee_2, &2);
 
             pool::close(pool_handle).unwrap();
@@ -563,7 +563,7 @@ mod medium_cases {
             let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
 
             let addr_1 = addresses.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
             let inputs = serde_json::to_string(&utxos_1).unwrap();
 
             let outputs = vec![UTXOOutput {
@@ -605,7 +605,7 @@ mod medium_cases {
             let utxos = payments_utils::get_utxos_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
 
             let addr_1 = addresses.get(0).unwrap();
-            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.input.clone()).collect();
+            let utxos_1: Vec<String> = utxos.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.txo.clone()).collect();
             let inputs = serde_json::to_string(&utxos_1).unwrap();
 
             let outputs = vec![UTXOOutput {
