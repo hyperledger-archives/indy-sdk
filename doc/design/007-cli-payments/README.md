@@ -50,7 +50,7 @@ indy> ledger get-utxo payment_address=<payment-address>
 
 Returns:
 
-* Table with columns: Input, Amount, Extra
+* Table with columns: Txo, Payment Address, Amount, Extra
 
 ### Send PAYMENT transaction
 
