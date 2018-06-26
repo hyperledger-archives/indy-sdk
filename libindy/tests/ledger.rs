@@ -159,7 +159,7 @@ mod high_cases {
                             "type":"105",
                             "dest":"Th7MpTaRZVRYnPiabds81Y"
                          },
-                         "protocolVersion":1,
+                         "protocolVersion":2,
                          "signature":"4o86XfkiJ4e2r3J6Ufoi17UU3W5Zi9sshV6FjBjkVw4sgEQFQov9dxqDEtLbAJAWffCWd5KfAk164QVo7mYwKkiV"}"#;
 
             let resp = LedgerUtils::submit_request(pool_handle, request);
