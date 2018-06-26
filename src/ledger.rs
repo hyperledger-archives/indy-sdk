@@ -5,7 +5,8 @@ use std::time::Duration;
 use std::ptr::null;
 
 use ffi::ledger;
-use ffi::{ResponseStringCB,
+use ffi::{ResponseEmptyCB,
+          ResponseStringCB,
           ResponseStringStringCB,
           ResponseStringStringU64CB};
 
@@ -500,14 +501,18 @@ impl Ledger {
     ///
     /// # Arguments
     /// * `submitter_did` - DID of the request submitter.
+    /// * `ledger_type` - (Optional) type of the ledger the requested transaction belongs to:
+    ///     DOMAIN - used default,
+    ///     POOL,
+    ///     CONFIG
     /// * `seq_no` - seq_no of transaction in ledger.
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_txn_request(submitter_did: &str, seq_no: i32) -> Result<String, ErrorCode> {
+    pub fn build_get_txn_request(submitter_did: &str, ledger_type: Option<&str>, seq_no: i32) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-        let err = Ledger::_build_get_txn_request(command_handle, submitter_did, seq_no, cb);
+        let err = Ledger::_build_get_txn_request(command_handle, submitter_did, ledger_type, seq_no, cb);
     
         ResultHandler::one(err, receiver)
     }
@@ -517,14 +522,18 @@ impl Ledger {
     /// # Arguments
     /// * `submitter_did` - DID of the request submitter.
     /// * `seq_no` - seq_no of transaction in ledger.
+    /// * `ledger_type` - (Optional) type of the ledger the requested transaction belongs to:
+    ///     DOMAIN - used default,
+    ///     POOL,
+    ///     CONFIG
     /// * `timeout` - the maximum time this function waits for a response
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_txn_request_timeout(submitter_did: &str, seq_no: i32, timeout: Duration) -> Result<String, ErrorCode> {
+    pub fn build_get_txn_request_timeout(submitter_did: &str, ledger_type: Option<&str>, seq_no: i32, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-        let err = Ledger::_build_get_txn_request(command_handle, submitter_did, seq_no, cb);
+        let err = Ledger::_build_get_txn_request(command_handle, submitter_did, ledger_type, seq_no, cb);
     
         ResultHandler::one_timeout(err, receiver, timeout)
     }
@@ -534,20 +543,25 @@ impl Ledger {
     /// # Arguments
     /// * `submitter_did` - DID of the request submitter.
     /// * `seq_no` - seq_no of transaction in ledger.
+    /// * `ledger_type` - (Optional) type of the ledger the requested transaction belongs to:
+    ///     DOMAIN - used default,
+    ///     POOL,
+    ///     CONFIG
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-    pub fn build_get_txn_request_async<F: 'static>(submitter_did: &str, seq_no: i32, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
+    pub fn build_get_txn_request_async<F: 'static>(submitter_did: &str, ledger_type: Option<&str>, seq_no: i32, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
-        Ledger::_build_get_txn_request(command_handle, submitter_did, seq_no, cb)
+        Ledger::_build_get_txn_request(command_handle, submitter_did, ledger_type, seq_no, cb)
     }
 
-    fn _build_get_txn_request(command_handle: IndyHandle, submitter_did: &str, seq_no: i32, cb: Option<ResponseStringCB>) ->  ErrorCode {
+    fn _build_get_txn_request(command_handle: IndyHandle, submitter_did: &str, ledger_type: Option<&str>, seq_no: i32, cb: Option<ResponseStringCB>) ->  ErrorCode {
         let submitter_did = c_str!(submitter_did);
+        let ledger_type_str = opt_c_str!(ledger_type);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_txn_request(command_handle, submitter_did.as_ptr(), seq_no, cb) })
+        ErrorCode::from(unsafe { ledger::indy_build_get_txn_request(command_handle, submitter_did.as_ptr(), opt_c_ptr!(ledger_type, ledger_type_str), seq_no, cb) })
     }
 
     /// Builds an ATTRIB request. Request to add attribute to a NYM record.
@@ -1201,6 +1215,59 @@ impl Ledger {
         let data = c_str!(data);
 
         ErrorCode::from(unsafe { ledger::indy_build_node_request(command_handle, submitter_did.as_ptr(), target_did.as_ptr(), data.as_ptr(), cb) })
+    }
+
+    /// Builds a GET_VALIDATOR_INFO request.
+    ///
+    /// # Arguments
+    /// * `submitter_did` - Id of Identity stored in secured Wallet.
+    ///
+    /// # Returns
+    /// Request result as json.
+    pub fn build_get_validator_info_request(submitter_did: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let err = Ledger::_build_get_validator_info_request(command_handle, submitter_did, cb);
+
+        ResultHandler::one(err, receiver)
+    }
+
+    /// Builds a GET_VALIDATOR_INFO request.
+    ///
+    /// # Arguments
+    /// * `submitter_did` - Id of Identity stored in secured Wallet.
+    /// * `timeout` - the maximum time this function waits for a response
+    ///
+    /// # Returns
+    /// Request result as json.
+    pub fn build_get_validator_info_request_timeout(submitter_did: &str, timeout: Duration) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let err = Ledger::_build_get_validator_info_request(command_handle, submitter_did, cb);
+
+        ResultHandler::one_timeout(err, receiver, timeout)
+    }
+
+    /// Builds a GET_VALIDATOR_INFO request.
+    ///
+    /// # Arguments
+    /// * `submitter_did` - Id of Identity stored in secured Wallet.
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn build_get_validator_info_request_async<F: 'static>(submitter_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
+
+        Ledger::_build_get_validator_info_request(command_handle, submitter_did, cb)
+    }
+
+    fn _build_get_validator_info_request(command_handle: IndyHandle, submitter_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+        let submitter_did = c_str!(submitter_did);
+
+        ErrorCode::from(unsafe {
+          ledger::indy_build_get_validator_info_request(command_handle, submitter_did.as_ptr(), cb)
+        })
     }
 
     /// Builds a POOL_CONFIG request. Request to change Pool's configuration.
@@ -2076,6 +2143,65 @@ impl Ledger {
         let get_revoc_reg_delta_response = c_str!(get_revoc_reg_delta_response);
 
         ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_delta_response(command_handle,get_revoc_reg_delta_response.as_ptr(), cb) })
+    }
+
+    /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
+    ///
+    /// # Arguments
+    /// * `txn_type` - type of transaction to apply `parse` callback.
+    /// * `parse` - required callback to parse reply for state proof.
+    /// * `free` - required callback to deallocate memory.
+    ///
+    /// # Returns
+    /// Status of callbacks registration.
+    pub fn register_transaction_parser_for_sp(txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Ledger::_register_transaction_parser_for_sp(command_handle, txn_type, parser, free, cb);
+
+        ResultHandler::empty(err, receiver)
+    }
+
+    /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
+    ///
+    /// # Arguments
+    /// * `txn_type` - type of transaction to apply `parse` callback.
+    /// * `parse` - required callback to parse reply for state proof.
+    /// * `free` - required callback to deallocate memory.
+    /// * `timeout` - the maximum time this function waits for a response
+    ///
+    /// # Returns
+    /// Status of callbacks registration.
+    pub fn register_transaction_parser_for_sp_timeout(txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>, timeout: Duration) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Ledger::_register_transaction_parser_for_sp(command_handle, txn_type, parser, free, cb);
+
+        ResultHandler::empty_timeout(err, receiver, timeout)
+    }
+
+    /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
+    ///
+    /// # Arguments
+    /// * `txn_type` - type of transaction to apply `parse` callback.
+    /// * `parse` - required callback to parse reply for state proof.
+    /// * `free` - required callback to deallocate memory.
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn register_transaction_parser_for_sp_async<F: 'static>(txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
+
+        Ledger::_register_transaction_parser_for_sp(command_handle, txn_type, parser, free, cb)
+    }
+
+    fn _register_transaction_parser_for_sp(command_handle: IndyHandle, txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+        let txn_type = c_str!(txn_type);
+
+        ErrorCode::from(unsafe {
+          ledger::indy_register_transaction_parser_for_sp(command_handle, txn_type.as_ptr(), parser, free, cb)
+        })
     }
 }
 
