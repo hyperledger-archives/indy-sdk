@@ -202,11 +202,22 @@ pub mod tests {
     }
 
     pub fn load_null_payment_plugin(ctx: &CommandContext) -> () {
-        let lib = libloading::Library::new(NULL_PAYMENT_PLUGIN).unwrap();
+        let lib = _load_lib(NULL_PAYMENT_PLUGIN).unwrap();
         unsafe {
             let init_func: libloading::Symbol<unsafe extern fn() -> ErrorCode> = lib.get(NULL_PAYMENT_PLUGIN_INIT_FUNCTION.as_bytes()).unwrap();
             init_func();
         }
         ctx.add_plugin(NULL_PAYMENT_PLUGIN, lib)
+    }
+
+    #[cfg(unix)]
+    fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
+        libloading::os::unix::Library::open(Some(library), ::libc::RTLD_NOW | ::libc::RTLD_NODELETE)
+            .map(libloading::Library::from)
+    }
+
+    #[cfg(not(unix))]
+    fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
+        libloading::Library::new(library)
     }
 }
