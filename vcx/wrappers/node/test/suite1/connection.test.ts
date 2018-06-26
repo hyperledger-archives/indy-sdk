@@ -1,7 +1,7 @@
 import '../module-resolver-helper'
 
 import { assert } from 'chai'
-import { connectionCreate, connectionCreateConnect } from 'helpers/entities'
+import { connectionCreate, connectionCreateConnect, dataConnectionCreate } from 'helpers/entities'
 import { gcTest } from 'helpers/gc'
 import { TIMEOUT_GC } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
@@ -13,6 +13,13 @@ describe('Connection:', () => {
   describe('create:', () => {
     it('success', async () => {
       await connectionCreate()
+    })
+
+    // TODO: Enable me once https://evernym.atlassian.net/browse/EN-662 is resolved
+    it.skip('success: parallel', async () => {
+      const numConnections = 50
+      const data = dataConnectionCreate()
+      await Promise.all(new Array(numConnections).fill(0).map(() => connectionCreate(data)))
     })
   })
 
