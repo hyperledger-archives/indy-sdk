@@ -468,6 +468,198 @@ impl Wallet {
         })
     }
 
+    /// Exports opened wallet
+    ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
+    /// # Arguments:
+    /// * `wallet_handle` - wallet handle returned by indy_open_wallet
+    /// * `export_config_json` - JSON containing settings for input operation.
+    ///   {
+    ///     "path": path of the file that contains exported wallet content
+    ///     "key": passphrase used to derive export key
+    ///   }
+    pub fn export(wallet_handle: IndyHandle, export_config_json: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_export(command_handle, wallet_handle, export_config_json, cb);
+
+        ResultHandler::empty(err, receiver)
+    }
+
+    /// Exports opened wallet
+    ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
+    /// # Arguments:
+    /// * `wallet_handle` - wallet handle returned by indy_open_wallet
+    /// * `export_config_json` - JSON containing settings for input operation.
+    ///   {
+    ///     "path": path of the file that contains exported wallet content
+    ///     "key": passphrase used to derive export key
+    ///   }
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn export_timeout(wallet_handle: IndyHandle, export_config_json: &str, timeout: Duration) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_export(command_handle, wallet_handle, export_config_json, cb);
+
+        ResultHandler::empty_timeout(err, receiver, timeout)
+    }
+
+    /// Exports opened wallet
+    ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
+    /// # Arguments:
+    /// * `wallet_handle` - wallet handle returned by indy_open_wallet
+    /// * `export_config_json` - JSON containing settings for input operation.
+    ///   {
+    ///     "path": path of the file that contains exported wallet content
+    ///     "key": passphrase used to derive export key
+    ///   }
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn export_async<F: 'static>(wallet_handle: IndyHandle, export_config_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
+
+        Wallet::_export(command_handle, wallet_handle, export_config_json, cb)
+    }
+
+    fn _export(command_handle: IndyHandle, wallet_handle: IndyHandle, export_config_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+        let export_config_json = c_str!(export_config_json);
+
+        ErrorCode::from(unsafe {
+          wallet::indy_export_wallet(command_handle, wallet_handle, export_config_json.as_ptr(), cb)
+        })
+    }
+
+    /// Creates a new secure wallet with the given unique name and then imports its content
+    /// according to fields provided in import_config
+    /// This can be seen as an Wallet::create call with additional content import
+    ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
+    /// # Arguments
+    /// * `pool_name` - Name of the pool that corresponds to this wallet
+    /// * `name` - Name of the wallet
+    /// * `storage_type(optional)` - Type of the wallet storage. Defaults to 'default'.
+    ///                  Custom storage types can be registered with indy_register_wallet_storage_call
+    /// * `config(optional)` - Wallet configuration json.
+    ///   {
+    ///       "storage": <object>  List of supported keys are defined by wallet type.
+    ///   }
+    /// * `credentials` - Wallet credentials json (if NULL, then default config will be used).
+    ///   {
+    ///       "key": string,
+    ///       "storage": Optional<object>  List of supported keys are defined by wallet type.
+    ///
+    ///   }
+    /// * `import_config_json` - JSON containing settings for input operation.
+    ///   {
+    ///     "path": path of the file that contains exported wallet content
+    ///     "key": passphrase used to derive export key
+    ///   }
+    pub fn import(pool_name: &str, name: &str, storage_type: Option<&str>, config: Option<&str>, credentials: &str, import_config_json: &str) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_import(command_handle, pool_name, name, storage_type, config, credentials, import_config_json, cb);
+
+        ResultHandler::empty(err, receiver)
+    }
+
+    /// Creates a new secure wallet with the given unique name and then imports its content
+    /// according to fields provided in import_config
+    /// This can be seen as an Wallet::create call with additional content import
+    ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
+    /// # Arguments
+    /// * `pool_name` - Name of the pool that corresponds to this wallet
+    /// * `name` - Name of the wallet
+    /// * `storage_type(optional)` - Type of the wallet storage. Defaults to 'default'.
+    ///                  Custom storage types can be registered with indy_register_wallet_storage_call
+    /// * `config(optional)` - Wallet configuration json.
+    ///   {
+    ///       "storage": <object>  List of supported keys are defined by wallet type.
+    ///   }
+    /// * `credentials` - Wallet credentials json (if NULL, then default config will be used).
+    ///   {
+    ///       "key": string,
+    ///       "storage": Optional<object>  List of supported keys are defined by wallet type.
+    ///
+    ///   }
+    /// * `import_config_json` - JSON containing settings for input operation.
+    ///   {
+    ///     "path": path of the file that contains exported wallet content
+    ///     "key": passphrase used to derive export key
+    ///   }
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn import_timeout(pool_name: &str, name: &str, storage_type: Option<&str>, config: Option<&str>, credentials: &str, import_config_json: &str, timeout: Duration) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Wallet::_import(command_handle, pool_name, name, storage_type, config, credentials, import_config_json, cb);
+
+        ResultHandler::empty_timeout(err, receiver, timeout)
+    }
+
+    /// Creates a new secure wallet with the given unique name and then imports its content
+    /// according to fields provided in import_config
+    /// This can be seen as an Wallet::create call with additional content import
+    ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
+    /// # Arguments
+    /// * `pool_name` - Name of the pool that corresponds to this wallet
+    /// * `name` - Name of the wallet
+    /// * `storage_type(optional)` - Type of the wallet storage. Defaults to 'default'.
+    ///                  Custom storage types can be registered with indy_register_wallet_storage_call
+    /// * `config(optional)` - Wallet configuration json.
+    ///   {
+    ///       "storage": <object>  List of supported keys are defined by wallet type.
+    ///   }
+    /// * `credentials` - Wallet credentials json (if NULL, then default config will be used).
+    ///   {
+    ///       "key": string,
+    ///       "storage": Optional<object>  List of supported keys are defined by wallet type.
+    ///
+    ///   }
+    /// * `import_config_json` - JSON containing settings for input operation.
+    ///   {
+    ///     "path": path of the file that contains exported wallet content
+    ///     "key": passphrase used to derive export key
+    ///   }
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn import_async<F: 'static>(pool_name: &str, name: &str, storage_type: Option<&str>, config: Option<&str>, credentials: &str, import_config_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
+
+        Wallet::_import(command_handle, pool_name, name, storage_type, config, credentials, import_config_json, cb)
+    }
+
+    fn _import(command_handle: IndyHandle, pool_name: &str, name: &str, storage_type: Option<&str>, config: Option<&str>, credentials: &str, import_config_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+        let pool_name = c_str!(pool_name);
+        let name = c_str!(name);
+        let storage_type_str = opt_c_str!(storage_type);
+        let config_str = opt_c_str!(config);
+        let credentials = c_str!(credentials);
+        let import_config_json = c_str!(import_config_json);
+
+        ErrorCode::from(unsafe {
+          wallet::indy_import_wallet(command_handle, pool_name.as_ptr(), name.as_ptr(), opt_c_ptr!(storage_type, storage_type_str), opt_c_ptr!(config, config_str), credentials.as_ptr(), import_config_json.as_ptr(), cb)
+        })
+    }
+
     /// Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool
     pub fn list() -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
