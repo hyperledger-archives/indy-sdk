@@ -330,5 +330,72 @@ impl Pool {
 
         ErrorCode::from(unsafe { pool::indy_delete_pool_ledger_config(command_handle, pool_name.as_ptr(), cb) })
     }
+
+    /// Set PROTOCOL_VERSION to specific version.
+    ///
+    /// There is a global property PROTOCOL_VERSION that used in every request to the pool and
+    /// specified version of Indy Node which Libindy works.
+    ///
+    /// By default PROTOCOL_VERSION=1.
+    ///
+    /// # Arguments
+    /// * `protocol_version` - Protocol version will be used:
+    ///     1 - for Indy Node 1.3
+    ///     2 - for Indy Node 1.4
+    pub fn set_protocol_version(protocol_version: usize) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Pool::_set_protocol_version(command_handle, protocol_version, cb);
+
+        ResultHandler::empty(err, receiver)
+    }
+
+    /// Set PROTOCOL_VERSION to specific version.
+    ///
+    /// There is a global property PROTOCOL_VERSION that used in every request to the pool and
+    /// specified version of Indy Node which Libindy works.
+    ///
+    /// By default PROTOCOL_VERSION=1.
+    ///
+    /// # Arguments
+    /// * `protocol_version` - Protocol version will be used:
+    ///     1 - for Indy Node 1.3
+    ///     2 - for Indy Node 1.4
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn set_protocol_version_timeout(protocol_version: usize, timeout: Duration) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Pool::_set_protocol_version(command_handle, protocol_version, cb);
+
+        ResultHandler::empty_timeout(err, receiver, timeout)
+    }
+
+    /// Set PROTOCOL_VERSION to specific version.
+    ///
+    /// There is a global property PROTOCOL_VERSION that used in every request to the pool and
+    /// specified version of Indy Node which Libindy works.
+    ///
+    /// By default PROTOCOL_VERSION=1.
+    ///
+    /// # Arguments
+    /// * `protocol_version` - Protocol version will be used:
+    ///     1 - for Indy Node 1.3
+    ///     2 - for Indy Node 1.4
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn set_protocol_version_async<F: 'static>(protocol_version: usize, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
+
+        Pool::_set_protocol_version(command_handle, protocol_version, cb)
+    }
+
+    fn _set_protocol_version(command_handle: IndyHandle, protocol_version: usize, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+
+        ErrorCode::from(unsafe {
+          pool::indy_set_protocol_version(command_handle, protocol_version, cb)
+        })
+    }
 }
 
