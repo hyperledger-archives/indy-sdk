@@ -1,6 +1,7 @@
 import '../module-resolver-helper'
 
 import { assert } from 'chai'
+import { validatePaymentTxn } from 'helpers/asserts'
 import {
   dataSchemaCreate,
   dataSchemaLookup,
@@ -151,12 +152,8 @@ describe('Schema:', () => {
   describe('getPaymentTxn:', () => {
     it('success', async () => {
       const schema = await schemaCreate()
-      const paymentTxnStr = await schema.getPaymentTxn()
-      assert.ok(paymentTxnStr)
-      const paymentTxn = JSON.parse(paymentTxnStr)
-      assert.property(paymentTxn, 'amount')
-      assert.property(paymentTxn, 'inputs')
-      assert.property(paymentTxn, 'outputs')
+      const paymentTxn = await schema.getPaymentTxn()
+      validatePaymentTxn(paymentTxn)
     })
   })
 

@@ -1,6 +1,7 @@
 import '../module-resolver-helper'
 
 import { assert } from 'chai'
+import { validatePaymentTxn } from 'helpers/asserts'
 import { credentialDefCreate } from 'helpers/entities'
 import { gcTest } from 'helpers/gc'
 import { TIMEOUT_GC } from 'helpers/test-constants'
@@ -89,12 +90,8 @@ describe('CredentialDef:', () => {
   describe('getPaymentTxn:', () => {
     it('success', async () => {
       const credentialDef = await credentialDefCreate()
-      const paymentTxnStr = await credentialDef.getPaymentTxn()
-      assert.ok(paymentTxnStr)
-      const paymentTxn = JSON.parse(paymentTxnStr)
-      assert.property(paymentTxn, 'amount')
-      assert.property(paymentTxn, 'inputs')
-      assert.property(paymentTxn, 'outputs')
+      const paymentTxn = await credentialDef.getPaymentTxn()
+      validatePaymentTxn(paymentTxn)
     })
   })
 
