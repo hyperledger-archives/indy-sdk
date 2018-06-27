@@ -61,12 +61,12 @@ extern {
 mod tests {
     use super::*;
     use self::sodiumoxide::crypto::secretbox;
-    use utils::crypto::chacha20poly1305_ietf::ChaCha20Poly1305IETF;
+    use utils::crypto::chacha20poly1305_ietf;
 
     #[test]
     fn crypto_pwhash_works() {
         let passwd = b"Correct Horse Battery Staple";
-        let secretbox::Key(ref mut kb) = secretbox::Key([0; ChaCha20Poly1305IETF::KEYBYTES]);
+        let secretbox::Key(ref mut kb) = secretbox::Key([0; chacha20poly1305_ietf::KEY_LENGTH]);
         let pwhash::Salt(ref salt) = pwhash::gen_salt();
 
         let _key = PwhashArgon2i13::derive_key(kb, passwd, salt).unwrap();

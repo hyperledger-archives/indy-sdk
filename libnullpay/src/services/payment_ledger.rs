@@ -38,7 +38,8 @@ pub fn get_utxo_info(utxo: String) -> Option<UTXOInfo> {
     match get_txn(seq_no).map(|(_, outputs)| {
         outputs.into_iter().find(|out| out.payment_address == payment_address).map(|out| {
             UTXOInfo {
-                input: utxo,
+                txo: utxo,
+                payment_address,
                 amount: out.amount,
                 extra: out.extra,
             }

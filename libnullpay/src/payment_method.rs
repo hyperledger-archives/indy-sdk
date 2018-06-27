@@ -1,3 +1,5 @@
+extern crate serde_json;
+
 use ErrorCode;
 use libindy::ledger;
 use libindy::payments::IndyPaymentCallback;
@@ -10,8 +12,11 @@ use utils::cstring::CStringUtils;
 
 use serde_json::{from_str, to_string};
 use std::collections::HashMap;
-use std::ffi::CString;
 use std::os::raw::c_char;
+
+use std::thread;
+
+use libindy;
 
 pub static PAYMENT_METHOD_NAME: &str = "null";
 
@@ -30,7 +35,7 @@ pub mod create_payment_address {
 pub mod add_request_fees {
     use super::*;
 
-    pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, req_json: *const c_char, inputs_json: *const c_char, outputs_json: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
+    pub extern fn handle(cmd_handle: i32, wallet_handle: i32, submitter_did: *const c_char, req_json: *const c_char, inputs_json: *const c_char, outputs_json: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
         check_useful_c_str!(req_json, ErrorCode::CommonInvalidState);
         check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidState);
         check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidState);
@@ -66,7 +71,7 @@ pub mod add_request_fees {
         let total_amount = _count_total_inputs(&inputs_json);
         let total_payments = _count_total_payments(&outputs_json);
 
-        let err = if total_amount >= total_payments + fee {
+        if total_amount >= total_payments + fee {
             match parse_req_id_from_request(&req_json) {
                 Err(ec) => return ec,
                 _ => ()
@@ -74,14 +79,28 @@ pub mod add_request_fees {
             //we have enough money for this txn, give it back
             let seq_no = payment_ledger::add_txn(inputs_json.clone(), outputs_json.clone());
 
-            _process_inputs(&inputs_json);
-            let infos: Vec<UTXOInfo> = _process_outputs(&outputs_json, seq_no);
+            libindy::payments::list_payment_addresses(
+                wallet_handle,
+                Box::new(move |ec, res| {
+                    let ec = if ec == ErrorCode::Success {
+                        let payment_addresses: Vec<String> = serde_json::from_str(&res).unwrap();
 
-            _save_response(&infos, &req_json)
+                        if _check_inputs(&inputs_json, &payment_addresses) {
+                            _process_inputs(&inputs_json);
+                            let infos: Vec<UTXOInfo> = _process_outputs(&outputs_json, seq_no);
+                            _save_response(&infos, &req_json)
+                        } else { ErrorCode::CommonInvalidState }
+                    } else { ec };
+
+                    trace!("libnullpay::add_request_fees::handle >>");
+                    _process_callback(cmd_handle, ec, req_json.clone(), cb);
+                }));
+            return ErrorCode::Success;
         } else {
             //we don't have enough money, send GET_TXN transaction to callback and in response PaymentsInsufficientFundsError will be returned
             ledger::build_get_txn_request(
                 submitter_did.as_str(),
+                None,
                 1,
                 Box::new(move |ec, res| {
                     let ec = if ec == ErrorCode::Success {
@@ -92,10 +111,7 @@ pub mod add_request_fees {
                 }),
             );
             return ErrorCode::Success;
-        };
-
-        trace!("libnullpay::add_request_fees::handle >>");
-        _process_callback(cmd_handle, err, req_json, cb)
+        }
     }
 }
 
@@ -118,6 +134,7 @@ pub mod build_get_utxo_request {
 
         ledger::build_get_txn_request(
             submitter_did.as_str(),
+            None,
             1,
             Box::new(move |ec, res| {
                 let ec = if ec == ErrorCode::Success {
@@ -145,7 +162,7 @@ pub mod parse_get_utxo_response {
 pub mod build_payment_req {
     use super::*;
 
-    pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, inputs_json: *const c_char, outputs_json: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
+    pub extern fn handle(cmd_handle: i32, wallet_handle: i32, submitter_did: *const c_char, inputs_json: *const c_char, outputs_json: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
         check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidState);
         check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidState);
         check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidState);
@@ -154,32 +171,53 @@ pub mod build_payment_req {
         parse_json!(inputs_json, Vec<String>, ErrorCode::CommonInvalidStructure);
         parse_json!(outputs_json, Vec<UTXOOutput>, ErrorCode::CommonInvalidStructure);
 
-        ledger::build_get_txn_request(
-            submitter_did.as_str(),
-            1,
+        libindy::payments::list_payment_addresses(
+            wallet_handle,
             Box::new(move |ec, res| {
+                if ec != ErrorCode::Success {
+                    _process_callback(cmd_handle, ec, String::new(), cb);
+                    return;
+                };
+
+                let payment_addresses: Vec<String> = serde_json::from_str(&res).unwrap();
+
+                if !_check_inputs(&inputs_json, &payment_addresses) {
+                    _process_callback(cmd_handle, ErrorCode::CommonInvalidState, String::new(), cb);
+                    return;
+                }
+
                 let total_balance = _count_total_inputs(&inputs_json);
                 let total_payments = _count_total_payments(&outputs_json);
 
-                let ec = if ec == ErrorCode::Success {
-                    if total_balance >= total_payments {
-                        let seq_no = payment_ledger::add_txn(inputs_json.clone(), outputs_json.clone());
+                let seq_no = payment_ledger::add_txn(inputs_json.clone(), outputs_json.clone());
 
-                        _process_inputs(&inputs_json);
-                        let infos = _process_outputs(&outputs_json, seq_no);
+                let submitter_did = submitter_did.clone();
+                let inputs_json = inputs_json.clone();
+                let outputs_json = outputs_json.clone();
 
-                        _save_response(&infos, &res)
-                    } else {
-                        _add_response(&res, "INSUFFICIENT_FUNDS");
-                        ErrorCode::Success
-                    }
-                } else {
-                    ec
-                };
+                thread::spawn(move || {
+                    ledger::build_get_txn_request(
+                        submitter_did.as_str(),
+                        None,
+                        1,
+                        Box::new(move |ec, res| {
+                            if ec == ErrorCode::Success {
+                                if total_balance >= total_payments {
+                                    _process_inputs(&inputs_json);
+                                    let infos = _process_outputs(&outputs_json, seq_no);
 
-                trace!("libnullpay::build_payment_req::handle >>");
-                _process_callback(cmd_handle, ec, res, cb);
-            }),
+                                    _save_response(&infos, &res);
+                                } else {
+                                    _add_response(&res, "INSUFFICIENT_FUNDS");
+                                }
+                            };
+
+                            trace!("libnullpay::build_payment_req::handle >>");
+                            _process_callback(cmd_handle, ec, res, cb);
+                        }),
+                    );
+                });
+            })
         )
     }
 }
@@ -204,6 +242,7 @@ pub mod build_mint_req {
         parse_json!(outputs_json, Vec<UTXOOutput>, ErrorCode::CommonInvalidStructure);
 
         ledger::build_get_txn_request(submitter_did.as_str(),
+                                      None,
                                       1,
                                       Box::new(move |ec, res| {
                                           if ec == ErrorCode::Success {
@@ -232,6 +271,7 @@ pub mod build_set_txn_fees_req {
         parse_json!(fees_json, HashMap<String, i32>, ErrorCode::CommonInvalidStructure);
 
         ledger::build_get_txn_request(submitter_did.as_str(),
+                                      None,
                                       1,
                                       Box::new(move |ec, res| {
                                           if ec == ErrorCode::Success {
@@ -253,6 +293,7 @@ pub mod build_get_txn_fees_req {
         trace!("libnullpay::build_get_txn_fees_req::handle << submitter_did: {}", submitter_did);
 
         ledger::build_get_txn_request(submitter_did.as_str(),
+                                      None,
                                       1,
                                       Box::new(move |ec, res| {
                                           let ec = if ec == ErrorCode::Success {
@@ -292,7 +333,7 @@ fn _process_parse_response(cmd_handle: i32, response: *const c_char, cb: Option<
 }
 
 fn _process_callback(cmd_handle: i32, err: ErrorCode, response: String, cb: Option<IndyPaymentCallback>) -> ErrorCode {
-    let response = CString::new(response).unwrap();
+    let response = CStringUtils::string_to_cstring(response);
     match cb {
         Some(cb) => cb(cmd_handle, err, response.as_ptr()),
         None => err
@@ -307,6 +348,18 @@ fn _process_outputs(outputs: &Vec<UTXOOutput>, seq_no: i32) -> Vec<UTXOInfo> {
             _ => panic!("Some UTXO was not processed!")
         }
     }).collect()
+}
+
+use utils::utxo::from_utxo;
+
+fn _check_inputs(inputs: &Vec<String>, payment_addresses: &Vec<String>) -> bool {
+    inputs.iter().all(|input|
+        match from_utxo(input) {
+            Some((_, payment_address)) => {
+                payment_addresses.contains(&payment_address)
+            }
+            None => false
+        })
 }
 
 fn _process_inputs(inputs: &Vec<String>) {

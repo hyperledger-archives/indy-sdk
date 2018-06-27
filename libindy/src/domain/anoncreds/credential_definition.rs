@@ -11,6 +11,7 @@ use self::indy_crypto::cl::{
     CredentialPrivateKey,
     CredentialKeyCorrectnessProof
 };
+use super::super::ledger::request::ProtocolVersion;
 
 use std::collections::HashMap;
 use named_type::NamedType;
@@ -33,12 +34,23 @@ impl SignatureType {
     }
 }
 
+fn default_false() -> bool { false }
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialDefinitionConfig {
+    #[serde(default = "default_false")]
     pub support_revocation: bool
 }
 
 impl<'a> JsonDecodable<'a> for CredentialDefinitionConfig {}
+
+impl Default for CredentialDefinitionConfig {
+    fn default() -> Self {
+        CredentialDefinitionConfig {
+            support_revocation: false
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialDefinitionData {
@@ -68,9 +80,12 @@ pub enum CredentialDefinition {
 }
 
 impl CredentialDefinition {
-    pub fn cred_def_id(did: &str, schema_id: &str, signature_type: &str) -> String {
-        //TODO: FIXME
-        format!("{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id)
+    pub fn cred_def_id(did: &str, schema_id: &str, signature_type: &str, tag: &str) -> String {
+        if ProtocolVersion::is_node_1_3(){
+            format!("{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id)
+        } else {
+            format!("{}{}{}{}{}{}{}{}{}", did, DELIMITER, CRED_DEF_MARKER, DELIMITER, signature_type, DELIMITER, schema_id, DELIMITER, tag)
+        }
     }
 }
 

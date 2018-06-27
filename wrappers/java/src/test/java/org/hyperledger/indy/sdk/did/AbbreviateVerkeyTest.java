@@ -10,7 +10,7 @@ import static org.junit.Assert.assertNotEquals;
 public class AbbreviateVerkeyTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
-	public void testAbbrVerkeyWorksForAbbrVerekey() throws Exception {
+	public void testAbbrVerkeyWorksForAbbrVerkey() throws Exception {
 		CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, "{}").get();
 
 		String verkey = Did.AbbreviateVerkey(result.getDid(), result.getVerkey()).get();
@@ -19,7 +19,7 @@ public class AbbreviateVerkeyTest extends IndyIntegrationTestWithSingleWallet {
 	}
 
 	@Test
-	public void testAbbrVerkeyWorksForNotAbbrVerekey() throws Exception {
+	public void testAbbrVerkeyWorksForNotAbbrVerkey() throws Exception {
 		DidJSONParameters.CreateAndStoreMyDidJSONParameter theirDidJson =
 				new DidJSONParameters.CreateAndStoreMyDidJSONParameter(DID_TRUSTEE, null, null, null);
 

@@ -371,9 +371,9 @@ indy.buildNodeRequest = function buildNodeRequest (submitterDid, targetDid, data
   return cb.promise
 }
 
-indy.buildGetTxnRequest = function buildGetTxnRequest (submitterDid, data, cb) {
+indy.buildGetTxnRequest = function buildGetTxnRequest (submitterDid, ledgerType, data, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildGetTxnRequest(submitterDid, data, cb)
+  capi.buildGetTxnRequest(submitterDid, ledgerType, data, cb)
   return cb.promise
 }
 
@@ -517,6 +517,12 @@ indy.deletePoolLedgerConfig = function deletePoolLedgerConfig (configName, cb) {
   return cb.promise
 }
 
+indy.setProtocolVersion = function setProtocolVersion (protocolVersion, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.setProtocolVersion(protocolVersion, cb)
+  return cb.promise
+}
+
 indy.createWallet = function createWallet (poolName, name, xtype, config, credentials, cb) {
   cb = wrapIndyCallback(cb)
   capi.createWallet(poolName, name, xtype, config, toJson(credentials), cb)
@@ -544,6 +550,18 @@ indy.closeWallet = function closeWallet (handle, cb) {
 indy.deleteWallet = function deleteWallet (name, credentials, cb) {
   cb = wrapIndyCallback(cb)
   capi.deleteWallet(name, toJson(credentials), cb)
+  return cb.promise
+}
+
+indy.exportWallet = function exportWallet (handle, exportConfigJson, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.exportWallet(handle, toJson(exportConfigJson), cb)
+  return cb.promise
+}
+
+indy.importWallet = function importWallet (poolName, name, xtype, config, credentials, importConfigJson, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.importWallet(poolName, name, xtype, config, toJson(credentials), toJson(importConfigJson), cb)
   return cb.promise
 }
 

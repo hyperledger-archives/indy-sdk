@@ -18,7 +18,7 @@
       "output": {
         ".html": {
           "relative_path": "api/index.html",
-          "hash": "Tgj8nZzwL/a0cYdIjuweUw=="
+          "hash": "GQqiW+H+tqDXrV/2MOY+Ww=="
         }
       },
       "is_incremental": false,
@@ -71,47 +71,11 @@
     },
     {
       "type": "ManagedReference",
-      "source_relative_path": "obj/api/Hyperledger.Indy.AgentApi.Agent.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/Hyperledger.Indy.AgentApi.Agent.html",
-          "hash": "vYcrzcCeVTzyMr2fYK0onA=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/Hyperledger.Indy.AgentApi.ParseMsgResult.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/Hyperledger.Indy.AgentApi.ParseMsgResult.html",
-          "hash": "aft4NxW/n++iYssVcfLzvg=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/Hyperledger.Indy.AgentApi.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/Hyperledger.Indy.AgentApi.html",
-          "hash": "eo+NNbZWLpcy8bVwAI+38A=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
       "source_relative_path": "obj/api/Hyperledger.Indy.AnonCredsApi.AnonCreds.yml",
       "output": {
         ".html": {
           "relative_path": "api/Hyperledger.Indy.AnonCredsApi.AnonCreds.html",
-          "hash": "Q+9ROo5kxCGAeEr3TEkmdg=="
+          "hash": "x14rJ9YwxOQGTmrtiJOSSA=="
         }
       },
       "is_incremental": false,
@@ -179,11 +143,47 @@
     },
     {
       "type": "ManagedReference",
-      "source_relative_path": "obj/api/Hyperledger.Indy.AnonCredsApi.IssuerCreateClaimResult.yml",
+      "source_relative_path": "obj/api/Hyperledger.Indy.AnonCredsApi.IssuerCreateAndStoreCredentialDefResult.yml",
       "output": {
         ".html": {
-          "relative_path": "api/Hyperledger.Indy.AnonCredsApi.IssuerCreateClaimResult.html",
-          "hash": "l8PN7r2ctZ+o/qI/LTJsLg=="
+          "relative_path": "api/Hyperledger.Indy.AnonCredsApi.IssuerCreateAndStoreCredentialDefResult.html",
+          "hash": "K9a8IsstCvD8Y7wSVYQLHg=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.AnonCredsApi.IssuerCreateAndStoreRevocRegResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.AnonCredsApi.IssuerCreateAndStoreRevocRegResult.html",
+          "hash": "1+Wwk9v2lCCO7GSu07giEw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.AnonCredsApi.IssuerCreateCredentialResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.AnonCredsApi.IssuerCreateCredentialResult.html",
+          "hash": "3CdBK+ywy1x1Mk6liVD7Kg=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.AnonCredsApi.IssuerCreateSchemaResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.AnonCredsApi.IssuerCreateSchemaResult.html",
+          "hash": "rQGuQq+JEi8vR4sws2LHKg=="
         }
       },
       "is_incremental": false,
@@ -196,6 +196,18 @@
         ".html": {
           "relative_path": "api/Hyperledger.Indy.AnonCredsApi.ProofRejectedException.html",
           "hash": "LZSVdFiuXKu0Q7D2jkmboA=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.AnonCredsApi.ProverCreateCredentialRequestResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.AnonCredsApi.ProverCreateCredentialRequestResult.html",
+          "hash": "2c2kwGAIZdlXrhaILaInYg=="
         }
       },
       "is_incremental": false,
@@ -219,7 +231,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Hyperledger.Indy.AnonCredsApi.html",
-          "hash": "5IYMYK8HtN36HWUrG6oYew=="
+          "hash": "eOrUZCyI73TDBGpRSnI+Aw=="
         }
       },
       "is_incremental": false,
@@ -227,11 +239,59 @@
     },
     {
       "type": "ManagedReference",
-      "source_relative_path": "obj/api/Hyperledger.Indy.CryptoApi.BoxResult.yml",
+      "source_relative_path": "obj/api/Hyperledger.Indy.BlobStorageApi.BlobStorage.yml",
       "output": {
         ".html": {
-          "relative_path": "api/Hyperledger.Indy.CryptoApi.BoxResult.html",
-          "hash": "mLICqEqzE+QeLdzqemq89A=="
+          "relative_path": "api/Hyperledger.Indy.BlobStorageApi.BlobStorage.html",
+          "hash": "cWCEBWCaFZ9SWcIklp3Ghw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.BlobStorageApi.BlobStorageReader.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.BlobStorageApi.BlobStorageReader.html",
+          "hash": "SRmEAb07S9gc5hE5sZ4ygg=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.BlobStorageApi.BlobStorageWriter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.BlobStorageApi.BlobStorageWriter.html",
+          "hash": "BQPYEtR3mAO2OMQK9Y5MdQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.BlobStorageApi.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.BlobStorageApi.html",
+          "hash": "h00gS8plQ/ZG3DuwvYcgGw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.CryptoApi.AuthDecryptResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.CryptoApi.AuthDecryptResult.html",
+          "hash": "rhB7iMWEOWpmRc3jGauzKw=="
         }
       },
       "is_incremental": false,
@@ -243,7 +303,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Hyperledger.Indy.CryptoApi.Crypto.html",
-          "hash": "plpK8i74zzzeojtlxiVPBw=="
+          "hash": "6HSSMYs0s9eQyBfWkxXxOA=="
         }
       },
       "is_incremental": false,
@@ -255,7 +315,79 @@
       "output": {
         ".html": {
           "relative_path": "api/Hyperledger.Indy.CryptoApi.html",
-          "hash": "6cKJrr37QZjFEzCxki6z2Q=="
+          "hash": "xmmJZF4/Ge6Bsb/zc02snA=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.DidApi.CreateAndStoreMyDidResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.DidApi.CreateAndStoreMyDidResult.html",
+          "hash": "8Dr6FOyJvfbxN+hu8suWLg=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.DidApi.Did.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.DidApi.Did.html",
+          "hash": "B277hnTixyJmPiSJiyTWXQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.DidApi.EncryptResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.DidApi.EncryptResult.html",
+          "hash": "sD3q5QGtnblZ1HlafyhGag=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.DidApi.EndpointForDidResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.DidApi.EndpointForDidResult.html",
+          "hash": "240+lBPbN7JCwO4mdMZPbw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.DidApi.UnknownCryptoException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.DidApi.UnknownCryptoException.html",
+          "hash": "QNqc0Be3ysdJEP48obVQQw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.DidApi.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.DidApi.html",
+          "hash": "9JQ2AY2lNihWRzMxQtRytA=="
         }
       },
       "is_incremental": false,
@@ -267,7 +399,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Hyperledger.Indy.ErrorCode.html",
-          "hash": "iifj8vE6p51eOtYu2wBm6g=="
+          "hash": "kqBTuQsa1rZUOV+nee3EPA=="
         }
       },
       "is_incremental": false,
@@ -291,7 +423,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Hyperledger.Indy.IndyException.html",
-          "hash": "5Z3fh1n1lCrHJ0BeW6Jumg=="
+          "hash": "aTWkRUWE2TE/Rf4qaXBLSA=="
         }
       },
       "is_incremental": false,
@@ -351,7 +483,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Hyperledger.Indy.LedgerApi.Ledger.html",
-          "hash": "H0I9OqIa6LWILzY6VclceA=="
+          "hash": "G+0pZCqI02hsWyqs6o2CUA=="
         }
       },
       "is_incremental": false,
@@ -383,11 +515,35 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.LedgerApi.ParseRegistryResponseResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.LedgerApi.ParseRegistryResponseResult.html",
+          "hash": "mFLYpxrWcVbsA52NUka3Mw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.LedgerApi.ParseResponseResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.LedgerApi.ParseResponseResult.html",
+          "hash": "bRxa7YVGyoX+1yoHv4DYJQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "obj/api/Hyperledger.Indy.LedgerApi.yml",
       "output": {
         ".html": {
           "relative_path": "api/Hyperledger.Indy.LedgerApi.html",
-          "hash": "xKLxtq7z5dU/SmUnXJyw9Q=="
+          "hash": "HYvgn2595uWiufabYr/ejg=="
         }
       },
       "is_incremental": false,
@@ -435,7 +591,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Hyperledger.Indy.PoolApi.Pool.html",
-          "hash": "K5688nZUZ3zbCwtkIOv4MQ=="
+          "hash": "8ix7tFZmJkXDjb5vzQMhDg=="
         }
       },
       "is_incremental": false,
@@ -484,78 +640,6 @@
         ".html": {
           "relative_path": "api/Hyperledger.Indy.PoolApi.html",
           "hash": "l9u6V8J2ki8mWlaXx9MM7Q=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/Hyperledger.Indy.SignusApi.CreateAndStoreMyDidResult.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/Hyperledger.Indy.SignusApi.CreateAndStoreMyDidResult.html",
-          "hash": "6kdc1gaSrsme38JfNMiSEg=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/Hyperledger.Indy.SignusApi.EncryptResult.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/Hyperledger.Indy.SignusApi.EncryptResult.html",
-          "hash": "rKlAf/mu/cTQGT+79caCww=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/Hyperledger.Indy.SignusApi.EndpointForDidResult.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/Hyperledger.Indy.SignusApi.EndpointForDidResult.html",
-          "hash": "2dkhBFn0UF33yRi1UYb/tw=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/Hyperledger.Indy.SignusApi.Signus.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/Hyperledger.Indy.SignusApi.Signus.html",
-          "hash": "mcvOb3sZqIzEUppH3dP97w=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/Hyperledger.Indy.SignusApi.UnknownCryptoException.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/Hyperledger.Indy.SignusApi.UnknownCryptoException.html",
-          "hash": "7xAf5IIo38XLasdf//fFhw=="
-        }
-      },
-      "is_incremental": false,
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/Hyperledger.Indy.SignusApi.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/Hyperledger.Indy.SignusApi.html",
-          "hash": "09jdB6TQcklvK7Xb/QrrRA=="
         }
       },
       "is_incremental": false,
@@ -615,7 +699,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Hyperledger.Indy.WalletApi.Wallet.html",
-          "hash": "6x6FvaSOHnkE3Vg8MTiAig=="
+          "hash": "8Ssr3xRB2eYos5kFeNIHHA=="
         }
       },
       "is_incremental": false,
@@ -711,7 +795,7 @@
       "output": {
         ".html": {
           "relative_path": "api/toc.html",
-          "hash": "QD5x4YP7qaa4BWtdcZaRhQ=="
+          "hash": "ZkhRREsDSwGGsHoNAfvgIw=="
         }
       },
       "is_incremental": false,
@@ -733,32 +817,31 @@
   "incremental_info": [
     {
       "status": {
-        "can_incremental": false,
-        "details": "Disable incremental build by force rebuild option.",
+        "can_incremental": true,
         "incrementalPhase": "build"
       },
       "processors": {
-        "RestApiDocumentProcessor": {
-          "can_incremental": false,
-          "details": "Processor RestApiDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
-          "incrementalPhase": "build"
-        },
         "ResourceDocumentProcessor": {
           "can_incremental": false,
           "details": "Processor ResourceDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
           "incrementalPhase": "build"
         },
-        "ConceptualDocumentProcessor": {
-          "can_incremental": false,
+        "ManagedReferenceDocumentProcessor": {
+          "can_incremental": true,
           "incrementalPhase": "build"
         },
-        "ManagedReferenceDocumentProcessor": {
-          "can_incremental": false,
+        "ConceptualDocumentProcessor": {
+          "can_incremental": true,
           "incrementalPhase": "build"
         },
         "TocDocumentProcessor": {
           "can_incremental": false,
           "details": "Processor TocDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "incrementalPhase": "build"
+        },
+        "RestApiDocumentProcessor": {
+          "can_incremental": false,
+          "details": "Processor RestApiDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
           "incrementalPhase": "build"
         }
       }

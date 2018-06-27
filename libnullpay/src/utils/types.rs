@@ -18,7 +18,9 @@ impl Clone for UTXOOutput {
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct UTXOInfo {
-    pub input: String,
+    pub txo: String,
+    #[serde(rename = "paymentAddress")]
+    pub payment_address: String,
     pub amount: i32,
     pub extra: Option<String>
 }

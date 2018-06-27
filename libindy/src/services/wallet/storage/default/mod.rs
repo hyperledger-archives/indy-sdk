@@ -1,4 +1,5 @@
 extern crate owning_ref;
+extern crate sodiumoxide;
 
 mod query;
 mod transaction;
@@ -18,6 +19,7 @@ use services::wallet::language;
 
 use super::{StorageIterator, WalletStorageType, WalletStorage, StorageEntity, EncryptedValue, Tag, TagName};
 use super::super::{RecordOptions, SearchOptions};
+
 
 const _SQLITE_DB: &str = "sqlite.db";
 const _PLAIN_TAGS_QUERY: &str = "SELECT name, value from tags_plaintext where item_id = ?";
@@ -243,7 +245,7 @@ impl WalletStorage for SQLiteStorage {
     ///
     /// # Arguments
     ///
-    ///  * `type_` - type_ of the item in storag
+    ///  * `type_` - type_ of the item in storage
     ///  * `name` - name of the item in storage
     ///  * `options` - JSon containing what needs to be fetched.
     ///  Example: {"retrieveValue": true, "retrieveTags": true}
@@ -473,7 +475,7 @@ impl WalletStorage for SQLiteStorage {
     ///
     /// # Arguments
     ///
-    ///  * `type_` - type of the item in storag
+    ///  * `type_` - type of the item in storage
     ///  * `name` - name of the item in storage
     ///
     /// # Returns
@@ -685,7 +687,7 @@ impl WalletStorageType for SQLiteStorageType {
 
     ///
     /// Establishes a connection to the SQLite DB with the provided name located in the path
-    /// specified in the config. In case of a succesfull onection returns a Storage object
+    /// specified in the config. In case of a successful onection returns a Storage object
     /// embedding the connection and the encryption keys that will be used for encryption and
     /// decryption operations.
     ///
@@ -731,7 +733,6 @@ mod tests {
     use super::super::Tag;
     use std::collections::HashMap;
     use std::env;
-
 
     fn _create_and_open_test_storage() -> Box<WalletStorage> {
         _prepare_path();
@@ -839,7 +840,7 @@ mod tests {
      * SQLiteWalletStorageType Delete tests
      */
 
-    /** postitive tests */
+    /** positive tests */
     #[test]
     fn sqlite_storage_type_create_check_metadata() {
         _prepare_path();
@@ -1396,7 +1397,7 @@ mod tests {
     }
 
     #[test]
-    fn sqlite_storage_update_tags_succedes_for_nonexistant_tag_and_works_atomically() {
+    fn sqlite_storage_update_tags_succedes_for_nonexistent_tag_and_works_atomically() {
         let storage = _create_and_open_test_storage();
         let type_ = vec![1,2,3];
         let name = vec![4,5,6];

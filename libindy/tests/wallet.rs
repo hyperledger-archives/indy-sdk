@@ -19,6 +19,7 @@ mod utils;
 use utils::inmem_wallet::InmemWallet;
 use utils::wallet::WalletUtils;
 use utils::test::TestUtils;
+use utils::did::DidUtils;
 use utils::constants::*;
 
 use indy::api::ErrorCode;
@@ -124,13 +125,13 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore]
         fn indy_delete_wallet_works_for_opened() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            WalletUtils::create_wallet(POOL, WALLET, None, None, None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(WALLET, None, None).unwrap();
             let res = WalletUtils::delete_wallet(WALLET, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -229,6 +230,65 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
             InmemWallet::cleanup();
+        }
+    }
+
+    mod export_wallet {
+        use super::*;
+
+        #[test]
+        fn indy_export_wallet_works() {
+            TestUtils::cleanup_storage();
+
+            let path = WalletUtils::export_wallet_path();
+            let config_json = WalletUtils::prepare_export_wallet_config(&path);
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            DidUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            WalletUtils::export_wallet(wallet_handle, &config_json).unwrap();
+
+            assert!(path.exists());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod import_wallet {
+        use super::*;
+
+        #[test]
+        fn indy_import_wallet_works() {
+            TestUtils::cleanup_storage();
+
+            let path = WalletUtils::export_wallet_path();
+            let config_json = WalletUtils::prepare_export_wallet_config(&path);
+
+            WalletUtils::create_wallet(POOL, WALLET, None, None, None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(WALLET, None, None).unwrap();
+
+            let (did, _) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
+            DidUtils::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
+
+            let did_with_meta = DidUtils::get_my_did_with_metadata(wallet_handle, &did).unwrap();
+
+            WalletUtils::export_wallet(wallet_handle, &config_json).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            WalletUtils::delete_wallet(WALLET, None).unwrap();
+
+            WalletUtils::import_wallet(POOL, WALLET, None, None, None, &config_json).unwrap();
+
+            let wallet_handle = WalletUtils::open_wallet(WALLET, None, None).unwrap();
+
+            let did_with_meta_after_import = DidUtils::get_my_did_with_metadata(wallet_handle, &did).unwrap();
+
+            assert_eq!(did_with_meta, did_with_meta_after_import);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
         }
     }
 }
@@ -460,4 +520,140 @@ mod medium_cases {
             TestUtils::cleanup_storage();
         }
     }
+
+    mod export_wallet {
+        use super::*;
+        use std::fs;
+
+        #[test]
+        fn indy_export_wallet_returns_error_if_path_exists() {
+            TestUtils::cleanup_storage();
+
+            let path = WalletUtils::export_wallet_path();
+            let config_json = WalletUtils::prepare_export_wallet_config(&path);
+
+            fs::DirBuilder::new()
+                .recursive(true)
+                .create(path).unwrap();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
+
+            let res = WalletUtils::export_wallet(wallet_handle, &config_json);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_export_wallet_returns_error_if_invalid_config() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let res = WalletUtils::export_wallet(wallet_handle, "{}");
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_export_wallet_returns_error_if_invalid_handle() {
+            TestUtils::cleanup_storage();
+
+            let path = WalletUtils::export_wallet_path();
+            let config_json = WalletUtils::prepare_export_wallet_config(&path);
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
+
+            let res = WalletUtils::export_wallet(wallet_handle + 1, &config_json);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod import_wallet {
+        use super::*;
+
+        #[test]
+        fn indy_import_wallet_returns_error_if_path_doesnt_exist() {
+            TestUtils::cleanup_storage();
+
+            let path = WalletUtils::export_wallet_path();
+            let config_json = WalletUtils::prepare_export_wallet_config(&path);
+
+            let wallet_name = "indy_import_wallet_returns_error_if_path_doesnt_exist";
+            let res = WalletUtils::import_wallet(POOL, wallet_name, None, None, None, &config_json);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
+
+            let res = WalletUtils::open_wallet(wallet_name, None, None);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_import_wallet_returns_error_if_invalid_config() {
+            TestUtils::cleanup_storage();
+
+            let res = WalletUtils::import_wallet(POOL, WALLET, None, None, None, "{}");
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_import_wallet_works_for_other_key() {
+            TestUtils::cleanup_storage();
+
+            let path = WalletUtils::export_wallet_path();
+            let config_json = WalletUtils::prepare_export_wallet_config(&path);
+
+            WalletUtils::create_wallet(POOL, WALLET, None, None, None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(WALLET, None, None).unwrap();
+
+            DidUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            WalletUtils::export_wallet(wallet_handle, &config_json).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            WalletUtils::delete_wallet(WALLET, None).unwrap();
+
+            let json = json!({
+                "path": path.to_str().unwrap(),
+                "key": "other_key",
+            });
+            let config_json = serde_json::to_string(&json).unwrap();
+
+            let res = WalletUtils::import_wallet(POOL, WALLET, None, None, None, &config_json);
+            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_import_wallet_works_for_duplicate_name() {
+            TestUtils::cleanup_storage();
+
+            let path = WalletUtils::export_wallet_path();
+            let config_json = WalletUtils::prepare_export_wallet_config(&path);
+
+            WalletUtils::create_wallet(POOL, WALLET, None, None, None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(WALLET, None, None).unwrap();
+
+            DidUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            WalletUtils::export_wallet(wallet_handle, &config_json).unwrap();
+
+            let res = WalletUtils::import_wallet(POOL, WALLET, None, None, None, &config_json);
+            assert_eq!(ErrorCode::WalletAlreadyExistsError, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
+        }
+    }
 }
+

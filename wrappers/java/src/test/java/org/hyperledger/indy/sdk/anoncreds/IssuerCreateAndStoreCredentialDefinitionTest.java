@@ -27,7 +27,7 @@ public class IssuerCreateAndStoreCredentialDefinitionTest extends AnoncredsInteg
 				"           \"attr_names\":[\"name\"]" +
 				"        }";
 
-		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, schema, "InvalidSchema", null, defaultCredentialDefitionConfig).get();
+		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, schema, "InvalidSchema", null, defaultCredentialDefinitionConfig).get();
 	}
 
 	@Test
@@ -43,7 +43,7 @@ public class IssuerCreateAndStoreCredentialDefinitionTest extends AnoncredsInteg
 				"           \"attr_names\":[]\n" +
 				"       }";
 
-		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, schema, "EmptyKeys", null, defaultCredentialDefitionConfig).get();
+		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, schema, "EmptyKeys", null, defaultCredentialDefinitionConfig).get();
 	}
 
 	@Test
@@ -52,6 +52,6 @@ public class IssuerCreateAndStoreCredentialDefinitionTest extends AnoncredsInteg
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(CredDefAlreadyExistsException.class));
 
-		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, "Duplicate", null, defaultCredentialDefitionConfig).get();
+		Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, tag, null, defaultCredentialDefinitionConfig).get();
 	}
 }

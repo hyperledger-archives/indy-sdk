@@ -13,19 +13,18 @@
 
 @interface PoolUtils ()
 
-@property (assign) int requestIdOffset;
+@property(assign) int requestIdOffset;
 
 @end
 
 
 @implementation PoolUtils
 
-+ (PoolUtils *)sharedInstance
-{
++ (PoolUtils *)sharedInstance {
     static PoolUtils *instance = nil;
     static dispatch_once_t dispatch_once_block;
 
-    dispatch_once(&dispatch_once_block, ^ {
+    dispatch_once(&dispatch_once_block, ^{
         instance = [PoolUtils new];
         instance.requestIdOffset = 1;
     });
@@ -34,8 +33,7 @@
 }
 
 
-- (NSNumber *) getRequestId
-{
+- (NSNumber *)getRequestId {
     NSTimeInterval timeInSeconds = [[NSDate date] timeIntervalSince1970];
     return @(timeInSeconds + self.requestIdOffset++);
 }
@@ -43,12 +41,10 @@
 // MARK: - TXN File
 
 - (NSString *)createGenesisTxnFileForTestPool:(NSString *)poolName
-                             nodesCount:(NSNumber *)nodesCount
-                            txnFilePath:(NSString *)txnFilePath
-{
+                                   nodesCount:(NSNumber *)nodesCount
+                                  txnFilePath:(NSString *)txnFilePath {
     int nodes = (nodesCount != nil) ? [nodesCount intValue] : 4;
-    if (nodes <= 0 || nodes > 4)
-    {
+    if (nodes <= 0 || nodes > 4) {
         return nil;
     }
 
@@ -74,28 +70,23 @@
 
 - (NSString *)createGenesisTxnFileWithPoolName:(NSString *)poolName
                                    txnFileData:(NSString *)txnFileData
-                                   txnFilePath:(NSString *)txnFilePath
-{
+                                   txnFilePath:(NSString *)txnFilePath {
     NSString *filePath;
-    if (!txnFilePath)
-    {
+    if (!txnFilePath) {
         filePath = [NSString stringWithFormat:@"%@%@.txn", [TestUtils getUserTmpDir], poolName];
-    }
-    else
-    {
+    } else {
         filePath = txnFilePath;
     }
 
 
-    BOOL isSuccess =  [[NSFileManager defaultManager] createFileAtPath:filePath
-                                                              contents:[NSData dataWithBytes:[txnFileData UTF8String] length:[txnFileData length]]
-                                                            attributes:nil];
-    
-    if (isSuccess)
-    {
+    BOOL isSuccess = [[NSFileManager defaultManager] createFileAtPath:filePath
+                                                             contents:[NSData dataWithBytes:[txnFileData UTF8String] length:[txnFileData length]]
+                                                           attributes:nil];
+
+    if (isSuccess) {
         return filePath;
     }
-    
+
     return nil;
 }
 
@@ -103,25 +94,20 @@
 // MARK: - Config
 
 // Note that to be config valid it assumes genesis txt file is already exists
-- (NSString *)poolConfigJsonForTxnFilePath:(NSString *)txnFilePath
-{
+- (NSString *)poolConfigJsonForTxnFilePath:(NSString *)txnFilePath {
     NSString *config = [NSString stringWithFormat:@"{\"genesis_txn\":\"%@\"}", txnFilePath];
-    
+
     return config;
 }
 
 - (NSString *)createDefaultPoolConfig:(NSString *)poolName
-                          txnFileData:(NSString *)txnFileData
-
-{
+                          txnFileData:(NSString *)txnFileData {
     NSString *filePath = [NSString stringWithFormat:@"%@%@.txn", [TestUtils getUserTmpDir], poolName];
     return [NSString stringWithFormat:@"{\"genesis_txn\":\"%@\"}", filePath];
 }
 
 - (NSError *)createPoolLedgerConfigWithPoolName:(NSString *)poolName
-                                     poolConfig:(NSString *)config
-
-{
+                                     poolConfig:(NSString *)config {
     NSString *configStr = (config) ? config : @"";
 
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
@@ -129,59 +115,57 @@
 
     [IndyPool createPoolLedgerConfigWithPoolName:poolName
                                       poolConfig:configStr
-                                      completion:^ (NSError *error)
-     {
-         err = error;
-         [completionExpectation fulfill];
-     }];
+                                      completion:^(NSError *error) {
+                                          err = error;
+                                          [completionExpectation fulfill];
+                                      }];
 
-    [self waitForExpectations:@[ completionExpectation ] timeout:[TestUtils shortTimeout]];
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils shortTimeout]];
 
     return err;
 }
 
 // MARK: - Pool ledger
 
-- (NSError *)openPoolLedger:(NSString*)poolName
-                     config:(NSString*)config
-                poolHandler:(IndyHandle*)handle
-{
+- (NSError *)openPoolLedger:(NSString *)poolName
+                     config:(NSString *)config
+                poolHandler:(IndyHandle *)handle {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block IndyHandle poolHandle = 0;
-    
+
     NSString *configStr = (config) ? config : @"";
-    
+
     [IndyPool openPoolLedgerWithName:poolName
                           poolConfig:configStr
-                          completion:^(NSError *error, IndyHandle blockHandle)
-     {
-         err = error;
-         poolHandle = blockHandle;
-         [completionExpectation fulfill];
-     }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
-    
-    if (handle) { *handle = poolHandle; }
+                          completion:^(NSError *error, IndyHandle blockHandle) {
+                              err = error;
+                              poolHandle = blockHandle;
+                              [completionExpectation fulfill];
+                          }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (handle) {*handle = poolHandle;}
     return err;
 }
 
 
-- (NSError*)createAndOpenPoolLedgerWithPoolName: (NSString *) poolName
-                                     poolHandle: (IndyHandle*) handle
-{
+- (NSError *)createAndOpenPoolLedgerWithPoolName:(NSString *)poolName
+                                      poolHandle:(IndyHandle *)handle {
     NSError *ret;
-    
+
+    [self setProtocolVersion:[TestUtils protocolVersion]];
+
     NSString *txnFilePath = [self createGenesisTxnFileForTestPool:poolName
                                                        nodesCount:nil
                                                       txnFilePath:nil];
-    
+
     NSString *poolConfig = [self poolConfigJsonForTxnFilePath:txnFilePath];
-    
+
     ret = [self createPoolLedgerConfigWithPoolName:poolName
                                         poolConfig:poolConfig];
-    
+
     ret = [self openPoolLedger:poolName
                         config:nil
                    poolHandler:handle];
@@ -190,79 +174,88 @@
 
 // MARK: - Actions
 
-- (NSError *)refreshPoolHandle:(IndyHandle)poolHandle
-{
+- (NSError *)refreshPoolHandle:(IndyHandle)poolHandle {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
-    
+
     [IndyPool refreshPoolLedgerWithHandle:poolHandle
-                               completion:^(NSError* error)
-     {
-         err = error;
-         [completionExpectation fulfill];
-     }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils shortTimeout]];
-    
+                               completion:^(NSError *error) {
+                                   err = error;
+                                   [completionExpectation fulfill];
+                               }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils shortTimeout]];
+
     return err;
 }
 
-- (NSError *)closeHandle:(IndyHandle)poolHandle
-{
+- (NSError *)closeHandle:(IndyHandle)poolHandle {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
-    
+
     [IndyPool closePoolLedgerWithHandle:poolHandle
-                             completion:^(NSError* error)
-     {
-         err = error;
-         [completionExpectation fulfill];
-     }];
+                             completion:^(NSError *error) {
+                                 err = error;
+                                 [completionExpectation fulfill];
+                             }];
 
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
     return err;
 }
 
-- (NSError *)deletePoolWithName:(NSString *)poolName
-{
+- (NSError *)deletePoolWithName:(NSString *)poolName {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
-    
-    
+
+
     [IndyPool deletePoolLedgerConfigWithName:poolName
-                                  completion:^(NSError* error)
-     {
-         err = error;
-         [completionExpectation fulfill];
-     }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
+                                  completion:^(NSError *error) {
+                                      err = error;
+                                      [completionExpectation fulfill];
+                                  }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
     return err;
-    
+
+}
+
+- (NSError *)setProtocolVersion:(NSNumber *)protocolVersion {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+
+    [IndyPool setProtocolVersion:protocolVersion
+                      completion:^(NSError *error) {
+                          err = error;
+                          [completionExpectation fulfill];
+                      }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
+    return err;
+
 }
 
 - (NSError *)sendRequestWithPoolHandle:(IndyHandle)poolHandle
                                request:(NSString *)request
-                              response:(NSString **)response
-{
+                              response:(NSString **)response {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
-    __block NSString* outResponse = nil;
-    
+    __block NSString *outResponse = nil;
+
     [IndyLedger submitRequest:request
                    poolHandle:poolHandle
-                   completion:^(NSError* error, NSString* result)
-     {
-         err = error;
-         outResponse = result;
-         [completionExpectation fulfill];
-     }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
-    
-    if (response){ *response = outResponse; }
+                   completion:^(NSError *error, NSString *result) {
+                       err = error;
+                       outResponse = result;
+                       [completionExpectation fulfill];
+                   }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (response) {*response = outResponse;}
     return err;
 }
 

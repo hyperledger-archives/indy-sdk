@@ -7,8 +7,9 @@ import json
 import logging
 
 from indy import blob_storage
+from indy import pool
 
-from src.utils import run_coroutine, path_home
+from src.utils import run_coroutine, path_home, PROTOCOL_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,9 @@ async def demo():
     prover_wallet_name = 'prover_wallet'
     issuer_did = 'NcYxiDXkpYi6ov5FcYDi1e'
     prover_did = 'VsKV7grR1BUE29mG2Fm2kX'
+
+    # Set protocol version 2 to work with Indy Node 1.4
+    await pool.set_protocol_version(PROTOCOL_VERSION)
 
     # 1. Create Issuer Wallet and Get Wallet Handle
     issuer_wallet_credentials = json.dumps({"key": "issuer_wallet_key"})
