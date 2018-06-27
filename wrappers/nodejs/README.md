@@ -129,7 +129,7 @@ It is IMPORTANT for current version GET Schema from Ledger with correct seq\_no 
 * `tag`: String - allows to distinct between credential definitions for the same issuer and schema
 * `signatureType`: String - credential definition type \(optional, 'CL' by default\) that defines credentials signature and revocation math. Supported types are:
   *  'CL': Camenisch-Lysyanskaya credential signature type
-* `config`: Json - type-specific configuration of credential definition as json:
+* `config`: Json - \(optional\) type-specific configuration of credential definition as json:
   *  'CL':
     *  support\_revocation: whether to request non-revocation credential \(optional, default false\)
 * __->__ [ `credDefId`: String, `credDef`: Json ] - cred\_def\_id: identifier of created credential definition
@@ -139,7 +139,7 @@ Errors: `Common*`, `Wallet*`, `Anoncreds*`
 
 #### issuerCreateAndStoreRevocReg \( wh, issuerDid, revocDefType, tag, credDefId, config, tailsWriterHandle \) -&gt; \[ revocRegId, revocRegDef, revocRegEntry \]
 
-Create a new revocation registry for the given credential definition as tuple of entities:
+Create a new revocation registry for the given credential definition as tuple of entities
 - Revocation registry definition that encapsulates credentials definition reference, revocation type specific configuration and
 secrets used for credentials revocation
 - Revocation registry state that stores the information about revoked entities in a non-disclosing way. The state can be
@@ -1036,6 +1036,20 @@ sign key \(see wallet\_sign\).
 
 Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
+#### multiSignRequest \( wh, submitterDid, request \) -&gt; signedRequest
+
+Multi signs request message.
+
+Adds submitter information to passed request json, signs it with submitter
+sign key \(see wallet\_sign\).
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `submitterDid`: String - Id of Identity stored in secured Wallet.
+* `request`: Json - Request data json.
+* __->__ `signedRequest`: Json - Signed request json.
+
+Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
+
 #### buildGetDdoRequest \( submitterDid, targetDid \) -&gt; requestResult
 
 Builds a request to get a DDO.
@@ -1227,16 +1241,25 @@ Builds a NODE request. Request to add a new node to the pool, or updates existin
 
 Errors: `Common*`
 
-#### buildGetTxnRequest \( submitterDid, data \) -&gt; request
+#### buildGetValidatorInfoRequest \( submitterDid \) -&gt; request
+
+Builds a GET\_VALIDATOR\_INFO request.
+
+* `submitterDid`: String - Id of Identity stored in secured Wallet.
+* __->__ `request`: Json
+
+Errors: `Common*`
+
+#### buildGetTxnRequest \( submitterDid, ledgerType, data \) -&gt; request
 
 Builds a GET\_TXN request. Request to get any transaction by its seq\_no.
 
 * `submitterDid`: String - DID of the request submitter.
-* `ledgerType`: String - Type of the ledger the requested transaction belongs to:
-DOMAIN - used default
-POOL
+* `ledgerType`: String - \(Optional\) type of the ledger the requested transaction belongs to:
+DOMAIN - used default,
+POOL,
 CONFIG
-* `data`: Requested transaction sequence number as it's stored on Ledger.
+* `data`: Number
 * __->__ `request`: Json
 
 Errors: `Common*`
@@ -1440,6 +1463,203 @@ Parse a GET\_REVOC\_REG\_DELTA response to get Revocation Registry Delta in the 
 
 Errors: `Common*`
 
+### non_secrets
+
+#### addWalletRecord \( wh, type, id, value, tags \) -&gt; void
+
+Create a new non-secret record in the wallet
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `type`: String - allows to separate different record types collections
+* `id`: String - the id of record
+* `value`: String - the value of record
+* `tags`: Json - the record tags used for search and storing meta information as json:
+```
+  {
+    "tagName1": <str>, // string tag (will be stored encrypted)
+    "tagName2": <str>, // string tag (will be stored encrypted)
+    "~tagName3": <str>, // string tag (will be stored un-encrypted)
+    "~tagName4": <str>, // string tag (will be stored un-encrypted)
+  }
+  Note that null means no tags
+  If tag name starts with "~" the tag will be stored un-encrypted that will allow
+  usage of this tag in complex search queries (comparison, predicates)
+  Encrypted tags can be searched only for exact matching
+````
+* __->__ void
+
+
+#### updateWalletRecordValue \( wh, type, id, value \) -&gt; void
+
+Update a non-secret wallet record value
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `type`: String - allows to separate different record types collections
+* `id`: String - the id of record
+* `value`: String - the new value of record
+* __->__ void
+
+
+#### updateWalletRecordTags \( wh, type, id, tags \) -&gt; void
+
+Update a non-secret wallet record tags
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `type`: String - allows to separate different record types collections
+* `id`: String - the id of record
+* `tags`: Json - the record tags used for search and storing meta information as json:
+```
+  {
+    "tagName1": <str>, // string tag (will be stored encrypted)
+    "tagName2": <str>, // string tag (will be stored encrypted)
+    "~tagName3": <str>, // string tag (will be stored un-encrypted)
+    "~tagName4": <str>, // string tag (will be stored un-encrypted)
+  }
+  If tag name starts with "~" the tag will be stored un-encrypted that will allow
+  usage of this tag in complex search queries (comparison, predicates)
+  Encrypted tags can be searched only for exact matching
+````
+* __->__ void
+
+
+#### addWalletRecordTags \( wh, type, id, tags \) -&gt; void
+
+Add new tags to the wallet record
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `type`: String - allows to separate different record types collections
+* `id`: String - the id of record
+* `tags`: Json - the record tags used for search and storing meta information as json:
+```
+  {
+    "tagName1": <str>, // string tag (will be stored encrypted)
+    "tagName2": <str>, // string tag (will be stored encrypted)
+    "~tagName3": <str>, // string tag (will be stored un-encrypted)
+    "~tagName4": <str>, // string tag (will be stored un-encrypted)
+  }
+  If tag name starts with "~" the tag will be stored un-encrypted that will allow
+  usage of this tag in complex search queries (comparison, predicates)
+  Encrypted tags can be searched only for exact matching
+  Note if some from provided tags already assigned to the record than
+    corresponding tags values will be replaced
+````
+* __->__ void
+
+
+#### deleteWalletRecordTags \( wh, type, id, tagNames \) -&gt; void
+
+Delete tags from the wallet record
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `type`: String - allows to separate different record types collections
+* `id`: String - the id of record
+* `tagNames`: Json - the list of tag names to remove from the record as json array:
+\["tagName1", "tagName2", ...\]
+* __->__ void
+
+
+#### deleteWalletRecord \( wh, type, id \) -&gt; void
+
+Delete an existing wallet record in the wallet
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `type`: String - record type
+* `id`: String - the id of record
+* __->__ void
+
+
+#### getWalletRecord \( wh, type, id, options \) -&gt; record
+
+Get an wallet record by id
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `type`: String - allows to separate different record types collections
+* `id`: String - the id of record
+* `options`: Json - \/\/TODO: FIXME: Think about replacing by bitmask
+```
+ {
+   retrieveType: (optional, false by default) Retrieve record type,
+   retrieveValue: (optional, true by default) Retrieve record value,
+   retrieveTags: (optional, false by default) Retrieve record tags
+ }
+````
+* __->__ `record`: Json - wallet record json:
+```
+{
+  id: "Some id",
+  type: "Some type", // present only if retrieveType set to true
+  value: "Some value", // present only if retrieveValue set to true
+  tags: <tags json>, // present only if retrieveTags set to true
+}
+````
+
+
+#### openWalletSearch \( wh, type, query, options \) -&gt; searchHandle
+
+Search for wallet records.
+
+Note instead of immediately returning of fetched records
+this call returns wallet\_search\_handle that can be used later
+to fetch records by small batches \(with indy\_fetch\_wallet\_search\_next\_records\).
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `type`: String - allows to separate different record types collections
+* `query`: Json - MongoDB style query to wallet record tags:
+```
+ {
+   "tagName": "tagValue",
+   $or:
+{
+     "tagName2": { $regex: 'pattern' },
+     "tagName3": { $gte: '123' },
+   },
+ }
+````
+* `options`: Json - \/\/TODO: FIXME: Think about replacing by bitmask
+```
+ {
+   retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
+   retrieveTotalCount: (optional, false by default) Calculate total count,
+   retrieveType: (optional, false by default) Retrieve record type,
+   retrieveValue: (optional, true by default) Retrieve record value,
+   retrieveTags: (optional, false by default) Retrieve record tags,
+ }
+````
+* __->__ `searchHandle`: Handle (Number) - search\_handle: Wallet search handle that can be used later
+to fetch records by small batches \(with indy\_fetch\_wallet\_search\_next\_records\)
+
+
+#### fetchWalletSearchNextRecords \( wh, walletSearchHandle, count \) -&gt; records
+
+Fetch next records for wallet search.
+
+Not if there are no records this call returns WalletNoRecords error.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `walletSearchHandle`: Handle (Number) - wallet search handle \(created by indy\_open\_wallet\_search\)
+* `count`: Number - Count of records to fetch
+* __->__ `records`: Json - wallet records json:
+```
+{
+  totalCount: <str>, // present only if retrieveTotalCount set to true
+  records: [{ // present only if retrieveRecords set to true
+      id: "Some id",
+      type: "Some type", // present only if retrieveType set to true
+      value: "Some value", // present only if retrieveValue set to true
+      tags: <tags json>, // present only if retrieveTags set to true
+  }],
+}
+````
+
+
+#### closeWalletSearch \( walletSearchHandle \) -&gt; void
+
+Close wallet search \(make search handle invalid\)
+
+* `walletSearchHandle`: Handle (Number) - wallet search handle
+* __->__ void
+
+
 ### pairwise
 
 #### isPairwiseExists \( wh, theirDid \) -&gt; exists
@@ -1494,6 +1714,265 @@ Save some data in the Wallet for pairwise associated with Did.
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
+
+### payment
+
+#### createPaymentAddress \( wh, paymentMethod, config \) -&gt; paymentAddress
+
+Create the payment address for specified payment method
+
+
+This method generates private part of payment address
+and stores it in a secure place. Ideally it should be
+secret in libindy wallet \(see crypto module\).
+
+Note that payment method should be able to resolve this
+secret by fully resolvable payment address format.
+
+Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+in the future releases.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `paymentMethod`: String - Payment method to use \(for example, 'sov'\)
+* `config`: String - payment address config as json:
+```
+  {
+    seed: <str>, // allows deterministic creation of payment address
+  }
+````
+* __->__ `paymentAddress`: String - payment\_address - public identifier of payment address in fully resolvable payment address format
+
+
+#### listPaymentAddresses \( wh \) -&gt; paymentAddresses
+
+Lists all payment addresses that are stored in the wallet
+
+Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+in the future releases.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* __->__ `paymentAddresses`: Json - payment\_addresses\_json - json array of string with json addresses
+
+
+#### addRequestFees \( wh, submitterDid, req, inputs, outputs \) -&gt; \[ reqWithFees, paymentMethod \]
+
+Modifies Indy request by adding information how to pay fees for this transaction
+according to selected payment method.
+
+Payment selection is performed by looking to o
+
+This method consumes set of UTXO inputs and outputs. The difference between inputs balance
+and outputs balance is the fee for this transaction.
+
+Not that this method also produces correct fee signatures.
+
+Format of inputs is specific for payment method. Usually it should reference payment transaction
+with at least one output that corresponds to payment address that user owns.
+
+Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+in the future releases.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `submitterDid`: String - DID of request sender
+* `req`: Json - initial transaction request as json
+* `inputs`: Json - The list of UTXO inputs as json array:
+\["input1", ...\]
+Notes:
+- each input should reference paymentAddress
+- this param will be used to determine payment\_method
+* `outputs`: Json - The list of UTXO outputs as json array:
+```
+  [{
+    paymentAddress: <str>, // payment address used as output
+    amount: <int>, // amount of tokens to transfer to this payment address
+    extra: <str>, // optional data
+  }]
+````
+* __->__ [ `reqWithFees`: Json, `paymentMethod`: String ] - req\_with\_fees\_json - modified Indy request with added fees info
+payment\_method
+
+
+#### parseResponseWithFees \( paymentMethod, resp \) -&gt; utxo
+
+Parses response for Indy request with fees.
+
+Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+in the future releases.
+
+* `paymentMethod`: String
+* `resp`: Json - response for Indy request with fees
+Note: this param will be used to determine payment\_method
+* __->__ `utxo`: Json - utxo\_json - parsed \(payment method and node version agnostic\) utxo info as json:
+```
+  [{
+     txo: <str>, // UTXO input
+     paymentAddress: <str>, //payment address for this UTXO
+     amount: <int>, // amount of tokens in this input
+     extra: <str>, // optional data from payment transaction
+  }]
+````
+
+
+#### buildGetUtxoRequest \( wh, submitterDid, paymentAddress \) -&gt; \[ getUtxoTxn, paymentMethod \]
+
+Builds Indy request for getting UTXO list for payment address
+according to this payment method.
+
+Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+in the future releases.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `submitterDid`: String - DID of request sender
+* `paymentAddress`: String - target payment address
+* __->__ [ `getUtxoTxn`: Json, `paymentMethod`: String ] - get\_utxo\_txn\_json - Indy request for getting UTXO list for payment address
+payment\_method
+
+
+#### parseGetUtxoResponse \( paymentMethod, resp \) -&gt; utxo
+
+Parses response for Indy request for getting UTXO list.
+
+Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+in the future releases.
+
+* `paymentMethod`: String
+* `resp`: Json - response for Indy request for getting UTXO list
+Note: this param will be used to determine payment\_method
+* __->__ `utxo`: Json - utxo\_json - parsed \(payment method and node version agnostic\) utxo info as json:
+```
+  [{
+     txo: <str>, // UTXO input
+     paymentAddress: <str>, //payment address for this UTXO
+     amount: <int>, // amount of tokens in this input
+     extra: <str>, // optional data from payment transaction
+  }]
+````
+
+
+#### buildPaymentReq \( wh, submitterDid, inputs, outputs \) -&gt; \[ paymentReq, paymentMethod \]
+
+Builds Indy request for doing tokens payment
+according to this payment method.
+
+This method consumes set of UTXO inputs and outputs.
+
+Format of inputs is specific for payment method. Usually it should reference payment transaction
+with at least one output that corresponds to payment address that user owns.
+
+Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+in the future releases.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `submitterDid`: String - DID of request sender
+* `inputs`: Json - The list of UTXO inputs as json array:
+\["input1", ...\]
+Note that each input should reference paymentAddress
+* `outputs`: Json - The list of UTXO outputs as json array:
+```
+  [{
+    paymentAddress: <str>, // payment address used as output
+    amount: <int>, // amount of tokens to transfer to this payment address
+    extra: <str>, // optional data
+  }]
+````
+* __->__ [ `paymentReq`: Json, `paymentMethod`: String ] - payment\_req\_json - Indy request for doing tokens payment
+payment\_method
+
+
+#### parsePaymentResponse \( paymentMethod, resp \) -&gt; utxo
+
+Parses response for Indy request for payment txn.
+
+Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+in the future releases.
+
+* `paymentMethod`: String
+* `resp`: Json - response for Indy request for payment txn
+Note: this param will be used to determine payment\_method
+* __->__ `utxo`: Json - utxo\_json - parsed \(payment method and node version agnostic\) utxo info as json:
+```
+  [{
+     txo: <str>, // UTXO input
+     paymentAddress: <str>, //payment address for this UTXO
+     amount: <int>, // amount of tokens in this input
+     extra: <str>, // optional data from payment transaction
+  }]
+````
+
+
+#### buildMintReq \( wh, submitterDid, outputs \) -&gt; \[ mintReq, paymentMethod \]
+
+Builds Indy request for doing tokens minting
+according to this payment method.
+
+Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+in the future releases.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `submitterDid`: String - DID of request sender
+* `outputs`: Json - The list of UTXO outputs as json array:
+```
+  [{
+    paymentAddress: <str>, // payment address used as output
+    amount: <int>, // amount of tokens to transfer to this payment address
+    extra: <str>, // optional data
+  }]
+````
+* __->__ [ `mintReq`: Json, `paymentMethod`: String ] - mint\_req\_json - Indy request for doing tokens minting
+payment\_method
+
+
+#### buildSetTxnFeesReq \( wh, submitterDid, paymentMethod, fees \) -&gt; setTxnFees
+
+Builds Indy request for setting fees for transactions in the ledger
+
+Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+in the future releases.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `submitterDid`: String - DID of request sender
+payment\_method
+fees\_json {
+txnType1: amount1,
+txnType2: amount2,
+.................
+txnTypeN: amountN,
+}
+* `paymentMethod`: String
+* `fees`: Json
+* __->__ `setTxnFees`: Json - set\_txn\_fees\_json - Indy request for setting fees for transactions in the ledger
+
+
+#### buildGetTxnFeesReq \( wh, submitterDid, paymentMethod \) -&gt; getTxnFees
+
+Builds Indy get request for getting fees for transactions in the ledger
+
+Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+in the future releases.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `submitterDid`: String - DID of request sender
+payment\_method
+* `paymentMethod`: String
+* __->__ `getTxnFees`: Json - get\_txn\_fees\_json - Indy request for getting fees for transactions in the ledger
+
+
+#### parseGetTxnFeesResponse \( paymentMethod, resp \) -&gt; fees
+
+Parses response for Indy request for getting fees
+
+Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+in the future releases.
+
+* `paymentMethod`: String
+* `resp`: Json - response for Indy request for getting fees
+* __->__ `fees`: Json - fees\_json {
+txnType1: amount1,
+txnType2: amount2,
+.................
+txnTypeN: amountN,
+}
+
 
 ### pool
 
@@ -1577,16 +2056,19 @@ Errors: `Common*`, `Ledger*`
 
 #### setProtocolVersion \( protocolVersion \) -&gt; void
 
-Set PROTOCOL_VERSION to specific version.
-There is a global property PROTOCOL_VERSION that used in every request to the pool and specified version of Indy Node which Libindy works.
-By default PROTOCOL_VERSION=1.
+Set PROTOCOL\_VERSION to specific version.
 
-* `protocolVersion`: Number -  Protocol version will be used:
-    *1 - for Indy Node 1.3
-    *2 - for Indy Node 1.4
+There is a global property PROTOCOL\_VERSION that used in every request to the pool and
+specified version of Indy Node which Libindy works.
+
+By default PROTOCOL\_VERSION=1.
+
+* `protocolVersion`: Number - Protocol version will be used:
+1 - for Indy Node 1.3
+2 - for Indy Node 1.4
 * __->__ void
 
-Errors: `Common*`, `Pool*`
+Errors: `Common*`
 
 ### wallet
 
@@ -1596,16 +2078,21 @@ Creates a new secure wallet with the given unique name.
 
 * `poolName`: String - Name of the pool that corresponds to this wallet.
 * `name`: String - Name of the wallet.
-* `xtype`: String? - Type of the wallet. Defaults to 'default'.
-Custom types can be registered with indy\_register\_wallet\_type call.
-* `config`: String? - Wallet configuration json. List of supported keys are defined by wallet type.
-if NULL, then default config will be used.
-* `credentials`: String? - Wallet credentials json. 
+* `xtype`: String
+* `config`: String? - Wallet configuration json.
 ```
-{
-    "key": "wallet pass phrase"
-}
+  {
+      "storage": <object>  List of supported keys are defined by wallet type.
+  }
+````
+* `credentials`: String - Wallet credentials json
 ```
+  {
+      "key": string,
+      "rekey": Optional<string>,
+      "storage": Optional<object>  List of supported keys are defined by wallet type.
+  }
+````
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
@@ -1618,19 +2105,20 @@ Wallet with corresponded name must be previously created with indy\_create\_wall
 It is impossible to open wallet with the same name more than once.
 
 * `name`: String - Name of the wallet.
-* `runtimeConfig`: String? - Runtime wallet configuration json. if NULL, then default runtime\_config will be used. Example:
+* `runtimeConfig`: String? - Runtime wallet configuration json. if NULL, then default runtime\_config will be used.
 ```
-{
-    "freshness_time": string (optional), Amount of minutes to consider wallet value as fresh. Defaults to 24*60.
-    ... List of additional supported keys are defined by wallet type.
-}
+  {
+      "storage": Optional<object>  List of supported keys are defined by wallet type.
+  }
 ````
-* `credentials`: String? - Wallet credentials json. 
+* `credentials`: String - Wallet credentials json
 ```
-{
-    "key": "wallet pass phrase"
-}
-```
+  {
+      "key": string,
+      "rekey": Optional<string>,
+      "storage": Optional<object>  List of supported keys are defined by wallet type.
+  }
+````
 * __->__ `handle`: Handle (Number) - Handle to opened wallet to use in methods that require wallet access.
 
 Errors: `Common*`, `Wallet*`
@@ -1639,14 +2127,76 @@ Errors: `Common*`, `Wallet*`
 
 Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool
 
-* __->__ `wallets`: Json
+Note this function is DEPRECATED and will be removed in the next release.
 
+* __->__ `wallets`: Json - wallets list json: \[{
+"name": &lt;string&gt;
+"type": &lt;string&gt;
+"pool\_name": &lt;string&gt;
+}\].
 
-#### closeWallet \( handle \) -&gt; void
+Errors: `Common*`, `Wallet*`
+
+#### exportWallet \( wh, exportConfig \) -&gt; void
+
+Exports opened wallet
+
+Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+in the future releases.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `exportConfig`: Json - JSON containing settings for input operation.
+```
+  {
+    "path": path of the file that contains exported wallet content
+    "key": passphrase used to derive export key
+  }
+````
+* __->__ void
+
+Errors: `Common*`, `Wallet*`
+
+#### importWallet \( poolName, name, xtype, config, credentials, importConfig \) -&gt; void
+
+Creates a new secure wallet with the given unique name and then imports its content
+according to fields provided in import\_config
+This can be seen as an indy\_create\_wallet call with additional content import
+
+Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+in the future releases.
+
+* `poolName`: String - Name of the pool that corresponds to this wallet
+* `name`: String - Name of the wallet
+* `xtype`: String
+* `config`: String? - Wallet configuration json.
+```
+  {
+      "storage": <object>  List of supported keys are defined by wallet type.
+  }
+````
+* `credentials`: String - Wallet credentials json \(if NULL, then default config will be used\).
+```
+  {
+      "key": string,
+      "storage": Optional<object>  List of supported keys are defined by wallet type.
+  }
+````
+* `importConfig`: Json - JSON containing settings for input operation.
+```
+  {
+    "path": path of the file that contains exported wallet content
+    "key": passphrase used to derive export key
+  }
+````
+* __->__ void
+
+Errors: `Common*`, `Wallet*`
+
+#### closeWallet \( wh \) -&gt; void
 
 Closes opened wallet and frees allocated resources.
 
-* `handle`: Handle (Number) - wallet handle returned by indy\_open\_wallet.
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
@@ -1656,58 +2206,18 @@ Errors: `Common*`, `Wallet*`
 Deletes created wallet.
 
 * `name`: String - Name of the wallet to delete.
-* `credentials`: String? - Wallet credentials json. 
+* `credentials`: String - Wallet credentials json
 ```
-{
-    "key": "wallet pass phrase"
-}
-```
+  {
+      "key": string,
+      "rekey": Optional<string>,
+      "storage": Optional<object>  List of supported keys are defined by wallet type.
+  }
+````
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
 
-#### exportWallet \( handle, exportConfigJson \) -&gt; void
-
-Exports opened wallet
-
-* `handle`: Handle (Number) - wallet handle returned by indy\_open\_wallet.
-* `exportConfigJson`: String - JSON containing settings for input operation.
-```
-{
-    "path": path of the file that contains exported wallet content
-    "key": passphrase used to export key
-}
-```
-* __->__ void
-
-Errors: `Common*`, `Wallet*`
-
-#### importWallet \( poolName, name, xtype, config, credentials, importConfigJson \) -&gt; void
-
-Creates a new secure wallet with the given unique name and then imports its content according to fields provided in import_config This can be seen as an indy_create_wallet call with additional content import
-* `poolName`: String - Name of the pool that corresponds to this wallet.
-* `name`: String - Name of the wallet.
-* `xtype`: String? - Type of the wallet. Defaults to 'default'.
-Custom types can be registered with indy\_register\_wallet\_type call.
-* `config`: String? - Wallet configuration json. List of supported keys are defined by wallet type.
-if NULL, then default config will be used.
-* `credentials`: String - Wallet credentials json. 
-```
-{
-    "key": passphrase used to encrypt data
-    "storage": Optional<object>  List of supported keys are defined by wallet type.
-}
-```
-* `exportConfigJson`: String - JSON containing settings for input operation.
-```
-{
-    "path": path of the file that contains exported wallet content
-    "key": passphrase used to export key
-}
-```
-* __->__ void
-
-Errors: `Common*`, `Wallet*`
 
 [//]: # (CODEGEN-END - don't edit by hand see `codegen/index.js`)
 

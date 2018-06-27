@@ -25,6 +25,7 @@ var normalizeType = function (param) {
     case 'void':
     case 'indy_u32_t':
     case 'indy_i32_t':
+    case 'indy_u64_t':
       return param.type
 
     case 'Buffer':
@@ -124,6 +125,10 @@ apiFunctions.forEach(function (fn) {
         chkType('IsInt32')
         cpp += '  indy_i32_t arg' + i + ' = info[' + i + ']->Int32Value();\n'
         break
+      case 'indy_u64_t':
+        chkType('IsUint32')
+        cpp += '  indy_u64_t arg' + i + ' = (indy_u64_t)info[' + i + ']->Uint32Value();\n'
+        break
       case 'Timestamp':
         chkType('IsUint32')
         cpp += '  long long arg' + i + ' = info[' + i + ']->Uint32Value();\n'
@@ -164,6 +169,7 @@ apiFunctions.forEach(function (fn) {
       case 'IndyHandle':
       case 'indy_u32_t':
       case 'indy_i32_t':
+      case 'indy_u64_t':
       case 'Timestamp':
       case 'Boolean':
         break
