@@ -112,7 +112,7 @@ pub mod load_plugin_command {
 }
 
 pub fn load_plugin(ctx: &CommandContext, library: &str, initializer: &str) -> Result<(), ()> {
-    let lib = libloading::Library::new(library)
+    let lib = _load_lib(library)
         .map_err(|_| println_err!("Plugin not found: {:?}", library))?;
 
     unsafe {
@@ -129,6 +129,17 @@ pub fn load_plugin(ctx: &CommandContext, library: &str, initializer: &str) -> Re
     ctx.add_plugin(library, lib);
 
     Ok(())
+}
+
+#[cfg(all(unix, test))]
+fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
+    libloading::os::unix::Library::open(Some(library), ::libc::RTLD_NOW | ::libc::RTLD_NODELETE)
+        .map(libloading::Library::from)
+}
+
+#[cfg(any(not(unix), not(test)))]
+fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
+    libloading::Library::new(library)
 }
 
 pub mod exit_command {
@@ -208,16 +219,5 @@ pub mod tests {
             init_func();
         }
         ctx.add_plugin(NULL_PAYMENT_PLUGIN, lib)
-    }
-
-    #[cfg(unix)]
-    fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
-        libloading::os::unix::Library::open(Some(library), ::libc::RTLD_NOW | ::libc::RTLD_NODELETE)
-            .map(libloading::Library::from)
-    }
-
-    #[cfg(not(unix))]
-    fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
-        libloading::Library::new(library)
     }
 }
