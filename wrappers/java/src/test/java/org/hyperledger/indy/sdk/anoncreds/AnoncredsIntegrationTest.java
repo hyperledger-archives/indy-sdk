@@ -36,10 +36,11 @@ public class AnoncredsIntegrationTest {
 	static String issuer1GvtCredReq;
 	static String issuer1GvtCredReqMetadata;
 	static String issuer1GvtCredential;
+	protected String CREDENTIALS = "{\"key\": \"key\"}";
 	String masterSecretId = "master_secret_name";
 	String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 	String proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-	String defaultCredentialDefitionConfig = "{\"support_revocation\":false}";
+	String defaultCredentialDefinitionConfig = "{\"support_revocation\":false}";
 	String tag = "tag1";
 	String gvtSchemaName = "gvt";
 	String schemaVersion = "1.0";
@@ -84,8 +85,8 @@ public class AnoncredsIntegrationTest {
 
 		String walletName = "anoncredsCommonWallet";
 
-		Wallet.createWallet("default", walletName, "default", null, null).get();
-		wallet = Wallet.openWallet(walletName, null, null).get();
+		Wallet.createWallet("default", walletName, "default", null, CREDENTIALS).get();
+		wallet = Wallet.openWallet(walletName, null, CREDENTIALS).get();
 
 		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult =
 				Anoncreds.issuerCreateSchema(issuerDid, gvtSchemaName, schemaVersion, gvtSchemaAttributes).get();
@@ -100,20 +101,20 @@ public class AnoncredsIntegrationTest {
 
 		//Issue GVT issuer1GvtCredential by Issuer1
 		IssuerCreateAndStoreCredentialDefResult issuer1CreateGvtCredDefResult =
-				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, tag, null, defaultCredentialDefitionConfig).get();
+				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, gvtSchema, tag, null, defaultCredentialDefinitionConfig).get();
 		issuer1gvtCredDefId = issuer1CreateGvtCredDefResult.getCredDefId();
 		issuer1gvtCredDef = issuer1CreateGvtCredDefResult.getCredDefJson();
 
 		//Issue XYZ issuer1GvtCredential by Issuer1
 		IssuerCreateAndStoreCredentialDefResult issuer1CreateXyzCredDefResult =
-				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, xyzSchema, tag, null, defaultCredentialDefitionConfig).get();
+				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, xyzSchema, tag, null, defaultCredentialDefinitionConfig).get();
 		issuer1xyzCredDefId = issuer1CreateXyzCredDefResult.getCredDefId();
 		issuer1xyzCredDef = issuer1CreateXyzCredDefResult.getCredDefJson();
 
 		//Issue GVT issuer1GvtCredential by Issuer2
 		String issuerDid2 = "VsKV7grR1BUE29mG2Fm2kX";
 		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult issuer2CreateGvtCredDefResult =
-				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid2, gvtSchema, tag, null, defaultCredentialDefitionConfig).get();
+				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid2, gvtSchema, tag, null, defaultCredentialDefinitionConfig).get();
 		String issuer2gvtCredDefId = issuer2CreateGvtCredDefResult.getCredDefId();
 		String issuer2gvtCredDef = issuer2CreateGvtCredDefResult.getCredDefJson();
 

@@ -1,0 +1,15 @@
+Source: libnullpay
+Section: devel
+Priority: optional
+Maintainer: Hyperledger <info@hyperledger.org>
+Build-Depends: 
+Standards-Version: 1.0.0
+Vcs-Git: https://github.com/hyperledger/indy-sdk/
+Vcs-Browser: https://github.com/hyperledger/indy-sdk/
+
+
+Package: libnullpay
+Architecture: amd64
+Depends: libindy
+Suggests: build-essential
+Description: This is a simple plugin that can be used for development of applications that use Payments API of Indy SDK.

@@ -2,12 +2,12 @@
 
 Indy-SDK Developer Walkthrough #4, Java Edition
 
-[ [Python](../python/README.md) | [.NET](../dotnet/README.md) | [Node.js](../node/README.md) | [Objective C](../objectivec/README.md) ]
+[ [Python](../../not-yet-written.md) | [.NET](../../not-yet-written.md) | [Node.js](../../not-yet-written.md) | [Objective C](../../not-yet-written.md) ]
 
 
 ## Prerequisites
 
-Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../../prerequisites).
+Setup your workstation with an indy development virtual machine (VM). See [prerequisites](../../prerequisites.md).
 
 
 ## Steps
@@ -35,7 +35,7 @@ to create a trust anchor identity that has privileges to create schemas
 and credential definitions.
 
 All of these steps are similar to those in simpler how-tos, such as
-["Write a DID and Query Its Verkey"](../../write-did-and-query-verkey/java/README.md).
+["Write a DID and Query Its Verkey"](../../write-did-and-query-verkey/../not-yet-written.md).
 We'll get this housekeeping out of
 the way in a single step here, rather than dwelling on its details.
 
@@ -95,5 +95,5 @@ Run the [finished code](SaveSchemaAndCredDef.java) and observe the whole sequenc
 
 ## More experiments
 
-You might try the ["Issue a Credential"](../../issue-cred/java/README.md)
+You might try the ["Issue a Credential"](../../issue-cred/../not-yet-written.md)
 how-to, which can be done in only one step once you complete this one.

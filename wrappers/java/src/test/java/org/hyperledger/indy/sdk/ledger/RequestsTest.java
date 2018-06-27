@@ -24,6 +24,7 @@ public class RequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 				"             \"type\":\"105\",\n" +
 				"             \"dest\":\"Th7MpTaRZVRYnPiabds81Y\"\n" +
 				"          },\n" +
+				"          \"protocolVersion\":2,\n" +
 				"          \"signature\":\"4o86XfkiJ4e2r3J6Ufoi17UU3W5Zi9sshV6FjBjkVw4sgEQFQov9dxqDEtLbAJAWffCWd5KfAk164QVo7mYwKkiV\"}";
 
 		String response = Ledger.submitRequest(pool, request).get();
@@ -71,8 +72,8 @@ public class RequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
 		String walletName = "incompatibleWallet";
 
-		Wallet.createWallet("otherPoolName", walletName, "default", null, null).get();
-		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
+		Wallet.createWallet("otherPoolName", walletName, "default", null, CREDENTIALS).get();
+		Wallet wallet = Wallet.openWallet(walletName, null, CREDENTIALS).get();
 
 		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();

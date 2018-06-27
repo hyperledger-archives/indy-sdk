@@ -90,6 +90,16 @@ public enum ErrorCode {
 	 */
 	CommonIOError(114),
 
+	/**
+	 * Caller passed invalid value as param 13 (null, invalid json and etc..)
+	 */
+	CommonInvalidParam13(115),
+
+	/**
+	 * Caller passed invalid value as param 14 (null, invalid json and etc..)
+	 */
+	CommonInvalidParam14(116),
+
 	// Wallet errors
 	 
 	/**
@@ -132,6 +142,41 @@ public enum ErrorCode {
 	 */
 	WalletAccessFailed(207),
 
+	/**
+	 * Input provided to wallet operations is considered not valid
+	 */
+	WalletInputError(208),
+
+	/**
+	 * Decoding of wallet data during input/output failed
+	 */
+	WalletDecodingError(209),
+
+	/**
+	 * Storage error occurred during wallet operation
+	 */
+	WalletStorageError(210),
+
+	/**
+	 * Error during encryption-related operations
+	 */
+	WalletEncryptionError(211),
+
+	/**
+	 * Requested wallet item not found
+	 */
+	WalletItemNotFound(212),
+
+	/**
+	 * Returned if wallet's add_record operation is used with record name that already exists
+	 */
+	WalletItemAlreadyExists(213),
+
+	/**
+	 * Returned if provided wallet query is invalid
+	 */
+	WalletQueryError(214),
+
 	// Ledger errors
 	
 	/**
@@ -150,7 +195,7 @@ public enum ErrorCode {
 	PoolLedgerTerminated(302),
 
 	/**
-	 *  No concensus during ledger operation
+	 *  No consensus during ledger operation
 	 */
 	LedgerNoConsensusError(303),
 
@@ -174,6 +219,12 @@ public enum ErrorCode {
 	 */
 	PoolLedgerTimeout(307),
 
+	/**
+	 * Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version.
+	 * Call pool.indy_set_protocol_version to set correct Protocol version.
+	 */
+	PoolIncompatibleProtocolVersion(308),
+
 	// Crypto errors
 
 	/**
@@ -187,7 +238,7 @@ public enum ErrorCode {
 	AnoncredsInvalidUserRevocId(401),
 
 	/**
-	 * Attempt to generate master secret with dupplicated name
+	 * Attempt to generate master secret with duplicated name
 	 */
 	AnoncredsMasterSecretDuplicateNameError(404),
 
@@ -216,7 +267,23 @@ public enum ErrorCode {
 	/**
 	 * Attempt to create duplicate did.
 	 */
-	DidAlreadyExistsError(600);
+	DidAlreadyExistsError(600),
+
+	/**
+	 * Unknown payment method has been called
+	 */
+	UnknownPaymentMethod(700),
+
+	/**
+	 * No method were scraped from inputs/outputs or more than one were scraped
+	 */
+	IncompatiblePaymentError(701),
+
+	/**
+	 * Insufficient funds on inputs
+	 */
+	InsufficientFundsError(702),
+	;
 
 	private int value;
 	private static Map<Integer, ErrorCode> map = new HashMap<Integer, ErrorCode>();

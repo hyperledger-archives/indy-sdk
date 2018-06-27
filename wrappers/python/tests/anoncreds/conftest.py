@@ -4,8 +4,8 @@ import pytest
 
 from indy import anoncreds
 from tests.conftest import path_home as x_path_home, pool_name as x_pool_name, wallet_type as x_wallet_type, \
-    wallet_runtime_config as x_wallet_runtime_config, wallet_handle_cleanup as x_wallet_handle_cleanup, \
-    wallet_handle as x_wallet_handle, xwallet as x_xwallet
+    wallet_runtime_config as x_wallet_runtime_config, credentials as x_credentials, \
+    wallet_handle_cleanup as x_wallet_handle_cleanup, wallet_handle as x_wallet_handle, xwallet as x_xwallet
 
 
 @pytest.fixture(scope="session")
@@ -36,14 +36,19 @@ def wallet_runtime_config():
 
 
 @pytest.fixture(scope="session")
+def credential():
+    return x_credentials()
+
+
+@pytest.fixture(scope="session")
 def xwallet_cleanup():
     return False
 
 
 # noinspection PyUnusedLocal
 @pytest.fixture(scope="session")
-def xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home):
-    xwallet_gen = x_xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home, None)
+def xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home,credential):
+    xwallet_gen = x_xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home, credential)
     yield next(xwallet_gen)
     next(xwallet_gen)
 
@@ -54,9 +59,9 @@ def wallet_handle_cleanup():
 
 
 @pytest.fixture(scope="session")
-def wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, wallet_handle_cleanup):
+def wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, credential, wallet_handle_cleanup):
     wallet_handle_gen = \
-        x_wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, None, wallet_handle_cleanup)
+        x_wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, credential, wallet_handle_cleanup)
     yield next(wallet_handle_gen)
     next(wallet_handle_gen)
 
@@ -101,9 +106,9 @@ def prover_did():
     return "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
 
 
-def build_id(identifier: str, marker: str, word1: str, word2: str):
+def build_id(identifier: str, marker: str, word1: str, word2: str, word3: str):
     delimiter = ":"
-    return identifier + delimiter + marker + delimiter + word1 + delimiter + word2
+    return identifier + delimiter + marker + delimiter + word1 + delimiter + word2 + delimiter + word3
 
 
 @pytest.fixture(scope="session")
@@ -158,18 +163,18 @@ def master_secret_id():
 
 
 @pytest.fixture(scope="session")
-def issuer_1_gvt_cred_def_id(issuer_did, gvt_schema_id):
-    return build_id(issuer_did, "3", "CL", gvt_schema_id)
+def issuer_1_gvt_cred_def_id(issuer_did, gvt_schema_id, tag):
+    return build_id(issuer_did, "3", "CL", gvt_schema_id, tag)
 
 
 @pytest.fixture(scope="session")
-def issuer_1_xyz_cred_def_id(issuer_did, xyz_schema_id):
-    return build_id(issuer_did, "3", "CL", xyz_schema_id)
+def issuer_1_xyz_cred_def_id(issuer_did, xyz_schema_id, tag):
+    return build_id(issuer_did, "3", "CL", xyz_schema_id, tag)
 
 
 @pytest.fixture(scope="session")
-def issuer_2_gvt_cred_def_id(issuer_did_2, gvt_schema_id):
-    return build_id(issuer_did_2, "3", "CL", gvt_schema_id)
+def issuer_2_gvt_cred_def_id(issuer_did_2, gvt_schema_id, tag):
+    return build_id(issuer_did_2, "3", "CL", gvt_schema_id, tag)
 
 
 @pytest.fixture(scope="session")

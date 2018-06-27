@@ -1,18 +1,18 @@
 extern crate indy_crypto;
 
-use domain::credential::{Credential, CredentialInfo, AttributeValues};
-use domain::credential_offer::CredentialOffer;
-use domain::credential_request::CredentialRequestMetadata;
-use domain::requested_credential::RequestedCredentials;
-use domain::proof_request::{ProofRequest, RequestedAttributeInfo, RequestedPredicateInfo, PredicateInfo, NonRevocedInterval};
-use domain::proof::{Identifier, RequestedProof, Proof, RevealedAttributeInfo, SubProofReferent};
-use domain::schema::SchemaV1;
-use domain::credential_definition::CredentialDefinitionV1 as CredentialDefinition;
-use domain::revocation_registry_definition::RevocationRegistryDefinitionV1;
-use domain::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
-use domain::revocation_state::RevocationState;
-use domain::requested_credential::ProvingCredentialKey;
-use domain::filter::{Filter, Filtering};
+use domain::anoncreds::credential::{Credential, CredentialInfo, AttributeValues};
+use domain::anoncreds::credential_offer::CredentialOffer;
+use domain::anoncreds::credential_request::CredentialRequestMetadata;
+use domain::anoncreds::requested_credential::RequestedCredentials;
+use domain::anoncreds::proof_request::{ProofRequest, RequestedAttributeInfo, RequestedPredicateInfo, PredicateInfo, NonRevocedInterval};
+use domain::anoncreds::proof::{Identifier, RequestedProof, Proof, RevealedAttributeInfo, SubProofReferent};
+use domain::anoncreds::schema::SchemaV1;
+use domain::anoncreds::credential_definition::CredentialDefinitionV1 as CredentialDefinition;
+use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
+use domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
+use domain::anoncreds::revocation_state::RevocationState;
+use domain::anoncreds::requested_credential::ProvingCredentialKey;
+use domain::anoncreds::filter::{Filter, Filtering};
 
 use errors::common::CommonError;
 use errors::anoncreds::AnoncredsError;
@@ -145,6 +145,7 @@ impl Prover {
         }
 
         trace!("get_credentials_for_proof_req <<< credentials_for_proof_request: {:?}", credentials_for_proof_request);
+
         Ok(credentials_for_proof_request)
     }
 
@@ -182,8 +183,8 @@ impl Prover {
                 .ok_or(CommonError::InvalidStructure(format!("CredentialDefinition not found by id: {:?}", credential.cred_def_id)))?;
 
             let rev_state = if cred_def.value.revocation.is_some() {
-                let timestamp = cred_key.timestamp.clone().ok_or(CommonError::InvalidStructure(format!("Timestamp not found")))?;
-                let rev_reg_id = credential.rev_reg_id.clone().ok_or(CommonError::InvalidStructure(format!("Revocation Registry Id not found")))?;
+                let timestamp = cred_key.timestamp.clone().ok_or(CommonError::InvalidStructure("Timestamp not found".to_string()))?;
+                let rev_reg_id = credential.rev_reg_id.clone().ok_or(CommonError::InvalidStructure("Revocation Registry Id not found".to_string()))?;
                 let rev_states_for_timestamp = rev_states.get(&rev_reg_id)
                     .ok_or(CommonError::InvalidStructure(format!("RevocationState not found by id: {:?}", rev_reg_id)))?;
                 Some(rev_states_for_timestamp.get(&timestamp)

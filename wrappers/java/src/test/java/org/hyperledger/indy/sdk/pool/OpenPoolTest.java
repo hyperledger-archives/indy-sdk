@@ -64,4 +64,17 @@ public class OpenPoolTest extends IndyIntegrationTest {
 		openedPools.add(pool);
 	}
 
+
+	@Test
+	public void testOpenPoolWorksForIncompatibleProtocolVersion() throws Exception {
+		thrown.expectCause(isA(PoolIncompatibleProtocolVersionException.class));
+
+		Pool.setProtocolVersion(1).get();
+
+		String poolName = PoolUtils.createPoolLedgerConfig();
+
+		Pool.openPoolLedger(poolName, null).get();
+
+		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
+	}
 }

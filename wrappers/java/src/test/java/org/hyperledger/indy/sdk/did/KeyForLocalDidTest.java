@@ -1,7 +1,7 @@
 package org.hyperledger.indy.sdk.did;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
-import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -33,7 +33,7 @@ public class KeyForLocalDidTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testKeyForDidWorksForNoKey() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		Did.keyForLocalDid(wallet, DID_MY2).get();
 	}

@@ -248,6 +248,44 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
+	 * Multi signs request message.
+	 * <p>
+	 * Adds submitter information to passed request json, signs it with submitter
+	 * sign key (see wallet_sign).
+	 *
+	 * @param wallet       A Wallet.
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param requestJson  Request data json.
+	 * @return A future resolving to a signed request json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> multiSignRequest(
+			Wallet wallet,
+			String submitterDid,
+			String requestJson) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(requestJson, "requestJson");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_multi_sign_request(
+				commandHandle,
+				walletHandle,
+				submitterDid,
+				requestJson,
+				signRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
 	 * Builds a request to get a DDO.
 	 *
 	 * @param submitterDid Id of Identity stored in secured Wallet.
@@ -670,15 +708,45 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
+	 * Builds a GET_VALIDATOR_INFO request.
+	 *
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildGetValidatorInfoRequest(
+			String submitterDid) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_get_validator_info_request(
+				commandHandle,
+				submitterDid,
+				buildRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
 	 * Builds a GET_TXN request. Request to get any transaction by its seq_no.
 	 *
 	 * @param submitterDid DID of read request sender.
-	 * @param seqNo         seq_no of transaction in ledger.
+	 * @param ledgerType  (Optional) type of the ledger the requested transaction belongs to:
+	 *    DOMAIN - used default,
+	 *    POOL,
+	 *    CONFIG
+	 * @param seqNo         requested transaction sequence number as it's stored on Ledger.
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildGetTxnRequest(
 			String submitterDid,
+			String ledgerType,
 			int seqNo) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
@@ -689,6 +757,7 @@ public class Ledger extends IndyJava.API {
 		int result = LibIndy.api.indy_build_get_txn_request(
 				commandHandle,
 				submitterDid,
+				ledgerType,
 				seqNo,
 				buildRequestCb);
 

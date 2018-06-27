@@ -3,6 +3,7 @@ package org.hyperledger.indy.sdk.did;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStateException;
 import org.hyperledger.indy.sdk.ledger.Ledger;
+import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -47,7 +48,7 @@ public class KeyForDidTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 	@Test
 	public void testKeyForDidWorksForNoKey() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStateException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		Did.keyForDid(pool, wallet, DID_MY2).get();
 	}

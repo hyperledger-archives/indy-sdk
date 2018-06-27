@@ -2,6 +2,7 @@ pub mod did;
 pub mod pool;
 pub mod wallet;
 pub mod ledger;
+pub mod payment;
 mod callbacks;
 mod results;
 
@@ -86,6 +87,27 @@ pub enum ErrorCode
     // Attempt to open encrypted wallet with invalid credentials
     WalletAccessFailed = 207,
 
+    // Input provided to wallet operations is considered not valid
+    WalletInputError = 208,
+
+    // Decoding of wallet data during input/output failed
+    WalletDecodingError = 209,
+
+    // Storage error occurred during wallet operation
+    WalletStorageError = 210,
+
+    // Error during encryption-related operations
+    WalletEncryptionError = 211,
+
+    // Requested wallet item not found
+    WalletItemNotFound = 212,
+
+    // Returned if wallet's add_record operation is used with record name that already exists
+    WalletItemAlreadyExists = 213,
+
+    // Returned if provided wallet query is invalid
+    WalletQueryError = 214,
+
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
     PoolLedgerNotCreatedError = 300,
@@ -96,7 +118,7 @@ pub enum ErrorCode
     // Pool ledger terminated
     PoolLedgerTerminated = 302,
 
-    // No concensus during ledger operation
+    // No consensus during ledger operation
     LedgerNoConsensusError = 303,
 
     // Attempt to parse invalid transaction response
@@ -110,6 +132,10 @@ pub enum ErrorCode
 
     // Timeout for action
     PoolLedgerTimeout = 307,
+
+    // Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version.
+    // Call pool.indy_set_protocol_version to set correct Protocol version.
+    PoolIncompatibleProtocolVersion = 308,
 
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
@@ -135,7 +161,16 @@ pub enum ErrorCode
     UnknownCryptoTypeError = 500,
 
     // Attempt to create duplicate did
-    DidAlreadyExistsError = 600
+    DidAlreadyExistsError = 600,
+
+    // Unknown payment method was given
+    PaymentUnknownMethodError = 700,
+
+    //No method were scraped from inputs/outputs or more than one were scraped
+    PaymentIncompatibleMethodsError = 701,
+
+    // Insufficient funds on inputs
+    PaymentInsufficientFundsError = 702,
 }
 
 impl ErrorCode {
@@ -167,10 +202,17 @@ impl ErrorCode {
             WalletIncompatiblePoolError => "Trying to use wallet with pool that has different name",
             WalletAccessFailed => "Trying to open wallet encrypted wallet with invalid credentials",
             WalletAlreadyOpenedError => "Trying to open wallet that was opened already",
+            WalletInputError => "Input provided to wallet operations is considered not valid",
+            WalletDecodingError => "Decoding of wallet data during input/output failed",
+            WalletStorageError => "Storage error occurred during wallet operation",
+            WalletEncryptionError => "Error during encryption-related operations",
+            WalletItemNotFound => "Requested wallet item not found",
+            WalletItemAlreadyExists => "Returned if wallet's add_record operation is used with record name that already exists",
+            WalletQueryError => "Returned if provided wallet query is invalid",
             PoolLedgerNotCreatedError => "Trying to open pool ledger that wasn't created before",
             PoolLedgerInvalidPoolHandle => "Caller passed invalid pool ledger handle",
             PoolLedgerTerminated => "Pool ledger terminated",
-            LedgerNoConsensusError => "No concensus during ledger operation",
+            LedgerNoConsensusError => "No consensus during ledger operation",
             LedgerInvalidTransaction => "Attempt to send unknown or incomplete transaction message",
             LedgerSecurityError => "Attempt to send transaction without the necessary privileges",
             PoolLedgerConfigAlreadyExistsError => "Attempt to create pool ledger config with name used for another existing pool",
@@ -184,6 +226,9 @@ impl ErrorCode {
             AnoncredsCredDefAlreadyExistsError => "Credential definition already exists",
             UnknownCryptoTypeError => "Unknown format of DID entity keys",
             DidAlreadyExistsError => "Did already exists",
+            PaymentUnknownMethodError => "Unknown payment method was given",
+            PaymentIncompatibleMethodsError => "Multiple different payment methods were specified",
+            PaymentInsufficientFundsError => "Insufficient funds on inputs",
         }
     }
 }

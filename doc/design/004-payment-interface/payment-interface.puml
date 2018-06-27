@@ -1,0 +1,46 @@
+@startuml tokens-interface
+
+[Application] as application
+
+package "Indy SDK" {
+    () "Payments API" as i_payments_api
+    application ..> i_payments_api
+
+    note right of i_payments_api
+    An API that allows application
+    to work with payments
+    end note
+
+    () "Payment Method API" as i_payment_method_api
+    application  ..> i_payment_method_api
+
+    note left of i_payment_method_api
+    An API that allows
+    registration of payment
+    methods
+    end note
+   
+    [API Layer] as indy_api
+    i_payments_api -- indy_api
+    i_payment_method_api -- indy_api
+    
+    [Payment Service] as payment_service
+    indy_api ..> payment_service
+
+    note right of payment_service
+    Stores all registered payment methods
+    and perform requests dispatching
+    to corresponded payment method
+    end note
+
+    () "Payment Method Handler Interface" as i_payment_handler_method
+    payment_service ..> i_payment_handler_method    
+}
+
+[Sovrin Payment Method] as sovrin_payment_method
+i_payment_handler_method -- sovrin_payment_method
+
+[Another Payment Method] as another_payment_method
+i_payment_handler_method -- another_payment_method 
+
+@enduml 

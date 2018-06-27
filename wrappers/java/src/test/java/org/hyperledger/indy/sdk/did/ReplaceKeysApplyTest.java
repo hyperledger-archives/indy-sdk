@@ -1,7 +1,7 @@
 package org.hyperledger.indy.sdk.did;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
-import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -28,7 +28,7 @@ public class ReplaceKeysApplyTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testReplaceKeysApplyWorksWithoutCallingReplaceStart() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		Did.replaceKeysApply(wallet, did).get();
 	}
@@ -36,7 +36,7 @@ public class ReplaceKeysApplyTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testReplaceKeysApplyWorksForNotFoundDid() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		Did.replaceKeysStart(wallet, did, "{}").get();
 		Did.replaceKeysApply(wallet, DID).get();

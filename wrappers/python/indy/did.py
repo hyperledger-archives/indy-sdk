@@ -110,7 +110,7 @@ async def replace_keys_apply(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("replace_keys_apply: >>> wallet_handle: %r, did: %r, identity_json: %r",
+    logger.debug("replace_keys_apply: >>> wallet_handle: %r, did: %r",
                  wallet_handle,
                  did)
 

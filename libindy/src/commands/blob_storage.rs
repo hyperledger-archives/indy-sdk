@@ -6,16 +6,19 @@ use errors::indy::IndyError;
 use services::blob_storage::BlobStorageService;
 
 use std::rc::Rc;
+use std::result;
+
+type Result<T> = result::Result<T, IndyError>;
 
 pub enum BlobStorageCommand {
     OpenReader(
         String, // type
         String, // config
-        Box<Fn(Result<i32 /* handle */, IndyError>) + Send>),
+        Box<Fn(Result<i32 /* handle */>) + Send>),
     OpenWriter(
         String, // writer type
         String, // writer config JSON
-        Box<Fn(Result<i32 /* handle */, IndyError>) + Send>),
+        Box<Fn(Result<i32 /* handle */>) + Send>),
 }
 
 pub struct BlobStorageCommandExecutor {
@@ -32,30 +35,32 @@ impl BlobStorageCommandExecutor {
     pub fn execute(&self, command: BlobStorageCommand) {
         match command {
             BlobStorageCommand::OpenReader(type_, config, cb) => {
+                info!("OpenReader command received");
                 cb(self.open_reader(&type_, &config));
             }
             BlobStorageCommand::OpenWriter(writer_type, writer_config, cb) => {
+                info!("OpenWriter command received");
                 cb(self.open_writer(&writer_type, &writer_config));
             }
         }
     }
 
-    fn open_reader(&self, type_: &str, config: &str) -> Result<i32, IndyError> {
-        trace!("open_reader >>> type_: {:?}, config: {:?}", type_, config);
+    fn open_reader(&self, type_: &str, config: &str) -> Result<i32> {
+        debug!("open_reader >>> type_: {:?}, config: {:?}", type_, config);
 
         let res = self.blob_storage_service.open_reader(type_, config).map_err(IndyError::from);
 
-        trace!("open_reader << res: {:?}", res);
+        debug!("open_reader << res: {:?}", res);
 
         res
     }
 
-    fn open_writer(&self, type_: &str, config: &str) -> Result<i32, IndyError> {
-        trace!("open_writer >>> type_: {:?}, config: {:?}", type_, config);
+    fn open_writer(&self, type_: &str, config: &str) -> Result<i32> {
+        debug!("open_writer >>> type_: {:?}, config: {:?}", type_, config);
 
         let res = self.blob_storage_service.open_writer(type_, config).map_err(IndyError::from);
 
-        trace!("open_writer << res: {:?}", res);
+        debug!("open_writer << res: {:?}", res);
 
         res
     }

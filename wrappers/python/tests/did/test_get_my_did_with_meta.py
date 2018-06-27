@@ -30,4 +30,4 @@ async def test_get_my_dids_works_for_invalid_handle(wallet_handle, did_my1):
 async def test_get_my_did_with_metadata_works_for_no_metadata(wallet_handle, did_my1):
     with pytest.raises(IndyError) as e:
         await did.get_my_did_with_meta(wallet_handle, did_my1)
-    assert ErrorCode.WalletNotFoundError == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code

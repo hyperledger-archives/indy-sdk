@@ -4,7 +4,7 @@ import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.did.DidResults;
-import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WalletItemNotFoundException;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -21,10 +21,9 @@ public class CryptoAuthDecryptTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testAuthDecryptWorks() throws Exception {
-		String paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();
-		String theirVk = Crypto.createKey(wallet, paramJson).get();
+		String theirVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
 
-		paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(MY2_SEED, null).toJson();
+		String paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(MY2_SEED, null).toJson();
 		String myVk = Crypto.createKey(wallet, paramJson).get();
 
 		byte[] encryptedMsg = Crypto.authCrypt(wallet, theirVk, myVk, MESSAGE).get();
@@ -52,13 +51,12 @@ public class CryptoAuthDecryptTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testAuthDecryptWorksForUnknownTheirVk() throws Exception {
-		String paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();
-		String theirVk = Crypto.createKey(wallet, paramJson).get();
+		String theirVk = Crypto.createKey(wallet, MY1_IDENTITY_KEY_JSON).get();
 
 		byte[] encryptedMsg = Crypto.authCrypt(wallet, theirVk, VERKEY, MESSAGE).get();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletValueNotFoundException.class));
+		thrown.expectCause(isA(WalletItemNotFoundException.class));
 
 		Crypto.authDecrypt(wallet, VERKEY, encryptedMsg).get();
 	}

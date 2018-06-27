@@ -9,12 +9,12 @@ use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use self::indy_crypto::utils::json::JsonDecodable;
 
-use domain::schema::{Schema, schemas_map_to_schemas_v1_map};
-use domain::credential_definition::{CredentialDefinition, cred_defs_map_to_cred_defs_v1_map};
-use domain::proof::Proof;
-use domain::proof_request::ProofRequest;
-use domain::revocation_registry_definition::{RevocationRegistryDefinition, rev_reg_defs_map_to_rev_reg_defs_v1_map};
-use domain::revocation_registry::{RevocationRegistry, rev_regs_map_to_rev_regs_local_map};
+use domain::anoncreds::schema::{Schema, schemas_map_to_schemas_v1_map};
+use domain::anoncreds::credential_definition::{CredentialDefinition, cred_defs_map_to_cred_defs_v1_map};
+use domain::anoncreds::proof::Proof;
+use domain::anoncreds::proof_request::ProofRequest;
+use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, rev_reg_defs_map_to_rev_reg_defs_v1_map};
+use domain::anoncreds::revocation_registry::{RevocationRegistry, rev_regs_map_to_rev_regs_local_map};
 
 pub enum VerifierCommand {
     VerifyProof(
@@ -41,7 +41,7 @@ impl VerifierCommandExecutor {
     pub fn execute(&self, command: VerifierCommand) {
         match command {
             VerifierCommand::VerifyProof(proof_request_json, proof_json, credential_schemas_json, credential_defs_json, rev_reg_defs_json, rev_reg_entries_json, cb) => {
-                trace!(target: "verifier_command_executor", "VerifyProof command received");
+                info!(target: "verifier_command_executor", "VerifyProof command received");
                 cb(self.verify_proof(&proof_request_json, &proof_json, &credential_schemas_json, &credential_defs_json, &rev_reg_defs_json, &rev_reg_entries_json));
             }
         };
@@ -54,7 +54,7 @@ impl VerifierCommandExecutor {
                     cred_defs_json: &str,
                     rev_reg_defs_json: &str,
                     rev_reg_json: &str) -> Result<bool, IndyError> {
-        trace!("verify_proof >>> proof_request_json: {:?}, proof_json: {:?}, schemas_json: {:?}, cred_defs_json: {:?},  \
+        debug!("verify_proof >>> proof_request_json: {:?}, proof_json: {:?}, schemas_json: {:?}, cred_defs_json: {:?},  \
                rev_reg_defs_json: {:?}, rev_reg_json: {:?}",
                proof_request_json, proof_json, schemas_json, cred_defs_json, rev_reg_defs_json, rev_reg_json);
 
@@ -143,7 +143,7 @@ impl VerifierCommandExecutor {
                                                             &rev_reg_defs_map_to_rev_reg_defs_v1_map(rev_reg_defs),
                                                             &rev_regs_map_to_rev_regs_local_map(rev_regs))?;
 
-        trace!("verify_proof <<< result: {:?}", result);
+        debug!("verify_proof <<< result: {:?}", result);
 
         Ok(result)
     }

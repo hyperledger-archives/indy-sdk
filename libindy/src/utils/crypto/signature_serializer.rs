@@ -27,6 +27,8 @@ pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
             let mut result = "".to_string();
             let length = map.len();
             for (index, key) in map.keys().enumerate() {
+                if key == "signature" { continue; } // Skip signature field as in python code
+
                 let mut value = map[key].clone();
                 if key == "raw" || key == "hash" || key == "enc" {
                     let mut ctx = Hash::new_context()?;
@@ -96,12 +98,10 @@ mod tests {
     }
 
     #[test]
-    #[ignore] /* FIXME implement ignoring signature field as in python code */
     fn signature_serialize_works_with_null() {
         let data = r#"{"signature": null}"#;
         let v: serde_json::Value = serde_json::from_str(data).unwrap();
         let serialized = serialize_signature(v).unwrap();
-        println!("{:?}", serialized);
         assert_eq!(serialized, "");
     }
 }
