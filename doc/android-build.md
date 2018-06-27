@@ -33,6 +33,8 @@ Android emulator generally use x86 images
     - It fails on the libzmq linking
 
 - If you are using Linux and want to build without docker, use the script`indy-sdk/libindy/build_scripts/android/build.withoutdocker.sh` .
+ - usage e.g `./build.withoutdocker.sh -d x86 16 i686-linux-android` to download the prebuilt binaries and build for x86 using api level 16 with ABI i686-linux-android
+ - e.g `./build.withoutdocker.sh x86 16 i686-linux-android openssl_x86 libsodium_x86 libzmq_x86` if you want to pass the dependencies to the script
 
 
 # Building binaries of Libnullpay for Android

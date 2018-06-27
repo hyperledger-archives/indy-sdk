@@ -7,7 +7,6 @@ pub struct EnvironmentUtils {}
 impl EnvironmentUtils {
     pub fn indy_home_path() -> PathBuf {
         // TODO: FIXME: Provide better handling for the unknown home path case!!!
-
         let mut path = env::home_dir().unwrap_or(PathBuf::from("/home/indy"));
         let mut indy_client_dir = ".indy_client";
         if cfg!(target_os = "ios"){
@@ -28,7 +27,6 @@ impl EnvironmentUtils {
         match external_storage {
             Ok (val) => android_dir = val + "/.indy_client",
             Err(err) => {
-                error!("Unable to find EXTERNAL_STORAGE android environment variable which holds the location to external storage file path");
                 panic!("Failed to find external storage path {:?}", err)
             }
         }
