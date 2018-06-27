@@ -1,70 +1,98 @@
 #!/usr/bin/env bash
 
 WORKDIR=${PWD}
+DOWNLOAD_PREBUILTS="0"
+FINAL="1"
+while getopts ":d" opt; do
+    case ${opt} in
+        d) DOWNLOAD_PREBUILTS="1";;
+        \?);;
+    esac
+done
+shift $((OPTIND -1))
+
 TARGET_ARCH=$1
 TARGET_API=$2
 CROSS_COMPILE=$3
 
+
+download_and_unzip_deps(){
+	rm -rf indy-android-dependencies
+	git clone https://github.com/evernym/indy-android-dependencies.git
+	pushd indy-android-dependencies/prebuilt/
+	git checkout tags/v1.0.1
+	find . -name "*.zip" | xargs -P 5 -I FILENAME sh -c 'unzip -o -d "$(dirname "FILENAME")" "FILENAME"'
+	popd
+	ln -sf indy-android-dependencies/prebuilt dependencies
+    export OPENSSL_DIR=dependencies/openssl/openssl_arm
+    export SODIUM_DIR=dependencies/sodium/libsodium_arm
+	export LIBZMQ_DIR=dependencies/zmq/libzmq_arm
+}
+
 if [ -z "${TARGET_ARCH}" ]; then
     echo STDERR "Missing TARGET_ARCH argument"
-    echo STDERR "e.g. x86 or arm or arm64"
-    echo "Sample : ./build.withoutdocker.sh x86 16 i686-linux-android dependencies/openssl/openssl_x86 dependencies/sodium/libsodium_x86 dependencies/zmq/libzmq_x86"
+    echo STDERR "e.g. x86 or arm"
     exit 1
 fi
 
 if [ -z "${TARGET_API}" ]; then
     echo STDERR "Missing TARGET_API argument"
     echo STDERR "e.g. 21"
-    echo "Sample : ./build.withoutdocker.sh x86 16 i686-linux-android dependencies/openssl/openssl_x86 dependencies/sodium/libsodium_x86 dependencies/zmq/libzmq_x86"
     exit 1
 fi
 
 if [ -z "${CROSS_COMPILE}" ]; then
     echo STDERR "Missing CROSS_COMPILE argument"
     echo STDERR "e.g. i686-linux-android"
-    echo "Sample : ./build.withoutdocker.sh x86 16 i686-linux-android dependencies/openssl/openssl_x86 dependencies/sodium/libsodium_x86 dependencies/zmq/libzmq_x86"
     exit 1
 fi
 
-
-if [ -z "${OPENSSL_DIR}" ]; then
-    OPENSSL_DIR="openssl_${TARGET_ARCH}"
-    if [ -d "${OPENSSL_DIR}" ] ; then
-        echo "Found ${OPENSSL_DIR}"
-    elif [ -z "$4" ]; then
-        echo STDERR "Missing OPENSSL_DIR argument and environment variable"
-        echo STDERR "e.g. set OPENSSL_DIR=<path> for environment or openssl_${TARGET_ARCH}"
-        exit 1
+if [ "${DOWNLOAD_PREBUILTS}" == "1" ]; then
+    download_and_unzip_deps
     else
-        OPENSSL_DIR=$4
-    fi
+        echo "not downloading prebuilt dependencies. Dependencies locations have to be passed"
+        if [ -z "${OPENSSL_DIR}" ]; then
+            OPENSSL_DIR="openssl_${TARGET_ARCH}"
+            if [ -d "${OPENSSL_DIR}" ] ; then
+                echo "Found ${OPENSSL_DIR}"
+            elif [ -z "$4" ]; then
+                echo STDERR "Missing OPENSSL_DIR argument and environment variable"
+                echo STDERR "e.g. set OPENSSL_DIR=<path> for environment or openssl_${TARGET_ARCH}"
+                exit 1
+            else
+                OPENSSL_DIR=$4
+            fi
+        fi
+
+        if [ -z "${SODIUM_DIR}" ]; then
+            SODIUM_DIR="libsodium_${TARGET_ARCH}"
+            if [ -d "${SODIUM_DIR}" ] ; then
+                echo "Found ${SODIUM_DIR}"
+            elif [ -z "$5" ]; then
+                echo STDERR "Missing SODIUM_DIR argument and environment variable"
+                echo STDERR "e.g. set SODIUM_DIR=<path> for environment or libsodium_${TARGET_ARCH}"
+                exit 1
+            else
+                SODIUM_DIR=$5
+            fi
+        fi
+
+        if [ -z "${LIBZMQ_DIR}" ] ; then
+            LIBZMQ_DIR="libzmq_${TARGET_ARCH}"
+            if [ -d "${LIBZMQ_DIR}" ] ; then
+                echo "Found ${LIBZMQ_DIR}"
+            elif [ -z "$6" ] ; then
+                echo STDERR "Missing LIBZMQ_DIR argument and environment variable"
+                echo STDERR "e.g. set LIBZMQ_DIR=<path> for environment or libzmq_${TARGET_ARCH}"
+                exit 1
+            else
+                LIBZMQ_DIR=$6
+            fi
+        fi
+
+
 fi
 
-if [ -z "${SODIUM_DIR}" ] ; then
-    SODIUM_DIR="libsodium_${TARGET_ARCH}"
-    if [ -d "${SODIUM_DIR}" ] ; then
-        echo "Found ${SODIUM_DIR}"
-    elif [ -z "$5" ]; then
-        echo STDERR "Missing SODIUM_DIR argument and environment variable"
-        echo STDERR "e.g. set SODIUM_DIR=<path> for environment or libsodium_${TARGET_ARCH}"
-        exit 1
-    else
-        SODIUM_DIR=$5
-    fi
-fi
-
-if [ -z "${LIBZMQ_DIR}" ] ; then
-    LIBZMQ_DIR="libzmq_${TARGET_ARCH}"
-    if [ -d "${LIBZMQ_DIR}" ] ; then
-        echo "Found ${LIBZMQ_DIR}"
-    elif [ -z "$6" ]; then
-        echo STDERR "Missing LIBZMQ_DIR argument and environment variable"
-        echo STDERR "e.g. set LIBZMQ_DIR=<path> for environment or libzmq_${TARGET_ARCH}"
-        exit 1
-    else
-        LIBZMQ_DIR=$6
-    fi
-fi
 
 
 if [ "$(uname)" == "Darwin" ]; then
