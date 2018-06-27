@@ -1,6 +1,7 @@
 import '../module-resolver-helper'
 
 import { assert } from 'chai'
+import { validatePaymentTxn } from 'helpers/asserts'
 import {
   connectionCreateConnect,
   dataIssuerCredentialCreate,
@@ -215,12 +216,8 @@ describe('IssuerCredential:', () => {
       assert.equal(await issuerCredential.getState(), StateType.RequestReceived)
       await issuerCredential.sendCredential(connection)
       assert.equal(await issuerCredential.getState(), StateType.Accepted)
-      const paymentTxnStr = await issuerCredential.getPaymentTxn()
-      assert.ok(paymentTxnStr)
-      const paymentTxn = JSON.parse(paymentTxnStr)
-      assert.property(paymentTxn, 'amount')
-      assert.property(paymentTxn, 'inputs')
-      assert.property(paymentTxn, 'outputs')
+      const paymentTxn = await issuerCredential.getPaymentTxn()
+      validatePaymentTxn(paymentTxn)
     })
   })
 

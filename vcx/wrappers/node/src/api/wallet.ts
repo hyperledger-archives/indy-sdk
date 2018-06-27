@@ -3,6 +3,7 @@ import { Callback } from 'ffi'
 import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
+import { IUTXO } from './common'
 
 export type PaymentAddress = string
 export type PaymentAmount = number
@@ -50,6 +51,17 @@ export interface ISearchNextRecordsOptions {
   count: number
 }
 
+export interface IPaymentAddress {
+  address: string,
+  balance: number,
+  utxo: IUTXO[]
+}
+
+export interface IWalletTokenInfo {
+  balance: number,
+  addresses: IPaymentAddress[]
+}
+
 /**
  * @class Class representing a Wallet
  */
@@ -63,9 +75,9 @@ export class Wallet {
    * @param {paymentAddress} address
    * @returns {Promise<string>} Wallet info, balance, addresses, etc
    */
-  public static async getTokenInfo (handle?: PaymentHandle): Promise<string> {
+  public static async getTokenInfo (handle?: PaymentHandle): Promise<IWalletTokenInfo> {
     try {
-      return await createFFICallbackPromise<string>(
+      const walletInfoStr = await createFFICallbackPromise<string>(
         (resolve, reject, cb) => {
           const rc = rustAPI().vcx_wallet_get_token_info(0, handle, cb)
           if (rc) {
@@ -83,6 +95,8 @@ export class Wallet {
             resolve(info)
           })
       )
+      const walletInfo = JSON.parse(walletInfoStr)
+      return walletInfo
     } catch (err) {
       throw new VCXInternalError(err)
     }

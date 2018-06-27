@@ -1,6 +1,7 @@
 import '../module-resolver-helper'
 
 import { assert } from 'chai'
+import { validatePaymentTxn } from 'helpers/asserts'
 import {
   connectionCreateConnect,
   credentialCreateWithMsgId,
@@ -207,12 +208,8 @@ describe('Credential:', () => {
       VCXMock.setVcxMock(VCXMockMessage.CredentialResponse)
       await credential.updateState()
       assert.equal(await credential.getState(), StateType.Accepted)
-      const paymentTxnStr = await credential.getPaymentTxn()
-      assert.ok(paymentTxnStr)
-      const paymentTxn = JSON.parse(paymentTxnStr)
-      assert.property(paymentTxn, 'amount')
-      assert.property(paymentTxn, 'inputs')
-      assert.property(paymentTxn, 'outputs')
+      const paymentTxn = await credential.getPaymentTxn()
+      validatePaymentTxn(paymentTxn)
     })
 
     // TODO: Enable once https://evernym.atlassian.net/browse/EN-669 is resolved
