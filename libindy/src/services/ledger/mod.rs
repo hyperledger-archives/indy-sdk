@@ -19,7 +19,7 @@ use domain::ledger::rev_reg_def::{RevRegDefOperation, GetRevRegDefOperation, Get
 use domain::ledger::rev_reg::{RevRegEntryOperation, GetRevRegOperation, GetRevRegDeltaOperation, GetRevocRegReplyResult, GetRevocRegDeltaReplyResult};
 use domain::ledger::pool::{PoolConfigOperation, PoolUpgradeOperation, PoolRestartOperation};
 use domain::ledger::node::{NodeOperation, NodeOperationData};
-use domain::ledger::txn::GetTxnOperation;
+use domain::ledger::txn::{GetTxnOperation, LedgerType};
 use domain::ledger::response::{Message, Reply};
 use domain::ledger::validator_info::GetValidatorInfoOperation;
 use domain::anoncreds::DELIMITER;
@@ -113,7 +113,7 @@ impl LedgerService {
         info!("build_attrib_request >>> identifier: {:?}, dest: {:?}, hash: {:?}, raw: {:?}, enc: {:?}", identifier, dest, hash, raw, enc);
 
         if raw.is_none() && hash.is_none() && enc.is_none() {
-            return Err(CommonError::InvalidStructure(format!("Either raw or hash or enc must be specified")));
+            return Err(CommonError::InvalidStructure("Either raw or hash or enc must be specified".to_string()));
         }
         if let Some(ref raw) = raw {
             serde_json::from_str::<serde_json::Value>(raw)
@@ -138,7 +138,7 @@ impl LedgerService {
         info!("build_get_attrib_request >>> identifier: {:?}, dest: {:?}, hash: {:?}, raw: {:?}, enc: {:?}", identifier, dest, hash, raw, enc);
 
         if raw.is_none() && hash.is_none() && enc.is_none() {
-            return Err(CommonError::InvalidStructure(format!("Either raw or hash or enc must be specified")));
+            return Err(CommonError::InvalidStructure("Either raw or hash or enc must be specified".to_string()));
         }
         let operation = GetAttribOperation::new(dest.to_string(), raw, hash, enc);
 
@@ -223,7 +223,9 @@ impl LedgerService {
         let signature_type = parts.get(2)
             .ok_or(CommonError::InvalidStructure(format!("Signature type not found in: {}", id)))?.to_string();
 
-        let operation = GetCredDefOperation::new(ref_, signature_type, origin);
+        let tag = parts.get(4).map(|tag| tag.to_string());
+
+        let operation = GetCredDefOperation::new(ref_, signature_type, origin, tag);
 
         let request = Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("GET_CRED_DEF request json is invalid {:?}.", err)))?;
@@ -272,10 +274,17 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_get_txn_request(&self, identifier: &str, data: i32) -> Result<String, CommonError> {
-        info!("build_get_txn_request >>> identifier: {:?}, data {:?}", identifier, data);
+    pub fn build_get_txn_request(&self, identifier: &str, ledger_type: Option<&str>, seq_no: i32) -> Result<String, CommonError> {
+        info!("build_get_txn_request >>> identifier: {:?}, seq_no {:?}, ledger_type {:?}", identifier, ledger_type, seq_no);
 
-        let operation = GetTxnOperation::new(data);
+        let ledger_id = match ledger_type {
+            Some(type_) => LedgerType::from_json(&format!(r#""{}""#, type_))
+                .map_err(|_| CommonError::InvalidStructure(format!("Ledger type: {} does not supported", type_)))?
+                .to_id(),
+            None => LedgerType::DOMAIN.to_id()
+        };
+
+        let operation = GetTxnOperation::new(seq_no, ledger_id);
 
         let request = Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("GET_TXN request json is invalid {:?}.", err)))?;
@@ -460,10 +469,10 @@ impl LedgerService {
 
         let cred_def = match reply.result() {
             GetCredDefReplyResult::GetCredDefReplyResultV0(res) => CredentialDefinitionV1 {
-                id: CredentialDefinition::cred_def_id(&res.origin, &res.ref_.to_string(), &res.signature_type.to_str()),
+                id: CredentialDefinition::cred_def_id(&res.origin, &res.ref_.to_string(), &res.signature_type.to_str(), &res.tag.clone().unwrap_or(String::new())),
                 schema_id: res.ref_.to_string(),
                 signature_type: res.signature_type,
-                tag: String::new(),
+                tag: res.tag.unwrap_or(String::new()),
                 value: res.data
             },
             GetCredDefReplyResult::GetCredDefReplyResultV1(res) => CredentialDefinitionV1 {
@@ -576,6 +585,7 @@ impl LedgerService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use domain::ledger::request::ProtocolVersion;
 
     #[test]
     fn build_nym_request_works_for_only_required_fields() {
@@ -583,7 +593,7 @@ mod tests {
         let identifier = "identifier";
         let dest = "dest";
 
-        let expected_result = r#""identifier":"identifier","operation":{"dest":"dest","type":"1"},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"dest":"dest","type":"1"}"#;
 
         let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, None).unwrap();
         assert!(nym_request.contains(expected_result));
@@ -595,7 +605,7 @@ mod tests {
         let identifier = "identifier";
         let dest = "dest";
 
-        let expected_result = r#""identifier":"identifier","operation":{"dest":"dest","role":null,"type":"1"},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"dest":"dest","role":null,"type":"1"}"#;
 
         let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, Some("")).unwrap();
         assert!(nym_request.contains(expected_result));
@@ -609,7 +619,7 @@ mod tests {
         let verkey = "verkey";
         let alias = "some_alias";
 
-        let expected_result = r#""identifier":"identifier","operation":{"alias":"some_alias","dest":"dest","role":null,"type":"1","verkey":"verkey"},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"alias":"some_alias","dest":"dest","role":null,"type":"1","verkey":"verkey"}"#;
 
         let nym_request = ledger_service.build_nym_request(identifier, dest, Some(verkey), Some(alias), Some("")).unwrap();
         assert!(nym_request.contains(expected_result));
@@ -621,7 +631,7 @@ mod tests {
         let identifier = "identifier";
         let dest = "dest";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"105","dest":"dest"},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"105","dest":"dest"}"#;
 
         let get_nym_request = ledger_service.build_get_nym_request(identifier, dest).unwrap();
         assert!(get_nym_request.contains(expected_result));
@@ -633,7 +643,7 @@ mod tests {
         let identifier = "identifier";
         let dest = "dest";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"120","dest":"dest"},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"120","dest":"dest"}"#;
 
         let get_ddo_request = ledger_service.build_get_ddo_request(identifier, dest).unwrap();
         assert!(get_ddo_request.contains(expected_result));
@@ -656,7 +666,7 @@ mod tests {
         let dest = "dest";
         let hash = "hash";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"100","dest":"dest","hash":"hash"},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"100","dest":"dest","hash":"hash"}"#;
 
         let attrib_request = ledger_service.build_attrib_request(identifier, dest, Some(hash), None, None).unwrap();
         assert!(attrib_request.contains(expected_result));
@@ -669,7 +679,7 @@ mod tests {
         let dest = "dest";
         let raw = "raw";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","raw":"raw"},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","raw":"raw"}"#;
 
         let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, Some(raw), None, None).unwrap();
         assert!(get_attrib_request.contains(expected_result));
@@ -682,7 +692,7 @@ mod tests {
         let dest = "dest";
         let hash = "hash";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","hash":"hash"},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","hash":"hash"}"#;
 
         let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, None, Some(hash), None).unwrap();
         assert!(get_attrib_request.contains(expected_result));
@@ -695,7 +705,7 @@ mod tests {
         let dest = "dest";
         let enc = "enc";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","enc":"enc"},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","enc":"enc"}"#;
 
         let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, None, None, Some(enc)).unwrap();
         assert!(get_attrib_request.contains(expected_result));
@@ -708,7 +718,7 @@ mod tests {
         let dest = "dest";
         let raw = "raw";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","raw":"raw"},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","raw":"raw"}"#;
 
         let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, Some(raw), None, None).unwrap();
         assert!(get_attrib_request.contains(expected_result));
@@ -730,7 +740,7 @@ mod tests {
         let identifier = "identifier";
         let data = r#"{"name":"name", "version":"1.0", "attrNames":["male"], "id":"id", "ver":"1.0"}"#;
 
-        let expected_result = r#""operation":{"type":"101","data":{"name":"name","version":"1.0","attr_names":["male"]}},"protocolVersion":1"#;
+        let expected_result = r#""operation":{"type":"101","data":{"name":"name","version":"1.0","attr_names":["male"]}}"#;
 
         let schema_request = ledger_service.build_schema_request(identifier, data).unwrap();
         assert!(schema_request.contains(expected_result));
@@ -752,7 +762,7 @@ mod tests {
         let identifier = "identifier";
         let id = Schema::schema_id("identifier", "name", "1.0");
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"107","dest":"identifier","data":{"name":"name","version":"1.0"}},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"107","dest":"identifier","data":{"name":"name","version":"1.0"}}"#;
 
         let get_schema_request = ledger_service.build_get_schema_request(identifier, &id).unwrap();
         assert!(get_schema_request.contains(expected_result));
@@ -760,11 +770,13 @@ mod tests {
 
     #[test]
     fn build_get_cred_def_request_works() {
+        ProtocolVersion::set(2);
+
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
-        let id = CredentialDefinition::cred_def_id("origin", "1", "signature_type");
+        let id = CredentialDefinition::cred_def_id("origin", "1", "signature_type", "tag");
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"origin"},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"origin","tag":"tag"}"#;
 
         let get_cred_def_request = ledger_service.build_get_cred_def_request(identifier, &id).unwrap();
         assert!(get_cred_def_request.contains(expected_result));
@@ -777,7 +789,7 @@ mod tests {
         let dest = "dest";
         let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1, "alias":"some", "services": ["VALIDATOR"], "blskey":"blskey"}"#;
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"ip","node_port":1,"client_ip":"ip","client_port":1,"alias":"some","services":["VALIDATOR"],"blskey":"blskey"}},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"ip","node_port":1,"client_ip":"ip","client_port":1,"alias":"some","services":["VALIDATOR"],"blskey":"blskey"}}"#;
 
         let node_request = ledger_service.build_node_request(identifier, dest, data).unwrap();
         assert!(node_request.contains(expected_result));
@@ -803,9 +815,20 @@ mod tests {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1},"protocolVersion":1"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1,"ledgerId":1}"#;
 
-        let get_txn_request = ledger_service.build_get_txn_request(identifier, 1).unwrap();
+        let get_txn_request = ledger_service.build_get_txn_request(identifier, None, 1).unwrap();
+        assert!(get_txn_request.contains(expected_result));
+    }
+
+    #[test]
+    fn build_get_txn_request_works_for_ledger_type() {
+        let ledger_service = LedgerService::new();
+        let identifier = "identifier";
+
+        let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1,"ledgerId":0}"#;
+
+        let get_txn_request = ledger_service.build_get_txn_request(identifier, Some("POOL"), 1).unwrap();
         assert!(get_txn_request.contains(expected_result));
     }
 }

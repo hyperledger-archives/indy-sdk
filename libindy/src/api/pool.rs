@@ -259,3 +259,49 @@ pub extern fn indy_delete_pool_ledger_config(command_handle: i32,
 
     res
 }
+
+/// Set PROTOCOL_VERSION to specific version.
+///
+/// There is a global property PROTOCOL_VERSION that used in every request to the pool and
+/// specified version of Indy Node which Libindy works.
+///
+/// By default PROTOCOL_VERSION=1.
+///
+/// #Params
+/// protocol_version: Protocol version will be used:
+///     1 - for Indy Node 1.3
+///     2 - for Indy Node 1.4
+///
+/// #Returns
+/// Error code
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_set_protocol_version(command_handle: i32,
+                                        protocol_version: usize,
+                                        cb: Option<extern fn(xcommand_handle: i32,
+                                                             err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_set_protocol_version: >>> protocol_version: {:?}", protocol_version);
+
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    trace!("indy_set_protocol_version: entities >>> protocol_version: {:?}", protocol_version);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Pool(
+            PoolCommand::SetProtocolVersion(
+            protocol_version,
+            Box::new(move |result| {
+                let err = result_to_err_code!(result);
+                trace!("indy_set_protocol_version:");
+                cb(command_handle, err)
+            })
+        )));
+
+    let res = result_to_err_code!(result);
+
+    trace!("indy_set_protocol_version: <<< res: {:?}", res);
+
+    res
+}

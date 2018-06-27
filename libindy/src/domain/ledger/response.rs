@@ -55,7 +55,7 @@ impl<'a, T: JsonDecodable<'a>> JsonDecodable<'a> for ReplyDataV1<T> {}
 
 #[derive(Debug, Deserialize)]
 pub struct GetReplyResultV0<T> {
-    pub  data: T
+    pub  data: Option<T>
 }
 
 impl<'a, T: JsonDecodable<'a>> JsonDecodable<'a> for GetReplyResultV0<T> {}

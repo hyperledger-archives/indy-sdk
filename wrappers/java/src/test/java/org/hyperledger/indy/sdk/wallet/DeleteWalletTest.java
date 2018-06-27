@@ -1,11 +1,11 @@
 package org.hyperledger.indy.sdk.wallet;
 
-import org.hyperledger.indy.sdk.IOException;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 
+import org.hyperledger.indy.sdk.InvalidStateException;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -36,10 +36,9 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	@Ignore//TODO THERE IS BUG IN INDY
 	public void testDeleteWalletWorksForOpened() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(IOException.class));
+		thrown.expectCause(isA(InvalidStateException.class));
 
 		String walletName = "deleteWalletWorksForOpened";
 
@@ -51,7 +50,7 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testDeleteWalletWorksForTwice() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(IOException.class));
+		thrown.expectCause(isA(WalletNotFoundException.class));
 
 		Wallet.createWallet(POOL, WALLET, null, null, CREDENTIALS).get();
 
@@ -74,7 +73,7 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testDeleteWalletWorksForNotCreated() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(IOException.class));
+		thrown.expectCause(isA(WalletNotFoundException.class));
 
 		Wallet.deleteWallet(WALLET, CREDENTIALS).get();
 	}

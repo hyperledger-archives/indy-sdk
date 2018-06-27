@@ -50,7 +50,7 @@ indy> ledger get-utxo payment_address=<payment-address>
 
 Returns:
 
-* Table with columns: Input, Amount, Extra
+* Table with columns: Txo, Payment Address, Amount, Extra
 
 ### Send PAYMENT transaction
 
@@ -105,7 +105,7 @@ Sending MINT process is the following:
 Prepare SET_FEES transaction as json.
 
 ```indy-cli
-indy> ledger set-fees-prepare fees=<txn-type-1>:<amount-1>,...,<txn-type-n>:<amount-n>
+indy> ledger set-fees-prepare payment_method=<payment_method> fees=<txn-type-1>:<amount-1>,...,<txn-type-n>:<amount-n>
 ```
 
 Returns:

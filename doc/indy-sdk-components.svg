@@ -7,7 +7,7 @@
 [Indy CLI] as cli
 cinterface <.. cli
 
-package "Programming lanugages wrappers" {
+package "Programming languages wrappers" {
     [Java Wrapper] as java_wrapper
     cinterface <.. java_wrapper
     

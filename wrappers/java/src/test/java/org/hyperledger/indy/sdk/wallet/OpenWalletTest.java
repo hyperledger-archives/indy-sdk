@@ -32,26 +32,23 @@ public class OpenWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testOpenWalletWorksForInvalidCredentials() throws Exception {
-		Wallet.createWallet(POOL, "ForEbcryptedWalletInvalidCredentials", TYPE, null, CREDENTIALS).get();
+		Wallet.createWallet(POOL, "ForEncryptedWalletInvalidCredentials", TYPE, null, CREDENTIALS).get();
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletAccessFailedException.class));
 
-		Wallet.openWallet("ForEbcryptedWalletInvalidCredentials", null, "{\"key\": \"other_key\"}").get();
+		Wallet.openWallet("ForEncryptedWalletInvalidCredentials", null, "{\"key\": \"other_key\"}").get();
 	}
 
 
 	@Test
-	@Ignore
-	public void testOpenWalletWorksForEbcryptedWalletChangingCredentials() throws Exception {
-		Wallet.createWallet(POOL, "ForEbcryptedWalletChangingCredentials", TYPE, null, CREDENTIALS).get();
+	public void testOpenWalletWorksForEncryptedWalletChangingCredentials() throws Exception {
+		Wallet.createWallet(POOL, "ForEncryptedWalletChangingCredentials", TYPE, null, CREDENTIALS).get();
 
-		Wallet wallet = Wallet.openWallet("ForEbcryptedWalletChangingCredentials", null, "{\"key\": \"key\", \"rekey\": \"other_key\"}").get();
-		assertNotNull(wallet);
-
+		Wallet wallet = Wallet.openWallet("ForEncryptedWalletChangingCredentials", null, "{\"key\": \"key\", \"rekey\": \"other_key\"}").get();
 		wallet.closeWallet().get();
 
-		wallet = Wallet.openWallet("ForEbcryptedWalletChangingCredentials", null, "{\"key\": \"other_key\"}").get();
+		wallet = Wallet.openWallet("ForEncryptedWalletChangingCredentials", null, "{\"key\": \"other_key\"}").get();
 		wallet.closeWallet().get();
 	}
 
@@ -66,7 +63,7 @@ public class OpenWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testOpenWalletWorksForNotCreatedWallet() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(IOException.class));
+		thrown.expectCause(isA(WalletNotFoundException.class));
 
 		Wallet.openWallet("openWalletWorksForNotCreatedWallet", null, CREDENTIALS).get();
 	}

@@ -36,6 +36,7 @@ npm install --save indy-sdk
 ```
 
 #### Troubleshooting
+Use environment variable `RUST_LOG={info|debug|trace}` to output logs of Libindy.
 
 ##### Linking errors
 
@@ -1231,7 +1232,11 @@ Errors: `Common*`
 Builds a GET\_TXN request. Request to get any transaction by its seq\_no.
 
 * `submitterDid`: String - DID of the request submitter.
-* `data`: Number
+* `ledgerType`: String - Type of the ledger the requested transaction belongs to:
+DOMAIN - used default
+POOL
+CONFIG
+* `data`: Requested transaction sequence number as it's stored on Ledger.
 * __->__ `request`: Json
 
 Errors: `Common*`
@@ -1570,6 +1575,19 @@ Deletes created pool ledger configuration.
 
 Errors: `Common*`, `Ledger*`
 
+#### setProtocolVersion \( protocolVersion \) -&gt; void
+
+Set PROTOCOL_VERSION to specific version.
+There is a global property PROTOCOL_VERSION that used in every request to the pool and specified version of Indy Node which Libindy works.
+By default PROTOCOL_VERSION=1.
+
+* `protocolVersion`: Number -  Protocol version will be used:
+    *1 - for Indy Node 1.3
+    *2 - for Indy Node 1.4
+* __->__ void
+
+Errors: `Common*`, `Pool*`
+
 ### wallet
 
 #### createWallet \( poolName, name, xtype, config, credentials \) -&gt; void
@@ -1582,8 +1600,12 @@ Creates a new secure wallet with the given unique name.
 Custom types can be registered with indy\_register\_wallet\_type call.
 * `config`: String? - Wallet configuration json. List of supported keys are defined by wallet type.
 if NULL, then default config will be used.
-* `credentials`: String? - Wallet credentials json. List of supported keys are defined by wallet type.
-if NULL, then default config will be used.
+* `credentials`: String? - Wallet credentials json. 
+```
+{
+    "key": "wallet pass phrase"
+}
+```
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
@@ -1603,8 +1625,12 @@ It is impossible to open wallet with the same name more than once.
     ... List of additional supported keys are defined by wallet type.
 }
 ````
-* `credentials`: String? - Wallet credentials json. List of supported keys are defined by wallet type.
-if NULL, then default credentials will be used.
+* `credentials`: String? - Wallet credentials json. 
+```
+{
+    "key": "wallet pass phrase"
+}
+```
 * __->__ `handle`: Handle (Number) - Handle to opened wallet to use in methods that require wallet access.
 
 Errors: `Common*`, `Wallet*`
@@ -1630,12 +1656,58 @@ Errors: `Common*`, `Wallet*`
 Deletes created wallet.
 
 * `name`: String - Name of the wallet to delete.
-* `credentials`: String? - Wallet credentials json. List of supported keys are defined by wallet type.
-if NULL, then default credentials will be used.
+* `credentials`: String? - Wallet credentials json. 
+```
+{
+    "key": "wallet pass phrase"
+}
+```
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
 
+#### exportWallet \( handle, exportConfigJson \) -&gt; void
+
+Exports opened wallet
+
+* `handle`: Handle (Number) - wallet handle returned by indy\_open\_wallet.
+* `exportConfigJson`: String - JSON containing settings for input operation.
+```
+{
+    "path": path of the file that contains exported wallet content
+    "key": passphrase used to export key
+}
+```
+* __->__ void
+
+Errors: `Common*`, `Wallet*`
+
+#### importWallet \( poolName, name, xtype, config, credentials, importConfigJson \) -&gt; void
+
+Creates a new secure wallet with the given unique name and then imports its content according to fields provided in import_config This can be seen as an indy_create_wallet call with additional content import
+* `poolName`: String - Name of the pool that corresponds to this wallet.
+* `name`: String - Name of the wallet.
+* `xtype`: String? - Type of the wallet. Defaults to 'default'.
+Custom types can be registered with indy\_register\_wallet\_type call.
+* `config`: String? - Wallet configuration json. List of supported keys are defined by wallet type.
+if NULL, then default config will be used.
+* `credentials`: String - Wallet credentials json. 
+```
+{
+    "key": passphrase used to encrypt data
+    "storage": Optional<object>  List of supported keys are defined by wallet type.
+}
+```
+* `exportConfigJson`: String - JSON containing settings for input operation.
+```
+{
+    "path": path of the file that contains exported wallet content
+    "key": passphrase used to export key
+}
+```
+* __->__ void
+
+Errors: `Common*`, `Wallet*`
 
 [//]: # (CODEGEN-END - don't edit by hand see `codegen/index.js`)
 

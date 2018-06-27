@@ -137,7 +137,7 @@ pub enum ErrorCode
     WalletStorageError = 210,
 
     // Error during encryption-related operations
-    WalletEncryptonError = 211,
+    WalletEncryptionError = 211,
 
     // Requested wallet item not found
     WalletItemNotFound = 212,
@@ -158,7 +158,7 @@ pub enum ErrorCode
     // Pool ledger terminated
     PoolLedgerTerminated = 302,
 
-    // No concensus during ledger operation
+    // No consensus during ledger operation
     LedgerNoConsensusError = 303,
 
     // Attempt to parse invalid transaction response

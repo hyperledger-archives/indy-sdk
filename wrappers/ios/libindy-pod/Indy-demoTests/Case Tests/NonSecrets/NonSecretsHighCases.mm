@@ -14,6 +14,10 @@
 - (void)setUp {
     [super setUp];
     [TestUtils cleanupStorage];
+
+    ret = [[PoolUtils sharedInstance] setProtocolVersion:[TestUtils protocolVersion]];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::setProtocolVersion() failed!");
+
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
                                                                   xtype:nil
                                                                  handle:&walletHandle];
@@ -65,7 +69,7 @@
                                                      tagsJson:[NonSecretsUtils tags1]];
     XCTAssertEqual(ret.code, Success, @"NonSecretsUtils::addRecordInWallet() failed");
 
-//    [NonSecretsUtils checkRecordField:walletHandle field:@"value" expectedValue:[NonSecretsUtils value1]];
+    [NonSecretsUtils checkRecordField:walletHandle field:@"value" expectedValue:[NonSecretsUtils value1]];
 
     ret = [[NonSecretsUtils sharedInstance] updateRecordValueInWallet:walletHandle
                                                                  type:[NonSecretsUtils type]
@@ -73,7 +77,7 @@
                                                                 value:[NonSecretsUtils value2]];
     XCTAssertEqual(ret.code, Success, @"NonSecretsUtils::updateRecordValueInWallet() failed");
 
-//    [NonSecretsUtils checkRecordField:walletHandle field:@"value" expectedValue:[NonSecretsUtils value2]];
+    [NonSecretsUtils checkRecordField:walletHandle field:@"value" expectedValue:[NonSecretsUtils value2]];
 }
 
 - (void)testUpdateWalletRecordValueWorksForNotFoundRecord {
@@ -94,7 +98,7 @@
                                                      tagsJson:[NonSecretsUtils tags1]];
     XCTAssertEqual(ret.code, Success, @"NonSecretsUtils::addRecordInWallet() failed");
 
-    //[NonSecretsUtils checkRecordField:walletHandle field:@"tags" expectedValue:[NonSecretsUtils tags1]];
+    [NonSecretsUtils checkRecordField:walletHandle field:@"tags" expectedValue:[NonSecretsUtils tags1]];
 
     ret = [[NonSecretsUtils sharedInstance] updateRecordTagsInWallet:walletHandle
                                                                 type:[NonSecretsUtils type]
@@ -102,7 +106,7 @@
                                                             tagsJson:[NonSecretsUtils tags2]];
     XCTAssertEqual(ret.code, Success, @"NonSecretsUtils::updateRecordTagsInWallet() failed");
 
-//    [NonSecretsUtils checkRecordField:walletHandle field:@"tags" expectedValue:[NonSecretsUtils tags2]];
+    [NonSecretsUtils checkRecordField:walletHandle field:@"tags" expectedValue:[NonSecretsUtils tags2]];
 }
 
 - (void)testUpdateWalletRecordTagsWorksForNotFoundRecord {
@@ -129,7 +133,7 @@
                                                          tagsJson:[NonSecretsUtils tags1]];
     XCTAssertEqual(ret.code, Success, @"NonSecretsUtils::addRecordTagsInWallet() failed");
 
-//    [NonSecretsUtils checkRecordField:walletHandle field:@"tags" expectedValue:[NonSecretsUtils tags1]];
+    [NonSecretsUtils checkRecordField:walletHandle field:@"tags" expectedValue:[NonSecretsUtils tags1]];
 }
 
 - (void)testAddWalletRecordTagsWorksForNotFoundRecord {
@@ -150,7 +154,7 @@
                                                      tagsJson:[NonSecretsUtils tags1]];
     XCTAssertEqual(ret.code, Success, @"NonSecretsUtils::addRecordInWallet() failed");
 
-//    [NonSecretsUtils checkRecordField:walletHandle field:@"tags" expectedValue:[NonSecretsUtils tags1]];
+    [NonSecretsUtils checkRecordField:walletHandle field:@"tags" expectedValue:[NonSecretsUtils tags1]];
 
     ret = [[NonSecretsUtils sharedInstance] deleteRecordTagsInWallet:walletHandle
                                                                 type:[NonSecretsUtils type]
@@ -158,7 +162,7 @@
                                                            tagsNames:@"[\"tagName1\"]"];
     XCTAssertEqual(ret.code, Success, @"NonSecretsUtils::deleteRecordTagsInWallet() failed");
 
-//    [NonSecretsUtils checkRecordField:walletHandle field:@"tags" expectedValue:@"{\"tagName2\":\"5\",\"tagName3\":\"12\"}"];
+    [NonSecretsUtils checkRecordField:walletHandle field:@"tags" expectedValue:@"{\"tagName2\":\"5\",\"tagName3\":\"12\"}"];
 }
 
 - (void)testDeleteWalletRecordTagsWorksForNotFoundRecord {
@@ -237,7 +241,7 @@
     XCTAssertTrue([[NonSecretsUtils id1] isEqualToString:record[@"id"]]);
     XCTAssertTrue([[NonSecretsUtils value1] isEqualToString:record[@"value"]]);
     XCTAssertTrue([[NonSecretsUtils type] isEqualToString:record[@"type"]]);
-    XCTAssertTrue([[NSDictionary fromString:[NonSecretsUtils tags1]] isEqualToDictionary:[NSDictionary fromString:record[@"tags"]]]);
+    XCTAssertTrue([[NSDictionary fromString:[NonSecretsUtils tags1]] isEqualToDictionary:record[@"tags"]]);
 }
 
 - (void)testGetWalletRecordWorksForNotFoundRecord {

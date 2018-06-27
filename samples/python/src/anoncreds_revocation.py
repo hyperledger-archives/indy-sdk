@@ -7,8 +7,9 @@ import json
 import logging
 
 from indy import blob_storage
+from indy import pool
 
-from src.utils import run_coroutine, path_home
+from src.utils import run_coroutine, path_home, PROTOCOL_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -22,13 +23,18 @@ async def demo():
     issuer_did = 'NcYxiDXkpYi6ov5FcYDi1e'
     prover_did = 'VsKV7grR1BUE29mG2Fm2kX'
 
+    # Set protocol version 2 to work with Indy Node 1.4
+    await pool.set_protocol_version(PROTOCOL_VERSION)
+
     # 1. Create Issuer Wallet and Get Wallet Handle
-    await wallet.create_wallet(pool_name, issuer_wallet_name, None, None, None)
-    issuer_wallet = await wallet.open_wallet(issuer_wallet_name, None, None)
+    issuer_wallet_credentials = json.dumps({"key": "issuer_wallet_key"})
+    await wallet.create_wallet(pool_name, issuer_wallet_name, None, None, issuer_wallet_credentials)
+    issuer_wallet = await wallet.open_wallet(issuer_wallet_name, None, issuer_wallet_credentials)
 
     # 2. Create Prover Wallet and Get Wallet Handle
-    await wallet.create_wallet(pool_name, prover_wallet_name, None, None, None)
-    prover_wallet = await wallet.open_wallet(prover_wallet_name, None, None)
+    prover_wallet_credentials = json.dumps({"key": "issuer_wallet_key"})
+    await wallet.create_wallet(pool_name, prover_wallet_name, None, None, prover_wallet_credentials)
+    prover_wallet = await wallet.open_wallet(prover_wallet_name, None, prover_wallet_credentials)
 
     # 3. Issuer create Credential Schema
     schema_name = 'gvt'
@@ -142,11 +148,11 @@ async def demo():
 
     # 13. Close and delete Issuer wallet
     await wallet.close_wallet(issuer_wallet)
-    await wallet.delete_wallet(issuer_wallet_name, None)
+    await wallet.delete_wallet(issuer_wallet_name, issuer_wallet_credentials)
 
     # 14. Close and delete Prover wallet
     await wallet.close_wallet(prover_wallet)
-    await wallet.delete_wallet(prover_wallet_name, None)
+    await wallet.delete_wallet(prover_wallet_name, prover_wallet_credentials)
 
     logger.info("Anoncreds Revocation sample -> completed")
 

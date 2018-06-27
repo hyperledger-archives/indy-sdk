@@ -23,6 +23,10 @@ RUN apt-get update && \
       libncursesw5-dev \
       libzmq3-dev
 
+# install nodejs and npm
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
+RUN apt-get install -y nodejs
+
 RUN pip3 install -U \
 	pip \
 	setuptools \
@@ -43,10 +47,12 @@ RUN apt-get update && apt-get install openjdk-8-jdk -y
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 RUN apt-get update && apt-get install -y maven
 
+RUN apt-get install -y zip
+
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.25.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.26.0
 ENV PATH /home/indy/.cargo/bin:$PATH
 
 WORKDIR /home/indy

@@ -9,6 +9,7 @@ import java.util.Arrays;
 
 import static org.hyperledger.indy.sdk.did.Did.*;
 import static org.hyperledger.indy.sdk.crypto.Crypto.*;
+import static utils.PoolUtils.PROTOCOL_VERSION;
 
 
 class Crypto {
@@ -19,17 +20,22 @@ class Crypto {
 		String myWalletName = "myWallet";
 		String theirWalletName = "theirWallet";
 
+		// Set protocol version 2 to work with Indy Node 1.4
+		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
+
 		// 1. Create and Open Pool
 		String poolName = PoolUtils.createPoolLedgerConfig();
 		Pool pool = Pool.openPoolLedger(poolName, "{}").get();
 
 		// 2. Create and Open My Wallet
-		Wallet.createWallet(poolName, myWalletName, "default", null, null).get();
-		Wallet myWallet = Wallet.openWallet(myWalletName, null, null).get();
+		String myWalletCredentials = "{\"key\":\"my_wallet_key\"}";
+		Wallet.createWallet(poolName, myWalletName, "default", null, myWalletCredentials).get();
+		Wallet myWallet = Wallet.openWallet(myWalletName, null, myWalletCredentials).get();
 
 		// 3. Create and Open Their Wallet
-		Wallet.createWallet(poolName, theirWalletName, "default", null, null).get();
-		Wallet theirWallet = Wallet.openWallet(theirWalletName, null, null).get();
+		String theirWalletCredentials = "{\"key\":\"their_wallet_key\"}";
+		Wallet.createWallet(poolName, theirWalletName, "default", null, theirWalletCredentials).get();
+		Wallet theirWallet = Wallet.openWallet(theirWalletName, null, theirWalletCredentials).get();
 
 		// 4. Create My Did
 		CreateAndStoreMyDidResult myDid = createAndStoreMyDid(myWallet, "{}").get();
@@ -59,11 +65,11 @@ class Crypto {
 
 		// 8. Close and delete My Wallet
 		myWallet.closeWallet().get();
-		Wallet.deleteWallet(myWalletName, null).get();
+		Wallet.deleteWallet(myWalletName, myWalletCredentials).get();
 
 		// 9. Close and delete Their Wallet
 		theirWallet.closeWallet().get();
-		Wallet.deleteWallet(theirWalletName, null).get();
+		Wallet.deleteWallet(theirWalletName, theirWalletCredentials).get();
 
 		// 10. Close Pool
 		pool.closePoolLedger().get();

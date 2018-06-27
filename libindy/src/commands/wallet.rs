@@ -9,6 +9,10 @@ use services::wallet::WalletService;
 use api::wallet::*;
 use std::rc::Rc;
 
+use std::result;
+
+type Result<T> = result::Result<T, IndyError>;
+
 pub enum WalletCommand {
     RegisterWalletType(String, // type_
                        WalletCreate, // create
@@ -35,23 +39,33 @@ pub enum WalletCommand {
                        WalletGetSearchTotalCount, // get search total count
                        WalletFetchSearchNextRecord, // fetch search next record
                        WalletFreeSearch, // free search
-                       Box<Fn(Result<(), IndyError>) + Send>),
+                       Box<Fn(Result<()>) + Send>),
     Create(String, // pool name
            String, // wallet name
            Option<String>, // storage type
            Option<String>, // config
            String, // credentials
-           Box<Fn(Result<(), IndyError>) + Send>),
+           Box<Fn(Result<()>) + Send>),
     Open(String, // wallet name
          Option<String>, // wallet runtime config
          String, // wallet credentials
-         Box<Fn(Result<i32, IndyError>) + Send>),
+         Box<Fn(Result<i32>) + Send>),
     Close(i32, // handle
-          Box<Fn(Result<(), IndyError>) + Send>),
-    ListWallets(Box<Fn(Result<String, IndyError>) + Send>),
+          Box<Fn(Result<()>) + Send>),
+    ListWallets(Box<Fn(Result<String>) + Send>),
     Delete(String, // name
            String, // wallet credentials
-           Box<Fn(Result<(), IndyError>) + Send>)
+           Box<Fn(Result<()>) + Send>),
+    Export(i32, // wallet_handle
+           String, // export config_json
+           Box<Fn(Result<()>) + Send>),
+    Import(String, // pool name
+           String, // wallet name
+           Option<String>, // storage type
+           Option<String>, // config
+           String, // credentials
+           String, // import_config_json
+           Box<Fn(Result<()>) + Send>),
 }
 
 pub struct WalletCommandExecutor {
@@ -102,6 +116,15 @@ impl WalletCommandExecutor {
                 info!(target: "wallet_command_executor", "Delete command received");
                 cb(self.delete(&name, &credentials));
             }
+            WalletCommand::Export(wallet_handle, export_config_json, cb) => {
+                info!(target: "wallet_command_executor", "Export command received");
+                cb(self.export(wallet_handle, &export_config_json));
+            }
+            WalletCommand::Import(pool_name, name, storage_type, config, credentials, import_config, cb) => {
+                info!(target: "wallet_command_executor", "Import command received");
+                cb(self.import(&pool_name, &name, storage_type.as_ref().map(String::as_str),
+                               config.as_ref().map(String::as_str), &credentials, &import_config));
+            }
         };
     }
 
@@ -130,7 +153,7 @@ impl WalletCommandExecutor {
                      search_all_records: WalletSearchAllRecords,
                      get_search_total_count: WalletGetSearchTotalCount,
                      fetch_search_next_record: WalletFetchSearchNextRecord,
-                     free_search: WalletFreeSearch) -> Result<(), IndyError> {
+                     free_search: WalletFreeSearch) -> Result<()> {
         info!("register_type >>>");
 
         let res = self
@@ -152,7 +175,7 @@ impl WalletCommandExecutor {
               name: &str,
               storage_type: Option<&str>,
               config: Option<&str>,
-              credentials: &str) -> Result<(), IndyError> {
+              credentials: &str) -> Result<()> {
         debug!("create >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}",
                pool_name, name, storage_type, config, credentials);
 
@@ -166,7 +189,7 @@ impl WalletCommandExecutor {
     fn open(&self,
             name: &str,
             runtime_config: Option<&str>,
-            credentials: &str) -> Result<i32, IndyError> {
+            credentials: &str) -> Result<i32> {
         debug!("open >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
 
         let res = self.wallet_service.open_wallet(name, runtime_config, credentials)?;
@@ -177,7 +200,7 @@ impl WalletCommandExecutor {
     }
 
     fn close(&self,
-             handle: i32) -> Result<(), IndyError> {
+             handle: i32) -> Result<()> {
         debug!("close >>> handle: {:?}", handle);
 
         let res = self.wallet_service.close_wallet(handle)?;
@@ -187,7 +210,7 @@ impl WalletCommandExecutor {
         Ok(res)
     }
 
-    fn list_wallets(&self) -> Result<String, IndyError> {
+    fn list_wallets(&self) -> Result<String> {
         debug!("list_wallets >>>");
 
         let res = self.wallet_service.list_wallets()
@@ -203,12 +226,42 @@ impl WalletCommandExecutor {
 
     fn delete(&self,
               name: &str,
-              credentials: &str) -> Result<(), IndyError> {
+              credentials: &str) -> Result<()> {
         debug!("delete >>> name: {:?}, credentials: {:?}", name, credentials);
 
         let res = self.wallet_service.delete_wallet(name, credentials)?;
 
         debug!("delete <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn export(&self,
+              wallet_handle: i32,
+              export_config_json: &str) -> Result<()> {
+        debug!("export >>> handle: {:?}, export_config_json: {:?}", wallet_handle, export_config_json);
+
+        // TODO - later add proper versioning
+        let res = self.wallet_service.export_wallet(wallet_handle, export_config_json, 0)?;
+
+        debug!("export <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn import(&self,
+              pool_name: &str,
+              name: &str,
+              storage_type: Option<&str>,
+              config: Option<&str>,
+              credentials: &str,
+              import_config: &str) -> Result<()> {
+        debug!("import >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}, import_config: {:?}",
+               pool_name, name, storage_type, config, credentials, import_config);
+
+        let res = self.wallet_service.import_wallet(pool_name, name, storage_type, config, credentials, import_config)?;
+
+        debug!("import <<< res: {:?}", res);
 
         Ok(res)
     }

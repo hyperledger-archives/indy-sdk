@@ -665,18 +665,24 @@ async def build_get_validator_info_request(submitter_did: str) -> str:
 
 
 async def build_get_txn_request(submitter_did: str,
+                                ledger_type: Optional[str],
                                 seq_no: int) -> str:
     """
     Builds a GET_TXN request. Request to get any transaction by its seq_no.
 
     :param submitter_did: DID of the submitter stored in secured Wallet.
-    :param seq_no: seq_no of transaction in ledger.
+    :param ledger_type: (Optional) type of the ledger the requested transaction belongs to:
+        DOMAIN - used default,
+        POOL,
+        CONFIG
+    :param seq_no: requested transaction sequence number as it's stored on Ledger.
     :return: Request result as json.
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_txn_request: >>> submitter_did: %r, seq_no: %r",
+    logger.debug("build_get_txn_request: >>> submitter_did: %r, ledger_type: %r, seq_no: %r",
                  submitter_did,
+                 ledger_type,
                  seq_no)
 
     if not hasattr(build_get_txn_request, "cb"):
@@ -684,10 +690,12 @@ async def build_get_txn_request(submitter_did: str,
         build_get_txn_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_ledger_type = c_char_p(ledger_type.encode('utf-8')) if ledger_type is not None else None
     c_seq_no = c_int32(seq_no)
 
     request_json = await do_call('indy_build_get_txn_request',
                                  c_submitter_did,
+                                 c_ledger_type,
                                  c_seq_no,
                                  build_get_txn_request.cb)
 
