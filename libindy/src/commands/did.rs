@@ -552,11 +552,15 @@ impl DidCommandExecutor {
 
         let their_did_info = match get_nym_response.result() {
             GetNymReplyResult::GetNymReplyResultV0(res) => {
-                let gen_nym_result_data = GetNymResultDataV0::from_json(&res.data)
-                    .map_err(map_err_trace!())
-                    .map_err(|_| CommonError::InvalidState("Invalid GetNymResultData json".to_string()))?;
+                if let Some(data) = &res.data {
+                    let gen_nym_result_data = GetNymResultDataV0::from_json(data)
+                        .map_err(map_err_trace!())
+                        .map_err(|_| CommonError::InvalidState("Invalid GetNymResultData json".to_string()))?;
 
-                TheirDidInfo::new(gen_nym_result_data.dest, gen_nym_result_data.verkey)
+                    TheirDidInfo::new(gen_nym_result_data.dest, gen_nym_result_data.verkey)
+                } else {
+                    return Err(WalletError::ItemNotFound.into()); //TODO FIXME use separate error
+                }
             }
             GetNymReplyResult::GetNymReplyResultV1(res) => TheirDidInfo::new(res.txn.data.did, res.txn.data.verkey)
         };
