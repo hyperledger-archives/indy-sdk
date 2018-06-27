@@ -94,7 +94,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
                                                                                            &schema_json,
                                                                                            TAG_1,
                                                                                            None,
-                                                                                           &AnoncredsUtils::revocation_cred_def_config()).unwrap();
+                                                                                           Some(&AnoncredsUtils::revocation_cred_def_config())).unwrap();
 
     // Issuer post CredentialDefinition to Ledger
     let cred_def_request = LedgerUtils::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
@@ -440,7 +440,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
                                                                                            &schema_json,
                                                                                            TAG_1,
                                                                                            None,
-                                                                                           &AnoncredsUtils::revocation_cred_def_config()).unwrap();
+                                                                                           Some(&AnoncredsUtils::revocation_cred_def_config())).unwrap();
 
     // Issuer post CredentialDefinition to Ledger
     let cred_def_request = LedgerUtils::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
@@ -748,7 +748,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
                                                                                            &schema_json,
                                                                                            TAG_1,
                                                                                            None,
-                                                                                           &AnoncredsUtils::revocation_cred_def_config()).unwrap();
+                                                                                           Some(&AnoncredsUtils::revocation_cred_def_config())).unwrap();
 
     // Issuer post CredentialDefinition to Ledger
     let cred_def_request = LedgerUtils::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();
@@ -1030,7 +1030,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
                                                                                            &schema_json,
                                                                                            TAG_1,
                                                                                            None,
-                                                                                           &AnoncredsUtils::revocation_cred_def_config()).unwrap();
+                                                                                           Some(&AnoncredsUtils::revocation_cred_def_config())).unwrap();
 
     // Issuer post CredentialDefinition to Ledger
     let cred_def_request = LedgerUtils::build_cred_def_txn(&issuer_did, &cred_def_json).unwrap();

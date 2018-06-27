@@ -8,7 +8,7 @@ from indy import ledger, did, wallet, pool
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
 async def test_ledger_demo_works(pool_name, pool_genesis_txn_path, seed_trustee1, pool_genesis_txn_file, path_home,
-                                 credentials):
+                                 credentials, protocol_version):
     # 1. Create ledger config from genesis txn file
     pool_config = json.dumps({"genesis_txn": str(pool_genesis_txn_path)})
     await pool.create_pool_ledger_config(pool_name, pool_config)

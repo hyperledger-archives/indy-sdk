@@ -157,7 +157,8 @@ type AddRequestFeesCB = extern fn(command_handle: i32,
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
 ///   [{
-///      input: <str>, // UTXO input
+///      txo: <str>, // UTXO input
+///      paymentAddress: <str>, //payment address for this UTXO
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
@@ -193,7 +194,8 @@ type BuildGetUTXORequestCB = extern fn(command_handle: i32,
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
 ///   [{
-///      input: <str>, // UTXO input
+///      txo: <str>, // UTXO input
+///      paymentAddress: <str>, //payment address for this UTXO
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
@@ -245,7 +247,8 @@ type BuildPaymentReqCB = extern fn(command_handle: i32,
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
 ///   [{
-///      input: <str>, // UTXO input
+///      txo: <str>, // UTXO input
+///      paymentAddress: <str>, //payment address for this UTXO
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
@@ -442,7 +445,8 @@ pub extern fn indy_add_request_fees(command_handle: i32,
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
 ///   [{
-///      input: <str>, // UTXO input
+///      txo: <str>, // UTXO input
+///      paymentAddress: <str>, //payment address for this UTXO
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
@@ -482,7 +486,8 @@ pub extern fn indy_build_get_utxo_request(command_handle: i32,
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
 ///   [{
-///      input: <str>, // UTXO input
+///      txo: <str>, // UTXO input
+///      paymentAddress: <str>, //payment address for this UTXO
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
@@ -538,7 +543,8 @@ pub extern fn indy_build_payment_req(command_handle: i32,
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
 ///   [{
-///      input: <str>, // UTXO input
+///      txo: <str>, // UTXO input
+///      paymentAddress: <str>, //payment address for this UTXO
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]

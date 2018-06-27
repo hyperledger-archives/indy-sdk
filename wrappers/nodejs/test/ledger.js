@@ -53,7 +53,7 @@ test('ledger', async function (t) {
   var data = await indy.parseGetSchemaResponse(res)
   t.is(data[0], schemaId)
   t.is(data[1].name, schema.name)
-  req = await indy.buildGetTxnRequest(myDid, data[1].seqNo)
+  req = await indy.buildGetTxnRequest(myDid, null, data[1].seqNo)
   res = await waitUntilApplied(pool.handle, req, res => res['result']['data']['txnMetadata']['seqNo'] != null)
   t.is(res.result.data.txn.data.data.name, schema.name)
   schema = data[1]

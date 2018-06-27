@@ -8,6 +8,7 @@ use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use super::response::GetReplyResultV1;
 use super::super::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1, SignatureType};
+use super::super::ledger::request::ProtocolVersion;
 
 #[derive(Serialize, Debug)]
 pub struct CredDefOperation {
@@ -16,16 +17,18 @@ pub struct CredDefOperation {
     pub data: CredentialDefinitionData,
     #[serde(rename = "type")]
     pub _type: String,
-    pub signature_type: String
+    pub signature_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tag: Option<String>
 }
 
 impl CredDefOperation {
     pub fn new(data: CredentialDefinitionV1) -> CredDefOperation {
         CredDefOperation {
             _ref: data.schema_id.parse::<i32>().unwrap_or(0),
-            // TODO: FIXME
             signature_type: data.signature_type.to_str().to_string(),
             data: data.value,
+            tag: if ProtocolVersion::is_node_1_3() { None } else { Some(data.tag.clone()) },
             _type: CRED_DEF.to_string()
         }
     }
@@ -40,16 +43,19 @@ pub struct GetCredDefOperation {
     #[serde(rename = "ref")]
     pub _ref: i32,
     pub signature_type: String,
-    pub origin: String
+    pub origin: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tag: Option<String>
 }
 
 impl GetCredDefOperation {
-    pub fn new(_ref: i32, signature_type: String, origin: String) -> GetCredDefOperation {
+    pub fn new(_ref: i32, signature_type: String, origin: String, tag: Option<String>) -> GetCredDefOperation {
         GetCredDefOperation {
             _type: GET_CRED_DEF.to_string(),
             _ref,
             signature_type,
-            origin
+            origin,
+            tag
         }
     }
 }
@@ -74,6 +80,7 @@ pub struct GetCredDefResultV0 {
     pub seq_no: i32,
     pub signature_type: SignatureType,
     pub origin: String,
+    pub tag: Option<String>,
     pub data: CredentialDefinitionData
 }
 

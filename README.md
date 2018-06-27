@@ -193,4 +193,5 @@ details.
 ## How to migrate
 The documents that provide necessary information for Libindy migration. This document is written for developers using Libindy 1.3.0 to provide necessary information and
 to simplify their transition to API of Libindy 1.4.0.
-* [v1.3.0 → v1.4.0](doc/migration-guide.md)
+* [v1.3.0 → v1.4.0](doc/migration-guide-1.3.0-1.4.0.md)
+* [v1.4.0 → v1.5.0](doc/migration-guide-1.4.0-1.5.0.md)

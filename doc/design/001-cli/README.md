@@ -48,7 +48,7 @@ CLI will support 2 execution modes:
 * Each command will be implemented as Rust module with one public "new" function that returns configured "Command" instance
 * All commands will share one "CommandContext". "CommandContext" will hold application state and contain 2 parts:
   * Pre-defined application part. Part that holds application-level state like command prompt, isExit flag and etc...
-  * Generic command specific part. This part will be key-value storage that will allow commands to store command-speficic data like Indy SDK handles, used DID and etc... 
+  * Generic command specific part. This part will be key-value storage that will allow commands to store command-specific data like Indy SDK handles, used DID and etc... 
 * "Executor" and "Cleaner" functions will get CommandContext as parameter
 * Actual execution of commands will be performed by CommandExecutor class. This class will:
   * Instantiation of shared "CommandContext"
@@ -155,6 +155,20 @@ List all created wallets with corresponded status (indicates opened one):
 indy> wallet list
 ```
 
+### Export wallet
+Exports opened wallet to the specified file.
+
+```indy-cli
+indy> wallet export export_path=<path-to-file> export_key=[<export key>]
+```
+
+### Import wallet
+Create new wallet and then import content from the specified file.
+
+```indy-cli
+indy> wallet import <wallet name> pool_name=<pool name> key=<key> export_path=<path-to-file> export_key=<key used for export>
+
+
 ### Pool management commands
 ```
 indy> pool <subcommand>
@@ -169,7 +183,7 @@ indy> pool create [name=]<pool name> gen_txn_file=<gen txn file path>
 #### Connect
 Connect to Indy nodes pool and make it available for operation that require pool access. If there was pool connection it will be disconnected.
 ```
-indy> pool connect [name=]<pool name>
+indy> pool connect [name=]<pool name> [protocol-version=<version>]
 ```
 
 #### Disconnect
@@ -256,7 +270,7 @@ ledger get-schema did=<did-value> name=<name-value> version=<version-value>
 #### CRED_DEF transaction
 Send CRED_DEF transaction
 ```
-ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> primary=<primary-value> [revocation=<revocation-value>]  [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
+ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> [tag=<tag>] primary=<primary-value> [revocation=<revocation-value>]  [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
 ```
 
 #### GET_CRED_DEF transaction
@@ -269,6 +283,12 @@ ledger get-cred-def schema_id=<schema_id-value> signature_type=<signature_type-v
 Send NODE transaction
 ```
 ledger node target=<target-value> node_ip=<node_ip-value> node_port=<node_port-value> client_ip=<client_ip-value> client_port=<client_port-value> alias=<alias-value> blskey=<blskey-value> [services=<services-value>]
+```
+
+#### GET_VALIDATOR_INFO transaction
+Send GET_VALIDATOR_INFO transaction to get info from all nodes
+```
+ledger get-validator-info 
 ```
 
 #### POOL_UPGRADE transaction
@@ -304,7 +324,7 @@ ledger get-utxo payment_address=<payment_address>
 #### PAYMENT transaction
 Send PAYMENT transaction
 ```
-ledger get-utxo inputs=<utxo-1>,..,<utxo-n> outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
+ledger payment inputs=<utxo-1>,..,<utxo-n> outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
 ```
 
 #### GET_FEES transaction
@@ -326,7 +346,7 @@ ledger set-fees-prepare payment_method=<payment_method> fees=<txn-type-1>:<amoun
 ```
 
 #### Add multi signature to transaction
-Prepare SET_FEES transaction
+Add multi signature by current DID to transaction
 ```
 ledger sign-multi txn=<txn_json>
 ```

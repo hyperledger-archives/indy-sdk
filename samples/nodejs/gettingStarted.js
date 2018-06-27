@@ -22,6 +22,8 @@ async function run() {
         }
     }
 
+    await indy.setProtocolVersion(2)
+
     let poolHandle = await indy.openPoolLedger(poolName);
 
     console.log("==============================");

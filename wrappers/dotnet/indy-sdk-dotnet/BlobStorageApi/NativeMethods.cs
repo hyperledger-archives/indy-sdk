@@ -11,6 +11,6 @@ namespace Hyperledger.Indy.BlobStorageApi
         internal delegate void BlobStorageCompletedDelegate(int xcommand_handle, int err, int handle);
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_open_blob_storage_writer(int command_handle, string type_, string config_jsom, BlobStorageCompletedDelegate cb);
+        internal static extern int indy_open_blob_storage_writer(int command_handle, string type_, string config_json, BlobStorageCompletedDelegate cb);
     }
 }

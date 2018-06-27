@@ -26,7 +26,6 @@ public class LedgerDemoTest extends IndyIntegrationTest {
 
 	@Test
 	public void testLedgerDemo() throws Exception {
-
 		// 1. Create ledger config from genesis txn file
 		String poolName = PoolUtils.createPoolLedgerConfig();
 		

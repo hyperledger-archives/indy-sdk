@@ -11,6 +11,7 @@
    brew install cmake
    brew install openssl
    brew install zeromq
+   brew install zmq
    ```
    
 

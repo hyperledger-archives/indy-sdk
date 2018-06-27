@@ -263,7 +263,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_crypto_sign_works_for_unknow_signer() {
+        fn indy_crypto_sign_works_for_unknown_signer() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
@@ -631,7 +631,7 @@ mod load {
     const OPERATIONS_CNT: usize = 10;
 
     /**
-     Environment varibales can be used for tuning this test:
+     Environment variables can be used for tuning this test:
      - AGENTS_CNT - count of parallel agents
      - OPERATIONS_CNT - operations per agent (consequence in same agent)
      - DATA_SZ - data size for encryption

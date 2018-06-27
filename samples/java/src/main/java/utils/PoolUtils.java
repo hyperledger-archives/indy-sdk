@@ -12,6 +12,7 @@ import java.io.IOException;
 public class PoolUtils {
 
 	private static final String DEFAULT_POOL_NAME = "default_pool";
+	public static final int PROTOCOL_VERSION = 2;
 
 
 	private static File createGenesisTxnFile(String filename) throws IOException {

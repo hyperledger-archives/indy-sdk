@@ -81,7 +81,8 @@ pub type AddRequestFeesCB = extern fn(command_handle: i32,
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
 ///   [{
-///      input: <str>, // UTXO input
+///      txo: <str>, // UTXO input
+///      paymentAddress: <str>, //payment address for this UTXO
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
@@ -117,7 +118,8 @@ pub type BuildGetUTXORequestCB = extern fn(command_handle: i32,
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
 ///   [{
-///      input: <str>, // UTXO input
+///      txo: <str>, // UTXO input
+///      paymentAddress: <str>, //payment address for this UTXO
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
@@ -169,7 +171,8 @@ pub type BuildPaymentReqCB = extern fn(command_handle: i32,
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
 ///   [{
-///      input: <str>, // UTXO input
+///      txo: <str>, // UTXO input
+///      paymentAddress: <str>, //payment address for this UTXO
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
@@ -265,6 +268,9 @@ pub type ParseGetTxnFeesResponseCB = extern fn(command_handle: i32,
 ///
 /// It allows library user to provide custom payment method implementation as set of handlers.
 ///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
+///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
 /// payment_method: The type of payment method also used as sub-prefix for fully resolvable payment address format ("sov" - for example)
@@ -352,6 +358,9 @@ pub extern fn indy_register_payment_method(command_handle: i32,
 /// Note that payment method should be able to resolve this
 /// secret by fully resolvable payment address format.
 ///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
+///
 /// #Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle where to save new address
@@ -403,6 +412,9 @@ pub extern fn indy_create_payment_address(command_handle: i32,
 
 /// Lists all payment addresses that are stored in the wallet
 ///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
+///
 /// #Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet to search for payment_addresses in
@@ -453,6 +465,9 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
 ///
 /// Format of inputs is specific for payment method. Usually it should reference payment transaction
 /// with at least one output that corresponds to payment address that user owns.
+///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
 ///
 /// #Params
 /// wallet_handle: wallet handle
@@ -520,6 +535,9 @@ pub extern fn indy_add_request_fees(command_handle: i32,
 
 /// Parses response for Indy request with fees.
 ///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
+///
 /// #Params
 /// command_handle
 /// payment_method
@@ -529,7 +547,8 @@ pub extern fn indy_add_request_fees(command_handle: i32,
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
 ///   [{
-///      input: <str>, // UTXO input
+///      txo: <str>, // UTXO input
+///      paymentAddress: <str>, //payment address for this UTXO
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
@@ -567,6 +586,9 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
 
 /// Builds Indy request for getting UTXO list for payment address
 /// according to this payment method.
+///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
 ///
 /// #Params
 /// wallet_handle: wallet handle
@@ -617,6 +639,9 @@ pub extern fn indy_build_get_utxo_request(command_handle: i32,
 
 /// Parses response for Indy request for getting UTXO list.
 ///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
+///
 /// #Params
 /// resp_json: response for Indy request for getting UTXO list
 ///   Note: this param will be used to determine payment_method
@@ -624,7 +649,8 @@ pub extern fn indy_build_get_utxo_request(command_handle: i32,
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
 ///   [{
-///      input: <str>, // UTXO input
+///      txo: <str>, // UTXO input
+///      paymentAddress: <str>, //payment address for this UTXO
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
@@ -670,6 +696,9 @@ pub extern fn indy_parse_get_utxo_response(command_handle: i32,
 ///
 /// Format of inputs is specific for payment method. Usually it should reference payment transaction
 /// with at least one output that corresponds to payment address that user owns.
+///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
 ///
 /// #Params
 /// wallet_handle: wallet handle
@@ -731,6 +760,9 @@ pub extern fn indy_build_payment_req(command_handle: i32,
 
 /// Parses response for Indy request for payment txn.
 ///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
+///
 /// #Params
 /// command_handle
 /// payment_method
@@ -740,7 +772,8 @@ pub extern fn indy_build_payment_req(command_handle: i32,
 /// #Returns
 /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
 ///   [{
-///      input: <str>, // UTXO input
+///      txo: <str>, // UTXO input
+///      paymentAddress: <str>, //payment address for this UTXO
 ///      amount: <int>, // amount of tokens in this input
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
@@ -781,6 +814,9 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
 
 /// Builds Indy request for doing tokens minting
 /// according to this payment method.
+///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
 ///
 /// #Params
 /// wallet_handle: wallet handle
@@ -835,6 +871,9 @@ pub extern fn indy_build_mint_req(command_handle: i32,
 }
 
 /// Builds Indy request for setting fees for transactions in the ledger
+///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
 ///
 /// # Params
 /// command_handle
@@ -891,6 +930,9 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
 
 /// Builds Indy get request for getting fees for transactions in the ledger
 ///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
+///
 /// # Params
 /// command_handle
 /// wallet_handle: wallet handle
@@ -937,6 +979,9 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: i32,
 }
 
 /// Parses response for Indy request for getting fees
+///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
 ///
 /// # Params
 /// command_handle

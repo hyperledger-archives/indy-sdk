@@ -1,4 +1,5 @@
 pub const SEQ_NO: i32 = 1;
+pub const PROTOCOL_VERSION: usize = 2;
 pub const POOL: &'static str = "pool_1";
 pub const WALLET: &'static str = "wallet_1";
 pub const TYPE: &'static str = "default";

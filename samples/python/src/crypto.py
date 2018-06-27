@@ -5,7 +5,9 @@ from indy import did, crypto, wallet
 import json
 import logging
 
-from src.utils import run_coroutine
+from indy import pool
+
+from src.utils import run_coroutine, PROTOCOL_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +17,9 @@ async def demo():
 
     wallet_name = 'wallet1'
     pool_name = 'pool1'
+
+    # Set protocol version 2 to work with Indy Node 1.4
+    await pool.set_protocol_version(PROTOCOL_VERSION)
 
     # 1. Create Wallet and Get Wallet Handle
     wallet_credentials = json.dumps({"key": "wallet_key"})

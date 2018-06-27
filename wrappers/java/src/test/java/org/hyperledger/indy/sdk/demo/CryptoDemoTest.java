@@ -25,7 +25,6 @@ public class CryptoDemoTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCryptoDemo() throws Exception {
-
 		//1. Create and Open Pool
 		String poolName = PoolUtils.createPoolLedgerConfig();
 

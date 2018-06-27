@@ -4,7 +4,7 @@ This sample is extensions of "write_schema_and_cred_def.py"
 Shows how to issue a credential as a Trust Anchor which has created a Cred Definition
 for an existing Schema.
 
-After Trust Anchor has successfully created and stored a Cred Definiton using Anonymous Credentials,
+After Trust Anchor has successfully created and stored a Cred Definition using Anonymous Credentials,
 Prover's wallet is created and opened, and used to generate Prover's Master Secret.
 After that, Trust Anchor generates Claim Offer for given Cred Definition, using Prover's DID
 Prover uses Claim Offer to create Claim Request

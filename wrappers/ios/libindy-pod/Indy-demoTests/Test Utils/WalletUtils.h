@@ -30,4 +30,14 @@
 
 - (NSError *)closeWalletWithHandle:(IndyHandle)walletHandle;
 
+- (NSError *)exportWalletWithHandle:(IndyHandle)walletHandle
+                   exportConfigJson:(NSString *)exportConfigJson;
+
+
+- (NSError *)importWalletWithPoolName:(NSString *)poolName
+                           walletName:(NSString *)walletName
+                                xtype:(NSString *)xtype
+                               config:(NSString *)config
+                     importConfigJson:(NSString *)importConfigJson;
+
 @end
