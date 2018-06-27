@@ -26,7 +26,7 @@ async def test_key_for_did_works_for_their_did(wallet_handle, did_my1, verkey_my
 async def test_key_for_did_works_for_unknown_did(pool_handle, wallet_handle, did_my2):
     with pytest.raises(IndyError) as e:
         await did.key_for_did(pool_handle, wallet_handle, did_my2)
-    assert ErrorCode.CommonInvalidState == e.value.error_code
+    assert ErrorCode.WalletItemNotFound == e.value.error_code
 
 
 @pytest.mark.asyncio

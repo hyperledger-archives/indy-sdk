@@ -270,7 +270,7 @@ impl IssuerCommandExecutor {
         self.wallet_service.add_indy_object(wallet_handle, &cred_def_id, &cred_def_priv_key, &HashMap::new())?;
         self.wallet_service.add_indy_object(wallet_handle, &cred_def_id, &cred_def_correctness_proof, &HashMap::new())?;
 
-        self._wallet_set_schema_id(wallet_handle, &cred_def_id, &schema.id)?; // TODO: FIXME
+        self._wallet_set_schema_id(wallet_handle, &cred_def_id, &schema.id)?; // TODO: FIXME delete temporary storing of schema id
 
         debug!("create_and_store_credential_definition <<< cred_def_id: {:?}, cred_def_json: {:?}", cred_def_id, cred_def_json);
         Ok((cred_def_id, cred_def_json))
@@ -380,7 +380,7 @@ impl IssuerCommandExecutor {
         let nonce = new_nonce()
             .map_err(|err| IndyError::AnoncredsError(AnoncredsError::from(err)))?;
 
-        let schema_id = self._wallet_get_schema_id(wallet_handle, &cred_def_id)?; // TODO: FIXME
+        let schema_id = self._wallet_get_schema_id(wallet_handle, &cred_def_id)?; // TODO: FIXME get CredDef from wallet and use CredDef.schema_id
 
         let credential_offer = CredentialOffer {
             schema_id: schema_id.to_string(),
@@ -423,7 +423,7 @@ impl IssuerCommandExecutor {
         let cred_def_priv_key: CredentialDefinitionPrivateKey =
             self.wallet_service.get_indy_object(wallet_handle, &cred_request.cred_def_id, &RecordOptions::id_value(), &mut String::new())?;
 
-        let schema_id = self._wallet_get_schema_id(wallet_handle, &cred_offer.cred_def_id)?;  // TODO: FIXME
+        let schema_id = self._wallet_get_schema_id(wallet_handle, &cred_offer.cred_def_id)?;  // TODO: FIXME get CredDef from wallet and use CredDef.schema_id
 
         let (rev_reg_def, mut rev_reg,
             rev_reg_def_priv, sdk_tails_accessor, rev_reg_info) = match rev_reg_id {

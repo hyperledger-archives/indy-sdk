@@ -395,7 +395,7 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        fn create_payment_address_works_for_non_existant_plugin() {
+        fn create_payment_address_works_for_non_existent_plugin() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
@@ -444,7 +444,7 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        fn list_payment_addresses_works_for_nonexistant_wallet() {
+        fn list_payment_addresses_works_for_nonexistent_wallet() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
@@ -462,7 +462,7 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        fn add_request_fees_works_for_non_existant_plugin_name() {
+        fn add_request_fees_works_for_non_existent_plugin_name() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
@@ -705,7 +705,7 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        pub fn parse_response_with_fees_works_for_nonexistant_plugin() {
+        pub fn parse_response_with_fees_works_for_nonexistent_plugin() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
 
@@ -737,7 +737,7 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        pub fn build_get_utxo_request_works_for_nonexistant_plugin() {
+        pub fn build_get_utxo_request_works_for_nonexistent_plugin() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
@@ -815,7 +815,7 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        pub fn parse_get_utxo_response_works_for_nonexistant_plugin() {
+        pub fn parse_get_utxo_response_works_for_nonexistent_plugin() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
 

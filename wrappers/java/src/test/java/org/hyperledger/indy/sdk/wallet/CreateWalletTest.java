@@ -37,7 +37,7 @@ public class CreateWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(UnknownWalletTypeException.class));
 
-		Wallet.createWallet(POOL, WALLET, "unknow_type", null, CREDENTIALS).get();
+		Wallet.createWallet(POOL, WALLET, "unknown_type", null, CREDENTIALS).get();
 	}
 
 	@Test

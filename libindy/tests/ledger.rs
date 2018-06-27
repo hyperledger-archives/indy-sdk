@@ -42,7 +42,7 @@ use self::openssl::hash::{MessageDigest, Hasher};
 use self::sodiumoxide::crypto::secretbox;
 
 use utils::domain::anoncreds::schema::{Schema, SchemaV1};
-use utils::domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
+use utils::domain::anoncreds::credential_definition::{CredentialDefinitionV1};
 use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 use utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
 use utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
@@ -225,7 +225,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_sign_works_for_unknow_signer() {
+        fn indy_sign_works_for_unknown_signer() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
@@ -1131,7 +1131,6 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        #[ignore] //FIXME currently unstable because pool isn't maintain restart transaction yet.
         fn indy_pool_restart_request_works_for_start_cancel_works() {
             TestUtils::cleanup_storage();
 

@@ -60,6 +60,7 @@ pub mod connect_command {
                 .add_main_param("name", "The name of pool")
                 .add_optional_param("protocol-version", "Pool protocol version will be used for requests. One of: 1, 2. (2 by default)")
                 .add_example("pool connect pool1")
+                .add_example("pool connect pool1 protocol-version=2")
                 .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
@@ -289,7 +290,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn create_works_for_unknow_txn_file() {
+        pub fn create_works_for_unknown_txn_file() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
@@ -297,7 +298,7 @@ pub mod tests {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", POOL.to_string());
-                params.insert("gen_txn_file", "unknow_pool_transactions_genesis".to_string());
+                params.insert("gen_txn_file", "unknown_pool_transactions_genesis".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             TestUtils::cleanup_storage();
