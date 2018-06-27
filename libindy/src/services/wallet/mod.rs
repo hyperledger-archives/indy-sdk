@@ -586,7 +586,7 @@ impl WalletService {
         match self.open_wallet(name, None, credentials) {
             Err(err) => {
                 // Ignores the error, since there is nothing that can be done
-                self.delete_wallet(name, credentials).ok(); // TODO: why do we ignore thr result here?  ok is used to avoid warning
+                let _ = self.delete_wallet(name, credentials); // TODO: why do we ignore thr result here?  ok is used to avoid warning
                 Err(err)
             }
             Ok(wallet_handle) => {
@@ -596,7 +596,7 @@ impl WalletService {
                         match import(wallet, reader, &import_config.key) {
                             Ok(_) => Ok(()),
                             err @ Err(_) => {
-                                self.delete_wallet(name, credentials).ok();  // TODO: why do we ignore thr result here?  ok is used to avoid warning
+                                let _ = self.delete_wallet(name, credentials); // TODO: why do we ignore thr result here?  ok is used to avoid warning
                                 err
                             }
                         }
