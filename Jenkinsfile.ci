@@ -234,7 +234,7 @@ def linuxTesting(file, env_name, network_name) {
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libindy Test: Build"
-                sh "cargo build --features fatal_warnings $additionalFeatures"
+                sh "cargo build --features \"fatal_warnings $additionalFeatures\""
             }
         }
 
