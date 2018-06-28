@@ -114,6 +114,7 @@ After successfully compiling `libindy`, you will need to add the path containing
 * [RHEL based distributions (Amazon Linux 2017.03)](doc/rhel-build.md)
 * [Windows](doc/windows-build.md)
 * [MacOS](doc/mac-build.md)
+* [Android](doc/android-build.md)
 
 **Note:**
 By default `cargo build` produce debug artifacts with a large amount of run-time checks.

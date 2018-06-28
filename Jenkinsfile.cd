@@ -230,23 +230,21 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
             }
         }
 
-        if (env_name == 'Ubuntu') { // TODO: Delete condition IS-702
-            sh "cp libnullpay/target/release/libnullpay.so cli"
-            sh "cp libindy/target/release/libindy.so cli"
-            dir('cli') {
-                testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                    echo "${env_name} Indy Cli Test: Build"
-                    sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release"
+        sh "cp libnullpay/target/release/libnullpay.so cli"
+        sh "cp libindy/target/release/libindy.so cli"
+        dir('cli') {
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                echo "${env_name} Indy Cli Test: Build"
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release"
 
-                    echo "${env_name} Indy Cli Test: Build Tests"
-                    sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run'
+                echo "${env_name} Indy Cli Test: Build Tests"
+                sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run'
 
-                    echo "${env_name} Indy Cli Test: Run tests"
-                    sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"'
+                echo "${env_name} Indy Cli Test: Run tests"
+                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"'
 
-                    if (stashBuildResults) {
-                        stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
-                    }
+                if (stashBuildResults) {
+                    stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
                 }
             }
         }
@@ -629,7 +627,7 @@ def publishingRCtoStable() {
                 publishLibindyCliWindowsFilesRCtoStable(libindyVersion)
 
                 echo 'Moving Windows RC artifacts to Stable: libnullpay'
-                publishLibnullpayWindowsFilesRCtoStable(libindyVersion)
+                publishLibnullpayWindowsFilesRCtoStable()
 
                 echo 'Moving Ubuntu RC artifacts to Stable: libnullpay'
                 publishLibnullpayDebRCtoStable(testEnv)
@@ -676,7 +674,7 @@ def publishLibindyCliDebRCtoStable(testEnv, version) {
 
 def publishLibnullpayDebRCtoStable(testEnv) {
     def libnullpayVersion = getSrcVersion("libnullpay")
-    publishDebRCtoStable(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "libindyCliDebs", false)
+    publishDebRCtoStable(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "libnullpayDebs", false)
 }
 
 def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, moveDevArtifacts) {
@@ -685,7 +683,7 @@ def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, moveD
 
         unstash name: stashName
 
-        sh "fakeroot deb-reversion -v $version $packageName/debs/\"$packageName\"_\"$rcFullVersion\"_amd64.deb"
+        sh "fakeroot deb-reversion -v $version $folder/debs/\"$packageName\"_\"$rcFullVersion\"_amd64.deb"
 
         if (moveDevArtifacts) {
             sh "fakeroot deb-reversion -v $version $folder/debs/\"$packageName\"-dev_\"$rcFullVersion\"_amd64.deb"
