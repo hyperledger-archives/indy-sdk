@@ -629,7 +629,7 @@ def publishingRCtoStable() {
                 publishLibindyCliWindowsFilesRCtoStable(libindyVersion)
 
                 echo 'Moving Windows RC artifacts to Stable: libnullpay'
-                publishLibnullpayWindowsFilesRCtoStable(libindyVersion)
+                publishLibnullpayWindowsFilesRCtoStable()
 
                 echo 'Moving Ubuntu RC artifacts to Stable: libnullpay'
                 publishLibnullpayDebRCtoStable(testEnv)
@@ -676,7 +676,7 @@ def publishLibindyCliDebRCtoStable(testEnv, version) {
 
 def publishLibnullpayDebRCtoStable(testEnv) {
     def libnullpayVersion = getSrcVersion("libnullpay")
-    publishDebRCtoStable(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "libindyCliDebs", false)
+    publishDebRCtoStable(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "libnullpayDebs", false)
 }
 
 def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, moveDevArtifacts) {
@@ -685,7 +685,7 @@ def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, moveD
 
         unstash name: stashName
 
-        sh "fakeroot deb-reversion -v $version $packageName/debs/\"$packageName\"_\"$rcFullVersion\"_amd64.deb"
+        sh "fakeroot deb-reversion -v $version $folder/debs/\"$packageName\"_\"$rcFullVersion\"_amd64.deb"
 
         if (moveDevArtifacts) {
             sh "fakeroot deb-reversion -v $version $folder/debs/\"$packageName\"-dev_\"$rcFullVersion\"_amd64.deb"
