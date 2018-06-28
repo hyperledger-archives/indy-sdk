@@ -238,7 +238,7 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
                 sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings"
 
                 echo "${env_name} Indy Cli Test: Build Tests"
-                sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" fatal_warnings --no-run'
+                sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run'
 
                 echo "${env_name} Indy Cli Test: Run tests"
                 sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"'
