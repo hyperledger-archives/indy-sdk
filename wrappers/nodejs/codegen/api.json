@@ -2062,8 +2062,8 @@
         {"name": "pool_name", "type": "const char*"},
         {"name": "name", "type": "const char*"},
         {"name": "xtype", "type": "const char*"},
-        {"name": "config", "type": "const char*"},
-        {"name": "credentials", "type": "const char*"},
+        {"name": "config", "type": "const char*", "json": true},
+        {"name": "credentials", "type": "const char*", "json": true},
         {
           "name": "fn",
           "params": [
@@ -2081,7 +2081,7 @@
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "name", "type": "const char*"},
         {"name": "runtime_config", "type": "const char*"},
-        {"name": "credentials", "type": "const char*"},
+        {"name": "credentials", "type": "const char*", "json": true},
         {
           "name": "fn",
           "params": [
@@ -2134,8 +2134,8 @@
         {"name": "pool_name", "type": "const char*"},
         {"name": "name", "type": "const char*"},
         {"name": "xtype", "type": "const char*"},
-        {"name": "config", "type": "const char*"},
-        {"name": "credentials", "type": "const char*"},
+        {"name": "config", "type": "const char*", "json": true},
+        {"name": "credentials", "type": "const char*", "json": true},
         {"name": "import_config_json", "type": "const char*", "json": true},
         {
           "name": "fn",
@@ -2169,7 +2169,7 @@
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "name", "type": "const char*"},
-        {"name": "credentials", "type": "const char*"},
+        {"name": "credentials", "type": "const char*", "json": true},
         {
           "name": "fn",
           "params": [
