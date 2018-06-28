@@ -3,11 +3,8 @@ use serde_json::Value;
 extern crate rand;
 
 use settings;
-use rand::Rng;
 use std::fmt;
-use std::sync::Mutex;
 use std::string::ToString;
-use std::collections::HashMap;
 use utils::error;
 use utils::constants::{ SCHEMA_ID, SCHEMA_JSON, SCHEMA_TXN_TYPE };
 use utils::libindy::{
@@ -21,9 +18,10 @@ use utils::libindy::{
     payments::{pay_for_txn, PaymentTxn},
 };
 use error::schema::SchemaError;
+use object_cache::ObjectCache;
 
 lazy_static! {
-    static ref SCHEMA_MAP: Mutex<HashMap<u32, Box<CreateSchema>>> = Default::default();
+    static ref SCHEMA_MAP: ObjectCache<CreateSchema> = Default::default();
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -45,12 +43,24 @@ pub struct CreateSchema {
     data: Vec<String>,
     version: String,
     schema_id: String,
-    #[serde(skip_serializing, default)]
-    handle: u32,
     name: String,
     source_id: String,
     sequence_num: u32,
     payment_txn: Option<PaymentTxn>,
+}
+
+impl Default for CreateSchema {
+    fn default() -> CreateSchema {
+        CreateSchema {
+            data: Vec::new(),
+            version: String::new(),
+            schema_id: String::new(),
+            name: String::new(),
+            source_id: String::new(),
+            sequence_num: 0,
+            payment_txn: None,
+        }
+    }
 }
 
 pub trait Schema: ToString {
@@ -176,40 +186,40 @@ impl CreateSchema {
 
     pub fn get_schema_id(&self) -> &String { &self.schema_id }
 
-    fn get_payment_txn(&self) -> Result<Option<PaymentTxn>, u32> { Ok(self.payment_txn.clone()) }
+    fn get_payment_txn(&self) -> Result<PaymentTxn, u32> {
+        if self.payment_txn.is_some() {
+            Ok(self.payment_txn.clone().unwrap())
+        } else {
+            Err(error::NOT_READY.code_num)
+        }
+    }
 }
 
 pub fn create_new_schema(source_id: &str,
                          issuer_did: String,
-                         schema_name: String,
+                         name: String,
                          version: String,
                          data: String) -> Result<u32, SchemaError> {
-    debug!("creating schema with source_id: {}, name: {}, issuer_did: {}", source_id, schema_name, issuer_did);
+    debug!("creating schema with source_id: {}, name: {}, issuer_did: {}", source_id, name, issuer_did);
     let (schema_id, payment_txn) = LedgerSchema::create_schema(&issuer_did,
-                                                &schema_name,
+                                                &name,
                                                 &version,
                                                 &data)?;
 
     debug!("created schema on ledger with id: {}", schema_id);
 
-    let new_handle = rand::thread_rng().gen::<u32>();
-    let new_schema = Box::new(CreateSchema {
+    let new_schema = CreateSchema {
         source_id: source_id.to_string(),
-        handle: new_handle,
-        name: schema_name,
+        name,
         data: serde_json::from_str(&data).unwrap_or_default(),
         version,
         schema_id,
         //Todo: Take sequence number out. Id will be used instead
         sequence_num: 0,
         payment_txn,
-    });
+    };
 
-    {
-        let mut m = SCHEMA_MAP.lock().unwrap();
-        debug!("inserting handle {} into schema table", new_handle);
-        m.insert(new_handle, new_schema);
-    }
+    let new_handle = SCHEMA_MAP.add(new_schema).map_err(|key|SchemaError::InvalidSchemaCreation())?;
 
     Ok(new_handle)
 }
@@ -217,73 +227,58 @@ pub fn create_new_schema(source_id: &str,
 
 pub fn get_schema_attrs(source_id: String, schema_id: String) -> Result<(u32, String), SchemaError> {
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-    let new_handle = rand::thread_rng().gen::<u32>();
 
     let (schema_id, schema_json) = LedgerSchema::retrieve_schema(&submitter_did, &schema_id)?;
     let schema_data: SchemaData = serde_json::from_str(&schema_json)
         .or(Err(SchemaError::CommonError(error::INVALID_JSON.code_num)))?;
 
-    let new_schema = Box::new(CreateSchema {
+    let new_schema = CreateSchema {
         source_id,
         schema_id,
         sequence_num: 0,
-        handle: new_handle,
         name: schema_data.name,
         version: schema_data.version,
         data: schema_data.attr_names,
         payment_txn: None,
-    });
+    };
 
-    {
-        let mut m = SCHEMA_MAP.lock().unwrap();
-        debug!("inserting handle {} into schema table", new_handle);
-        m.insert(new_handle, new_schema);
-    }
+    let new_handle = SCHEMA_MAP.add(new_schema).map_err(|key|SchemaError::InvalidSchemaCreation())?;
 
     Ok((new_handle, to_string(new_handle)?))
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
-    match SCHEMA_MAP.lock().unwrap().get(&handle) {
-        Some(_) => true,
-        None => false,
-    }
+    SCHEMA_MAP.has_handle(handle)
 }
 
 pub fn get_sequence_num(handle: u32) -> Result<u32, SchemaError> {
-    match SCHEMA_MAP.lock().unwrap().get(&handle) {
-        Some(x) => Ok(x.get_sequence_num()),
-        None => Err(SchemaError::InvalidHandle()),
-    }
+    SCHEMA_MAP.get(handle,|s|{
+        Ok(s.get_sequence_num())
+    }).map_err(|ec|SchemaError::CommonError(ec))
 }
 
 pub fn to_string(handle: u32) -> Result<String, SchemaError> {
-    match SCHEMA_MAP.lock().unwrap().get(&handle) {
-        Some(p) => Ok(p.to_string().to_owned()),
-        None => Err(SchemaError::InvalidHandle()),
-    }
+    SCHEMA_MAP.get(handle,|s| {
+        serde_json::to_string(&s).or(Err(1))
+    }).map_err(|ec|SchemaError::CommonError(ec))
 }
 
 pub fn get_source_id(handle: u32) -> Result<String, u32> {
-    match SCHEMA_MAP.lock().unwrap().get(&handle) {
-        Some(s) => Ok(s.get_source_id().clone()),
-        None => Err(error::INVALID_SCHEMA_HANDLE.code_num),
-    }
+    SCHEMA_MAP.get(handle,|s|{
+        Ok(s.get_source_id().clone())
+    })
 }
 
-pub fn get_schema_id(handle: u32) -> Result<String, u32> {
-    match SCHEMA_MAP.lock().unwrap().get(&handle) {
-        Some(s) => Ok(s.get_schema_id().clone()),
-        None => Err(error::INVALID_SCHEMA_HANDLE.code_num),
-    }
+pub fn get_schema_id(handle: u32) -> Result<String, SchemaError> {
+    SCHEMA_MAP.get(handle,|s|{
+        Ok(s.get_schema_id().clone())
+    }).map_err(|ec|SchemaError::CommonError(ec))
 }
 
-pub fn get_payment_txn(handle: u32) -> Option<PaymentTxn> {
-    // get_payment_txn only ever returns Ok()
-    match SCHEMA_MAP.lock().unwrap().get(&handle) {
-        Some(s) => s.get_payment_txn().unwrap(),
-        None => None,
-    }
+pub fn get_payment_txn(handle: u32) -> Result<PaymentTxn, SchemaError> {
+    SCHEMA_MAP.get(handle,|s|{
+        s.get_payment_txn()
+    }).or(Err(SchemaError::NoPaymentInformation()))
 }
 
 pub fn from_string(schema_data: &str) -> Result<u32, SchemaError> {
@@ -293,29 +288,24 @@ pub fn from_string(schema_data: &str) -> Result<u32, SchemaError> {
             SchemaError::CommonError(error::INVALID_JSON.code_num)
         })?;
 
-    let new_handle = rand::thread_rng().gen::<u32>();
     let source_id = derived_schema.source_id.clone();
-    let schema = Box::from(derived_schema);
+    let new_handle = SCHEMA_MAP.add(derived_schema).map_err(|ec|SchemaError::CommonError(ec))?;
 
-    {
-        let mut m = SCHEMA_MAP.lock().unwrap();
-        debug!("inserting handle {} with source_id {:?} into schema table", new_handle, source_id);
-        m.insert(new_handle, schema);
-    }
     Ok(new_handle)
 }
 
-pub fn release(handle: u32) -> Result< u32, SchemaError> {
-    match SCHEMA_MAP.lock().unwrap().remove(&handle) {
-        Some(t) => Ok(error::SUCCESS.code_num),
-        None => Err(SchemaError::InvalidHandle()),
+pub fn release(handle: u32) -> Result<(), SchemaError> {
+    match SCHEMA_MAP.release(handle) {
+        Ok(_) => Ok(()),
+        Err(_) => Err(SchemaError::InvalidHandle()),
     }
 }
 
 pub fn release_all() {
-    let mut map = SCHEMA_MAP.lock().unwrap();
-
-    map.drain();
+    match SCHEMA_MAP.drain() {
+        Ok(_) => (),
+        Err(_) => (),
+    };
 }
 
 #[cfg(test)]
@@ -343,7 +333,6 @@ pub mod tests {
             version: "1.0".to_string(),
             schema_id: SCHEMA_ID.to_string(),
             source_id: "testId".to_string(),
-            handle: 1,
             name: "schema_name".to_string(),
             sequence_num: 306,
             payment_txn: None,
@@ -495,8 +484,8 @@ pub mod tests {
     fn test_errors(){
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        assert_eq!(get_sequence_num(145661).err(), Some(SchemaError::InvalidHandle()));
-        assert_eq!(to_string(13435178).err(), Some(SchemaError::InvalidHandle()));
+        assert_eq!(get_sequence_num(145661).err(), Some(SchemaError::CommonError(error::INVALID_OBJ_HANDLE.code_num)));
+        assert_eq!(to_string(13435178).err(), Some(SchemaError::CommonError(error::INVALID_OBJ_HANDLE.code_num)));
         let test: Result<LedgerSchema, SchemaError> = LedgerSchema::new_from_ledger(SCHEMA_ID);
         assert_eq!(from_string("{}").err(), Some(SchemaError::CommonError(INVALID_JSON.code_num)));
     }

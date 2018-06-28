@@ -477,7 +477,7 @@ pub mod tests {
                                                                 name,
                                                                 institution_did.clone(),
                                                                 schema_id.clone(),
-                                                                "tag_1".to_string(),
+                                                                "tag1".to_string(),
                                                                 r#"{"support_revocation":false}"#.to_string()).unwrap();
 
         let cred_def_id = ::credential_def::get_cred_def_id(handle).unwrap();

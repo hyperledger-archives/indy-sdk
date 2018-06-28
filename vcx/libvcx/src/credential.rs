@@ -291,7 +291,13 @@ impl Credential {
 
     fn get_source_id(&self) -> &String {&self.source_id}
 
-    fn get_payment_txn(&self) -> Result<Option<PaymentTxn>, u32> { Ok(self.payment_txn.clone()) }
+    fn get_payment_txn(&self) -> Result<PaymentTxn, u32> {
+        if self.payment_info.is_none() || self.payment_txn.is_none() {
+            return Err(error::NO_PAYMENT_INFORMATION.code_num);
+        }
+
+        Ok(self.payment_txn.clone().unwrap())
+    }
 
     fn set_credential_offer(&mut self, offer: CredentialOffer){
         self.credential_offer = Some(offer);
@@ -368,9 +374,10 @@ pub fn get_credential(handle: u32) -> Result<String, CredentialError> {
     }).map_err(|ec| CredentialError::CommonError(ec))
 }
 
-pub fn get_payment_txn(handle: u32) -> Option<PaymentTxn> {
-    // get_payment_txn only ever returns Ok()
-    HANDLE_MAP.get(handle, |obj| { obj.get_payment_txn()}).unwrap()
+pub fn get_payment_txn(handle: u32) -> Result<PaymentTxn, CredentialError> {
+    HANDLE_MAP.get(handle, |obj| {
+        obj.get_payment_txn()
+    }).or(Err(CredentialError::NoPaymentInformation()))
 }
 
 pub fn get_credential_offer(handle: u32) -> Result<String, CredentialError> {

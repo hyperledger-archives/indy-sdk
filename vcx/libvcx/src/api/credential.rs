@@ -526,7 +526,7 @@ pub extern fn vcx_credential_get_payment_txn(command_handle: u32,
 
     thread::spawn(move|| {
         match credential::get_payment_txn(handle) {
-            Some(x) => {
+            Ok(x) => {
                 match serde_json::to_string(&x) {
                     Ok(x) => {
                         info!("vcx_credential_get_payment_txn_cb(command_handle: {}, rc: {}, : {}), source_id: {:?}",
@@ -542,10 +542,10 @@ pub extern fn vcx_credential_get_payment_txn(command_handle: u32,
                     }
                 }
             },
-            None => {
+            Err(x) => {
                 error!("vcx_credential_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {:?}",
-                       command_handle, error_string(error::NOT_READY.code_num), "null", credential::get_source_id(handle).unwrap_or_default());
-                cb(command_handle, error::NOT_READY.code_num, ptr::null());
+                       command_handle, x.to_string(), "null", credential::get_source_id(handle).unwrap_or_default());
+                cb(command_handle, x.to_error_code(), ptr::null());
             },
         };
     });
