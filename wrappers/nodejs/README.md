@@ -27,7 +27,7 @@ This module has a native compile step. It compiles C++ code and dynamically link
 You will need:
 
 * C++ build tools and Python 2. See [this](https://github.com/nodejs/node-gyp#installation) for platform recommendations.
-* `libindy` v1.3.1+ in your system library path. (i.e. `/usr/lib/libindy.so` for linux)
+* `libindy` v1.5+ in your system library path. (i.e. `/usr/lib/libindy.so` for linux)
 
 Then you can install via npm:
 
@@ -2079,13 +2079,13 @@ Creates a new secure wallet with the given unique name.
 * `poolName`: String - Name of the pool that corresponds to this wallet.
 * `name`: String - Name of the wallet.
 * `xtype`: String
-* `config`: String? - Wallet configuration json.
+* `config`: Json? - Wallet configuration json.
 ```
   {
       "storage": <object>  List of supported keys are defined by wallet type.
   }
 ````
-* `credentials`: String - Wallet credentials json
+* `credentials`: Json - Wallet credentials json
 ```
   {
       "key": string,
@@ -2111,7 +2111,7 @@ It is impossible to open wallet with the same name more than once.
       "storage": Optional<object>  List of supported keys are defined by wallet type.
   }
 ````
-* `credentials`: String - Wallet credentials json
+* `credentials`: Json - Wallet credentials json
 ```
   {
       "key": string,
@@ -2168,13 +2168,13 @@ in the future releases.
 * `poolName`: String - Name of the pool that corresponds to this wallet
 * `name`: String - Name of the wallet
 * `xtype`: String
-* `config`: String? - Wallet configuration json.
+* `config`: Json? - Wallet configuration json.
 ```
   {
       "storage": <object>  List of supported keys are defined by wallet type.
   }
 ````
-* `credentials`: String - Wallet credentials json \(if NULL, then default config will be used\).
+* `credentials`: Json - Wallet credentials json \(if NULL, then default config will be used\).
 ```
   {
       "key": string,
@@ -2206,7 +2206,7 @@ Errors: `Common*`, `Wallet*`
 Deletes created wallet.
 
 * `name`: String - Name of the wallet to delete.
-* `credentials`: String - Wallet credentials json
+* `credentials`: Json - Wallet credentials json
 ```
   {
       "key": string,

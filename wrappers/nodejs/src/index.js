@@ -677,13 +677,13 @@ indy.setProtocolVersion = function setProtocolVersion (protocolVersion, cb) {
 
 indy.createWallet = function createWallet (poolName, name, xtype, config, credentials, cb) {
   cb = wrapIndyCallback(cb)
-  capi.createWallet(poolName, name, xtype, config, credentials, cb)
+  capi.createWallet(poolName, name, xtype, toJson(config), toJson(credentials), cb)
   return cb.promise
 }
 
 indy.openWallet = function openWallet (name, runtimeConfig, credentials, cb) {
   cb = wrapIndyCallback(cb)
-  capi.openWallet(name, runtimeConfig, credentials, cb)
+  capi.openWallet(name, runtimeConfig, toJson(credentials), cb)
   return cb.promise
 }
 
@@ -701,7 +701,7 @@ indy.exportWallet = function exportWallet (wh, exportConfig, cb) {
 
 indy.importWallet = function importWallet (poolName, name, xtype, config, credentials, importConfig, cb) {
   cb = wrapIndyCallback(cb)
-  capi.importWallet(poolName, name, xtype, config, credentials, toJson(importConfig), cb)
+  capi.importWallet(poolName, name, xtype, toJson(config), toJson(credentials), toJson(importConfig), cb)
   return cb.promise
 }
 
@@ -713,7 +713,7 @@ indy.closeWallet = function closeWallet (wh, cb) {
 
 indy.deleteWallet = function deleteWallet (name, credentials, cb) {
   cb = wrapIndyCallback(cb)
-  capi.deleteWallet(name, credentials, cb)
+  capi.deleteWallet(name, toJson(credentials), cb)
   return cb.promise
 }
 
