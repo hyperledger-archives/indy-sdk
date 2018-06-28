@@ -54,7 +54,7 @@ if [ "$(uname)" == "Darwin" ]; then
 elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
     echo "Downloading NDK for Linux"
     export TOOLCHAIN_PREFIX=${WORKDIR}/toolchains/linux
-    mkdir ${TOOLCHAIN_PREFIX}
+    mkdir -p ${TOOLCHAIN_PREFIX}
     pushd $TOOLCHAIN_PREFIX
     if [ ! -d "android-ndk-r16b" ] ; then
         echo "Downloading android-ndk-r16b-linux-x86_64.zip"

@@ -4,7 +4,7 @@ use std::path::Path;
 fn main() {
     let target = env::var("TARGET").unwrap();
     println!("target={}", target);
-    if win_env.find("-windows-").is_some() {
+    if target.find("-windows-").is_some() {
         println!("cargo:rustc-link-lib=indy.dll");
 
         let profile = env::var("PROFILE").unwrap();
