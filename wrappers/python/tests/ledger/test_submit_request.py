@@ -18,6 +18,7 @@ async def test_submit_request_works(pool_handle):
             "type": "105",
             "dest": "Th7MpTaRZVRYnPiabds81Y"
         },
+        "protocolVersion": 2,
         "signature": "4o86XfkiJ4e2r3J6Ufoi17UU3W5Zi9sshV6FjBjkVw4sgEQFQov9dxqDEtLbAJAWffCWd5KfAk164QVo7mYwKkiV"
     }
 
