@@ -734,7 +734,6 @@ mod tests {
     use std::collections::HashMap;
     use std::env;
 
-
     fn _create_and_open_test_storage() -> Box<WalletStorage> {
         _prepare_path();
         let storage_type = SQLiteStorageType::new();

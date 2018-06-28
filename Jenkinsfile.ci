@@ -362,10 +362,6 @@ def linuxNodejsTesting(env_name, network_name, testEnv) {
 }
 
 def linuxCLITesting(env_name, network_name, testEnv) {
-    if (env_name == "RedHat"){ // TODO: Delete it IS-702
-        return;
-    }
-
     unstash name: "LibindyCliSO${env_name}"
     unstash name: "LibnullpayCliSO${env_name}"
 
