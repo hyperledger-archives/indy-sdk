@@ -18,7 +18,7 @@ use settings;
 
 static NULL_PAYMENT: &str = "null";
 static EMPTY_CONFIG: &str = "{}";
-static FEES: &str = r#"{"0":1, "1":1, "101":2, "102":42, "103":1999998889, "104":0, "105":0, "106":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
+static FEES: &str = r#"{"0":1, "1":1, "101":2, "102":42, "103":1999998889, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
 static PARSED_TXN_PAYMENT_RESPONSE: &str = r#"[{"amount":4,"extra":null,"input":"["pov:null:1","pov:null:2"]"}]"#;
 
 static PAYMENT_INIT: Once = ONCE_INIT;
@@ -41,9 +41,9 @@ pub struct AddressInfo {
     utxo: Vec<UTXO>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct UTXO {
-    txo: String,
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct UTXO {
+    txo: Option<String>,
     #[serde(rename = "paymentAddress")]
     payment_address: String,
     amount: u64,
@@ -81,18 +81,10 @@ pub fn init_payments() -> Result<(), u32> {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct PaymentUTXO {
-    #[serde(rename = "paymentAddress")]
-    payment_address: String,
-    amount: u64,
-    extra: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct PaymentTxn {
     pub amount: u64,
     pub inputs: Vec<String>,
-    pub outputs: Vec<PaymentUTXO>,
+    pub outputs: Vec<UTXO>,
 }
 
 impl PaymentTxn {
@@ -100,7 +92,7 @@ impl PaymentTxn {
         let inputs: Vec<String> = serde_json::from_str(&inputs)
             .map_err(|err| {error::INVALID_JSON.code_num})?;
 
-        let outputs: Vec<PaymentUTXO> = serde_json::from_str(&outputs)
+        let outputs: Vec<UTXO> = serde_json::from_str(&outputs)
             .map_err(|err| {error::INVALID_JSON.code_num})?;
 
         Ok(PaymentTxn {
@@ -272,7 +264,7 @@ pub fn inputs(cost: u64) -> Result<(u64, String), PaymentError> {
     'outer: for address in wallet_info.addresses.iter() {
         'inner: for utxo in address.utxo.iter() {
             if balance < cost {
-                inputs.push(utxo.txo.to_string());
+                inputs.push(utxo.txo.clone().unwrap().to_string());
                 balance += utxo.amount;
             } else { break 'outer }
         }
@@ -427,8 +419,8 @@ pub mod tests {
     #[test]
     fn test_address_balance() {
         let addresses = vec![
-            UTXO { txo: "pov::null:2".to_string(), payment_address: "pay:null:J81AxU9hVHYFtJc".to_string(), amount: 2, extra: Some("abcde".to_string()) },
-            UTXO { txo: "pov::null:3".to_string(), payment_address: "pay:null:J81AxU9hVHYFtJc".to_string(), amount: 3, extra: Some("bcdef".to_string()) }
+            UTXO { txo: Some("pov::null:2".to_string()), payment_address: "pay:null:J81AxU9hVHYFtJc".to_string(), amount: 2, extra: Some("abcde".to_string()) },
+            UTXO { txo: Some("pov::null:3".to_string()), payment_address: "pay:null:J81AxU9hVHYFtJc".to_string(), amount: 3, extra: Some("bcdef".to_string()) }
         ];
 
         assert_eq!(_address_balance(&addresses), 5);

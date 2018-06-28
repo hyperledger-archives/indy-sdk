@@ -2,8 +2,6 @@ extern crate rand;
 extern crate serde_json;
 extern crate libc;
 
-use std::{ sync::Mutex, collections::HashMap };
-use rand::Rng;
 use api::VcxStateType;
 use messages;
 use settings;
@@ -18,9 +16,10 @@ use utils::{error,
             openssl::encode
 };
 use error::{ issuer_cred::IssuerCredError, ToErrorCode, payment::PaymentError};
+use object_cache::ObjectCache;
 
 lazy_static! {
-    static ref ISSUER_CREDENTIAL_MAP: Mutex<HashMap<u32, Box<IssuerCredential>>> = Default::default();
+    static ref ISSUER_CREDENTIAL_MAP: ObjectCache<IssuerCredential> = Default::default();
 }
 
 static CREDENTIAL_OFFER_ID_KEY: &str = "claim_offer_id";
@@ -28,8 +27,6 @@ static CREDENTIAL_OFFER_ID_KEY: &str = "claim_offer_id";
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct IssuerCredential {
     source_id: String,
-    #[serde(skip_serializing, default)]
-    handle: u32,
     credential_attributes: String,
     msg_uid: String,
     schema_seq_no: u32,
@@ -100,14 +97,14 @@ impl PaymentInfo {
 impl IssuerCredential {
     fn validate_credential_offer(&self) -> Result<u32, IssuerCredError> {
         //TODO: validate credential_attributes against credential_def
-        debug!("successfully validated issuer_credential {}", self.handle);
+        debug!("successfully validated issuer_credential {}", self.source_id);
         Ok(error::SUCCESS.code_num)
     }
 
     fn send_credential_offer(&mut self, connection_handle: u32) -> Result<u32, IssuerCredError> {
-        debug!("sending credential offer for issuer_credential handle {} to connection handle {}", self.handle, connection_handle);
+        debug!("sending credential offer for issuer_credential {} to connection handle {}", self.source_id, connection_handle);
         if self.state != VcxStateType::VcxStateInitialized {
-            warn!("credential {} has invalid state {} for sending credentialOffer", self.handle, self.state as u32);
+            warn!("credential {} has invalid state {} for sending credentialOffer", self.source_id, self.state as u32);
             return Err(IssuerCredError::NotReadyError())
         }
 
@@ -157,16 +154,16 @@ impl IssuerCredential {
                 self.msg_uid = parse_msg_uid(&response[0]).map_err(|ec| IssuerCredError::CommonError(ec))?;
                 self.state = VcxStateType::VcxStateOfferSent;
                 self.credential_offer = Some(credential_offer);
-                debug!("sent credential offer for: {}", self.handle);
+                debug!("sent credential offer for: {}", self.source_id);
                 return Ok(error::SUCCESS.code_num);
             }
         }
     }
 
     fn send_credential(&mut self, connection_handle: u32) -> Result<u32, IssuerCredError> {
-        debug!("sending credential for issuer_credential handle {} to connection handle {}", self.handle, connection_handle);
+        debug!("sending credential for issuer_credential {} to connection handle {}", self.source_id, connection_handle);
         if self.state != VcxStateType::VcxStateRequestReceived {
-            warn!("credential {} has invalid state {} for sending credential", self.handle, self.state as u32);
+            warn!("credential {} has invalid state {} for sending credential", self.source_id, self.state as u32);
             return Err(IssuerCredError::NotReadyError());
         }
 
@@ -205,7 +202,7 @@ impl IssuerCredential {
             Ok(response) => {
                 self.msg_uid = parse_msg_uid(&response[0]).map_err(|ec| IssuerCredError::CommonError(ec))?;
                 self.state = VcxStateType::VcxStateAccepted;
-                debug!("issued credential: {}", self.handle);
+                debug!("issued credential: {}", self.source_id);
                 return Ok(error::SUCCESS.code_num);
             }
         }
@@ -217,33 +214,39 @@ impl IssuerCredential {
 
     // TODO: The error arm of this Result is never used in any calling functions.
     // So currently there is no way to test the error status.
-    fn get_credential_offer_status(&mut self) -> Result<u32, u32> {
-        debug!("updating state for credential offer: {}", self.handle);
+    fn get_credential_offer_status(&mut self) -> Result<u32, IssuerCredError> {
+        debug!("updating state for credential offer: {}", self.source_id);
         if self.state == VcxStateType::VcxStateRequestReceived {
-            return Ok(error::SUCCESS.code_num);
+            return Ok(self.get_state());
         }
         else if self.state != VcxStateType::VcxStateOfferSent || self.msg_uid.is_empty() || self.issued_did.is_empty() {
 
-            return Ok(error::SUCCESS.code_num);
+            return Ok(self.get_state());
         }
-        let payload = messages::get_message::get_ref_msg(&self.msg_uid, &self.issued_did, &self.issued_vk, &self.agent_did, &self.agent_vk)?;
+        let payload = messages::get_message::get_ref_msg(&self.msg_uid,
+                                                               &self.issued_did,
+                                                               &self.issued_vk,
+                                                               &self.agent_did,
+                                                               &self.agent_vk)
+            .map_err(|wc|IssuerCredError::CommonError(wc))?;
 
         self.credential_request = Some(parse_credential_req_payload(&payload)?);
-        debug!("received credential request for credential offer: {}", self.handle);
+        debug!("received credential request for credential offer: {}", self.source_id);
         self.state = VcxStateType::VcxStateRequestReceived;
-        Ok(error::SUCCESS.code_num)
+        Ok(self.get_state())
     }
 
-    fn update_state(&mut self) {
-        self.get_credential_offer_status().unwrap_or(error::SUCCESS.code_num);
+    fn update_state(&mut self) -> Result<u32, IssuerCredError> {
+        self.get_credential_offer_status()
         //There will probably be more things here once we do other things with the credential
     }
 
     fn get_state(&self) -> u32 { let state = self.state as u32; state }
     fn get_offer_uid(&self) -> &String { &self.msg_uid }
     fn set_offer_uid(&mut self, uid: &str) {self.msg_uid = uid.to_owned();}
-    fn set_credential_request(&mut self, credential_request:CredentialRequest){
+    fn set_credential_request(&mut self, credential_request:CredentialRequest) -> Result<u32,u32> {
         self.credential_request = Some(credential_request);
+        Ok(error::SUCCESS.code_num)
     }
 
     fn get_credential_attributes(&self) -> &String { &self.credential_attributes}
@@ -325,16 +328,16 @@ impl IssuerCredential {
         Ok(())
     }
 
-    fn get_payment_txn(&self) -> Result<Option<payments::PaymentTxn>, u32> {
-        if self.price == 0 || self.payment_address.is_none() { return Ok(None); }
+    fn get_payment_txn(&self) -> Result<payments::PaymentTxn, u32> {
+        if self.price == 0 || self.payment_address.is_none() { return Err(error::NO_PAYMENT_INFORMATION.code_num); }
 
         let payment_address = self.payment_address.clone().unwrap();
 
-        Ok(Some(payments::PaymentTxn {
+        Ok(payments::PaymentTxn {
             amount: self.price,
             inputs: vec![payment_address],
             outputs: Vec::new(),
-        }))
+        })
     }
 }
 
@@ -387,36 +390,32 @@ pub fn encode_attributes(attributes: &str) -> Result<String, IssuerCredError> {
 }
 
 pub fn get_encoded_attributes(handle:u32) -> Result<String, IssuerCredError>{
-    match ISSUER_CREDENTIAL_MAP.lock().unwrap().get(&handle) {
-        Some(credential) => Ok(credential.create_attributes_encodings()?),
-        None => Err(IssuerCredError::InvalidHandle()),
-    }
+    ISSUER_CREDENTIAL_MAP.get(handle,|i|{
+        i.create_attributes_encodings().map_err(|ec|ec.to_error_code())
+    }).map_err(|ec|IssuerCredError::CommonError(ec))
 }
 
 pub fn get_offer_uid(handle: u32) -> Result<String,u32> {
-    match ISSUER_CREDENTIAL_MAP.lock().unwrap().get(&handle) {
-        Some(credential) => Ok(credential.get_offer_uid().clone()),
-        None => Err(error::INVALID_ISSUER_CREDENTIAL_HANDLE.code_num),
-    }
+    ISSUER_CREDENTIAL_MAP.get(handle,|i|{
+        Ok(i.get_offer_uid().clone())
+    })
 }
 
-pub fn get_payment_txn(handle: u32) -> Option<payments::PaymentTxn> {
-    // get_payment_txn only ever returns Ok()
-    match ISSUER_CREDENTIAL_MAP.lock().unwrap().get(&handle) {
-        Some(c) => c.get_payment_txn().unwrap(),
-        None => None,
-    }
+pub fn get_payment_txn(handle: u32) -> Result<payments::PaymentTxn, IssuerCredError> {
+    ISSUER_CREDENTIAL_MAP.get(handle,|i|{
+        i.get_payment_txn()
+    }).map_err(|ec|IssuerCredError::CommonError(ec))
 }
 
-fn parse_credential_req_payload(payload: &Vec<u8>) -> Result<CredentialRequest, u32> {
+fn parse_credential_req_payload(payload: &Vec<u8>) -> Result<CredentialRequest, IssuerCredError> {
     debug!("parsing credentialReq payload: {:?}", payload);
-    let data = messages::extract_json_payload(payload)?;
+    let data = messages::extract_json_payload(payload).map_err(|ec|IssuerCredError::CommonError(ec))?;
 
     let my_credential_req = match CredentialRequest::from_str(&data) {
          Ok(x) => x,
          Err(x) => {
              warn!("invalid json {}", x);
-             return Err(error::INVALID_JSON.code_num);
+             return Err(IssuerCredError::CommonError(error::INVALID_JSON.code_num));
          },
     };
     Ok(my_credential_req)
@@ -430,10 +429,8 @@ pub fn issuer_credential_create(cred_def_id: String,
                            credential_data: String,
                            price: u64) -> Result<u32, IssuerCredError> {
 
-    let new_handle = rand::thread_rng().gen::<u32>();
-
-    let mut new_issuer_credential = Box::new(IssuerCredential {
-        handle: new_handle,
+    let mut new_issuer_credential = IssuerCredential {
+        credential_id: source_id.to_string(),
         source_id,
         msg_uid: String::new(),
         credential_attributes: credential_data,
@@ -444,7 +441,6 @@ pub fn issuer_credential_create(cred_def_id: String,
         credential_request: None,
         credential_offer: None,
         credential_name,
-        credential_id: new_handle.to_string(),
         ref_msg_id: None,
         price,
         payment_address: None,
@@ -455,91 +451,79 @@ pub fn issuer_credential_create(cred_def_id: String,
         agent_did: String::new(),
         agent_vk: String::new(),
         cred_def_id
-    });
+    };
 
     new_issuer_credential.validate_credential_offer()?;
 
     new_issuer_credential.state = VcxStateType::VcxStateInitialized;
 
+    let new_handle = ISSUER_CREDENTIAL_MAP.add(new_issuer_credential).map_err(|key|IssuerCredError::CreateError())?;
     debug!("inserting handle {} into credential_issuer table", new_handle);
-    ISSUER_CREDENTIAL_MAP.lock().unwrap().insert(new_handle, new_issuer_credential);
 
     Ok(new_handle)
 }
 
-pub fn update_state(handle: u32) {
-    match ISSUER_CREDENTIAL_MAP.lock().unwrap().get_mut(&handle) {
-        Some(t) => t.update_state(),
-        None => {}
-    };
+pub fn update_state(handle: u32) -> Result<u32, IssuerCredError> {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle,|i|{
+        match i.update_state() {
+            Ok(x) => Ok(x),
+            Err(x) => Ok(i.get_state()),
+        }
+    }).map_err(|ec|IssuerCredError::CommonError(ec))
 }
 
-pub fn get_state(handle: u32) -> u32 {
-    match ISSUER_CREDENTIAL_MAP.lock().unwrap().get(&handle) {
-        Some(t) => t.get_state(),
-        None => VcxStateType::VcxStateNone as u32,
-    }
+pub fn get_state(handle: u32) -> Result<u32, u32> {
+    ISSUER_CREDENTIAL_MAP.get(handle,|i|{
+        Ok(i.get_state())
+    })
 }
 
-pub fn release(handle: u32) -> Result< u32, IssuerCredError> {
-    match ISSUER_CREDENTIAL_MAP.lock().unwrap().remove(&handle) {
-        Some(t) => Ok(error::SUCCESS.code_num),
-        None => Err(IssuerCredError::InvalidHandle()),
+pub fn release(handle: u32) -> Result<(), IssuerCredError> {
+    match ISSUER_CREDENTIAL_MAP.release(handle) {
+        Ok(_) => Ok(()),
+        Err(_) => Err(IssuerCredError::InvalidHandle()),
     }
 }
 
 pub fn release_all() {
-    let mut map = ISSUER_CREDENTIAL_MAP.lock().unwrap();
-
-    map.drain();
+    match ISSUER_CREDENTIAL_MAP.drain() {
+        Ok(_) => (),
+        Err(_) => (),
+    };
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
-    match ISSUER_CREDENTIAL_MAP.lock().unwrap().get(&handle) {
-        Some(_) => true,
-        None => false,
-    }
+    ISSUER_CREDENTIAL_MAP.has_handle(handle)
 }
 
 pub fn to_string(handle: u32) -> Result<String, IssuerCredError> {
-    match ISSUER_CREDENTIAL_MAP.lock().unwrap().get(&handle) {
-        Some(c) => Ok(serde_json::to_string(&c).unwrap().to_owned()),
-        None => Err(IssuerCredError::InvalidHandle()),
-    }
+    ISSUER_CREDENTIAL_MAP.get(handle,|i|{
+        serde_json::to_string(&i).map_err(|ec|error::INVALID_JSON.code_num)
+    }).map_err(|ec|IssuerCredError::CommonError(ec))
 }
 
-pub fn from_string(credential_data: &str) -> Result<u32,u32> {
+pub fn from_string(credential_data: &str) -> Result<u32, IssuerCredError> {
     let derived_credential: IssuerCredential = match serde_json::from_str(credential_data) {
         Ok(x) => x,
-        Err(_) => return Err(error::INVALID_JSON.code_num),
+        Err(_) => return Err(IssuerCredError::CommonError(error::INVALID_JSON.code_num)),
     };
 
-    let new_handle = rand::thread_rng().gen::<u32>();
     let source_id = derived_credential.source_id.clone();
-    let credential = Box::from(derived_credential);
-
-    {
-        let mut m = ISSUER_CREDENTIAL_MAP.lock().unwrap();
-        debug!("inserting handle {} with source_id {:?} into credential_issuer table",
-               new_handle, source_id);
-        m.insert(new_handle, credential);
-    }
+    let new_handle = ISSUER_CREDENTIAL_MAP.add(derived_credential).map_err(|ec|IssuerCredError::CommonError(ec))?;
 
     Ok(new_handle)
 }
 
 pub fn send_credential_offer(handle: u32, connection_handle: u32) -> Result<u32,IssuerCredError> {
-    match ISSUER_CREDENTIAL_MAP.lock().unwrap().get_mut(&handle) {
-        Some(c) => Ok(c.send_credential_offer(connection_handle)?),
-        None => Err(IssuerCredError::InvalidHandle()),
-    }
+    ISSUER_CREDENTIAL_MAP.get_mut(handle,|i|{
+        i.send_credential_offer(connection_handle).map_err(|ec|ec.to_error_code())
+    }).map_err(|ec|IssuerCredError::CommonError(ec))
 }
 
 pub fn send_credential(handle: u32, connection_handle: u32) -> Result<u32,IssuerCredError> {
-    match ISSUER_CREDENTIAL_MAP.lock().unwrap().get_mut(&handle) {
-        Some(c) => Ok(c.send_credential(connection_handle)?),
-        None => Err(IssuerCredError::InvalidHandle()),
-    }
+    ISSUER_CREDENTIAL_MAP.get_mut(handle,|i|{
+        i.send_credential(connection_handle).map_err(|ec| ec.to_error_code())
+    }).map_err(|ec|IssuerCredError::CommonError(ec))
 }
 
 fn get_offer_details(response: &str) -> Result<String, IssuerCredError> {
@@ -562,12 +546,10 @@ fn get_offer_details(response: &str) -> Result<String, IssuerCredError> {
     }
 }
 
-pub fn set_credential_request(handle: u32, credential_request: CredentialRequest) -> Result<u32,IssuerCredError>{
-    match ISSUER_CREDENTIAL_MAP.lock().unwrap().get_mut(&handle) {
-        Some(c) => {c.set_credential_request(credential_request);
-            Ok(error::SUCCESS.code_num)},
-        None => Err(IssuerCredError::InvalidHandle()),
-    }
+pub fn set_credential_request(handle: u32, credential_request: CredentialRequest) -> Result<u32, IssuerCredError>{
+    ISSUER_CREDENTIAL_MAP.get_mut(handle,|i|{
+        i.set_credential_request(credential_request.clone())
+    }).map_err(|ec|IssuerCredError::CommonError(ec))
 }
 
 pub fn append_value(original_payload: &str,key: &str,  value: &str) -> Result<String, IssuerCredError> {
@@ -595,16 +577,14 @@ pub fn convert_to_map(s:&str) -> Result<serde_json::Map<String, serde_json::Valu
 }
 
 pub fn get_credential_attributes(handle:u32) -> Result<String, u32> {
-    match ISSUER_CREDENTIAL_MAP.lock().unwrap().get(&handle) {
-        Some(c) => Ok(c.get_credential_attributes().clone()),
-        None => Err(error::INVALID_ISSUER_CREDENTIAL_HANDLE.code_num),
-    }
+    ISSUER_CREDENTIAL_MAP.get(handle,|i|{
+        Ok(i.get_credential_attributes().clone())
+    })
 }
 pub fn get_source_id(handle: u32) -> Result<String, u32> {
-    match ISSUER_CREDENTIAL_MAP.lock().unwrap().get(&handle) {
-        Some(c) => Ok(c.get_source_id().clone()),
-        None => Err(error::INVALID_ISSUER_CREDENTIAL_HANDLE.code_num),
-    }
+    ISSUER_CREDENTIAL_MAP.get(handle,|i|{
+        Ok(i.get_source_id().clone())
+    })
 }
 
 #[cfg(test)]
@@ -664,7 +644,6 @@ pub mod tests {
         let credential_req:CredentialRequest = CredentialRequest::from_str(CREDENTIAL_REQ_STRING).unwrap();
         let (credential_offer, _) = ::credential::parse_json_offer(CREDENTIAL_OFFER_JSON).unwrap();
         let issuer_credential = IssuerCredential {
-            handle: 123,
             source_id: "standard_credential".to_owned(),
             schema_seq_no: 32,
             msg_uid: "1234".to_owned(),
@@ -706,11 +685,9 @@ pub mod tests {
     pub fn create_full_issuer_credential() -> (IssuerCredential, ::credential::Credential) {
         let issuer_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (_, _, cred_def_id, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def();
-        let new_handle = rand::thread_rng().gen::<u32>();
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
 
         let mut issuer_credential = IssuerCredential {
-            handle: new_handle,
             source_id: "source_id".to_string(),
             msg_uid: String::new(),
             credential_attributes: credential_data.to_string(),
@@ -721,7 +698,7 @@ pub mod tests {
             credential_request: None,
             credential_offer: None,
             credential_name: "cred_name".to_string(),
-            credential_id: new_handle.to_string(),
+            credential_id: String::new(),
             ref_msg_id: None,
             price: 1,
             payment_address: None,
@@ -793,7 +770,7 @@ pub mod tests {
 					 1).unwrap();
 
         assert_eq!(send_credential_offer(handle, connection_handle).unwrap(), error::SUCCESS.code_num);
-        assert_eq!(get_state(handle), VcxStateType::VcxStateOfferSent as u32);
+        assert_eq!(get_state(handle).unwrap(), VcxStateType::VcxStateOfferSent as u32);
         assert_eq!(get_offer_uid(handle).unwrap(), "ntc2ytb");
     }
 
@@ -823,13 +800,13 @@ pub mod tests {
 					 1).unwrap();
 
         set_libindy_rc(error::TIMEOUT_LIBINDY_ERROR.code_num);
-        assert_eq!(send_credential_offer(handle, connection_handle), Err(IssuerCredError::CommonError(error::TIMEOUT_LIBINDY_ERROR.code_num)));
-        assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
+        assert!(send_credential_offer(handle, connection_handle).is_err());
+        assert_eq!(get_state(handle).unwrap(), VcxStateType::VcxStateInitialized as u32);
         assert_eq!(get_offer_uid(handle).unwrap(), "");
 
         // Can retry after initial failure
         assert_eq!(send_credential_offer(handle, connection_handle).unwrap(), error::SUCCESS.code_num);
-        assert_eq!(get_state(handle), VcxStateType::VcxStateOfferSent as u32);
+        assert_eq!(get_state(handle).unwrap(), VcxStateType::VcxStateOfferSent as u32);
         assert_eq!(get_offer_uid(handle).unwrap(), "ntc2ytb");
     }
 
@@ -881,7 +858,6 @@ pub mod tests {
         let credential_req:CredentialRequest = CredentialRequest::from_str(CREDENTIAL_REQ_STRING).unwrap();
         let (credential_offer, _) = ::credential::parse_json_offer(CREDENTIAL_OFFER_JSON).unwrap();
         let mut credential = IssuerCredential {
-            handle: 123,
             source_id: "test_has_pending_credential_request".to_owned(),
             schema_seq_no: 32,
             msg_uid: "1234".to_owned(),
@@ -907,7 +883,7 @@ pub mod tests {
         httpclient::set_next_u8_response(CREDENTIAL_REQ_RESPONSE.to_vec());
         httpclient::set_next_u8_response(UPDATE_CREDENTIAL_RESPONSE.to_vec());
 
-        credential.update_state();
+        credential.update_state().unwrap();
         assert_eq!(credential.get_state(), VcxStateType::VcxStateRequestReceived as u32);
     }
 
@@ -990,7 +966,7 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let invalid_handle = 478620;
-        assert_eq!(to_string(invalid_handle).err(), Some(IssuerCredError::InvalidHandle()));
+        assert_eq!(to_string(invalid_handle).err(), Some(IssuerCredError::CommonError(error::INVALID_OBJ_HANDLE.code_num)));
         assert_eq!(release(invalid_handle).err(), Some(IssuerCredError::InvalidHandle()));
     }
 
@@ -1023,6 +999,7 @@ pub mod tests {
         println!("{}", serde_json::to_string(&payment_info).unwrap())
     }
 
+    #[test]
     fn test_verify_payment() {
         let test_name = "test_verify_payment";
         set_default_and_enable_test_mode();
@@ -1065,7 +1042,7 @@ pub mod tests {
         credential.state = VcxStateType::VcxStateRequestReceived;
         credential.price = 200;
         assert!(credential.send_credential(connection_handle).is_err());
-        let payment = serde_json::to_string(&credential.get_payment_txn().unwrap().unwrap()).unwrap();
+        let payment = serde_json::to_string(&credential.get_payment_txn().unwrap()).unwrap();
         assert!(payment.len() > 20);
     }
 }

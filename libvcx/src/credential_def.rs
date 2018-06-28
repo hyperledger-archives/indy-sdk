@@ -2,9 +2,6 @@ extern crate serde_json;
 extern crate rand;
 extern crate libc;
 
-use std::sync::Mutex;
-use std::collections::HashMap;
-use rand::Rng;
 use utils::error;
 use settings;
 use schema::LedgerSchema;
@@ -18,20 +15,31 @@ use utils::libindy::ledger::{libindy_submit_request,
                              libindy_parse_get_cred_def_response};
 use error::ToErrorCode;
 use error::cred_def::CredDefError;
+use object_cache::ObjectCache;
 
 lazy_static! {
-    static ref CREDENTIALDEF_MAP: Mutex<HashMap<u32, Box<CredentialDef>>> = Default::default();
+    static ref CREDENTIALDEF_MAP: ObjectCache<CredentialDef> = Default::default();
 }
 
 #[derive(Deserialize, Debug, Serialize, PartialEq)]
 pub struct CredentialDef {
     id: String,
     tag: String,
-    #[serde(skip_serializing, default)]
-    pub handle: u32,
     name: String,
     source_id: String,
     payment_txn: Option<PaymentTxn>,
+}
+
+impl Default for CredentialDef {
+    fn default() -> CredentialDef {
+        CredentialDef {
+            id: String::new(),
+            tag: String::new(),
+            name: String::new(),
+            source_id: String::new(),
+            payment_txn: None,
+        }
+    }
 }
 
 impl CredentialDef {
@@ -44,13 +52,17 @@ impl CredentialDef {
 
     pub fn get_cred_def_id(&self) -> &String { &self.id }
 
-    pub fn set_handle(&mut self, handle: u32) { self.handle = handle; }
-
     pub fn set_name(&mut self, name: String) { self.name = name.clone(); }
 
     pub fn set_source_id(&mut self, source_id: String) { self.source_id = source_id.clone(); }
 
-    fn get_payment_txn(&self) -> Result<Option<PaymentTxn>, u32> { Ok(self.payment_txn.clone()) }
+    fn get_payment_txn(&self) -> Result<PaymentTxn, u32> {
+        if self.payment_txn.is_some() {
+            Ok(self.payment_txn.clone().unwrap())
+        } else {
+            Err(error::NOT_READY.code_num)
+        }
+    }
 }
 
 //Todo: Add a get_cred_def_id call
@@ -71,20 +83,15 @@ pub fn create_new_credentialdef(source_id: String,
                                                    Some(SigTypes::CL),
                                                    &config_json)?;
 
-    let new_handle = rand::thread_rng().gen::<u32>();
-    let new_cred_def = Box::new(CredentialDef {
-        handle: new_handle,
+    let new_cred_def = CredentialDef {
         source_id,
         name,
         tag,
         id,
         payment_txn,
-    });
-    {
-        let mut m = CREDENTIALDEF_MAP.lock().unwrap();
-        debug!("inserting handle {} into credentialdef table", new_handle);
-        m.insert(new_handle, new_cred_def);
-    }
+    };
+
+    let new_handle = CREDENTIALDEF_MAP.add(new_cred_def).map_err(|key|CredDefError::CreateCredDefError())?;
 
     Ok(new_handle)
 }
@@ -142,70 +149,57 @@ pub fn retrieve_credential_def(cred_def_id: &str) -> Result<(String, String), Cr
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
-    match CREDENTIALDEF_MAP.lock().unwrap().get(&handle) {
-        Some(_) => true,
-        None => false,
-    }
+    CREDENTIALDEF_MAP.has_handle(handle)
 }
 
 pub fn to_string(handle: u32) -> Result<String, u32> {
-    match CREDENTIALDEF_MAP.lock().unwrap().get(&handle) {
-        Some(p) => Ok(serde_json::to_string(&p).unwrap().to_owned()),
-        None => Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num)
-    }
+    CREDENTIALDEF_MAP.get(handle, |c| {
+        serde_json::to_string(&c).map_err(|ec|error::INVALID_JSON.code_num)
+    })
 }
 
-pub fn from_string(credentialdef_data: &str) -> Result<u32, u32> {
+pub fn from_string(credentialdef_data: &str) -> Result<u32, CredDefError> {
     let derived_credentialdef: CredentialDef = serde_json::from_str(credentialdef_data)
         .map_err(|err| {
             error!("{} with: {}", error::INVALID_CREDENTIAL_DEF_JSON.message, err);
-            error::INVALID_CREDENTIAL_DEF_JSON.code_num
+            CredDefError::CommonError(error::INVALID_CREDENTIAL_DEF_JSON.code_num)
         })?;
-    let new_handle = rand::thread_rng().gen::<u32>();
     let source_id = derived_credentialdef.source_id.clone();
-    let credentialdef = Box::from(derived_credentialdef);
+    let new_handle = CREDENTIALDEF_MAP.add(derived_credentialdef).map_err(|ec|CredDefError::CommonError(ec))?;
 
-    {
-        let mut m = CREDENTIALDEF_MAP.lock().unwrap();
-        debug!("inserting handle {} with source_id {:?} into credentialdef table", new_handle, source_id);
-        m.insert(new_handle, credentialdef);
-    }
     Ok(new_handle)
 }
 
-pub fn get_source_id(handle: u32) -> Result<String, u32> {
-    match CREDENTIALDEF_MAP.lock().unwrap().get(&handle) {
-        Some(c) => Ok(c.get_source_id().clone()),
-        None => Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num),
-    }
+pub fn get_source_id(handle: u32) -> Result<String, CredDefError> {
+    CREDENTIALDEF_MAP.get(handle,|c| {
+        Ok(c.get_source_id().clone())
+    }).map_err(|ec|CredDefError::CommonError(ec))
 }
 
-pub fn get_payment_txn(handle: u32) -> Option<PaymentTxn> {
-    // get_payment_txn only ever returns Ok()
-    match CREDENTIALDEF_MAP.lock().unwrap().get(&handle) {
-        Some(c) => c.get_payment_txn().unwrap(),
-        None => None,
-    }
+pub fn get_payment_txn(handle: u32) -> Result<PaymentTxn, CredDefError> {
+    CREDENTIALDEF_MAP.get(handle,|c| {
+        c.get_payment_txn()
+    }).or(Err(CredDefError::NoPaymentInformation()))
 }
 
-pub fn get_cred_def_id(handle: u32) -> Result<String, u32> {
-    match CREDENTIALDEF_MAP.lock().unwrap().get(&handle) {
-        Some(c) => Ok(c.get_cred_def_id().clone()),
-        None => Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num),
-    }
+pub fn get_cred_def_id(handle: u32) -> Result<String, CredDefError> {
+    CREDENTIALDEF_MAP.get(handle,|c| {
+        Ok(c.get_cred_def_id().clone())
+    }).map_err(|ec|CredDefError::CommonError(ec))
 }
 
-pub fn release(handle: u32) -> Result<(), u32> {
-    match CREDENTIALDEF_MAP.lock().unwrap().remove(&handle) {
-        Some(t) => Ok(()),
-        None => Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num),
+pub fn release(handle: u32) -> Result<(), CredDefError> {
+    match CREDENTIALDEF_MAP.release(handle) {
+        Ok(_) => Ok(()),
+        Err(_) => Err(CredDefError::InvalidHandle()),
     }
 }
 
 pub fn release_all() {
-    let mut map = CREDENTIALDEF_MAP.lock().unwrap();
-
-    map.drain();
+    match CREDENTIALDEF_MAP.drain() {
+        Ok(_) => (),
+        Err(_) => (),
+    };
 }
 
 #[cfg(test)]
@@ -237,7 +231,7 @@ pub mod tests {
         settings::clear_config();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        assert_eq!(retrieve_credential_def(CRED_DEF_ID), Err(CredDefError::CommonError(error::NO_POOL_OPEN.code_num)));
+        assert!(retrieve_credential_def(CRED_DEF_ID).is_err());
     }
 
     #[cfg(feature = "pool_tests")]
@@ -354,9 +348,8 @@ pub mod tests {
         release(handle).unwrap();
         let new_handle = from_string(&credentialdef_data).unwrap();
         let new_credentialdef_data = to_string(new_handle).unwrap();
-        let mut credentialdef1: CredentialDef = serde_json::from_str(&credentialdef_data).unwrap();
+        let credentialdef1: CredentialDef = serde_json::from_str(&credentialdef_data).unwrap();
         let credentialdef2: CredentialDef = serde_json::from_str(&new_credentialdef_data).unwrap();
-        credentialdef1.handle = credentialdef2.handle;
         assert_eq!(credentialdef1,credentialdef2);
         assert_eq!(CredentialDef::from_str("{}").err(), Some(CredDefError::CreateCredDefError()));
     }
@@ -371,10 +364,10 @@ pub mod tests {
         let h4 = create_new_credentialdef("SourceId".to_string(), CREDENTIAL_DEF_NAME.to_string(), ISSUER_DID.to_string(), SCHEMA_ID.to_string(), "tag".to_string(), "{}".to_string()).unwrap();
         let h5 = create_new_credentialdef("SourceId".to_string(), CREDENTIAL_DEF_NAME.to_string(), ISSUER_DID.to_string(), SCHEMA_ID.to_string(), "tag".to_string(), "{}".to_string()).unwrap();
         release_all();
-        assert_eq!(release(h1),Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num));
-        assert_eq!(release(h2),Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num));
-        assert_eq!(release(h3),Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num));
-        assert_eq!(release(h4),Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num));
-        assert_eq!(release(h5),Err(error::INVALID_CREDENTIAL_DEF_HANDLE.code_num));
+        assert_eq!(release(h1),Err(CredDefError::InvalidHandle()));
+        assert_eq!(release(h2),Err(CredDefError::InvalidHandle()));
+        assert_eq!(release(h3),Err(CredDefError::InvalidHandle()));
+        assert_eq!(release(h4),Err(CredDefError::InvalidHandle()));
+        assert_eq!(release(h5),Err(CredDefError::InvalidHandle()));
     }
 }

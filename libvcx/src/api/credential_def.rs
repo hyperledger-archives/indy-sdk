@@ -169,8 +169,8 @@ pub extern fn vcx_credentialdef_deserialize(command_handle: u32,
             },
             Err(x) => {
                 warn!("vcx_credentialdef_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
-                      command_handle, error_string(x), 0, "");
-                (x, 0)
+                      command_handle, x.to_string(), 0, "");
+                (x.to_error_code(), 0)
             },
         };
         cb(command_handle, rc, handle);
@@ -207,8 +207,8 @@ pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32, cred_def_ha
             },
             Err(x) => {
                 warn!("vcx_credentialdef_get_cred_def_id(command_handle: {}, cred_def_handle: {}, rc: {}, cred_def_id: {})",
-                      command_handle, cred_def_handle, error_string(x), "");
-                cb(command_handle, x, ptr::null_mut());
+                      command_handle, cred_def_handle, x.to_string(), "");
+                cb(command_handle, x.to_error_code(), ptr::null_mut());
             },
         };
     });
@@ -245,7 +245,7 @@ pub extern fn vcx_credentialdef_get_payment_txn(command_handle: u32,
 
     thread::spawn(move|| {
         match credential_def::get_payment_txn(handle) {
-            Some(x) => {
+            Ok(x) => {
                 match serde_json::to_string(&x) {
                     Ok(x) => {
                         info!("vcx_credentialdef_get_payment_txn_cb(command_handle: {}, rc: {}, : {}), source_id: {:?}",
@@ -261,10 +261,10 @@ pub extern fn vcx_credentialdef_get_payment_txn(command_handle: u32,
                     }
                 }
             },
-            None => {
+            Err(x) => {
                 error!("vcx_credentialdef_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {:?}",
-                       command_handle, error_string(error::NOT_READY.code_num), "null", credential_def::get_source_id(handle).unwrap_or_default());
-                cb(command_handle, error::NOT_READY.code_num, ptr::null());
+                       command_handle, x.to_string(), "null", credential_def::get_source_id(handle).unwrap_or_default());
+                cb(command_handle, x.to_error_code(), ptr::null());
             },
         };
     });
@@ -286,7 +286,7 @@ pub extern fn vcx_credentialdef_release(credentialdef_handle: u32) -> u32 {
         Ok(_) => info!("vcx_credentialdef_release(credentialdef_handle: {}, rc: {}), source_id: {:?}",
                       credentialdef_handle, error_string(0), source_id),
         Err(x) => warn!("vcx_credentialdef_release(credentialdef_handle: {}, rc: {}), source_id: {:?}",
-                        credentialdef_handle, error_string(x), source_id),
+                        credentialdef_handle, x.to_string(), source_id),
     };
     error::SUCCESS.code_num
 }
@@ -358,9 +358,8 @@ mod tests {
         println!("successfully called deserialize_cb");
         let expected = r#"{"id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:1697","tag":"tag","name":"Test Credential Definition","source_id":"SourceId"}"#;
         let new = credential_def::to_string(credentialdef_handle).unwrap();
-        let mut def1: credential_def::CredentialDef = serde_json::from_str(expected).unwrap();
+        let def1: credential_def::CredentialDef = serde_json::from_str(expected).unwrap();
         let def2: credential_def::CredentialDef = serde_json::from_str(&new).unwrap();
-        def1.handle = def2.handle;
         assert_eq!(def1,def2);
     }
 

@@ -133,8 +133,8 @@ mod tests {
         thread::sleep(Duration::from_millis(2000));
         // AS INSTITUTION SEND CREDENTIAL
         set_institution();
-        issuer_credential::update_state(credential_offer);
-        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, issuer_credential::get_state(credential_offer));
+        issuer_credential::update_state(credential_offer).unwrap();
+        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, issuer_credential::get_state(credential_offer).unwrap());
         println!("sending credential");
         issuer_credential::send_credential(credential_offer, alice).unwrap();
         thread::sleep(Duration::from_millis(2000));
@@ -308,8 +308,8 @@ mod tests {
         thread::sleep(Duration::from_millis(5000));
         // AS INSTITUTION VALIDATE PROOF
         set_institution();
-        proof::update_state(proof_req_handle);
-        assert_eq!(proof::get_proof_state(proof_req_handle), ProofStateType::ProofValidated as u32);
+        proof::update_state(proof_req_handle).unwrap();
+        assert_eq!(proof::get_proof_state(proof_req_handle).unwrap(), ProofStateType::ProofValidated as u32);
         println!("proof validated!");
         let wallet = ::utils::libindy::payments::get_wallet_token_info().unwrap();
         cleanup_dev_env("test_real_proof");

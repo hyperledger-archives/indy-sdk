@@ -240,4 +240,4 @@ async def test_credential_get_payment_txn():
     with pytest.raises(VcxError) as e:
         credential = await Credential.create(source_id, offer)
         await credential.get_payment_txn()
-    assert ErrorCode.NotReady == e.value.error_code
+    assert ErrorCode.NoPaymentInformation == e.value.error_code

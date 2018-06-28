@@ -61,7 +61,7 @@ tempfile = "2.2"
 [package.metadata.deb]
 maintainer = "Mark Hadley<mark.hadley@evernym.com>, Devin Fisher, Ryan Marsh, Doug Wightman"
 copyright = "2018, Evernym Inc."
-depends = "$auto, libindy (=1.4.0~605), libnullpay (=0.1.0~605)"
+depends = "$auto, libindy (=1.5.0), libnullpay (=1.5.0)"
 extended-description = """\
 "TODO DESCRIPTION"""
 section = "admin"

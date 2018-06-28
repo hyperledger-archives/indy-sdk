@@ -92,11 +92,18 @@ pub extern fn vcx_proof_update_state(command_handle: u32,
     }
 
     thread::spawn(move|| {
-        proof::update_state(proof_handle);
-
-        info!("vcx_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}), source_id: {:?}",
-              command_handle, error_string(0), proof_handle, proof::get_state(proof_handle), source_id);
-        cb(command_handle, error::SUCCESS.code_num, proof::get_state(proof_handle));
+        match proof::update_state(proof_handle) {
+            Ok(x) => {
+                info!("vcx_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}), source_id: {:?}",
+                      command_handle, error_string(0), proof_handle, x, source_id);
+                cb(command_handle, error::SUCCESS.code_num, x);
+            },
+            Err(x) => {
+                warn!("vcx_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}), source_id: {:?}",
+                      command_handle, x.to_string(), proof_handle, 0, source_id);
+                cb(command_handle, x.to_error_code(), 0);
+            }
+        }
     });
 
     error::SUCCESS.code_num
@@ -117,9 +124,18 @@ pub extern fn vcx_proof_get_state(command_handle: u32,
     }
 
     thread::spawn(move|| {
-        info!("vcx_proof_get_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}), source_id: {:?}",
-              command_handle, error_string(0), proof_handle, proof::get_state(proof_handle), source_id);
-        cb(command_handle, error::SUCCESS.code_num, proof::get_state(proof_handle));
+        match proof::get_state(proof_handle) {
+            Ok(x) => {
+                info!("vcx_proof_get_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}), source_id: {:?}",
+                      command_handle, error_string(0), proof_handle, x, source_id);
+                cb(command_handle, error::SUCCESS.code_num, x);
+            },
+            Err(x) => {
+                warn!("vcx_proof_get_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}), source_id: {:?}",
+                      command_handle, x.to_string(), proof_handle, 0, source_id);
+                cb(command_handle, x.to_error_code(), 0);
+            }
+        }
     });
 
     error::SUCCESS.code_num
@@ -307,19 +323,22 @@ pub extern fn vcx_get_proof(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    //update the state to see if proof has come
-    proof::update_state(proof_handle);
-
     thread::spawn(move|| {
+        //update the state to see if proof has come, ignore any errors
+        match proof::update_state(proof_handle) {
+            Ok(_) => (),
+            Err(_) => (),
+        };
+
         match proof::get_proof(proof_handle) {
             Ok(x) => {
                 info!("vcx_get_proof_cb(command_handle: {}, proof_handle: {}, rc: {}, proof: {})", command_handle, proof_handle, 0, x);
                 let msg = CStringUtils::string_to_cstring(x);
-                cb(command_handle, error::SUCCESS.code_num, proof::get_proof_state(proof_handle), msg.as_ptr());
+                cb(command_handle, error::SUCCESS.code_num, proof::get_proof_state(proof_handle).unwrap(), msg.as_ptr());
             },
             Err(x) => {
                 warn!("vcx_get_proof_cb(command_handle: {}, proof_handle: {}, rc: {}, proof: {})", command_handle, proof_handle, x.to_error_code(), "null");
-                cb(command_handle, x.to_error_code(), proof::get_proof_state(proof_handle), ptr::null_mut());
+                cb(command_handle, x.to_error_code(), proof::get_proof_state(proof_handle).unwrap(), ptr::null_mut());
             },
         };
     });
@@ -500,12 +519,12 @@ mod tests {
             Ok(x) => x,
             Err(_) => panic!("Proof creation failed"),
         };
-        assert_eq!(proof::get_state(handle),VcxStateType::VcxStateInitialized as u32);
+        assert_eq!(proof::get_state(handle).unwrap(),VcxStateType::VcxStateInitialized as u32);
 
         let connection_handle = connection::build_connection("test_send_proof_request").unwrap();
         assert_eq!(vcx_proof_send_request(0,handle,connection_handle,Some(send_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(1000));
-        assert_eq!(proof::get_state(handle),VcxStateType::VcxStateOfferSent as u32);
+        assert_eq!(proof::get_state(handle).unwrap(),VcxStateType::VcxStateOfferSent as u32);
     }
 
     #[test]

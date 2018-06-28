@@ -6,9 +6,7 @@ extern crate openssl;
 use self::openssl::bn::{ BigNum, BigNumRef };
 use settings;
 use connection;
-use rand::Rng;
 use api::{ VcxStateType, ProofStateType };
-use std::sync::Mutex;
 use std::collections::HashMap;
 use messages::proofs::proof_message::{ProofMessage};
 use messages;
@@ -23,16 +21,15 @@ use schema::{ LedgerSchema };
 //use proof_compliance::{ proof_compliance };
 use error::proof::ProofError;
 use error::ToErrorCode;
+use object_cache::ObjectCache;
 
 lazy_static! {
-    static ref PROOF_MAP: Mutex<HashMap<u32, Box<Proof>>> = Default::default();
+    static ref PROOF_MAP: ObjectCache<Proof> = Default::default();
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Proof {
     source_id: String,
-    #[serde(skip_serializing, default)]
-    handle: u32,
     requested_attrs: String,
     requested_predicates: String,
     msg_uid: String,
@@ -57,7 +54,6 @@ impl Proof {
     // other than return success.
     fn validate_proof_request(&self) -> Result<u32, u32> {
         //TODO: validate proof request
-        debug!("successfully validated proof request {}", self.handle);
         Ok(error::SUCCESS.code_num)
     }
 
@@ -77,7 +73,7 @@ impl Proof {
                                                   credential_defs_json,
                                                   rev_reg_defs_json,
                                                   rev_regs_json).map_err(|err| {
-                error!("Error: {}, Proof {} wasn't valid", err, self.handle);
+                error!("Error: {}, Proof {} wasn't valid", err, self.source_id);
                 self.proof_state = ProofStateType::ProofInvalid;
                 ProofError::InvalidProof()
         })?;
@@ -87,7 +83,7 @@ impl Proof {
             self.proof_state = ProofStateType::ProofInvalid;
             return Ok(error::SUCCESS.code_num)
         }
-        debug!("Indy validated Proof: {:?}", self.handle);
+        debug!("Indy validated Proof: {}", self.source_id);
         self.proof_state = ProofStateType::ProofValidated;
         Ok(error::SUCCESS.code_num)
     }
@@ -178,10 +174,10 @@ impl Proof {
 
     fn send_proof_request(&mut self, connection_handle: u32) -> Result<u32, ProofError> {
         if self.state != VcxStateType::VcxStateInitialized {
-            warn!("proof {} has invalid state {} for sending proofRequest", self.handle, self.state as u32);
+            warn!("proof {} has invalid state {} for sending proofRequest", self.source_id, self.state as u32);
             return Err(ProofError::ProofNotReadyError())
         }
-        debug!("sending proof request with proof: {}, and connection {}", self.handle, connection_handle);
+        debug!("sending proof request with proof: {}, and connection {}", self.source_id, connection_handle);
         self.prover_did = connection::get_pw_did(connection_handle).map_err(|ec| ProofError::InvalidConnection())?;
         self.agent_did = connection::get_agent_did(connection_handle).map_err(|ec| ProofError::InvalidConnection())?;
         self.agent_vk = connection::get_agent_verkey(connection_handle).map_err(|ec| ProofError::InvalidConnection())?;
@@ -240,12 +236,12 @@ impl Proof {
     }
 
     fn get_proof_request_status(&mut self) -> Result<u32, ProofError> {
-        debug!("updating state for proof {}", self.handle);
+        debug!("updating state for proof {}", self.source_id);
         if self.state == VcxStateType::VcxStateAccepted {
-            return Ok(error::SUCCESS.code_num);
+            return Ok(self.get_state());
         }
         else if self.state != VcxStateType::VcxStateOfferSent || self.msg_uid.is_empty() || self.prover_did.is_empty() {
-            return Ok(error::SUCCESS.code_num);
+            return Ok(self.get_state());
         }
 
         let payload = messages::get_message::get_ref_msg(&self.msg_uid, &self.prover_did,
@@ -254,9 +250,7 @@ impl Proof {
             .map_err(|ec| ProofError::ProofMessageError(ec))?;
 
         self.proof = match parse_proof_payload(&payload) {
-            Err(err) => {
-                return Ok(error::SUCCESS.code_num)
-            },
+            Err(err) => return Ok(self.get_state()),
             Ok(x) => Some(x),
         };
 
@@ -265,27 +259,27 @@ impl Proof {
         match self.proof_validation() {
             Ok(x) => {
                 if self.proof_state != ProofStateType::ProofInvalid {
-                    debug!("Proof format was validated for proof {}", self.handle);
+                    debug!("Proof format was validated for proof {}", self.source_id);
                     self.proof_state = ProofStateType::ProofValidated;
                 }
             }
             Err(x) => {
                 self.state = VcxStateType::VcxStateRequestReceived;
                 if x == ProofError::CommonError(error::TIMEOUT_LIBINDY_ERROR.code_num) {
-                    warn!("Proof {} unable to be validated", self.handle);
+                    warn!("Proof {} unable to be validated", self.source_id);
                     self.proof_state = ProofStateType::ProofUndefined;
                 } else {
-                    warn!("Proof {} had invalid format with err {}", self.handle, x);
+                    warn!("Proof {} had invalid format with err {}", self.source_id, x);
                     self.proof_state = ProofStateType::ProofInvalid;
                 }
             }
         };
 
-        Ok(error::SUCCESS.code_num)
+        Ok(self.get_state())
     }
 
-    fn update_state(&mut self) {
-        self.get_proof_request_status().unwrap_or(error::SUCCESS.code_num);
+    fn update_state(&mut self) -> Result<u32, ProofError> {
+        self.get_proof_request_status()
     }
 
     fn get_state(&self) -> u32 {let state = self.state as u32; state}
@@ -308,11 +302,9 @@ pub fn create_proof(source_id: String,
         return Err(ProofError::CommonError(error::INVALID_JSON.code_num))
     }
 
-    let new_handle = rand::thread_rng().gen::<u32>();
     debug!("creating proof with source_id: {}, name: {}, requested_attrs: {}, requested_predicates: {}", source_id, name, requested_attrs, requested_predicates);
 
-    let mut new_proof = Box::new(Proof {
-        handle: new_handle,
+    let mut new_proof = Proof {
         source_id,
         msg_uid: String::new(),
         ref_msg_id: String::new(),
@@ -331,74 +323,66 @@ pub fn create_proof(source_id: String,
         remote_vk: String::new(),
         agent_did: String::new(),
         agent_vk: String::new(),
-    });
+    };
 
     new_proof.validate_proof_request().map_err(|ec| ProofError::CommonError(ec))?;
 
     new_proof.state = VcxStateType::VcxStateInitialized;
 
-    {
-        let mut m = PROOF_MAP.lock().unwrap();
-        debug!("inserting handle {} into proof table", new_handle);
-        m.insert(new_handle, new_proof);
-    }
+    let new_handle = PROOF_MAP.add(new_proof).map_err(|ec|ProofError::CreateProofError())?;
 
     Ok(new_handle)
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
-    match PROOF_MAP.lock().unwrap().get(&handle) {
-        Some(_) => true,
-        None => false,
-    }
+    PROOF_MAP.has_handle(handle)
 }
 
-pub fn update_state(handle: u32) {
-    match PROOF_MAP.lock().unwrap().get_mut(&handle) {
-        Some(t) => t.update_state(),
-        None => {},
-    };
+pub fn update_state(handle: u32) -> Result<u32, ProofError> {
+    PROOF_MAP.get_mut(handle,|p|{
+        match p.update_state() {
+            Ok(x) => Ok(x),
+            Err(x) => Ok(p.get_state()),
+        }
+    }).map_err(|ec|ProofError::CommonError(ec))
 }
 
-pub fn get_state(handle: u32) -> u32 {
-    match PROOF_MAP.lock().unwrap().get(&handle) {
-        Some(t) => t.get_state(),
-        None => VcxStateType::VcxStateNone as u32,
-    }
+pub fn get_state(handle: u32) -> Result<u32, ProofError> {
+    PROOF_MAP.get(handle,|p|{
+        Ok(p.get_state())
+    }).map_err(|ec|ProofError::CommonError(ec))
 }
 
-pub fn get_proof_state(handle: u32) -> u32 {
-    match PROOF_MAP.lock().unwrap().get(&handle) {
-        Some(t) => t.get_proof_state(),
-        None => VcxStateType::VcxStateNone as u32,
-    }
+pub fn get_proof_state(handle: u32) -> Result<u32, ProofError> {
+    PROOF_MAP.get(handle,|p|{
+        Ok(p.get_proof_state())
+    }).map_err(|ec|ProofError::CommonError(ec))
 }
 
-pub fn release(handle: u32) -> Result<u32, ProofError> {
-    match PROOF_MAP.lock().unwrap().remove(&handle) {
-        Some(t) => Ok(error::SUCCESS.code_num),
-        None => Err(ProofError::InvalidHandle()),
+pub fn release(handle: u32) -> Result<(), ProofError> {
+    match PROOF_MAP.release(handle) {
+        Ok(_) => Ok(()),
+        Err(_) => Err(ProofError::InvalidHandle()),
     }
 }
 
 pub fn release_all() {
-    let mut map = PROOF_MAP.lock().unwrap();
-
-    map.drain();
+    match PROOF_MAP.drain() {
+        Ok(_) => (),
+        Err(_) => (),
+    };
 }
 
 pub fn to_string(handle: u32) -> Result<String, ProofError> {
-    match PROOF_MAP.lock().unwrap().get(&handle) {
-        Some(p) => Ok(serde_json::to_string(&p).unwrap().to_owned()),
-        None => Err(ProofError::InvalidHandle())
-    }
+    PROOF_MAP.get(handle,|p|{
+        serde_json::to_string(&p).map_err(|ec|error::INVALID_JSON.code_num)
+    }).map_err(|ec|ProofError::CommonError(ec))
 }
 
 pub fn get_source_id(handle: u32) -> Result<String, ProofError> {
-    match PROOF_MAP.lock().unwrap().get(&handle) {
-        Some(p) => Ok(p.get_source_id().clone()),
-        None => Err(ProofError::InvalidHandle())
-    }
+    PROOF_MAP.get(handle,|p|{
+        Ok(p.get_source_id().clone())
+    }).map_err(|ec|ProofError::CommonError(ec))
 }
 
 pub fn from_string(proof_data: &str) -> Result<u32, ProofError> {
@@ -407,23 +391,16 @@ pub fn from_string(proof_data: &str) -> Result<u32, ProofError> {
         ProofError::CommonError(error::INVALID_JSON.code_num)
     })?;
 
-    let new_handle = rand::thread_rng().gen::<u32>();
     let source_id = derived_proof.source_id.clone();
-    let proof = Box::from(derived_proof);
+    let new_handle = PROOF_MAP.add(derived_proof).map_err(|ec|ProofError::CommonError(ec))?;
 
-    {
-        let mut m = PROOF_MAP.lock().unwrap();
-        debug!("inserting handle {} with source_id {:?} into proof table", new_handle, source_id);
-        m.insert(new_handle, proof);
-    }
     Ok(new_handle)
 }
 
 pub fn send_proof_request(handle: u32, connection_handle: u32) -> Result<u32, ProofError> {
-    match PROOF_MAP.lock().unwrap().get_mut(&handle) {
-        Some(c) => Ok(c.send_proof_request(connection_handle)?),
-        None => Err(ProofError::InvalidHandle()),
-    }
+    PROOF_MAP.get_mut(handle,|p|{
+        p.send_proof_request(connection_handle).map_err(|ec|ec.to_error_code())
+    }).map_err(|ec|ProofError::CommonError(ec))
 }
 
 fn get_proof_details(response: &str) -> Result<String, ProofError> {
@@ -447,10 +424,9 @@ fn get_proof_details(response: &str) -> Result<String, ProofError> {
 }
 
 pub fn get_proof_uuid(handle: u32) -> Result<String,u32> {
-    match PROOF_MAP.lock().unwrap().get(&handle) {
-        Some(proof) => Ok(proof.get_proof_uuid().clone()),
-        None => Err(error::INVALID_PROOF_HANDLE.code_num),
-    }
+    PROOF_MAP.get(handle,|p|{
+        Ok(p.get_proof_uuid().clone())
+    })
 }
 
 fn parse_proof_payload(payload: &Vec<u8>) -> Result<ProofMessage, u32> {
@@ -465,10 +441,9 @@ fn parse_proof_payload(payload: &Vec<u8>) -> Result<ProofMessage, u32> {
 }
 
 pub fn get_proof(handle: u32) -> Result<String, ProofError> {
-    match PROOF_MAP.lock().unwrap().get(&handle) {
-        Some(proof) => Ok(proof.get_proof()?),
-        None => Err(ProofError::InvalidHandle()),
-    }
+    PROOF_MAP.get(handle,|p|{
+        p.get_proof().map_err(|ec|ec.to_error_code())
+    }).map_err(|ec|ProofError::CommonError(ec))
 }
 
 // TODO: This doesnt feel like it should be here (maybe utils?)
@@ -498,9 +473,7 @@ mod tests {
     }
 
     fn create_boxed_proof() -> Box<Proof> {
-        let new_handle = rand::thread_rng().gen::<u32>();
         Box::new(Proof {
-            handle: new_handle,
             source_id: "12".to_string(),
             msg_uid: String::from("1234"),
             ref_msg_id: String::new(),
@@ -558,11 +531,10 @@ mod tests {
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();
         let proof_data = to_string(handle).unwrap();
-        let mut proof1: Proof = serde_json::from_str(&proof_data).unwrap();
+        let proof1: Proof = serde_json::from_str(&proof_data).unwrap();
         assert!(release(handle).is_ok());
         let new_handle = from_string(&proof_data).unwrap();
         let proof2 : Proof = serde_json::from_str(&to_string(new_handle).unwrap()).unwrap();
-        proof1.handle = proof2.handle;
         assert_eq!(proof1, proof2);
     }
 
@@ -592,7 +564,7 @@ mod tests {
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();
         assert_eq!(send_proof_request(handle, connection_handle).unwrap(), error::SUCCESS.code_num);
-        assert_eq!(get_state(handle), VcxStateType::VcxStateOfferSent as u32);
+        assert_eq!(get_state(handle).unwrap(), VcxStateType::VcxStateOfferSent as u32);
         assert_eq!(get_proof_uuid(handle).unwrap(), "ntc2ytb");
     }
 
@@ -613,8 +585,7 @@ mod tests {
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();
 
-        assert_eq!(send_proof_request(handle, connection_handle).err(),
-                  Some(ProofError::CommonError(error::INVALID_DID.code_num)));
+        assert!(send_proof_request(handle, connection_handle).is_err());
     }
 
     #[test]
@@ -635,9 +606,7 @@ mod tests {
 
         let connection_handle = build_connection("test_send_proof_request").unwrap();
 
-        let new_handle = 1;
         let mut proof = Box::new(Proof {
-            handle: new_handle,
             source_id: "12".to_string(),
             msg_uid: String::from("1234"),
             ref_msg_id: String::new(),
@@ -661,7 +630,7 @@ mod tests {
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
         httpclient::set_next_u8_response(UPDATE_PROOF_RESPONSE.to_vec());
 
-        proof.update_state();
+        proof.update_state().unwrap();
         assert_eq!(proof.get_state(), VcxStateType::VcxStateRequestReceived as u32);
     }
 
@@ -672,9 +641,7 @@ mod tests {
 
         let connection_handle = build_connection("test_send_proof_request").unwrap();
 
-        let new_handle = 1;
         let mut proof = Box::new(Proof {
-            handle: new_handle,
             source_id: "12".to_string(),
             msg_uid: String::from("1234"),
             ref_msg_id: String::new(),
@@ -699,7 +666,7 @@ mod tests {
         httpclient::set_next_u8_response(UPDATE_PROOF_RESPONSE.to_vec());
         //httpclient::set_next_u8_response(GET_PROOF_OR_CREDENTIAL_RESPONSE.to_vec());
 
-        proof.update_state();
+        proof.update_state().unwrap();
         assert_eq!(proof.get_state(), VcxStateType::VcxStateRequestReceived as u32);
         assert_eq!(proof.get_proof_state(), ProofStateType::ProofInvalid as u32);
         assert_eq!(proof.prover_did, "GxtnGN6ypZYgEqcftSQFnC");
@@ -788,7 +755,6 @@ mod tests {
         let mut proof_req_msg = ProofRequestMessage::create();
         proof_req_msg.proof_request_data = serde_json::from_str(proof_req).unwrap();
         let mut proof = Proof {
-            handle: 1237852,
             source_id: "12".to_string(),
             msg_uid: String::from("1234"),
             ref_msg_id: String::new(),
@@ -833,12 +799,12 @@ mod tests {
                                   "Optional".to_owned()).unwrap();
         set_libindy_rc(error::TIMEOUT_LIBINDY_ERROR.code_num);
         assert_eq!(send_proof_request(handle, connection_handle).err(), Some(ProofError::CommonError(error::TIMEOUT_LIBINDY_ERROR.code_num)));
-        assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
+        assert_eq!(get_state(handle).unwrap(), VcxStateType::VcxStateInitialized as u32);
         assert_eq!(get_proof_uuid(handle).unwrap(), "");
 
         // Retry sending proof request
         assert_eq!(send_proof_request(handle, connection_handle).unwrap(), 0);
-        assert_eq!(get_state(handle), VcxStateType::VcxStateOfferSent as u32);
+        assert_eq!(get_state(handle).unwrap(), VcxStateType::VcxStateOfferSent as u32);
         assert_eq!(get_proof_uuid(handle).unwrap(), "ntc2ytb");
     }
 
@@ -869,7 +835,7 @@ mod tests {
         proof.state = VcxStateType::VcxStateOfferSent;
         proof.proof_state = ProofStateType::ProofUndefined;
         proof.get_proof_request_status().unwrap();
-        proof.update_state();
+        proof.update_state().unwrap();
         assert_eq!(proof.get_state(), VcxStateType::VcxStateRequestReceived as u32);
         assert_eq!(proof.get_proof_state(), ProofStateType::ProofInvalid as u32);
     }
@@ -887,8 +853,8 @@ mod tests {
         assert_eq!(proof.validate_proof_indy("{}", "{}", "{}", "{}","", "").err(),
                    Some(ProofError::InvalidProof()));
 
+        let bad_handle = 100000;
         // TODO: Do something to guarantee that this handle is bad
-        let bad_handle = rand::thread_rng().gen::<u32>();
         assert_eq!(proof.send_proof_request(bad_handle).err(),
                    Some(ProofError::ProofNotReadyError()));
         // TODO: Add test that returns a INVALID_PROOF_CREDENTIAL_DATA
@@ -903,8 +869,8 @@ mod tests {
                                 "my name".to_string()).err(),
             Some(ProofError::CommonError(INVALID_JSON.code_num)));
 
-        assert_eq!(to_string(bad_handle).err(), Some(ProofError::InvalidHandle()));
-        assert_eq!(get_source_id(bad_handle).err(), Some(ProofError::InvalidHandle()));
+        assert_eq!(to_string(bad_handle).err(), Some(ProofError::CommonError(error::INVALID_OBJ_HANDLE.code_num)));
+        assert_eq!(get_source_id(bad_handle).err(), Some(ProofError::CommonError(error::INVALID_OBJ_HANDLE.code_num)));
         assert_eq!(from_string(empty).err(), Some(ProofError::CommonError(INVALID_JSON.code_num)));
         let mut proof_good = create_boxed_proof();
         assert_eq!(proof_good.get_proof_request_status().err(), Some(ProofError::ProofMessageError(POST_MSG_FAILURE.code_num)));

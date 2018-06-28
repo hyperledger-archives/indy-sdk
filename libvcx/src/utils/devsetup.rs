@@ -125,6 +125,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_local_env() {
+        ::utils::logger::LoggerUtils::init_test_logging("debug");
         let wallet_name = "test_local_env";
         setup_local_env(wallet_name);
         ::utils::libindy::anoncreds::tests::create_and_store_credential();
