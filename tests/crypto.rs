@@ -107,7 +107,7 @@ mod low_cases {
             safe_wallet_create!(wallet_name);
             let handle = Wallet::open(wallet_name, None, None).unwrap();
 
-            let res = Key::create_timeout(handle, None, Duration::from_millis(500));
+            let res = Key::create_timeout(handle, None, Duration::from_millis(1000));
             assert!(res.is_ok());
 
             let res = Key::create_timeout(handle, None, Duration::from_millis(1));
