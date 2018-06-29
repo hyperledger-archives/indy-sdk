@@ -427,7 +427,7 @@ def ubuntuPublishing() {
     node('ubuntu') {
         stage('Publish Ubuntu Files') {
             try {
-                echo 'Publish Ubuntu files: Checkout csm'
+                echo 'Publish Ubuntu files: Checkout scm'
                 checkout scm
 
                 libindyVersion = getSrcVersion("libindy")
@@ -449,13 +449,35 @@ def ubuntuPublishing() {
     }
     return libindyVersion
 }
+def androidPublishing(){
+    def libindyVersion
 
+    node('android'){
+        stage('Publish Android binaries'){
+            try{
+                echo 'Publish Android files: Checkout scm'
+                checkout scm
+
+                libindyVersion = getSrcVersion("libindy")
+
+                echo 'Publish Android binaries: Building docker image'
+                buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
+                buildAndroid(buildEnv)
+
+            }
+            finally{
+                echo 'Publish Android binaries: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
 def windowsPublishing() {
     def libindyVersion
     node('ubuntu') {
         stage('Publish Libindy Windows Files') {
             try {
-                echo 'Publish Windows files: Checkout csm'
+                echo 'Publish Windows files: Checkout scm'
                 checkout scm
 
                 libindyVersion = getSrcVersion("libindy")
@@ -554,6 +576,20 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
     }
 }
 
+def buildAndroid(envn) {
+    envn.inside {
+        ANDROID_SCRIPT_PATH = 'libindy/ci/buildAndroid.sh'
+        sh "./${ANDROID_SCRIPT_PATH} arm"
+        sh "./${ANDROID_SCRIPT_PATH} x86"
+        sh "./${ANDROID_SCRIPT_PATH} arm64"
+        //Todo: get parallel processing to work. Currently it fails on Jenkins. It must share files or something
+        // parallel([
+        //     'arm': { sh "./${ANDROID_SCRIPT_PATH} arm"},
+        //     'x86': { sh "./${ANDROID_SCRIPT_PATH} x86"},
+        //     'arm64': { sh "./${ANDROID_SCRIPT_PATH} arm64"}
+        // ])
+    }
+}
 
 def pythonWrapperPublishing(testEnv, isRelease) {
     dir('wrappers/python') {
