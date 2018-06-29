@@ -12,6 +12,11 @@ const WALLET_RECORD = {
   value: 'RecordValue'
 }
 
+const OPTIONS = {
+  retrieveTags: false,
+  retrieveType: true,
+  retrieveValue: true
+}
 const QUERY_JSON = { tagName1: 'str1' }
 
 const UPDATE_WALLET_RECORD = {
@@ -83,8 +88,8 @@ describe('Wallet:', () => {
 
   describe('records:', () => {
     it('success', async () => {
-      const error = await shouldThrow(async () => Wallet.getRecord({ type: WALLET_RECORD.type_, id: WALLET_RECORD.id }))
-      assert.equal(error.vcxCode, VCXCode.UNKNOWN_LIBINDY_ERROR)
+      await Wallet.addRecord(WALLET_RECORD)
+      await Wallet.getRecord({ type: WALLET_RECORD.type_, id: WALLET_RECORD.id, options: OPTIONS })
       await Wallet.updateRecordValue(UPDATE_WALLET_RECORD)
       await Wallet.updateRecordTags(UPDATE_WALLET_TAGS)
       await Wallet.addRecordTags(UPDATE_WALLET_TAGS)

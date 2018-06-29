@@ -212,7 +212,6 @@ describe('Credential:', () => {
       validatePaymentTxn(paymentTxn)
     })
 
-    // TODO: Enable once https://evernym.atlassian.net/browse/EN-669 is resolved
     it('throws: no paymentTxn', async () => {
       const data = await dataCredentialCreateWithOffer()
       data.offer = JSON.stringify([credentialOffer[0]])
@@ -224,7 +223,7 @@ describe('Credential:', () => {
       assert.equal(await credential.getState(), StateType.Accepted)
       const error = await shouldThrow(() => credential.getPaymentTxn())
       // Change to equal a specific payment related code
-      assert.notEqual(error.vcxCode, VCXCode.NO_PAYMENT_INFORMATION)
+      assert.equal(error.vcxCode, VCXCode.NO_PAYMENT_INFORMATION)
     })
   })
 

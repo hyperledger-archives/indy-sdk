@@ -2,14 +2,15 @@ import pytest
 from vcx.error import VcxError
 from vcx.api.wallet import *
 
-TYPE = "TestType"
+TYPE = "record type"
 EMPTY_TYPE = ""
-ID = "RecordId"
+ID = "123"
 EMPTY_ID = ""
-VALUE = "RecordValue"
+VALUE = "record value"
 VALUE_NEW = "RecordValueNew"
 EMPTY_VALUE = ""
 TAGS = "{\"tagName1\":\"str1\",\"tagName2\":\"5\",\"tagName3\":\"12\"}"
+OPTIONS = json.dumps({"retrieveType": True, "retrieveValue": True, "retrieveTags": True})
 TAGS_EMPTY = ""
 TAGS_EMPTY_JSON = "{}"
 TAGS_MALFORMED_JSON = "{\"e\":}"
@@ -42,18 +43,9 @@ async def test_create_payment_address():
     assert address
 
 @pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_wallet_storage():
     await Wallet.add_record(TYPE, ID, VALUE, TAGS)
-    with pytest.raises(VcxError) as e:
-        await Wallet.add_record(EMPTY_TYPE, ID, VALUE, TAGS)
-    with pytest.raises(VcxError) as e:
-        await Wallet.add_record(TYPE, EMPTY_ID, VALUE, TAGS)
-    with pytest.raises(VcxError) as e:
-        await Wallet.add_record(TYPE, ID, EMPTY_VALUE, TAGS)
-    with pytest.raises(VcxError) as e:
-        await Wallet.add_record(TYPE, ID, VALUE, TAGS_EMPTY)
-    with pytest.raises(VcxError) as e:
-        await Wallet.add_record(TYPE, ID, VALUE, TAGS_MALFORMED_JSON)
 
     await Wallet.update_record_value(TYPE, ID, VALUE_NEW)
     await Wallet.update_record_tags(TYPE, ID, TAGS_EMPTY_JSON)
@@ -66,13 +58,14 @@ async def test_wallet_storage():
         "value": VALUE,
         "tags": None,
     }
-    with pytest.raises(VcxError) as e:
-        await Wallet.get_record(TYPE, ID)
+    assert (json.loads(await Wallet.get_record(TYPE, ID, OPTIONS)) == record)
 
+@pytest.mark.asyncio
+async def test_wallet_search():
     search_handle = await Wallet.open_search(TYPE, QUERY_JSON, None)
-    assert(search_handle == 1)
+    assert (search_handle == 1)
     searched_record = await Wallet.search_next_records(search_handle, 1)
-    assert(json.loads(searched_record) == SEARCHED_RECORD)
+    assert (json.loads(searched_record) == SEARCHED_RECORD)
     await Wallet.close_search(search_handle)
 
     with pytest.raises(VcxError) as e:

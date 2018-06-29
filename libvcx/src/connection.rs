@@ -753,7 +753,6 @@ mod tests {
     use messages::get_message::*;
     use std::thread;
     use std::time::Duration;
-    use utils::error::UNKNOWN_LIBINDY_ERROR;
     use utils::constants::INVITE_DETAIL_STRING;
     use super::*;
     use rand::Rng;
@@ -763,7 +762,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         assert_eq!(build_connection("This Should Fail").err(),
-                   Some(ConnectionError::CommonError(UNKNOWN_LIBINDY_ERROR.code_num)));
+                   Some(ConnectionError::CommonError(error::INVALID_WALLET_HANDLE.code_num)));
        assert!(build_connection_with_invite("This Should Fail", "BadDetailsFoobar").is_err());
     }
     #[test]
@@ -900,7 +899,7 @@ mod tests {
     fn test_bad_wallet_connection_fails() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        assert_eq!(build_connection("test_bad_wallet_connection_fails").unwrap_err().to_error_code(),error::UNKNOWN_LIBINDY_ERROR.code_num);
+        assert_eq!(build_connection("test_bad_wallet_connection_fails").unwrap_err().to_error_code(),error::INVALID_WALLET_HANDLE.code_num);
     }
 
     #[test]
