@@ -67,7 +67,13 @@ export enum VCXCode {
     UNKNOWN_TXN_TYPE = 1065,
     INVALID_PAYMENT_ADDRESS = 1066,
     INVALID_LIBINDY_PARAM = 1067,
-    INVALID_PAYMENT = 1068
+    INVALID_PAYMENT = 1068,
+    MISSING_WALLET_KEY = 1069,
+    OBJECT_CACHE_ERROR = 1070,
+    NO_PAYMENT_INFORMATION = 1071,
+    IO_ERROR = 1072,
+    NO_RESULTS = 1073,
+    INVALID_WALLET_STORAGE_PARAMETER = 1074
 }
 export enum StateType {
     None = 0,
@@ -86,7 +92,7 @@ export interface IInitVCXOptions {
 
 export interface IUTXO {
   paymentAddress: string,
-  amount: string,
+  amount: number,
   extra?: string,
   txo?: string
 }

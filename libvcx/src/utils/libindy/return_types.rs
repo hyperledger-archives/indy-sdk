@@ -112,7 +112,7 @@ impl Return_I32_I32 {
 #[allow(non_camel_case_types)]
 pub struct Return_I32_STR {
     pub command_handle: i32,
-    receiver: Receiver<(i32, Option<String>)>,
+    pub receiver: Receiver<(i32, Option<String>)>,
 }
 impl Return_I32_STR {
     pub fn new() -> Result<Return_I32_STR, u32> {
@@ -135,7 +135,6 @@ impl Return_I32_STR {
 
     pub fn receive(&self, timeout: Option<Duration>) -> Result<Option<String>, u32> {
         let (err, str1) = receive(&self.receiver, timeout)?;
-
         map_indy_error(str1, err)
     }
 }

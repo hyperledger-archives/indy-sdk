@@ -546,4 +546,80 @@ export class Wallet {
       throw new VCXInternalError(err)
     }
   }
+
+  /**
+   * @memberof Wallet
+   * @description Import a wallet from a file, backup key used for encrypting the file
+   * @static
+   * @async
+   * @param {String} importPath
+   * @param {String} backupKey
+   * @returns {Promise<void>}
+   */
+  public static async import (path: string, backupKey: string): Promise<void> {
+    const commandHandle = 0
+    try {
+      await createFFICallbackPromise<void>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_wallet_import(commandHandle,
+            path,
+            backupKey,
+            cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => Callback(
+          'void',
+          ['uint32','uint32'],
+          (xhandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * @memberof Wallet
+   * @description Export a file to a wallet, backup key used for decrypting the file.
+   * @static
+   * @async
+   * @param {String} exportPath
+   * @param {String} backupKey
+   * @returns {Promise<void>}
+   */
+  public static async export (path: string, backupKey: string): Promise<void> {
+    const commandHandle = 0
+    try {
+      await createFFICallbackPromise<void>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_wallet_export(commandHandle,
+            path,
+            backupKey,
+            cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => Callback(
+          'void',
+          ['uint32','uint32'],
+          (xhandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
 }
