@@ -180,5 +180,5 @@ extern {
                                                    cb: Option<ResponseEmptyCB>) -> Error;
 }
 
-pub type CustomTransactionParser = extern fn(reply_from_node: CString, parsed_sp: CString) -> Error;
+pub type CustomTransactionParser = extern fn(reply_from_node: CString, parsed_sp: *mut CString) -> Error;
 pub type CustomFree = extern fn(data: CString) -> Error;
