@@ -268,10 +268,10 @@ def linuxTesting(file, env_name, network_name) {
                             echo "${env_name} Libindy Test: Test"
 
                             echo "${env_name} Libindy Test: Build Test"
-                            sh "RUST_BACKTRACE=1 cargo test --no-run $libindyFeatures"
+                            sh "RUST_BACKTRACE=1 cargo test --no-run --features $additionalFeatures"
 
                             echo "${env_name} Libindy Test: Run tests"
-                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test $libindyFeatures"
+                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features  $additionalFeatures"
                         }
                     }
                 },

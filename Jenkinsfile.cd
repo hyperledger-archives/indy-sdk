@@ -171,8 +171,12 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
 
                 try {
                     def libindyFeatures = "--features sodium_static"
+                    def libindyBuildFeatures = "--features \"fatal_warnings sodium_static\""
 
                     echo "${env_name} Libindy Test: Build"
+                    sh "RUST_BACKTRACE=1 cargo build --release $libindyBuildFeatures"
+
+                    echo "${env_name} Libindy Test: Build tests"
                     sh "RUST_BACKTRACE=1 cargo test --release --no-run $libindyFeatures"
 
                     echo "${env_name} Libindy Test: Run tests"
