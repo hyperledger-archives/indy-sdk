@@ -6,7 +6,7 @@ use utils::error::{
     WALLET_ALREADY_EXISTS,
     INVALID_JSON,
     IOERROR,
-    NO_RESULTS,
+    WALLET_RECORD_NOT_FOUND,
     INVALID_WALLET_STORAGE_PARAMETER,
 };
 
@@ -31,7 +31,7 @@ impl ToErrorCode for WalletError {
             WalletError::InvalidJson() => INVALID_JSON.code_num,
             WalletError::IoError() => IOERROR.code_num,
             WalletError::InvalidParamters() => INVALID_WALLET_STORAGE_PARAMETER.code_num,
-            WalletError::RecordNotFound() => NO_RESULTS.code_num,
+            WalletError::RecordNotFound() => WALLET_RECORD_NOT_FOUND.code_num,
             WalletError::CommonError(x) => x,
         }
     }
@@ -46,7 +46,7 @@ impl fmt::Display for WalletError {
             WalletError::DuplicateWallet(ref s) => write!(f, "{}", s),
             WalletError::InvalidJson() => write!(f, "{}", INVALID_JSON.message),
             WalletError::InvalidParamters() => write!(f, "{}", INVALID_WALLET_STORAGE_PARAMETER.message),
-            WalletError::RecordNotFound() => write!(f, "{}", NO_RESULTS.message),
+            WalletError::RecordNotFound() => write!(f, "{}", WALLET_RECORD_NOT_FOUND.message),
             WalletError::CommonError(x) => write!(f, "This Wallet Common Error had a value of {}", x),
         }
     }

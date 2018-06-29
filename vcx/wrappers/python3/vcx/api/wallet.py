@@ -5,7 +5,7 @@ import json
 import logging
 
 
-class Wallet():
+class Wallet:
 
     @staticmethod
     async def close_search(handle: int):
@@ -64,7 +64,7 @@ class Wallet():
         return data.decode()
 
     @staticmethod
-    async def get_record(type_: str, id: str):
+    async def get_record(type_: str, id: str, options: str):
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.get_record, "cb"):
@@ -73,10 +73,12 @@ class Wallet():
 
         c_type_ = c_char_p(type_.encode('utf-8'))
         c_id = c_char_p(id.encode('utf-8'))
+        c_options = c_char_p(options.encode('utf-8'))
         data = await do_call('vcx_wallet_get_record',
-                               c_type_,
-                               c_id,
-                               Wallet.get_record.cb)
+                             c_type_,
+                             c_id,
+                             c_options,
+                             Wallet.get_record.cb)
 
         logger.debug("vcx_wallet_get_record completed")
         return data.decode()

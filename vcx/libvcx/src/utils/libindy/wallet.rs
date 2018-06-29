@@ -1,13 +1,12 @@
 extern crate libc;
 extern crate serde_json;
 
-use indy;
 use self::libc::c_char;
 use std::ffi::CString;
 use settings;
 use std::ptr::null;
 use utils::libindy::{indy_function_eval};
-use utils::libindy::return_types::{ Return_I32, Return_I32_I32, Return_I32_STR, receive};
+use utils::libindy::return_types::{ Return_I32, Return_I32_I32, receive};
 use utils::libindy::error_codes::{map_indy_error_code, map_string_error};
 use utils::timeout::TimeoutUtils;
 use utils::error;
@@ -53,27 +52,39 @@ extern {
                             identity_json: *const c_char,
                             cb: Option<extern fn(xcommand_handle: i32, err: i32)>) -> i32;
 
+    pub fn indy_add_wallet_record(command_handle: i32,
+                                  wallet_handle: i32,
+                                  type_: *const c_char,
+                                  id: *const c_char,
+                                  value: *const c_char,
+                                  tags_json: *const c_char,
+                                  cb: Option<extern fn(command_handle_: i32, err: i32)>) -> i32;
+
+    pub fn indy_get_wallet_record(command_handle: i32,
+                                  wallet_handle: i32,
+                                  type_: *const c_char,
+                                  id: *const c_char,
+                                  options_json: *const c_char,
+                                  cb: Option<extern fn(command_handle_: i32, err: i32, record_json: *const c_char)>) -> i32;
+
+    pub fn indy_update_wallet_record_value(command_handle: i32,
+                                           wallet_handle: i32,
+                                           type_: *const c_char,
+                                           id: *const c_char,
+                                           value: *const c_char,
+                                           cb: Option<extern fn(command_handle_: i32, err: i32)>) -> i32;
+
+    pub fn indy_delete_wallet_record(command_handle: i32,
+                                     wallet_handle: i32,
+                                     type_: *const c_char,
+                                     id: *const c_char,
+                                     cb: Option<extern fn(command_handle_: i32, err: i32)>) -> i32;
+
     fn indy_export_wallet(command_handle: i32,
                           wallet_handle: i32,
                           export_config_json: *const c_char,
                           cb: Option<extern fn(xcommand_handle: i32, err: i32)>) -> i32;
 
-    fn indy_add_wallet_record(command_handle: i32,
-                              wallet_handle: i32,
-                              type_: *const c_char,
-                              id: *const c_char,
-                              value: *const c_char,
-                              tags_json: *const c_char,
-                              cb: Option<extern fn(command_handle_: i32, err: i32)>) -> i32;
-
-    fn indy_get_wallet_record(command_handle: i32,
-                              wallet_handle: i32,
-                              type_: *const c_char,
-                              id: *const c_char,
-                              options_json: *const c_char,
-                              cb: Option<extern fn(command_handle_: i32,
-                                                   err: i32,
-                                                   record_json: *const c_char)>) -> i32;
     fn indy_import_wallet(command_handle: i32,
                           pool_name: *const c_char,
                           name: *const c_char,
@@ -119,71 +130,6 @@ pub fn create_wallet(wallet_name: &str, pool_name: &str) -> Result<(), u32> {
             Err(err) => return Err(error::UNKNOWN_LIBINDY_ERROR.code_num),
         }
     }
-}
-
-pub fn add_record(wallet_handle: i32, type_: &str, id: &str, value: &str, tags: &str) -> Result<(), WalletError> {
-    let rtn_obj = Return_I32::new().unwrap();
-    let type_ = CString::new(type_).unwrap();
-    let id = CString::new(id).unwrap();
-    let value = CString::new(value).unwrap();
-    let tags = CString::new(tags).unwrap();
-    unsafe {
-        indy_function_eval(
-            indy_add_wallet_record(rtn_obj.command_handle,
-                                   wallet_handle,
-                                   type_.as_ptr(),
-                                   id.as_ptr(),
-                                   value.as_ptr(),
-                                   tags.as_ptr(),
-                                   Some(rtn_obj.get_callback()))).map_err(map_indy_error_code)?;
-
-    }
-
-    match receive(&rtn_obj.receiver, TimeoutUtils::some_long()) {
-        Ok(_) => Ok(()),
-        Err(err) => Err(WalletError::CommonError(err)),
-    }
-}
-
-pub fn get_record_indy(wallet_handle: i32, type_: &str, id: &str) -> Result< String, WalletError> {
-    let options = json!({
-                "retrieveType": true,
-                "retrieveValue": true,
-                "retrieveTags": true
-            }).to_string();
-
-    let res = match indy::wallet::Wallet::get_record(wallet_handle, type_, id, &options) {
-        Ok(s) => s,
-        Err(ec) => return Err(WalletError::CommonError(ec as u32)),
-    };
-    Ok(res)
-}
-
-pub fn get_record(wallet_handle: i32, type_: &str, id: &str) -> Result<String, WalletError> {
-    let rtn_obj = Return_I32_STR::new()?;
-    let type_ = CString::new(type_).or(Err(WalletError::InvalidWalletCreation()))?;
-    let id = CString::new(id).or(Err(WalletError::InvalidWalletCreation()))?;
-
-    let options = json!({
-                "retrieveType": true,
-                "retrieveValue": true,
-                "retrieveTags": true
-            }).to_string();
-    let options2 = CString::new(options).unwrap();
-
-    unsafe {
-        indy_function_eval(
-            indy_get_wallet_record(rtn_obj.command_handle,
-                                   wallet_handle,
-                                   type_.as_ptr(),
-                                   id.as_ptr(),
-                                   options2.as_ptr(),
-                                   Some(rtn_obj.get_callback()))).map_err(map_indy_error_code)?;
-    }
-    let option_string = rtn_obj.receive(TimeoutUtils::some_long())?;
-    let result = option_string.ok_or(WalletError::RecordNotFound())?;
-    Ok(result)
-
 }
 
 pub fn open_wallet(wallet_name: &str) -> Result<i32, u32> {
@@ -343,6 +289,8 @@ pub mod tests {
     use utils::error;
     use std::thread;
     use std::time::Duration;
+    use std::ptr;
+    use utils::cstring::CStringUtils;
 
     #[test]
     fn test_wallet() {
@@ -384,7 +332,13 @@ pub mod tests {
         let credential_config = json!({"key": wallet_key, "storage": "{}"}).to_string();
 
         let handle = setup_wallet_env(&wallet_name).unwrap();
-        Wallet::add_record(handle, "type1", "id1", "value1", None).unwrap();
+
+        let xtype = CStringUtils::string_to_cstring("type1".to_string());
+        let id = CStringUtils::string_to_cstring("id1".to_string());
+        let value = CStringUtils::string_to_cstring("value1".to_string());
+        let options = CStringUtils::string_to_cstring("{}".to_string());
+        ::api::wallet::vcx_wallet_add_record(0, xtype.as_ptr(), id.as_ptr(), value.as_ptr(), ptr::null(), Some(::api::wallet::tests::indy_generic_no_msg_cb));
+
         export(handle, &dir, backup_key).unwrap();
         Wallet::close(handle).unwrap();
         Wallet::delete(&wallet_name, Some(&credential_config)).unwrap();
@@ -392,7 +346,8 @@ pub mod tests {
 
         import(&dir, backup_key).unwrap();
         let handle = setup_wallet_env(&wallet_name).unwrap();
-        Wallet::get_record(handle, "type1", "id1", "{}").unwrap();
+
+        ::api::wallet::vcx_wallet_get_record(handle, xtype.as_ptr(), id.as_ptr(), options.as_ptr(), Some(::api::wallet::tests::indy_generic_msg_cb));
         Wallet::close(handle).unwrap();
         Wallet::delete(&wallet_name, Some(&credential_config)).unwrap();
         fs::remove_file(Path::new(&dir)).unwrap();

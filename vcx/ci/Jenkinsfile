@@ -7,14 +7,12 @@ def vcx_nodejs
 
 testing()
 
-//'Android' : { androidBuild() }
-
 def testing() {
     stage('Testing') {
         parallel([
             'Main' : { mainUbuntu() },
             'Android': { android() },
-            //'iOS' : { ios() }
+            'iOS' : { ios() }
         ])
     }
 }
@@ -104,6 +102,7 @@ def android() {
                     publishAndroid(rust)
                 }
             } catch (Exception ex) {
+                // We currently do not fail the main build if the android and ios builds fai
                 // currentBuild.result = "FAILED"
                 // if (env.BRANCH_NAME == "master") {
                     // fail()
@@ -118,82 +117,32 @@ def android() {
 }
 
 def ios() {
-    node('macos') {
+    node('macos-vcx') {
         stage('iOS Build') {
             try {
                 checkout scm
-                sh 'chmod +x vcx/ci/scripts/iosBuild.sh'
-                sh './vcx/ci/scripts/iosBuild.sh'
-                /*
-            // 1) Login to a new account on a macOS High Sierra (10.13.4) computer.
-            // ASSUMING THE LOGIN NAME IS: iosbuild1
+                SCRIPTS_PATH="vcx/libvcx/build_scripts/ios/mac"
+                WORK_DIR = "/Users/jenkins"
 
-            // 2) Make sure that the oracle java SDK is installed on the mac
-                sh "brew update"                
-                sh "brew cask install java8"                
+                // Build ios architectures
+                sh "source vcx/ci/scripts/iosBuild.sh"
 
-            // 3) Checkout the sdk project using https://github.com/evernym/sdk.git or git@github.com:evernym/sdk.git
-                checkout scm
-                sh "brew install git"
+                // Publish to Kraken
+                TIME_VERSION=sh (script: 'echo $(date +%Y%m%d_%H%M%S)', returnStdout: true ).trim()
+                sh "mkdir ${TIME_VERSION}"
+                sh "zip -r ${TIME_VERSION}/libvcxall_${TIME_VERSION}.zip vcx/wrappers/ios/vcx/lib/libvcxall.a"
 
-            // 4) Copy the sdk/vcx/libvcx/build_scripts/ios/mac/.bash_profile file to your home directory /Users/[username] and replace the
-            // username iosbuild1 with your username.
-
-            // 5) Re-start your terminal/iterm so that the bash settings take effect
-
-            // 6) Install Android Studio or start Android Studio to make sure that the Android sdk
-            // is installed at /Users/[username]/Library/Android/sdk (YES, this is for iOS but we make sure Android Studio is installed)
-                sh "brew install ruby"
-                sh "brew install curl"
-                //ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
-                sh "brew doctor"
-                sh "brew install android-sdk"
-
-            // 7) Startup a terminal and cd into sdk/vcx/libvcx/build_scripts/ios/mac
-                sh "cd sdk/vcx/libvcx/build_scripts/ios/mac"
-
-            // 8) Run the script ./mac.01.libindy.setup.sh (make sure the brew install commands are successful)
-                sh "./mac.01.libindy.setup.sh"
-
-            // 9) Restart your terminal for environment variables to take effect and cd into sdk/vcx/libvcx/build_scripts/ios/mac
-            // 10) Run the script 'source ./mac.02.libindy.env.sh'
-                sh "./mac.02.libindy.env.sh"
-
-            // 9) Restart your terminal for environment variables to take effect and cd into sdk/vcx/libvcx/build_scripts/ios/mac
-            // 11) Run the script ./mac.03.libindy.build.sh
-                sh "./mac.03.libindy.build.sh"
-
-            // 12) Run the script ./mac.04.libvcx.setup.sh
-                sh "./mac.04.libvcx.setup.sh"
-
-            // 13) Run the script 'source ./mac.05.libvcx.env.sh'
-                sh "./mac.05.libvcx.env.sh"
-
-            // 14) Run the script ./mac.06.libvcx.build.sh (Test failures do not prevent the .a files from being correctly built)
-            // Check for error
-                sh "./mac.06.libvcx.build.sh"
-
-            // 15) Run the script ./mac.08.libssl.libcrypto.build.sh
-                sh "./mac.08.libssl.libcrypto.build.sh"
-
-            // 16) Run the script ./mac.09.libzmq.libsodium.build.sh
-                sh "./mac.09.libzmq.libsodium.build.sh"
-
-            // 17) Run the script ./mac.10.libminiz.libsqlite3.combine.sh
-                sh "./mac.10.libminiz.libsqlite3.combine.sh"
-
-            // 18) Run the script ./mac.11.copy.static.libs.to.app.sh
-                sh "./mac.11.copy.static.libs.to.app.sh"
-
-            // 19) Run the script ./mac.12.combine.static.libs.sh libvcxall
-                sh "./mac.12.combine.static.libs.sh libvcxall"
-                */
-
-            } catch (Exception ex) {
-                currentBuild.result = "FAILED"
                 if (env.BRANCH_NAME == "master") {
-                    fail()
+                    withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
+                        sh "find ${TIME_VERSION} -type f -name 'libvcxall_${TIME_VERSION}.zip' -exec curl -u \"${KRAKEN_CREDENTIALS}\" -X POST  https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \\;"
+                    }
                 }
+            } catch (Exception ex) {
+                // We currently do not fail the main build if the android and ios builds fail
+                // currentBuild.result = "FAILED"
+                // if (env.BRANCH_NAME == "master") {
+                //     fail()
+                // }
                 echo "$ex error"
             } finally {
                 step([$class: 'WsCleanup'])
@@ -416,11 +365,9 @@ def packageAndroid(envn) {
 }
 
 def publishAndroid(envn) {
-    sh "echo in publish fn"
     envn.inside {
         CERT_SCRIPT = 'vcx/ci/scripts/getCert.sh'
         sh "${CERT_SCRIPT}"
-        sh "echo after getCert"
         withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
             sh "echo before publishing"
             sh "find vcx/wrappers/java/vcx/build/outputs/aar/ -type f -name 'com.evernym-vcx_*-release.aar' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST  https://kraken.corp.evernym.com/repo/android/upload -F 'file=@{}' \\;"
