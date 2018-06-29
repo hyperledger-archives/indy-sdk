@@ -279,11 +279,11 @@ pub fn open_sandbox_pool() -> u32 {
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_open_close_pool() {
+        use super::*;
         let wallet_name = "test_open_close_pool";
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         assert!(get_pool_handle().unwrap() > 0);

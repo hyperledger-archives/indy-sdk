@@ -81,6 +81,9 @@ pub static INVALID_PAYMENT: Error = Error{code_num: 1068, message: "Invalid Paym
 pub static MISSING_WALLET_KEY: Error = Error{ code_num: 1069, message: "Configuration is missing wallet key"};
 pub static OBJECT_CACHE_ERROR: Error = Error{ code_num: 1070, message: "Object cache error"};
 pub static NO_PAYMENT_INFORMATION: Error = Error { code_num: 1071, message: "No payment information associated with object"};
+pub static IOERROR: Error = Error { code_num: 1072, message: "IO Error, possibly creating a backup wallet"};
+pub static NO_RESULTS: Error = Error { code_num: 1073, message: "Wallet Get Record Returned No Results"};
+pub static INVALID_WALLET_STORAGE_PARAMETER: Error = Error { code_num: 1074, message: "Wallet Storage Parameter Either Malformed or Missing"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -153,6 +156,9 @@ lazy_static! {
         insert_c_message(&mut m, &INVALID_PAYMENT_ADDRESS);
         insert_c_message(&mut m, &INVALID_LIBINDY_PARAM);
         insert_c_message(&mut m, &MISSING_WALLET_KEY);
+        insert_c_message(&mut m, &IOERROR);
+        insert_c_message(&mut m, &NO_RESULTS);
+        insert_c_message(&mut m, &INVALID_WALLET_STORAGE_PARAMETER);
         insert_c_message(&mut m, &OBJECT_CACHE_ERROR);
         insert_c_message(&mut m, &NO_PAYMENT_INFORMATION);
        m

@@ -131,4 +131,17 @@ pub mod tests {
         ::utils::libindy::anoncreds::tests::create_and_store_credential();
         cleanup_dev_env(wallet_name);
     }
+
+    pub fn setup_wallet_env(test_name: &str) -> Result<i32, String> {
+        use utils::libindy::wallet::init_wallet;
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        init_wallet(test_name).map_err(|e| format!("Unable to init_wallet in tests: {}", e))
+    }
+
+    pub fn cleanup_wallet_env(test_name: &str) -> Result<(), String> {
+        use utils::libindy::wallet::delete_wallet;
+        println!("Deleting Wallet");
+        delete_wallet(test_name).or(Err(format!("Unable to delete wallet: {}", test_name)))
+    }
 }

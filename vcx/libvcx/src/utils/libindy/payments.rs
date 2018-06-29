@@ -337,7 +337,6 @@ pub fn set_ledger_fees(fees: Option<String>) -> Result<(), u32> {
 pub mod tests {
     use super::*;
     use settings;
-    use utils::devsetup::tests;
 
     pub fn token_setup(number_of_addresses: Option<u32>, tokens_per_address: Option<u32>) {
         init_payments().unwrap();
@@ -384,13 +383,13 @@ pub mod tests {
     #[test]
     fn test_get_wallet_token_info_real() {
         let name = "test_get_wallet_info_real";
-        tests::setup_ledger_env(name);
+        ::utils::devsetup::tests::setup_ledger_env(name);
         create_address().unwrap();
         create_address().unwrap();
         create_address().unwrap();
         let wallet_info = get_wallet_token_info().unwrap();
         assert_eq!(wallet_info.balance, 45);
-        tests::cleanup_dev_env(name);
+        ::utils::devsetup::tests::cleanup_dev_env(name);
     }
 
     #[test]
@@ -407,7 +406,7 @@ pub mod tests {
     #[test]
     fn test_get_ledger_fees_real() {
         let name = "test_get_ledger_fees_real";
-        tests::setup_ledger_env(name);
+        ::utils::devsetup::tests::setup_ledger_env(name);
         set_ledger_fees(None).unwrap();
         let fees = get_ledger_fees().unwrap();
         println!("{}", fees);
@@ -500,7 +499,7 @@ pub mod tests {
     fn test_pay_for_txn_real() {
         let name = "test_pay_for_txn_real";
 
-        tests::setup_ledger_env(name);
+        ::utils::devsetup::tests::setup_ledger_env(name);
 
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema();
         let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
@@ -510,7 +509,7 @@ pub mod tests {
 
         let end_wallet = get_wallet_token_info().unwrap();
 
-        tests::cleanup_dev_env(name);
+        ::utils::devsetup::tests::cleanup_dev_env(name);
         assert_eq!(payment.amount, 2);
         assert_eq!(payment.outputs.len(), 1);
         assert_eq!(start_wallet.balance - 2, end_wallet.balance);
@@ -521,7 +520,7 @@ pub mod tests {
     #[test]
     fn test_pay_for_txn_fails_with_insufficient_tokens_in_wallet() {
         let name = "test_pay_for_txn_real";
-        tests::setup_ledger_env(name);
+        ::utils::devsetup::tests::setup_ledger_env(name);
 
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema();
         let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
@@ -529,7 +528,7 @@ pub mod tests {
 
         let rc= pay_for_txn(&create_schema_req, "103");
 
-        tests::cleanup_dev_env(name);
+        ::utils::devsetup::tests::cleanup_dev_env(name);
         assert_eq!(rc, Err(error::INSUFFICIENT_TOKEN_AMOUNT.code_num));
     }
 
@@ -576,7 +575,7 @@ pub mod tests {
     fn test_submit_fees_with_insufficient_tokens_on_ledger() {
         let name = "test_submit_fees_with_insufficient_tokens_on_ledger";
 
-        tests::setup_ledger_env(name);
+        ::utils::devsetup::tests::setup_ledger_env(name);
 
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema();
         let req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
@@ -591,7 +590,7 @@ pub mod tests {
 
         let rc = _submit_fees_request(&req, &inputs, &output);
 
-        tests::cleanup_dev_env(name);
+        ::utils::devsetup::tests::cleanup_dev_env(name);
         assert_eq!(rc, Err(error::INSUFFICIENT_TOKEN_AMOUNT.code_num));
     }
 
@@ -600,7 +599,7 @@ pub mod tests {
     #[test]
     fn test_pay_for_txn_with_empty_outputs_success() {
         let name = "test_pay_for_txn_with_empty_outputs_success";
-        tests::setup_ledger_env(name);
+        ::utils::devsetup::tests::setup_ledger_env(name);
 
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema();
         let req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
@@ -618,7 +617,7 @@ pub mod tests {
         assert!(rc.is_ok());
         assert_eq!(end_wallet.balance, 0);
 
-        tests::cleanup_dev_env(name);
+        ::utils::devsetup::tests::cleanup_dev_env(name);
     }
 
     #[test]
