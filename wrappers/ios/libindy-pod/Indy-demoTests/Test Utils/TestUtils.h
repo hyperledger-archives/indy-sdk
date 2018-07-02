@@ -41,6 +41,8 @@
 
 + (NSString *)wallet;
 
++ (NSString *)walletConfig;
+
 + (NSData *)message;
 
 + (NSData *)encryptedMessage;

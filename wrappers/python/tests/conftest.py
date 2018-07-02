@@ -129,17 +129,6 @@ def path_home() -> Path:
 
 
 @pytest.fixture
-def wallet_name():
-    logger = logging.getLogger(__name__)
-    logger.debug("wallet_name: >>>")
-
-    res = "wallet1"
-
-    logger.debug("wallet_name: <<< res: %r", res)
-    return res
-
-
-@pytest.fixture
 def wallet_type():
     logger = logging.getLogger(__name__)
     logger.debug("wallet_type: >>>")
@@ -166,7 +155,7 @@ def wallet_config():
     logger = logging.getLogger(__name__)
     logger.debug("wallet_config: >>>")
 
-    res = None
+    res = '{"id":"wallet1"}'
 
     logger.debug("wallet_config: <<< res: %r", res)
     return res
@@ -203,23 +192,22 @@ def xwallet_cleanup():
 
 # noinspection PyUnusedLocal
 @pytest.fixture
-def xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home, credentials):
+def xwallet(event_loop, xwallet_cleanup, path_home, wallet_config, credentials):
     logger = logging.getLogger(__name__)
-    logger.debug("xwallet: >>> pool_name: %r, wallet_type: %r, xwallet_cleanup: %r, path_home: %r, credentials: %r",
-                 pool_name,
-                 wallet_type,
-                 xwallet,
+    logger.debug("xwallet: >>> xwallet_cleanup: %r, path_home: %r, wallet_config: %r, credentials: %r",
+                 xwallet_cleanup,
                  path_home,
+                 wallet_config,
                  credentials)
 
     logger.debug("xwallet: Creating wallet")
-    event_loop.run_until_complete(wallet.create_wallet(pool_name, wallet_name, wallet_type, None, credentials))
+    event_loop.run_until_complete(wallet.create_wallet(wallet_config, credentials))
 
     logger.debug("xwallet: yield")
     yield
 
     logger.debug("xwallet: Deleting wallet")
-    event_loop.run_until_complete(wallet.delete_wallet(wallet_name, credentials)) if xwallet_cleanup else None
+    event_loop.run_until_complete(wallet.delete_wallet(wallet_config, credentials)) if xwallet_cleanup else None
 
     logger.debug("xwallet: <<<")
 
@@ -247,19 +235,17 @@ def wallet_handle_cleanup():
 
 
 @pytest.fixture
-def wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, credentials, wallet_handle_cleanup):
+def wallet_handle(event_loop, xwallet, wallet_config, credentials, wallet_handle_cleanup):
     logger = logging.getLogger(__name__)
     logger.debug(
-        "wallet_handle: >>> wallet_name: %r, xwallet: %r, wallet_runtime_config: %r, credentials: %r,"
-        " wallet_handle_cleanup: %r",
-        wallet_name,
+        "wallet_handle: >>> xwallet: %r, wallet_config: %r, credentials: %r, wallet_handle_cleanup: %r",
         xwallet,
-        wallet_runtime_config,
+        wallet_config,
         credentials,
         wallet_handle_cleanup)
 
     logger.debug("wallet_handle: Opening wallet")
-    wallet_handle = event_loop.run_until_complete(wallet.open_wallet(wallet_name, wallet_runtime_config, credentials))
+    wallet_handle = event_loop.run_until_complete(wallet.open_wallet(wallet_config, credentials))
     assert type(wallet_handle) is int
 
     logger.debug("wallet_handle: yield %r", wallet_handle)
