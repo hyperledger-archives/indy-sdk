@@ -631,7 +631,7 @@ impl WalletStorageType for SQLiteStorageType {
         let db_file_path = SQLiteStorageType::_db_path(id);
 
         if db_file_path.exists() {
-            std::fs::remove_file(db_file_path.parent().unwrap())?;
+            std::fs::remove_dir_all(db_file_path.parent().unwrap())?;
             Ok(())
         } else {
             Err(WalletStorageError::NotFound)
