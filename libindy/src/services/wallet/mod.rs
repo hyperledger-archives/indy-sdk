@@ -257,7 +257,7 @@ impl WalletService {
         if let Some(rekey) = credentials.rekey {
             let metadata = {
                 let master_key_salt = encryption::gen_master_key_salt()?;
-                let master_key = encryption::derive_master_key(&credentials.key, &master_key_salt)?;
+                let master_key = encryption::derive_master_key(&rekey, &master_key_salt)?;
 
                 let metadata = Metadata {
                     master_key_salt: master_key_salt[..].to_vec(),
