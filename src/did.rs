@@ -558,8 +558,8 @@ impl Did {
     /// # Returns
     /// * `endpoint` - The DIDs endpoint.
     /// * `transport_vk` - The DIDs transport key (ver key, key id).
-    pub fn get_endpoint(wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str) -> Result<(String, String), ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
+    pub fn get_endpoint(wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str) -> Result<(String, Option<String>), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string();
 
         let err = Did::_get_endpoint(command_handle, wallet_handle, pool_handle, did, cb);
 
@@ -576,8 +576,8 @@ impl Did {
     /// # Returns
     /// * `endpoint` - The DIDs endpoint.
     /// * `transport_vk` - The DIDs transport key (ver key, key id).
-    pub fn get_endpoint_timeout(wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
+    pub fn get_endpoint_timeout(wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str, timeout: Duration) -> Result<(String, Option<String>), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string();
 
         let err = Did::_get_endpoint(command_handle, wallet_handle, pool_handle, did, cb);
 
@@ -593,8 +593,8 @@ impl Did {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-    pub fn get_endpoint_async<F: 'static>(wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
+    pub fn get_endpoint_async<F: 'static>(wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, Option<String>) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_opt_string(Box::new(closure));
 
         Did::_get_endpoint(command_handle, wallet_handle, pool_handle, did, cb)
     }
