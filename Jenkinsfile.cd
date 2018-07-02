@@ -40,8 +40,9 @@ def publishing() {
 
         publishedVersions = parallel([
                 //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
-                'ubuntu-files' : { ubuntuPublishing() },
-                'windows-files': { windowsPublishing() },
+//                'ubuntu-files' : { ubuntuPublishing() },
+//                'windows-files': { windowsPublishing() },
+                'android-files': { androidPublishing() },
         ])
 
         if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
@@ -576,18 +577,38 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
     }
 }
 
-def buildAndroid(envn) {
-    envn.inside {
-        ANDROID_SCRIPT_PATH = 'libindy/ci/buildAndroid.sh'
+def buildAndroid(buildEnv) {
+    ANDROID_SCRIPT_PATH = 'libindy/ci/buildAndroid.sh'
+    buildEnv.inside {
         sh "./${ANDROID_SCRIPT_PATH} arm"
+    }
+    echo 'Publish Libindy android files for arm'
+    androidPublishArtifacts(buildEnv, "libindy", "libindy", "lib", libindyVersion,"arm" ,"LibindyAndroidArmBuildResult")
+
+    buildEnv.inside {
         sh "./${ANDROID_SCRIPT_PATH} x86"
+    }
+    echo 'Publish Libindy android files for x86'
+    androidPublishArtifacts(buildEnv, "libindy", "libindy", "lib", libindyVersion,"x86" ,"LibindyAndroidx86BuildResult")
+
+    buildEnv.inside {
         sh "./${ANDROID_SCRIPT_PATH} arm64"
-        //Todo: get parallel processing to work. Currently it fails on Jenkins. It must share files or something
-        // parallel([
-        //     'arm': { sh "./${ANDROID_SCRIPT_PATH} arm"},
-        //     'x86': { sh "./${ANDROID_SCRIPT_PATH} x86"},
-        //     'arm64': { sh "./${ANDROID_SCRIPT_PATH} arm64"}
-        // ])
+    }
+    echo 'Publish Libindy android files for arm64'
+    androidPublishArtifacts(buildEnv, "libindy", "libindy", "lib", libindyVersion,"arm64" ,"LibindyAndroidArm64BuildResult")
+
+}
+
+
+def androidPublishArtifacts(buildEnv, folder, packageName, packageType, packageVersion,arch, stashName) {
+    buildEnv.inside {
+        sh 'chmod -R 777 ci'
+
+        unstash name: stashName
+
+        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
+            sh "ci/android-zip-and-upload.sh $folder $packageName $packageType $packageVersion $arch '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+        }
     }
 }
 
