@@ -32,35 +32,27 @@
 }
 
 - (void)testCryptoDemo {
-    NSString *myWalletName = @"my_wallet4";
-    NSString *theirWalletName = @"their_wallet5";
+    NSString *myWalletConfig = @"{\"id\":\"my_wallet4\"}";
+    NSString *theirWalletConfig = @"{\"id\":\"their_wallet4\"}";
 
     IndyHandle myWalletHandle = 0;
     IndyHandle theirWalletHandle = 0;
 
     //1. Create my wallet
-    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
-                                                      walletName:myWalletName
-                                                           xtype:[TestUtils defaultType]
-                                                          config:nil];
+    ret = [[WalletUtils sharedInstance] createWalletWithConfig:myWalletConfig];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createWalletWithPoolName() failed for my wallet!");
 
     // 2. Open my wallet
-    ret = [[WalletUtils sharedInstance] openWalletWithName:myWalletName
-                                                    config:nil
+    ret = [[WalletUtils sharedInstance] openWalletWithConfig:myWalletConfig
                                                  outHandle:&myWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::openWalletWithName() failed for my wallet!");
 
     // 3. Create Their Wallet
-    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
-                                                      walletName:theirWalletName
-                                                           xtype:[TestUtils defaultType]
-                                                          config:nil];
+    ret = [[WalletUtils sharedInstance] createWalletWithConfig:theirWalletConfig];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createWalletWithPoolName() failed for their wallet!");
 
     // 4. Open their wallet
-    ret = [[WalletUtils sharedInstance] openWalletWithName:theirWalletName
-                                                    config:nil
+    ret = [[WalletUtils sharedInstance] openWalletWithConfig:theirWalletConfig
                                                  outHandle:&theirWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::openWalletWithName() failed for their wallet!");
 
