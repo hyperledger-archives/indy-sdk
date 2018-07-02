@@ -124,7 +124,7 @@ fn validate_optional_config_val<F, S, E>(val: Option<&String>, err: u32, closure
 
 pub fn log_settings() {
     let settings = SETTINGS.read().unwrap();
-    info!("loaded settings: {:?}", settings);
+    trace!("loaded settings: {:?}", settings);
 }
 
 pub fn test_indy_mode_enabled() -> bool {
@@ -148,7 +148,6 @@ pub fn test_agency_mode_enabled() -> bool {
 pub fn process_config_string(config: &str) -> Result<u32, u32> {
     let configuration: Value = serde_json::from_str(config)
         .or(Err(error::INVALID_JSON.code_num))?;
-
     if let Value::Object(ref map) = configuration {
         for (key, value) in map {
             if value.is_string() {

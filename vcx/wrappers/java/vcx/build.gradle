@@ -71,9 +71,11 @@ archivesBaseName = fullVersionName()
 buildscript {
 
     repositories {
-        mavenLocal()
         jcenter()
         google()
+        maven {
+            url "https://maven.google.com"
+        }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.0.1'
@@ -87,11 +89,18 @@ buildscript {
 repositories {
         
      maven { url "http://repo.maven.apache.org/maven2" }
+    maven {
+        url "https://maven.google.com"
+    }
 }
+
 allprojects {
     repositories {
         google()
         jcenter()
+        maven {
+            url "https://maven.google.com"
+        }
     }
 }
 

@@ -13,10 +13,10 @@ public class CredentialApi extends VcxJava.API {
     private CredentialApi(){}
 
     private static Callback vcxCredentialCreateWithMsgidCB = new Callback() {
-        public void callback(int command_handle,int err,int credentailHandle, String offer){
+        public void callback(int command_handle,int err,int credentialHandle, String offer){
             CompletableFuture<GetCredentialCreateMsgidResult> future = (CompletableFuture<GetCredentialCreateMsgidResult>) removeFuture(command_handle);
             if (!checkCallback(future,err)) return;
-            GetCredentialCreateMsgidResult result = new GetCredentialCreateMsgidResult(credentailHandle, offer);
+            GetCredentialCreateMsgidResult result = new GetCredentialCreateMsgidResult(credentialHandle, offer);
             future.complete(result);
         }
     };
@@ -44,10 +44,10 @@ public class CredentialApi extends VcxJava.API {
     }
 
     private static Callback vcxCredentialSendRequestCB = new Callback() {
-        public void callback(int command_handle,int err,String credentail){
+        public void callback(int command_handle,int err, String credential){
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(command_handle);
             if (!checkCallback(future,err)) return;
-            String result = credentail;
+            String result = credential;
             future.complete(result);
         }
     };
@@ -73,10 +73,10 @@ public class CredentialApi extends VcxJava.API {
     }
 
     private static Callback vcxCredentialSerializeCB = new Callback() {
-        public void callback(int command_handle,int err,String serializedCredentail){
+        public void callback(int command_handle,int err,String serializedCredential){
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(command_handle);
             if (!checkCallback(future,err)) return;
-            String result = serializedCredentail;
+            String result = serializedCredential;
             future.complete(result);
         }
     };
@@ -97,10 +97,10 @@ public class CredentialApi extends VcxJava.API {
     }
 
     private static Callback vcxCredentialDeserializeCB = new Callback() {
-        public void callback(int command_handle,int err,int credentailHandle){
+        public void callback(int command_handle,int err,int credentialHandle){
             CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(command_handle);
             if (!checkCallback(future,err)) return;
-            Integer result = credentailHandle;
+            Integer result = credentialHandle;
             future.complete(result);
         }
     };
