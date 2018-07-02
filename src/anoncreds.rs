@@ -164,8 +164,8 @@ impl Issuer {
         })
     }
 
-    pub fn create_credential(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle) -> Result<(String, String, String), ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string_string();
+    pub fn create_credential(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle) -> Result<(String, Option<String>, Option<String>), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string_opt_string();
 
         let err = Issuer::_create_credential(command_handle, wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle, cb);
 
@@ -173,8 +173,8 @@ impl Issuer {
     }
 
     /// * `timeout` - the maximum time this function waits for a response
-    pub fn create_credential_timeout(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle, timeout: Duration) -> Result<(String, String, String), ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string_string();
+    pub fn create_credential_timeout(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle, timeout: Duration) -> Result<(String, Option<String>, Option<String>), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string_opt_string();
 
         let err = Issuer::_create_credential(command_handle, wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle, cb);
 
@@ -185,8 +185,8 @@ impl Issuer {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-    pub fn create_credential_async<F: 'static>(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String, String) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string_string(Box::new(closure));
+    pub fn create_credential_async<F: 'static>(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, Option<String>, Option<String>) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_opt_string_opt_string(Box::new(closure));
 
         Issuer::_create_credential(command_handle, wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle, cb)
     }
