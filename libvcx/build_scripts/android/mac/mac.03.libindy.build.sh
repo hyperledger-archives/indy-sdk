@@ -85,7 +85,7 @@ export ORIGINAL_PATH=$PATH
 #export ORIGINAL_PKG_CONFIG_PATH=$PKG_CONFIG_PATH
 
 cargo clean
-cargo update
+cargo install
 
 export OPENSSL_DIR_DARWIN=$OPENSSL_DIR
 
@@ -161,7 +161,8 @@ SODIUM_LIB_DIR=/usr/local/lib
 ANDROID_ZMQ_LIB=/usr/local/lib
 unset ANDROID_SQLITE_LIB
 sed -i .bak 's/\"\"\.as_ptr() as \*const u8/\"\"\.as_ptr() as \*const i8/' src/services/wallet/storage/plugged/mod.rs
-cargo build --target x86_64-apple-darwin --release --verbose
+# KS:Commenting this for now, because it fails for osx build
+# cargo build --target x86_64-apple-darwin --release --verbose
 echo "-----------------------------------------------------------------------------------------------"
 
 #########################################################################################################################
@@ -169,8 +170,9 @@ echo "--------------------------------------------------------------------------
 #########################################################################################################################
 cd $WORK_DIR/vcx-indy-sdk/libnullpay
 
-# Replace '\"cdylib\"' with '\"staticlib\", \"cdylib\"' in Cargo.toml
-sed -i .bak 's/\"cdylib\"/\"staticlib\", \"cdylib\"/' Cargo.toml
+# KS: Don't need to replace it now, "staticlib" is now added in cargo.toml for libNullpay
+# # Replace '\"cdylib\"' with '\"staticlib\", \"cdylib\"' in Cargo.toml
+# sed -i .bak 's/\"cdylib\"/\"staticlib\", \"cdylib\"/' Cargo.toml
 
 # !IMPORTANT STEPS NEXT -- Modify the build.rs of libnullpay to handle android shared libraries
 tail -n 1 build.rs | wc -c | xargs -I {} truncate build.rs -s -{}
@@ -245,7 +247,8 @@ unset ANDROID_SODIUM_LIB
 SODIUM_LIB_DIR=/usr/local/lib
 ANDROID_ZMQ_LIB=/usr/local/lib
 unset ANDROID_SQLITE_LIB
-cargo build --target x86_64-apple-darwin --release --verbose
+# KS:Commenting this for now, because it fails for osx build
+# cargo build --target x86_64-apple-darwin --release --verbose
 
 export PATH=$ORIGINAL_PATH
 #export PKG_CONFIG_PATH=$ORIGINAL_PKG_CONFIG_PATH

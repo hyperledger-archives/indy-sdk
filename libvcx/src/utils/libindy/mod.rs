@@ -86,7 +86,7 @@ pub fn init_pool_and_wallet() -> Result<(), u32>  {
     let path: String = settings::get_config_value(settings::CONFIG_GENESIS_PATH)
         .unwrap_or(settings::DEFAULT_GENESIS_PATH.to_string());
 
-    debug!("opening pool {} with genesis_path: {}", pool_name, path);
+    trace!("opening pool {} with genesis_path: {}", pool_name, path);
     let option_path = Some(Path::new(&path));
     match pool::create_pool_ledger_config(&pool_name, option_path.to_owned()) {
         Err(e) => {

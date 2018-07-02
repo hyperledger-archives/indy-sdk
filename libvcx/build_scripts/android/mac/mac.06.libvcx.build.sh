@@ -14,7 +14,7 @@ export ORIGINAL_PATH=$PATH
 #export ORIGINAL_PKG_CONFIG_PATH=$PKG_CONFIG_PATH
 
 cargo clean
-cargo update
+cargo install
 
 export OPENSSL_DIR_DARWIN=$OPENSSL_DIR
 
@@ -66,7 +66,7 @@ export OPENSSL_DIR=$OPENSSL_DIR_DARWIN
 unset ANDROID_SODIUM_LIB
 unset ANDROID_ZMQ_LIB
 unset LIBINDY_DIR
-cargo build --target x86_64-apple-darwin --release --verbose
+# cargo build --target x86_64-apple-darwin --release --verbose
 
 #cargo test
 
