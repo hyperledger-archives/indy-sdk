@@ -7,7 +7,7 @@ linker = "arm-linux-androideabi-gcc"
 runner = "./run-on-adroid.sh"
 
 [target.i686-linux-android]
-linker = "i686-linux-android-gcc"
+linker = "build_scripts/android/toolchains/darwin/x86/bin/i686-linux-android-clang"
 runner = "./run-on-adroid.sh"
 
 [target.x86_64-linux-android]

@@ -21,7 +21,7 @@ download_and_unzip_deps(){
 	git clone https://github.com/evernym/indy-android-dependencies.git
 	pushd indy-android-dependencies/prebuilt/
 	git checkout tags/v1.0.1
-	find . -name "*.zip" | xargs -P 5 -I FILENAME sh -c 'unzip -o -d "$(dirname "FILENAME")" "FILENAME"'
+	find . -name "*.zip" | xargs -P 5 -I FILENAME sh -c 'unzip -o -d -q "$(dirname "FILENAME")" "FILENAME"'
 	popd
 	ln -sf indy-android-dependencies/prebuilt dependencies
     export OPENSSL_DIR=dependencies/openssl/openssl_arm
@@ -165,13 +165,13 @@ cp -rf ./../../Cargo.toml ${LIBINDY_SRC}
 
 pushd $LIBINDY_SRC
 export OPENSSL_STATIC=1
-cargo clean
-cargo build --release --target=${CROSS_COMPILE}
+#cargo clean
+cargo test --target=${CROSS_COMPILE}
 popd
 
 
-LIBINDY_BUILDS=${WORKDIR}/libindy_${TARGET_ARCH}
-mkdir -p ${LIBINDY_BUILDS}
-$CC -v -shared -o ${LIBINDY_BUILDS}/libindy.so -Wl,--whole-archive ${LIBINDY_SRC}/target/${CROSS_COMPILE}/release/libindy.a ${TOOLCHAIN_DIR}/sysroot/usr/lib/libz.so ${TOOLCHAIN_DIR}/sysroot/usr/lib/libm.a ${TOOLCHAIN_DIR}/sysroot/usr/lib/liblog.so ${OPENSSL_DIR}/lib/libssl.a ${OPENSSL_DIR}/lib/libcrypto.a ${SODIUM_LIB_DIR}/libsodium.a ${LIBZMQ_LIB_DIR}/libzmq.a ${TOOLCHAIN_DIR}/${CROSS_COMPILE}/lib/libstdc++.a -Wl,--no-whole-archive -z muldefs
-cp "${LIBINDY_SRC}/target/${CROSS_COMPILE}/release/libindy.a" ${LIBINDY_BUILDS}/
+#LIBINDY_BUILDS=${WORKDIR}/libindy_${TARGET_ARCH}
+#mkdir -p ${LIBINDY_BUILDS}
+#$CC -v -shared -o ${LIBINDY_BUILDS}/libindy.so -Wl,--whole-archive ${LIBINDY_SRC}/target/${CROSS_COMPILE}/release/libindy.a ${TOOLCHAIN_DIR}/sysroot/usr/lib/libz.so ${TOOLCHAIN_DIR}/sysroot/usr/lib/libm.a ${TOOLCHAIN_DIR}/sysroot/usr/lib/liblog.so ${OPENSSL_DIR}/lib/libssl.a ${OPENSSL_DIR}/lib/libcrypto.a ${SODIUM_LIB_DIR}/libsodium.a ${LIBZMQ_LIB_DIR}/libzmq.a ${TOOLCHAIN_DIR}/${CROSS_COMPILE}/lib/libstdc++.a -Wl,--no-whole-archive -z muldefs
+#cp "${LIBINDY_SRC}/target/${CROSS_COMPILE}/release/libindy.a" ${LIBINDY_BUILDS}/
 
