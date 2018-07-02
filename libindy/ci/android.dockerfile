@@ -31,7 +31,7 @@ RUN wget https://dl.google.com/android/repository/tools_r25.2.3-linux.zip -P /ho
 RUN unzip /home/indy/android-sdk-linux/tools_r25.2.3-linux.zip -d /home/indy/android-sdk-linux
 RUN ls -al /home/indy/android-sdk-linux
 RUN yes | .//home/indy/android-sdk-linux/tools/android update sdk --no-ui
-RUN yes | .//home/indy/android-sdk-linux/tools/bin/sdkmanager "ndk-bundle"
+RUN y | .//home/indy/android-sdk-linux/tools/bin/sdkmanager "ndk-bundle"
 
 USER indy
 # cargo deb for debian packaging of libindy
