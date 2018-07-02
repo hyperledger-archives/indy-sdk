@@ -215,18 +215,21 @@ impl Wallet {
 
 #[cfg(test)]
 mod tests {
-    extern crate serde_json;
+    use super::*;
 
     use std;
     use std::env;
     use std::rc::Rc;
+    use serde_json;
+
+    use domain::wallet::Metadata;
     use errors::wallet::WalletError;
+    use services::wallet::encryption;
     use services::wallet::wallet::Wallet;
     use services::wallet::storage::WalletStorageType;
     use services::wallet::storage::default::SQLiteStorageType;
     use services::wallet::language::*;
     use std::collections::HashMap;
-    use super::*;
 
     type Tags = HashMap<String, String>;
 
@@ -250,27 +253,40 @@ mod tests {
         std::fs::create_dir(_wallet_path()).ok();
     }
 
+    fn _id() -> &'static str {
+        "w1"
+    }
+
     fn _credentials() -> String {
         r##"{"master_key": "AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=\n", "storage_credentials": {}}}"##.to_string()
     }
 
     fn _create_wallet() -> Wallet {
-        let name = "test_wallet";
-        let pool_name = "test_pool";
         let storage_type = SQLiteStorageType::new();
         let master_key = _get_test_master_key();
-        storage_type.create_storage("test_wallet", None, "", &Keys::gen_keys(&master_key)).unwrap();
-        let credentials = _credentials();
-        let storage = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
 
-        let keys = Keys::new(
-            decrypt_merged(
-                &storage.get_storage_metadata().unwrap(),
-                &master_key
-            ).unwrap()
-        ).unwrap();
+        let keys = Keys::new();
 
-        Wallet::new(name, pool_name, storage, Rc::new(keys))
+        let metadata = {
+            let master_key_salt = encryption::gen_master_key_salt().unwrap();
+
+            let metadata = Metadata {
+                master_key_salt: master_key_salt[..].to_vec(),
+                keys: keys.serialize_encrypted(&master_key).unwrap(),
+            };
+
+            serde_json::to_vec(&metadata)
+                .map_err(|err| CommonError::InvalidState(format!("Cannot serialize wallet metadata: {:?}", err))).unwrap()
+        };
+
+        storage_type.create_storage(_id(),
+                                    None,
+                                    None,
+                                    &metadata).unwrap();
+
+        let storage = storage_type.open_storage(_id(), None, None).unwrap();
+
+        Wallet::new(storage, Rc::new(keys))
     }
 
     fn _get_test_master_key() -> chacha20poly1305_ietf::Key {
@@ -359,7 +375,9 @@ mod tests {
     #[test]
     fn wallet_set_get_works_for_reopen() {
         _cleanup();
+
         let mut wallet = _create_wallet();
+
         let type_ = "test";
         let name = "name1";
         let value = "value1";
@@ -375,16 +393,18 @@ mod tests {
         wallet.close().unwrap();
 
         let storage_type = SQLiteStorageType::new();
-        let credentials = _credentials();
-        let storage = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
-        let keys = Keys::new(
-            decrypt_merged(// DARKO
-                           &storage.get_storage_metadata().unwrap(),
-                           &_get_test_master_key()
-            ).unwrap()
-        ).unwrap();
-        let wallet = Wallet::new("test_wallet", "test_pool", storage, Rc::new(keys));
+        let storage = storage_type.open_storage(_id(), None, None).unwrap();
 
+        let metadata: Metadata = {
+            let metadata = storage.get_storage_metadata().unwrap();
+            serde_json::from_slice(&metadata)
+                .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize metadata: {:?}", err))).unwrap()
+        };
+
+        let master_key = _get_test_master_key();
+        let keys = Keys::deserialize_encrypted(&metadata.keys, &master_key).unwrap();
+
+        let wallet = Wallet::new(storage, Rc::new(keys));
         let entity = wallet.get(type_, name, &_fetch_options(false, true, true)).unwrap();
 
         assert_eq!(entity.name, name);
@@ -577,22 +597,6 @@ mod tests {
         assert_match!(Err(WalletError::ItemNotFound), res);
     }
 
-    #[test]
-    fn wallet_get_pool_name_works() {
-        _cleanup();
-        let wallet = _create_wallet();
-
-        assert_eq!(wallet.get_pool_name(), "test_pool");
-    }
-
-    #[test]
-    fn wallet_get_name_works() {
-        _cleanup();
-        let wallet = _create_wallet();
-
-        assert_eq!(wallet.get_name(), "test_wallet");
-    }
-
     // query encryption tests
     #[test]
     fn wallet_query_parsing() {
@@ -627,22 +631,8 @@ mod tests {
                 "k8": "v8"
             }
         });
-        let master_key = _get_test_master_key();
-        let column_keys = Keys::gen_keys(&master_key);
-        let name = "test_wallet";
-        let pool_name = "test_pool";
-        let storage_type = SQLiteStorageType::new();
-        let master_key = _get_test_master_key();
-        storage_type.create_storage("test_wallet", None, "", &Keys::gen_keys(&master_key)).unwrap();
-        let credentials = _credentials();
-        let storage = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
 
-        let keys = Keys::new(
-            decrypt_merged(
-                &storage.get_storage_metadata().unwrap(),
-                &master_key
-            ).unwrap()
-        ).unwrap();
+        let keys = Keys::new();
         let raw_query = serde_json::to_string(&test_query).unwrap();
         let query = language::parse_from_json(&raw_query).unwrap();
         let encrypted_query = encrypt_query(query, &keys).unwrap();

@@ -5,6 +5,7 @@ mod query;
 mod transaction;
 
 use std;
+use std::fs;
 
 use rusqlite;
 use serde_json;
@@ -202,7 +203,7 @@ impl StorageIterator for SQLiteStorageIterator {
                     None
                 };
                 Ok(Some(StorageEntity::new(name, value, type_, tags)))
-            },
+            }
             Some(Err(err)) => Err(WalletStorageError::from(err)),
             None => Ok(None)
         }
@@ -226,9 +227,9 @@ impl SQLiteStorageType {
         SQLiteStorageType {}
     }
 
-    fn create_path(name: &str) -> std::path::PathBuf {
+    fn _db_path(name: &str) -> std::path::PathBuf {
         let mut path = EnvironmentUtils::wallet_path(name);
-        path.push(_SQLITE_DB );
+        path.push(_SQLITE_DB);
         path
     }
 }
@@ -308,7 +309,7 @@ impl WalletStorage for SQLiteStorage {
             Some(tags)
         } else { None };
 
-         Ok(StorageEntity::new(name.to_vec(), value, type_.map(|val| val.to_vec()), tags))
+        Ok(StorageEntity::new(name.to_vec(), value, type_.map(|val| val.to_vec()), tags))
     }
 
     ///
@@ -343,7 +344,7 @@ impl WalletStorage for SQLiteStorage {
     fn add(&self, type_: &[u8], name: &[u8], value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let tx: transaction::Transaction = transaction::Transaction::new(&self.conn, rusqlite::TransactionBehavior::Deferred)?;
         let res = tx.prepare_cached("INSERT INTO items (type, name, value, key) VALUES (?1, ?2, ?3, ?4)")?
-                            .insert(&[&type_.to_vec(), &name.to_vec(), &value.data, &value.key]);
+            .insert(&[&type_.to_vec(), &name.to_vec(), &value.data, &value.key]);
 
         let id = match res {
             Ok(entity) => entity,
@@ -367,7 +368,7 @@ impl WalletStorage for SQLiteStorage {
 
         Ok(())
     }
-    
+
     fn update(&self, type_: &[u8], name: &[u8], value: &EncryptedValue) -> Result<(), WalletStorageError> {
         let res = self.conn.prepare_cached("UPDATE items SET value = ?1, key = ?2 WHERE type = ?3 AND name = ?4")?
             .execute(&[&value.data, &value.key, &type_.to_vec(), &name.to_vec()]);
@@ -519,7 +520,7 @@ impl WalletStorage for SQLiteStorage {
     }
 
     fn set_storage_metadata(&self, metadata: &[u8]) -> Result<(), WalletStorageError> {
-        match self.conn.execute("UPDATE metadata SET value = ?1",&[&metadata.to_vec()]) {
+        match self.conn.execute("UPDATE metadata SET value = ?1", &[&metadata.to_vec()]) {
             Ok(_) => Ok(()),
             Err(error) => {
                 Err(WalletStorageError::IOError(format!("Error occurred while inserting the keys: {}", error)))
@@ -554,9 +555,12 @@ impl WalletStorage for SQLiteStorage {
             self.conn.query_row(
                 &query_string,
                 &query_arguments,
-                |row| { let x: i64 = row.get(0); Some(x as usize) }
+                |row| {
+                    let x: i64 = row.get(0);
+                    Some(x as usize)
+                }
             )?
-        } else {None};
+        } else { None };
 
 
         if search_options.retrieve_records {
@@ -576,8 +580,7 @@ impl WalletStorage for SQLiteStorage {
             };
             let storage_iterator = SQLiteStorageIterator::new(Some(statement), &query_arguments, fetch_options, tag_retriever, total_count)?;
             Ok(Box::new(storage_iterator))
-        }
-        else {
+        } else {
             let storage_iterator = SQLiteStorageIterator::new(None, &[], RecordOptions::default(), None, total_count)?;
             Ok(Box::new(storage_iterator))
         }
@@ -625,10 +628,10 @@ impl WalletStorageType for SQLiteStorageType {
     ///  * `IOError(..)` - Deletion of the file form the file-system failed
     ///
     fn delete_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletStorageError> {
-        let db_file_path = SQLiteStorageType::create_path(id);
+        let db_file_path = SQLiteStorageType::_db_path(id);
 
         if db_file_path.exists() {
-            std::fs::remove_file(db_file_path)?;
+            std::fs::remove_file(db_file_path.parent().unwrap())?;
             Ok(())
         } else {
             Err(WalletStorageError::NotFound)
@@ -664,23 +667,28 @@ impl WalletStorageType for SQLiteStorageType {
     ///  * `IOError(..)` - Deletion of the file form the file-system failed
     ///
     fn create_storage(&self, name: &str, config: Option<&str>, credentials: Option<&str>, metadata: &[u8]) -> Result<(), WalletStorageError> {
-        let db_file_path = SQLiteStorageType::create_path(name);
-        if db_file_path.exists() {
+        let db_path = SQLiteStorageType::_db_path(name);
+
+        if db_path.exists() {
             return Err(WalletStorageError::AlreadyExists);
         }
 
-        let conn = rusqlite::Connection::open(db_file_path.as_path())?;
+        fs::DirBuilder::new()
+            .recursive(true)
+            .create(db_path.parent().unwrap())?;
+
+        let conn = rusqlite::Connection::open(db_path.as_path())?;
 
         match conn.execute_batch(_CREATE_SCHEMA) {
             Ok(_) => match conn.execute("INSERT OR REPLACE INTO metadata(value) VALUES(?1)", &[&metadata.to_vec()]) {
                 Ok(_) => Ok(()),
                 Err(error) => {
-                    std::fs::remove_file(db_file_path)?;
+                    std::fs::remove_file(db_path)?;
                     Err(WalletStorageError::IOError(format!("Error occurred while inserting the keys: {}", error)))
                 }
             },
             Err(error) => {
-                std::fs::remove_file(db_file_path)?;
+                std::fs::remove_file(db_path)?;
                 Err(WalletStorageError::IOError(format!("Error occurred while creating wallet file: {}", error)))
             }
         }
@@ -715,7 +723,7 @@ impl WalletStorageType for SQLiteStorageType {
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
     fn open_storage(&self, name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<WalletStorage>, WalletStorageError> {
-        let db_file_path = SQLiteStorageType::create_path(name);
+        let db_file_path = SQLiteStorageType::_db_path(name);
 
         if !db_file_path.exists() {
             return Err(WalletStorageError::NotFound);
@@ -763,7 +771,7 @@ mod tests {
 
     fn _db_file_path() -> std::path::PathBuf {
         let mut db_file_path = _wallet_base_path();
-        db_file_path.push(_SQLITE_DB );
+        db_file_path.push(_SQLITE_DB);
         db_file_path
     }
 
@@ -872,7 +880,8 @@ mod tests {
         assert_match!(Err(WalletStorageError::NotFound), res_wrong);
         assert_match!(Ok(()), res_ok);
     }
-//
+
+    //
 //    /**
 //     * SQLiteWalletStorageType Open tests
 //     */
@@ -903,7 +912,6 @@ mod tests {
     /**
      * Get/Set tests
      */
-
     #[test]
     fn sqlite_storage_set_get_works() {
         _prepare_path();
@@ -917,7 +925,7 @@ mod tests {
 
         let type_: Vec<u8> = vec![1, 2, 3];
         let name: Vec<u8> = vec![4, 5, 6];
-        let value = EncryptedValue{data: vec![7, 8, 9], key: vec![10, 11, 12]};
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 11, 12] };
         let mut tags: Vec<Tag> = Vec::new();
         tags.push(Tag::Encrypted(vec![1, 5, 8], vec![3, 5, 6]));
         tags.push(Tag::PlainText(vec![1, 5, 8, 1], "Plain value".to_string()));
@@ -945,8 +953,8 @@ mod tests {
 
         let type_: Vec<u8> = vec![1, 2, 3];
         let name: Vec<u8> = vec![4, 5, 6];
-        let value = EncryptedValue{data: vec![7, 8, 9], key: vec![10, 11, 12]};
-        let value2 = EncryptedValue{data: vec![100, 150, 200], key: vec![10, 11, 12]};
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 11, 12] };
+        let value2 = EncryptedValue { data: vec![100, 150, 200], key: vec![10, 11, 12] };
         let mut tags: Vec<Tag> = Vec::new();
         tags.push(Tag::Encrypted(vec![1, 5, 8], vec![3, 5, 6]));
         tags.push(Tag::PlainText(vec![1, 5, 8, 1], "Plain value".to_string()));
@@ -970,7 +978,7 @@ mod tests {
         storage_type.create_storage("test_wallet", None, Some("{}"), &test_keys).unwrap();
         let type_: Vec<u8> = vec![1, 2, 3];
         let name: Vec<u8> = vec![4, 5, 6];
-        let value = EncryptedValue{data: vec![7, 8, 9], key: vec![10, 11, 12]};
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 11, 12] };
         let mut tags: Vec<Tag> = Vec::new();
         tags.push(Tag::Encrypted(vec![1, 5, 8], vec![3, 5, 6]));
         tags.push(Tag::PlainText(vec![1, 5, 8, 1], "Plain value".to_string()));
@@ -998,7 +1006,7 @@ mod tests {
         let storage = storage_type.open_storage("test_wallet", None, Some("{}")).unwrap();
         let type_: Vec<u8> = vec![1, 2, 3];
         let name: Vec<u8> = vec![4, 5, 6];
-        let value = EncryptedValue{data: vec![7, 8, 9], key: vec![10, 11, 12]};
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 11, 12] };
         let mut tags: Vec<Tag> = Vec::new();
         tags.push(Tag::Encrypted(vec![1, 5, 8], vec![3, 5, 6]));
         tags.push(Tag::PlainText(vec![1, 5, 8, 1], "Plain value".to_string()));
@@ -1021,7 +1029,7 @@ mod tests {
 
         let type_: Vec<u8> = vec![1, 2, 3];
         let name: Vec<u8> = vec![4, 5, 6];
-        let value = EncryptedValue{data: vec![7, 8, 9], key: vec![10, 11, 12]};
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 11, 12] };
         let mut tags: Vec<Tag> = Vec::new();
         tags.push(Tag::Encrypted(vec![1, 5, 8], vec![3, 5, 6]));
         tags.push(Tag::PlainText(vec![1, 5, 8, 1], "Plain value".to_string()));
@@ -1040,10 +1048,9 @@ mod tests {
     /**
      * delete tests
      */
-
     #[test]
     fn sqlite_storage_delete() {
-         _prepare_path();
+        _prepare_path();
         let storage_type = SQLiteStorageType::new();
         let test_keys = _get_test_keys();
 
@@ -1052,7 +1059,7 @@ mod tests {
 
         let type_: Vec<u8> = vec![1, 2, 3];
         let name: Vec<u8> = vec![4, 5, 6];
-        let value = EncryptedValue{data: vec![7, 8, 9], key: vec![10, 11, 12]};
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 11, 12] };
         let mut tags: Vec<Tag> = Vec::new();
         tags.push(Tag::Encrypted(vec![1, 5, 8], vec![3, 5, 6]));
         tags.push(Tag::PlainText(vec![1, 5, 8, 1], "Plain value".to_string()));
@@ -1071,7 +1078,6 @@ mod tests {
     }
 
     /** negative tests */
-
     #[test]
     fn sqlite_storage_delete_returns_error_item_not_found_if_no_such_key() {
         _prepare_path();
@@ -1083,7 +1089,7 @@ mod tests {
 
         let type_: Vec<u8> = vec![1, 2, 3];
         let name: Vec<u8> = vec![4, 5, 6];
-        let value = EncryptedValue{data: vec![7, 8, 9], key: vec![10, 11, 12]};
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 11, 12] };
         let mut tags: Vec<Tag> = Vec::new();
         tags.push(Tag::Encrypted(vec![1, 5, 8], vec![3, 5, 6]));
         tags.push(Tag::PlainText(vec![1, 5, 8, 1], "Plain value".to_string()));
@@ -1092,7 +1098,8 @@ mod tests {
         let res = storage.delete(&type_, &vec![5, 5, 6]);
         assert_match!(Err(WalletStorageError::ItemNotFound), res);
     }
-//
+
+    //
 //    /** delete tests - END **/
 //
 //
@@ -1112,8 +1119,8 @@ mod tests {
         let type_: Vec<u8> = vec![1, 2, 3];
         let name1: Vec<u8> = vec![4, 5, 6];
         let name2: Vec<u8> = vec![4, 5, 8];
-        let value1 = EncryptedValue{data: vec![7, 8, 9], key: vec![10, 11, 12]};
-        let value2 = EncryptedValue{data: vec![100, 150, 200], key: vec![10, 11, 12]};
+        let value1 = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 11, 12] };
+        let value2 = EncryptedValue { data: vec![100, 150, 200], key: vec![10, 11, 12] };
         let mut tags: Vec<Tag> = Vec::new();
         tags.push(Tag::Encrypted(vec![1, 5, 8], vec![3, 5, 6]));
         tags.push(Tag::PlainText(vec![1, 5, 8, 1], "Plain value".to_string()));
@@ -1139,7 +1146,7 @@ mod tests {
         let retrieved_value2 = item2.clone().value.unwrap();
         assert_eq!(retrieved_value2, value2);
         assert_eq!(item2.type_.clone().unwrap(), type_);
-  }
+    }
 
     #[test]
     fn sqlite_storage_get_all_with_no_existing_keys() {
@@ -1158,14 +1165,13 @@ mod tests {
     /**
      * Update tests
      */
-
     #[test]
     fn sqlite_storage_update() {
         let storage = _create_and_open_test_storage();
-        let type_ = vec![1,2,3];
-        let name = vec![4,5,6];
-        let value1 = EncryptedValue{data: vec![7, 8, 9], key: vec![10, 11, 12]};
-        let value2 = EncryptedValue{data: vec![100, 150, 200], key: vec![10, 11, 34]};
+        let type_ = vec![1, 2, 3];
+        let name = vec![4, 5, 6];
+        let value1 = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 11, 12] };
+        let value2 = EncryptedValue { data: vec![100, 150, 200], key: vec![10, 11, 34] };
         let tags = Vec::new();
 
         storage.add(&type_, &name, &value1, &tags).unwrap();
@@ -1179,11 +1185,11 @@ mod tests {
     #[test]
     fn sqlite_storage_update_returns_error_on_bad_item_name() {
         let storage = _create_and_open_test_storage();
-        let type_ = vec![1,2,3];
-        let name = vec![4,5,6];
+        let type_ = vec![1, 2, 3];
+        let name = vec![4, 5, 6];
         let wrong_name = vec![100, 100, 100];
-        let value1 = EncryptedValue{data: vec![7,8,9], key:vec![10, 10, 10]};
-        let value2 = EncryptedValue{data: vec![20, 20, 20], key: vec![30, 30, 30]};
+        let value1 = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 10, 10] };
+        let value2 = EncryptedValue { data: vec![20, 20, 20], key: vec![30, 30, 30] };
         let tags = Vec::new();
 
         storage.add(&type_, &name, &value1, &tags).unwrap();
@@ -1196,11 +1202,11 @@ mod tests {
     #[test]
     fn sqlite_storage_update_returns_error_on_bad_type() {
         let storage = _create_and_open_test_storage();
-        let type_ = vec![1,2,3];
-        let wrong_type = vec![1,1,1];
-        let name = vec![4,5,6];
-        let value1 = EncryptedValue{data: vec![7,8,9], key: vec![10, 10, 10]};
-        let value2 = EncryptedValue{data: vec![20, 20, 20], key: vec![30, 30, 30]};
+        let type_ = vec![1, 2, 3];
+        let wrong_type = vec![1, 1, 1];
+        let name = vec![4, 5, 6];
+        let value1 = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 10, 10] };
+        let value2 = EncryptedValue { data: vec![20, 20, 20], key: vec![30, 30, 30] };
         let tags = Vec::new();
 
         storage.add(&type_, &name, &value1, &tags).unwrap();
@@ -1214,13 +1220,12 @@ mod tests {
     /**
      * Add tags tests
      */
-
     #[test]
     fn sqlite_storage_add_tags() {
         let storage = _create_and_open_test_storage();
-        let type_ = vec![1,2,3];
-        let name = vec![4,5,6];
-        let value = EncryptedValue{data: vec![7,8,9], key: vec![10, 10, 10]};
+        let type_ = vec![1, 2, 3];
+        let name = vec![4, 5, 6];
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 10, 10] };
         let mut tags = Vec::new();
         let tag1 = Tag::Encrypted(vec![0, 0, 0], vec![9, 9, 9]);
         tags.push(tag1.clone());
@@ -1251,9 +1256,9 @@ mod tests {
     #[test]
     fn sqlite_storage_add_tags_returns_proper_error_if_wrong_name() {
         let storage = _create_and_open_test_storage();
-        let type_ = vec![1,2,3];
-        let name = vec![4,5,6];
-        let value = EncryptedValue{data: vec![7,8,9], key: vec![10, 10, 10]};
+        let type_ = vec![1, 2, 3];
+        let name = vec![4, 5, 6];
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 10, 10] };
         let tags = Vec::new();
 
         storage.add(&type_, &name, &value, &tags).unwrap();
@@ -1261,33 +1266,33 @@ mod tests {
         let mut new_tags = Vec::new();
         new_tags.push(Tag::Encrypted(vec![1, 1, 1], vec![2, 2, 2]));
 
-        let res = storage.add_tags(&type_, &vec![100,100,100], &new_tags);
+        let res = storage.add_tags(&type_, &vec![100, 100, 100], &new_tags);
         assert_match!(Err(WalletStorageError::ItemNotFound), res)
     }
 
     #[test]
     fn sqlite_storage_add_tags_returns_proper_error_if_wrong_type() {
         let storage = _create_and_open_test_storage();
-        let type_ = vec![1,2,3];
-        let name = vec![4,5,6];
-        let value = EncryptedValue{data: vec![7,8,9], key: vec![10, 10, 10]};
+        let type_ = vec![1, 2, 3];
+        let name = vec![4, 5, 6];
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 10, 10] };
         let tags = Vec::new();
 
-        storage.add(&vec![200,200], &name, &value, &tags).unwrap();
+        storage.add(&vec![200, 200], &name, &value, &tags).unwrap();
 
         let mut new_tags = Vec::new();
         new_tags.push(Tag::Encrypted(vec![1, 1, 1], vec![2, 2, 2]));
 
-        let res = storage.add_tags(&type_, &vec![100,100,100], &new_tags);
+        let res = storage.add_tags(&type_, &vec![100, 100, 100], &new_tags);
         assert_match!(Err(WalletStorageError::ItemNotFound), res)
     }
 
     #[test]
     fn sqlite_storage_add_tags_if_already_exists() {
         let storage = _create_and_open_test_storage();
-        let type_ = vec![1,2,3];
-        let name = vec![4,5,6];
-        let value = EncryptedValue{data: vec![7,8,9], key: vec![10, 10, 10]};
+        let type_ = vec![1, 2, 3];
+        let name = vec![4, 5, 6];
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 10, 10] };
         let mut tags = Vec::new();
         let tag1 = Tag::Encrypted(vec![0, 0, 0], vec![9, 9, 9]);
         let tag2 = Tag::Encrypted(vec![1, 1, 1], vec![8, 8, 8]);
@@ -1318,13 +1323,12 @@ mod tests {
     /**
      * Update tags tests
      */
-
     #[test]
     fn sqlite_storage_update_tags() {
         let storage = _create_and_open_test_storage();
-        let type_ = vec![1,2,3];
-        let name = vec![4,5,6];
-        let value = EncryptedValue{data: vec![7,8,9], key: vec![10, 10, 10]};
+        let type_ = vec![1, 2, 3];
+        let name = vec![4, 5, 6];
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 10, 10] };
         let mut tags = Vec::new();
         let tag1 = Tag::Encrypted(vec![0, 0, 0], vec![0, 0, 0]);
         let tag2 = Tag::PlainText(vec![1, 1, 1], "tag_value_2".to_string());
@@ -1351,9 +1355,9 @@ mod tests {
     #[test]
     fn sqlite_storage_update_tags_returns_error_if_wrong_name() {
         let storage = _create_and_open_test_storage();
-        let type_ = vec![1,2,3];
-        let name = vec![4,5,6];
-        let value = EncryptedValue{data: vec![7,8,9], key: vec![10, 10, 10]};
+        let type_ = vec![1, 2, 3];
+        let name = vec![4, 5, 6];
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 10, 10] };
         let mut tags = Vec::new();
         let tag1 = Tag::Encrypted(vec![0, 0, 0], vec![0, 0, 0]);
         let tag2 = Tag::PlainText(vec![1, 1, 1], "tag_value_2".to_string());
@@ -1377,9 +1381,9 @@ mod tests {
     #[test]
     fn sqlite_storage_update_tags_returns_error_if_wrong_type() {
         let storage = _create_and_open_test_storage();
-        let type_ = vec![1,2,3];
-        let name = vec![4,5,6];
-        let value = EncryptedValue{data: vec![7,8,9], key: vec![10, 10, 10]};
+        let type_ = vec![1, 2, 3];
+        let name = vec![4, 5, 6];
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 10, 10] };
         let mut tags = Vec::new();
         let tag1 = Tag::Encrypted(vec![0, 0, 0], vec![0, 0, 0]);
         let tag2 = Tag::PlainText(vec![1, 1, 1], "tag_value_2".to_string());
@@ -1401,9 +1405,9 @@ mod tests {
     #[test]
     fn sqlite_storage_update_tags_succedes_for_nonexistent_tag_and_works_atomically() {
         let storage = _create_and_open_test_storage();
-        let type_ = vec![1,2,3];
-        let name = vec![4,5,6];
-        let value = EncryptedValue{data: vec![7,8,9], key: vec![10, 10, 10]};
+        let type_ = vec![1, 2, 3];
+        let name = vec![4, 5, 6];
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 10, 10] };
         let mut tags = Vec::new();
         let tag1 = Tag::Encrypted(vec![0, 0, 0], vec![0, 0, 0]);
         let tag2 = Tag::PlainText(vec![1, 1, 1], "tag_value_2".to_string());
@@ -1435,9 +1439,9 @@ mod tests {
     #[test]
     fn sqlite_storage_delete_tags() {
         let storage = _create_and_open_test_storage();
-        let type_ = vec![1,2,3];
-        let name = vec![4,5,6];
-        let value = EncryptedValue{data: vec![7,8,9], key: vec![10, 10, 10]};
+        let type_ = vec![1, 2, 3];
+        let name = vec![4, 5, 6];
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 10, 10] };
         let mut tags = Vec::new();
         let tag_name1 = vec![0, 0, 0];
         let tag_name2 = vec![1, 1, 1];
@@ -1464,9 +1468,9 @@ mod tests {
     #[test]
     fn sqlite_storage_returns_error_if_wrong_type() {
         let storage = _create_and_open_test_storage();
-        let type_ = vec![1,2,3];
-        let name = vec![4,5,6];
-        let value = EncryptedValue{data: vec![7,8,9], key: vec![10, 10, 10]};
+        let type_ = vec![1, 2, 3];
+        let name = vec![4, 5, 6];
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 10, 10] };
         let mut tags = Vec::new();
         let tag_name1 = vec![0, 0, 0];
         let tag_name2 = vec![1, 1, 1];
@@ -1495,9 +1499,9 @@ mod tests {
     #[test]
     fn sqlite_storage_returns_error_if_wrong_name() {
         let storage = _create_and_open_test_storage();
-        let type_ = vec![1,2,3];
-        let name = vec![4,5,6];
-        let value = EncryptedValue{data: vec![7,8,9], key: vec![10, 10, 10]};
+        let type_ = vec![1, 2, 3];
+        let name = vec![4, 5, 6];
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 10, 10] };
         let mut tags = Vec::new();
         let tag_name1 = vec![0, 0, 0];
         let tag_name2 = vec![1, 1, 1];
@@ -1526,9 +1530,9 @@ mod tests {
     #[test]
     fn sqlite_storage_delete_tags_works_atomically_and_no_error_if_one_tag_name_is_wrong() {
         let storage = _create_and_open_test_storage();
-        let type_ = vec![1,2,3];
-        let name = vec![4,5,6];
-        let value = EncryptedValue{data: vec![7,8,9], key: vec![10, 10, 10]};
+        let type_ = vec![1, 2, 3];
+        let name = vec![4, 5, 6];
+        let value = EncryptedValue { data: vec![7, 8, 9], key: vec![10, 10, 10] };
         let mut tags = Vec::new();
         let tag_name1 = vec![0, 0, 0];
         let tag_name2 = vec![1, 1, 1];
@@ -1559,7 +1563,6 @@ mod tests {
     /**
      * Delete tests
      */
-
     #[test]
     fn sqlite_storage_type_delete_works() {
         _prepare_path();
@@ -1569,7 +1572,6 @@ mod tests {
         storage_type.create_storage("test_wallet", None, Some("{}"), &test_keys).unwrap();
         storage_type.delete_storage("test_wallet", None, Some("{}")).unwrap();
         storage_type.create_storage("test_wallet", None, Some("{}"), &test_keys).unwrap();
-
     }
 
     /** Delete negative tests */

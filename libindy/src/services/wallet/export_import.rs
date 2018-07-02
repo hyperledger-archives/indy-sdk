@@ -349,23 +349,24 @@ fn bytes_to_u16(b: &[u8]) -> u16 {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     use std;
     use std::io;
     use std::io::{Read, BufReader};
     use std::env;
     use std::rc::Rc;
     use std::collections::HashMap;
-
-    extern crate rand;
-
-    use self::rand::*;
     use serde_json;
-    use ::utils::environment::EnvironmentUtils;
+    use rand;
+    use rand::*;
+
+    use domain::wallet::Metadata;
+    use utils::environment::EnvironmentUtils;
+    use services::wallet::encryption;
     use services::wallet::storage::WalletStorageType;
     use services::wallet::storage::default::SQLiteStorageType;
     use services::wallet::wallet::{Keys, Wallet};
-    use services::wallet::encryption::decrypt_merged;
-    use super::*;
 
     fn _wallet_path() -> std::path::PathBuf {
         let mut path = env::home_dir().unwrap();
@@ -382,34 +383,48 @@ mod tests {
         std::fs::create_dir_all(_wallet_path()).unwrap();
     }
 
+    fn _id() -> &'static str {
+        "w1"
+    }
+
     fn _credentials() -> String {
         r##"{"master_key": "AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg=\n", "storage_credentials": {}}}"##.to_string()
     }
 
     fn _create_wallet() -> Wallet {
-        let name = "test_wallet";
-        let pool_name = "test_pool";
         let storage_type = SQLiteStorageType::new();
         let master_key = _get_test_master_key();
-        storage_type.create_storage("test_wallet", None, "", &Keys::gen_keys(&master_key)).unwrap();
-        let credentials = _credentials();
-        let storage = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
 
-        let keys = Keys::new(
-            decrypt_merged(
-                &storage.get_storage_metadata().unwrap(),
-                &master_key
-            ).unwrap()
-        ).unwrap();
+        let keys = Keys::new();
 
-        Wallet::new(name, pool_name, storage, Rc::new(keys))
+        let metadata = {
+            let master_key_salt = encryption::gen_master_key_salt().unwrap();
+
+            let metadata = Metadata {
+                master_key_salt: master_key_salt[..].to_vec(),
+                keys: keys.serialize_encrypted(&master_key).unwrap(),
+            };
+
+            serde_json::to_vec(&metadata)
+                .map_err(|err| CommonError::InvalidState(format!("Cannot serialize wallet metadata: {:?}", err))).unwrap()
+        };
+
+        storage_type.create_storage(_id(),
+                                    None,
+                                    None,
+                                    &metadata).unwrap();
+
+        let storage = storage_type.open_storage(_id(), None, None).unwrap();
+
+        Wallet::new(storage, Rc::new(keys))
+
     }
 
     fn _get_test_master_key() -> chacha20poly1305_ietf::Key {
         chacha20poly1305_ietf::gen_key()
     }
 
-    fn _create_export_file() -> Box<io::Write> {
+    fn _create_export_file() -> std::fs::File {
         let path = EnvironmentUtils::tmp_file_path("export_directory");
         if path.exists() {
             std::fs::remove_dir_all(path.clone()).unwrap();
@@ -419,7 +434,7 @@ mod tests {
         let mut export_file_path = path.clone();
         export_file_path.push("export_file");
         let file = std::fs::File::create(export_file_path).unwrap();
-        Box::new(file)
+        file
     }
 
     fn _get_export_file_content() -> Vec<u8> {
@@ -458,13 +473,13 @@ mod tests {
         r##"{"retrieveType": true, "retrieveValue": true, "retrieveTags": true}"##
     }
 
-    fn _get_test_salt() -> [u8; pwhash_argon2i13::SALTBYTES] {
-        [
+    fn _get_test_salt() -> pwhash_argon2i13::Salt {
+        pwhash_argon2i13::Salt::new([
             0, 1, 2, 3, 4, 5, 6, 7,
             0, 1, 2, 3, 4, 5, 6, 7,
             0, 1, 2, 3, 4, 5, 6, 7,
             0, 1, 2, 3, 4, 5, 6, 7,
-        ]
+        ])
     }
 
     /**
@@ -474,7 +489,7 @@ mod tests {
     fn test_header_serialised_length() {
         let nonce = chacha20poly1305_ietf::gen_nonce();
         let salt = _get_test_salt();
-        let header = Header::new(1, "TEST_ENCRYPTION_METHOD", nonce.get_bytes(), salt);
+        let header = Header::new(1, "TEST_ENCRYPTION_METHOD".to_string(), nonce, salt);
         let serialised_header = header.serialise().unwrap();
 
         assert_eq!(serialised_header.len(), 2 + 12 + 2 + "TEST_ENCRYPTION_METHOD".len() + 2 + chacha20poly1305_ietf::NONCEBYTES + 2 + 32 + 32);
@@ -484,7 +499,7 @@ mod tests {
     fn test_header_equal_after_deserialisation() {
         let nonce = chacha20poly1305_ietf::gen_nonce();
         let salt = _get_test_salt();
-        let header = Header::new(1, "TEST_ENCRYPTION_METHOD", nonce.get_bytes(), salt);
+        let header = Header::new(1, "TEST_ENCRYPTION_METHOD".to_string(), nonce, salt);
 
         let serialised_header = header.serialise().unwrap();
         let deserialised_header = Header::deserialise(&serialised_header).unwrap();
@@ -500,7 +515,7 @@ mod tests {
     fn test_header_deserialisation_raises_error_if_data_changed() {
         let nonce = chacha20poly1305_ietf::gen_nonce();
         let salt = _get_test_salt();
-        let header = Header::new(1, "TEST_ENCRYPTION_METHOD", nonce.get_bytes(), salt);
+        let header = Header::new(1, "TEST_ENCRYPTION_METHOD".to_string(), nonce, salt);
 
         let mut serialised_header = header.serialise().unwrap();
         serialised_header[3] = 1;
@@ -512,7 +527,7 @@ mod tests {
     fn test_header_deserialisation_raises_error_if_hash_changed() {
         let nonce = chacha20poly1305_ietf::gen_nonce();
         let salt = _get_test_salt();
-        let header = Header::new(1, "TEST_ENCRYPTION_METHOD", nonce.get_bytes(), salt);
+        let header = Header::new(1, "TEST_ENCRYPTION_METHOD".to_string(), nonce, salt);
 
         let mut serialised_header = header.serialise().unwrap();
         let index = serialised_header.len() - 5;
@@ -662,10 +677,10 @@ mod tests {
     fn export_empty_wallet() {
         _cleanup();
         let wallet = _create_wallet();
-        let export_writer = _create_export_file();
+        let mut export_writer = _create_export_file();
         let key = "key";
 
-        export(&wallet, export_writer, key, 0).unwrap();
+        export(&wallet, &mut export_writer, key, 0).unwrap();
 
         let exported_content = _get_export_file_content();
         assert_eq!(exported_content.len(), _expected_header_length());
@@ -693,10 +708,10 @@ mod tests {
         let wallet = _create_wallet();
         wallet.add(type1, name1, value1, &tags1).unwrap();
         wallet.add(type2, name2, value2, &tags2).unwrap();
-        let export_writer = _create_export_file();
+        let mut export_writer = _create_export_file();
         let key = "key";
 
-        export(&wallet, export_writer, key, 0).unwrap();
+        export(&wallet, &mut export_writer, key, 0).unwrap();
 
         let exported_content = _get_export_file_content();
         assert_eq!(exported_content.len(), _expected_header_length() + record_1_length + record_2_length + 2 * 4 + 16);
@@ -722,10 +737,10 @@ mod tests {
         }
         let total_unencrypted_length = total_item_length + item_count * 20;
 
-        let export_writer = _create_export_file();
+        let mut export_writer = _create_export_file();
         let key = "key";
 
-        export(&wallet, export_writer, key, 0).unwrap();
+        export(&wallet, &mut export_writer, key, 0).unwrap();
 
         let exported_content = _get_export_file_content();
         let chunk_count = f64::ceil(total_unencrypted_length as f64 / 1024.0) as usize;
@@ -737,10 +752,10 @@ mod tests {
     fn import_fails_if_header_length_too_small() {
         _cleanup();
         let mut wallet = _create_wallet();
-        let reader = Box::new(BufReader::new("\x00\x20some_hash00000000000000000000000".as_bytes()));
+        let mut reader = BufReader::new("\x00\x20some_hash00000000000000000000000".as_bytes());
         let key = "import_key";
 
-        let res = import(&mut wallet, reader, key);
+        let res = import(&mut wallet, &mut reader, key);
 
         assert_match!(Err(WalletError::CommonError(_)), res);
     }
@@ -749,10 +764,10 @@ mod tests {
     fn import_fails_if_header_body_too_small() {
         _cleanup();
         let mut wallet = _create_wallet();
-        let reader = Box::new(BufReader::new("\x00\x30this_hash_is_too_short".as_bytes()));
+        let mut reader = BufReader::new("\x00\x30this_hash_is_too_short".as_bytes());
         let key = "import_key";
 
-        let res = import(&mut wallet, reader, key);
+        let res = import(&mut wallet, &mut reader, key);
 
         assert_match!(Err(WalletError::CommonError(_)), res);
     }
@@ -763,17 +778,17 @@ mod tests {
         let key = "key";
         {
             let mut wallet = _create_wallet();
-            let export_writer = _create_export_file();
-            export(&wallet, export_writer, key, 1).unwrap();
+            let mut export_writer = _create_export_file();
+            export(&wallet, &mut export_writer, key, 1).unwrap();
             wallet.close().unwrap();
         }
         _cleanup();
 
-        let reader = _get_export_file_reader();
+        let mut reader = _get_export_file_reader();
         let mut wallet = _create_wallet();
         assert!(wallet.get_all().unwrap().next().unwrap().is_none());
 
-        import(&mut wallet, reader, key).expect("Failed to import wallet");
+        import(&mut wallet, &mut reader, key).expect("Failed to import wallet");
         assert!(wallet.get_all().unwrap().next().unwrap().is_none());
     }
 
@@ -801,18 +816,18 @@ mod tests {
             let mut wallet = _create_wallet();
             wallet.add(type1, name1, value1, &tags1).unwrap();
             wallet.add(type2, name2, value2, &tags2).unwrap();
-            let export_writer = _create_export_file();
-            export(&wallet, export_writer, key, 1).unwrap();
+            let mut export_writer = _create_export_file();
+            export(&wallet, &mut export_writer, key, 1).unwrap();
             wallet.close().unwrap();
         }
         _cleanup();
 
-        let reader = _get_export_file_reader();
+        let mut reader = _get_export_file_reader();
         let mut wallet = _create_wallet();
         let first_res = wallet.get(type1, name1, "{}");
         assert_match!(Err(WalletError::ItemNotFound), first_res);
 
-        import(&mut wallet, reader, key).expect("Failed to import wallet");
+        import(&mut wallet, &mut reader, key).expect("Failed to import wallet");
         let first_record = wallet.get(type1, name1, _options()).expect("Failed to retrieve first item");
         let second_record = wallet.get(type2, name2, _options()).expect("Failed to retrieve second item");
 
@@ -848,16 +863,16 @@ mod tests {
                 wallet.add("type", &name, &value, &tags).unwrap();
             }
             let total_unencrypted_length = total_item_length + item_count * 20;
-            let export_writer = _create_export_file();
-            export(&wallet, export_writer, key, 0).unwrap();
+            let mut export_writer = _create_export_file();
+            export(&wallet, &mut export_writer, key, 0).unwrap();
             wallet.close().unwrap();
         }
         _cleanup();
 
-        let reader = _get_export_file_reader();
+        let mut reader = _get_export_file_reader();
         let mut wallet = _create_wallet();
         assert!(wallet.get_all().unwrap().next().unwrap().is_none());
-        import(&mut wallet, reader, key).expect("Failed to import wallet");
+        import(&mut wallet, &mut reader, key).expect("Failed to import wallet");
 
         for i in 0..item_count {
             let name = format!("name_{}", i);
@@ -896,8 +911,8 @@ mod tests {
             let mut wallet = _create_wallet();
             wallet.add(type1, name1, value1, &tags1).unwrap();
             wallet.add(type2, name2, value2, &tags2).unwrap();
-            let export_writer = _create_export_file();
-            export(&wallet, export_writer, key, 1).unwrap();
+            let mut export_writer = _create_export_file();
+            export(&wallet, &mut export_writer, key, 1).unwrap();
             wallet.close().unwrap();
         }
         _cleanup();
@@ -910,12 +925,12 @@ mod tests {
         content[index] = new_byte_value;
         _replace_export_file(content);
 
-        let reader = _get_export_file_reader();
+        let mut reader = _get_export_file_reader();
         let mut wallet = _create_wallet();
         let first_res = wallet.get(type1, name1, "{}");
         assert_match!(Err(WalletError::ItemNotFound), first_res);
 
-        let res = import(&mut wallet, reader, key);
+        let res = import(&mut wallet, &mut reader, key);
         assert_match!(Err(WalletError::CommonError(_)), res);
     }
 
@@ -943,8 +958,8 @@ mod tests {
             let mut wallet = _create_wallet();
             wallet.add(type1, name1, value1, &tags1).unwrap();
             wallet.add(type2, name2, value2, &tags2).unwrap();
-            let export_writer = _create_export_file();
-            export(&wallet, export_writer, key, 1).unwrap();
+            let mut export_writer = _create_export_file();
+            export(&wallet, &mut export_writer, key, 1).unwrap();
             wallet.close().unwrap();
         }
         _cleanup();
@@ -957,12 +972,12 @@ mod tests {
         content[index] = new_byte_value;
         _replace_export_file(content);
 
-        let reader = _get_export_file_reader();
+        let mut reader = _get_export_file_reader();
         let mut wallet = _create_wallet();
         let first_res = wallet.get(type1, name1, "{}");
         assert_match!(Err(WalletError::ItemNotFound), first_res);
 
-        let res = import(&mut wallet, reader, key);
+        let res = import(&mut wallet, &mut reader, key);
         assert_match!(Err(WalletError::CommonError(_)), res);
     }
 
@@ -990,8 +1005,8 @@ mod tests {
             let mut wallet = _create_wallet();
             wallet.add(type1, name1, value1, &tags1).unwrap();
             wallet.add(type2, name2, value2, &tags2).unwrap();
-            let export_writer = _create_export_file();
-            export(&wallet, export_writer, key, 1).unwrap();
+            let mut export_writer = _create_export_file();
+            export(&wallet, &mut export_writer, key, 1).unwrap();
             wallet.close().unwrap();
         }
         _cleanup();
@@ -1003,9 +1018,9 @@ mod tests {
         content[index] = new_byte_value;
         _replace_export_file(content);
 
-        let reader = _get_export_file_reader();
+        let mut reader = _get_export_file_reader();
         let mut wallet = _create_wallet();
-        let res = import(&mut wallet, reader, key);
+        let res = import(&mut wallet, &mut reader, key);
         assert_match!(Err(_), res);
         let res = wallet.get(type1, name1, _options());
         assert_match!(Err(WalletError::ItemNotFound), res);
@@ -1035,8 +1050,8 @@ mod tests {
             let mut wallet = _create_wallet();
             wallet.add(type1, name1, value1, &tags1).unwrap();
             wallet.add(type2, name2, value2, &tags2).unwrap();
-            let export_writer = _create_export_file();
-            export(&wallet, export_writer, key, 1).unwrap();
+            let mut export_writer = _create_export_file();
+            export(&wallet, &mut export_writer, key, 1).unwrap();
             wallet.close().unwrap();
         }
         _cleanup();
@@ -1045,9 +1060,9 @@ mod tests {
         content.pop().unwrap();
         _replace_export_file(content);
 
-        let reader = _get_export_file_reader();
+        let mut reader = _get_export_file_reader();
         let mut wallet = _create_wallet();
-        let res = import(&mut wallet, reader, key);
+        let res = import(&mut wallet, &mut reader, key);
         assert_match!(Err(_), res);
         let res = wallet.get(type1, name1, _options());
         assert_match!(Err(WalletError::ItemNotFound), res);
@@ -1077,8 +1092,8 @@ mod tests {
             let mut wallet = _create_wallet();
             wallet.add(type1, name1, value1, &tags1).unwrap();
             wallet.add(type2, name2, value2, &tags2).unwrap();
-            let export_writer = _create_export_file();
-            export(&wallet, export_writer, key, 1).unwrap();
+            let mut export_writer = _create_export_file();
+            export(&wallet, &mut export_writer, key, 1).unwrap();
             wallet.close().unwrap();
         }
         _cleanup();
@@ -1087,9 +1102,9 @@ mod tests {
         content.push(10);
         _replace_export_file(content);
 
-        let reader = _get_export_file_reader();
+        let mut reader = _get_export_file_reader();
         let mut wallet = _create_wallet();
-        let res = import(&mut wallet, reader, key);
+        let res = import(&mut wallet, &mut reader, key);
         assert_match!(Err(_), res);
         let res = wallet.get(type1, name1, _options());
         assert_match!(Err(WalletError::ItemNotFound), res);
