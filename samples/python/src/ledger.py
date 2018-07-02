@@ -2,7 +2,7 @@ import json
 import time
 
 from indy import ledger, did, wallet, pool
-from src.utils import get_pool_genesis_txn_path, run_coroutine
+from src.utils import get_pool_genesis_txn_path, run_coroutine, PROTOCOL_VERSION
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,6 +15,9 @@ async def demo():
     wallet_name = 'walle1t'
     seed_trustee1 = "000000000000000000000000Trustee1"
     pool_genesis_txn_path = get_pool_genesis_txn_path(pool_name)
+
+    # Set protocol version 2 to work with Indy Node 1.4
+    await pool.set_protocol_version(PROTOCOL_VERSION)
 
     # 1. Create ledger config from genesis txn file
     pool_config = json.dumps({"genesis_txn": str(pool_genesis_txn_path)})

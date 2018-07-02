@@ -1,9 +1,8 @@
 var test = require('ava')
 var indy = require('../')
 var cuid = require('cuid')
-var path = require('path')
 var initTestPool = require('./helpers/initTestPool')
-var indyHomeDir = require('home-dir')('.indy_client')
+var tempy = require('tempy')
 
 function sleep (ms) {
   return new Promise(function (resolve) {
@@ -53,7 +52,7 @@ test('ledger', async function (t) {
   var data = await indy.parseGetSchemaResponse(res)
   t.is(data[0], schemaId)
   t.is(data[1].name, schema.name)
-  req = await indy.buildGetTxnRequest(myDid, data[1].seqNo)
+  req = await indy.buildGetTxnRequest(myDid, null, data[1].seqNo)
   res = await waitUntilApplied(pool.handle, req, res => res['result']['data']['txnMetadata']['seqNo'] != null)
   t.is(res.result.data.txn.data.data.name, schema.name)
   schema = data[1]
@@ -106,7 +105,7 @@ test('ledger', async function (t) {
 
   // Revoc Reg Def
   var writerH = await indy.openBlobStorageWriter('default', {
-    'base_dir': path.join(indyHomeDir, 'tails'),
+    'base_dir': tempy.directory(),
     'uri_pattern': ''
   })
   var [revRegDefId, revRegDef, revRegEntry] = await indy.issuerCreateAndStoreRevocReg(wh, myDid, null, 'tag1', credDefId, {max_cred_num: 5}, writerH)

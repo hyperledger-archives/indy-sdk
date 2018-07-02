@@ -59,7 +59,7 @@ impl fmt::Display for WalletError {
             WalletError::EncryptionError(ref description) => write!(f, "Wallet encryption error occurred. Description: {}", description),
             WalletError::ItemNotFound => write!(f, "Item not found"),
             WalletError::ItemAlreadyExists => write!(f, "Item already exists"),
-            WalletError::QueryError(ref description) => write!(f, "{}", description)
+            WalletError::QueryError(ref description) => write!(f, "{}", description),
         }
     }
 }
@@ -126,7 +126,7 @@ impl ToErrorCode for WalletError {
             WalletError::InputError(_) => ErrorCode::WalletInputError,
             WalletError::EncodingError(_) => ErrorCode::WalletDecodingError,
             WalletError::StorageError(_) => ErrorCode::WalletStorageError,
-            WalletError::EncryptionError(_) => ErrorCode::WalletEncryptonError,
+            WalletError::EncryptionError(_) => ErrorCode::WalletEncryptionError,
             WalletError::ItemNotFound => ErrorCode::WalletItemNotFound,
             WalletError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
             WalletError::QueryError(_) => ErrorCode::WalletQueryError,
@@ -143,7 +143,7 @@ impl From<CommonError> for WalletError {
 
 impl From<io::Error> for WalletError {
     fn from(err: io::Error) -> WalletError {
-        WalletError::CommonError(CommonError::IOError(err))
+        WalletError::from(CommonError::from(err))
     }
 }
 

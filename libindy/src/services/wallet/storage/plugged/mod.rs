@@ -747,7 +747,7 @@ impl WalletStorageType for PluggedStorageType {
 
         let err = (self.open_handler)(cname.as_ptr(),
                                       config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
-                                      "".as_ptr() as *const i8, // TODO!!!
+                                      "".as_ptr() as *const _, // TODO!!!
                                       credentials.as_ptr(),
                                       &mut handle);
 
@@ -1499,7 +1499,7 @@ mod tests {
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let value = EncryptedValue { data: _random_vector(256), key: _random_vector(60) };
+        let value = EncryptedValue{data: _random_vector(256), key: _random_vector(60)};
         let mut tags = Vec::new();
         tags.push(Tag::Encrypted(_random_vector(32), _random_vector(64)));
         tags.push(Tag::PlainText(_random_vector(32), _random_string(64)));
@@ -1531,7 +1531,7 @@ mod tests {
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let value = EncryptedValue { data: _random_vector(256), key: _random_vector(44) };
+        let value = EncryptedValue{data: _random_vector(256), key: _random_vector(44)};
 
         storage.update(&type_, &id, &value).unwrap();
 

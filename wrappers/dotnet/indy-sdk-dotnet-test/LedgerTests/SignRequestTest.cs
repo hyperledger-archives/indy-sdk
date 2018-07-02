@@ -33,7 +33,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
 
         [TestMethod]
-        public async Task TestSignWorksForUnknowDid()
+        public async Task TestSignWorksForUnknownDid()
         {
             var msg = "{\"reqId\":1496822211362017764}";
 

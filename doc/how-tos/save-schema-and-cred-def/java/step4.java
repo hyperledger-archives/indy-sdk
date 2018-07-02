@@ -1,5 +1,5 @@
 		System.out.println("\n11. Creating and storing CRED DEF using anoncreds as Trust Anchor, for the given Schema\n");
-		String credDefJSON = "{\"seqNo\": 1, \"dest\": \"" + defautStewardDid + "\", \"data\": " + schemaDataJSON + "}";
+		String credDefJSON = "{\"seqNo\": 1, \"dest\": \"" + defaultStewardDid + "\", \"data\": " + schemaDataJSON + "}";
 		System.out.println("Cred Def JSON:\n" + credDefJSON);
 		String credDef = issuerCreateAndStoreClaimDef(walletHandle, trustAnchorDID, credDefJSON, "CL", false).get();
 		System.out.println("Returned Cred Definition:\n" + credDef);

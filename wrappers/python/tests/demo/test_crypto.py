@@ -7,7 +7,7 @@ import json
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
 async def test_crypto_demo_works(pool_name, seed_trustee1, path_home, pool_genesis_txn_path, pool_genesis_txn_file,
-                                 credentials):
+                                 credentials, protocol_version):
     # 1. Create ledger config from genesis txn file
     pool_config = json.dumps({"genesis_txn": str(pool_genesis_txn_path)})
     await pool.create_pool_ledger_config(pool_name, pool_config)

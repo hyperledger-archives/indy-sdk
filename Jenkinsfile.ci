@@ -45,7 +45,7 @@ def windowsTesting() {
                                 "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo build"
+                            bat "cargo build --features fatal_warnings"
                             bat "cargo test --no-run"
 
                             echo "Windows Libindy Test: Run tests"
@@ -64,7 +64,7 @@ def windowsTesting() {
                         withEnv([
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo build"
+                            bat "cargo build --features fatal_warnings"
                             bat "cargo test --no-run"
 
                             echo "Windows Libnullpay Test: Run tests"
@@ -133,7 +133,7 @@ def macosTesting() {
                     echo "MacOS Test: Build"
                     setupRust()
                     setupBrewPackages()
-                    sh "cargo build"
+                    sh "cargo build --features fatal_warnings"
                     sh "cargo test --no-run"
                     // TODO testing
                 }
@@ -169,7 +169,13 @@ def iosTesting() {
 
                 dir('wrappers/ios/libindy-pod') {
                     echo "iOS Test: Installing dependencies (pods)"
-                    sh "pod install --repo-update"
+
+                    withEnv([
+                            "GEM_PATH=$HOME/.gem.indy_sdk",
+                            "GEM_HOME=$HOME/.gem.indy_sdk"
+                    ]) {
+                        sh "pod install --repo-update"
+                    }
                 }
 
                 // FIXME replace this hack (manually rewrite installed pod)
@@ -220,7 +226,7 @@ def linuxTesting(file, env_name, network_name) {
         poolInst = openPool(env_name, network_name)
 
         def testEnv
-        def libindyFeatures = "--features sodium_static"
+        def additionalFeatures = "sodium_static"
 
         dir('libindy') {
             echo "${env_name} Libindy Test: Build docker image"
@@ -228,7 +234,7 @@ def linuxTesting(file, env_name, network_name) {
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libindy Test: Build"
-                sh "cargo build $libindyFeatures"
+                sh "cargo build --features \"fatal_warnings $additionalFeatures\""
             }
         }
 
@@ -243,7 +249,7 @@ def linuxTesting(file, env_name, network_name) {
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libnullpay Test: Build"
-                sh "LIBRARY_PATH=./ cargo build"
+                sh "LIBRARY_PATH=./ cargo build --features fatal_warnings"
             }
         }
 
@@ -262,10 +268,10 @@ def linuxTesting(file, env_name, network_name) {
                             echo "${env_name} Libindy Test: Test"
 
                             echo "${env_name} Libindy Test: Build Test"
-                            sh "RUST_BACKTRACE=1 cargo test --no-run $libindyFeatures"
+                            sh "RUST_BACKTRACE=1 cargo test --no-run --features $additionalFeatures"
 
                             echo "${env_name} Libindy Test: Run tests"
-                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test $libindyFeatures"
+                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features  $additionalFeatures"
                         }
                     }
                 },
@@ -356,10 +362,6 @@ def linuxNodejsTesting(env_name, network_name, testEnv) {
 }
 
 def linuxCLITesting(env_name, network_name, testEnv) {
-    if (env_name == "RedHat"){ // TODO: Delete it IS-702
-        return;
-    }
-
     unstash name: "LibindyCliSO${env_name}"
     unstash name: "LibnullpayCliSO${env_name}"
 

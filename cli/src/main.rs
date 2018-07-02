@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "fatal_warnings", deny(warnings))]
+
 extern crate ansi_term;
 extern crate unescape;
 #[macro_use]
@@ -87,6 +89,8 @@ fn build_executor() -> CommandExecutor {
         .add_command(wallet::list_command::new())
         .add_command(wallet::close_command::new())
         .add_command(wallet::delete_command::new())
+        .add_command(wallet::export_command::new())
+        .add_command(wallet::import_command::new())
         .finalize_group()
         .add_group(ledger::group::new())
         .add_command(ledger::nym_command::new())

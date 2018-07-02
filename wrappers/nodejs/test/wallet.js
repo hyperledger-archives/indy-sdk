@@ -1,7 +1,9 @@
 var test = require('ava')
 var indy = require('../')
 var cuid = require('cuid')
+var fs = require('fs')
 var initTestPool = require('./helpers/initTestPool')
+var tempy = require('tempy')
 
 test('wallet', async function (t) {
   var pool = await initTestPool()
@@ -34,6 +36,18 @@ test('wallet', async function (t) {
   err = await t.throws(indy.closeWallet(-1))
   t.is(err.indyName, 'WalletInvalidHandle')
 
+  var [did] = await indy.createAndStoreMyDid(handle, {})
+  var didBeforeExport = await indy.getMyDidWithMeta(handle, did)
+
+  var exportPath = tempy.file()
+  var exportConfig = {
+    'key': 'export_key',
+    'path': exportPath
+  }
+  await indy.exportWallet(handle, exportConfig)
+
+  t.is(fs.existsSync(exportPath), true)
+
   await indy.closeWallet(handle)
 
   t.deepEqual(await listWallets(), [{name: wName, type: 'default'}])
@@ -41,6 +55,19 @@ test('wallet', async function (t) {
   await indy.deleteWallet(wName, walletCredentials)
 
   t.deepEqual(await listWallets(), [])
+
+  await indy.importWallet(pool.name, wName, 'default', null, walletCredentials, exportConfig)
+
+  t.deepEqual(await listWallets(), [{name: wName, type: 'default'}])
+
+  handle = await indy.openWallet(wName, null, walletCredentials)
+  t.truthy(handle >= 0)
+
+  var didAfterImport = await indy.getMyDidWithMeta(handle, did)
+
+  t.deepEqual(didBeforeExport, didAfterImport)
+
+  await indy.closeWallet(handle)
 
   pool.cleanup()
 })

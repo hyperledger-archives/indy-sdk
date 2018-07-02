@@ -114,6 +114,7 @@ After successfully compiling `libindy`, you will need to add the path containing
 * [RHEL based distributions (Amazon Linux 2017.03)](doc/rhel-build.md)
 * [Windows](doc/windows-build.md)
 * [MacOS](doc/mac-build.md)
+* [Android](doc/android-build.md)
 
 **Note:**
 By default `cargo build` produce debug artifacts with a large amount of run-time checks.
@@ -192,4 +193,5 @@ details.
 ## How to migrate
 The documents that provide necessary information for Libindy migration. This document is written for developers using Libindy 1.3.0 to provide necessary information and
 to simplify their transition to API of Libindy 1.4.0.
-* [v1.3.0 → v1.4.0](doc/migration-guide.md)
+* [v1.3.0 → v1.4.0](doc/migration-guide-1.3.0-1.4.0.md)
+* [v1.4.0 → v1.5.0](doc/migration-guide-1.4.0-1.5.0.md)

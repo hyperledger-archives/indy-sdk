@@ -115,6 +115,7 @@ pub enum LedgerCommand {
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetTxnRequest(
         String, // submitter did
+        Option<String>, // ledger type
         i32, // data
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildPoolConfigRequest(
@@ -292,9 +293,9 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildGetValidatorInfoRequest command received");
                 cb(self.build_get_validator_info_request(&submitter_did));
             }
-            LedgerCommand::BuildGetTxnRequest(submitter_did, data, cb) => {
+            LedgerCommand::BuildGetTxnRequest(submitter_did, ledger_type, seq_no, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetTxnRequest command received");
-                cb(self.build_get_txn_request(&submitter_did, data));
+                cb(self.build_get_txn_request(&submitter_did, ledger_type.as_ref().map(String::as_str), seq_no));
             }
             LedgerCommand::BuildPoolConfigRequest(submitter_did, writes, force, cb) => {
                 info!(target: "ledger_command_executor", "BuildPoolConfigRequest command received");
@@ -664,7 +665,7 @@ impl LedgerCommandExecutor {
     }
 
     fn build_get_validator_info_request(&self,
-                             submitter_did: &str) -> Result<String, IndyError> {
+                                        submitter_did: &str) -> Result<String, IndyError> {
         info!("build_get_validator_info_request >>> submitter_did: {:?}", submitter_did);
 
         self.crypto_service.validate_did(submitter_did)?;
@@ -678,14 +679,14 @@ impl LedgerCommandExecutor {
 
     fn build_get_txn_request(&self,
                              submitter_did: &str,
-                             data: i32) -> Result<String, IndyError> {
-        debug!("build_get_txn_request >>> submitter_did: {:?}, data: {:?}",
-               submitter_did, data);
+                             ledger_type: Option<&str>,
+                             seq_no: i32) -> Result<String, IndyError> {
+        debug!("build_get_txn_request >>> submitter_did: {:?}, ledger_type: {:?}, seq_no: {:?}",
+               submitter_did, ledger_type, seq_no);
 
         self.crypto_service.validate_did(submitter_did)?;
 
-        let res = self.ledger_service.build_get_txn_request(submitter_did,
-                                                            data)?;
+        let res = self.ledger_service.build_get_txn_request(submitter_did, ledger_type, seq_no)?;
 
         debug!("build_get_txn_request <<< res: {:?}", res);
 
